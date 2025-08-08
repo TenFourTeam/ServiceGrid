@@ -1,0 +1,129 @@
+export type ID = string;
+export type Money = number; // cents
+export type ISODate = string;
+
+export interface Business {
+  id: ID;
+  name: string;
+  logoUrl?: string;
+  phone?: string;
+  replyToEmail?: string;
+  taxRateDefault: number; // 0.0 - 1.0
+  numbering: {
+    estPrefix: string;
+    estSeq: number;
+    invPrefix: string;
+    invSeq: number;
+  };
+}
+
+export interface Customer {
+  id: ID;
+  businessId: ID;
+  name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  notes?: string;
+}
+
+export interface LineItem {
+  id: ID;
+  name: string;
+  qty: number;
+  unit?: string;
+  unitPrice: Money;
+  lineTotal: Money; // computed
+}
+
+export type EstimateStatus = 'Draft' | 'Sent' | 'Approved' | 'Declined';
+export interface Estimate {
+  id: ID;
+  number: string; // EST-###
+  businessId: ID;
+  customerId: ID;
+  address?: string;
+  lineItems: LineItem[];
+  taxRate: number;
+  discount: Money; // absolute
+  subtotal: Money;
+  total: Money;
+  status: EstimateStatus;
+  files?: string[]; // local object URLs
+  notesInternal?: string;
+  terms?: string;
+  approvedAt?: ISODate;
+  approvedBy?: string; // typed name
+  createdAt: ISODate;
+  updatedAt: ISODate;
+  publicToken: string;
+}
+
+export type JobStatus = 'Scheduled' | 'In Progress' | 'Completed';
+export interface Job {
+  id: ID;
+  businessId: ID;
+  estimateId?: ID;
+  customerId: ID;
+  address?: string;
+  startsAt: ISODate;
+  endsAt: ISODate;
+  status: JobStatus;
+  recurrence?: 'biweekly';
+  notes?: string;
+  total?: Money;
+  createdAt: ISODate;
+  updatedAt: ISODate;
+}
+
+export type InvoiceStatus = 'Draft' | 'Sent' | 'Paid' | 'Overdue';
+export interface Invoice {
+  id: ID;
+  number: string; // INV-###
+  businessId: ID;
+  customerId: ID;
+  jobId?: ID;
+  lineItems: LineItem[];
+  taxRate: number;
+  discount: Money;
+  subtotal: Money;
+  total: Money;
+  status: InvoiceStatus;
+  dueAt?: ISODate;
+  paidAt?: ISODate;
+  createdAt: ISODate;
+  updatedAt: ISODate;
+  publicToken: string;
+}
+
+export interface Payment {
+  id: ID;
+  businessId: ID;
+  invoiceId: ID;
+  amount: Money;
+  status: 'Succeeded' | 'Failed';
+  receivedAt: ISODate;
+  method: 'Card';
+  last4?: string; // fake entry
+}
+
+export interface AppEvent {
+  id: ID;
+  ts: ISODate;
+  type:
+    | 'estimate.created' | 'estimate.sent' | 'estimate.approved'
+    | 'job.created' | 'job.updated' | 'job.completed'
+    | 'invoice.created' | 'invoice.sent' | 'invoice.paid';
+  entityId: ID;
+  meta?: Record<string, any>;
+}
+
+export interface AppState {
+  business: Business;
+  customers: Customer[];
+  estimates: Estimate[];
+  jobs: Job[];
+  invoices: Invoice[];
+  payments: Payment[];
+  events: AppEvent[];
+}

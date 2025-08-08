@@ -1,14 +1,16 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import AppLayout from '@/components/Layout/AppLayout';
+import { Link, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 
-const Index = () => {
+export default function Index() {
+  const nav = useNavigate();
+  useEffect(()=>{ nav('/calendar', { replace: true }); }, []);
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
-    </div>
+    <AppLayout title="Welcome">
+      <section className="text-center">
+        <h2 className="text-xl">Redirecting…</h2>
+        <p className="text-muted-foreground">Go to <Link to="/calendar" className="underline">Calendar</Link></p>
+      </section>
+    </AppLayout>
   );
-};
-
-export default Index;
+}
