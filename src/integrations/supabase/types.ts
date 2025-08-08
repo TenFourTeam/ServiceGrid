@@ -14,7 +14,84 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      email_senders: {
+        Row: {
+          created_at: string
+          from_email: string
+          from_name: string | null
+          id: string
+          provider: string
+          reply_to: string | null
+          sendgrid_sender_id: number | null
+          status: string | null
+          updated_at: string
+          user_id: string
+          verified: boolean
+        }
+        Insert: {
+          created_at?: string
+          from_email: string
+          from_name?: string | null
+          id?: string
+          provider?: string
+          reply_to?: string | null
+          sendgrid_sender_id?: number | null
+          status?: string | null
+          updated_at?: string
+          user_id: string
+          verified?: boolean
+        }
+        Update: {
+          created_at?: string
+          from_email?: string
+          from_name?: string | null
+          id?: string
+          provider?: string
+          reply_to?: string | null
+          sendgrid_sender_id?: number | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+          verified?: boolean
+        }
+        Relationships: []
+      }
+      estimate_public_snapshots: {
+        Row: {
+          approved_at: string | null
+          created_at: string
+          customer_email: string | null
+          estimate_id: string
+          id: string
+          snapshot: Json
+          token: string
+          view_count: number
+          viewed_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          created_at?: string
+          customer_email?: string | null
+          estimate_id: string
+          id?: string
+          snapshot: Json
+          token?: string
+          view_count?: number
+          viewed_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          created_at?: string
+          customer_email?: string | null
+          estimate_id?: string
+          id?: string
+          snapshot?: Json
+          token?: string
+          view_count?: number
+          viewed_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
