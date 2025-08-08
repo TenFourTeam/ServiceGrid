@@ -13,14 +13,20 @@ const TOTAL_MIN = (END_HOUR - START_HOUR) * 60;
 
 function dayKey(d: Date) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().slice(0,10); }
 
-export function WeekCalendar() {
+export function WeekCalendar({ selectedJobId }: { selectedJobId?: string }) {
   const { jobs, customers, updateJobStatus, upsertJob, deleteJob } = useStore();
   const [weekStart, setWeekStart] = useState(() => {
-    const now = new Date();
-    const day = now.getDay(); // 0=Sun
+    const initial = (() => {
+      if (selectedJobId) {
+        const j = jobs.find(j=>j.id===selectedJobId);
+        if (j) return new Date(j.startsAt);
+      }
+      return new Date();
+    })();
+    const day = initial.getDay(); // 0=Sun
     const mondayOffset = (day + 6) % 7; // Monday start
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - mondayOffset);
+    const monday = new Date(initial);
+    monday.setDate(initial.getDate() - mondayOffset);
     monday.setHours(0,0,0,0);
     return monday;
   });
@@ -37,8 +43,8 @@ export function WeekCalendar() {
     return map;
   }, [jobs, weekStart]);
 
-  const [activeJob, setActiveJob] = useState<Job | null>(null);
-  const gridRef = useRef<HTMLDivElement>(null);
+const [activeJob, setActiveJob] = useState<Job | null>(()=> selectedJobId ? jobs.find(j=>j.id===selectedJobId) ?? null : null);
+const gridRef = useRef<HTMLDivElement>(null);
 
   function onDragStart(e: React.PointerEvent, job: Job) {
     const bounds = (e.currentTarget.parentElement as HTMLElement | null)?.getBoundingClientRect() ?? gridRef.current?.getBoundingClientRect();

@@ -30,7 +30,8 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
         </div>
         <nav className="flex flex-col gap-1">
           <NavLink to="/calendar" label="Calendar" />
-          <NavLink to="/estimates" label="Estimates" />
+          <NavLink to="/work-orders" label="Work Orders" />
+          <NavLink to="/estimates" label="Quotes" />
           <NavLink to="/invoices" label="Invoices" />
           <NavLink to="/customers" label="Customers" />
           <NavLink to="/settings" label="Settings" />
