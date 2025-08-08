@@ -8,14 +8,64 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { formatMoney, formatDate } from '@/utils/format';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Estimate } from '@/types';
 
 export default function EstimatesPage() {
   const store = useStore();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<Partial<Estimate>>({ lineItems: [], taxRate: store.business.taxRateDefault, discount: 0 });
-  
+
+  // Inline New Quote widget state
+  const [inlineOpen, setInlineOpen] = useState(false);
+  const [quickDraft, setQuickDraft] = useState<Partial<Estimate>>({
+    lineItems: [],
+    taxRate: store.business.taxRateDefault,
+    discount: 0,
+    customerId: store.customers[0]?.id,
+  });
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
+  const [qty, setQty] = useState<number>(1);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewEstimate, setPreviewEstimate] = useState<Estimate | null>(null);
+
+  useEffect(() => {
+    if (!quickDraft.customerId && store.customers.length > 0) {
+      setQuickDraft((d) => ({ ...d, customerId: store.customers[0]!.id }));
+    }
+  }, [store.customers, quickDraft.customerId]);
+
+  const templates = useMemo(
+    () => [
+      { id: 'mow', name: 'Weekly Lawn Mowing', items: [ { name: 'Lawn mowing', qty: 1, unit: 'visit', unitPrice: 5000 } ] },
+      { id: 'spring', name: 'Spring Cleanup', items: [ { name: 'Leaf cleanup', qty: 2, unit: 'hour', unitPrice: 4000 }, { name: 'Haul-away', qty: 1, unit: 'trip', unitPrice: 2000 } ] },
+    ],
+    []
+  );
+
+  function applyTemplate(tid: string, mult: number) {
+    const t = templates.find((t) => t.id === tid);
+    if (!t) { setQuickDraft((d) => ({ ...d, lineItems: [] })); return; }
+    const lineItems = t.items.map((it) => {
+      const qty = Math.max(1, Math.floor((it.qty ?? 1) * (mult || 1)));
+      const unitPrice = it.unitPrice ?? 0;
+      return {
+        id: crypto.randomUUID(),
+        name: it.name,
+        qty,
+        unit: it.unit,
+        unitPrice,
+        lineTotal: Math.round(qty * unitPrice),
+      };
+    });
+    setQuickDraft((d) => ({ ...d, lineItems }));
+  }
+
+  function quickCreateAndPreview() {
+    const saved = store.upsertEstimate({ ...quickDraft, customerId: quickDraft.customerId! });
+    setPreviewEstimate(saved);
+    setPreviewOpen(true);
+  }
 
   const customer = store.customers.find((c) => c.id === draft.customerId);
   const totals = useMemo(() => {
@@ -39,11 +89,44 @@ export default function EstimatesPage() {
   function send(est: Estimate) { store.sendEstimate(est.id); }
 
   return (
-    <AppLayout title="Estimates">
+    <AppLayout title="Quotes">
       <section className="space-y-4">
-        <div className="flex justify-end"><Button onClick={() => setOpen(true)}>New Estimate</Button></div>
+        <div className="flex justify-end gap-2">
+          <Button variant="secondary" onClick={() => setInlineOpen((o) => !o)}>{inlineOpen ? 'Close New Quote' : 'New Quote'}</Button>
+          <Button onClick={() => setOpen(true)}>Open Editor</Button>
+        </div>
+        {inlineOpen && (
+          <Card className="mb-4">
+            <CardHeader><CardTitle>New Quote</CardTitle></CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                <div>
+                  <Label>Customer</Label>
+                  <select className="w-full border rounded-md h-9 px-3 bg-background" value={quickDraft.customerId ?? ''} onChange={(e)=>setQuickDraft({...quickDraft, customerId: e.target.value})}>
+                    {store.customers.map((c)=> <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <Label>Select Template or new items</Label>
+                  <select className="w-full border rounded-md h-9 px-3 bg-background" value={selectedTemplate} onChange={(e)=>{ const v=e.target.value; setSelectedTemplate(v); applyTemplate(v, qty); }}>
+                    <option value="">New items (empty)</option>
+                    {templates.map((t)=> <option key={t.id} value={t.id}>{t.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <Label>Quantity multiplier</Label>
+                  <Input type="number" min={1} value={qty} onChange={(e)=>{ const m=Math.max(1, Number(e.target.value)||1); setQty(m); if (selectedTemplate) applyTemplate(selectedTemplate, m); }} />
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button variant="secondary" onClick={()=>{ setInlineOpen(false); setSelectedTemplate(''); setQty(1); setQuickDraft({ lineItems: [], taxRate: store.business.taxRateDefault, discount: 0, customerId: store.customers[0]?.id }); }}>Cancel</Button>
+                  <Button onClick={quickCreateAndPreview} disabled={!quickDraft.customerId}>Send Quote</Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
         <Card>
-          <CardHeader><CardTitle>All Estimates</CardTitle></CardHeader>
+          <CardHeader><CardTitle>All Quotes</CardTitle></CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
@@ -81,7 +164,7 @@ export default function EstimatesPage() {
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl">
-          <DialogHeader><DialogTitle>{draft.id? 'Edit Estimate' : 'New Estimate'}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{draft.id? 'Edit Quote' : 'New Quote'}</DialogTitle></DialogHeader>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Customer</Label>
@@ -132,6 +215,35 @@ export default function EstimatesPage() {
             <div className="flex gap-2">
               <Button variant="secondary" onClick={()=>setOpen(false)}>Cancel</Button>
               <Button onClick={save}>Save</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Preview Email</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>To</Label>
+              <div className="text-sm">{store.customers.find(c=>c.id===previewEstimate?.customerId)?.name}</div>
+            </div>
+            <div>
+              <Label>Subject</Label>
+              <Input readOnly value={`Quote from ${store.business.name}`} />
+            </div>
+            <div>
+              <Label>Body</Label>
+              <Textarea readOnly value={`Hi ${store.customers.find(c=>c.id===previewEstimate?.customerId)?.name || 'there'},\n\nPlease review your quote totaling ${formatMoney(previewEstimate?.total ?? 0)}.\n\nLink: ${window.location.origin}/public/estimate/${previewEstimate?.publicToken || ''}\n\nThanks,\n${store.business.name}`} />
+            </div>
+            <div className="flex items-center justify-between">
+              <Button variant="secondary" onClick={() => { if (previewEstimate) { navigator.clipboard?.writeText(`${window.location.origin}/public/estimate/${previewEstimate.publicToken}`); } }}>Copy Link</Button>
+              <div className="flex gap-2">
+                <Button variant="secondary" onClick={() => setPreviewOpen(false)}>Close</Button>
+                <Button onClick={() => { if (previewEstimate) { store.sendEstimate(previewEstimate.id); setPreviewOpen(false); setInlineOpen(false); setSelectedTemplate(''); setQty(1); setQuickDraft({ lineItems: [], taxRate: store.business.taxRateDefault, discount: 0, customerId: store.customers[0]?.id }); } }}>Send</Button>
+              </div>
             </div>
           </div>
         </DialogContent>
