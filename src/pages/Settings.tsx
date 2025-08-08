@@ -26,10 +26,6 @@ export default function SettingsPage() {
               <Input value={store.business.phone} onChange={(e)=>store.setBusiness({ phone: e.target.value })} />
             </div>
             <div>
-              <Label>Reply-to Email</Label>
-              <Input value={store.business.replyToEmail} onChange={(e)=>store.setBusiness({ replyToEmail: e.target.value })} />
-            </div>
-            <div>
               <Label>Default Tax Rate</Label>
               <Input type="number" step="0.01" value={store.business.taxRateDefault} onChange={(e)=>store.setBusiness({ taxRateDefault: Number(e.target.value) })} />
             </div>

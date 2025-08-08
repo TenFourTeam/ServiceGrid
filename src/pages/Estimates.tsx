@@ -120,26 +120,6 @@ export default function EstimatesPage() {
     sendEmailForEstimate(est);
   }
 
-  async function handleSendTestEmail() {
-    const suggested = (store as any)?.business?.email || '';
-    const to = window.prompt('Enter email address to send a test quote email to:', suggested);
-    if (!to) return;
-    const { data, error } = await supabase.functions.invoke('send-quote', {
-      body: {
-        to,
-        subject: `Test quote email from ${store.business.name}`,
-        html: `<div style="font-family:system-ui;line-height:1.5"><h2>Test Email</h2><p>This is a test email to verify deliverability.</p></div>`,
-      },
-    });
-    console.log('send-quote test response', { data, error });
-    if (error) {
-      toast({ title: 'Test email failed', description: error.message || 'There was a problem sending the test email.' });
-    } else if ((data as any)?.error) {
-      toast({ title: 'Test email failed', description: (data as any).error || 'Unknown error' });
-    } else {
-      toast({ title: 'Test email sent', description: `Email sent to ${to}` });
-    }
-  }
 
   const sortedEstimates = useMemo(() => {
     const arr = [...store.estimates];
@@ -179,7 +159,6 @@ export default function EstimatesPage() {
     <AppLayout title="Quotes">
       <section className="space-y-4">
         <div className="flex justify-end gap-2">
-          <Button variant="secondary" onClick={handleSendTestEmail}>Send test email</Button>
           <Button onClick={() => setOpen(true)}>Create Quote</Button>
         </div>
 

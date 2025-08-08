@@ -38,7 +38,6 @@ export default function EmailSenderSettings() {
   const [form, setForm] = useState({
     from_name: sender?.from_name ?? "",
     from_email: sender?.from_email ?? "",
-    reply_to: sender?.reply_to ?? "",
     address: "",
     address2: "",
     city: "",
@@ -53,10 +52,10 @@ export default function EmailSenderSettings() {
       ...f,
       from_name: sender?.from_name ?? "",
       from_email: sender?.from_email ?? "",
-      reply_to: sender?.reply_to ?? "",
+      
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sender?.from_name, sender?.from_email, sender?.reply_to]);
+  }, [sender?.from_name, sender?.from_email]);
 
   const onSave = async () => {
     if (!form.from_email || !form.address || !form.city || !form.state || !form.zip || !form.country) {
@@ -67,7 +66,7 @@ export default function EmailSenderSettings() {
       body: {
         from_email: form.from_email,
         from_name: form.from_name || undefined,
-        reply_to: form.reply_to || undefined,
+        
         address: form.address,
         address2: form.address2 || undefined,
         city: form.city,
@@ -128,15 +127,6 @@ export default function EmailSenderSettings() {
               value={form.from_email}
               onChange={(e) => setForm((f) => ({ ...f, from_email: e.target.value }))}
               placeholder="you@yourdomain.com"
-            />
-          </div>
-          <div>
-            <Label>Reply-to Email</Label>
-            <Input
-              type="email"
-              value={form.reply_to}
-              onChange={(e) => setForm((f) => ({ ...f, reply_to: e.target.value }))}
-              placeholder="reply@yourdomain.com"
             />
           </div>
         </div>
