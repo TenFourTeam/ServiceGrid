@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Job } from '@/types';
 import { useStore } from '@/store/useAppStore';
 import { clamp, formatDate, formatDateTime, minutesSinceStartOfDay } from '@/utils/format';
@@ -44,8 +44,21 @@ export function WeekCalendar({ selectedJobId }: { selectedJobId?: string }) {
   }, [jobs, weekStart]);
 
 const [activeJob, setActiveJob] = useState<Job | null>(()=> selectedJobId ? jobs.find(j=>j.id===selectedJobId) ?? null : null);
+const [viewMode, setViewMode] = useState<'week'|'day'>('week');
+const [selectedDay, setSelectedDay] = useState<Date>(() => { const t = new Date(); t.setHours(0,0,0,0); return t; });
+const [now, setNow] = useState<Date>(new Date());
+useEffect(() => { const id = setInterval(() => setNow(new Date()), 60_000); return () => clearInterval(id); }, []);
+const visibleDays = useMemo(() => (viewMode === 'week' ? days : [selectedDay]), [viewMode, days, selectedDay]);
+function isSameDay(a: Date, b: Date) { return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
+function formatRangeTitle(ds: Date[]) {
+  if (ds.length === 1) return ds[0].toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  const first = ds[0]; const last = ds[ds.length - 1];
+  const sameMonth = first.getMonth()===last.getMonth() && first.getFullYear()===last.getFullYear();
+  const left = first.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  const right = sameMonth ? last.toLocaleDateString(undefined, { day: 'numeric' }) : last.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return `${left} – ${right}`;
+}
 const gridRef = useRef<HTMLDivElement>(null);
-
   function onDragStart(e: React.PointerEvent, job: Job) {
     const bounds = (e.currentTarget.parentElement as HTMLElement | null)?.getBoundingClientRect() ?? gridRef.current?.getBoundingClientRect();
     if (!bounds) return;
@@ -74,25 +87,103 @@ const gridRef = useRef<HTMLDivElement>(null);
     <div className="w-full">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Button variant="secondary" onClick={() => setWeekStart(new Date(weekStart.getTime()-7*24*3600*1000))}>Prev</Button>
-          <Button variant="secondary" onClick={() => setWeekStart(new Date())}>Today</Button>
-          <Button variant="secondary" onClick={() => setWeekStart(new Date(weekStart.getTime()+7*24*3600*1000))}>Next</Button>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              if (viewMode === 'week') {
+                setWeekStart(new Date(weekStart.getTime() - 7*24*3600*1000));
+              } else {
+                setSelectedDay(new Date(selectedDay.getTime() - 24*3600*1000));
+              }
+            }}
+          >Prev</Button>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              if (viewMode === 'week') {
+                const today = new Date();
+                const day = today.getDay();
+                const mondayOffset = (day + 6) % 7;
+                const monday = new Date(today);
+                monday.setDate(today.getDate() - mondayOffset);
+                monday.setHours(0,0,0,0);
+                setWeekStart(monday);
+              } else {
+                const t = new Date();
+                t.setHours(0,0,0,0);
+                setSelectedDay(t);
+              }
+            }}
+          >Today</Button>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              if (viewMode === 'week') {
+                setWeekStart(new Date(weekStart.getTime() + 7*24*3600*1000));
+              } else {
+                setSelectedDay(new Date(selectedDay.getTime() + 24*3600*1000));
+              }
+            }}
+          >Next</Button>
+          <div className="ml-2 flex items-center gap-1">
+            <Button size="sm" variant={viewMode==='week' ? 'default' : 'secondary'} onClick={() => setViewMode('week')}>Week</Button>
+            <Button size="sm" variant={viewMode==='day' ? 'default' : 'secondary'} onClick={() => setViewMode('day')}>Day</Button>
+          </div>
         </div>
-        <div className="text-sm text-muted-foreground">{formatDate(days[0].toISOString())} - {formatDate(days[6].toISOString())}</div>
+        <div className="text-sm text-muted-foreground">{formatRangeTitle(visibleDays)}</div>
       </div>
+      {/* Day headers */}
+      <div className="grid grid-cols-8 gap-2 mb-2">
+        <div />
+        {visibleDays.map((day) => {
+          const isToday = isSameDay(day, now);
+          return (
+            <div
+              key={day.toISOString()}
+              className={`rounded-md px-2 py-2 text-sm font-medium ${isToday ? 'bg-primary/10 text-primary' : 'bg-muted/30 text-foreground'}`}
+            >
+              <div className="flex items-baseline justify-between">
+                <span>{day.toLocaleDateString(undefined, { weekday: 'short' })}</span>
+                <span>{day.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Calendar grid */}
       <div className="grid grid-cols-8 gap-2">
         <div className="text-xs text-muted-foreground">
           {Array.from({ length: END_HOUR-START_HOUR + 1 }, (_, i) => START_HOUR + i).map((h) => (
             <div key={h} className="h-16 pr-2 text-right">{h}:00</div>
           ))}
         </div>
-        {days.map((day) => (
-          <div key={day.toISOString()} className="border rounded-md p-2 relative" ref={gridRef}>
+        {visibleDays.map((day) => (
+          <div key={day.toISOString()} className="border rounded-md p-2 relative overflow-hidden" ref={gridRef}>
+            {/* Weekend shading */}
+            {(day.getDay() === 0 || day.getDay() === 6) && (
+              <div className="absolute inset-0 bg-muted/20 pointer-events-none" />
+            )}
+            {/* transparent overlay */}
             <div className="absolute inset-2" style={{ background: 'transparent' }} />
             {/* hour lines */}
             {Array.from({ length: END_HOUR-START_HOUR }, (_, i) => (
               <div key={i} className="absolute left-0 right-0 border-t border-dashed" style={{ top: `${(i/(END_HOUR-START_HOUR))*100}%` }} />
             ))}
+            {/* current time line */}
+            {(() => {
+              const mins = minutesSinceStartOfDay(now) - START_HOUR*60;
+              if (isSameDay(day, now) && mins >= 0 && mins <= TOTAL_MIN) {
+                const top = (mins / TOTAL_MIN) * 100;
+                return (
+                  <div className="absolute left-2 right-2" style={{ top: `${top}%` }}>
+                    <div className="h-px bg-destructive" />
+                    <div className="absolute -top-1 -left-1 w-2 h-2 rounded-full bg-destructive" />
+                  </div>
+                );
+              }
+              return null;
+            })()}
             {/* jobs */}
             {dayJobs[dayKey(day)]?.map((j) => {
               const start = new Date(j.startsAt);
@@ -102,7 +193,7 @@ const gridRef = useRef<HTMLDivElement>(null);
               const top = (startMin / TOTAL_MIN) * 100;
               const height = Math.max(8, ((endMin - startMin) / TOTAL_MIN) * 100);
               const customer = customers.find((c) => c.id === j.customerId)?.name ?? 'Customer';
-              const color = j.status === 'Scheduled' ? 'bg-blue-500/20 border-blue-500' : j.status === 'In Progress' ? 'bg-amber-500/20 border-amber-500' : 'bg-emerald-500/20 border-emerald-500';
+              const color = j.status === 'Scheduled' ? 'bg-primary/10 border-primary' : j.status === 'In Progress' ? 'bg-accent/10 border-accent' : 'bg-muted/30 border-muted-foreground';
               return (
                 <div key={j.id} className={`absolute left-2 right-2 border rounded-md p-2 text-xs select-none cursor-grab active:cursor-grabbing ${color}`} style={{ top: `${top}%`, height: `${height}%` }}
                   onPointerDown={(e) => onDragStart(e, j)} onDoubleClick={() => setActiveJob(j)}>
