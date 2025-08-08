@@ -3,10 +3,12 @@ import { ReactNode, useEffect } from 'react';
 import { useStore } from '@/store/useAppStore';
 import { Button } from '@/components/ui/button';
 import { NewJobSheet } from '@/components/Job/NewJobSheet';
+import { useAuth } from '@/components/Auth/AuthProvider';
 
 export default function AppLayout({ children, title }: { children: ReactNode; title?: string }) {
   const location = useLocation();
   const { business } = useStore();
+  const { signOut } = useAuth();
 
   useEffect(() => { document.title = title ? `${title} • TenFour Lawn` : 'TenFour Lawn'; }, [title]);
 
@@ -46,6 +48,7 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
             <Button asChild variant="secondary"><Link to="/estimates?new=1">New Quote</Link></Button>
             {/* New Job Sheet trigger */}
             <NewJobSheet />
+            <Button variant="outline" onClick={signOut}>Sign out</Button>
           </div>
         </header>
         {children}

@@ -7,6 +7,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { StoreProvider } from "./store/useAppStore";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import LoadingScreen from "@/components/LoadingScreen";
+import AuthProvider from "@/components/Auth/AuthProvider";
+import ProtectedRoute from "@/components/Auth/ProtectedRoute";
 
 const CalendarPage = lazy(() => import("./pages/Calendar"));
 const WorkOrdersPage = lazy(() => import("./pages/WorkOrders"));
@@ -15,6 +17,7 @@ const InvoicesPage = lazy(() => import("./pages/Invoices"));
 const CustomersPage = lazy(() => import("./pages/Customers"));
 const SettingsPage = lazy(() => import("./pages/Settings"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const AuthPage = lazy(() => import("./pages/Auth"));
 
 const queryClient = new QueryClient();
 
@@ -24,23 +27,25 @@ const App = () => (
       <Toaster />
       <Sonner />
       <StoreProvider>
-        <BrowserRouter>
-          <ErrorBoundary>
-            <Suspense fallback={<LoadingScreen />}>
-              <Routes>
-                <Route path="/" element={<Navigate to="/calendar" replace />} />
-                <Route path="/calendar" element={<CalendarPage />} />
-                <Route path="/work-orders" element={<WorkOrdersPage />} />
-                <Route path="/estimates" element={<EstimatesPage />} />
-                <Route path="/invoices" element={<InvoicesPage />} />
-                <Route path="/customers" element={<CustomersPage />} />
-                <Route path="/settings" element={<SettingsPage />} />
-                {/* Public routes to be implemented next iterations */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
-          </ErrorBoundary>
-        </BrowserRouter>
+        <AuthProvider>
+          <BrowserRouter>
+            <ErrorBoundary>
+              <Suspense fallback={<LoadingScreen /> }>
+                <Routes>
+                  <Route path="/auth" element={<AuthPage />} />
+                  <Route path="/" element={<Navigate to="/calendar" replace />} />
+                  <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
+                  <Route path="/work-orders" element={<ProtectedRoute><WorkOrdersPage /></ProtectedRoute>} />
+                  <Route path="/estimates" element={<ProtectedRoute><EstimatesPage /></ProtectedRoute>} />
+                  <Route path="/invoices" element={<ProtectedRoute><InvoicesPage /></ProtectedRoute>} />
+                  <Route path="/customers" element={<ProtectedRoute><CustomersPage /></ProtectedRoute>} />
+                  <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
+            </ErrorBoundary>
+          </BrowserRouter>
+        </AuthProvider>
       </StoreProvider>
     </TooltipProvider>
   </QueryClientProvider>
