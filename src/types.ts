@@ -1,6 +1,11 @@
+
 export type ID = string;
 export type Money = number; // cents
 export type ISODate = string;
+
+// New types for quotes
+export type QuoteFrequency = 'one-off' | 'bi-monthly' | 'monthly' | 'bi-yearly' | 'yearly';
+export type PaymentTerms = 'due_on_receipt' | 'net_15' | 'net_30' | 'net_60';
 
 export interface Business {
   id: ID;
@@ -45,7 +50,16 @@ export interface Estimate {
   address?: string;
   lineItems: LineItem[];
   taxRate: number;
-  discount: Money; // absolute
+  discount: Money; // absolute (cents)
+
+  // New fields for "Quoted" journey
+  paymentTerms?: PaymentTerms;
+  frequency?: QuoteFrequency;
+  depositRequired?: boolean;
+  depositPercent?: number; // 0..100
+  sentAt?: ISODate;
+  viewCount?: number;
+
   subtotal: Money;
   total: Money;
   status: EstimateStatus;

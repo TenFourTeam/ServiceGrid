@@ -154,7 +154,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const lineItems = (e.lineItems ?? []).map((li) => ({
         id: li.id ?? uuid(),
         name: li.name ?? '',
-        qty: li.qty ?? 1,
+        qty: li.qty ?? 1, // qty hidden in UI; default to 1
         unit: li.unit,
         unitPrice: li.unitPrice ?? 0,
         lineTotal: computeLineTotal({ ...li, id: li.id ?? '', name: li.name ?? '', qty: li.qty ?? 1, unit: li.unit, unitPrice: li.unitPrice ?? 0 }),
@@ -171,6 +171,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         lineItems,
         taxRate,
         discount,
+
+        // New fields with defaults
+        paymentTerms: e.paymentTerms ?? 'due_on_receipt',
+        frequency: e.frequency ?? 'one-off',
+        depositRequired: e.depositRequired ?? false,
+        depositPercent: e.depositPercent ?? 0,
+        sentAt: e.sentAt,
+        viewCount: e.viewCount ?? 0,
+
         subtotal,
         total,
         status: e.status ?? 'Draft',
@@ -190,7 +199,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     sendEstimate(id) {
       const est = state.estimates.find((e) => e.id === id);
       if (!est) return;
-      const updated: Estimate = { ...est, status: 'Sent', updatedAt: nowISO() };
+      const updated: Estimate = { ...est, status: 'Sent', sentAt: nowISO(), updatedAt: nowISO() };
       dispatch({ type: 'UPSERT_ESTIMATE', payload: updated });
       dispatch({ type: 'ADD_EVENT', payload: { id: uuid(), ts: nowISO(), type: 'estimate.sent', entityId: id } });
     },

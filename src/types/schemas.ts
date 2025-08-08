@@ -1,3 +1,4 @@
+
 import { z } from 'zod'
 
 export const ID = z.string()
@@ -10,6 +11,10 @@ const NumberingSchema = z.object({
   invPrefix: z.string(),
   invSeq: z.number(),
 })
+
+// New enums for quoted journey
+export const QuoteFrequencySchema = z.enum(['one-off', 'bi-monthly', 'monthly', 'bi-yearly', 'yearly'])
+export const PaymentTermsSchema = z.enum(['due_on_receipt', 'net_15', 'net_30', 'net_60'])
 
 export const BusinessSchema = z.object({
   id: ID,
@@ -51,6 +56,15 @@ export const EstimateSchema = z.object({
   lineItems: z.array(LineItemSchema),
   taxRate: z.number(),
   discount: Money,
+
+  // New fields
+  paymentTerms: PaymentTermsSchema.optional(),
+  frequency: QuoteFrequencySchema.optional(),
+  depositRequired: z.boolean().optional(),
+  depositPercent: z.number().optional(),
+  sentAt: ISODate.optional(),
+  viewCount: z.number().optional(),
+
   subtotal: Money,
   total: Money,
   status: EstimateStatusSchema,
