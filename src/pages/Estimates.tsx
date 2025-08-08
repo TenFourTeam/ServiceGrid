@@ -32,6 +32,11 @@ export default function EstimatesPage() {
     frequency: 'one-off',
   });
 
+  // Email preview state
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewSubject, setPreviewSubject] = useState('');
+  const [previewHTML, setPreviewHTML] = useState('');
+
   // Sorting
   const [sortKey, setSortKey] = useState<SortKey>('updated');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
@@ -43,6 +48,110 @@ export default function EstimatesPage() {
     const total = Math.max(0, subtotal + tax - (draft.discount ?? 0));
     return { subtotal, total };
   }, [draft]);
+
+  // Pretty email helpers
+  function formatPaymentTermsLabel(terms: string) {
+    switch (terms) {
+      case 'due_on_receipt': return 'Due on receipt';
+      case 'net_15': return 'Net 15';
+      case 'net_30': return 'Net 30';
+      case 'net_60': return 'Net 60';
+      default: return terms || 'Due on receipt';
+    }
+  }
+
+  function renderQuoteEmailHTML(params: {
+    number: string;
+    businessName: string;
+    customerName: string;
+    items: { name: string; qty?: number; unitPrice?: number; lineTotal?: number }[];
+    subtotal: number;
+    taxRate: number;
+    discount: number;
+    total: number;
+    address?: string;
+    terms?: string;
+    depositRequired?: boolean;
+    depositPercent?: number;
+    paymentTerms?: string;
+  }) {
+    const rows = (params.items || []).map((li) => {
+      const qty = li.qty ?? 1;
+      const unit = formatMoney(li.unitPrice ?? 0);
+      const amt = formatMoney(li.lineTotal ?? Math.round(qty * (li.unitPrice ?? 0)));
+      return `<tr>
+        <td style="padding:12px 8px;border-bottom:1px solid #eee;">${li.name || ''}</td>
+        <td style="padding:12px 8px;text-align:center;border-bottom:1px solid #eee;">${qty}</td>
+        <td style="padding:12px 8px;text-align:right;border-bottom:1px solid #eee;">${unit}</td>
+        <td style="padding:12px 8px;text-align:right;border-bottom:1px solid #eee;">${amt}</td>
+      </tr>`;
+    }).join('');
+
+    const discountRow = params.discount > 0 ? `<tr>
+      <td style="padding:8px 8px;text-align:right" colspan="3">Discount</td>
+      <td style="padding:8px 8px;text-align:right">- ${formatMoney(params.discount)}</td>
+    </tr>` : '';
+
+    const depositLine = params.depositRequired ? `<p style="margin:6px 0 0;color:#555;">Deposit: ${params.depositPercent ?? 0}% due to schedule.</p>` : '';
+
+    return `
+    <div style="background:#f6f9fc;padding:24px 12px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
+      <div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #e6eaf1;border-radius:10px;overflow:hidden;">
+        <div style="background:#0f172a;color:#fff;padding:20px 24px;">
+          <div style="font-size:18px;font-weight:600">${params.businessName}</div>
+          <div style="opacity:0.85;font-size:14px">Quote ${params.number}</div>
+        </div>
+        <div style="padding:24px;">
+          <p style="margin:0 0 12px;color:#111;">Hi ${params.customerName},</p>
+          <p style="margin:0 0 16px;color:#333;">Please find your quote below. Total amount is <strong>${formatMoney(params.total)}</strong>.</p>
+
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin:12px 0 4px;">
+            <thead>
+              <tr>
+                <th align="left" style="padding:8px;color:#334155;font-size:12px;text-transform:uppercase;letter-spacing:.02em">Item</th>
+                <th align="center" style="padding:8px;color:#334155;font-size:12px;text-transform:uppercase;letter-spacing:.02em">Qty</th>
+                <th align="right" style="padding:8px;color:#334155;font-size:12px;text-transform:uppercase;letter-spacing:.02em">Price</th>
+                <th align="right" style="padding:8px;color:#334155;font-size:12px;text-transform:uppercase;letter-spacing:.02em">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+          </table>
+
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin-top:8px;">
+            <tr>
+              <td style="padding:8px 8px;text-align:right" colspan="3">Subtotal</td>
+              <td style="padding:8px 8px;text-align:right">${formatMoney(params.subtotal)}</td>
+            </tr>
+            <tr>
+              <td style="padding:8px 8px;text-align:right" colspan="3">Tax (${Math.round((params.taxRate || 0) * 100)}%)</td>
+              <td style="padding:8px 8px;text-align:right">${formatMoney(Math.round(params.subtotal * (params.taxRate || 0)))}</td>
+            </tr>
+            ${discountRow}
+            <tr>
+              <td style="padding:12px 8px;text-align:right;border-top:2px solid #e5e7eb;font-weight:700" colspan="3">Total</td>
+              <td style="padding:12px 8px;text-align:right;border-top:2px solid #e5e7eb;font-weight:700">${formatMoney(params.total)}</td>
+            </tr>
+          </table>
+
+          <div style="margin-top:16px;color:#4b5563;font-size:14px;">
+            <p style="margin:0 0 6px;">Payment terms: ${formatPaymentTermsLabel(params.paymentTerms || 'due_on_receipt')}</p>
+            ${depositLine}
+            ${params.address ? `<p style=\"margin:6px 0 0;\">Service address: ${params.address}</p>` : ''}
+          </div>
+
+          ${params.terms ? `<div style=\"margin-top:16px;padding:12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;color:#374151;font-size:13px;\">
+            <div style=\"font-weight:600;margin-bottom:6px;\">Terms</div>
+            <div>${params.terms}</div>
+          </div>` : ''}
+
+          <p style="margin-top:20px;color:#334155;">Thank you,<br/>${params.businessName}</p>
+        </div>
+      </div>
+      <div style="max-width:640px;margin:8px auto 0;text-align:center;color:#6b7280;font-size:12px;">This is an automated message. Please reply if you have any questions.</div>
+    </div>`;
+  }
 
   function addLine() {
     setDraft((d) => ({
@@ -77,19 +186,24 @@ export default function EstimatesPage() {
       toast({ title: 'No email on file', description: 'Add an email to the customer to send the quote.' });
       return;
     }
-    const bodyHtml = `
-      <div style="font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif; line-height:1.5">
-        <h2 style="margin:0 0 8px">Quote ${e.number}</h2>
-        <p>Dear ${customer.name},</p>
-        <p>Please review your quote totaling <strong>${formatMoney(e.total)}</strong>.</p>
-        <ul>
-          ${(e.lineItems || []).map(li => `<li>${li.name} — ${formatMoney(li.unitPrice)}</li>`).join('')}
-        </ul>
-        <p>Thank you,<br/>${store.business.name}</p>
-      </div>
-    `;
+    const subject = `Quote ${e.number} — ${store.business.name} — ${formatMoney(e.total)}`;
+    const html = renderQuoteEmailHTML({
+      number: e.number,
+      businessName: store.business.name,
+      customerName: customer.name,
+      items: e.lineItems || [],
+      subtotal: e.subtotal ?? 0,
+      taxRate: e.taxRate ?? 0,
+      discount: e.discount ?? 0,
+      total: e.total,
+      address: e.address,
+      terms: e.terms,
+      depositRequired: e.depositRequired,
+      depositPercent: e.depositPercent,
+      paymentTerms: e.paymentTerms,
+    });
     const { data, error } = await supabase.functions.invoke('send-quote', {
-      body: { to, subject: `Quote ${e.number} from ${store.business.name}`, html: bodyHtml },
+      body: { to, subject, html },
     });
     console.log('send-quote response', { data, error });
     if (error) {
@@ -113,6 +227,36 @@ export default function EstimatesPage() {
     await sendEmailForEstimate(e);
     setOpen(false);
     resetDraft();
+  }
+
+  function openPreview() {
+    const customer = draft.customerId ? store.customers.find((c) => c.id === draft.customerId) : undefined;
+    const lineItems = draft.lineItems ?? [];
+    const subtotal = lineItems.reduce((s, l) => s + Math.round((l.qty ?? 1) * (l.unitPrice ?? 0)), 0);
+    const taxRate = (draft.taxRate ?? store.business.taxRateDefault ?? 0) as number;
+    const tax = Math.round(subtotal * taxRate);
+    const discount = draft.discount ?? 0;
+    const total = Math.max(0, subtotal + tax - discount);
+    const number = draft.number ?? 'Draft';
+    const subject = `Quote ${number} — ${store.business.name} — ${formatMoney(total)}`;
+    const html = renderQuoteEmailHTML({
+      number,
+      businessName: store.business.name,
+      customerName: customer?.name ?? 'Customer',
+      items: lineItems,
+      subtotal,
+      taxRate,
+      discount,
+      total,
+      address: draft.address,
+      terms: draft.terms ?? 'Payment due upon receipt. Thank you for your business.',
+      depositRequired: !!draft.depositRequired,
+      depositPercent: draft.depositPercent ?? 0,
+      paymentTerms: draft.paymentTerms ?? 'due_on_receipt',
+    });
+    setPreviewSubject(subject);
+    setPreviewHTML(html);
+    setPreviewOpen(true);
   }
 
   function send(est: Estimate) {
@@ -350,11 +494,28 @@ export default function EstimatesPage() {
             <div className="flex gap-2">
               <Button variant="secondary" onClick={()=>setOpen(false)}>Cancel</Button>
               <Button variant="secondary" onClick={save}>Save</Button>
+              <Button variant="secondary" onClick={openPreview}>Preview Email</Button>
               <Button onClick={saveAndSend}>Save & Send</Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader><DialogTitle>Email Preview</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <div className="text-xs text-muted-foreground">Subject</div>
+              <div className="text-sm font-medium">{previewSubject}</div>
+            </div>
+            <div className="border rounded-md overflow-hidden">
+              <iframe title="Email preview" className="w-full h-[480px] bg-background" srcDoc={previewHTML}></iframe>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
     </AppLayout>
   );
 }
