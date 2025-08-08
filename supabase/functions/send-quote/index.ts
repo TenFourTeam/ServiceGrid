@@ -32,14 +32,32 @@ serve(async (req: Request) => {
       });
     }
 
-    const result = await resend.emails.send({
+    console.log("send-quote: received request", { to, subject, html_length: html.length });
+
+    const sendResp = await resend.emails.send({
       from: "Quotes <onboarding@resend.dev>",
       to: [to],
       subject,
       html,
+      // You can set a reply_to later to your verified domain address for better deliverability
+      // reply_to: "support@yourdomain.com",
+      tags: [{ name: "app", value: "quotes" }],
     });
 
-    return new Response(JSON.stringify({ ok: true, result }), {
+    if ((sendResp as any)?.error) {
+      console.error("send-quote: Resend error", (sendResp as any).error);
+      return new Response(
+        JSON.stringify({ ok: false, error: (sendResp as any).error?.message || "Failed to send email", details: (sendResp as any).error }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    console.log("send-quote: email sent", (sendResp as any)?.data);
+
+    return new Response(JSON.stringify({ ok: true, id: (sendResp as any)?.data?.id, data: (sendResp as any)?.data }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });

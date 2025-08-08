@@ -88,12 +88,16 @@ export default function EstimatesPage() {
         <p>Thank you,<br/>${store.business.name}</p>
       </div>
     `;
-    const { error } = await supabase.functions.invoke('send-quote', {
+    const { data, error } = await supabase.functions.invoke('send-quote', {
       body: { to, subject: `Quote ${e.number} from ${store.business.name}`, html: bodyHtml },
     });
+    console.log('send-quote response', { data, error });
     if (error) {
       console.error('send-quote error', error);
-      toast({ title: 'Failed to send', description: 'There was a problem sending the email.' });
+      toast({ title: 'Failed to send', description: error.message || 'There was a problem sending the email.' });
+    } else if ((data as any)?.error) {
+      console.error('send-quote payload error', (data as any).error);
+      toast({ title: 'Failed to send', description: (data as any).error || 'Unknown error from email service.' });
     } else {
       toast({ title: 'Quote sent', description: `Email sent to ${to}` });
     }
@@ -114,6 +118,27 @@ export default function EstimatesPage() {
   function send(est: Estimate) {
     store.sendEstimate(est.id);
     sendEmailForEstimate(est);
+  }
+
+  async function handleSendTestEmail() {
+    const suggested = (store as any)?.business?.email || '';
+    const to = window.prompt('Enter email address to send a test quote email to:', suggested);
+    if (!to) return;
+    const { data, error } = await supabase.functions.invoke('send-quote', {
+      body: {
+        to,
+        subject: `Test quote email from ${store.business.name}`,
+        html: `<div style="font-family:system-ui;line-height:1.5"><h2>Test Email</h2><p>This is a test email to verify deliverability.</p></div>`,
+      },
+    });
+    console.log('send-quote test response', { data, error });
+    if (error) {
+      toast({ title: 'Test email failed', description: error.message || 'There was a problem sending the test email.' });
+    } else if ((data as any)?.error) {
+      toast({ title: 'Test email failed', description: (data as any).error || 'Unknown error' });
+    } else {
+      toast({ title: 'Test email sent', description: `Email sent to ${to}` });
+    }
   }
 
   const sortedEstimates = useMemo(() => {
@@ -154,7 +179,7 @@ export default function EstimatesPage() {
     <AppLayout title="Quotes">
       <section className="space-y-4">
         <div className="flex justify-end gap-2">
-          {/* Removed Inline New Quote button */}
+          <Button variant="secondary" onClick={handleSendTestEmail}>Send test email</Button>
           <Button onClick={() => setOpen(true)}>Create Quote</Button>
         </div>
 
