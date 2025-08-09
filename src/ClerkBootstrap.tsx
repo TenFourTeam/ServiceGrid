@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import App from "./App";
 import { ClerkRuntimeProvider } from "./components/Auth/ClerkRuntime";
-
+import LoadingScreen from "./components/LoadingScreen";
 const SUPABASE_URL = "https://ijudkzqfriazabiosnvb.supabase.co";
 
 export default function ClerkBootstrap() {
@@ -31,13 +31,12 @@ export default function ClerkBootstrap() {
     return () => { cancelled = true; };
   }, []);
 
-  if (error || !pk || !ClerkProviderComp) {
-    // Gracefully continue without Clerk so existing Supabase auth still works
-    return (
-      <ClerkRuntimeProvider hasClerk={false}>
-        <App />
-      </ClerkRuntimeProvider>
-    );
+  if (!pk || !ClerkProviderComp) {
+    return <LoadingScreen />;
+  }
+
+  if (error) {
+    return <div role="alert">Authentication failed to initialize: {error}</div>;
   }
 
   const ClerkProvider = ClerkProviderComp;

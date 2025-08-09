@@ -18,10 +18,8 @@ const InvoicesPage = lazy(() => import("./pages/Invoices"));
 const CustomersPage = lazy(() => import("./pages/Customers"));
 const SettingsPage = lazy(() => import("./pages/Settings"));
 const NotFound = lazy(() => import("./pages/NotFound"));
-const AuthPage = lazy(() => import("./pages/Auth"));
 
-const AuthResetPage = lazy(() => import("./pages/AuthReset"));
-const UpdatePasswordPage = lazy(() => import("./pages/UpdatePassword"));
+
 const ClerkAuthPage = lazy(() => import("./pages/ClerkAuth"));
 const QuoteActionPage = lazy(() => import("./pages/QuoteAction"));
 
@@ -38,9 +36,9 @@ const App = () => (
             <ErrorBoundary>
               <Suspense fallback={<LoadingScreen /> }>
                  <Routes>
-                   <Route path="/auth" element={<AuthPage />} />
-                   <Route path="/auth/reset" element={<AuthResetPage />} />
-                   <Route path="/auth/update-password" element={<UpdatePasswordPage />} />
+                   <Route path="/auth" element={<Navigate to="/clerk-auth" replace />} />
+                   <Route path="/auth/reset" element={<Navigate to="/clerk-auth" replace />} />
+                   <Route path="/auth/update-password" element={<Navigate to="/clerk-auth" replace />} />
                    <Route path="/clerk-auth" element={<ClerkAuthPage />} />
                    <Route path="/quote-action" element={<QuoteActionPage />} />
                    <Route path="/" element={<Navigate to="/calendar" replace />} />

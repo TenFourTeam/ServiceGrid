@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton, useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { Link, useLocation } from "react-router-dom";
+import LoadingScreen from "@/components/LoadingScreen";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -15,26 +16,7 @@ export default function ClerkAuthPage() {
   const redirectTarget = from?.pathname ? `${from.pathname}${from.search ?? ""}${from.hash ?? ""}` : "/";
 
   if (!hasClerk) {
-    useEffect(() => {
-      document.title = "Sign In • TenFour Lawn";
-      const meta = document.querySelector('meta[name="description"]');
-      if (meta) meta.setAttribute('content', 'Clerk is not available. Use email login instead.');
-    }, []);
-
-    return (
-      <main className="container mx-auto max-w-2xl py-10">
-        <header className="mb-6">
-          <h1 className="text-2xl font-bold">Account</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Clerk is loading or unavailable. You can continue with email login.</p>
-          <link rel="canonical" href={`${window.location.origin}/clerk-auth`} />
-        </header>
-        <section>
-          <Button asChild>
-            <Link to="/auth">Use email login</Link>
-          </Button>
-        </section>
-      </main>
-    );
+    return <LoadingScreen />;
   }
 
   return <ClerkAuthInner redirectTarget={redirectTarget} />;
