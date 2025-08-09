@@ -63,13 +63,23 @@ serve(async (req: Request) => {
       });
     }
 
-    const verified = !!(sgJson?.verified?.status ?? sgJson?.verified ?? false);
+    // Strict verification check
+    const sgVerifiedRaw = sgJson?.verified;
+    let verified = false;
+    if (typeof sgVerifiedRaw === "boolean") {
+      verified = sgVerifiedRaw;
+    } else if (sgVerifiedRaw && typeof sgVerifiedRaw?.status === "string") {
+      const s = String(sgVerifiedRaw.status).toLowerCase();
+      verified = s === "verified" || s === "completed" || s === "true";
+    }
+    const providerStatus =
+      sgVerifiedRaw && typeof sgVerifiedRaw?.status === "string" ? String(sgVerifiedRaw.status) : null;
 
     await supabase
       .from("email_senders")
       .update({
         verified,
-        status: sgJson?.verified?.status ? String(sgJson.verified.status) : null,
+        status: providerStatus,
       })
       .eq("id", sender.id);
 

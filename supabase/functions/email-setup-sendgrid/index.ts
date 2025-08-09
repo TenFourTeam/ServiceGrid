@@ -138,30 +138,43 @@ serve(async (req: Request) => {
       });
     }
 
-    const senderId: number | undefined =
+  const senderId: number | undefined =
       existing?.sendgrid_sender_id ?? sgJson?.id ?? sgJson?.sender_id ?? undefined;
 
-    // Update our DB with sendgrid sender id and verified state
-    const verified =
-      !!(sgJson?.verified?.status ?? sgJson?.verified ?? (existing?.verified ?? false));
+  // Compute strict verified status from SendGrid response
+  const sgVerifiedRaw = sgJson?.verified;
+  let computedVerified = false;
+  if (typeof sgVerifiedRaw === "boolean") {
+    computedVerified = sgVerifiedRaw;
+  } else if (sgVerifiedRaw && typeof sgVerifiedRaw?.status === "string") {
+    const s = String(sgVerifiedRaw.status).toLowerCase();
+    computedVerified = s === "verified" || s === "completed" || s === "true";
+  }
+  let providerStatus = sgVerifiedRaw && typeof sgVerifiedRaw?.status === "string" ? String(sgVerifiedRaw.status) : null;
 
-    const { error: updErr, data: updatedRow } = await supabase
-      .from("email_senders")
-      .update({
-        sendgrid_sender_id: senderId ?? null,
-        verified,
-        status: sgJson?.verified?.status ? String(sgJson.verified.status) : null,
-      })
-      .eq("id", upserted.id)
-      .select()
-      .single();
+  // If user changed the from_email, force unverified and set pending status
+  if (existing?.from_email && existing.from_email !== from_email) {
+    computedVerified = false;
+    if (!providerStatus) providerStatus = "pending";
+  }
+
+  const { error: updErr, data: updatedRow } = await supabase
+    .from("email_senders")
+    .update({
+      sendgrid_sender_id: senderId ?? null,
+      verified: computedVerified,
+      status: providerStatus,
+    })
+    .eq("id", upserted.id)
+    .select()
+    .single();
 
     if (updErr) {
       console.error("email-setup-sendgrid: update error", updErr);
     }
 
     // For safety, attempt to trigger verification email if not verified yet
-    if (senderId && !verified) {
+    if (senderId && !computedVerified) {
       await fetch(`https://api.sendgrid.com/v3/senders/${senderId}/resend_verification`, {
         method: "POST",
         headers: { Authorization: `Bearer ${SENDGRID_API_KEY}` },
@@ -172,7 +185,7 @@ serve(async (req: Request) => {
       JSON.stringify({
         ok: true,
         senderId: senderId ?? null,
-        verified: !!verified,
+        verified: !!computedVerified,
         row: updatedRow ?? upserted,
       }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
