@@ -44,6 +44,10 @@ serve(async (req: Request): Promise<Response> => {
   const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     global: { headers: { Authorization: authHeader } },
   });
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false },
+  });
 
   let payload: SendRequest;
   try {
@@ -62,15 +66,14 @@ serve(async (req: Request): Promise<Response> => {
     });
   }
 
-  // Require authenticated user for RLS (mail_sends.user_id)
-  const { data: userData, error: userErr } = await supabase.auth.getUser();
-  if (userErr || !userData?.user) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
+  // Try to get authenticated user if provided (optional)
+  let userId: string | null = null;
+  try {
+    const { data: userData } = await supabase.auth.getUser();
+    userId = userData?.user?.id ?? null;
+  } catch (_) {
+    userId = null;
   }
-  const userId = userData.user.id;
 
   // Compute request hash for idempotency/logging
   const encoder = new TextEncoder();
@@ -95,7 +98,7 @@ serve(async (req: Request): Promise<Response> => {
     if (sendRes.error) {
       console.error("Resend send error:", sendRes.error);
       // Log failed send
-      await supabase.from("mail_sends").insert({
+      await supabaseAdmin.from("mail_sends").insert({
         user_id: userId,
         to_email: payload.to,
         subject: payload.subject,
@@ -117,7 +120,7 @@ serve(async (req: Request): Promise<Response> => {
     const messageId = (sendRes as any)?.data?.id ?? null;
 
     // Log successful send
-    await supabase.from("mail_sends").insert({
+    await supabaseAdmin.from("mail_sends").insert({
       user_id: userId,
       to_email: payload.to,
       subject: payload.subject,
@@ -138,7 +141,7 @@ serve(async (req: Request): Promise<Response> => {
     console.error("Unexpected send error:", e);
 
     // Best-effort log failure
-    await supabase.from("mail_sends").insert({
+    await supabaseAdmin.from("mail_sends").insert({
       user_id: userId,
       to_email: payload.to,
       subject: payload.subject,
