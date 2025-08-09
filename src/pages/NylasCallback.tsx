@@ -5,10 +5,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
+import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 
 export default function NylasCallbackPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { getToken, isSignedIn } = useClerkAuth();
 
   const params = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const code = params.get("code");
@@ -22,11 +24,11 @@ useEffect(() => {
     // Try Supabase token first, else Clerk
     const { data: sess } = await supabase.auth.getSession();
     let headers: Record<string, string> = {};
-    if (sess.session?.access_token) headers = { Authorization: `Bearer ${sess.session.access_token}` };
-    else {
+    if (sess.session?.access_token) {
+      headers = { Authorization: `Bearer ${sess.session.access_token}` };
+    } else if (isSignedIn) {
       try {
-        const { getToken } = await import("@clerk/clerk-react");
-        const token = await (getToken as any)();
+        const token = await getToken();
         if (token) headers = { Authorization: `Bearer ${token}` };
       } catch {}
     }
@@ -42,7 +44,7 @@ useEffect(() => {
     setLoading(false);
   };
   run();
-}, [code, navigate]);
+}, [code, navigate, getToken, isSignedIn]);
 
   return (
     <main className="min-h-screen grid place-items-center p-4">
