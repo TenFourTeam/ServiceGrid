@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,6 +34,30 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Ensure a profile row exists for the authenticated user.
+  // We intentionally avoid calling Supabase inside the auth callback; instead, we react to user changes here.
+  useEffect(() => {
+    if (loading || !user?.id) return;
+
+    console.log("[AuthProvider] Ensuring profile for", user.id, user.email);
+    const t = setTimeout(() => {
+      supabase.functions
+        .invoke("ensure-profile")
+        .then(({ data, error }) => {
+          if (error) {
+            console.error("[AuthProvider] ensure-profile error:", error);
+          } else {
+            console.log("[AuthProvider] ensure-profile success:", data);
+          }
+        })
+        .catch((e) => {
+          console.error("[AuthProvider] ensure-profile unexpected error:", e);
+        });
+    }, 0);
+
+    return () => clearTimeout(t);
+  }, [user?.id, loading]);
 
   const value = useMemo<AuthContextValue>(() => ({
     user,
