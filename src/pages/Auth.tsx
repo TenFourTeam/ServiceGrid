@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/components/Auth/AuthProvider";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AuthPage() {
   const { user } = useAuth();
@@ -19,6 +20,8 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [resending, setResending] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     document.title = mode === "signIn" ? "Sign in • TenFour Lawn" : "Create account • TenFour Lawn";
@@ -57,9 +60,51 @@ export default function AuthPage() {
         setMessage("Check your email to confirm your account.");
       }
     } catch (err: any) {
-      setError(err?.message ?? "Something went wrong");
+      const raw = String(err?.message ?? "");
+      let friendly = raw || "Something went wrong";
+      if (mode === "signIn" && /invalid login credentials/i.test(raw)) {
+        friendly = "Invalid email or password.";
+      } else if (/email address .* is invalid/i.test(raw)) {
+        friendly = "That email address looks invalid.";
+      } else if (/confirm|verify/i.test(raw)) {
+        friendly = "Please verify your email to continue. You can resend the verification email below.";
+      }
+      setError(friendly);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const onResend = async () => {
+    if (!email) {
+      setError("Enter your email first.");
+      return;
+    }
+    setError(null);
+    setResending(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email,
+      });
+      if (error) throw error;
+      setMessage(`Verification email sent to ${email}. Check your inbox and spam.`);
+      toast?.({
+        title: "Verification email sent",
+        description: `We've sent a verification email to ${email}.`,
+      });
+    } catch (err: any) {
+      const raw = String(err?.message ?? "");
+      let friendly = raw || "Could not resend the email.";
+      if (/invalid/i.test(raw)) friendly = "That email address looks invalid.";
+      if (/rate|limit/i.test(raw)) friendly = "Too many requests. Please wait a moment and try again.";
+      setError(friendly);
+      toast?.({
+        title: "Resend failed",
+        description: friendly,
+      });
+    } finally {
+      setResending(false);
     }
   };
 
@@ -82,6 +127,11 @@ export default function AuthPage() {
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             {message && <p className="text-sm text-muted-foreground">{message}</p>}
+            {(((mode === "signUp") && !!message) || (error && /confirm|verify/i.test(error))) && (
+              <Button type="button" variant="outline" className="w-full" onClick={onResend} disabled={resending || !email}>
+                {resending ? "Resending…" : "Resend verification email"}
+              </Button>
+            )}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Please wait…" : mode === "signIn" ? "Sign in" : "Create account"}
             </Button>
