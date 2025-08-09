@@ -608,7 +608,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      next_est_number: {
+        Args: { p_business_id: string }
+        Returns: string
+      }
+      next_inv_number: {
+        Args: { p_business_id: string }
+        Returns: string
+      }
     }
     Enums: {
       invoice_status: "Draft" | "Sent" | "Paid" | "Overdue"

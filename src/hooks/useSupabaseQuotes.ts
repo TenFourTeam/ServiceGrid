@@ -13,6 +13,7 @@ export interface DbQuoteRow {
   publicToken: string;
   customerId: string;
   customerName?: string;
+  customerEmail?: string;
 }
 
 export function useSupabaseQuotes(opts?: { enabled?: boolean }) {
@@ -35,7 +36,7 @@ export function useSupabaseQuotes(opts?: { enabled?: boolean }) {
             "public_token",
             "view_count",
             "customer_id",
-            "customers(name)",
+            "customers(name,email)",
           ].join(",")
         )
         .order("updated_at", { ascending: false });
@@ -51,6 +52,7 @@ export function useSupabaseQuotes(opts?: { enabled?: boolean }) {
         viewCount: r.view_count ?? 0,
         customerId: r.customer_id,
         customerName: r.customers?.name,
+        customerEmail: r.customers?.email,
       }));
       return { rows };
     },
