@@ -46,7 +46,7 @@ export const LineItemSchema = z.object({
 })
 
 export const QuoteStatusSchema = z.enum(['Draft', 'Sent', 'Approved', 'Declined'])
-export const EstimateStatusSchema = QuoteStatusSchema
+export const quoteStatusSchema = QuoteStatusSchema
 
 export const QuoteSchema = z.object({
   id: ID,
@@ -79,7 +79,7 @@ export const QuoteSchema = z.object({
   publicToken: z.string(),
 })
 
-export const EstimateSchema = QuoteSchema
+export const QuoteSchema = QuoteSchema
 
 export const JobStatusSchema = z.enum(['Scheduled', 'In Progress', 'Completed'])
 
