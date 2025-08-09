@@ -154,7 +154,7 @@ export default function EmailSenderSettings() {
   const dirtyEmail = !!(sender?.from_email && sender.from_email !== form.from_email);
   
   return (
-    <Card>
+    <Card id="email-sending">
       <CardHeader>
         <CardTitle>Email Sending</CardTitle>
       </CardHeader>
