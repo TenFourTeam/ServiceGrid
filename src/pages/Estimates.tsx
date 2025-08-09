@@ -32,12 +32,6 @@ export default function EstimatesPage() {
     frequency: 'one-off',
   });
 
-  // Auto-open new estimate dialog via query
-  try {
-    const sp = new URLSearchParams(window.location.search);
-    if (sp.get('new') === '1' && !open) setOpen(true);
-  } catch {}
-
   // Email preview state
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewSubject, setPreviewSubject] = useState('');

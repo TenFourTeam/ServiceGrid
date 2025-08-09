@@ -5,16 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useState } from 'react';
 
 export default function CustomersPage() {
   const store = useStore();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState({ name: '', email: '', phone: '', address: '' });
-  const [params] = useSearchParams();
-
-  useEffect(() => { if (params.get('new') === '1') setOpen(true); }, [params]);
 
   function save() {
     store.upsertCustomer(draft);

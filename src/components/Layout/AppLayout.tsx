@@ -4,7 +4,6 @@ import { useStore } from '@/store/useAppStore';
 import { Button } from '@/components/ui/button';
 import { NewJobSheet } from '@/components/Job/NewJobSheet';
 import { useAuth } from '@/components/Auth/AuthProvider';
-import { OnboardingChecklist } from '@/components/Onboarding/Checklist';
 
 export default function AppLayout({ children, title }: { children: ReactNode; title?: string }) {
   const location = useLocation();
@@ -46,7 +45,6 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
         <header className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">{title ?? 'Dashboard'}</h1>
           <div className="flex items-center gap-2">
-            <OnboardingChecklist />
             <Button asChild variant="secondary"><Link to="/estimates?new=1">New Quote</Link></Button>
             {/* New Job Sheet trigger */}
             <NewJobSheet />
