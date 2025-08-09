@@ -90,19 +90,26 @@ serve(async (req) => {
             <meta name="viewport" content="width=device-width,initial-scale=1" />
             <title>Quote Approved</title>
             <style>
-              body { font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; padding: 24px; color: #0f172a; }
-              .card { max-width: 560px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; }
+              :root { --bg:#f6f9fc; --card:#ffffff; --border:#e5e7eb; --ink:#0f172a; --muted:#475569; --primary:#0f172a; }
+              body { font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; padding: 24px; color: var(--ink); background: var(--bg); }
+              .wrap { max-width: 720px; margin: 0 auto; }
+              .hdr { background: var(--primary); color: #fff; border-radius: 12px 12px 0 0; padding: 20px 24px; }
+              .card { background: var(--card); border: 1px solid var(--border); border-top: 0; border-radius: 0 0 12px 12px; padding: 24px; }
               .title { font-size: 18px; font-weight: 700; margin: 0 0 8px; }
-              .desc { color: #475569; margin: 0; }
+              .desc { color: var(--muted); margin: 0; }
               .foot { color: #64748b; font-size: 12px; text-align: center; margin-top: 16px; }
+              .icon { display:inline-block; width:18px; height:18px; border-radius:999px; background:#16a34a; margin-right:8px; vertical-align:-3px; }
             </style>
           </head>
           <body>
-            <div class="card">
-              <div class="title">Thanks! Your approval has been recorded.</div>
-              <p class="desc">You can safely close this page now.</p>
+            <div class="wrap">
+              <div class="hdr"><strong>Quote Action</strong></div>
+              <div class="card">
+                <div class="title"><span class="icon"></span>Thanks! Your approval has been recorded.</div>
+                <p class="desc">You can safely close this page now.</p>
+              </div>
+              <div class="foot">Powered by Supabase Edge Functions</div>
             </div>
-            <div class="foot">This page is powered by Supabase Edge Functions.</div>
           </body>
         </html>
       `);
@@ -117,19 +124,26 @@ serve(async (req) => {
             <meta name="viewport" content="width=device-width,initial-scale=1" />
             <title>Edit Request Recorded</title>
             <style>
-              body { font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; padding: 24px; color: #0f172a; }
-              .card { max-width: 560px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; }
+              :root { --bg:#f6f9fc; --card:#ffffff; --border:#e5e7eb; --ink:#0f172a; --muted:#475569; --primary:#0f172a; }
+              body { font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; padding: 24px; color: var(--ink); background: var(--bg); }
+              .wrap { max-width: 720px; margin: 0 auto; }
+              .hdr { background: var(--primary); color: #fff; border-radius: 12px 12px 0 0; padding: 20px 24px; }
+              .card { background: var(--card); border: 1px solid var(--border); border-top: 0; border-radius: 0 0 12px 12px; padding: 24px; }
               .title { font-size: 18px; font-weight: 700; margin: 0 0 8px; }
-              .desc { color: #475569; margin: 0; }
+              .desc { color: var(--muted); margin: 0; }
               .foot { color: #64748b; font-size: 12px; text-align: center; margin-top: 16px; }
+              .icon { display:inline-block; width:18px; height:18px; border-radius:999px; background:#f59e0b; margin-right:8px; vertical-align:-3px; }
             </style>
           </head>
           <body>
-            <div class="card">
-              <div class="title">Thanks! Your edit request has been recorded.</div>
-              <p class="desc">We’ll reach out shortly to confirm the changes you’d like.</p>
+            <div class="wrap">
+              <div class="hdr"><strong>Quote Action</strong></div>
+              <div class="card">
+                <div class="title"><span class="icon"></span>Thanks! Your edit request has been recorded.</div>
+                <p class="desc">We’ll reach out shortly to confirm the changes you’d like.</p>
+              </div>
+              <div class="foot">Powered by Supabase Edge Functions</div>
             </div>
-            <div class="foot">This page is powered by Supabase Edge Functions.</div>
           </body>
         </html>
       `);

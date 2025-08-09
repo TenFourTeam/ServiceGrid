@@ -103,109 +103,124 @@ export default function QuotesPage() {
      viewLink?: string;
      quoteId?: string;
      token?: string;
+     preview?: boolean;
    }) {
-    const rows = (params.items || []).map((li) => {
-      const qty = li.qty ?? 1;
-      const unit = formatMoney(li.unitPrice ?? 0);
-      const amt = formatMoney(li.lineTotal ?? Math.round(qty * (li.unitPrice ?? 0)));
-      return `<tr>
-        <td style="padding:12px 8px;border-bottom:1px solid #eee;">${li.name || ''}</td>
-        <td style="padding:12px 8px;text-align:center;border-bottom:1px solid #eee;">${qty}</td>
-        <td style="padding:12px 8px;text-align:right;border-bottom:1px solid #eee;">${unit}</td>
-        <td style="padding:12px 8px;text-align:right;border-bottom:1px solid #eee;">${amt}</td>
-      </tr>`;
-    }).join('');
-
-    const discountRow = params.discount > 0 ? `<tr>
-      <td style="padding:8px 8px;text-align:right" colspan="3">Discount</td>
-      <td style="padding:8px 8px;text-align:right">- ${formatMoney(params.discount)}</td>
-    </tr>` : '';
-
-    const depositLine = params.depositRequired ? `<p style="margin:6px 0 0;color:#555;">Deposit: ${params.depositPercent ?? 0}% due to schedule.</p>` : '';
-
-    const funcBase = 'https://ijudkzqfriazabiosnvb.functions.supabase.co/quote-events';
-    const hasActions = !!(params.quoteId && params.token);
-    const approveHref = hasActions ? `${funcBase}?type=approve&quote_id=${encodeURIComponent(params.quoteId!)}&token=${encodeURIComponent(params.token!)}` : undefined;
-    const editHref = hasActions ? `${funcBase}?type=edit&quote_id=${encodeURIComponent(params.quoteId!)}&token=${encodeURIComponent(params.token!)}` : undefined;
-    const openPixelSrc = hasActions ? `${funcBase}?type=open&quote_id=${encodeURIComponent(params.quoteId!)}&token=${encodeURIComponent(params.token!)}` : undefined;
-
-    const actionsBlock = `
-      <div style="margin-top:16px;">
-        ${approveHref
-          ? `<a href="${approveHref}" style="display:inline-block;background:#16a34a;color:#fff;text-decoration:none;padding:10px 14px;border-radius:8px;font-weight:600;margin-right:8px">Approve</a>`
-          : `<span style="display:inline-block;background:#9ca3af;color:#fff;text-decoration:none;padding:10px 14px;border-radius:8px;font-weight:600;margin-right:8px;opacity:.6;">Approve</span>`
-        }
-        ${editHref
-          ? `<a href="${editHref}" style="display:inline-block;background:#64748b;color:#fff;text-decoration:none;padding:10px 14px;border-radius:8px;font-weight:600;">Request Edits</a>`
-          : `<span style="display:inline-block;background:#9ca3af;color:#fff;text-decoration:none;padding:10px 14px;border-radius:8px;font-weight:600;opacity:.6;">Request Edits</span>`
-        }
-      </div>
-    `;
-
-    return `
-    <div style="background:#f6f9fc;padding:24px 12px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
-      <div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #e6eaf1;border-radius:10px;overflow.hidden;">
-        <div style="background:#0f172a;color:#fff;padding:20px 24px;">
-          <div style="font-size:18px;font-weight:600">${params.businessName}</div>
-          <div style="opacity:0.85;font-size:14px">Quote ${params.number}</div>
-        </div>
-        <div style="padding:24px;">
-          <p style="margin:0 0 12px;color:#111;">Hi ${params.customerName},</p>
-          <p style="margin:0 0 16px;color:#333;">Please find your quote below. Total amount is <strong>${formatMoney(params.total)}</strong>.</p>
-          ${params.viewLink ? `<div style="margin:16px 0 20px;"><a href="${params.viewLink}" target="_blank" style="display:inline-block;background:#0ea5e9;color:#fff;text-decoration:none;padding:10px 14px;border-radius:8px;font-weight:600">View your quote</a></div>` : ''}
-
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin:12px 0 4px;">
-            <thead>
-              <tr>
-                <th align="left" style="padding:8px;color:#334155;font-size:12px;text-transform:uppercase;letter-spacing:.02em">Item</th>
-                <th align="center" style="padding:8px;color:#334155;font-size:12px;text-transform:uppercase;letter-spacing:.02em">Qty</th>
-                <th align="right" style="padding:8px;color:#334155;font-size:12px;text-transform:uppercase;letter-spacing:.02em">Price</th>
-                <th align="right" style="padding:8px;color:#334155;font-size:12px;text-transform:uppercase;letter-spacing:.02em">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rows}
-            </tbody>
-          </table>
-
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin-top:8px;">
-            <tr>
-              <td style="padding:8px 8px;text-align:right" colspan="3">Subtotal</td>
-              <td style="padding:8px 8px;text-align:right">${formatMoney(params.subtotal)}</td>
-            </tr>
-            <tr>
-              <td style="padding:8px 8px;text-align:right" colspan="3">Tax (${Math.round((params.taxRate || 0) * 100)}%)</td>
-              <td style="padding:8px 8px;text-align:right">${formatMoney(Math.round(params.subtotal * (params.taxRate || 0)))}</td>
-            </tr>
-            ${discountRow}
-            <tr>
-              <td style="padding:12px 8px;text-align:right;border-top:2px solid #e5e7eb;font-weight:700" colspan="3">Total</td>
-              <td style="padding:12px 8px;text-align:right;border-top:2px solid #e5e7eb;font-weight:700">${formatMoney(params.total)}</td>
-            </tr>
-          </table>
-
-          <div style="margin-top:16px;color:#4b5563;font-size:14px;">
-            ${params.paymentTerms && params.paymentTerms !== 'due_on_receipt' ? `<p style="margin:0 0 6px;">Payment terms: ${formatPaymentTermsLabel(params.paymentTerms)}</p>` : ''}
-            ${params.frequency && params.frequency !== 'one-off' ? `<p style="margin:6px 0 0;">Frequency: ${({ 'bi-monthly':'Bi-monthly', 'monthly':'Monthly', 'bi-yearly':'Bi-yearly', 'yearly':'Yearly' } as any)[params.frequency] || params.frequency}</p>` : ''}
-            ${depositLine}
-            ${params.address ? `<p style="margin:6px 0 0;">Service address: ${params.address}</p>` : ''}
-          </div>
-
-          ${params.terms ? `<div style="margin-top:16px;padding:12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;color:#374151;font-size:13px;">
-            <div style="font-weight:600;margin-bottom:6px;">Terms</div>
-            <div>${params.terms}</div>
-          </div>` : ''}
-
-          ${actionsBlock}
-
-          <p style="margin-top:20px;color:#334155;">Thank you,<br/>${params.businessName}</p>
-
-          ${openPixelSrc ? `<img src="${openPixelSrc}" width="1" height="1" alt="" style="display:block;opacity:0;" />` : ''}
-        </div>
-      </div>
-      <div style="max-width:640px;margin:8px auto 0;text-align:center;color:#6b7280;font-size:12px;">This is an automated message. Please reply if you have any questions.</div>
-    </div>`;
-  }
+     const rows = (params.items || []).map((li) => {
+       const qty = li.qty ?? 1;
+       const unit = formatMoney(li.unitPrice ?? 0);
+       const amt = formatMoney(li.lineTotal ?? Math.round(qty * (li.unitPrice ?? 0)));
+       return `<tr>
+         <td style="padding:12px 8px;border-bottom:1px solid #eee;">${li.name || ''}</td>
+         <td style="padding:12px 8px;text-align:center;border-bottom:1px solid #eee;">${qty}</td>
+         <td style="padding:12px 8px;text-align:right;border-bottom:1px solid #eee;">${unit}</td>
+         <td style="padding:12px 8px;text-align:right;border-bottom:1px solid #eee;">${amt}</td>
+       </tr>`;
+     }).join('');
+ 
+     const discountRow = params.discount > 0 ? `<tr>
+       <td style="padding:8px 8px;text-align:right" colspan="3">Discount</td>
+       <td style="padding:8px 8px;text-align:right">- ${formatMoney(params.discount)}</td>
+     </tr>` : '';
+ 
+     const depositLine = params.depositRequired ? `<p style="margin:6px 0 0;color:#555;">Deposit: ${params.depositPercent ?? 0}% due to schedule.</p>` : '';
+ 
+     const funcBase = 'https://ijudkzqfriazabiosnvb.functions.supabase.co/quote-events';
+     const hasActions = !!(params.quoteId && params.token);
+     const approveHref = hasActions ? `${funcBase}?type=approve&quote_id=${encodeURIComponent(params.quoteId!)}&token=${encodeURIComponent(params.token!)}` : undefined;
+     const editHref = hasActions ? `${funcBase}?type=edit&quote_id=${encodeURIComponent(params.quoteId!)}&token=${encodeURIComponent(params.token!)}` : undefined;
+     const openPixelSrc = hasActions ? `${funcBase}?type=open&quote_id=${encodeURIComponent(params.quoteId!)}&token=${encodeURIComponent(params.token!)}` : undefined;
+ 
+     // Email-safe button styles matching app theme
+     const primaryBg = '#0f172a'; // matches app primary (light mode)
+     const primaryText = '#ffffff';
+     const secondaryBg = '#f1f5f9'; // matches app secondary
+     const secondaryText = '#0f172a';
+     const borderCol = '#e5e7eb';
+     const btnBase = 'display:inline-block;text-decoration:none;padding:10px 14px;border-radius:8px;font-weight:600;';
+     const approveBtn = `${btnBase}background:${primaryBg};color:${primaryText};margin-right:8px;`;
+     const editBtn = `${btnBase}background:${secondaryBg};color:${secondaryText};border:1px solid ${borderCol};`;
+ 
+     const actionsBlock = `
+       <div style="margin-top:16px;">
+         ${approveHref
+           ? `<a href="${approveHref}" style="${approveBtn}">Approve</a>`
+           : `<span style="${approveBtn}opacity:.6;">Approve</span>`
+         }
+         ${editHref
+           ? `<a href="${editHref}" style="${editBtn}">Request Edits</a>`
+           : `<span style="${editBtn}opacity:.6;">Request Edits</span>`
+         }
+       </div>
+     `;
+ 
+     const previewHelpers = params.preview ? `
+       <div id=\"action-confirm\" style=\"display:none;margin-top:16px;padding:16px;border:1px solid ${borderCol};border-radius:8px;background:#f8fafc;color:#334155;\">\n         <div id=\"action-title\" style=\"font-weight:700;margin-bottom:4px;\"></div>\n         <div id=\"action-desc\"></div>\n       </div>\n       <script>(function(){\n         document.addEventListener('click', function(ev){\n           var t = ev.target;\n           while (t && t.tagName !== 'A') t = t.parentElement;\n           if (!t) return;\n           var href = t.getAttribute('href') || '';\n           if (href.indexOf('${funcBase}') === 0) {\n             ev.preventDefault();\n             try {\n               var u = new URL(href);\n               var type = u.searchParams.get('type');\n               var title = document.getElementById('action-title');\n               var desc = document.getElementById('action-desc');\n               var box = document.getElementById('action-confirm');\n               if (type === 'approve') {\n                 if (title) title.textContent = 'Preview: Approval recorded';\n                 if (desc) desc.textContent = 'In a real email, clicking Approve would record your approval.';\n               } else if (type === 'edit') {\n                 if (title) title.textContent = 'Preview: Edit request recorded';\n                 if (desc) desc.textContent = 'In a real email, clicking Request Edits would notify us of your requested changes.';\n               }\n               if (box) box.style.display = 'block';\n             } catch {}\n           }\n         }, true);\n       })();<\/script>\n     ` : '';
+ 
+     return `
+     <div style="background:#f6f9fc;padding:24px 12px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
+       <div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #e6eaf1;border-radius:10px;overflow.hidden;">
+         <div style="background:${primaryBg};color:${primaryText};padding:20px 24px;">
+           <div style="font-size:18px;font-weight:600">${params.businessName}</div>
+           <div style="opacity:0.85;font-size:14px">Quote ${params.number}</div>
+         </div>
+         <div style="padding:24px;">
+           <p style="margin:0 0 12px;color:#111;">Hi ${params.customerName},</p>
+           <p style="margin:0 0 16px;color:#333;">Please find your quote below. Total amount is <strong>${formatMoney(params.total)}</strong>.</p>
+           ${params.viewLink ? `<div style="margin:16px 0 20px;"><a href="${params.viewLink}" target="_blank" style="${btnBase}background:${primaryBg};color:${primaryText};">View your quote</a></div>` : ''}
+ 
+           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin:12px 0 4px;">
+             <thead>
+               <tr>
+                 <th align="left" style="padding:8px;color:#334155;font-size:12px;text-transform:uppercase;letter-spacing:.02em">Item</th>
+                 <th align="center" style="padding:8px;color:#334155;font-size:12px;text-transform:uppercase;letter-spacing:.02em">Qty</th>
+                 <th align="right" style="padding:8px;color:#334155;font-size:12px;text-transform:uppercase;letter-spacing:.02em">Price</th>
+                 <th align="right" style="padding:8px;color:#334155;font-size:12px;text-transform:uppercase;letter-spacing:.02em">Amount</th>
+               </tr>
+             </thead>
+             <tbody>
+               ${rows}
+             </tbody>
+           </table>
+ 
+           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin-top:8px;">
+             <tr>
+               <td style="padding:8px 8px;text-align:right" colspan="3">Subtotal</td>
+               <td style="padding:8px 8px;text-align:right">${formatMoney(params.subtotal)}</td>
+             </tr>
+             <tr>
+               <td style="padding:8px 8px;text-align:right" colspan="3">Tax (${Math.round((params.taxRate || 0) * 100)}%)</td>
+               <td style="padding:8px 8px;text-align:right">${formatMoney(Math.round(params.subtotal * (params.taxRate || 0)))}</td>
+             </tr>
+             ${discountRow}
+             <tr>
+               <td style="padding:12px 8px;text-align:right;border-top:2px solid #e5e7eb;font-weight:700" colspan="3">Total</td>
+               <td style="padding:12px 8px;text-align:right;border-top:2px solid #e5e7eb;font-weight:700">${formatMoney(params.total)}</td>
+             </tr>
+           </table>
+ 
+           <div style="margin-top:16px;color:#4b5563;font-size:14px;">
+             ${params.paymentTerms && params.paymentTerms !== 'due_on_receipt' ? `<p style="margin:0 0 6px;">Payment terms: ${formatPaymentTermsLabel(params.paymentTerms)}</p>` : ''}
+             ${params.frequency && params.frequency !== 'one-off' ? `<p style="margin:6px 0 0;">Frequency: ${({ 'bi-monthly':'Bi-monthly', 'monthly':'Monthly', 'bi-yearly':'Bi-yearly', 'yearly':'Yearly' } as any)[params.frequency] || params.frequency}</p>` : ''}
+             ${depositLine}
+             ${params.address ? `<p style=\"margin:6px 0 0;\">Service address: ${params.address}</p>` : ''}
+           </div>
+ 
+           ${params.terms ? `<div style="margin-top:16px;padding:12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;color:#374151;font-size:13px;">
+             <div style="font-weight:600;margin-bottom:6px;">Terms</div>
+             <div>${params.terms}</div>
+           </div>` : ''}
+ 
+           ${actionsBlock}
+           ${previewHelpers}
+ 
+           <p style="margin-top:20px;color:#334155;">Thank you,<br/>${params.businessName}</p>
+ 
+           ${openPixelSrc ? `<img src="${openPixelSrc}" width="1" height="1" alt="" style="display:block;opacity:0;" />` : ''}
+         </div>
+       </div>
+       <div style="max-width:640px;margin:8px auto 0;text-align:center;color:#6b7280;font-size:12px;">This is an automated message. Please reply if you have any questions.</div>
+     </div>`;
+   }
 
   function addLine() {
     setDraft((d) => ({
@@ -377,6 +392,7 @@ export default function QuotesPage() {
       frequency: draft.frequency,
       quoteId: draft.id,
       token: draft.publicToken,
+      preview: true,
     });
     setPreviewSubject(subject);
     setPreviewHTML(html);
