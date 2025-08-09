@@ -55,6 +55,9 @@ export default function QuotesPage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewSubject, setPreviewSubject] = useState('');
   const [previewHTML, setPreviewHTML] = useState('');
+  const [testEmail, setTestEmail] = useState('je-tsongkhapa@pm.me');
+  const [outbox, setOutbox] = useState<any[]>([]);
+  const [outboxLoading, setOutboxLoading] = useState(false);
 
   // Sorting
   const [sortKey, setSortKey] = useState<SortKey>('updated');
@@ -309,15 +312,55 @@ export default function QuotesPage() {
     setPreviewOpen(true);
   }
 
+  async function sendTest() {
+    try {
+      const headers = await buildAuthHeaders();
+      const subject = previewSubject || `Quote Preview — ${store.business.name}`;
+      const html = previewHTML || '<p>Test email</p>';
+      const { data, error } = await supabase.functions.invoke('resend-send-email', {
+        body: {
+          to: testEmail,
+          subject,
+          html,
+          from_name: store.business.name,
+          reply_to: store.business.replyToEmail || undefined,
+        },
+        headers,
+      });
+      if (error || (data as any)?.error) {
+        const msg = (error as any)?.message || (data as any)?.error || 'Failed to send test email.';
+        toast({ title: 'Test send failed', description: msg, variant: 'destructive' });
+      } else {
+        toast({ title: 'Test sent', description: `Sent to ${testEmail}.` });
+      }
+    } catch (e:any) {
+      toast({ title: 'Test send failed', description: e?.message || String(e), variant: 'destructive' });
+    }
+  }
+
+  async function loadOutbox() {
+    setOutboxLoading(true);
+    const { data, error } = await supabase
+      .from('mail_sends')
+      .select('id,to_email,subject,status,created_at,provider_message_id')
+      .order('created_at', { ascending: false })
+      .limit(20);
+    if (error) {
+      toast({ title: 'Outbox error', description: error.message, variant: 'destructive' });
+    } else {
+      setOutbox(data || []);
+    }
+    setOutboxLoading(false);
+  }
+
   function send(est: Quote) {
     store.sendQuote(est.id);
     sendEmailForQuote(est);
   }
-
   async function checkSenderHealth() {
     try {
       const headers = await buildAuthHeaders();
-      const { data, error } = await supabase.functions.invoke('email-sender-get', { headers });
+      const { data, error } = await supabase.functions.invoke('resend-health', { headers });
       if (error) {
         toast({ title: 'Sender health check failed', description: error.message || 'Could not load sender info.', variant: 'destructive' });
         return;
@@ -437,6 +480,43 @@ export default function QuotesPage() {
                 ))}
               </TableBody>
             </Table>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Email Outbox</CardTitle>
+            <div className="flex gap-2">
+              <Button variant="secondary" onClick={loadOutbox} disabled={outboxLoading}>
+                {outboxLoading ? 'Loading…' : 'Refresh'}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {outbox.length === 0 ? (
+              <div className="text-sm text-muted-foreground">No emails yet. Click Refresh after sending.</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>To</TableHead>
+                    <TableHead>Subject</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Sent</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {outbox.map((m)=>(
+                    <TableRow key={m.id}>
+                      <TableCell>{m.to_email}</TableCell>
+                      <TableCell className="max-w-[360px] truncate">{m.subject}</TableCell>
+                      <TableCell>{m.status}</TableCell>
+                      <TableCell>{formatDate(m.created_at)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       </section>

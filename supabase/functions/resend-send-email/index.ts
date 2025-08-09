@@ -86,44 +86,73 @@ serve(async (req: Request): Promise<Response> => {
   const fromName = payload.from_name || undefined;
   const from = fromName ? `${fromName} <${fromEmail}>` : fromEmail;
 
+  // Idempotency: if we've already sent this request successfully, return previous result
+  try {
+    const { data: existing } = await supabaseAdmin
+      .from('mail_sends')
+      .select('id,status,provider_message_id,created_at')
+      .eq('request_hash', hash)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (existing && existing.length && existing[0].status === 'sent') {
+      return new Response(JSON.stringify({ id: existing[0].provider_message_id, status: 'duplicate' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    }
+  } catch (e) {
+    console.warn('Idempotency lookup failed', e);
+  }
+
+  const text = payload.html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+
   try {
     const sendRes = await resend.emails.send({
       from,
       to: [payload.to],
       subject: payload.subject,
       html: payload.html,
+      text,
       reply_to: payload.reply_to ? payload.reply_to : undefined,
     });
 
     if (sendRes.error) {
-      console.error("Resend send error:", sendRes.error);
-      // Log failed send
-      await supabaseAdmin.from("mail_sends").insert({
+      const message = String(sendRes.error?.message || 'Unknown error');
+      console.error('Resend send error:', sendRes.error);
+
+      await supabaseAdmin.from('mail_sends').insert({
         user_id: userId,
         to_email: payload.to,
         subject: payload.subject,
-        status: "failed",
-        error_code: "resend_error",
-        error_message: String(sendRes.error?.message || "Unknown error"),
+        status: 'failed',
+        error_code: 'resend_error',
+        error_message: message,
         provider_message_id: null,
         request_hash: hash,
         quote_id: payload.quote_id || null,
       } as any);
 
-      return new Response(JSON.stringify({ error: sendRes.error.message }), {
+      // Friendly errors
+      const lower = message.toLowerCase();
+      let friendly = message;
+      if (lower.includes('domain') && lower.includes('not') && lower.includes('verify')) {
+        friendly = 'Your sending domain is not verified. Verify it at https://resend.com/domains.';
+      }
+
+      return new Response(JSON.stringify({ error: friendly }), {
         status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
       });
     }
 
     const messageId = (sendRes as any)?.data?.id ?? null;
 
-    // Log successful send
-    await supabaseAdmin.from("mail_sends").insert({
+    await supabaseAdmin.from('mail_sends').insert({
       user_id: userId,
       to_email: payload.to,
       subject: payload.subject,
-      status: "sent",
+      status: 'sent',
       error_code: null,
       error_message: null,
       provider_message_id: messageId,
@@ -131,30 +160,28 @@ serve(async (req: Request): Promise<Response> => {
       quote_id: payload.quote_id || null,
     } as any);
 
-    return new Response(JSON.stringify({ id: messageId, status: "sent" }), {
+    return new Response(JSON.stringify({ id: messageId, status: 'sent' }), {
       status: 200,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
     });
   } catch (e: any) {
-    console.error("Unexpected send error:", e);
+    console.error('Unexpected send error:', e);
 
-    // Best-effort log failure
-    await supabaseAdmin.from("mail_sends").insert({
+    await supabaseAdmin.from('mail_sends').insert({
       user_id: userId,
       to_email: payload.to,
       subject: payload.subject,
-      status: "failed",
-      error_code: "exception",
-      error_message: String(e?.message || e || "Unknown error"),
+      status: 'failed',
+      error_code: 'exception',
+      error_message: String(e?.message || e || 'Unknown error'),
       provider_message_id: null,
       request_hash: hash,
       quote_id: payload.quote_id || null,
-      
     } as any);
 
-    return new Response(JSON.stringify({ error: e?.message || "Send failed" }), {
+    return new Response(JSON.stringify({ error: e?.message || 'Send failed' }), {
       status: 500,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
     });
   }
 });
