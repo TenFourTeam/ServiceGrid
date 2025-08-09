@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      email_domains: {
+        Row: {
+          created_at: string
+          default_from_email: string | null
+          default_from_name: string | null
+          dns_records: Json | null
+          domain: string
+          id: string
+          sendgrid_id: number | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          default_from_email?: string | null
+          default_from_name?: string | null
+          dns_records?: Json | null
+          domain: string
+          id?: string
+          sendgrid_id?: number | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          default_from_email?: string | null
+          default_from_name?: string | null
+          dns_records?: Json | null
+          domain?: string
+          id?: string
+          sendgrid_id?: number | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       email_logs: {
         Row: {
           created_at: string

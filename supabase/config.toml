@@ -26,3 +26,12 @@ verify_jwt = false
 
 [functions.nylas-webhook]
 verify_jwt = false
+
+[functions.sendgrid-domain-init]
+verify_jwt = false
+
+[functions.sendgrid-domain-verify]
+verify_jwt = false
+
+[functions.sendgrid-send-email]
+verify_jwt = false

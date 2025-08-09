@@ -223,13 +223,13 @@ export default function EstimatesPage() {
       paymentTerms: e.paymentTerms,
     });
     const headers = await buildAuthHeaders();
-    const { data, error } = await supabase.functions.invoke('nylas-send-email', {
+    const { data, error } = await supabase.functions.invoke('sendgrid-send-email', {
       body: { to, subject, html, quote_id: e.id },
       headers,
     });
-    console.log('nylas-send-email response', { data, error });
+    console.log('sendgrid-send-email response', { data, error });
     if (error) {
-      console.error('nylas-send-email error', error);
+      console.error('sendgrid-send-email error', error);
       const status = (error as any)?.status;
       const msg = status === 401
         ? 'You are not authenticated. Please sign in and try again.'
@@ -239,11 +239,11 @@ export default function EstimatesPage() {
     }
     const payload = data as any;
     if (payload?.error) {
-      console.error('nylas-send-email payload error', payload.error);
+      console.error('sendgrid-send-email payload error', payload.error);
       const raw = String(payload.error || '');
-      const needsConnect = /no sender|no connected|nylas/i.test(raw);
+      const needsConnect = /no verified sending domain|dns|sendgrid|domain/i.test(raw);
       const desc = needsConnect
-        ? 'Connect your email in Settings > Email Sending, then try again.'
+        ? 'Set up your sending domain in Settings > Email Sending, then try again.'
         : (raw || 'Unknown error from email service.');
       toast({ title: 'Failed to send', description: desc });
     } else {

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { useAuth } from "@/components/Auth/AuthProvider";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 // Minimal sender row (Nylas only)
 type SenderRow = {
@@ -120,41 +122,136 @@ export default function EmailSenderSettings() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // SendGrid domain-based sending state
+  const [businessEmail, setBusinessEmail] = useState("");
+
+  const domainsQuery = useQuery({
+    queryKey: ["email-domains"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("email_domains")
+        .select("id, domain, status, dns_records, default_from_email, default_from_name, created_at")
+        .order("created_at", { ascending: false });
+      if (error) {
+        console.error("load domains error", error);
+        return [] as any[];
+      }
+      return data || [];
+    },
+  });
+
+  const startDomainSetup = async () => {
+    const domain = (businessEmail.split("@")[1] || "").toLowerCase();
+    if (!domain) {
+      toast({ title: "Enter a valid email", description: "We use it to detect your domain (e.g. yourname@yourcompany.com).", variant: "destructive" });
+      return;
+    }
+    const { data, error } = await supabase.functions.invoke("sendgrid-domain-init", {
+      body: { email: businessEmail },
+    });
+    if (error || (data as any)?.error) {
+      const msg = (error as any)?.message || (data as any)?.error || "Failed to start domain setup";
+      toast({ title: "Domain setup failed", description: msg, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Domain setup started", description: `Add the DNS records below to ${domain} and then click Verify.` });
+    domainsQuery.refetch();
+  };
+
+  const verifyDomain = async (domain: string) => {
+    const { data, error } = await supabase.functions.invoke("sendgrid-domain-verify", { body: { domain } });
+    if (error || (data as any)?.error) {
+      const msg = (error as any)?.message || (data as any)?.error || "Verification failed";
+      toast({ title: "Verification failed", description: msg, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Verification requested", description: "We checked with SendGrid. If records are correct it will mark as verified." });
+    domainsQuery.refetch();
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Email Sending</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="space-y-2">
-          <p className="text-sm">
-            {hasNylas
-              ? `Connected via Nylas: ${fromEmail}`
-              : "Send from your own mailbox by connecting it with Nylas (recommended)."}
-          </p>
-          <div className="flex items-center gap-2">
-            {!hasNylas ? (
-              <>
-                <Button onClick={onConnect}>Connect mailbox</Button>
-                <Button variant="ghost" asChild>
-                  <a href="/nylas/start" target="_blank" rel="noopener noreferrer">Open in new tab</a>
-                </Button>
-              </>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Email Sending</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="space-y-2">
+            <p className="text-sm">
+              {hasNylas
+                ? `Connected via Nylas: ${fromEmail}`
+                : "Send from your own mailbox by connecting it with Nylas (recommended)."}
+            </p>
+            <div className="flex items-center gap-2">
+              {!hasNylas ? (
+                <>
+                  <Button onClick={onConnect}>Connect mailbox</Button>
+                  <Button variant="ghost" asChild>
+                    <a href="/nylas/start" target="_blank" rel="noopener noreferrer">Open in new tab</a>
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="secondary" onClick={() => refetch()} disabled={isFetching}>Refresh</Button>
+                  <Button variant="outline" onClick={onDisconnect}>Disconnect</Button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {hasNylas && (
+            <div className="text-sm text-muted-foreground">
+              Status: Connected ✅ (provider: {sender?.status || "connected"})
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Domain-based sending (SendGrid)</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="businessEmail">Your business email</Label>
+            <div className="flex gap-2">
+              <Input id="businessEmail" placeholder="you@yourcompany.com" value={businessEmail} onChange={(e) => setBusinessEmail(e.target.value)} />
+              <Button onClick={startDomainSetup}>Start setup</Button>
+            </div>
+            <p className="text-xs text-muted-foreground">We'll detect your domain and generate DNS records. After adding them, click Verify.</p>
+          </div>
+
+          <div className="space-y-3">
+            {domainsQuery.data?.length ? (
+              domainsQuery.data.map((d: any) => (
+                <div key={d.id} className="rounded-md border p-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">{d.domain}</div>
+                      <div className="text-xs text-muted-foreground">Status: {d.status}</div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="secondary" onClick={() => verifyDomain(d.domain)}>Verify</Button>
+                    </div>
+                  </div>
+                  {d.dns_records && Array.isArray(d.dns_records) && (
+                    <div className="mt-3 text-xs">
+                      <div className="font-medium">DNS records to add:</div>
+                      <ul className="list-disc pl-6 mt-1 space-y-1">
+                        {d.dns_records.map((r: any, i: number) => (
+                          <li key={i}><code>{r.type}</code> {r.host || r.name} → {r.data || r.value}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              ))
             ) : (
-              <>
-                <Button variant="secondary" onClick={() => refetch()} disabled={isFetching}>Refresh</Button>
-                <Button variant="outline" onClick={onDisconnect}>Disconnect</Button>
-              </>
+              <p className="text-sm text-muted-foreground">No domains yet.</p>
             )}
           </div>
-        </div>
-
-        {hasNylas && (
-          <div className="text-sm text-muted-foreground">
-            Status: Connected ✅ (provider: {sender?.status || "connected"})
-          </div>
-        )}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
