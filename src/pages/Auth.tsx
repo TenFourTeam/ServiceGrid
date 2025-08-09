@@ -8,6 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useAuth } from "@/components/Auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 
+const sanitizeEmail = (v: string) => v.trim().toLowerCase();
+const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+
 export default function AuthPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -33,6 +36,14 @@ export default function AuthPage() {
       return m;
     })();
     meta.setAttribute('content', desc);
+
+    const canonical = document.querySelector('link[rel="canonical"]') || (() => {
+      const l = document.createElement('link');
+      l.setAttribute('rel', 'canonical');
+      document.head.appendChild(l);
+      return l;
+    })();
+    canonical.setAttribute('href', window.location.href);
   }, [mode]);
 
   useEffect(() => {
@@ -43,16 +54,24 @@ export default function AuthPage() {
     e.preventDefault();
     setError(null);
     setMessage(null);
+
+    const em = sanitizeEmail(email);
+    if (!isValidEmail(em)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    setEmail(em);
+
     setLoading(true);
     try {
       if (mode === "signIn") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({ email: em, password });
         if (error) throw error;
         navigate(from, { replace: true });
       } else {
         const redirectUrl = `${window.location.origin}/`;
         const { error } = await supabase.auth.signUp({
-          email,
+          email: em,
           password,
           options: { emailRedirectTo: redirectUrl },
         });
@@ -64,10 +83,12 @@ export default function AuthPage() {
       let friendly = raw || "Something went wrong";
       if (mode === "signIn" && /invalid login credentials/i.test(raw)) {
         friendly = "Invalid email or password.";
-      } else if (/email address .* is invalid/i.test(raw)) {
+      } else if (/email address .* is invalid|invalid email/i.test(raw)) {
         friendly = "That email address looks invalid.";
       } else if (/confirm|verify/i.test(raw)) {
         friendly = "Please verify your email to continue. You can resend the verification email below.";
+      } else if (/rate|limit/i.test(raw)) {
+        friendly = "Too many requests. Please wait a moment and try again.";
       }
       setError(friendly);
     } finally {
@@ -76,22 +97,24 @@ export default function AuthPage() {
   };
 
   const onResend = async () => {
-    if (!email) {
-      setError("Enter your email first.");
+    const em = sanitizeEmail(email);
+    if (!isValidEmail(em)) {
+      setError("Enter a valid email first.");
       return;
     }
     setError(null);
     setResending(true);
+    setEmail(em);
     try {
       const { error } = await supabase.auth.resend({
         type: "signup",
-        email,
+        email: em,
       });
       if (error) throw error;
-      setMessage(`Verification email sent to ${email}. Check your inbox and spam.`);
+      setMessage(`Verification email sent to ${em}. Check your inbox and spam.`);
       toast?.({
         title: "Verification email sent",
-        description: `We've sent a verification email to ${email}.`,
+        description: `We've sent a verification email to ${em}.`,
       });
     } catch (err: any) {
       const raw = String(err?.message ?? "");
@@ -119,7 +142,7 @@ export default function AuthPage() {
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="you@example.com" />
+              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} onBlur={() => setEmail(sanitizeEmail(email))} required placeholder="you@example.com" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
@@ -128,11 +151,14 @@ export default function AuthPage() {
             {error && <p className="text-sm text-destructive">{error}</p>}
             {message && <p className="text-sm text-muted-foreground">{message}</p>}
             {(((mode === "signUp") && !!message) || (error && /confirm|verify/i.test(error))) && (
-              <Button type="button" variant="outline" className="w-full" onClick={onResend} disabled={resending || !email}>
+              <Button type="button" variant="outline" className="w-full" onClick={onResend} disabled={resending || !isValidEmail(email)}>
                 {resending ? "Resending…" : "Resend verification email"}
               </Button>
             )}
-            <Button type="submit" className="w-full" disabled={loading}>
+            <p className="text-xs text-muted-foreground mt-2">
+              Account emails are sent from noreply@mail.app.supabase.io. Check your spam/junk if you don't see them.
+            </p>
+            <Button type="submit" className="w-full" disabled={loading || !isValidEmail(email) || !password}>
               {loading ? "Please wait…" : mode === "signIn" ? "Sign in" : "Create account"}
             </Button>
           </form>
