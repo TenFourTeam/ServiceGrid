@@ -98,7 +98,8 @@ serve(async (req: Request) => {
     // Always create a NEW Single Sender in SendGrid to avoid overwriting existing ones
     const safeFromName = from_name && from_name.trim().length > 0 ? from_name : from_email;
     const baseNickname = (nickname && nickname.trim().length > 0) ? nickname : safeFromName;
-    const uniqueNickname = `${baseNickname}-${Math.random().toString(36).slice(2,6).toUpperCase()}`;
+    const userPrefix = `WB-${user.id.substring(0,8).toUpperCase()}`;
+    const uniqueNickname = `${userPrefix}-${Math.random().toString(36).slice(2,6).toUpperCase()}`;
     const safeReplyTo = reply_to;
 
     let body: any = {
@@ -259,6 +260,35 @@ serve(async (req: Request) => {
         method: "POST",
         headers: { Authorization: `Bearer ${SENDGRID_API_KEY}` },
       }).catch((e) => console.warn("resend_verification failed", e));
+    }
+
+    // Enforce "no extras allowed" for this user: delete other app-created senders
+    try {
+      const listResp = await fetch("https://api.sendgrid.com/v3/senders", {
+        headers: { Authorization: `Bearer ${SENDGRID_API_KEY}` },
+      });
+      const listText = await listResp.text();
+      let listJson: any[] = [];
+      try { listJson = listText ? JSON.parse(listText) : []; } catch { /* ignore */ }
+      if (listResp.ok && Array.isArray(listJson)) {
+        const toDelete = listJson.filter((s: any) =>
+          typeof s?.nickname === "string" && s.nickname.startsWith(userPrefix + "-") && (s.id ?? s.sender_id) !== senderId
+        );
+        for (const s of toDelete) {
+          const id = s.id ?? s.sender_id;
+          if (!id) continue;
+          try {
+            await fetch(`https://api.sendgrid.com/v3/senders/${id}`, {
+              method: "DELETE",
+              headers: { Authorization: `Bearer ${SENDGRID_API_KEY}` },
+            });
+          } catch (e) {
+            console.warn("email-setup-sendgrid: failed to delete extra sender", id, e);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("email-setup-sendgrid: cleanup extras failed", e);
     }
 
     return new Response(

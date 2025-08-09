@@ -41,41 +41,6 @@ serve(async (req: Request) => {
       .single();
 
     if (!sender?.sendgrid_sender_id) {
-      // Try to relink by listing senders using current from_email
-      try {
-        const listResp = await fetch("https://api.sendgrid.com/v3/senders", {
-          headers: { Authorization: `Bearer ${SENDGRID_API_KEY}` },
-        });
-        const listText = await listResp.text();
-        let listJson: any[] = [];
-        try { listJson = listText ? JSON.parse(listText) : []; } catch { /* ignore */ }
-        if (listResp.ok && Array.isArray(listJson)) {
-          const match = listJson.find((s: any) =>
-            (s?.from?.email && String(s.from.email).toLowerCase() === String(sender?.from_email || "").toLowerCase())
-          );
-          if (match) {
-            // Compute verified/status
-            const vRaw = match?.verified;
-            let verified = false;
-            if (typeof vRaw === "boolean") verified = vRaw;
-            else if (typeof vRaw === "string") verified = vRaw.toLowerCase() === "true";
-            else if (vRaw && typeof vRaw?.status === "string") {
-              const s = String(vRaw.status).toLowerCase();
-              verified = s === "verified" || s === "completed" || s === "approved" || s === "true";
-            }
-            const providerStatus = vRaw && typeof vRaw?.status === "string" ? String(vRaw.status) : null;
-            await supabase.from("email_senders").update({
-              sendgrid_sender_id: match.id ?? match.sender_id ?? null,
-              verified,
-              status: providerStatus,
-            }).eq("id", sender.id);
-            return new Response(JSON.stringify({ ok: true, verified, relinked: true }), {
-              status: 200,
-              headers: { "Content-Type": "application/json", ...corsHeaders },
-            });
-          }
-        }
-      } catch { /* ignore */ }
       return new Response(JSON.stringify({ error: "No sender configured" }), {
         status: 400,
         headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -92,39 +57,6 @@ serve(async (req: Request) => {
 
     if (!sgResp.ok) {
       if (sgResp.status === 404) {
-        // Try to relink by listing senders
-        try {
-          const listResp = await fetch("https://api.sendgrid.com/v3/senders", { headers: { Authorization: `Bearer ${SENDGRID_API_KEY}` } });
-          const listText = await listResp.text();
-          let listJson: any[] = [];
-          try { listJson = listText ? JSON.parse(listText) : []; } catch { /* ignore */ }
-          if (listResp.ok && Array.isArray(listJson)) {
-            const match = listJson.find((s: any) =>
-              (s?.from?.email && String(s.from.email).toLowerCase() === String(sender?.from_email || "").toLowerCase())
-            );
-            if (match) {
-              const vRaw = match?.verified;
-              let verified = false;
-              if (typeof vRaw === "boolean") verified = vRaw;
-              else if (typeof vRaw === "string") verified = vRaw.toLowerCase() === "true";
-              else if (vRaw && typeof vRaw?.status === "string") {
-                const s = String(vRaw.status).toLowerCase();
-                verified = s === "verified" || s === "completed" || s === "approved" || s === "true";
-              }
-              const providerStatus = vRaw && typeof vRaw?.status === "string" ? String(vRaw.status) : null;
-              await supabase.from("email_senders").update({
-                sendgrid_sender_id: match.id ?? match.sender_id ?? null,
-                verified,
-                status: providerStatus,
-              }).eq("id", sender.id);
-              return new Response(JSON.stringify({ ok: true, verified, relinked: true, note: "Relinked existing sender in SendGrid." }), {
-                status: 200,
-                headers: { "Content-Type": "application/json", ...corsHeaders },
-              });
-            }
-          }
-        } catch { /* ignore */ }
-        console.warn("email-sender-status: sender not found on SendGrid (404). Clearing local sender id.");
         await supabase
           .from("email_senders")
           .update({ sendgrid_sender_id: null, verified: false, status: "missing" })
@@ -134,7 +66,6 @@ serve(async (req: Request) => {
           { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
-
       console.error("email-sender-status: sendgrid error", sgResp.status, text);
       return new Response(JSON.stringify({ error: "SendGrid error", details: text }), {
         status: 500,
@@ -142,8 +73,13 @@ serve(async (req: Request) => {
       });
     }
 
-    // Strict verification check
+    // Strict verification check (robust)
     const sgVerifiedRaw = sgJson?.verified;
+    const sgIsVerifiedFlag = sgJson?.is_verified === true;
+    const sgVerificationStatus = typeof sgJson?.verification_status === "string"
+      ? String(sgJson.verification_status).toLowerCase()
+      : null;
+
     let verified = false;
     if (typeof sgVerifiedRaw === "boolean") {
       verified = sgVerifiedRaw;
@@ -153,8 +89,15 @@ serve(async (req: Request) => {
       const s = String(sgVerifiedRaw.status).toLowerCase();
       verified = s === "verified" || s === "completed" || s === "approved" || s === "true";
     }
-    const providerStatus =
-      sgVerifiedRaw && typeof sgVerifiedRaw?.status === "string" ? String(sgVerifiedRaw.status) : null;
+    if (!verified && (sgIsVerifiedFlag || ["approved","verified","completed","success","true"].includes(sgVerificationStatus || ""))) {
+      verified = true;
+    }
+
+    const providerStatus = ((): string | null => {
+      if (typeof sgVerifiedRaw?.status === "string") return String(sgVerifiedRaw.status);
+      if (sgVerificationStatus) return sgVerificationStatus;
+      return null;
+    })();
 
     await supabase
       .from("email_senders")

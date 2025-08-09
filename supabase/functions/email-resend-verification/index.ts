@@ -41,56 +41,6 @@ serve(async (req: Request) => {
       .single();
 
     if (!sender?.sendgrid_sender_id) {
-      // Try to relink and then resend if needed
-      try {
-        const listResp = await fetch("https://api.sendgrid.com/v3/senders", {
-          headers: { Authorization: `Bearer ${SENDGRID_API_KEY}` },
-        });
-        const listText = await listResp.text();
-        let listJson: any[] = [];
-        try { listJson = listText ? JSON.parse(listText) : []; } catch { /* ignore */ }
-        if (listResp.ok && Array.isArray(listJson)) {
-          const match = listJson.find((s: any) =>
-            (s?.from?.email && String(s.from.email).toLowerCase() === String(sender?.from_email || "").toLowerCase())
-          );
-          if (match) {
-            const id = match.id ?? match.sender_id;
-            const vRaw = match?.verified;
-            let isVerified = false;
-            if (typeof vRaw === "boolean") isVerified = vRaw;
-            else if (vRaw && typeof vRaw?.status === "string") {
-              const s = String(vRaw.status).toLowerCase();
-              isVerified = s === "verified" || s === "completed" || s === "true";
-            }
-            const providerStatus = vRaw && typeof vRaw?.status === "string" ? String(vRaw.status) : null;
-            await supabase.from("email_senders").update({
-              sendgrid_sender_id: id ?? null,
-              verified: isVerified,
-              status: providerStatus,
-            }).eq("id", sender.id);
-            if (isVerified) {
-              return new Response(JSON.stringify({ ok: true, alreadyVerified: true, relinked: true }), {
-                status: 200, headers: { "Content-Type": "application/json", ...corsHeaders },
-              });
-            }
-            // not verified -> send verification
-            const resp2 = await fetch(`https://api.sendgrid.com/v3/senders/${id}/resend_verification`, {
-              method: "POST",
-              headers: { Authorization: `Bearer ${SENDGRID_API_KEY}` },
-            });
-            if (!resp2.ok) {
-              const t2 = await resp2.text();
-              console.error("email-resend-verification: resend after relink failed", resp2.status, t2);
-              return new Response(JSON.stringify({ error: "SendGrid error", details: t2 }), {
-                status: 500, headers: { "Content-Type": "application/json", ...corsHeaders },
-              });
-            }
-            return new Response(JSON.stringify({ ok: true, relinked: true }), {
-              status: 200, headers: { "Content-Type": "application/json", ...corsHeaders },
-            });
-          }
-        }
-      } catch { /* ignore */ }
       return new Response(JSON.stringify({ error: "No sender configured" }), {
         status: 400,
         headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -108,58 +58,6 @@ serve(async (req: Request) => {
     if (!resp.ok) {
       const t = await resp.text();
       if (resp.status === 404) {
-        // Try relink
-        try {
-          const listResp = await fetch("https://api.sendgrid.com/v3/senders", {
-            headers: { Authorization: `Bearer ${SENDGRID_API_KEY}` },
-          });
-          const listText = await listResp.text();
-          let listJson: any[] = [];
-          try { listJson = listText ? JSON.parse(listText) : []; } catch { /* ignore */ }
-          if (listResp.ok && Array.isArray(listJson)) {
-            const match = listJson.find((s: any) =>
-              (s?.from?.email && String(s.from.email).toLowerCase() === String(sender?.from_email || "").toLowerCase())
-            );
-            if (match) {
-              const id = match.id ?? match.sender_id;
-              const vRaw = match?.verified;
-              let isVerified = false;
-              if (typeof vRaw === "boolean") isVerified = vRaw;
-              else if (vRaw && typeof vRaw?.status === "string") {
-                const s = String(vRaw.status).toLowerCase();
-                isVerified = s === "verified" || s === "completed" || s === "true";
-              }
-              const providerStatus = vRaw && typeof vRaw?.status === "string" ? String(vRaw.status) : null;
-              await supabase.from("email_senders").update({
-                sendgrid_sender_id: id ?? null,
-                verified: isVerified,
-                status: providerStatus,
-              }).eq("id", sender.id);
-              if (isVerified) {
-                return new Response(JSON.stringify({ ok: true, alreadyVerified: true, relinked: true }), {
-                  status: 200, headers: { "Content-Type": "application/json", ...corsHeaders },
-                });
-              }
-              const resp2 = await fetch(`https://api.sendgrid.com/v3/senders/${id}/resend_verification`, {
-                method: "POST",
-                headers: { Authorization: `Bearer ${SENDGRID_API_KEY}` },
-              });
-              if (!resp2.ok) {
-                const t2 = await resp2.text();
-                console.error("email-resend-verification: resend after relink failed", resp2.status, t2);
-                return new Response(JSON.stringify({ error: "SendGrid error", details: t2 }), {
-                  status: 500, headers: { "Content-Type": "application/json", ...corsHeaders },
-                });
-              }
-              return new Response(JSON.stringify({ ok: true, relinked: true }), {
-                status: 200, headers: { "Content-Type": "application/json", ...corsHeaders },
-              });
-            }
-          }
-        } catch { /* ignore */ }
-        console.warn(
-          "email-resend-verification: sender not found on SendGrid (404). Clearing local sender id."
-        );
         await supabase
           .from("email_senders")
           .update({ sendgrid_sender_id: null, verified: false, status: "missing" })
