@@ -13,6 +13,7 @@ import { Estimate } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 
 type SortKey = 'customer' | 'amount' | 'status' | 'updated';
 type SortDir = 'asc' | 'desc';
@@ -20,6 +21,25 @@ type SortDir = 'asc' | 'desc';
 export default function EstimatesPage() {
   const store = useStore();
   const { toast } = useToast();
+  const clerkAuth = useClerkAuth();
+
+  async function buildAuthHeaders(): Promise<Record<string, string>> {
+    try {
+      const headers: Record<string, string> = {};
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+        return headers;
+      }
+      if (clerkAuth?.isSignedIn) {
+        const token = await clerkAuth.getToken();
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+      }
+      return headers;
+    } catch {
+      return {};
+    }
+  }
 
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<Partial<Estimate>>({
@@ -202,19 +222,30 @@ export default function EstimatesPage() {
       depositPercent: e.depositPercent,
       paymentTerms: e.paymentTerms,
     });
+    const headers = await buildAuthHeaders();
     const { data, error } = await supabase.functions.invoke('nylas-send-email', {
       body: { to, subject, html, quote_id: e.id },
+      headers,
     });
     console.log('nylas-send-email response', { data, error });
     if (error) {
       console.error('nylas-send-email error', error);
-      toast({ title: 'Failed to send', description: error.message || 'There was a problem sending the email.' });
+      const status = (error as any)?.status;
+      const msg = status === 401
+        ? 'You are not authenticated. Please sign in and try again.'
+        : (error.message || 'There was a problem sending the email.');
+      toast({ title: 'Failed to send', description: msg });
       return;
     }
     const payload = data as any;
     if (payload?.error) {
       console.error('nylas-send-email payload error', payload.error);
-      toast({ title: 'Failed to send', description: payload.error || 'Unknown error from email service.' });
+      const raw = String(payload.error || '');
+      const needsConnect = /no sender|no connected|nylas/i.test(raw);
+      const desc = needsConnect
+        ? 'Connect your email in Settings > Email Sending, then try again.'
+        : (raw || 'Unknown error from email service.');
+      toast({ title: 'Failed to send', description: desc });
     } else {
       toast({ title: 'Quote sent', description: `Email sent to ${to}. Check Email Outbox for status.` });
     }
