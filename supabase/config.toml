@@ -7,7 +7,9 @@ verify_jwt = false
 [functions.clerk-whoami]
 verify_jwt = false
 
-
 # Keep these core functions
 [functions.resend-send-email]
+verify_jwt = false
+
+[functions.quote-events]
 verify_jwt = false

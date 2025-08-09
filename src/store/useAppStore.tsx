@@ -117,6 +117,10 @@ export interface Store extends AppState {
   setBusiness(b: Partial<Business>): void;
   
   overwriteState(state: AppState): void;
+
+  // NEW: quote engagement helpers
+  recordQuoteOpen(id: string): void;
+  requestQuoteEdit(id: string): void;
 }
 
 const StoreContext = createContext<Store | null>(null);
@@ -336,6 +340,29 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'SET_BUSINESS', payload: business });
     },
     overwriteState(s) { dispatch({ type: 'SET_STATE', payload: s }); },
+
+    // NEW: record a quote "open" (email viewed)
+    recordQuoteOpen(id) {
+      const est = state.quotes.find((e) => e.id === id);
+      if (!est) return;
+      const nextViewCount = (est.viewCount ?? 0) + 1;
+      const nextStatus: Quote['status'] =
+        est.status === 'Approved' || est.status === 'Declined'
+          ? est.status
+          : (est.status === 'Sent' || est.status === 'Viewed')
+            ? 'Viewed'
+            : est.status;
+      const updated: Quote = { ...est, status: nextStatus, viewCount: nextViewCount, updatedAt: nowISO() };
+      dispatch({ type: 'UPSERT_QUOTE', payload: updated });
+    },
+
+    // NEW: customer requested edits -> move back to Draft (edits requested)
+    requestQuoteEdit(id) {
+      const est = state.quotes.find((e) => e.id === id);
+      if (!est) return;
+      const updated: Quote = { ...est, status: 'Draft (edits requested)', updatedAt: nowISO() };
+      dispatch({ type: 'UPSERT_QUOTE', payload: updated });
+    },
   }), [state]);
 
   return <StoreContext.Provider value={api}>{children}</StoreContext.Provider>;

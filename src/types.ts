@@ -1,4 +1,3 @@
-
 export type ID = string;
 export type Money = number; // cents
 export type ISODate = string;
@@ -41,7 +40,7 @@ export interface LineItem {
   lineTotal: Money; // computed
 }
 
-export type QuoteStatus = 'Draft' | 'Sent' | 'Approved' | 'Declined';
+export type QuoteStatus = 'Draft' | 'Sent' | 'Viewed' | 'Approved' | 'Declined' | 'Draft (edits requested)';
 export interface Quote {
   id: ID;
   number: string; // EST-###

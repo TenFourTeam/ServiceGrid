@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatMoney, formatDate } from '@/utils/format';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Quote } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -79,7 +79,7 @@ export default function QuotesPage() {
     }
   }
 
-   function renderQuoteEmailHTML(params: {
+  function renderQuoteEmailHTML(params: {
      number: string;
      businessName: string;
      customerName: string;
@@ -95,6 +95,8 @@ export default function QuotesPage() {
      paymentTerms?: string;
      frequency?: string;
      viewLink?: string;
+     quoteId?: string;
+     token?: string;
    }) {
     const rows = (params.items || []).map((li) => {
       const qty = li.qty ?? 1;
@@ -114,6 +116,25 @@ export default function QuotesPage() {
     </tr>` : '';
 
     const depositLine = params.depositRequired ? `<p style="margin:6px 0 0;color:#555;">Deposit: ${params.depositPercent ?? 0}% due to schedule.</p>` : '';
+
+    const funcBase = 'https://ijudkzqfriazabiosnvb.functions.supabase.co/quote-events';
+    const hasActions = !!(params.quoteId && params.token);
+    const approveHref = hasActions ? `${funcBase}?type=approve&quote_id=${encodeURIComponent(params.quoteId!)}&token=${encodeURIComponent(params.token!)}` : undefined;
+    const editHref = hasActions ? `${funcBase}?type=edit&quote_id=${encodeURIComponent(params.quoteId!)}&token=${encodeURIComponent(params.token!)}` : undefined;
+    const openPixelSrc = hasActions ? `${funcBase}?type=open&quote_id=${encodeURIComponent(params.quoteId!)}&token=${encodeURIComponent(params.token!)}` : undefined;
+
+    const actionsBlock = `
+      <div style="margin-top:16px;">
+        ${approveHref
+          ? `<a href="${approveHref}" target="_blank" style="display:inline-block;background:#16a34a;color:#fff;text-decoration:none;padding:10px 14px;border-radius:8px;font-weight:600;margin-right:8px">Approve</a>`
+          : `<span style="display:inline-block;background:#9ca3af;color:#fff;text-decoration:none;padding:10px 14px;border-radius:8px;font-weight:600;margin-right:8px;opacity:.6;">Approve</span>`
+        }
+        ${editHref
+          ? `<a href="${editHref}" target="_blank" style="display:inline-block;background:#64748b;color:#fff;text-decoration:none;padding:10px 14px;border-radius:8px;font-weight:600;">Request Edits</a>`
+          : `<span style="display:inline-block;background:#9ca3af;color:#fff;text-decoration:none;padding:10px 14px;border-radius:8px;font-weight:600;opacity:.6;">Request Edits</span>`
+        }
+      </div>
+    `;
 
     return `
     <div style="background:#f6f9fc;padding:24px 12px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
@@ -161,15 +182,19 @@ export default function QuotesPage() {
             ${params.paymentTerms && params.paymentTerms !== 'due_on_receipt' ? `<p style="margin:0 0 6px;">Payment terms: ${formatPaymentTermsLabel(params.paymentTerms)}</p>` : ''}
             ${params.frequency && params.frequency !== 'one-off' ? `<p style="margin:6px 0 0;">Frequency: ${({ 'bi-monthly':'Bi-monthly', 'monthly':'Monthly', 'bi-yearly':'Bi-yearly', 'yearly':'Yearly' } as any)[params.frequency] || params.frequency}</p>` : ''}
             ${depositLine}
-            ${params.address ? `<p style=\"margin:6px 0 0;\">Service address: ${params.address}</p>` : ''}
+            ${params.address ? `<p style="margin:6px 0 0;">Service address: ${params.address}</p>` : ''}
           </div>
- 
-           ${params.terms ? `<div style=\"margin-top:16px;padding:12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;color:#374151;font-size:13px;\">
-             <div style=\"font-weight:600;margin-bottom:6px;\">Terms</div>
-             <div>${params.terms}</div>
-           </div>` : ''}
+
+          ${params.terms ? `<div style="margin-top:16px;padding:12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;color:#374151;font-size:13px;">
+            <div style="font-weight:600;margin-bottom:6px;">Terms</div>
+            <div>${params.terms}</div>
+          </div>` : ''}
+
+          ${actionsBlock}
 
           <p style="margin-top:20px;color:#334155;">Thank you,<br/>${params.businessName}</p>
+
+          ${openPixelSrc ? `<img src="${openPixelSrc}" width="1" height="1" alt="" style="display:block;opacity:0;" />` : ''}
         </div>
       </div>
       <div style="max-width:640px;margin:8px auto 0;text-align:center;color:#6b7280;font-size:12px;">This is an automated message. Please reply if you have any questions.</div>
@@ -202,13 +227,13 @@ export default function QuotesPage() {
     toast({ title: 'Quote saved', description: `Saved quote ${e.number}` });
   }
 
-   async function sendEmailForQuote(e: Quote) {
-     const customer = store.customers.find((c) => c.id === e.customerId);
-     const to = customer?.email;
-     if (!to) {
-       toast({ title: 'No email on file', description: 'Add an email to the customer to send the quote.' });
-       return;
-     }
+  async function sendEmailForQuote(e: Quote) {
+    const customer = store.customers.find((c) => c.id === e.customerId);
+    const to = customer?.email;
+    if (!to) {
+      toast({ title: 'No email on file', description: 'Add an email to the customer to send the quote.' });
+      return;
+    }
 
     const headers = await buildAuthHeaders();
 
@@ -228,7 +253,8 @@ export default function QuotesPage() {
       depositPercent: e.depositPercent,
       paymentTerms: e.paymentTerms,
       frequency: e.frequency,
-      // No public link included anymore
+      quoteId: e.id,
+      token: e.publicToken,
     });
 
     const { data, error } = await supabase.functions.invoke('resend-send-email', {
@@ -307,13 +333,13 @@ export default function QuotesPage() {
       depositPercent: draft.depositPercent ?? 0,
       paymentTerms: draft.paymentTerms ?? 'due_on_receipt',
       frequency: draft.frequency,
+      quoteId: draft.id,
+      token: draft.publicToken,
     });
     setPreviewSubject(subject);
     setPreviewHTML(html);
     setPreviewOpen(true);
   }
-
-
 
   function send(est: Quote) {
     store.sendQuote(est.id);
@@ -353,6 +379,34 @@ export default function QuotesPage() {
       setSortDir('asc');
     }
   }
+
+  // NEW: listen for quote engagement events from Supabase
+  useEffect(() => {
+    const channel = supabase
+      .channel('quote-events')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'quote_events' },
+        (payload) => {
+          const rec = payload.new as any;
+          const match = store.quotes.find((q) => q.id === rec.quote_id && q.publicToken === rec.token);
+          if (!match) return;
+          console.log('quote_events received:', rec);
+          if (rec.type === 'open') {
+            store.recordQuoteOpen(rec.quote_id);
+          } else if (rec.type === 'approve') {
+            store.approveQuote(rec.quote_id, 'Customer');
+          } else if (rec.type === 'edit') {
+            store.requestQuoteEdit(rec.quote_id);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [store.quotes]);
 
   return (
     <AppLayout title="Quotes">

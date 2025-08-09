@@ -83,6 +83,33 @@ export type Database = {
         }
         Relationships: []
       }
+      quote_events: {
+        Row: {
+          created_at: string
+          id: string
+          meta: Json | null
+          quote_id: string
+          token: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meta?: Json | null
+          quote_id: string
+          token: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meta?: Json | null
+          quote_id?: string
+          token?: string
+          type?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
