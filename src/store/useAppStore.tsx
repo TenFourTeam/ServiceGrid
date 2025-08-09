@@ -360,7 +360,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     requestQuoteEdit(id) {
       const est = state.quotes.find((e) => e.id === id);
       if (!est) return;
-      const updated: Quote = { ...est, status: 'Draft (edits requested)', updatedAt: nowISO() };
+      const updated: Quote = { ...est, status: 'Edits Requested', updatedAt: nowISO() };
       dispatch({ type: 'UPSERT_QUOTE', payload: updated });
     },
   }), [state]);

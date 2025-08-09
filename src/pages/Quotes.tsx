@@ -13,6 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Briefcase } from 'lucide-react';
 
 type SortKey = 'customer' | 'amount' | 'status' | 'updated';
 type SortDir = 'asc' | 'desc';
@@ -130,11 +132,11 @@ export default function QuotesPage() {
     const actionsBlock = `
       <div style="margin-top:16px;">
         ${approveHref
-          ? `<a href="${approveHref}" target="_blank" style="display:inline-block;background:#16a34a;color:#fff;text-decoration:none;padding:10px 14px;border-radius:8px;font-weight:600;margin-right:8px">Approve</a>`
+          ? `<a href="${approveHref}" style="display:inline-block;background:#16a34a;color:#fff;text-decoration:none;padding:10px 14px;border-radius:8px;font-weight:600;margin-right:8px">Approve</a>`
           : `<span style="display:inline-block;background:#9ca3af;color:#fff;text-decoration:none;padding:10px 14px;border-radius:8px;font-weight:600;margin-right:8px;opacity:.6;">Approve</span>`
         }
         ${editHref
-          ? `<a href="${editHref}" target="_blank" style="display:inline-block;background:#64748b;color:#fff;text-decoration:none;padding:10px 14px;border-radius:8px;font-weight:600;">Request Edits</a>`
+          ? `<a href="${editHref}" style="display:inline-block;background:#64748b;color:#fff;text-decoration:none;padding:10px 14px;border-radius:8px;font-weight:600;">Request Edits</a>`
           : `<span style="display:inline-block;background:#9ca3af;color:#fff;text-decoration:none;padding:10px 14px;border-radius:8px;font-weight:600;opacity:.6;">Request Edits</span>`
         }
       </div>
@@ -435,16 +437,33 @@ export default function QuotesPage() {
 
           // Debounce toasts by quote+type per session
           const toastKey = `${rec.quote_id}:${rec.type}`;
-          if (!shownToastRef.current.has(toastKey)) {
-            if (rec.type === 'open') {
-              toast({ title: 'Quote viewed', description: `Customer viewed quote ${match.number}.` });
-            } else if (rec.type === 'approve') {
-              toast({ title: 'Quote approved', description: `Customer approved quote ${match.number}.` });
-            } else if (rec.type === 'edit') {
-              toast({ title: 'Edit request received', description: `Customer requested changes for quote ${match.number}.` });
+            if (!shownToastRef.current.has(toastKey)) {
+              if (rec.type === 'open') {
+                toast({ title: 'Quote viewed', description: `Customer viewed quote ${match.number}.` });
+              } else if (rec.type === 'approve') {
+                toast({
+                  title: 'Quote approved',
+                  description: `Customer approved quote ${match.number}.`,
+                  action: (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => {
+                        const jobs = store.convertQuoteToJob(rec.quote_id, undefined, undefined, undefined);
+                        if (jobs && jobs.length > 0) {
+                          toast({ title: 'Job created', description: `Created job from ${match.number}.` });
+                        }
+                      }}
+                    >
+                      Convert to Job
+                    </Button>
+                  ),
+                });
+              } else if (rec.type === 'edit') {
+                toast({ title: 'Edit request received', description: `Customer requested changes for quote ${match.number}.` });
+              }
+              shownToastRef.current.add(toastKey);
             }
-            shownToastRef.current.add(toastKey);
-          }
 
           if (rec.type === 'open') {
             store.recordQuoteOpen(rec.quote_id);
@@ -530,7 +549,28 @@ export default function QuotesPage() {
             }}>Create Invoice</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
-                        {e.status==='Approved' && <Button onClick={()=>store.convertQuoteToJob(e.id, undefined, undefined, undefined)}>Convert to Job</Button>}
+                        {e.status==='Approved' && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="cta"
+                                  className="pulse"
+                                  onClick={() => {
+                                    const jobs = store.convertQuoteToJob(e.id, undefined, undefined, undefined);
+                                    if (jobs && jobs.length > 0) {
+                                      toast({ title: 'Job created', description: `Created job from ${e.number}.` });
+                                    }
+                                  }}
+                                >
+                                  <Briefcase className="mr-2" />
+                                  Convert to Job
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Create a job from this approved quote</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

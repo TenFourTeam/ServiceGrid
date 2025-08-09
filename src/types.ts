@@ -40,7 +40,7 @@ export interface LineItem {
   lineTotal: Money; // computed
 }
 
-export type QuoteStatus = 'Draft' | 'Sent' | 'Viewed' | 'Approved' | 'Declined' | 'Draft (edits requested)';
+export type QuoteStatus = 'Draft' | 'Sent' | 'Viewed' | 'Approved' | 'Declined' | 'Edits Requested';
 export interface Quote {
   id: ID;
   number: string; // EST-###
