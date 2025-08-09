@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatMoney, formatDate } from '@/utils/format';
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { Quote } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -59,6 +59,10 @@ export default function QuotesPage() {
   // Sorting
   const [sortKey, setSortKey] = useState<SortKey>('updated');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+
+  // session-level guards to avoid duplicate toasts/emails
+  const processedEditEmailsRef = useRef<Set<string>>(new Set());
+  const shownToastRef = useRef<Set<string>>(new Set());
 
   const totals = useMemo(() => {
     const li = draft.lineItems ?? [];
@@ -296,6 +300,42 @@ export default function QuotesPage() {
     }
   }
 
+  async function sendEditFollowupEmail(e: Quote) {
+    const customer = store.customers.find((c) => c.id === e.customerId);
+    const to = customer?.email;
+    if (!to) {
+      console.warn('No customer email for follow-up');
+      return;
+    }
+
+    const headers = await buildAuthHeaders();
+    const subject = `Re: Quote ${e.number} — What would you like to change?`;
+    const html = `<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#0f172a;">
+      <p>Hi ${customer?.name || 'there'},</p>
+      <p>Thanks for requesting edits to quote <strong>${e.number}</strong>. Just reply to this email with the changes you’d like, and we’ll update the quote promptly.</p>
+      <p>Best,<br/>${store.business.name}</p>
+    </div>`;
+
+    const { data, error } = await supabase.functions.invoke('resend-send-email', {
+      body: {
+        to,
+        subject,
+        html,
+        quote_id: e.id,
+        from_name: store.business.name,
+        reply_to: store.business.replyToEmail || undefined,
+      },
+      headers,
+    });
+    console.log('edit follow-up email response', { data, error });
+    if (error || (data as any)?.error) {
+      const msg = (error as any)?.message || (data as any)?.error || 'There was a problem sending the follow-up email.';
+      toast({ title: 'Follow-up not sent', description: msg, variant: 'destructive' });
+    } else {
+      toast({ title: 'We emailed the customer', description: `Sent follow-up for ${e.number}.` });
+    }
+  }
+
   async function saveAndSend() {
     if (!draft.customerId) {
       toast({ title: 'Select customer', description: 'Please choose a customer before sending.' });
@@ -380,24 +420,47 @@ export default function QuotesPage() {
     }
   }
 
-  // NEW: listen for quote engagement events from Supabase
+  // Realtime: listen for quote engagement events from Supabase with UX feedback
   useEffect(() => {
     const channel = supabase
       .channel('quote-events')
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'quote_events' },
-        (payload) => {
+        async (payload) => {
           const rec = payload.new as any;
           const match = store.quotes.find((q) => q.id === rec.quote_id && q.publicToken === rec.token);
           if (!match) return;
           console.log('quote_events received:', rec);
+
+          // Debounce toasts by quote+type per session
+          const toastKey = `${rec.quote_id}:${rec.type}`;
+          if (!shownToastRef.current.has(toastKey)) {
+            if (rec.type === 'open') {
+              toast({ title: 'Quote viewed', description: `Customer viewed quote ${match.number}.` });
+            } else if (rec.type === 'approve') {
+              toast({ title: 'Quote approved', description: `Customer approved quote ${match.number}.` });
+            } else if (rec.type === 'edit') {
+              toast({ title: 'Edit request received', description: `Customer requested changes for quote ${match.number}.` });
+            }
+            shownToastRef.current.add(toastKey);
+          }
+
           if (rec.type === 'open') {
             store.recordQuoteOpen(rec.quote_id);
           } else if (rec.type === 'approve') {
             store.approveQuote(rec.quote_id, 'Customer');
           } else if (rec.type === 'edit') {
             store.requestQuoteEdit(rec.quote_id);
+            const emailKey = `${rec.quote_id}:edit`;
+            if (!processedEditEmailsRef.current.has(emailKey)) {
+              processedEditEmailsRef.current.add(emailKey);
+              try {
+                await sendEditFollowupEmail(match);
+              } catch (err) {
+                console.error('Edit follow-up email failed:', err);
+              }
+            }
           }
         }
       )
