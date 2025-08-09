@@ -67,7 +67,23 @@ export default function EmailSenderSettings() {
       toast({ title: "Failed to start connection", description: "Missing authorize URL", variant: "destructive" });
       return;
     }
-    window.location.href = url;
+    // Open in a new tab to avoid iframe X-Frame-Options blocking
+    toast({ title: "Opening Nylas...", description: "If a new tab didn't open, please allow pop-ups." });
+    const win = window.open(url, "_blank", "noopener,noreferrer");
+    if (!win) {
+      // Fallback if pop-ups are blocked
+      const a = document.createElement("a");
+      a.href = url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.click();
+      // Last resort: navigate top-level (will leave the builder)
+      try {
+        window.top?.location?.assign(url);
+      } catch {
+        window.location.href = url;
+      }
+    }
   };
 
   const onDisconnect = async () => {
