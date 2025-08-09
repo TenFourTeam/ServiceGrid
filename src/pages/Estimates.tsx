@@ -1,4 +1,3 @@
-
 import AppLayout from '@/components/Layout/AppLayout';
 import { useStore } from '@/store/useAppStore';
 import { Button } from '@/components/ui/button';
@@ -223,13 +222,13 @@ export default function EstimatesPage() {
       paymentTerms: e.paymentTerms,
     });
     const headers = await buildAuthHeaders();
-    const { data, error } = await supabase.functions.invoke('sendgrid-send-email', {
-      body: { to, subject, html, quote_id: e.id },
+    const { data, error } = await supabase.functions.invoke('resend-send-email', {
+      body: { to, subject, html, quote_id: e.id, from_name: store.business.name, reply_to: store.business.replyToEmail || undefined },
       headers,
     });
-    console.log('sendgrid-send-email response', { data, error });
+    console.log('resend-send-email response', { data, error });
     if (error) {
-      console.error('sendgrid-send-email error', error);
+      console.error('resend-send-email error', error);
       const status = (error as any)?.status;
       const msg = status === 401
         ? 'You are not authenticated. Please sign in and try again.'
@@ -239,13 +238,8 @@ export default function EstimatesPage() {
     }
     const payload = data as any;
     if (payload?.error) {
-      console.error('sendgrid-send-email payload error', payload.error);
-      const raw = String(payload.error || '');
-      const needsConnect = /no verified sending domain|dns|sendgrid|domain/i.test(raw);
-      const desc = needsConnect
-        ? 'Set up your sending domain in Settings > Email Sending, then try again.'
-        : (raw || 'Unknown error from email service.');
-      toast({ title: 'Failed to send', description: desc });
+      console.error('resend-send-email payload error', payload.error);
+      toast({ title: 'Failed to send', description: String(payload.error) });
     } else {
       toast({ title: 'Quote sent', description: `Email sent to ${to}. Check Email Outbox for status.` });
     }

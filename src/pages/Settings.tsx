@@ -1,4 +1,3 @@
-
 import AppLayout from '@/components/Layout/AppLayout';
 import { useStore } from '@/store/useAppStore';
 import { Button } from '@/components/ui/button';
@@ -6,8 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { exportJSON, importJSON, resetStorage } from '@/store/storage';
-import EmailSenderSettings from '@/components/Settings/EmailSenderSettings';
-import EmailOutbox from '@/components/Settings/EmailOutbox';
 
 export default function SettingsPage() {
   const store = useStore();
@@ -64,9 +61,6 @@ export default function SettingsPage() {
             <Button variant="destructive" onClick={()=>{ resetStorage(); window.location.reload(); }}>Reset All</Button>
           </CardContent>
         </Card>
-
-        <EmailSenderSettings />
-        <EmailOutbox />
       </div>
     </AppLayout>
   );
