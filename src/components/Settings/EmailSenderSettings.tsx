@@ -62,26 +62,37 @@ export default function EmailSenderSettings() {
       toast({ title: "Failed to start connection", description: String(error.message ?? "Unknown error"), variant: "destructive" });
       return;
     }
-    const url = data?.url as string | undefined;
-    if (!url) {
+    const rawUrl = data?.url as string | undefined;
+    if (!rawUrl) {
       toast({ title: "Failed to start connection", description: "Missing authorize URL", variant: "destructive" });
       return;
     }
+
+    // Ensure absolute URL (avoid relative "/v3/connect/authorize" in SPA)
+    const makeAbsolute = (u: string) => {
+      if (/^https?:\/\//i.test(u)) return u;
+      if (u.startsWith("/")) return `https://api.us.nylas.com${u}`;
+      if (u.startsWith("v3/")) return `https://api.us.nylas.com/${u}`;
+      return u;
+    };
+    const safeUrl = makeAbsolute(rawUrl);
+    console.log("Nylas authorize URL:", { rawUrl, safeUrl });
+
     // Open in a new tab to avoid iframe X-Frame-Options blocking
     toast({ title: "Opening Nylas...", description: "If a new tab didn't open, please allow pop-ups." });
-    const win = window.open(url, "_blank", "noopener,noreferrer");
+    const win = window.open(safeUrl, "_blank", "noopener,noreferrer");
     if (!win) {
       // Fallback if pop-ups are blocked
       const a = document.createElement("a");
-      a.href = url;
+      a.href = safeUrl;
       a.target = "_blank";
       a.rel = "noopener noreferrer";
       a.click();
       // Last resort: navigate top-level (will leave the builder)
       try {
-        window.top?.location?.assign(url);
+        window.top?.location?.assign(safeUrl);
       } catch {
-        window.location.href = url;
+        window.location.href = safeUrl;
       }
     }
   };
