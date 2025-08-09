@@ -75,6 +75,8 @@ export default function QuotesPage() {
     return { subtotal, total };
   }, [draft]);
 
+  const draftCanSend = !draft.id || draft.status === 'Draft' || draft.status === 'Edits Requested';
+
   // Pretty email helpers
   function formatPaymentTermsLabel(terms: string) {
     switch (terms) {
@@ -364,6 +366,10 @@ export default function QuotesPage() {
       toast({ title: 'Select customer', description: 'Please choose a customer before sending.' });
       return;
     }
+    if (draft.id && !(draft.status === 'Draft' || draft.status === 'Edits Requested')) {
+      toast({ title: 'Cannot send email', description: 'Only Draft or Edits Requested quotes can be emailed.' });
+      return;
+    }
     const now = new Date().toISOString();
     const e = store.upsertQuote({ ...draft, customerId: draft.customerId!, status: 'Sent', sentAt: now, updatedAt: now });
     // Also trigger store event logging
@@ -408,6 +414,10 @@ export default function QuotesPage() {
   }
 
   function send(est: Quote) {
+    if (!(est.status === 'Draft' || est.status === 'Edits Requested')) {
+      toast({ title: 'Cannot send email', description: 'Only Draft or Edits Requested quotes can be emailed.' });
+      return;
+    }
     store.sendQuote(est.id);
     sendEmailForQuote(est);
   }
@@ -562,7 +572,7 @@ export default function QuotesPage() {
                             <Button>Action</Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="z-50">
-            <DropdownMenuItem disabled={e.status==='Sent'} onClick={()=>send(e)}>Send Email</DropdownMenuItem>
+            <DropdownMenuItem disabled={!(e.status==='Draft' || e.status==='Edits Requested')} onClick={()=>send(e)}>Send Email</DropdownMenuItem>
             
             <DropdownMenuItem onClick={()=>store.convertQuoteToJob(e.id, undefined, undefined, undefined)}>Create Work Order</DropdownMenuItem>
             <DropdownMenuItem onClick={()=>{
@@ -732,7 +742,7 @@ export default function QuotesPage() {
               <Button variant="secondary" onClick={()=>setOpen(false)}>Cancel</Button>
               <Button variant="secondary" onClick={save}>Save</Button>
               <Button variant="secondary" onClick={openPreview}>Preview Email</Button>
-              <Button onClick={saveAndSend}>Save & Send</Button>
+              <Button onClick={saveAndSend} disabled={!draftCanSend} title={!draftCanSend ? 'Only Draft or Edits Requested quotes can be emailed' : undefined}>Save & Send</Button>
             </div>
           </div>
         </DialogContent>
