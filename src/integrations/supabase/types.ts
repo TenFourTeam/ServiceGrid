@@ -14,12 +14,55 @@ export type Database = {
   }
   public: {
     Tables: {
+      email_logs: {
+        Row: {
+          created_at: string
+          error: string | null
+          id: string
+          message_id: string | null
+          payload: Json | null
+          provider: string
+          status: string
+          subject: string
+          to_email: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          message_id?: string | null
+          payload?: Json | null
+          provider: string
+          status: string
+          subject: string
+          to_email: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          message_id?: string | null
+          payload?: Json | null
+          provider?: string
+          status?: string
+          subject?: string
+          to_email?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       email_senders: {
         Row: {
           created_at: string
           from_email: string
           from_name: string | null
           id: string
+          nylas_grant_id: string | null
           provider: string
           reply_to: string | null
           sendgrid_sender_id: number | null
@@ -33,6 +76,7 @@ export type Database = {
           from_email: string
           from_name?: string | null
           id?: string
+          nylas_grant_id?: string | null
           provider?: string
           reply_to?: string | null
           sendgrid_sender_id?: number | null
@@ -46,6 +90,7 @@ export type Database = {
           from_email?: string
           from_name?: string | null
           id?: string
+          nylas_grant_id?: string | null
           provider?: string
           reply_to?: string | null
           sendgrid_sender_id?: number | null
