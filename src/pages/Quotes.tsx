@@ -14,6 +14,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { escapeHtml, sanitizeSubject } from '@/utils/sanitize';
 
 
 type SortKey = 'customer' | 'amount' | 'status' | 'updated';
@@ -110,7 +111,7 @@ export default function QuotesPage() {
        const unit = formatMoney(li.unitPrice ?? 0);
        const amt = formatMoney(li.lineTotal ?? Math.round(qty * (li.unitPrice ?? 0)));
        return `<tr>
-         <td style="padding:12px 8px;border-bottom:1px solid #eee;">${li.name || ''}</td>
+         <td style="padding:12px 8px;border-bottom:1px solid #eee;">${escapeHtml(li.name || '')}</td>
          <td style="padding:12px 8px;text-align:center;border-bottom:1px solid #eee;">${qty}</td>
          <td style="padding:12px 8px;text-align:right;border-bottom:1px solid #eee;">${unit}</td>
          <td style="padding:12px 8px;text-align:right;border-bottom:1px solid #eee;">${amt}</td>
@@ -165,11 +166,11 @@ export default function QuotesPage() {
      <div style="background:#f6f9fc;padding:24px 12px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
        <div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #e6eaf1;border-radius:10px;overflow.hidden;">
          <div style="background:${primaryBg};color:${primaryText};padding:20px 24px;">
-           <div style="font-size:18px;font-weight:600">${params.businessName}</div>
-           <div style="opacity:0.85;font-size:14px">Quote ${params.number}</div>
-         </div>
-         <div style="padding:24px;">
-           <p style="margin:0 0 12px;color:#111;">Hi ${params.customerName},</p>
+            <div style="font-size:18px;font-weight:600">${escapeHtml(params.businessName)}</div>
+            <div style="opacity:0.85;font-size:14px">Quote ${escapeHtml(params.number)}</div>
+          </div>
+          <div style="padding:24px;">
+            <p style="margin:0 0 12px;color:#111;">Hi ${escapeHtml(params.customerName)},</p>
            <p style="margin:0 0 16px;color:#333;">Please find your quote below. Total amount is <strong>${formatMoney(params.total)}</strong>.</p>
            ${params.viewLink ? `<div style="margin:16px 0 20px;"><a href="${params.viewLink}" target="_blank" style="${btnBase}background:${primaryBg};color:${primaryText};">View your quote</a></div>` : ''}
  
@@ -207,18 +208,18 @@ export default function QuotesPage() {
              ${params.paymentTerms && params.paymentTerms !== 'due_on_receipt' ? `<p style="margin:0 0 6px;">Payment terms: ${formatPaymentTermsLabel(params.paymentTerms)}</p>` : ''}
              ${params.frequency && params.frequency !== 'one-off' ? `<p style="margin:6px 0 0;">Frequency: ${({ 'bi-monthly':'Bi-monthly', 'monthly':'Monthly', 'bi-yearly':'Bi-yearly', 'yearly':'Yearly' } as any)[params.frequency] || params.frequency}</p>` : ''}
              ${depositLine}
-             ${params.address ? `<p style=\"margin:6px 0 0;\">Service address: ${params.address}</p>` : ''}
+             ${params.address ? `<p style=\"margin:6px 0 0;\">Service address: ${escapeHtml(params.address)}</p>` : ''}
            </div>
  
            ${params.terms ? `<div style="margin-top:16px;padding:12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;color:#374151;font-size:13px;">
              <div style="font-weight:600;margin-bottom:6px;">Terms</div>
-             <div>${params.terms}</div>
+             <div>${escapeHtml(params.terms)}</div>
            </div>` : ''}
  
            ${actionsBlock}
            ${previewHelpers}
  
-           <p style="margin-top:20px;color:#334155;">Thank you,<br/>${params.businessName}</p>
+           <p style="margin-top:20px;color:#334155;">Thank you,<br/>${escapeHtml(params.businessName)}</p>
  
            ${openPixelSrc ? `<img src="${openPixelSrc}" width="1" height="1" alt="" style="display:block;opacity:0;" />` : ''}
          </div>
@@ -263,7 +264,7 @@ export default function QuotesPage() {
 
     const headers = await buildAuthHeaders();
 
-    const subject = `Quote ${e.number} — ${store.business.name} — ${formatMoney(e.total)}`;
+    const subject = sanitizeSubject(`Quote ${e.number} — ${store.business.name} — ${formatMoney(e.total)}`);
     const html = renderQuoteEmailHTML({
       number: e.number,
       businessName: store.business.name,
@@ -331,11 +332,11 @@ export default function QuotesPage() {
     }
 
     const headers = await buildAuthHeaders();
-    const subject = `Re: Quote ${e.number} — What would you like to change?`;
+    const subject = sanitizeSubject(`Re: Quote ${e.number} — What would you like to change?`);
     const html = `<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#0f172a;">
-      <p>Hi ${customer?.name || 'there'},</p>
-      <p>Thanks for requesting edits to quote <strong>${e.number}</strong>. Just reply to this email with the changes you’d like, and we’ll update the quote promptly.</p>
-      <p>Best,<br/>${store.business.name}</p>
+      <p>Hi ${escapeHtml(customer?.name || 'there')},</p>
+      <p>Thanks for requesting edits to quote <strong>${escapeHtml(e.number)}</strong>. Just reply to this email with the changes you’d like, and we’ll update the quote promptly.</p>
+      <p>Best,<br/>${escapeHtml(store.business.name)}</p>
     </div>`;
 
     const { data, error } = await supabase.functions.invoke('resend-send-email', {
@@ -381,7 +382,7 @@ export default function QuotesPage() {
     const discount = draft.discount ?? 0;
     const total = Math.max(0, subtotal + tax - discount);
     const number = draft.number ?? 'Draft';
-    const subject = `Quote ${number} — ${store.business.name} — ${formatMoney(total)}`;
+    const subject = sanitizeSubject(`Quote ${number} — ${store.business.name} — ${formatMoney(total)}`);
     const html = renderQuoteEmailHTML({
       number,
       businessName: store.business.name,
