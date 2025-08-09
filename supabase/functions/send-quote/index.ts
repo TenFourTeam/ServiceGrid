@@ -114,8 +114,13 @@ serve(async (req: Request) => {
 
     if (sgResp.status !== 202) {
       const errText = await sgResp.text();
-      console.error("send-quote: sendgrid error", sgResp.status, errText);
-      return new Response(JSON.stringify({ ok: false, error: "Failed to send email", details: errText }), {
+      let details: any = null;
+      try { details = errText ? JSON.parse(errText) : null; } catch {}
+      const message = Array.isArray(details?.errors)
+        ? details.errors.map((e: any) => e.message).join("; ")
+        : errText;
+      console.error("send-quote: sendgrid error", sgResp.status, message);
+      return new Response(JSON.stringify({ ok: false, error: "Failed to send email", details: message }), {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });

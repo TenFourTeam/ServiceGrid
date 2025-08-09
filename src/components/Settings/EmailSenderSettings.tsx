@@ -104,6 +104,8 @@ export default function EmailSenderSettings() {
   };
 
   const verified = !!sender?.verified;
+  const dirtyEmail = !!(sender?.from_email && sender.from_email !== form.from_email);
+  const canResend = !!sender?.sendgrid_sender_id && !dirtyEmail && !isFetching;
 
   return (
     <Card>
@@ -111,6 +113,7 @@ export default function EmailSenderSettings() {
         <CardTitle>Email Sending</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground">Send via SendGrid Single Sender. Use an email you own; replies go to this address. Address fields are required by SendGrid.</p>
         <div className="grid md:grid-cols-2 gap-3">
           <div>
             <Label>From Name</Label>
@@ -128,6 +131,9 @@ export default function EmailSenderSettings() {
               onChange={(e) => setForm((f) => ({ ...f, from_email: e.target.value }))}
               placeholder="you@yourdomain.com"
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              We'll send a verification email via SendGrid to this address. If you change it, you'll need to Save to re-verify.
+            </p>
           </div>
         </div>
 
@@ -185,8 +191,18 @@ export default function EmailSenderSettings() {
         <div className="flex items-center gap-2 pt-2">
           <Button onClick={onSave}>Save & Send Verification</Button>
           <Button variant="secondary" onClick={onRefresh} disabled={isFetching}>Refresh Status</Button>
-          <Button variant="outline" onClick={onResend} disabled={verified}>Resend Verification</Button>
+          <Button
+            variant="outline"
+            onClick={onResend}
+            disabled={verified || dirtyEmail || !sender?.sendgrid_sender_id}
+            title={dirtyEmail ? "Email changed — save to re-verify" : undefined}
+          >
+            Resend Verification
+          </Button>
         </div>
+        {dirtyEmail ? (
+          <p className="text-xs text-muted-foreground">You've changed the From Email. Click "Save & Send Verification" to re-verify.</p>
+        ) : null}
 
         <div className="text-sm text-muted-foreground">
           Status: {verified ? "Verified ✅" : "Not verified ❌"} {sender?.status ? `(provider: ${sender.status})` : ""}
