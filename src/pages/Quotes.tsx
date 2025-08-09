@@ -55,9 +55,6 @@ export default function QuotesPage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewSubject, setPreviewSubject] = useState('');
   const [previewHTML, setPreviewHTML] = useState('');
-  const [testEmail, setTestEmail] = useState('je-tsongkhapa@pm.me');
-  const [outbox, setOutbox] = useState<any[]>([]);
-  const [outboxLoading, setOutboxLoading] = useState(false);
 
   // Sorting
   const [sortKey, setSortKey] = useState<SortKey>('updated');
@@ -266,7 +263,7 @@ export default function QuotesPage() {
       }
       toast({ title: 'Failed to send', description: friendly, variant: 'destructive' });
     } else {
-      toast({ title: 'Quote sent', description: `Email sent to ${to}. Check Email Outbox for status.` });
+      toast({ title: 'Quote sent', description: `Email sent to ${to}.` });
     }
   }
 
@@ -312,72 +309,11 @@ export default function QuotesPage() {
     setPreviewOpen(true);
   }
 
-  async function sendTest() {
-    try {
-      const headers = await buildAuthHeaders();
-      const subject = previewSubject || `Quote Preview — ${store.business.name}`;
-      const html = previewHTML || '<p>Test email</p>';
-      const { data, error } = await supabase.functions.invoke('resend-send-email', {
-        body: {
-          to: testEmail,
-          subject,
-          html,
-          from_name: store.business.name,
-          reply_to: store.business.replyToEmail || undefined,
-        },
-        headers,
-      });
-      if (error || (data as any)?.error) {
-        const msg = (error as any)?.message || (data as any)?.error || 'Failed to send test email.';
-        toast({ title: 'Test send failed', description: msg, variant: 'destructive' });
-      } else {
-        toast({ title: 'Test sent', description: `Sent to ${testEmail}.` });
-      }
-    } catch (e:any) {
-      toast({ title: 'Test send failed', description: e?.message || String(e), variant: 'destructive' });
-    }
-  }
 
-  async function loadOutbox() {
-    setOutboxLoading(true);
-    const { data, error } = await supabase
-      .from('mail_sends')
-      .select('id,to_email,subject,status,created_at,provider_message_id')
-      .order('created_at', { ascending: false })
-      .limit(20);
-    if (error) {
-      toast({ title: 'Outbox error', description: error.message, variant: 'destructive' });
-    } else {
-      setOutbox(data || []);
-    }
-    setOutboxLoading(false);
-  }
 
   function send(est: Quote) {
     store.sendQuote(est.id);
     sendEmailForQuote(est);
-  }
-  async function checkSenderHealth() {
-    try {
-      const headers = await buildAuthHeaders();
-      const { data, error } = await supabase.functions.invoke('resend-health', { headers });
-      if (error) {
-        toast({ title: 'Sender health check failed', description: error.message || 'Could not load sender info.', variant: 'destructive' });
-        return;
-      }
-      const sender = (data as any)?.sender;
-      if (!sender) {
-        toast({ title: 'No sender configured', description: 'Connect a sending domain in Resend and set a default From address.' });
-        return;
-      }
-      if (sender.verified) {
-        toast({ title: 'Sender verified', description: `${sender.from_email} (${sender.provider}) is ready to send.` });
-      } else {
-        toast({ title: 'Sender not verified', description: `${sender.from_email} (${sender.provider}). Verify your domain to send emails.` });
-      }
-    } catch (e: any) {
-      toast({ title: 'Health check error', description: e?.message || String(e), variant: 'destructive' });
-    }
   }
 
   const sortedQuotes = useMemo(() => {
@@ -462,7 +398,7 @@ export default function QuotesPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="z-50">
             <DropdownMenuItem onClick={()=>send(e)}>Send Email</DropdownMenuItem>
-            <DropdownMenuItem onClick={checkSenderHealth}>Check Sender Health</DropdownMenuItem>
+            
             <DropdownMenuItem onClick={()=>store.convertQuoteToJob(e.id, undefined, undefined, undefined)}>Create Work Order</DropdownMenuItem>
             <DropdownMenuItem onClick={()=>{
               const jobs = store.convertQuoteToJob(e.id);
@@ -483,42 +419,6 @@ export default function QuotesPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Email Outbox</CardTitle>
-            <div className="flex gap-2">
-              <Button variant="secondary" onClick={loadOutbox} disabled={outboxLoading}>
-                {outboxLoading ? 'Loading…' : 'Refresh'}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {outbox.length === 0 ? (
-              <div className="text-sm text-muted-foreground">No emails yet. Click Refresh after sending.</div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>To</TableHead>
-                    <TableHead>Subject</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Sent</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {outbox.map((m)=>(
-                    <TableRow key={m.id}>
-                      <TableCell>{m.to_email}</TableCell>
-                      <TableCell className="max-w-[360px] truncate">{m.subject}</TableCell>
-                      <TableCell>{m.status}</TableCell>
-                      <TableCell>{formatDate(m.created_at)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
       </section>
 
       <Dialog open={open} onOpenChange={(v)=>{ setOpen(v); if (!v) resetDraft(); }}>

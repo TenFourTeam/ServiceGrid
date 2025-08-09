@@ -9,8 +9,5 @@ verify_jwt = false
 
 
 # Keep these core functions
-[functions.email-sender-get]
-verify_jwt = false
-
 [functions.resend-send-email]
 verify_jwt = false

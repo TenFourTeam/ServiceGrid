@@ -115,7 +115,7 @@ export interface Store extends AppState {
   sendInvoice(id: string): void;
   markInvoicePaid(id: string, last4?: string): void;
   setBusiness(b: Partial<Business>): void;
-  seedDemo(): void;
+  
   overwriteState(state: AppState): void;
 }
 
@@ -334,46 +334,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setBusiness(b) {
       const business: Business = { ...state.business, ...b } as Business;
       dispatch({ type: 'SET_BUSINESS', payload: business });
-    },
-    seedDemo() {
-      // simple seed if empty
-      if (state.customers.length > 0) return;
-      const names = ['Joyce Andersen', 'Dug Seaman', 'Pat Muller', 'Sam Green', 'Alex Rivera'];
-      const customers: Customer[] = names.map((n, idx) => ({ id: uuid(), businessId: state.business.id, name: n, email: `user${idx+1}@mail.com`, phone: '555-010' + idx, address: `${100+idx} Maple St` }));
-      customers.forEach((c) => dispatch({ type: 'UPSERT_CUSTOMER', payload: c }));
-
-      // quotes
-      const makeLI = (name: string, qty: number, price: number): LineItem => ({ id: uuid(), name, qty, unit: 'hr', unitPrice: price, lineTotal: Math.round(qty * price) });
-      const ests: Quote[] = customers.slice(0,5).map((c, i) => {
-        const lineItems = [makeLI('Lawn mowing', 2 + (i%2), 4500), makeLI('Hedge trim', 1, 3000)];
-        const { subtotal, total } = computeTotals(lineItems, state.business.taxRateDefault, i===4?1000:0);
-        const statuses: ('Sent'|'Approved'|'Declined'|'Draft')[] = ['Sent','Approved','Declined','Sent','Draft'];
-        return {
-          id: uuid(), number: `${state.business.numbering.estPrefix}${String(state.business.numbering.estSeq + i).padStart(3,'0')}`, businessId: state.business.id,
-          customerId: c.id, address: c.address, lineItems, taxRate: state.business.taxRateDefault, discount: i===4?1000:0, subtotal, total,
-          status: statuses[i], files: [], createdAt: nowISO(), updatedAt: nowISO(), publicToken: randToken(16), terms: 'Payment due upon receipt.'
-        } as Quote;
-      });
-      // bump seq
-      dispatch({ type: 'SET_BUSINESS', payload: { ...state.business, numbering: { ...state.business.numbering, estSeq: state.business.numbering.estSeq + ests.length } } });
-      ests.forEach((e) => dispatch({ type: 'UPSERT_QUOTE', payload: e }));
-
-      // jobs
-      const approved = ests.find((e) => e.status === 'Approved') ?? ests[1];
-      const baseStart = new Date(); baseStart.setHours(10,0,0,0);
-      const j1: Job = { id: uuid(), businessId: state.business.id, quoteId: approved.id, customerId: approved.customerId, address: approved.address, startsAt: new Date(baseStart).toISOString(), endsAt: new Date(baseStart.getTime()+60*60*1000).toISOString(), status: 'Scheduled', createdAt: nowISO(), updatedAt: nowISO(), total: approved.total };
-      const j2: Job = { ...j1, id: uuid(), startsAt: new Date(baseStart.getTime()+2*60*60*1000).toISOString(), endsAt: new Date(baseStart.getTime()+3*60*60*1000).toISOString(), status: 'In Progress' };
-      const j3: Job = { ...j1, id: uuid(), startsAt: new Date(baseStart.getTime()+24*60*60*1000).toISOString(), endsAt: new Date(baseStart.getTime()+25*60*60*1000).toISOString(), status: 'Completed' };
-      const j4s = api.convertQuoteToJob(approved.id, new Date(baseStart.getTime()+3*24*60*60*1000), new Date(baseStart.getTime()+3*24*60*60*1000+60*60*1000), 'biweekly');
-      [j1, j2, j3].forEach((j) => dispatch({ type: 'UPSERT_JOB', payload: j }));
-
-      // invoices
-      const inv1 = api.createInvoiceFromJob(j3.id, new Date(Date.now()+3*24*3600*1000));
-      const inv2 = api.createInvoiceFromJob(j1.id, new Date(Date.now()+7*24*3600*1000));
-      const inv3 = api.createInvoiceFromJob(j2.id, new Date(Date.now()-3*24*3600*1000));
-      dispatch({ type: 'UPSERT_INVOICE', payload: { ...inv1, status: 'Paid', paidAt: nowISO() } });
-      dispatch({ type: 'UPSERT_INVOICE', payload: { ...inv2, status: 'Sent' } });
-      dispatch({ type: 'UPSERT_INVOICE', payload: { ...inv3, status: 'Overdue' } });
     },
     overwriteState(s) { dispatch({ type: 'SET_STATE', payload: s }); },
   }), [state]);

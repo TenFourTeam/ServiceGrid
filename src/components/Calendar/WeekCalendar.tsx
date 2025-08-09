@@ -44,11 +44,11 @@ export function WeekCalendar({ selectedJobId }: { selectedJobId?: string }) {
   }, [jobs, weekStart]);
 
 const [activeJob, setActiveJob] = useState<Job | null>(()=> selectedJobId ? jobs.find(j=>j.id===selectedJobId) ?? null : null);
-const [viewMode, setViewMode] = useState<'week'|'day'>('week');
-const [selectedDay, setSelectedDay] = useState<Date>(() => { const t = new Date(); t.setHours(0,0,0,0); return t; });
+
+
 const [now, setNow] = useState<Date>(new Date());
 useEffect(() => { const id = setInterval(() => setNow(new Date()), 60_000); return () => clearInterval(id); }, []);
-const visibleDays = useMemo(() => (viewMode === 'week' ? days : [selectedDay]), [viewMode, days, selectedDay]);
+
 function isSameDay(a: Date, b: Date) { return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
 function formatRangeTitle(ds: Date[]) {
   if (ds.length === 1) return ds[0].toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
@@ -85,57 +85,13 @@ const gridRef = useRef<HTMLDivElement>(null);
 
   return (
     <div className="w-full">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Button
-            variant="secondary"
-            onClick={() => {
-              if (viewMode === 'week') {
-                setWeekStart(new Date(weekStart.getTime() - 7*24*3600*1000));
-              } else {
-                setSelectedDay(new Date(selectedDay.getTime() - 24*3600*1000));
-              }
-            }}
-          >Prev</Button>
-          <Button
-            variant="secondary"
-            onClick={() => {
-              if (viewMode === 'week') {
-                const today = new Date();
-                const day = today.getDay();
-                const mondayOffset = (day + 6) % 7;
-                const monday = new Date(today);
-                monday.setDate(today.getDate() - mondayOffset);
-                monday.setHours(0,0,0,0);
-                setWeekStart(monday);
-              } else {
-                const t = new Date();
-                t.setHours(0,0,0,0);
-                setSelectedDay(t);
-              }
-            }}
-          >Today</Button>
-          <Button
-            variant="secondary"
-            onClick={() => {
-              if (viewMode === 'week') {
-                setWeekStart(new Date(weekStart.getTime() + 7*24*3600*1000));
-              } else {
-                setSelectedDay(new Date(selectedDay.getTime() + 24*3600*1000));
-              }
-            }}
-          >Next</Button>
-          <div className="ml-2 flex items-center gap-1">
-            <Button size="sm" variant={viewMode==='week' ? 'default' : 'secondary'} onClick={() => setViewMode('week')}>Week</Button>
-            <Button size="sm" variant={viewMode==='day' ? 'default' : 'secondary'} onClick={() => setViewMode('day')}>Day</Button>
-          </div>
-        </div>
-        <div className="text-sm text-muted-foreground">{formatRangeTitle(visibleDays)}</div>
+      <div className="flex items-center justify-end mb-3">
+        <div className="text-sm text-muted-foreground">{formatRangeTitle(days)}</div>
       </div>
       {/* Day headers */}
       <div className="grid grid-cols-8 gap-2 mb-2">
         <div />
-        {visibleDays.map((day) => {
+        {days.map((day) => {
           const isToday = isSameDay(day, now);
           return (
             <div
@@ -158,7 +114,7 @@ const gridRef = useRef<HTMLDivElement>(null);
             <div key={h} className="h-16 pr-2 text-right">{h}:00</div>
           ))}
         </div>
-        {visibleDays.map((day) => (
+        {days.map((day) => (
           <div key={day.toISOString()} className="border rounded-md p-2 relative overflow-hidden" ref={gridRef}>
             {/* Weekend shading */}
             {(day.getDay() === 0 || day.getDay() === 6) && (
