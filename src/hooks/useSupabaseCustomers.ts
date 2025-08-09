@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/components/Auth/AuthProvider";
+import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 
 export interface DbCustomerRow {
   id: string;
@@ -9,25 +8,37 @@ export interface DbCustomerRow {
   address?: string | null;
 }
 
+const SUPABASE_URL = "https://ijudkzqfriazabiosnvb.supabase.co";
+
 export function useSupabaseCustomers(opts?: { enabled?: boolean }) {
-  const { user } = useAuth();
-  const enabled = !!user && (opts?.enabled ?? true);
+  const { isSignedIn, getToken } = useClerkAuth();
+  const enabled = !!isSignedIn && (opts?.enabled ?? true);
 
   return useQuery<{ rows: DbCustomerRow[] } | null, Error>({
     queryKey: ["supabase", "customers"],
     enabled,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("customers")
-        .select(["id", "name", "email", "address"].join(","))
-        .order("updated_at", { ascending: false });
+      const token = await getToken();
+      if (!token) throw new Error("Not authenticated");
 
-      if (error) throw error;
-      const rows: DbCustomerRow[] = (data || []).map((r: any) => ({
-        id: r.id,
-        name: r.name,
-        email: r.email,
-        address: r.address,
+      const r = await fetch(`${SUPABASE_URL}/functions/v1/customers`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!r.ok) {
+        const txt = await r.text().catch(() => "");
+        throw new Error(`Failed to load customers (${r.status}): ${txt}`);
+      }
+
+      const data = await r.json();
+      const rows: DbCustomerRow[] = (data?.rows || []).map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        email: c.email ?? null,
+        address: c.address ?? null,
       }));
       return { rows };
     },

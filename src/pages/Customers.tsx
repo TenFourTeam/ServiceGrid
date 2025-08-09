@@ -1,4 +1,3 @@
-
 import AppLayout from '@/components/Layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,13 +6,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { useState } from 'react';
 import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/components/Auth/AuthProvider';
+import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
+const SUPABASE_URL = "https://ijudkzqfriazabiosnvb.supabase.co";
+
 export default function CustomersPage() {
-  const { user } = useAuth();
+  const { isSignedIn, getToken } = useClerkAuth();
   const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useSupabaseCustomers();
@@ -24,7 +24,7 @@ export default function CustomersPage() {
   const [draft, setDraft] = useState({ name: '', email: '', address: '' });
 
   async function save() {
-    if (!user) {
+    if (!isSignedIn) {
       toast.error('You must be signed in to create customers.');
       return;
     }
@@ -35,22 +35,26 @@ export default function CustomersPage() {
 
     setSaving(true);
     try {
-      // Ensure the user has a business and get its id
-      const { data: business, error: rpcError } = await supabase.rpc('ensure_default_business');
-      if (rpcError) throw rpcError;
-      const businessId = (business as any)?.id;
-      if (!businessId) throw new Error('Could not resolve business for current user.');
+      const token = await getToken();
+      if (!token) throw new Error('Not authenticated');
 
-      // Insert the customer tied to the current user and business
-      const { error: insertError } = await supabase.from('customers').insert({
-        name: draft.name.trim(),
-        email: draft.email.trim() || null,
-        address: draft.address.trim() || null,
-        business_id: businessId,
-        owner_id: user.id,
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/customers`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: draft.name.trim(),
+          email: draft.email.trim() || null,
+          address: draft.address.trim() || null,
+        }),
       });
 
-      if (insertError) throw insertError;
+      if (!res.ok) {
+        const txt = await res.text().catch(() => '');
+        throw new Error(txt || 'Failed to create customer');
+      }
 
       toast.success('Customer created');
       setOpen(false);

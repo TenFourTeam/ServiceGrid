@@ -1,4 +1,3 @@
-
 project_id = "ijudkzqfriazabiosnvb"
 
 [functions.clerk-publishable-key]
@@ -12,4 +11,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.quote-events]
+verify_jwt = false
+
+[functions.customers]
 verify_jwt = false
