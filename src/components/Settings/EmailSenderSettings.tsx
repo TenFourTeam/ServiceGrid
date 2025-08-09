@@ -134,7 +134,12 @@ export default function EmailSenderSettings() {
           </p>
           <div className="flex items-center gap-2">
             {!hasNylas ? (
-              <Button onClick={onConnect}>Connect mailbox</Button>
+              <>
+                <Button onClick={onConnect}>Connect mailbox</Button>
+                <Button variant="ghost" asChild>
+                  <a href="/nylas/start" target="_blank" rel="noopener noreferrer">Open in new tab</a>
+                </Button>
+              </>
             ) : (
               <>
                 <Button variant="secondary" onClick={() => refetch()} disabled={isFetching}>Refresh</Button>

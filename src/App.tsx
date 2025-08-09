@@ -23,6 +23,7 @@ const NylasCallbackPage = lazy(() => import("./pages/NylasCallback"));
 const AuthResetPage = lazy(() => import("./pages/AuthReset"));
 const UpdatePasswordPage = lazy(() => import("./pages/UpdatePassword"));
 const ClerkAuthPage = lazy(() => import("./pages/ClerkAuth"));
+const NylasStartPage = lazy(() => import("./pages/NylasStart"));
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,7 @@ const App = () => (
                   <Route path="/invoices" element={<ProtectedRoute><InvoicesPage /></ProtectedRoute>} />
                   <Route path="/customers" element={<ProtectedRoute><CustomersPage /></ProtectedRoute>} />
                   <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+                  <Route path="/nylas/start" element={<ProtectedRoute><NylasStartPage /></ProtectedRoute>} />
                   <Route path="/nylas/callback" element={<ProtectedRoute><NylasCallbackPage /></ProtectedRoute>} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
