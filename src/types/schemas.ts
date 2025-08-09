@@ -79,7 +79,7 @@ export const QuoteSchema = z.object({
   publicToken: z.string(),
 })
 
-export const QuoteSchema = QuoteSchema
+export const quoteSchema = QuoteSchema
 
 export const JobStatusSchema = z.enum(['Scheduled', 'In Progress', 'Completed'])
 
