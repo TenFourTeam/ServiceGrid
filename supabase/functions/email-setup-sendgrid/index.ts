@@ -95,13 +95,14 @@ serve(async (req: Request) => {
       });
     }
 
-    // Create or update Single Sender in SendGrid
+    // Always create a NEW Single Sender in SendGrid to avoid overwriting existing ones
     const safeFromName = from_name && from_name.trim().length > 0 ? from_name : from_email;
-    const safeNickname = safeFromName;
+    const baseNickname = (nickname && nickname.trim().length > 0) ? nickname : safeFromName;
+    const uniqueNickname = `${baseNickname}-${Math.random().toString(36).slice(2,6).toUpperCase()}`;
     const safeReplyTo = reply_to;
 
-    const body = {
-      nickname: safeNickname,
+    let body: any = {
+      nickname: uniqueNickname,
       from: { email: from_email, name: safeFromName },
       reply_to: { email: safeReplyTo, name: safeFromName },
       address,
@@ -112,11 +113,8 @@ serve(async (req: Request) => {
       country,
     };
 
-    const sgUrl = existing?.sendgrid_sender_id
-      ? `https://api.sendgrid.com/v3/senders/${existing.sendgrid_sender_id}`
-      : "https://api.sendgrid.com/v3/senders";
-
-    const method = existing?.sendgrid_sender_id ? "PATCH" : "POST";
+    const sgUrl = "https://api.sendgrid.com/v3/senders";
+    const method = "POST";
 
     let sgResp = await fetch(sgUrl, {
       method,
@@ -172,44 +170,40 @@ serve(async (req: Request) => {
     }
 
     if (!sgResp.ok) {
-      // Handle duplicate nickname by relinking to existing sender
+      // Handle duplicate nickname by retrying with a different nickname suffix (do NOT relink existing)
       const isDupNickname =
         sgResp.status === 400 &&
         ((Array.isArray(sgJson?.errors) && sgJson.errors.some((e: any) => /same nickname|already have a sender identity/i.test(String(e?.message || ""))))
          || /same nickname|already have a sender identity/i.test(text || ""));
       if (isDupNickname) {
         try {
-          const listResp = await fetch("https://api.sendgrid.com/v3/senders", {
-            headers: { Authorization: `Bearer ${SENDGRID_API_KEY}` },
+          const retryNickname = `${baseNickname}-${Math.random().toString(36).slice(2,6).toUpperCase()}`;
+          body = { ...body, nickname: retryNickname };
+          const createResp = await fetch("https://api.sendgrid.com/v3/senders", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${SENDGRID_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(body),
           });
-          const listText = await listResp.text();
-          let listJson: any[] = [];
-          try { listJson = listText ? JSON.parse(listText) : []; } catch { /* ignore */ }
-          if (listResp.ok && Array.isArray(listJson)) {
-            const match = listJson.find((s: any) =>
-              (s?.from?.email && String(s.from.email).toLowerCase() === String(from_email).toLowerCase()) ||
-              (s?.nickname && String(s.nickname).toLowerCase() === String(safeNickname).toLowerCase())
-            );
-            if (match) {
-              // Use this sender as the resolved one and continue as success
-              sgJson = match;
-            } else {
-              console.error("email-setup-sendgrid: duplicate nickname but no matching sender found in list", listText);
-              return new Response(JSON.stringify({ error: "SendGrid error", details: text }), {
-                status: 500,
-                headers: { "Content-Type": "application/json", ...corsHeaders },
-              });
-            }
-          } else {
-            console.error("email-setup-sendgrid: failed to list senders", listResp.status, listText);
-            return new Response(JSON.stringify({ error: "SendGrid error", details: text }), {
+          const createText = await createResp.text();
+          let createJson: any = {};
+          try { createJson = createText ? JSON.parse(createText) : {}; } catch { /* ignore */ }
+          if (!createResp.ok) {
+            console.error("email-setup-sendgrid: duplicate nickname retry failed", createResp.status, createText);
+            return new Response(JSON.stringify({ error: "SendGrid error", details: createText }), {
               status: 500,
               headers: { "Content-Type": "application/json", ...corsHeaders },
             });
           }
+          // Use the retry creation response
+          sgResp = createResp;
+          text = createText;
+          sgJson = createJson;
         } catch (e) {
-          console.error("email-setup-sendgrid: error reconciling duplicate nickname", e);
-          return new Response(JSON.stringify({ error: "SendGrid error", details: text }), {
+          console.error("email-setup-sendgrid: error creating new sender after duplicate nickname", e);
+          return new Response(JSON.stringify({ error: "SendGrid error", details: String(e) }), {
             status: 500,
             headers: { "Content-Type": "application/json", ...corsHeaders },
           });
@@ -223,19 +217,20 @@ serve(async (req: Request) => {
       }
     }
 
-  const senderId: number | undefined =
-      existing?.sendgrid_sender_id ?? sgJson?.id ?? sgJson?.sender_id ?? undefined;
+  const senderId: number | undefined = sgJson?.id ?? sgJson?.sender_id ?? undefined;
 
   // Compute strict verified status from SendGrid response
   const sgVerifiedRaw = sgJson?.verified;
   let computedVerified = false;
   if (typeof sgVerifiedRaw === "boolean") {
     computedVerified = sgVerifiedRaw;
-  } else if (sgVerifiedRaw && typeof sgVerifiedRaw?.status === "string") {
-    const s = String(sgVerifiedRaw.status).toLowerCase();
-    computedVerified = s === "verified" || s === "completed" || s === "true";
+  } else if (typeof sgVerifiedRaw === "string") {
+    computedVerified = sgVerifiedRaw.toLowerCase() === "true";
+  } else if (sgVerifiedRaw && typeof (sgVerifiedRaw as any)?.status === "string") {
+    const s = String((sgVerifiedRaw as any).status).toLowerCase();
+    computedVerified = s === "verified" || s === "completed" || s === "approved" || s === "true";
   }
-  let providerStatus = sgVerifiedRaw && typeof sgVerifiedRaw?.status === "string" ? String(sgVerifiedRaw.status) : null;
+  let providerStatus = sgVerifiedRaw && typeof (sgVerifiedRaw as any)?.status === "string" ? String((sgVerifiedRaw as any).status) : null;
 
   // If user changed the from_email, force unverified and set pending status
   if (existing?.from_email && existing.from_email !== from_email) {

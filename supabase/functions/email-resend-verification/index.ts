@@ -169,9 +169,12 @@ serve(async (req: Request) => {
           { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
-      // Treat already-verified as success
       if ((resp.status === 400 || resp.status === 409) && /already\s*verified/i.test(t)) {
         console.info("email-resend-verification: sender already verified");
+        await supabase
+          .from("email_senders")
+          .update({ verified: true, status: "verified" })
+          .eq("id", sender.id);
         return new Response(JSON.stringify({ ok: true, alreadyVerified: true }), {
           status: 200,
           headers: { "Content-Type": "application/json", ...corsHeaders },

@@ -58,9 +58,10 @@ serve(async (req: Request) => {
             const vRaw = match?.verified;
             let verified = false;
             if (typeof vRaw === "boolean") verified = vRaw;
+            else if (typeof vRaw === "string") verified = vRaw.toLowerCase() === "true";
             else if (vRaw && typeof vRaw?.status === "string") {
               const s = String(vRaw.status).toLowerCase();
-              verified = s === "verified" || s === "completed" || s === "true";
+              verified = s === "verified" || s === "completed" || s === "approved" || s === "true";
             }
             const providerStatus = vRaw && typeof vRaw?.status === "string" ? String(vRaw.status) : null;
             await supabase.from("email_senders").update({
@@ -105,9 +106,10 @@ serve(async (req: Request) => {
               const vRaw = match?.verified;
               let verified = false;
               if (typeof vRaw === "boolean") verified = vRaw;
+              else if (typeof vRaw === "string") verified = vRaw.toLowerCase() === "true";
               else if (vRaw && typeof vRaw?.status === "string") {
                 const s = String(vRaw.status).toLowerCase();
-                verified = s === "verified" || s === "completed" || s === "true";
+                verified = s === "verified" || s === "completed" || s === "approved" || s === "true";
               }
               const providerStatus = vRaw && typeof vRaw?.status === "string" ? String(vRaw.status) : null;
               await supabase.from("email_senders").update({
@@ -145,9 +147,11 @@ serve(async (req: Request) => {
     let verified = false;
     if (typeof sgVerifiedRaw === "boolean") {
       verified = sgVerifiedRaw;
+    } else if (typeof sgVerifiedRaw === "string") {
+      verified = sgVerifiedRaw.toLowerCase() === "true";
     } else if (sgVerifiedRaw && typeof sgVerifiedRaw?.status === "string") {
       const s = String(sgVerifiedRaw.status).toLowerCase();
-      verified = s === "verified" || s === "completed" || s === "true";
+      verified = s === "verified" || s === "completed" || s === "approved" || s === "true";
     }
     const providerStatus =
       sgVerifiedRaw && typeof sgVerifiedRaw?.status === "string" ? String(sgVerifiedRaw.status) : null;
