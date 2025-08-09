@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.email-sender-get]
 verify_jwt = false
+
+[functions.nylas-webhook]
+verify_jwt = false
