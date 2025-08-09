@@ -14,7 +14,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Briefcase } from 'lucide-react';
+
 
 type SortKey = 'customer' | 'amount' | 'status' | 'updated';
 type SortDir = 'asc' | 'desc';
@@ -364,7 +364,8 @@ export default function QuotesPage() {
       return;
     }
     const e = store.upsertQuote({ ...draft, customerId: draft.customerId! });
-    store.sendQuote(e.id);
+    // Defer status update to ensure the freshly upserted quote is in state
+    setTimeout(() => store.sendQuote(e.id), 0);
     await sendEmailForQuote(e);
     setOpen(false);
     resetDraft();
@@ -469,6 +470,7 @@ export default function QuotesPage() {
                     <Button
                       size="sm"
                       variant="secondary"
+                      className="attention-ring"
                       onClick={() => {
                         const jobs = store.convertQuoteToJob(rec.quote_id, undefined, undefined, undefined);
                         if (jobs && jobs.length > 0) {
@@ -576,7 +578,7 @@ export default function QuotesPage() {
                               <TooltipTrigger asChild>
                                 <Button
                                   variant="cta"
-                                  className="pulse"
+                                  className="attention-ring"
                                   onClick={() => {
                                     const jobs = store.convertQuoteToJob(e.id, undefined, undefined, undefined);
                                     if (jobs && jobs.length > 0) {
@@ -584,7 +586,6 @@ export default function QuotesPage() {
                                     }
                                   }}
                                 >
-                                  <Briefcase className="mr-2" />
                                   Convert to Job
                                 </Button>
                               </TooltipTrigger>
