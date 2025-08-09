@@ -93,6 +93,7 @@ export default function QuotesPage() {
      depositRequired?: boolean;
      depositPercent?: number;
      paymentTerms?: string;
+     frequency?: string;
      viewLink?: string;
    }) {
     const rows = (params.items || []).map((li) => {
@@ -157,15 +158,16 @@ export default function QuotesPage() {
           </table>
 
           <div style="margin-top:16px;color:#4b5563;font-size:14px;">
-            <p style="margin:0 0 6px;">Payment terms: ${formatPaymentTermsLabel(params.paymentTerms || 'due_on_receipt')}</p>
+            ${params.paymentTerms && params.paymentTerms !== 'due_on_receipt' ? `<p style="margin:0 0 6px;">Payment terms: ${formatPaymentTermsLabel(params.paymentTerms)}</p>` : ''}
+            ${params.frequency && params.frequency !== 'one-off' ? `<p style="margin:6px 0 0;">Frequency: ${({ 'bi-monthly':'Bi-monthly', 'monthly':'Monthly', 'bi-yearly':'Bi-yearly', 'yearly':'Yearly' } as any)[params.frequency] || params.frequency}</p>` : ''}
             ${depositLine}
             ${params.address ? `<p style=\"margin:6px 0 0;\">Service address: ${params.address}</p>` : ''}
           </div>
-
-          ${params.terms ? `<div style=\"margin-top:16px;padding:12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;color:#374151;font-size:13px;\">
-            <div style=\"font-weight:600;margin-bottom:6px;\">Terms</div>
-            <div>${params.terms}</div>
-          </div>` : ''}
+ 
+           ${params.terms ? `<div style=\"margin-top:16px;padding:12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;color:#374151;font-size:13px;\">
+             <div style=\"font-weight:600;margin-bottom:6px;\">Terms</div>
+             <div>${params.terms}</div>
+           </div>` : ''}
 
           <p style="margin-top:20px;color:#334155;">Thank you,<br/>${params.businessName}</p>
         </div>
@@ -225,6 +227,7 @@ export default function QuotesPage() {
       depositRequired: e.depositRequired,
       depositPercent: e.depositPercent,
       paymentTerms: e.paymentTerms,
+      frequency: e.frequency,
       // No public link included anymore
     });
 
@@ -303,6 +306,7 @@ export default function QuotesPage() {
       depositRequired: !!draft.depositRequired,
       depositPercent: draft.depositPercent ?? 0,
       paymentTerms: draft.paymentTerms ?? 'due_on_receipt',
+      frequency: draft.frequency,
     });
     setPreviewSubject(subject);
     setPreviewHTML(html);
@@ -394,10 +398,10 @@ export default function QuotesPage() {
                         <Button variant="secondary" onClick={()=>{ setDraft(e); setOpen(true); }}>Edit</Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button>Send</Button>
+                            <Button>Action</Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="z-50">
-            <DropdownMenuItem onClick={()=>send(e)}>Send Email</DropdownMenuItem>
+            <DropdownMenuItem disabled={e.status==='Sent'} onClick={()=>send(e)}>Send Email</DropdownMenuItem>
             
             <DropdownMenuItem onClick={()=>store.convertQuoteToJob(e.id, undefined, undefined, undefined)}>Create Work Order</DropdownMenuItem>
             <DropdownMenuItem onClick={()=>{
@@ -542,8 +546,7 @@ export default function QuotesPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-muted-foreground">Autosaves</div>
+          <div className="flex items-center justify-end">
             <div className="flex gap-2">
               <Button variant="secondary" onClick={()=>setOpen(false)}>Cancel</Button>
               <Button variant="secondary" onClick={save}>Save</Button>

@@ -21,7 +21,7 @@ const defaultBusiness = (): Business => ({
   replyToEmail: '',
   logoUrl: '',
   taxRateDefault: 0.08,
-  numbering: { estPrefix: 'EST-', estSeq: 1, invPrefix: 'INV-', invSeq: 1 },
+  numbering: { estPrefix: 'QUO-', estSeq: 1, invPrefix: 'INV-', invSeq: 1 },
 });
 
 const initialState: AppState = loadState<AppState>() ?? {
