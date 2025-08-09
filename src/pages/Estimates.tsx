@@ -17,7 +17,7 @@ import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 type SortKey = 'customer' | 'amount' | 'status' | 'updated';
 type SortDir = 'asc' | 'desc';
 
-export default function EstimatesPage() {
+export default function QuotesPage() {
   const store = useStore();
   const { toast } = useToast();
   const clerkAuth = useClerkAuth();
@@ -200,7 +200,7 @@ export default function EstimatesPage() {
     toast({ title: 'Quote saved', description: `Saved quote ${e.number}` });
   }
 
-   async function sendEmailForEstimate(e: Quote) {
+   async function sendEmailForQuote(e: Quote) {
      const customer = store.customers.find((c) => c.id === e.customerId);
      const to = customer?.email;
      if (!to) {
@@ -274,7 +274,7 @@ export default function EstimatesPage() {
     }
     const e = store.upsertQuote({ ...draft, customerId: draft.customerId! });
     store.sendQuote(e.id);
-    await sendEmailForEstimate(e);
+    await sendEmailForQuote(e);
     setOpen(false);
     resetDraft();
   }
@@ -311,7 +311,7 @@ export default function EstimatesPage() {
 
   function send(est: Quote) {
     store.sendQuote(est.id);
-    sendEmailForEstimate(est);
+    sendEmailForQuote(est);
   }
 
   async function checkSenderHealth() {
@@ -337,7 +337,7 @@ export default function EstimatesPage() {
     }
   }
 
-  const sortedEstimates = useMemo(() => {
+  const sortedQuotes = useMemo(() => {
     const arr = [...store.quotes];
     arr.sort((a, b) => {
       switch (sortKey) {
@@ -401,7 +401,7 @@ export default function EstimatesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedEstimates.map((e) => (
+                {sortedQuotes.map((e) => (
                   <TableRow key={e.id}>
                     <TableCell>{e.number}</TableCell>
                     <TableCell>{store.customers.find(c=>c.id===e.customerId)?.name}</TableCell>
