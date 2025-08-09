@@ -38,7 +38,6 @@ export default function EmailSenderSettings() {
   const [form, setForm] = useState({
     from_name: sender?.from_name ?? "",
     from_email: sender?.from_email ?? "",
-    nickname: sender?.from_name ?? sender?.from_email ?? "",
     reply_to: sender?.reply_to ?? sender?.from_email ?? "",
     address: "",
     address2: "",
@@ -55,14 +54,12 @@ export default function EmailSenderSettings() {
       from_name: sender?.from_name ?? "",
       from_email: sender?.from_email ?? "",
       reply_to: sender?.reply_to ?? sender?.from_email ?? "",
-      nickname: sender?.from_name ?? sender?.from_email ?? "",
-      
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sender?.from_name, sender?.from_email, sender?.reply_to]);
 
   const onSave = async () => {
-    if (!form.from_email || !form.address || !form.city || !form.state || !form.zip || !form.country) {
+    if (!form.from_email || !form.reply_to || !form.address || !form.city || !form.state || !form.zip || !form.country) {
       toast({ title: "Missing fields", description: "Please fill required fields marked with *." });
       return;
     }
@@ -70,8 +67,8 @@ export default function EmailSenderSettings() {
       body: {
         from_email: form.from_email,
         from_name: form.from_name || undefined,
-        nickname: form.nickname || form.from_name || form.from_email,
-        reply_to: form.reply_to || form.from_email,
+        nickname: form.from_name || form.from_email,
+        reply_to: form.reply_to,
         address: form.address,
         address2: form.address2 || undefined,
         city: form.city,
@@ -141,15 +138,7 @@ export default function EmailSenderSettings() {
 
         <div className="grid md:grid-cols-2 gap-3">
           <div>
-            <Label>Nickname</Label>
-            <Input
-              value={form.nickname}
-              onChange={(e) => setForm((f) => ({ ...f, nickname: e.target.value }))}
-              placeholder="e.g., Billing"
-            />
-          </div>
-          <div>
-            <Label>Reply-To Email</Label>
+            <Label>Reply-To Email *</Label>
             <Input
               type="email"
               value={form.reply_to}

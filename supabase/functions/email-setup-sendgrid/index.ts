@@ -55,7 +55,7 @@ serve(async (req: Request) => {
     const payload = (await req.json()) as SetupPayload;
     const { from_email, from_name, nickname, reply_to, address, address2, city, state, zip, country } = payload;
 
-    if (!from_email || !address || !city || !state || !zip || !country) {
+    if (!from_email || !reply_to || !address || !city || !state || !zip || !country) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
         status: 400,
         headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -96,9 +96,9 @@ serve(async (req: Request) => {
     }
 
     // Create or update Single Sender in SendGrid
-    const safeFromName = from_name && from_name.trim().length > 0 ? from_name : (from_email || "Sender");
-    const safeNickname = nickname && nickname.trim().length > 0 ? nickname : safeFromName;
-    const safeReplyTo = reply_to && reply_to.trim().length > 0 ? reply_to : from_email;
+    const safeFromName = from_name && from_name.trim().length > 0 ? from_name : from_email;
+    const safeNickname = safeFromName;
+    const safeReplyTo = reply_to;
 
     const body = {
       nickname: safeNickname,
