@@ -17,12 +17,16 @@ interface SendQuotePayload {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") as string;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
 const SENDGRID_API_KEY = Deno.env.get("SENDGRID_API_KEY") as string;
+const NYLAS_API_KEY = Deno.env.get("NYLAS_API_KEY") as string;
 
 if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
   console.error("send-quote: Missing Supabase env variables");
 }
 if (!SENDGRID_API_KEY) {
-  console.error("send-quote: Missing SENDGRID_API_KEY");
+  console.warn("send-quote: Missing SENDGRID_API_KEY (SendGrid path will fail)");
+}
+if (!NYLAS_API_KEY) {
+  console.warn("send-quote: Missing NYLAS_API_KEY (Nylas path will fail)");
 }
 
 serve(async (req: Request) => {
@@ -78,16 +82,71 @@ serve(async (req: Request) => {
       });
     }
 
+    const from_email = sender.from_email as string;
+    const from_name = (sender.from_name as string) || "Quotes";
+    const reply_to = (sender.reply_to as string) || from_email;
+
+    // Branch: Nylas (preferred when connected)
+    if (sender.provider === "nylas" && sender.nylas_grant_id) {
+      if (!NYLAS_API_KEY) {
+        return new Response(JSON.stringify({ error: "Nylas not available" }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+
+      const body = {
+        to: [{ email: to }],
+        subject,
+        body: [{ type: "text/html", content: html }],
+        reply_to: [{ email: reply_to, name: from_name }],
+      };
+
+      const nylasResp = await fetch(`https://api.us.nylas.com/v3/grants/${sender.nylas_grant_id}/messages/send`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${NYLAS_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      const nylasText = await nylasResp.text();
+      let nylasJson: any = {};
+      try { nylasJson = nylasText ? JSON.parse(nylasText) : {}; } catch {}
+
+      const ok = nylasResp.status === 200 || nylasResp.status === 201 || nylasResp.status === 202;
+
+      await supabase.from("email_logs").insert({
+        user_id: user.id,
+        provider: "nylas",
+        to_email: to,
+        subject,
+        status: ok ? "accepted" : `error:${nylasResp.status}`,
+        message_id: nylasJson?.data?.id || nylasJson?.id || null,
+        error: ok ? null : nylasText,
+        payload: { subject, to, html },
+      });
+
+      if (!ok) {
+        console.error("send-quote: nylas error", nylasResp.status, nylasText);
+        return new Response(JSON.stringify({ ok: false, error: "Failed to send email", details: nylasText }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+
+      console.log("send-quote: email accepted by Nylas");
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    // Branch: SendGrid (legacy path) — require verified only for SendGrid
     if (!sender.verified) {
       return new Response(JSON.stringify({ error: "Email sender is not verified. Please verify via the email from SendGrid." }), {
         status: 400,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
-
-    const from_email = sender.from_email as string;
-    const from_name = (sender.from_name as string) || "Quotes";
-    const reply_to = (sender.reply_to as string) || from_email;
 
     // Build SendGrid v3 Mail Send request
     const body = {
@@ -120,6 +179,17 @@ serve(async (req: Request) => {
         ? details.errors.map((e: any) => e.message).join("; ")
         : errText;
       console.error("send-quote: sendgrid error", sgResp.status, message);
+
+      await supabase.from("email_logs").insert({
+        user_id: user.id,
+        provider: "sendgrid",
+        to_email: to,
+        subject,
+        status: `error:${sgResp.status}`,
+        error: message || errText,
+        payload: { subject, to, html },
+      });
+
       return new Response(JSON.stringify({ ok: false, error: "Failed to send email", details: message }), {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -127,6 +197,15 @@ serve(async (req: Request) => {
     }
 
     console.log("send-quote: email accepted by SendGrid");
+    await supabase.from("email_logs").insert({
+      user_id: user.id,
+      provider: "sendgrid",
+      to_email: to,
+      subject,
+      status: "accepted",
+      payload: { subject, to, html },
+    });
+
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },

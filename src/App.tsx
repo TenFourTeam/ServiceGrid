@@ -1,3 +1,4 @@
+
 import React, { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -18,6 +19,7 @@ const CustomersPage = lazy(() => import("./pages/Customers"));
 const SettingsPage = lazy(() => import("./pages/Settings"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const AuthPage = lazy(() => import("./pages/Auth"));
+const NylasCallbackPage = lazy(() => import("./pages/NylasCallback"));
 
 const queryClient = new QueryClient();
 
@@ -40,6 +42,7 @@ const App = () => (
                   <Route path="/invoices" element={<ProtectedRoute><InvoicesPage /></ProtectedRoute>} />
                   <Route path="/customers" element={<ProtectedRoute><CustomersPage /></ProtectedRoute>} />
                   <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+                  <Route path="/nylas/callback" element={<ProtectedRoute><NylasCallbackPage /></ProtectedRoute>} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
