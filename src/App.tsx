@@ -37,22 +37,24 @@ const App = () => (
           <BrowserRouter>
             <ErrorBoundary>
               <Suspense fallback={<LoadingScreen /> }>
-                <Routes>
-                  <Route path="/auth" element={<Navigate to="/clerk-auth" replace />} />
-                  <Route path="/auth/reset" element={<AuthResetPage />} />
-                  <Route path="/auth/update-password" element={<UpdatePasswordPage />} />
-                  <Route path="/clerk-auth" element={<ClerkAuthPage />} />
-                  <Route path="/" element={<Navigate to="/calendar" replace />} />
-                  <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
-                  <Route path="/work-orders" element={<ProtectedRoute><WorkOrdersPage /></ProtectedRoute>} />
-                  <Route path="/estimates" element={<ProtectedRoute><EstimatesPage /></ProtectedRoute>} />
-                  <Route path="/invoices" element={<ProtectedRoute><InvoicesPage /></ProtectedRoute>} />
-                  <Route path="/customers" element={<ProtectedRoute><CustomersPage /></ProtectedRoute>} />
-                  <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-                  <Route path="/nylas/start" element={<ProtectedRoute><NylasStartPage /></ProtectedRoute>} />
-                  <Route path="/nylas/callback" element={<ProtectedRoute><NylasCallbackPage /></ProtectedRoute>} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
+                 <Routes>
+                   <Route path="/auth" element={<Navigate to="/clerk-auth" replace />} />
+                   <Route path="/auth/reset" element={<AuthResetPage />} />
+                   <Route path="/auth/update-password" element={<UpdatePasswordPage />} />
+                   <Route path="/clerk-auth" element={<ClerkAuthPage />} />
+                   <Route path="/" element={<Navigate to="/calendar" replace />} />
+                   {/* Public quote view - do not wrap with ProtectedRoute */}
+                   <Route path="/c/:slug/q/:token" element={React.createElement(lazy(() => import("./pages/PublicQuote")))} />
+                   <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
+                   <Route path="/work-orders" element={<ProtectedRoute><WorkOrdersPage /></ProtectedRoute>} />
+                   <Route path="/estimates" element={<ProtectedRoute><EstimatesPage /></ProtectedRoute>} />
+                   <Route path="/invoices" element={<ProtectedRoute><InvoicesPage /></ProtectedRoute>} />
+                   <Route path="/customers" element={<ProtectedRoute><CustomersPage /></ProtectedRoute>} />
+                   <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+                   <Route path="/nylas/start" element={<ProtectedRoute><NylasStartPage /></ProtectedRoute>} />
+                   <Route path="/nylas/callback" element={<ProtectedRoute><NylasCallbackPage /></ProtectedRoute>} />
+                   <Route path="*" element={<NotFound />} />
+                 </Routes>
               </Suspense>
             </ErrorBoundary>
           </BrowserRouter>

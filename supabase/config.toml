@@ -39,3 +39,9 @@ verify_jwt = false
 
 [functions.resend-send-email]
 verify_jwt = false
+
+[functions.estimate-view]
+verify_jwt = false
+
+[functions.estimate-publish]
+verify_jwt = false

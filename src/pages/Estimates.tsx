@@ -79,21 +79,22 @@ export default function EstimatesPage() {
     }
   }
 
-  function renderQuoteEmailHTML(params: {
-    number: string;
-    businessName: string;
-    customerName: string;
-    items: { name: string; qty?: number; unitPrice?: number; lineTotal?: number }[];
-    subtotal: number;
-    taxRate: number;
-    discount: number;
-    total: number;
-    address?: string;
-    terms?: string;
-    depositRequired?: boolean;
-    depositPercent?: number;
-    paymentTerms?: string;
-  }) {
+   function renderQuoteEmailHTML(params: {
+     number: string;
+     businessName: string;
+     customerName: string;
+     items: { name: string; qty?: number; unitPrice?: number; lineTotal?: number }[];
+     subtotal: number;
+     taxRate: number;
+     discount: number;
+     total: number;
+     address?: string;
+     terms?: string;
+     depositRequired?: boolean;
+     depositPercent?: number;
+     paymentTerms?: string;
+     viewLink?: string;
+   }) {
     const rows = (params.items || []).map((li) => {
       const qty = li.qty ?? 1;
       const unit = formatMoney(li.unitPrice ?? 0);
@@ -123,6 +124,7 @@ export default function EstimatesPage() {
         <div style="padding:24px;">
           <p style="margin:0 0 12px;color:#111;">Hi ${params.customerName},</p>
           <p style="margin:0 0 16px;color:#333;">Please find your quote below. Total amount is <strong>${formatMoney(params.total)}</strong>.</p>
+          ${params.viewLink ? `<div style="margin:16px 0 20px;"><a href="${params.viewLink}" target="_blank" style="display:inline-block;background:#0ea5e9;color:#fff;text-decoration:none;padding:10px 14px;border-radius:8px;font-weight:600">View your quote</a></div>` : ''}
 
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin:12px 0 4px;">
             <thead>
@@ -198,34 +200,68 @@ export default function EstimatesPage() {
     toast({ title: 'Quote saved', description: `Saved quote ${e.number}` });
   }
 
-  async function sendEmailForEstimate(e: Estimate) {
-    const customer = store.customers.find((c) => c.id === e.customerId);
-    const to = customer?.email;
-    if (!to) {
-      toast({ title: 'No email on file', description: 'Add an email to the customer to send the quote.' });
-      return;
-    }
-    const subject = `Quote ${e.number} — ${store.business.name} — ${formatMoney(e.total)}`;
-    const html = renderQuoteEmailHTML({
-      number: e.number,
-      businessName: store.business.name,
-      customerName: customer.name,
-      items: e.lineItems || [],
-      subtotal: e.subtotal ?? 0,
-      taxRate: e.taxRate ?? 0,
-      discount: e.discount ?? 0,
-      total: e.total,
-      address: e.address,
-      terms: e.terms,
-      depositRequired: e.depositRequired,
-      depositPercent: e.depositPercent,
-      paymentTerms: e.paymentTerms,
-    });
-    const headers = await buildAuthHeaders();
-    const { data, error } = await supabase.functions.invoke('resend-send-email', {
-      body: { to, subject, html, quote_id: e.id, from_name: store.business.name, reply_to: store.business.replyToEmail || undefined },
-      headers,
-    });
+   async function sendEmailForEstimate(e: Estimate) {
+     const customer = store.customers.find((c) => c.id === e.customerId);
+     const to = customer?.email;
+     if (!to) {
+       toast({ title: 'No email on file', description: 'Add an email to the customer to send the quote.' });
+       return;
+     }
+
+     // Create a public snapshot and token, then include a pretty link in the email
+     const headers = await buildAuthHeaders();
+     const snapshot = {
+       number: e.number,
+       businessName: store.business.name,
+       customerName: customer?.name || 'Customer',
+       items: e.lineItems || [],
+       subtotal: e.subtotal ?? 0,
+       taxRate: e.taxRate ?? 0,
+       discount: e.discount ?? 0,
+       total: e.total,
+       address: e.address,
+       terms: e.terms,
+       depositRequired: e.depositRequired,
+       depositPercent: e.depositPercent,
+       paymentTerms: e.paymentTerms,
+     };
+
+     const pub = await supabase.functions.invoke('estimate-publish', {
+       body: { estimate_id: e.id, customer_email: to, snapshot },
+       headers,
+     });
+
+     if (pub.error || (pub.data as any)?.error) {
+       console.error('estimate-publish error', pub.error || (pub.data as any)?.error);
+       toast({ title: 'Failed to publish quote', description: 'Could not create public link. Try again.' });
+       return;
+     }
+
+     const { token, slug } = pub.data as { token: string; slug: string };
+     const viewLink = `${window.location.origin}/c/${slug}/q/${token}`;
+
+     const subject = `Quote ${e.number} — ${store.business.name} — ${formatMoney(e.total)}`;
+     const html = renderQuoteEmailHTML({
+       number: e.number,
+       businessName: store.business.name,
+       customerName: customer.name,
+       items: e.lineItems || [],
+       subtotal: e.subtotal ?? 0,
+       taxRate: e.taxRate ?? 0,
+       discount: e.discount ?? 0,
+       total: e.total,
+       address: e.address,
+       terms: e.terms,
+       depositRequired: e.depositRequired,
+       depositPercent: e.depositPercent,
+       paymentTerms: e.paymentTerms,
+       viewLink,
+     });
+
+     const { data, error } = await supabase.functions.invoke('resend-send-email', {
+       body: { to, subject, html, quote_id: e.id, from_name: store.business.name, reply_to: store.business.replyToEmail || undefined },
+       headers,
+     });
     console.log('resend-send-email response', { data, error });
     if (error) {
       console.error('resend-send-email error', error);
