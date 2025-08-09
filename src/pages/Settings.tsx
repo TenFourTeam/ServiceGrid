@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { exportJSON, importJSON, resetStorage } from '@/store/storage';
 import EmailSenderSettings from '@/components/Settings/EmailSenderSettings';
+import EmailOutbox from '@/components/Settings/EmailOutbox';
 
 export default function SettingsPage() {
   const store = useStore();
@@ -65,6 +66,7 @@ export default function SettingsPage() {
         </Card>
 
         <EmailSenderSettings />
+        <EmailOutbox />
       </div>
     </AppLayout>
   );
