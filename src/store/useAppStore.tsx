@@ -210,7 +210,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'UPSERT_QUOTE', payload: updated });
       dispatch({ type: 'ADD_EVENT', payload: { id: uuid(), ts: nowISO(), type: 'quote.sent', entityId: id } });
     },
-    sendEstimate(id) { return (api as any).sendQuote(id); }
+    sendEstimate(id) { return (api as any).sendQuote(id); },
     approveQuote(id, name) {
       const est = state.quotes.find((e) => e.id === id);
       if (!est) return;
@@ -218,7 +218,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'UPSERT_QUOTE', payload: updated });
       dispatch({ type: 'ADD_EVENT', payload: { id: uuid(), ts: nowISO(), type: 'quote.approved', entityId: id } });
     },
-    approveEstimate(id, name) { return (api as any).approveQuote(id, name); }
+    approveEstimate(id, name) { return (api as any).approveQuote(id, name); },
     convertQuoteToJob(quoteId, start, end, recurrence) {
       const est = state.quotes.find((e) => e.id === quoteId);
       if (!est) return [];
@@ -253,7 +253,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'ADD_EVENT', payload: { id: uuid(), ts: nowISO(), type: 'job.created', entityId: base.id } });
       return jobs;
     },
-    convertEstimateToJob(estimateId, start, end, recurrence) { return (api as any).convertQuoteToJob(estimateId, start, end, recurrence); }
+    convertEstimateToJob(estimateId, start, end, recurrence) { return (api as any).convertQuoteToJob(estimateId, start, end, recurrence); },
     upsertJob(j) {
       const job: Job = {
         id: j.id ?? uuid(),
