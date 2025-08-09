@@ -202,18 +202,21 @@ export default function EstimatesPage() {
       depositPercent: e.depositPercent,
       paymentTerms: e.paymentTerms,
     });
-    const { data, error } = await supabase.functions.invoke('send-quote', {
-      body: { to, subject, html },
+    const { data, error } = await supabase.functions.invoke('nylas-send-email', {
+      body: { to, subject, html, quote_id: e.id },
     });
-    console.log('send-quote response', { data, error });
+    console.log('nylas-send-email response', { data, error });
     if (error) {
-      console.error('send-quote error', error);
+      console.error('nylas-send-email error', error);
       toast({ title: 'Failed to send', description: error.message || 'There was a problem sending the email.' });
-    } else if ((data as any)?.error) {
-      console.error('send-quote payload error', (data as any).error);
-      toast({ title: 'Failed to send', description: (data as any).error || 'Unknown error from email service.' });
+      return;
+    }
+    const payload = data as any;
+    if (payload?.error) {
+      console.error('nylas-send-email payload error', payload.error);
+      toast({ title: 'Failed to send', description: payload.error || 'Unknown error from email service.' });
     } else {
-      toast({ title: 'Quote sent', description: `Email sent to ${to}` });
+      toast({ title: 'Quote sent', description: `Email sent to ${to}. Check Email Outbox for status.` });
     }
   }
 
