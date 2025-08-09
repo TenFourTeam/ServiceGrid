@@ -137,6 +137,54 @@ export type Database = {
         }
         Relationships: []
       }
+      mail_sends: {
+        Row: {
+          created_at: string
+          error_code: string | null
+          error_message: string | null
+          id: string
+          nylas_grant_id: string | null
+          provider_message_id: string | null
+          quote_id: string | null
+          request_hash: string
+          status: string
+          subject: string
+          to_email: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          nylas_grant_id?: string | null
+          provider_message_id?: string | null
+          quote_id?: string | null
+          request_hash: string
+          status?: string
+          subject: string
+          to_email: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          nylas_grant_id?: string | null
+          provider_message_id?: string | null
+          quote_id?: string | null
+          request_hash?: string
+          status?: string
+          subject?: string
+          to_email?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           clerk_user_id: string | null
