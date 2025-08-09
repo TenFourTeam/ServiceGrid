@@ -106,8 +106,8 @@ All colors MUST be HSL.
 
 @layer utilities {
   @keyframes attention-ring {
-    0% { box-shadow: 0 0 0 0 hsl(var(--ring) / 0.25); }
-    60% { box-shadow: 0 0 0 4px hsl(var(--ring) / 0); }
+    0% { box-shadow: 0 0 0 0 hsl(var(--ring) / 0.35); }
+    60% { box-shadow: 0 0 0 6px hsl(var(--ring) / 0); }
     100% { box-shadow: 0 0 0 0 hsl(var(--ring) / 0); }
   }
 
