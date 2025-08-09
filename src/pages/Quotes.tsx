@@ -15,6 +15,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { escapeHtml, sanitizeSubject } from '@/utils/sanitize';
+import { useAuth as useAppAuth } from '@/components/Auth/AuthProvider';
+import { Badge } from '@/components/ui/badge';
+import { useSupabaseQuotes } from '@/hooks/useSupabaseQuotes';
 
 
 type SortKey = 'customer' | 'amount' | 'status' | 'updated';
@@ -62,6 +65,10 @@ export default function QuotesPage() {
   // Sorting
   const [sortKey, setSortKey] = useState<SortKey>('updated');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [dataSource, setDataSource] = useState<'local' | 'supabase'>('local');
+
+  const { user: appUser } = useAppAuth();
+  const { data: dbQuotes, isLoading: dbLoading, error: dbError } = useSupabaseQuotes({ enabled: dataSource === 'supabase' && !!appUser });
 
   // session-level guards to avoid duplicate toasts/emails
   const processedEditEmailsRef = useRef<Set<string>>(new Set());
@@ -528,8 +535,12 @@ export default function QuotesPage() {
   return (
     <AppLayout title="Quotes">
       <section className="space-y-4">
-        <div className="flex justify-end gap-2">
-          <Button onClick={() => setOpen(true)}>Create Quote</Button>
+        <div className="flex justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Button variant={dataSource === 'local' ? 'default' : 'secondary'} onClick={() => setDataSource('local')}>Local</Button>
+            <Button variant={dataSource === 'supabase' ? 'default' : 'secondary'} onClick={() => setDataSource('supabase')} disabled={!appUser}>Supabase</Button>
+          </div>
+          <Button onClick={() => setOpen(true)} disabled={dataSource === 'supabase'}>Create Quote</Button>
         </div>
 
         <Card>
@@ -555,60 +566,102 @@ export default function QuotesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedQuotes.map((e) => (
-                  <TableRow key={e.id}>
-                    <TableCell>{e.number}</TableCell>
-                    <TableCell>{store.customers.find(c=>c.id===e.customerId)?.name}</TableCell>
-                    <TableCell>{formatMoney(e.total)}</TableCell>
-                    <TableCell>
-                      {e.status}{e.viewCount ? ` (Viewed ${e.viewCount})` : ''}
-                    </TableCell>
-                    <TableCell>{formatDate(e.updatedAt)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex gap-2 justify-end">
-                        <Button variant="secondary" onClick={()=>{ setDraft(e); setOpen(true); }}>Edit</Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button>Action</Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="z-50">
-            <DropdownMenuItem disabled={!(e.status==='Draft' || e.status==='Edits Requested')} onClick={()=>send(e)}>Send Email</DropdownMenuItem>
-            
-            <DropdownMenuItem onClick={()=>store.convertQuoteToJob(e.id, undefined, undefined, undefined)}>Create Work Order</DropdownMenuItem>
-            <DropdownMenuItem onClick={()=>{
-              const jobs = store.convertQuoteToJob(e.id);
-              if (jobs.length > 0) {
-                store.createInvoiceFromJob(jobs[0].id);
-                toast({ title: 'Invoice created', description: 'An invoice draft was created from this quote.' });
-              }
-            }}>Create Invoice</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                        {e.status==='Approved' && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="cta"
-                                  className="attention-ring"
-                                  onClick={() => {
-                                    const jobs = store.convertQuoteToJob(e.id, undefined, undefined, undefined);
-                                    if (jobs && jobs.length > 0) {
-                                      toast({ title: 'Job created', description: `Created job from ${e.number}.` });
-                                    }
-                                  }}
-                                >
-                                  Convert to Job
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Create a job from this approved quote</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {dataSource === 'local' ? (
+                  <>
+                    {sortedQuotes.map((e) => (
+                      <TableRow key={e.id}>
+                        <TableCell>{e.number}</TableCell>
+                        <TableCell>{store.customers.find(c=>c.id===e.customerId)?.name}</TableCell>
+                        <TableCell>{formatMoney(e.total)}</TableCell>
+                        <TableCell>
+                          {e.status}{e.viewCount ? ` (Viewed ${e.viewCount})` : ''}
+                        </TableCell>
+                        <TableCell>{formatDate(e.updatedAt)}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex gap-2 justify-end">
+                            <Button variant="secondary" onClick={()=>{ setDraft(e); setOpen(true); }}>Edit</Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button>Action</Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="z-50">
+                                <DropdownMenuItem disabled={!(e.status==='Draft' || e.status==='Edits Requested')} onClick={()=>send(e)}>Send Email</DropdownMenuItem>
+                                <DropdownMenuItem onClick={()=>store.convertQuoteToJob(e.id, undefined, undefined, undefined)}>Create Work Order</DropdownMenuItem>
+                                <DropdownMenuItem onClick={()=>{
+                                  const jobs = store.convertQuoteToJob(e.id);
+                                  if (jobs.length > 0) {
+                                    store.createInvoiceFromJob(jobs[0].id);
+                                    toast({ title: 'Invoice created', description: 'An invoice draft was created from this quote.' });
+                                  }
+                                }}>Create Invoice</DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                            {e.status==='Approved' && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="cta"
+                                      className="attention-ring"
+                                      onClick={() => {
+                                        const jobs = store.convertQuoteToJob(e.id, undefined, undefined, undefined);
+                                        if (jobs && jobs.length > 0) {
+                                          toast({ title: 'Job created', description: `Created job from ${e.number}.` });
+                                        }
+                                      }}
+                                    >
+                                      Convert to Job
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Create a job from this approved quote</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    {dbLoading && (
+                      <TableRow>
+                        <TableCell colSpan={6}>Loading quotes…</TableCell>
+                      </TableRow>
+                    )}
+                    {dbError && !dbLoading && (
+                      <TableRow>
+                        <TableCell colSpan={6}>Failed to load quotes.</TableCell>
+                      </TableRow>
+                    )}
+                    {!dbLoading && !dbError && (dbQuotes?.rows?.length ? dbQuotes.rows.map((q) => (
+                      <TableRow key={q.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span>{q.number}</span>
+                            <Badge variant="secondary">DB</Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell>{q.customerName || '—'}</TableCell>
+                        <TableCell>{formatMoney(q.total)}</TableCell>
+                        <TableCell>
+                          {q.status}{q.viewCount ? ` (Viewed ${q.viewCount})` : ''}
+                        </TableCell>
+                        <TableCell>{formatDate(q.updatedAt)}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex gap-2 justify-end">
+                            <Button variant="secondary" disabled>Edit</Button>
+                            <Button disabled>Action</Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )) : (
+                      <TableRow>
+                        <TableCell colSpan={6}>No quotes found.</TableCell>
+                      </TableRow>
+                    ))}
+                  </>
+                )}
               </TableBody>
             </Table>
           </CardContent>
