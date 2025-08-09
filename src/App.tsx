@@ -43,8 +43,6 @@ const App = () => (
                    <Route path="/auth/update-password" element={<UpdatePasswordPage />} />
                    <Route path="/clerk-auth" element={<ClerkAuthPage />} />
                    <Route path="/" element={<Navigate to="/calendar" replace />} />
-                   {/* Public quote view - do not wrap with ProtectedRoute */}
-                   <Route path="/c/:slug/q/:token" element={React.createElement(lazy(() => import("./pages/PublicQuote")))} />
                    <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
                    <Route path="/work-orders" element={<ProtectedRoute><WorkOrdersPage /></ProtectedRoute>} />
                    <Route path="/estimates" element={<ProtectedRoute><EstimatesPage /></ProtectedRoute>} />
