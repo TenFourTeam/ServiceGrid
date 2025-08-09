@@ -159,7 +159,12 @@ serve(async (req: Request) => {
       .from("email_senders")
       .update({
         verified,
-        status: providerStatus,
+        status:
+          (typeof sgJson?.verification_status === "string"
+            ? String(sgJson.verification_status).toLowerCase()
+            : (sgJson?.verified && typeof sgJson.verified?.status === "string"
+                ? String(sgJson.verified.status).toLowerCase()
+                : (verified ? "verified" : "pending"))),
       })
       .eq("id", sender.id);
 
