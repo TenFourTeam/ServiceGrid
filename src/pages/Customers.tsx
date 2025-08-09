@@ -1,63 +1,147 @@
+
 import AppLayout from '@/components/Layout/AppLayout';
-import { useStore } from '@/store/useAppStore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useState } from 'react';
+import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/components/Auth/AuthProvider';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 export default function CustomersPage() {
-  const store = useStore();
-  const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState({ name: '', email: '', phone: '', address: '' });
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  function save() {
-    store.upsertCustomer(draft);
-    setOpen(false);
-    setDraft({ name: '', email: '', phone: '', address: '' });
+  const { data, isLoading, error } = useSupabaseCustomers();
+  const rows = data?.rows ?? [];
+
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [draft, setDraft] = useState({ name: '', email: '', address: '' });
+
+  async function save() {
+    if (!user) {
+      toast.error('You must be signed in to create customers.');
+      return;
+    }
+    if (!draft.name.trim()) {
+      toast.error('Please enter a customer name.');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      // Ensure the user has a business and get its id
+      const { data: business, error: rpcError } = await supabase.rpc('ensure_default_business');
+      if (rpcError) throw rpcError;
+      const businessId = (business as any)?.id;
+      if (!businessId) throw new Error('Could not resolve business for current user.');
+
+      // Insert the customer tied to the current user and business
+      const { error: insertError } = await supabase.from('customers').insert({
+        name: draft.name.trim(),
+        email: draft.email.trim() || null,
+        address: draft.address.trim() || null,
+        business_id: businessId,
+        owner_id: user.id,
+      });
+
+      if (insertError) throw insertError;
+
+      toast.success('Customer created');
+      setOpen(false);
+      setDraft({ name: '', email: '', address: '' });
+      await queryClient.invalidateQueries({ queryKey: ['supabase', 'customers'] });
+    } catch (e: any) {
+      console.error('[CustomersPage] create customer failed:', e);
+      toast.error(e?.message || 'Failed to create customer');
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
     <AppLayout title="Customers">
       <section className="space-y-4">
-        <div className="flex justify-end"><Button onClick={()=>setOpen(true)}>New Customer</Button></div>
+        <div className="flex justify-end">
+          <Button onClick={() => setOpen(true)}>New Customer</Button>
+        </div>
+
         <Card>
-          <CardHeader><CardTitle>All Customers</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>All Customers</CardTitle>
+          </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Address</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {store.customers.map((c)=> (
-                  <TableRow key={c.id}>
-                    <TableCell>{c.name}</TableCell>
-                    <TableCell>{c.email}</TableCell>
-                    <TableCell>{c.phone}</TableCell>
-                    <TableCell>{c.address}</TableCell>
+            {isLoading ? (
+              <div className="text-muted-foreground">Loading customers…</div>
+            ) : error ? (
+              <div className="text-destructive">Error loading customers: {error.message}</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Address</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {rows.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={3} className="text-muted-foreground">
+                        No customers yet.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    rows.map((c) => (
+                      <TableRow key={c.id}>
+                        <TableCell>{c.name}</TableCell>
+                        <TableCell>{c.email ?? ''}</TableCell>
+                        <TableCell>{c.address ?? ''}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       </section>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>New Customer</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>New Customer</DialogTitle>
+          </DialogHeader>
           <div className="space-y-3">
-            <Input placeholder="Name" value={draft.name} onChange={(e)=>setDraft({...draft, name:e.target.value})} />
-            <Input placeholder="Email" value={draft.email} onChange={(e)=>setDraft({...draft, email:e.target.value})} />
-            <Input placeholder="Phone" value={draft.phone} onChange={(e)=>setDraft({...draft, phone:e.target.value})} />
-            <Input placeholder="Address" value={draft.address} onChange={(e)=>setDraft({...draft, address:e.target.value})} />
-            <div className="flex justify-end gap-2"><Button variant="secondary" onClick={()=>setOpen(false)}>Cancel</Button><Button onClick={save}>Save</Button></div>
+            <Input
+              placeholder="Name"
+              value={draft.name}
+              onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+            />
+            <Input
+              placeholder="Email"
+              type="email"
+              value={draft.email}
+              onChange={(e) => setDraft({ ...draft, email: e.target.value })}
+            />
+            <Input
+              placeholder="Address"
+              value={draft.address}
+              onChange={(e) => setDraft({ ...draft, address: e.target.value })}
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => setOpen(false)} disabled={saving}>
+                Cancel
+              </Button>
+              <Button onClick={save} disabled={saving || !draft.name.trim()}>
+                {saving ? 'Saving…' : 'Save'}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

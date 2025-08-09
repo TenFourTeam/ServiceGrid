@@ -608,6 +608,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      ensure_default_business: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          est_prefix: string
+          est_seq: number
+          id: string
+          inv_prefix: string
+          inv_seq: number
+          logo_url: string | null
+          name: string
+          owner_id: string
+          phone: string | null
+          reply_to_email: string | null
+          tax_rate_default: number
+          updated_at: string
+        }
+      }
       next_est_number: {
         Args: { p_business_id: string }
         Returns: string

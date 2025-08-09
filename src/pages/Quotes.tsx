@@ -1,827 +1,500 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
 import AppLayout from '@/components/Layout/AppLayout';
-import { useStore } from '@/store/useAppStore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { formatMoney, formatDate } from '@/utils/format';
-import { useMemo, useState, useEffect, useRef } from 'react';
-import { Quote } from '@/types';
-import { useToast } from '@/hooks/use-toast';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth as useClerkAuth } from '@clerk/clerk-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { escapeHtml, sanitizeSubject } from '@/utils/sanitize';
-import { useAuth as useAppAuth } from '@/components/Auth/AuthProvider';
+import { useAuth } from '@/components/Auth/AuthProvider';
 import { useSupabaseQuotes } from '@/hooks/useSupabaseQuotes';
 import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useStore } from '@/store/useAppStore';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { Trash2, Plus, Eye, Send, Download, Copy } from 'lucide-react';
+import { toast } from 'sonner';
+import { formatCurrency } from '@/lib/utils';
+import type { Customer, LineItem, Quote, QuoteStatus } from '@/types';
 
+interface QuoteDraft {
+  customerId: string;
+  address: string;
+  lineItems: LineItem[];
+  taxRate: number;
+  discount: number;
+  notesInternal: string;
+  terms: string;
+}
 
-type SortKey = 'customer' | 'amount' | 'status' | 'updated';
-type SortDir = 'asc' | 'desc';
+const statusColors: Record<QuoteStatus, string> = {
+  'Draft': 'bg-gray-100 text-gray-800',
+  'Sent': 'bg-blue-100 text-blue-800',
+  'Viewed': 'bg-yellow-100 text-yellow-800',
+  'Approved': 'bg-green-100 text-green-800',
+  'Declined': 'bg-red-100 text-red-800',
+  'Edits Requested': 'bg-orange-100 text-orange-800',
+};
+
+function calculateLineTotal(qty: number, unitPrice: number): number {
+  return Math.round(qty * unitPrice);
+}
+
+function calculateQuoteTotals(lineItems: LineItem[], taxRate: number, discount: number) {
+  const subtotal = lineItems.reduce((sum, item) => sum + item.lineTotal, 0);
+  const taxAmount = Math.round(subtotal * taxRate);
+  const total = subtotal + taxAmount - discount;
+  return { subtotal, taxAmount, total };
+}
 
 export default function QuotesPage() {
+  const { user: appUser } = useAuth();
   const store = useStore();
-  const { toast } = useToast();
-  const clerkAuth = useClerkAuth();
-
-  async function buildAuthHeaders(): Promise<Record<string, string>> {
-    try {
-      const headers: Record<string, string> = {};
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`;
-        return headers;
-      }
-      if (clerkAuth?.isSignedIn) {
-        const token = await clerkAuth.getToken();
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-      }
-      return headers;
-    } catch {
-      return {};
-    }
-  }
-
-  const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState<Partial<Quote>>({
-    lineItems: [],
-    taxRate: 0, // default to zero
-    discount: 0,
-    paymentTerms: 'due_on_receipt',
-    depositRequired: false,
-    depositPercent: 0,
-    frequency: 'one-off',
-  });
-
-  // Email preview state
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewSubject, setPreviewSubject] = useState('');
-  const [previewHTML, setPreviewHTML] = useState('');
-
-  // Sorting
-  const [sortKey, setSortKey] = useState<SortKey>('updated');
-  const [sortDir, setSortDir] = useState<SortDir>('desc');
-
-  const { user: appUser } = useAppAuth();
-  const { data: dbQuotes, isLoading: dbLoading, error: dbError } = useSupabaseQuotes({ enabled: !!appUser });
+  const { data: dbQuotes } = useSupabaseQuotes({ enabled: !!appUser });
   const { data: dbCustomers } = useSupabaseCustomers({ enabled: !!appUser });
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
 
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [draft, setDraft] = useState<QuoteDraft>({
+    customerId: '',
+    address: '',
+    lineItems: [],
+    taxRate: 0.1,
+    discount: 0,
+    notesInternal: '',
+    terms: '',
+  });
+
+  const lineItemIdCounter = useRef(1);
+
+  const customers = useMemo(() => {
+    if (appUser && dbCustomers?.rows) {
+      return dbCustomers.rows.map(row => ({
+        id: row.id,
+        businessId: '',
+        name: row.name,
+        email: row.email || undefined,
+        phone: undefined,
+        address: row.address || undefined,
+      }));
+    }
+    return store.customers;
+  }, [appUser, dbCustomers, store.customers]);
+
+  const quotes = useMemo(() => {
+    if (appUser && dbQuotes?.rows) {
+      return dbQuotes.rows.map(row => ({
+        id: row.id,
+        number: row.number,
+        businessId: '',
+        customerId: row.customerId,
+        address: '',
+        lineItems: [],
+        taxRate: 0,
+        discount: 0,
+        subtotal: row.total,
+        total: row.total,
+        status: row.status,
+        files: [],
+        createdAt: row.updatedAt,
+        updatedAt: row.updatedAt,
+        publicToken: row.publicToken,
+        viewCount: row.viewCount,
+      }));
+    }
+    return store.quotes;
+  }, [appUser, dbQuotes, store.quotes]);
+
+  function resetDraft() {
+    setDraft({
+      customerId: '',
+      address: '',
+      lineItems: [],
+      taxRate: store.business.taxRateDefault,
+      discount: 0,
+      notesInternal: '',
+      terms: '',
+    });
+    lineItemIdCounter.current = 1;
+  }
+
+  function addLineItem() {
+    const newItem: LineItem = {
+      id: `temp-${lineItemIdCounter.current++}`,
+      name: '',
+      qty: 1,
+      unit: '',
+      unitPrice: 0,
+      lineTotal: 0,
+    };
+    setDraft(prev => ({
+      ...prev,
+      lineItems: [...prev.lineItems, newItem],
+    }));
+  }
+
+  function updateLineItem(id: string, updates: Partial<LineItem>) {
+    setDraft(prev => ({
+      ...prev,
+      lineItems: prev.lineItems.map(item => {
+        if (item.id !== id) return item;
+        const updated = { ...item, ...updates };
+        if ('qty' in updates || 'unitPrice' in updates) {
+          updated.lineTotal = calculateLineTotal(updated.qty, updated.unitPrice);
+        }
+        return updated;
+      }),
+    }));
+  }
+
+  function removeLineItem(id: string) {
+    setDraft(prev => ({
+      ...prev,
+      lineItems: prev.lineItems.filter(item => item.id !== id),
+    }));
+  }
+
+  async function saveQuote() {
+    if (!draft.customerId) {
+      toast.error('Please select a customer');
+      return;
+    }
+    if (draft.lineItems.length === 0) {
+      toast.error('Please add at least one line item');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { subtotal, total } = calculateQuoteTotals(draft.lineItems, draft.taxRate, draft.discount);
+      
+      const newQuote: Omit<Quote, 'id' | 'number' | 'createdAt' | 'updatedAt' | 'publicToken'> = {
+        businessId: store.business.id,
+        customerId: draft.customerId,
+        address: draft.address,
+        lineItems: draft.lineItems,
+        taxRate: draft.taxRate,
+        discount: draft.discount,
+        subtotal,
+        total,
+        status: 'Draft',
+        files: [],
+        notesInternal: draft.notesInternal,
+        terms: draft.terms,
+      };
+
+      store.upsertQuote(newQuote);
+      toast.success('Quote created successfully');
+      setOpen(false);
+      resetDraft();
+    } catch (error) {
+      console.error('Error saving quote:', error);
+      toast.error('Failed to save quote');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function getCustomerName(customerId: string): string {
+    const customer = customers.find(c => c.id === customerId);
+    return customer?.name || 'Unknown Customer';
+  }
+
+  function copyPublicLink(quote: Quote) {
+    const url = `${window.location.origin}/quote/${quote.publicToken}`;
+    navigator.clipboard.writeText(url);
+    toast.success('Quote link copied to clipboard');
+  }
+
   useEffect(() => {
     const params = new URLSearchParams(location.search || '');
     const newParam = params.get('new');
     if (newParam && (newParam === '1' || newParam.toLowerCase() === 'true')) {
-      if (!appUser) {
-        navigate('/clerk-auth', { replace: true });
-        return;
-      }
       resetDraft();
       setOpen(true);
       navigate('/quotes', { replace: true });
     }
-  }, [location.search, appUser, navigate]);
-
-  // session-level guards to avoid duplicate toasts/emails
-  const processedEditEmailsRef = useRef<Set<string>>(new Set());
-  const shownToastRef = useRef<Set<string>>(new Set());
+  }, [location.search, navigate]);
 
   const totals = useMemo(() => {
-    const li = draft.lineItems ?? [];
-    const subtotal = li.reduce((s, l) => s + Math.round((l.qty ?? 1) * (l.unitPrice ?? 0)), 0);
-    const tax = Math.round(subtotal * (draft.taxRate ?? 0));
-    const total = Math.max(0, subtotal + tax - (draft.discount ?? 0));
-    return { subtotal, total };
-  }, [draft]);
-
-  const draftCanSend = !draft.id || draft.status === 'Draft' || draft.status === 'Edits Requested';
-
-  // Pretty email helpers
-  function formatPaymentTermsLabel(terms: string) {
-    switch (terms) {
-      case 'due_on_receipt': return 'Due on receipt';
-      case 'net_15': return 'Net 15';
-      case 'net_30': return 'Net 30';
-      case 'net_60': return 'Net 60';
-      default: return terms || 'Due on receipt';
-    }
-  }
-
-  function renderQuoteEmailHTML(params: {
-     number: string;
-     businessName: string;
-     customerName: string;
-     items: { name: string; qty?: number; unitPrice?: number; lineTotal?: number }[];
-     subtotal: number;
-     taxRate: number;
-     discount: number;
-     total: number;
-     address?: string;
-     terms?: string;
-     depositRequired?: boolean;
-     depositPercent?: number;
-     paymentTerms?: string;
-     frequency?: string;
-     viewLink?: string;
-     quoteId?: string;
-     token?: string;
-     preview?: boolean;
-   }) {
-     const rows = (params.items || []).map((li) => {
-       const qty = li.qty ?? 1;
-       const unit = formatMoney(li.unitPrice ?? 0);
-       const amt = formatMoney(li.lineTotal ?? Math.round(qty * (li.unitPrice ?? 0)));
-       return `<tr>
-         <td style="padding:12px 8px;border-bottom:1px solid #eee;">${escapeHtml(li.name || '')}</td>
-         <td style="padding:12px 8px;text-align:center;border-bottom:1px solid #eee;">${qty}</td>
-         <td style="padding:12px 8px;text-align:right;border-bottom:1px solid #eee;">${unit}</td>
-         <td style="padding:12px 8px;text-align:right;border-bottom:1px solid #eee;">${amt}</td>
-       </tr>`;
-     }).join('');
- 
-     const discountRow = params.discount > 0 ? `<tr>
-       <td style="padding:8px 8px;text-align:right" colspan="3">Discount</td>
-       <td style="padding:8px 8px;text-align:right">- ${formatMoney(params.discount)}</td>
-     </tr>` : '';
- 
-     const depositLine = params.depositRequired ? `<p style="margin:6px 0 0;color:#555;">Deposit: ${params.depositPercent ?? 0}% due to schedule.</p>` : '';
- 
-     const funcBase = 'https://ijudkzqfriazabiosnvb.functions.supabase.co/quote-events';
-     const appBase = (typeof window !== 'undefined' && (window as any).location?.origin) ? (window as any).location.origin : '';
-     const hasActions = !!(params.quoteId && params.token);
- 
-     // Route actions through the app for a branded confirmation page
-     const approveHref = hasActions && appBase ? `${appBase}/quote-action?type=approve&quote_id=${encodeURIComponent(params.quoteId!)}&token=${encodeURIComponent(params.token!)}` : undefined;
-     const editHref = hasActions && appBase ? `${appBase}/quote-action?type=edit&quote_id=${encodeURIComponent(params.quoteId!)}&token=${encodeURIComponent(params.token!)}` : undefined;
- 
-     // Keep pixel for reliable open tracking via the edge function
-     const openPixelSrc = hasActions ? `${funcBase}?type=open&quote_id=${encodeURIComponent(params.quoteId!)}&token=${encodeURIComponent(params.token!)}` : undefined;
- 
-     // Email-safe button styles matching app theme
-     const primaryBg = '#0f172a'; // app primary (approx.)
-     const primaryText = '#ffffff';
-     const secondaryBg = '#f1f5f9'; // app secondary (approx.)
-     const secondaryText = '#0f172a';
-     const borderCol = '#e5e7eb';
-     const btnBase = 'display:inline-block;text-decoration:none;padding:10px 14px;border-radius:8px;font-weight:600;';
-     const approveBtn = `${btnBase}background:${primaryBg};color:${primaryText};margin-right:8px;`;
-     const editBtn = `${btnBase}background:${secondaryBg};color:${secondaryText};border:1px solid ${borderCol};`;
- 
-     const actionsBlock = `
-       <div style="margin-top:16px;">
-         ${approveHref
-           ? `<a href="${approveHref}" style="${approveBtn}">Approve</a>`
-           : `<span style="${approveBtn}opacity:.6;">Approve</span>`
-         }
-         ${editHref
-           ? `<a href="${editHref}" style="${editBtn}">Request Edits</a>`
-           : `<span style="${editBtn}opacity:.6;">Request Edits</span>`
-         }
-       </div>
-     `;
- 
-     const previewHelpers = params.preview ? `
-       <div id=\"action-confirm\" style=\"display:none;margin-top:16px;padding:16px;border:1px solid ${borderCol};border-radius:8px;background:#f8fafc;color:#334155;\">\n         <div id=\"action-title\" style=\"font-weight:700;margin-bottom:4px;\"></div>\n         <div id=\"action-desc\"></div>\n       </div>\n       <script>(function(){\n         document.addEventListener('click', function(ev){\n           var t = ev.target;\n           while (t && t.tagName !== 'A') t = t.parentElement;\n           if (!t) return;\n           var href = t.getAttribute('href') || '';\n           if (href.indexOf('${funcBase}') === 0 || href.indexOf('${appBase}/quote-action') === 0 || href.indexOf('/quote-action') === 0) {\n             ev.preventDefault();\n             try {\n               var u = new URL(href, window.location.origin);\n               var type = u.searchParams.get('type');\n               var title = document.getElementById('action-title');\n               var desc = document.getElementById('action-desc');\n               var box = document.getElementById('action-confirm');\n               if (type === 'approve') {\n                 if (title) title.textContent = 'Preview: Approval recorded';\n                 if (desc) desc.textContent = 'In a real email, clicking Approve would record your approval.';\n               } else if (type === 'edit') {\n                 if (title) title.textContent = 'Preview: Edit request recorded';\n                 if (desc) desc.textContent = 'In a real email, clicking Request Edits would notify us of your requested changes.';\n               }\n               if (box) box.style.display = 'block';\n             } catch {}\n           }\n         }, true);\n       })();<\/script>\n     ` : '';
- 
-     return `
-     <div style="background:#f6f9fc;padding:24px 12px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
-       <div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #e6eaf1;border-radius:10px;overflow.hidden;">
-         <div style="background:${primaryBg};color:${primaryText};padding:20px 24px;">
-            <div style="font-size:18px;font-weight:600">${escapeHtml(params.businessName)}</div>
-            <div style="opacity:0.85;font-size:14px">Quote ${escapeHtml(params.number)}</div>
-          </div>
-          <div style="padding:24px;">
-            <p style="margin:0 0 12px;color:#111;">Hi ${escapeHtml(params.customerName)},</p>
-           <p style="margin:0 0 16px;color:#333;">Please find your quote below. Total amount is <strong>${formatMoney(params.total)}</strong>.</p>
-           ${params.viewLink ? `<div style="margin:16px 0 20px;"><a href="${params.viewLink}" target="_blank" style="${btnBase}background:${primaryBg};color:${primaryText};">View your quote</a></div>` : ''}
- 
-           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin:12px 0 4px;">
-             <thead>
-               <tr>
-                 <th align="left" style="padding:8px;color:#334155;font-size:12px;text-transform:uppercase;letter-spacing:.02em">Item</th>
-                 <th align="center" style="padding:8px;color:#334155;font-size:12px;text-transform:uppercase;letter-spacing:.02em">Qty</th>
-                 <th align="right" style="padding:8px;color:#334155;font-size:12px;text-transform:uppercase;letter-spacing:.02em">Price</th>
-                 <th align="right" style="padding:8px;color:#334155;font-size:12px;text-transform:uppercase;letter-spacing:.02em">Amount</th>
-               </tr>
-             </thead>
-             <tbody>
-               ${rows}
-             </tbody>
-           </table>
- 
-           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin-top:8px;">
-             <tr>
-               <td style="padding:8px 8px;text-align:right" colspan="3">Subtotal</td>
-               <td style="padding:8px 8px;text-align:right">${formatMoney(params.subtotal)}</td>
-             </tr>
-             <tr>
-               <td style="padding:8px 8px;text-align:right" colspan="3">Tax (${Math.round((params.taxRate || 0) * 100)}%)</td>
-               <td style="padding:8px 8px;text-align:right">${formatMoney(Math.round(params.subtotal * (params.taxRate || 0)))}</td>
-             </tr>
-             ${discountRow}
-             <tr>
-               <td style="padding:12px 8px;text-align:right;border-top:2px solid #e5e7eb;font-weight:700" colspan="3">Total</td>
-               <td style="padding:12px 8px;text-align:right;border-top:2px solid #e5e7eb;font-weight:700">${formatMoney(params.total)}</td>
-             </tr>
-           </table>
- 
-           <div style="margin-top:16px;color:#4b5563;font-size:14px;">
-             ${params.paymentTerms && params.paymentTerms !== 'due_on_receipt' ? `<p style="margin:0 0 6px;">Payment terms: ${formatPaymentTermsLabel(params.paymentTerms)}</p>` : ''}
-             ${params.frequency && params.frequency !== 'one-off' ? `<p style="margin:6px 0 0;">Frequency: ${({ 'bi-monthly':'Bi-monthly', 'monthly':'Monthly', 'bi-yearly':'Bi-yearly', 'yearly':'Yearly' } as any)[params.frequency] || params.frequency}</p>` : ''}
-             ${depositLine}
-             ${params.address ? `<p style=\"margin:6px 0 0;\">Service address: ${escapeHtml(params.address)}</p>` : ''}
-           </div>
- 
-           ${params.terms ? `<div style="margin-top:16px;padding:12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;color:#374151;font-size:13px;">
-             <div style="font-weight:600;margin-bottom:6px;">Terms</div>
-             <div>${escapeHtml(params.terms)}</div>
-           </div>` : ''}
- 
-           ${actionsBlock}
-           ${previewHelpers}
- 
-           <p style="margin-top:20px;color:#334155;">Thank you,<br/>${escapeHtml(params.businessName)}</p>
- 
-           ${openPixelSrc ? `<img src="${openPixelSrc}" width="1" height="1" alt="" style="display:block;opacity:0;" />` : ''}
-         </div>
-       </div>
-       <div style="max-width:640px;margin:8px auto 0;text-align:center;color:#6b7280;font-size:12px;">This is an automated message. Please reply if you have any questions.</div>
-     </div>`;
-   }
-
-  function addLine() {
-    setDraft((d) => ({
-      ...d,
-      lineItems: [...(d.lineItems ?? []), { id: crypto.randomUUID(), name: '', qty: 1, unitPrice: 0, lineTotal: 0 }],
-    }));
-  }
-
-  function resetDraft() {
-    setDraft({
-      lineItems: [],
-      taxRate: 0,
-      discount: 0,
-      paymentTerms: 'due_on_receipt',
-      depositRequired: false,
-      depositPercent: 0,
-      frequency: 'one-off',
-    });
-  }
-
-  function save() {
-    const e = store.upsertQuote({ ...draft, customerId: draft.customerId! });
-    setOpen(false);
-    resetDraft();
-    toast({ title: 'Quote saved', description: `Saved quote ${e.number}` });
-  }
-
-  async function sendEmailForQuote(e: Quote) {
-    const customer = store.customers.find((c) => c.id === e.customerId);
-    const to = customer?.email;
-    if (!to) {
-      toast({ title: 'No email on file', description: 'Add an email to the customer to send the quote.' });
-      return;
-    }
-
-    const headers = await buildAuthHeaders();
-
-    const subject = sanitizeSubject(`Quote ${e.number} — ${store.business.name} — ${formatMoney(e.total)}`);
-    const html = renderQuoteEmailHTML({
-      number: e.number,
-      businessName: store.business.name,
-      customerName: customer.name,
-      items: e.lineItems || [],
-      subtotal: e.subtotal ?? 0,
-      taxRate: e.taxRate ?? 0,
-      discount: e.discount ?? 0,
-      total: e.total,
-      address: e.address,
-      terms: e.terms,
-      depositRequired: e.depositRequired,
-      depositPercent: e.depositPercent,
-      paymentTerms: e.paymentTerms,
-      frequency: e.frequency,
-      quoteId: e.id,
-      token: e.publicToken,
-    });
-
-    const { data, error } = await supabase.functions.invoke('resend-send-email', {
-      body: {
-        to,
-        subject,
-        html,
-        quote_id: e.id,
-        from_name: store.business.name,
-        reply_to: store.business.replyToEmail || undefined,
-      },
-      headers,
-    });
-
-    console.log('resend-send-email response', { data, error });
-
-    if (error) {
-      console.error('resend-send-email error', error);
-      const status = (error as any)?.status;
-      const msg = status === 401
-        ? 'You are not authenticated. Please sign in and try again.'
-        : (error.message || 'There was a problem sending the email.');
-      toast({ title: 'Failed to send', description: msg, variant: 'destructive' });
-      return;
-    }
-
-    const payload = data as any;
-    if (payload?.error) {
-      const raw = String(payload.error);
-      console.error('resend-send-email payload error', raw);
-      const lower = raw.toLowerCase();
-      let friendly = raw;
-      if (lower.includes('domain') && lower.includes('not verified')) {
-        friendly = 'Your sending domain is not verified. Verify your domain in Resend (resend.com/domains) or use a verified from email.';
-      }
-      toast({ title: 'Failed to send', description: friendly, variant: 'destructive' });
-    } else {
-      toast({ title: 'Quote sent', description: `Email sent to ${to}.` });
-    }
-  }
-
-  async function sendEditFollowupEmail(e: Quote) {
-    const customer = store.customers.find((c) => c.id === e.customerId);
-    const to = customer?.email;
-    if (!to) {
-      console.warn('No customer email for follow-up');
-      return;
-    }
-
-    const headers = await buildAuthHeaders();
-    const subject = sanitizeSubject(`Re: Quote ${e.number} — What would you like to change?`);
-    const html = `<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#0f172a;">
-      <p>Hi ${escapeHtml(customer?.name || 'there')},</p>
-      <p>Thanks for requesting edits to quote <strong>${escapeHtml(e.number)}</strong>. Just reply to this email with the changes you’d like, and we’ll update the quote promptly.</p>
-      <p>Best,<br/>${escapeHtml(store.business.name)}</p>
-    </div>`;
-
-    const { data, error } = await supabase.functions.invoke('resend-send-email', {
-      body: {
-        to,
-        subject,
-        html,
-        quote_id: e.id,
-        from_name: store.business.name,
-        reply_to: store.business.replyToEmail || undefined,
-      },
-      headers,
-    });
-    console.log('edit follow-up email response', { data, error });
-    if (error || (data as any)?.error) {
-      const msg = (error as any)?.message || (data as any)?.error || 'There was a problem sending the follow-up email.';
-      toast({ title: 'Follow-up not sent', description: msg, variant: 'destructive' });
-    } else {
-      toast({ title: 'We emailed the customer', description: `Sent follow-up for ${e.number}.` });
-    }
-  }
-
-  async function saveAndSend() {
-    if (!draft.customerId) {
-      toast({ title: 'Select customer', description: 'Please choose a customer before sending.' });
-      return;
-    }
-    if (draft.id && !(draft.status === 'Draft' || draft.status === 'Edits Requested')) {
-      toast({ title: 'Cannot send email', description: 'Only Draft or Edits Requested quotes can be emailed.' });
-      return;
-    }
-    const now = new Date().toISOString();
-    const e = store.upsertQuote({ ...draft, customerId: draft.customerId!, status: 'Sent', sentAt: now, updatedAt: now });
-    // Also trigger store event logging
-    store.sendQuote(e.id);
-    await sendEmailForQuote(e);
-    setOpen(false);
-    resetDraft();
-  }
-
-  function openPreview() {
-    const customer = draft.customerId ? store.customers.find((c) => c.id === draft.customerId) : undefined;
-    const lineItems = draft.lineItems ?? [];
-    const subtotal = lineItems.reduce((s, l) => s + Math.round((l.qty ?? 1) * (l.unitPrice ?? 0)), 0);
-    const taxRate = (draft.taxRate ?? store.business.taxRateDefault ?? 0) as number;
-    const tax = Math.round(subtotal * taxRate);
-    const discount = draft.discount ?? 0;
-    const total = Math.max(0, subtotal + tax - discount);
-    const number = draft.number ?? 'Draft';
-    const subject = sanitizeSubject(`Quote ${number} — ${store.business.name} — ${formatMoney(total)}`);
-    const html = renderQuoteEmailHTML({
-      number,
-      businessName: store.business.name,
-      customerName: customer?.name ?? 'Customer',
-      items: lineItems,
-      subtotal,
-      taxRate,
-      discount,
-      total,
-      address: draft.address,
-      terms: draft.terms ?? 'Payment due upon receipt. Thank you for your business.',
-      depositRequired: !!draft.depositRequired,
-      depositPercent: draft.depositPercent ?? 0,
-      paymentTerms: draft.paymentTerms ?? 'due_on_receipt',
-      frequency: draft.frequency,
-      quoteId: draft.id,
-      token: draft.publicToken,
-      preview: true,
-    });
-    setPreviewSubject(subject);
-    setPreviewHTML(html);
-    setPreviewOpen(true);
-  }
-
-  function send(est: Quote) {
-    if (!(est.status === 'Draft' || est.status === 'Edits Requested')) {
-      toast({ title: 'Cannot send email', description: 'Only Draft or Edits Requested quotes can be emailed.' });
-      return;
-    }
-    store.sendQuote(est.id);
-    sendEmailForQuote(est);
-  }
-
-  const sortedQuotes = useMemo(() => {
-    const arr = [...store.quotes];
-    arr.sort((a, b) => {
-      switch (sortKey) {
-        case 'customer': {
-          const an = store.customers.find(c => c.id === a.customerId)?.name || '';
-          const bn = store.customers.find(c => c.id === b.customerId)?.name || '';
-          return sortDir === 'asc' ? an.localeCompare(bn) : bn.localeCompare(an);
-        }
-        case 'amount':
-          return sortDir === 'asc' ? a.total - b.total : b.total - a.total;
-        case 'status':
-          return sortDir === 'asc' ? a.status.localeCompare(b.status) : b.status.localeCompare(a.status);
-        case 'updated': {
-          const at = new Date(a.updatedAt).getTime();
-          const bt = new Date(b.updatedAt).getTime();
-          return sortDir === 'asc' ? at - bt : bt - at;
-        }
-        default:
-          return 0;
-      }
-    });
-    return arr;
-  }, [store.quotes, store.customers, sortKey, sortDir]);
-
-  function toggleSort(k: SortKey) {
-    if (k === sortKey) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortKey(k);
-      setSortDir('asc');
-    }
-  }
-
-  // Handlers for DB-backed actions
-  const handleEditDbQuote = async (id: string) => {
-    try {
-      if (!appUser) { navigate('/clerk-auth'); return; }
-      const { data, error } = await supabase
-        .from('quotes')
-        .select([
-          'id',
-          'number',
-          'customer_id',
-          'address',
-          'tax_rate',
-          'discount',
-          'payment_terms',
-          'deposit_required',
-          'deposit_percent',
-          'frequency',
-          'terms',
-          'status',
-          'subtotal',
-          'total',
-          'public_token',
-          'created_at',
-          'updated_at',
-          'view_count',
-          'quote_line_items(id,name,qty,unit,unit_price,line_total,position)'
-        ].join(','))
-        .eq('id', id)
-        .maybeSingle();
-
-      if (error || !data) throw new Error(error?.message || 'Quote not found');
-
-      const items = ((data as any).quote_line_items || [])
-        .sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0))
-        .map((li: any) => ({
-          id: li.id,
-          name: li.name,
-          qty: Number(li.qty ?? 1),
-          unit: li.unit ?? undefined,
-          unitPrice: Number(li.unit_price ?? 0),
-          lineTotal: Number(li.line_total ?? 0),
-        }));
-
-      setDraft({
-        id: (data as any).id,
-        number: (data as any).number,
-        customerId: (data as any).customer_id,
-        address: (data as any).address ?? undefined,
-        lineItems: items,
-        taxRate: Number((data as any).tax_rate ?? 0),
-        discount: Number((data as any).discount ?? 0),
-        paymentTerms: (data as any).payment_terms ?? 'due_on_receipt',
-        depositRequired: !!(data as any).deposit_required,
-        depositPercent: (data as any).deposit_percent ?? 0,
-        frequency: (data as any).frequency ?? 'one-off',
-        terms: (data as any).terms ?? undefined,
-        status: (data as any).status,
-        subtotal: Number((data as any).subtotal ?? 0),
-        total: Number((data as any).total ?? 0),
-        publicToken: (data as any).public_token,
-        viewCount: Number((data as any).view_count ?? 0),
-        createdAt: (data as any).created_at,
-        updatedAt: (data as any).updated_at,
-      } as Partial<Quote>);
-
-      setOpen(true);
-    } catch (err: any) {
-      console.error('handleEditDbQuote error', err);
-      toast({ title: 'Could not load quote', description: err?.message || 'Please try again.', variant: 'destructive' });
-    }
-  };
-
-  const handleMarkApproved = async (id: string) => {
-    try {
-      if (!appUser) { navigate('/clerk-auth'); return; }
-      const now = new Date().toISOString();
-      const approvedBy = (appUser as any)?.email || (appUser as any)?.user_metadata?.email || undefined;
-      const { error } = await supabase
-        .from('quotes')
-        .update({ status: 'Approved', approved_at: now, approved_by: approvedBy })
-        .eq('id', id);
-      if (error) throw error;
-      toast({ title: 'Marked approved', description: 'The quote was marked as Approved.' });
-      await queryClient.invalidateQueries({ queryKey: ['supabase', 'quotes'] });
-    } catch (err: any) {
-      console.error('handleMarkApproved error', err);
-      toast({ title: 'Failed to update', description: err?.message || 'Please try again.', variant: 'destructive' });
-    }
-  };
-
-  // Sort Supabase rows client-side
-  const dbSortedRows = useMemo(() => {
-    const rows = dbQuotes?.rows ? [...dbQuotes.rows] : [];
-    rows.sort((a, b) => {
-      switch (sortKey) {
-        case 'customer': {
-          const an = (a.customerName || '').toLowerCase();
-          const bn = (b.customerName || '').toLowerCase();
-          return sortDir === 'asc' ? an.localeCompare(bn) : bn.localeCompare(an);
-        }
-        case 'amount':
-          return sortDir === 'asc' ? a.total - b.total : b.total - a.total;
-        case 'status':
-          return sortDir === 'asc' ? a.status.localeCompare(b.status) : b.status.localeCompare(a.status);
-        case 'updated': {
-          const at = new Date(a.updatedAt).getTime();
-          const bt = new Date(b.updatedAt).getTime();
-          return sortDir === 'asc' ? at - bt : bt - at;
-        }
-        default:
-          return 0;
-      }
-    });
-    return rows;
-  }, [dbQuotes?.rows, sortKey, sortDir]);
+    return calculateQuoteTotals(draft.lineItems, draft.taxRate, draft.discount);
+  }, [draft.lineItems, draft.taxRate, draft.discount]);
 
   return (
     <AppLayout title="Quotes">
       <section className="space-y-4">
-        <div className="flex justify-between gap-2">
-          <div />
-          <Button onClick={() => (appUser ? setOpen(true) : navigate('/clerk-auth'))}>Create Quote</Button>
+        <div className="flex justify-end">
+          <Button onClick={() => { resetDraft(); setOpen(true); }}>
+            New Quote
+          </Button>
         </div>
 
         <Card>
-          <CardHeader><CardTitle>All Quotes</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>All Quotes</CardTitle>
+          </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>No.</TableHead>
-                  <TableHead className="cursor-pointer select-none" onClick={() => toggleSort('customer')}>
-                    Customer {sortKey === 'customer' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
-                  </TableHead>
-                  <TableHead className="cursor-pointer select-none" onClick={() => toggleSort('amount')}>
-                    Amount {sortKey === 'amount' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
-                  </TableHead>
-                  <TableHead className="cursor-pointer select-none" onClick={() => toggleSort('status')}>
-                    Status {sortKey === 'status' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
-                  </TableHead>
-                  <TableHead className="cursor-pointer select-none" onClick={() => toggleSort('updated')}>
-                    Updated {sortKey === 'updated' ? (sortDir === 'asc' ? '▲' : '▼') : ''}
-                  </TableHead>
-                  <TableHead></TableHead>
+                  <TableHead>Number</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Views</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dbLoading && (
+                {quotes.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6}>Loading quotes…</TableCell>
-                  </TableRow>
-                )}
-                {dbError && !dbLoading && (
-                  <TableRow>
-                    <TableCell colSpan={6}>Failed to load quotes.</TableCell>
-                  </TableRow>
-                )}
-                {!dbLoading && !dbError && (dbSortedRows?.length ? dbSortedRows.map((q) => (
-                  <TableRow key={q.id}>
-                    <TableCell>{q.number}</TableCell>
-                    <TableCell>{q.customerName || '—'}</TableCell>
-                    <TableCell>{formatMoney(q.total)}</TableCell>
-                    <TableCell>
-                      {q.status}{q.viewCount ? ` (Viewed ${q.viewCount})` : ''}
-                    </TableCell>
-                    <TableCell>{formatDate(q.updatedAt)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex gap-2 justify-end">
-                        <Button variant="secondary" onClick={() => handleEditDbQuote(q.id)}>Edit</Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button>Action</Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="z-50">
-                            <DropdownMenuItem onClick={() => handleMarkApproved(q.id)}>Mark Approved</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground">
+                      No quotes yet. Create your first quote!
                     </TableCell>
                   </TableRow>
-                )) : (
-                  <TableRow>
-                    <TableCell colSpan={6}>No quotes found.</TableCell>
-                  </TableRow>
-                ))}
-
+                ) : (
+                  quotes.map((quote) => (
+                    <TableRow key={quote.id}>
+                      <TableCell className="font-medium">{quote.number}</TableCell>
+                      <TableCell>{getCustomerName(quote.customerId)}</TableCell>
+                      <TableCell>{formatCurrency(quote.total)}</TableCell>
+                      <TableCell>
+                        <Badge className={statusColors[quote.status]}>
+                          {quote.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{quote.viewCount || 0}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate(`/quote/${quote.publicToken}`)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyPublicLink(quote)}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </CardContent>
         </Card>
-
       </section>
 
-      <Dialog open={open} onOpenChange={(v)=>{ setOpen(v); if (!v) resetDraft(); }}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader><DialogTitle>{draft.id? 'Edit Quote' : 'Create Quote'}</DialogTitle></DialogHeader>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Customer</Label>
-              <select className="w-full border rounded-md h-9 px-3 bg-background" value={draft.customerId ?? ''} onChange={(e)=>setDraft({...draft, customerId: e.target.value})}>
-                <option value="">Select…</option>
-                {dbCustomers?.rows?.map((c)=> <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <Label>Service address</Label>
-              <Input value={draft.address ?? ''} onChange={(e)=>setDraft({...draft, address: e.target.value})} />
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>New Quote</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="customer">Customer *</Label>
+                <Select value={draft.customerId} onValueChange={(value) => setDraft(prev => ({ ...prev, customerId: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a customer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {customers.map((customer) => (
+                      <SelectItem key={customer.id} value={customer.id}>
+                        {customer.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="address">Service Address</Label>
+                <Input
+                  id="address"
+                  value={draft.address}
+                  onChange={(e) => setDraft(prev => ({ ...prev, address: e.target.value }))}
+                  placeholder="Enter service address"
+                />
+              </div>
             </div>
 
-            <div className="col-span-2">
-              <Label>Line items</Label>
-              <div className="space-y-2 mt-2">
-                {(draft.lineItems ?? []).map((li, idx) => (
-                  <div key={li.id} className="grid grid-cols-12 gap-2">
-                    <Input className="col-span-8" placeholder="Name" value={li.name} onChange={(e)=>{
-                      const items=[...(draft.lineItems ?? [])]; items[idx] = { ...li, name: e.target.value }; setDraft({ ...draft, lineItems: items });
-                    }} />
-                    {/* Price input in dollars; step $10 */}
-                    <div className="col-span-4 flex items-center gap-2">
-                      <div className="px-2 text-muted-foreground">$</div>
-                      <Input
-                        className="text-right"
-                        type="number"
-                        inputMode="decimal"
-                        step={10}
-                        min={0}
-                        value={((li.unitPrice ?? 0) / 100).toString()}
-                        onChange={(e)=>{
-                          const dollars = Number(e.target.value || '0');
-                          const cents = Math.max(0, Math.round(dollars * 100));
-                          const items=[...(draft.lineItems ?? [])];
-                          items[idx] = { ...li, unitPrice: cents, lineTotal: cents * (li.qty ?? 1) };
-                          setDraft({ ...draft, lineItems: items });
-                        }}
-                      />
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <Label>Line Items *</Label>
+                <Button type="button" variant="outline" size="sm" onClick={addLineItem}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Item
+                </Button>
+              </div>
+
+              {draft.lineItems.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No line items yet. Click "Add Item" to get started.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {draft.lineItems.map((item, index) => (
+                    <div key={item.id} className="grid grid-cols-12 gap-2 items-end p-3 border rounded-lg">
+                      <div className="col-span-4">
+                        <Label className="text-xs">Description</Label>
+                        <Input
+                          value={item.name}
+                          onChange={(e) => updateLineItem(item.id, { name: e.target.value })}
+                          placeholder="Item description"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Label className="text-xs">Qty</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={item.qty}
+                          onChange={(e) => updateLineItem(item.id, { qty: parseFloat(e.target.value) || 0 })}
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Label className="text-xs">Unit</Label>
+                        <Input
+                          value={item.unit || ''}
+                          onChange={(e) => updateLineItem(item.id, { unit: e.target.value })}
+                          placeholder="ea, hrs, etc."
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Label className="text-xs">Unit Price</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={item.unitPrice / 100}
+                          onChange={(e) => updateLineItem(item.id, { unitPrice: Math.round((parseFloat(e.target.value) || 0) * 100) })}
+                        />
+                      </div>
+                      <div className="col-span-1">
+                        <Label className="text-xs">Total</Label>
+                        <div className="text-sm font-medium py-2">
+                          {formatCurrency(item.lineTotal)}
+                        </div>
+                      </div>
+                      <div className="col-span-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeLineItem(item.id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-2"><Button variant="secondary" onClick={addLine}>Add line</Button></div>
+                  ))}
+                </div>
+              )}
             </div>
 
-            <div>
-              <Label>Tax rate</Label>
-              <Input type="number" step="0.01" value={draft.taxRate ?? 0} onChange={(e)=>setDraft({...draft, taxRate: Number(e.target.value)})} />
+            <Separator />
+
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="tax-rate">Tax Rate (%)</Label>
+                  <Input
+                    id="tax-rate"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={draft.taxRate * 100}
+                    onChange={(e) => setDraft(prev => ({ ...prev, taxRate: (parseFloat(e.target.value) || 0) / 100 }))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="discount">Discount ($)</Label>
+                  <Input
+                    id="discount"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={draft.discount / 100}
+                    onChange={(e) => setDraft(prev => ({ ...prev, discount: Math.round((parseFloat(e.target.value) || 0) * 100) }))}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span>Subtotal:</span>
+                  <span>{formatCurrency(totals.subtotal)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Tax:</span>
+                  <span>{formatCurrency(totals.taxAmount)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Discount:</span>
+                  <span>-{formatCurrency(draft.discount)}</span>
+                </div>
+                <Separator />
+                <div className="flex justify-between font-bold text-lg">
+                  <span>Total:</span>
+                  <span>{formatCurrency(totals.total)}</span>
+                </div>
+              </div>
             </div>
-            <div>
-              <Label>Discount (dollars)</Label>
-              <div className="flex items-center gap-2">
-                <div className="px-2 text-muted-foreground">$</div>
-                <Input
-                  type="number"
-                  inputMode="decimal"
-                  step={1}
-                  min={0}
-                  value={((draft.discount ?? 0) / 100).toString()}
-                  onChange={(e)=>{
-                    const dollars = Number(e.target.value || '0');
-                    setDraft({ ...draft, discount: Math.max(0, Math.round(dollars * 100)) });
-                  }}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="notes">Internal Notes</Label>
+                <Textarea
+                  id="notes"
+                  value={draft.notesInternal}
+                  onChange={(e) => setDraft(prev => ({ ...prev, notesInternal: e.target.value }))}
+                  placeholder="Internal notes (not visible to customer)"
+                  rows={3}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="terms">Terms & Conditions</Label>
+                <Textarea
+                  id="terms"
+                  value={draft.terms}
+                  onChange={(e) => setDraft(prev => ({ ...prev, terms: e.target.value }))}
+                  placeholder="Terms and conditions"
+                  rows={3}
                 />
               </div>
             </div>
 
-            <div>
-              <Label>Payment terms</Label>
-              <select className="w-full border rounded-md h-9 px-3 bg-background" value={draft.paymentTerms ?? 'due_on_receipt'} onChange={(e)=>setDraft({...draft, paymentTerms: e.target.value as any})}>
-                <option value="due_on_receipt">Due on receipt</option>
-                <option value="net_15">Net 15</option>
-                <option value="net_30">Net 30</option>
-                <option value="net_60">Net 60</option>
-              </select>
-            </div>
-            <div>
-              <Label>Frequency</Label>
-              <select className="w-full border rounded-md h-9 px-3 bg-background" value={draft.frequency ?? 'one-off'} onChange={(e)=>setDraft({...draft, frequency: e.target.value as any})}>
-                <option value="one-off">One-off</option>
-                <option value="bi-monthly">Bi-monthly</option>
-                <option value="monthly">Monthly</option>
-                <option value="bi-yearly">Bi-yearly</option>
-                <option value="yearly">Yearly</option>
-              </select>
-            </div>
-
-            <div className="col-span-2 grid grid-cols-2 gap-4">
-              <div className="flex items-center gap-2 mt-2">
-                <input
-                  id="depositRequired"
-                  type="checkbox"
-                  checked={!!draft.depositRequired}
-                  onChange={(e)=>setDraft({...draft, depositRequired: e.target.checked})}
-                />
-                <Label htmlFor="depositRequired" className="cursor-pointer">Deposit required</Label>
-              </div>
-              <div>
-                <Label>Deposit percent</Label>
-                <Input
-                  type="number"
-                  step={5}
-                  min={0}
-                  max={100}
-                  value={draft.depositPercent ?? 0}
-                  disabled={!draft.depositRequired}
-                  onChange={(e)=>setDraft({...draft, depositPercent: Math.max(0, Math.min(100, Number(e.target.value || '0')))})}
-                />
-              </div>
-            </div>
-
-            <div className="col-span-2 flex items-center justify-end gap-6 border-t pt-4">
-              <div className="text-sm">Subtotal: <span className="font-medium">{formatMoney(totals.subtotal)}</span></div>
-              <div className="text-sm">Total: <span className="font-bold">{formatMoney(totals.total)}</span></div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-end">
-            <div className="flex gap-2">
-              <Button variant="secondary" onClick={()=>setOpen(false)}>Cancel</Button>
-              <Button variant="secondary" onClick={save}>Save</Button>
-              <Button variant="secondary" onClick={openPreview}>Preview Email</Button>
-              <Button onClick={saveAndSend} disabled={!draftCanSend} title={!draftCanSend ? 'Only Draft or Edits Requested quotes can be emailed' : undefined}>Save & Send</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader><DialogTitle>Email Preview</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <div className="text-xs text-muted-foreground">Subject</div>
-              <div className="text-sm font-medium">{previewSubject}</div>
-            </div>
-            <div className="border rounded-md overflow-hidden">
-              <iframe title="Email preview" className="w-full h-[480px] bg-background" srcDoc={previewHTML}></iframe>
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => setOpen(false)} disabled={saving}>
+                Cancel
+              </Button>
+              <Button onClick={saveQuote} disabled={saving}>
+                {saving ? 'Creating...' : 'Create Quote'}
+              </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
-
     </AppLayout>
   );
 }
