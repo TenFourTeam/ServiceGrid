@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useAuth } from "@/components/Auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const sanitizeEmail = (v: string) => v.trim().toLowerCase();
 const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
@@ -27,6 +28,7 @@ export default function AuthPage() {
   const [resending, setResending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
+  const [accountExists, setAccountExists] = useState(false);
 
   useEffect(() => {
     document.title = mode === "signIn" ? "Sign in • TenFour Lawn" : "Create account • TenFour Lawn";
@@ -56,6 +58,7 @@ export default function AuthPage() {
     e.preventDefault();
     setError(null);
     setMessage(null);
+    setAccountExists(false);
 
     const em = sanitizeEmail(email);
     if (!isValidEmail(em)) {
@@ -87,6 +90,9 @@ export default function AuthPage() {
         friendly = "Invalid email or password.";
       } else if (/email address .* is invalid|invalid email/i.test(raw)) {
         friendly = "That email address looks invalid.";
+      } else if (mode === "signUp" && /(already.*registered|already.*exists|user.*registered)/i.test(raw)) {
+        friendly = "An account with this email already exists.";
+        setAccountExists(true);
       } else if (/confirm|verify/i.test(raw)) {
         friendly = "Please verify your email to continue. You can resend the verification email below.";
       } else if (/rate|limit/i.test(raw)) {
@@ -133,8 +139,6 @@ export default function AuthPage() {
     }
   };
 
-
-
   return (
     <main className="min-h-screen grid place-items-center p-4">
       <Card className="w-full max-w-md">
@@ -146,7 +150,7 @@ export default function AuthPage() {
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} onBlur={() => setEmail(sanitizeEmail(email))} required placeholder="you@example.com" />
+              <Input id="email" type="email" value={email} onChange={(e) => { setEmail(e.target.value); setAccountExists(false); }} onBlur={() => setEmail(sanitizeEmail(email))} required placeholder="you@example.com" />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -155,7 +159,7 @@ export default function AuthPage() {
                   <button
                     type="button"
                     className="text-xs underline underline-offset-4"
-                    onClick={() => navigate("/auth/reset")}
+                    onClick={() => navigate(`/auth/reset${email ? `?email=${encodeURIComponent(sanitizeEmail(email))}` : ""}`)}
                   >
                     Forgot password?
                   </button>
@@ -182,6 +186,27 @@ export default function AuthPage() {
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             {message && <p className="text-sm text-muted-foreground">{message}</p>}
+            {accountExists && (
+              <div className="mt-2">
+                <Alert>
+                  <AlertTitle>Account already exists</AlertTitle>
+                  <AlertDescription>
+                    It looks like there’s already an account for {email}. Choose an option below.
+                  </AlertDescription>
+                </Alert>
+                <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                  <Button type="button" onClick={() => { setMode("signIn"); }}>
+                    Sign in instead
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => navigate(`/auth/reset?email=${encodeURIComponent(email)}`)}>
+                    Reset password
+                  </Button>
+                  <Button type="button" variant="outline" onClick={onResend} disabled={resending || !isValidEmail(email)}>
+                    {resending ? "Resending…" : "Resend verification"}
+                  </Button>
+                </div>
+              </div>
+            )}
             {(((mode === "signUp") && !!message) || (error && /confirm|verify/i.test(error))) && (
               <Button type="button" variant="outline" className="w-full" onClick={onResend} disabled={resending || !isValidEmail(email)}>
                 {resending ? "Resending…" : "Resend verification email"}
@@ -196,9 +221,9 @@ export default function AuthPage() {
           </form>
           <div className="mt-4 text-sm text-muted-foreground">
             {mode === "signIn" ? (
-              <button className="underline underline-offset-4" onClick={() => setMode("signUp")}>Don't have an account? Sign up</button>
+              <button className="underline underline-offset-4" onClick={() => { setAccountExists(false); setMode("signUp"); }}>Don't have an account? Sign up</button>
             ) : (
-              <button className="underline underline-offset-4" onClick={() => setMode("signIn")}>Already have an account? Sign in</button>
+              <button className="underline underline-offset-4" onClick={() => { setAccountExists(false); setMode("signIn"); }}>Already have an account? Sign in</button>
             )}
           </div>
         </CardContent>

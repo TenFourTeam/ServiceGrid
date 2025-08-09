@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +17,7 @@ export default function AuthResetPage() {
   const [message, setMessage] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     document.title = "Reset password • TenFour Lawn";
@@ -37,6 +38,12 @@ export default function AuthResetPage() {
     })();
     canonical.setAttribute('href', window.location.href);
   }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const qEmail = params.get("email");
+    if (qEmail) setEmail(sanitizeEmail(qEmail));
+  }, [location.search]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
