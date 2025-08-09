@@ -467,6 +467,96 @@ export default function QuotesPage() {
     }
   }
 
+  // Handlers for DB-backed actions
+  const handleEditDbQuote = async (id: string) => {
+    try {
+      if (!appUser) { navigate('/clerk-auth'); return; }
+      const { data, error } = await supabase
+        .from('quotes')
+        .select([
+          'id',
+          'number',
+          'customer_id',
+          'address',
+          'tax_rate',
+          'discount',
+          'payment_terms',
+          'deposit_required',
+          'deposit_percent',
+          'frequency',
+          'terms',
+          'status',
+          'subtotal',
+          'total',
+          'public_token',
+          'created_at',
+          'updated_at',
+          'view_count',
+          'quote_line_items(id,name,qty,unit,unit_price,line_total,position)'
+        ].join(','))
+        .eq('id', id)
+        .maybeSingle();
+
+      if (error || !data) throw new Error(error?.message || 'Quote not found');
+
+      const items = ((data as any).quote_line_items || [])
+        .sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0))
+        .map((li: any) => ({
+          id: li.id,
+          name: li.name,
+          qty: Number(li.qty ?? 1),
+          unit: li.unit ?? undefined,
+          unitPrice: Number(li.unit_price ?? 0),
+          lineTotal: Number(li.line_total ?? 0),
+        }));
+
+      setDraft({
+        id: (data as any).id,
+        number: (data as any).number,
+        customerId: (data as any).customer_id,
+        address: (data as any).address ?? undefined,
+        lineItems: items,
+        taxRate: Number((data as any).tax_rate ?? 0),
+        discount: Number((data as any).discount ?? 0),
+        paymentTerms: (data as any).payment_terms ?? 'due_on_receipt',
+        depositRequired: !!(data as any).deposit_required,
+        depositPercent: (data as any).deposit_percent ?? 0,
+        frequency: (data as any).frequency ?? 'one-off',
+        terms: (data as any).terms ?? undefined,
+        status: (data as any).status,
+        subtotal: Number((data as any).subtotal ?? 0),
+        total: Number((data as any).total ?? 0),
+        publicToken: (data as any).public_token,
+        viewCount: Number((data as any).view_count ?? 0),
+        createdAt: (data as any).created_at,
+        updatedAt: (data as any).updated_at,
+      } as Partial<Quote>);
+
+      setOpen(true);
+    } catch (err: any) {
+      console.error('handleEditDbQuote error', err);
+      toast({ title: 'Could not load quote', description: err?.message || 'Please try again.', variant: 'destructive' });
+    }
+  };
+
+  const handleMarkApproved = async (id: string) => {
+    try {
+      if (!appUser) { navigate('/clerk-auth'); return; }
+      const now = new Date().toISOString();
+      const approvedBy = (appUser as any)?.email || (appUser as any)?.user_metadata?.email || undefined;
+      const { error } = await supabase
+        .from('quotes')
+        .update({ status: 'Approved', approved_at: now, approved_by: approvedBy })
+        .eq('id', id);
+      if (error) throw error;
+      toast({ title: 'Marked approved', description: 'The quote was marked as Approved.' });
+      await queryClient.invalidateQueries({ queryKey: ['supabase', 'quotes'] });
+    } catch (err: any) {
+      console.error('handleMarkApproved error', err);
+      toast({ title: 'Failed to update', description: err?.message || 'Please try again.', variant: 'destructive' });
+    }
+  };
+
   // Sort Supabase rows client-side
   const dbSortedRows = useMemo(() => {
     const rows = dbQuotes?.rows ? [...dbQuotes.rows] : [];
