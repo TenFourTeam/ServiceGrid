@@ -38,7 +38,7 @@ const App = () => (
             <ErrorBoundary>
               <Suspense fallback={<LoadingScreen /> }>
                  <Routes>
-                   <Route path="/auth" element={<AuthPage />} />
+                   <Route path="/auth" element={<Navigate to="/clerk-auth" replace />} />
                    <Route path="/auth/reset" element={<AuthResetPage />} />
                    <Route path="/auth/update-password" element={<UpdatePasswordPage />} />
                    <Route path="/clerk-auth" element={<ClerkAuthPage />} />
