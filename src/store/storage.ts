@@ -1,7 +1,7 @@
 import { AppStateSchema } from '@/types/schemas';
 
 const STORAGE_KEY = 'tenfour-lawn-store-v1';
-const STORAGE_VERSION = 1;
+const STORAGE_VERSION = 2;
 
 type Persisted<T> = { version: number; data: T };
 
@@ -15,7 +15,7 @@ function isLikelyAppState(obj: any): boolean {
     typeof obj === 'object' &&
     'business' in obj &&
     'customers' in obj &&
-    'estimates' in obj &&
+    ('quotes' in obj || 'estimates' in obj) &&
     'jobs' in obj &&
     'invoices' in obj &&
     'payments' in obj &&
@@ -25,10 +25,36 @@ function isLikelyAppState(obj: any): boolean {
 
 function migrateAppState(data: any, fromVersion: number): any {
   let d = data;
-  switch (fromVersion) {
-    default:
-      return d;
+  if (!d || typeof d !== 'object') return d;
+
+  if (fromVersion < 2) {
+    const src = d as any;
+    // Move estimates -> quotes
+    if (Array.isArray(src.estimates) && !Array.isArray(src.quotes)) {
+      src.quotes = src.estimates;
+      delete src.estimates;
+    }
+    // jobs: estimateId -> quoteId
+    if (Array.isArray(src.jobs)) {
+      src.jobs = src.jobs.map((j: any) => {
+        if (j && 'estimateId' in j && !('quoteId' in j)) {
+          j.quoteId = j.estimateId;
+          delete j.estimateId;
+        }
+        return j;
+      });
+    }
+    // events: estimate.* -> quote.*
+    if (Array.isArray(src.events)) {
+      src.events = src.events.map((ev: any) => {
+        if (ev && typeof ev.type === 'string' && ev.type.startsWith('estimate.')) {
+          ev.type = ev.type.replace('estimate.', 'quote.');
+        }
+        return ev;
+      });
+    }
   }
+  return d;
 }
 
 

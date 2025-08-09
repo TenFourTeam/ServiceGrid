@@ -45,9 +45,10 @@ export const LineItemSchema = z.object({
   lineTotal: Money,
 })
 
-export const EstimateStatusSchema = z.enum(['Draft', 'Sent', 'Approved', 'Declined'])
+export const QuoteStatusSchema = z.enum(['Draft', 'Sent', 'Approved', 'Declined'])
+export const EstimateStatusSchema = QuoteStatusSchema
 
-export const EstimateSchema = z.object({
+export const QuoteSchema = z.object({
   id: ID,
   number: z.string(),
   businessId: ID,
@@ -67,7 +68,7 @@ export const EstimateSchema = z.object({
 
   subtotal: Money,
   total: Money,
-  status: EstimateStatusSchema,
+  status: QuoteStatusSchema,
   files: z.array(z.string()).optional(),
   notesInternal: z.string().optional(),
   terms: z.string().optional(),
@@ -78,12 +79,14 @@ export const EstimateSchema = z.object({
   publicToken: z.string(),
 })
 
+export const EstimateSchema = QuoteSchema
+
 export const JobStatusSchema = z.enum(['Scheduled', 'In Progress', 'Completed'])
 
 export const JobSchema = z.object({
   id: ID,
   businessId: ID,
-  estimateId: ID.optional(),
+  quoteId: ID.optional(),
   customerId: ID,
   address: z.string().optional(),
   startsAt: ISODate,
@@ -132,7 +135,7 @@ export const AppEventSchema = z.object({
   id: ID,
   ts: ISODate,
   type: z.enum([
-    'estimate.created', 'estimate.sent', 'estimate.approved',
+    'quote.created', 'quote.sent', 'quote.approved',
     'job.created', 'job.updated', 'job.completed',
     'invoice.created', 'invoice.sent', 'invoice.paid',
   ]),
@@ -143,7 +146,7 @@ export const AppEventSchema = z.object({
 export const AppStateSchema = z.object({
   business: BusinessSchema,
   customers: z.array(CustomerSchema),
-  estimates: z.array(EstimateSchema),
+  quotes: z.array(QuoteSchema),
   jobs: z.array(JobSchema),
   invoices: z.array(InvoiceSchema),
   payments: z.array(PaymentSchema),

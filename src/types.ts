@@ -41,8 +41,8 @@ export interface LineItem {
   lineTotal: Money; // computed
 }
 
-export type EstimateStatus = 'Draft' | 'Sent' | 'Approved' | 'Declined';
-export interface Estimate {
+export type QuoteStatus = 'Draft' | 'Sent' | 'Approved' | 'Declined';
+export interface Quote {
   id: ID;
   number: string; // EST-###
   businessId: ID;
@@ -62,7 +62,7 @@ export interface Estimate {
 
   subtotal: Money;
   total: Money;
-  status: EstimateStatus;
+  status: QuoteStatus;
   files?: string[]; // local object URLs
   notesInternal?: string;
   terms?: string;
@@ -73,11 +73,15 @@ export interface Estimate {
   publicToken: string;
 }
 
+// Backward-compatibility aliases
+export type EstimateStatus = QuoteStatus;
+export interface Estimate extends Quote {}
+
 export type JobStatus = 'Scheduled' | 'In Progress' | 'Completed';
 export interface Job {
   id: ID;
   businessId: ID;
-  estimateId?: ID;
+  quoteId?: ID;
   customerId: ID;
   address?: string;
   startsAt: ISODate;
@@ -125,7 +129,7 @@ export interface AppEvent {
   id: ID;
   ts: ISODate;
   type:
-    | 'estimate.created' | 'estimate.sent' | 'estimate.approved'
+    | 'quote.created' | 'quote.sent' | 'quote.approved'
     | 'job.created' | 'job.updated' | 'job.completed'
     | 'invoice.created' | 'invoice.sent' | 'invoice.paid';
   entityId: ID;
@@ -135,7 +139,7 @@ export interface AppEvent {
 export interface AppState {
   business: Business;
   customers: Customer[];
-  estimates: Estimate[];
+  quotes: Quote[];
   jobs: Job[];
   invoices: Invoice[];
   payments: Payment[];

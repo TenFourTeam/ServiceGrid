@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatMoney, formatDate } from '@/utils/format';
 import { useMemo, useState } from 'react';
-import { Estimate } from '@/types';
+import { Quote } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,7 +41,7 @@ export default function EstimatesPage() {
   }
 
   const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState<Partial<Estimate>>({
+  const [draft, setDraft] = useState<Partial<Quote>>({
     lineItems: [],
     taxRate: 0, // default to zero
     discount: 0,
@@ -194,13 +194,13 @@ export default function EstimatesPage() {
   }
 
   function save() {
-    const e = store.upsertEstimate({ ...draft, customerId: draft.customerId! });
+    const e = store.upsertQuote({ ...draft, customerId: draft.customerId! });
     setOpen(false);
     resetDraft();
     toast({ title: 'Quote saved', description: `Saved quote ${e.number}` });
   }
 
-   async function sendEmailForEstimate(e: Estimate) {
+   async function sendEmailForEstimate(e: Quote) {
      const customer = store.customers.find((c) => c.id === e.customerId);
      const to = customer?.email;
      if (!to) {
@@ -272,8 +272,8 @@ export default function EstimatesPage() {
       toast({ title: 'Select customer', description: 'Please choose a customer before sending.' });
       return;
     }
-    const e = store.upsertEstimate({ ...draft, customerId: draft.customerId! });
-    store.sendEstimate(e.id);
+    const e = store.upsertQuote({ ...draft, customerId: draft.customerId! });
+    store.sendQuote(e.id);
     await sendEmailForEstimate(e);
     setOpen(false);
     resetDraft();
@@ -309,8 +309,8 @@ export default function EstimatesPage() {
     setPreviewOpen(true);
   }
 
-  function send(est: Estimate) {
-    store.sendEstimate(est.id);
+  function send(est: Quote) {
+    store.sendQuote(est.id);
     sendEmailForEstimate(est);
   }
 
@@ -338,7 +338,7 @@ export default function EstimatesPage() {
   }
 
   const sortedEstimates = useMemo(() => {
-    const arr = [...store.estimates];
+    const arr = [...store.quotes];
     arr.sort((a, b) => {
       switch (sortKey) {
         case 'customer': {
@@ -360,7 +360,7 @@ export default function EstimatesPage() {
       }
     });
     return arr;
-  }, [store.estimates, store.customers, sortKey, sortDir]);
+  }, [store.quotes, store.customers, sortKey, sortDir]);
 
   function toggleSort(k: SortKey) {
     if (k === sortKey) {
@@ -420,17 +420,17 @@ export default function EstimatesPage() {
                           <DropdownMenuContent align="end" className="z-50">
             <DropdownMenuItem onClick={()=>send(e)}>Send Email</DropdownMenuItem>
             <DropdownMenuItem onClick={checkSenderHealth}>Check Sender Health</DropdownMenuItem>
-                            <DropdownMenuItem onClick={()=>store.convertEstimateToJob(e.id, undefined, undefined, undefined)}>Create Work Order</DropdownMenuItem>
-                            <DropdownMenuItem onClick={()=>{
-                              const jobs = store.convertEstimateToJob(e.id);
-                              if (jobs.length > 0) {
-                                store.createInvoiceFromJob(jobs[0].id);
-                                toast({ title: 'Invoice created', description: 'An invoice draft was created from this quote.' });
-                              }
-                            }}>Create Invoice</DropdownMenuItem>
+            <DropdownMenuItem onClick={()=>store.convertQuoteToJob(e.id, undefined, undefined, undefined)}>Create Work Order</DropdownMenuItem>
+            <DropdownMenuItem onClick={()=>{
+              const jobs = store.convertQuoteToJob(e.id);
+              if (jobs.length > 0) {
+                store.createInvoiceFromJob(jobs[0].id);
+                toast({ title: 'Invoice created', description: 'An invoice draft was created from this quote.' });
+              }
+            }}>Create Invoice</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
-                        {e.status==='Approved' && <Button onClick={()=>store.convertEstimateToJob(e.id, undefined, undefined, undefined)}>Convert to Job</Button>}
+                        {e.status==='Approved' && <Button onClick={()=>store.convertQuoteToJob(e.id, undefined, undefined, undefined)}>Convert to Job</Button>}
                       </div>
                     </TableCell>
                   </TableRow>

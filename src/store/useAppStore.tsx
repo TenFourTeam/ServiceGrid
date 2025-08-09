@@ -1,4 +1,4 @@
-import { AppEvent, AppState, Business, Customer, Estimate, Invoice, Job, LineItem, Money } from '@/types';
+import { AppEvent, AppState, Business, Customer, Quote, Invoice, Job, LineItem, Money } from '@/types';
 import { loadState, saveState } from './storage';
 import React, { createContext, useContext, useEffect, useMemo, useReducer } from 'react';
 
@@ -27,7 +27,7 @@ const defaultBusiness = (): Business => ({
 const initialState: AppState = loadState<AppState>() ?? {
   business: defaultBusiness(),
   customers: [],
-  estimates: [],
+  quotes: [],
   jobs: [],
   invoices: [],
   payments: [],
@@ -39,7 +39,7 @@ type Action =
   | { type: 'SET_STATE'; payload: AppState }
   | { type: 'UPSERT_CUSTOMER'; payload: Customer }
   | { type: 'DELETE_CUSTOMER'; id: string }
-  | { type: 'UPSERT_ESTIMATE'; payload: Estimate }
+  | { type: 'UPSERT_QUOTE'; payload: Quote }
   | { type: 'UPSERT_JOB'; payload: Job }
   | { type: 'DELETE_JOB'; id: string }
   | { type: 'UPSERT_INVOICE'; payload: Invoice }
@@ -62,12 +62,12 @@ function reducer(state: AppState, action: Action): AppState {
     case 'DELETE_CUSTOMER': {
       return { ...state, customers: state.customers.filter((c) => c.id !== action.id) };
     }
-    case 'UPSERT_ESTIMATE': {
-      const exists = state.estimates.some((e) => e.id === action.payload.id);
-      const estimates = exists
-        ? state.estimates.map((e) => (e.id === action.payload.id ? action.payload : e))
-        : [action.payload, ...state.estimates];
-      return { ...state, estimates };
+    case 'UPSERT_QUOTE': {
+      const exists = state.quotes.some((e) => e.id === action.payload.id);
+      const quotes = exists
+        ? state.quotes.map((e) => (e.id === action.payload.id ? action.payload : e))
+        : [action.payload, ...state.quotes];
+      return { ...state, quotes };
     }
     case 'UPSERT_JOB': {
       const exists = state.jobs.some((j) => j.id === action.payload.id);
@@ -96,12 +96,17 @@ function reducer(state: AppState, action: Action): AppState {
 
 export interface Store extends AppState {
   // helpers
+  nextQuoteNumber(): string;
   nextEstimateNumber(): string;
   nextInvoiceNumber(): string;
   upsertCustomer(c: Partial<Customer> & { name: string }): Customer;
-  upsertEstimate(e: Partial<Estimate> & { customerId: string }): Estimate;
+  upsertQuote(e: Partial<Quote> & { customerId: string }): Quote;
+  upsertEstimate(e: Partial<Quote> & { customerId: string }): Quote;
+  sendQuote(id: string): void;
   sendEstimate(id: string): void;
+  approveQuote(id: string, name: string): void;
   approveEstimate(id: string, name: string): void;
+  convertQuoteToJob(quoteId: string, start?: Date, end?: Date, recurrence?: 'biweekly'): Job[];
   convertEstimateToJob(estimateId: string, start?: Date, end?: Date, recurrence?: 'biweekly'): Job[];
   upsertJob(j: Partial<Job> & { customerId: string; startsAt: string; endsAt: string }): Job;
   updateJobStatus(id: string, status: Job['status']): void;
@@ -123,13 +128,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const api: Store = useMemo(() => ({
     ...state,
-    nextEstimateNumber() {
+    nextQuoteNumber() {
       const n = state.business.numbering.estSeq;
       const num = `${state.business.numbering.estPrefix}${String(n).padStart(3, '0')}`;
       const business = { ...state.business, numbering: { ...state.business.numbering, estSeq: n + 1 } };
       dispatch({ type: 'SET_BUSINESS', payload: business });
       return num;
     },
+    nextEstimateNumber() { return (this as any).nextQuoteNumber(); },
     nextInvoiceNumber() {
       const n = state.business.numbering.invSeq;
       const num = `${state.business.numbering.invPrefix}${String(n).padStart(3, '0')}`;
@@ -150,7 +156,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'UPSERT_CUSTOMER', payload: customer });
       return customer;
     },
-    upsertEstimate(e) {
+    upsertQuote(e) {
       const lineItems = (e.lineItems ?? []).map((li) => ({
         id: li.id ?? uuid(),
         name: li.name ?? '',
@@ -162,9 +168,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const taxRate = e.taxRate ?? state.business.taxRateDefault;
       const discount = e.discount ?? 0;
       const { subtotal, total } = computeTotals(lineItems, taxRate, discount);
-      const estimate: Estimate = {
+      const quote: Quote = {
         id: e.id ?? uuid(),
-        number: e.number ?? api.nextEstimateNumber(),
+        number: e.number ?? api.nextQuoteNumber(),
         businessId: state.business.id,
         customerId: e.customerId,
         address: e.address,
@@ -192,26 +198,29 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         updatedAt: nowISO(),
         publicToken: e.publicToken ?? randToken(16),
       };
-      dispatch({ type: 'UPSERT_ESTIMATE', payload: estimate });
-      dispatch({ type: 'ADD_EVENT', payload: { id: uuid(), ts: nowISO(), type: 'estimate.created', entityId: estimate.id } });
-      return estimate;
+      dispatch({ type: 'UPSERT_QUOTE', payload: quote });
+      dispatch({ type: 'ADD_EVENT', payload: { id: uuid(), ts: nowISO(), type: 'quote.created', entityId: quote.id } });
+      return quote;
     },
-    sendEstimate(id) {
-      const est = state.estimates.find((e) => e.id === id);
+    upsertEstimate(e) { return (api as any).upsertQuote(e); },
+    sendQuote(id) {
+      const est = state.quotes.find((e) => e.id === id);
       if (!est) return;
-      const updated: Estimate = { ...est, status: 'Sent', sentAt: nowISO(), updatedAt: nowISO() };
-      dispatch({ type: 'UPSERT_ESTIMATE', payload: updated });
-      dispatch({ type: 'ADD_EVENT', payload: { id: uuid(), ts: nowISO(), type: 'estimate.sent', entityId: id } });
+      const updated: Quote = { ...est, status: 'Sent', sentAt: nowISO(), updatedAt: nowISO() };
+      dispatch({ type: 'UPSERT_QUOTE', payload: updated });
+      dispatch({ type: 'ADD_EVENT', payload: { id: uuid(), ts: nowISO(), type: 'quote.sent', entityId: id } });
     },
-    approveEstimate(id, name) {
-      const est = state.estimates.find((e) => e.id === id);
+    sendEstimate(id) { return (api as any).sendQuote(id); }
+    approveQuote(id, name) {
+      const est = state.quotes.find((e) => e.id === id);
       if (!est) return;
-      const updated: Estimate = { ...est, status: 'Approved', approvedAt: nowISO(), approvedBy: name, updatedAt: nowISO() };
-      dispatch({ type: 'UPSERT_ESTIMATE', payload: updated });
-      dispatch({ type: 'ADD_EVENT', payload: { id: uuid(), ts: nowISO(), type: 'estimate.approved', entityId: id } });
+      const updated: Quote = { ...est, status: 'Approved', approvedAt: nowISO(), approvedBy: name, updatedAt: nowISO() };
+      dispatch({ type: 'UPSERT_QUOTE', payload: updated });
+      dispatch({ type: 'ADD_EVENT', payload: { id: uuid(), ts: nowISO(), type: 'quote.approved', entityId: id } });
     },
-    convertEstimateToJob(estimateId, start, end, recurrence) {
-      const est = state.estimates.find((e) => e.id === estimateId);
+    approveEstimate(id, name) { return (api as any).approveQuote(id, name); }
+    convertQuoteToJob(quoteId, start, end, recurrence) {
+      const est = state.quotes.find((e) => e.id === quoteId);
       if (!est) return [];
       const s = start ?? new Date(Date.now() + 24 * 3600 * 1000);
       s.setHours(9, 0, 0, 0);
@@ -219,7 +228,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const base: Job = {
         id: uuid(),
         businessId: state.business.id,
-        estimateId: est.id,
+        quoteId: est.id,
         customerId: est.customerId,
         address: est.address,
         startsAt: s.toISOString(),
@@ -244,11 +253,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'ADD_EVENT', payload: { id: uuid(), ts: nowISO(), type: 'job.created', entityId: base.id } });
       return jobs;
     },
+    convertEstimateToJob(estimateId, start, end, recurrence) { return (api as any).convertQuoteToJob(estimateId, start, end, recurrence); }
     upsertJob(j) {
       const job: Job = {
         id: j.id ?? uuid(),
         businessId: state.business.id,
-        estimateId: j.estimateId,
+        quoteId: (j as any).quoteId ?? (j as any).estimateId, // backward compat
         customerId: j.customerId,
         address: j.address,
         startsAt: j.startsAt,
@@ -277,7 +287,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     createInvoiceFromJob(jobId, dueAt) {
       const job = state.jobs.find((j) => j.id === jobId);
       if (!job) throw new Error('Job not found');
-      const est = job.estimateId ? state.estimates.find((e) => e.id === job.estimateId) : undefined;
+      const est = (job as any).quoteId ? state.quotes.find((e) => e.id === (job as any).quoteId) : undefined;
       const lineItems: LineItem[] = est?.lineItems ?? [];
       const { subtotal, total } = computeTotals(lineItems, state.business.taxRateDefault, 0);
       const invoice: Invoice = {
@@ -332,9 +342,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const customers: Customer[] = names.map((n, idx) => ({ id: uuid(), businessId: state.business.id, name: n, email: `user${idx+1}@mail.com`, phone: '555-010' + idx, address: `${100+idx} Maple St` }));
       customers.forEach((c) => dispatch({ type: 'UPSERT_CUSTOMER', payload: c }));
 
-      // estimates
+      // quotes
       const makeLI = (name: string, qty: number, price: number): LineItem => ({ id: uuid(), name, qty, unit: 'hr', unitPrice: price, lineTotal: Math.round(qty * price) });
-      const ests: Estimate[] = customers.slice(0,5).map((c, i) => {
+      const ests: Quote[] = customers.slice(0,5).map((c, i) => {
         const lineItems = [makeLI('Lawn mowing', 2 + (i%2), 4500), makeLI('Hedge trim', 1, 3000)];
         const { subtotal, total } = computeTotals(lineItems, state.business.taxRateDefault, i===4?1000:0);
         const statuses: ('Sent'|'Approved'|'Declined'|'Draft')[] = ['Sent','Approved','Declined','Sent','Draft'];
@@ -342,19 +352,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           id: uuid(), number: `${state.business.numbering.estPrefix}${String(state.business.numbering.estSeq + i).padStart(3,'0')}`, businessId: state.business.id,
           customerId: c.id, address: c.address, lineItems, taxRate: state.business.taxRateDefault, discount: i===4?1000:0, subtotal, total,
           status: statuses[i], files: [], createdAt: nowISO(), updatedAt: nowISO(), publicToken: randToken(16), terms: 'Payment due upon receipt.'
-        };
+        } as Quote;
       });
       // bump seq
       dispatch({ type: 'SET_BUSINESS', payload: { ...state.business, numbering: { ...state.business.numbering, estSeq: state.business.numbering.estSeq + ests.length } } });
-      ests.forEach((e) => dispatch({ type: 'UPSERT_ESTIMATE', payload: e }));
+      ests.forEach((e) => dispatch({ type: 'UPSERT_QUOTE', payload: e }));
 
       // jobs
       const approved = ests.find((e) => e.status === 'Approved') ?? ests[1];
       const baseStart = new Date(); baseStart.setHours(10,0,0,0);
-      const j1: Job = { id: uuid(), businessId: state.business.id, estimateId: approved.id, customerId: approved.customerId, address: approved.address, startsAt: new Date(baseStart).toISOString(), endsAt: new Date(baseStart.getTime()+60*60*1000).toISOString(), status: 'Scheduled', createdAt: nowISO(), updatedAt: nowISO(), total: approved.total };
+      const j1: Job = { id: uuid(), businessId: state.business.id, quoteId: approved.id, customerId: approved.customerId, address: approved.address, startsAt: new Date(baseStart).toISOString(), endsAt: new Date(baseStart.getTime()+60*60*1000).toISOString(), status: 'Scheduled', createdAt: nowISO(), updatedAt: nowISO(), total: approved.total };
       const j2: Job = { ...j1, id: uuid(), startsAt: new Date(baseStart.getTime()+2*60*60*1000).toISOString(), endsAt: new Date(baseStart.getTime()+3*60*60*1000).toISOString(), status: 'In Progress' };
       const j3: Job = { ...j1, id: uuid(), startsAt: new Date(baseStart.getTime()+24*60*60*1000).toISOString(), endsAt: new Date(baseStart.getTime()+25*60*60*1000).toISOString(), status: 'Completed' };
-      const j4s = api.convertEstimateToJob(approved.id, new Date(baseStart.getTime()+3*24*60*60*1000), new Date(baseStart.getTime()+3*24*60*60*1000+60*60*1000), 'biweekly');
+      const j4s = api.convertQuoteToJob(approved.id, new Date(baseStart.getTime()+3*24*60*60*1000), new Date(baseStart.getTime()+3*24*60*60*1000+60*60*1000), 'biweekly');
       [j1, j2, j3].forEach((j) => dispatch({ type: 'UPSERT_JOB', payload: j }));
 
       // invoices
