@@ -70,10 +70,10 @@ export default function EmailSenderSettings() {
 
     // Ensure absolute URL (avoid relative "/v3/connect/authorize" in SPA)
     const makeAbsolute = (u: string) => {
+      if (!u) return u as string;
       if (/^https?:\/\//i.test(u)) return u;
-      if (u.startsWith("/")) return `https://api.us.nylas.com${u}`;
-      if (u.startsWith("v3/")) return `https://api.us.nylas.com/${u}`;
-      return u;
+      const path = u.startsWith("/") ? u : `/${u}`;
+      return `https://api.us.nylas.com${path}`;
     };
     const safeUrl = makeAbsolute(rawUrl);
     console.log("Nylas authorize URL:", { rawUrl, safeUrl });
@@ -82,6 +82,11 @@ export default function EmailSenderSettings() {
     toast({ title: "Opening Nylas...", description: "If a new tab didn't open, please allow pop-ups." });
     const win = window.open(safeUrl, "_blank", "noopener,noreferrer");
     if (!win) {
+      // Copy URL to clipboard as a fallback
+      try {
+        await navigator.clipboard.writeText(safeUrl);
+        toast({ title: "Authorization link copied", description: "Paste it into a new tab if one didn’t open." });
+      } catch {}
       // Fallback if pop-ups are blocked
       const a = document.createElement("a");
       a.href = safeUrl;
