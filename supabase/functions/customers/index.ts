@@ -81,6 +81,28 @@ function serializeError(e: unknown) {
   }
 }
 
+async function findAuthUserIdByEmail(
+  supabase: ReturnType<typeof createClient>,
+  email: string
+): Promise<string | null> {
+  const target = email.toLowerCase();
+  let page = 1;
+  const perPage = 200;
+  while (page <= 10) {
+    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage });
+    if (error) throw error;
+    const users = (data as any)?.users || [];
+    const match = users.find((u: any) =>
+      (u.email && u.email.toLowerCase() === target) ||
+      (Array.isArray(u?.email_addresses) && u.email_addresses.some((e: any) => (e.email_address || e.email)?.toLowerCase?.() === target))
+    );
+    if (match) return match.id as string;
+    if (!users.length || users.length < perPage) break;
+    page++;
+  }
+  return null;
+}
+
 async function resolveOwnerId(supabase: ReturnType<typeof createClient>, payload: any): Promise<string> {
   const clerkSub = payload.sub as string;
   const claimEmail = (payload.email || payload["email"] || payload["primary_email"] || "") as string;
@@ -141,28 +163,39 @@ async function resolveOwnerId(supabase: ReturnType<typeof createClient>, payload
     if (insErr) throw insErr;
     return supaUserId;
   } catch (err) {
-    // If the auth user already exists, link profile to existing auth user
     const msg = (err as any)?.message || String(err);
     const code = (err as any)?.code || (err as any)?.status;
     const isEmailExists = code === "email_exists" || code === 422 || /already been registered/i.test(msg);
     if (!isEmailExists) throw err;
 
-    // Look up existing auth user by email in auth.users (service role can access this)
-    const { data: authUser, error: authErr } = await supabase
-      .schema('auth')
-      .from('users')
-      .select('id')
-      .eq('email', email)
-      .limit(1)
-      .maybeSingle();
-    if (authErr) throw authErr;
-    const existingUserId = authUser?.id as string | undefined;
-    if (!existingUserId) throw new Error('Email exists in auth, but user not found by email');
+    // 3a) Try linking an existing profile by email
+    if (email) {
+      const { data: profByEmail2, error: profErr2 } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("email", email)
+        .limit(1)
+        .maybeSingle();
+      if (profErr2) throw profErr2;
+      if (profByEmail2?.id) {
+        const { error: updErr2 } = await supabase
+          .from("profiles")
+          .update({ clerk_user_id: clerkSub })
+          .eq("id", profByEmail2.id);
+        if (updErr2) throw updErr2;
+        return profByEmail2.id as string;
+      }
+    }
 
-    // Ensure a profile exists and is linked to Clerk
+    // 3b) Fallback: search auth users via Admin API and upsert profile
+    const existingUserId = await findAuthUserIdByEmail(supabase, email);
+    if (!existingUserId) {
+      throw new Error("Email exists in auth, but no matching user id could be found via Admin API");
+    }
+
     const { error: upsertErr } = await supabase
-      .from('profiles')
-      .upsert({ id: existingUserId, email, clerk_user_id: clerkSub }, { onConflict: 'id' });
+      .from("profiles")
+      .upsert({ id: existingUserId, email, clerk_user_id: clerkSub }, { onConflict: "id" });
     if (upsertErr) throw upsertErr;
 
     return existingUserId;
