@@ -7,15 +7,6 @@ verify_jwt = false
 [functions.clerk-whoami]
 verify_jwt = false
 
-# Keep Nylas auth handlers in case they are still referenced elsewhere, but UI is retired
-[functions.nylas-auth-start]
-verify_jwt = false
-
-[functions.nylas-exchange-code]
-verify_jwt = false
-
-[functions.nylas-disconnect]
-verify_jwt = false
 
 # Keep these core functions
 [functions.email-sender-get]

@@ -108,7 +108,6 @@ serve(async (req: Request): Promise<Response> => {
         provider_message_id: null,
         request_hash: hash,
         quote_id: payload.quote_id || null,
-        nylas_grant_id: null,
       } as any);
 
       return new Response(JSON.stringify({ error: sendRes.error.message }), {
@@ -130,7 +129,6 @@ serve(async (req: Request): Promise<Response> => {
       provider_message_id: messageId,
       request_hash: hash,
       quote_id: payload.quote_id || null,
-      nylas_grant_id: null,
     } as any);
 
     return new Response(JSON.stringify({ id: messageId, status: "sent" }), {
@@ -151,7 +149,7 @@ serve(async (req: Request): Promise<Response> => {
       provider_message_id: null,
       request_hash: hash,
       quote_id: payload.quote_id || null,
-      nylas_grant_id: null,
+      
     } as any);
 
     return new Response(JSON.stringify({ error: e?.message || "Send failed" }), {
