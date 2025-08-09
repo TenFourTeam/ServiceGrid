@@ -269,13 +269,19 @@ export default function EstimatesPage() {
       const msg = status === 401
         ? 'You are not authenticated. Please sign in and try again.'
         : (error.message || 'There was a problem sending the email.');
-      toast({ title: 'Failed to send', description: msg });
+      toast({ title: 'Failed to send', description: msg, variant: 'destructive' });
       return;
     }
     const payload = data as any;
     if (payload?.error) {
-      console.error('resend-send-email payload error', payload.error);
-      toast({ title: 'Failed to send', description: String(payload.error) });
+      const raw = String(payload.error);
+      console.error('resend-send-email payload error', raw);
+      const lower = raw.toLowerCase();
+      let friendly = raw;
+      if (lower.includes('domain') && lower.includes('not verified')) {
+        friendly = 'Your sending domain is not verified. Verify your domain in Resend (resend.com/domains) or use a verified from email.';
+      }
+      toast({ title: 'Failed to send', description: friendly, variant: 'destructive' });
     } else {
       toast({ title: 'Quote sent', description: `Email sent to ${to}. Check Email Outbox for status.` });
     }
@@ -328,6 +334,28 @@ export default function EstimatesPage() {
     sendEmailForEstimate(est);
   }
 
+  async function checkSenderHealth() {
+    try {
+      const headers = await buildAuthHeaders();
+      const { data, error } = await supabase.functions.invoke('email-sender-get', { headers });
+      if (error) {
+        toast({ title: 'Sender health check failed', description: error.message || 'Could not load sender info.', variant: 'destructive' });
+        return;
+      }
+      const sender = (data as any)?.sender;
+      if (!sender) {
+        toast({ title: 'No sender configured', description: 'Connect a sending domain in Resend and set a default From address.' });
+        return;
+      }
+      if (sender.verified) {
+        toast({ title: 'Sender verified', description: `${sender.from_email} (${sender.provider}) is ready to send.` });
+      } else {
+        toast({ title: 'Sender not verified', description: `${sender.from_email} (${sender.provider}). Verify your domain to send emails.` });
+      }
+    } catch (e: any) {
+      toast({ title: 'Health check error', description: e?.message || String(e), variant: 'destructive' });
+    }
+  }
 
   const sortedEstimates = useMemo(() => {
     const arr = [...store.estimates];
@@ -410,7 +438,8 @@ export default function EstimatesPage() {
                             <Button>Send</Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="z-50">
-                            <DropdownMenuItem onClick={()=>send(e)}>Send Email</DropdownMenuItem>
+            <DropdownMenuItem onClick={()=>send(e)}>Send Email</DropdownMenuItem>
+            <DropdownMenuItem onClick={checkSenderHealth}>Check Sender Health</DropdownMenuItem>
                             <DropdownMenuItem onClick={()=>store.convertEstimateToJob(e.id, undefined, undefined, undefined)}>Create Work Order</DropdownMenuItem>
                             <DropdownMenuItem onClick={()=>{
                               const jobs = store.convertEstimateToJob(e.id);
