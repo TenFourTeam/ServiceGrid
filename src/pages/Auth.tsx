@@ -133,53 +133,7 @@ export default function AuthPage() {
     }
   };
 
-  const onMagicLink = async () => {
-    const em = sanitizeEmail(email);
-    if (!isValidEmail(em)) {
-      setError("Please enter a valid email address.");
-      return;
-    }
-    setError(null);
-    setMessage(null);
-    setLoading(true);
-    try {
-      const redirectUrl = `${window.location.origin}/`;
-      const { error } = await supabase.auth.signInWithOtp({
-        email: em,
-        options: { emailRedirectTo: redirectUrl },
-      });
-      if (error) throw error;
-      setMessage(`Magic link sent to ${em}. Check your inbox.`);
-      toast?.({ title: "Magic link sent", description: `We've sent a sign-in link to ${em}.` });
-    } catch (err: any) {
-      const raw = String(err?.message ?? "");
-      let friendly = raw || "Could not send magic link.";
-      if (/rate|limit/i.test(raw)) friendly = "Too many requests. Please wait a moment and try again.";
-      if (/invalid/i.test(raw)) friendly = "That email address looks invalid.";
-      setError(friendly);
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const onGoogle = async () => {
-    setError(null);
-    setMessage(null);
-    setLoading(true);
-    try {
-      const redirectUrl = `${window.location.origin}/`;
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: redirectUrl },
-      });
-      if (error) throw error;
-    } catch (err: any) {
-      const raw = String(err?.message ?? "");
-      setError(raw || "Google sign-in failed.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <main className="min-h-screen grid place-items-center p-4">
@@ -239,16 +193,6 @@ export default function AuthPage() {
             <Button type="submit" className="w-full" disabled={loading || !isValidEmail(email) || !password}>
               {loading ? "Please wait…" : mode === "signIn" ? "Sign in" : "Create account"}
             </Button>
-            <div className="mt-3 grid gap-2">
-              {mode === "signIn" && (
-                <Button type="button" variant="outline" className="w-full" onClick={onMagicLink} disabled={loading || !isValidEmail(email)}>
-                  Send me a magic link
-                </Button>
-              )}
-              <Button type="button" variant="outline" className="w-full" onClick={onGoogle} disabled={loading}>
-                Continue with Google
-              </Button>
-            </div>
           </form>
           <div className="mt-4 text-sm text-muted-foreground">
             {mode === "signIn" ? (
