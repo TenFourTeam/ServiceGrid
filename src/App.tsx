@@ -13,7 +13,7 @@ import ProtectedRoute from "@/components/Auth/ProtectedRoute";
 
 const CalendarPage = lazy(() => import("./pages/Calendar"));
 const WorkOrdersPage = lazy(() => import("./pages/WorkOrders"));
-const EstimatesPage = lazy(() => import("./pages/Estimates"));
+const QuotesPage = lazy(() => import("./pages/Quotes"));
 const InvoicesPage = lazy(() => import("./pages/Invoices"));
 const CustomersPage = lazy(() => import("./pages/Customers"));
 const SettingsPage = lazy(() => import("./pages/Settings"));
@@ -45,7 +45,8 @@ const App = () => (
                    <Route path="/" element={<Navigate to="/calendar" replace />} />
                    <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
                    <Route path="/work-orders" element={<ProtectedRoute><WorkOrdersPage /></ProtectedRoute>} />
-                   <Route path="/estimates" element={<ProtectedRoute><EstimatesPage /></ProtectedRoute>} />
+                   <Route path="/quotes" element={<ProtectedRoute><QuotesPage /></ProtectedRoute>} />
+                   <Route path="/estimates" element={<Navigate to="/quotes" replace />} />
                    <Route path="/invoices" element={<ProtectedRoute><InvoicesPage /></ProtectedRoute>} />
                    <Route path="/customers" element={<ProtectedRoute><CustomersPage /></ProtectedRoute>} />
                    <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />

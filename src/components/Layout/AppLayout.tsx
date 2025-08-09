@@ -35,7 +35,7 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
         <nav className="flex flex-col gap-1">
           <NavLink to="/calendar" label="Calendar" />
           <NavLink to="/work-orders" label="Work Orders" />
-          <NavLink to="/estimates" label="Quotes" />
+          <NavLink to="/quotes" label="Quotes" />
           <NavLink to="/invoices" label="Invoices" />
           <NavLink to="/customers" label="Customers" />
           <NavLink to="/settings" label="Settings" />
@@ -46,7 +46,7 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
         <header className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">{title ?? 'Dashboard'}</h1>
           <div className="flex items-center gap-2">
-            <Button asChild variant="secondary"><Link to="/estimates?new=1">New Quote</Link></Button>
+            <Button asChild variant="secondary"><Link to="/quotes?new=1">New Quote</Link></Button>
             {/* New Job Sheet trigger */}
             <NewJobSheet />
             <Button variant="outline" onClick={async () => { try { await clerkSignOut?.(); } catch {} finally { await signOut(); } }}>Sign out</Button>
