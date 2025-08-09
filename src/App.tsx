@@ -23,6 +23,7 @@ const AuthPage = lazy(() => import("./pages/Auth"));
 const AuthResetPage = lazy(() => import("./pages/AuthReset"));
 const UpdatePasswordPage = lazy(() => import("./pages/UpdatePassword"));
 const ClerkAuthPage = lazy(() => import("./pages/ClerkAuth"));
+const QuoteActionPage = lazy(() => import("./pages/QuoteAction"));
 
 
 const queryClient = new QueryClient();
@@ -42,6 +43,7 @@ const App = () => (
                    <Route path="/auth/reset" element={<AuthResetPage />} />
                    <Route path="/auth/update-password" element={<UpdatePasswordPage />} />
                    <Route path="/clerk-auth" element={<ClerkAuthPage />} />
+                   <Route path="/quote-action" element={<QuoteActionPage />} />
                    <Route path="/" element={<Navigate to="/calendar" replace />} />
                    <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
                    <Route path="/work-orders" element={<ProtectedRoute><WorkOrdersPage /></ProtectedRoute>} />

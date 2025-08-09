@@ -125,15 +125,20 @@ export default function QuotesPage() {
      const depositLine = params.depositRequired ? `<p style="margin:6px 0 0;color:#555;">Deposit: ${params.depositPercent ?? 0}% due to schedule.</p>` : '';
  
      const funcBase = 'https://ijudkzqfriazabiosnvb.functions.supabase.co/quote-events';
+     const appBase = (typeof window !== 'undefined' && (window as any).location?.origin) ? (window as any).location.origin : '';
      const hasActions = !!(params.quoteId && params.token);
-     const approveHref = hasActions ? `${funcBase}?type=approve&quote_id=${encodeURIComponent(params.quoteId!)}&token=${encodeURIComponent(params.token!)}` : undefined;
-     const editHref = hasActions ? `${funcBase}?type=edit&quote_id=${encodeURIComponent(params.quoteId!)}&token=${encodeURIComponent(params.token!)}` : undefined;
+ 
+     // Route actions through the app for a branded confirmation page
+     const approveHref = hasActions && appBase ? `${appBase}/quote-action?type=approve&quote_id=${encodeURIComponent(params.quoteId!)}&token=${encodeURIComponent(params.token!)}` : undefined;
+     const editHref = hasActions && appBase ? `${appBase}/quote-action?type=edit&quote_id=${encodeURIComponent(params.quoteId!)}&token=${encodeURIComponent(params.token!)}` : undefined;
+ 
+     // Keep pixel for reliable open tracking via the edge function
      const openPixelSrc = hasActions ? `${funcBase}?type=open&quote_id=${encodeURIComponent(params.quoteId!)}&token=${encodeURIComponent(params.token!)}` : undefined;
  
      // Email-safe button styles matching app theme
-     const primaryBg = '#0f172a'; // matches app primary (light mode)
+     const primaryBg = '#0f172a'; // app primary (approx.)
      const primaryText = '#ffffff';
-     const secondaryBg = '#f1f5f9'; // matches app secondary
+     const secondaryBg = '#f1f5f9'; // app secondary (approx.)
      const secondaryText = '#0f172a';
      const borderCol = '#e5e7eb';
      const btnBase = 'display:inline-block;text-decoration:none;padding:10px 14px;border-radius:8px;font-weight:600;';
@@ -154,7 +159,7 @@ export default function QuotesPage() {
      `;
  
      const previewHelpers = params.preview ? `
-       <div id=\"action-confirm\" style=\"display:none;margin-top:16px;padding:16px;border:1px solid ${borderCol};border-radius:8px;background:#f8fafc;color:#334155;\">\n         <div id=\"action-title\" style=\"font-weight:700;margin-bottom:4px;\"></div>\n         <div id=\"action-desc\"></div>\n       </div>\n       <script>(function(){\n         document.addEventListener('click', function(ev){\n           var t = ev.target;\n           while (t && t.tagName !== 'A') t = t.parentElement;\n           if (!t) return;\n           var href = t.getAttribute('href') || '';\n           if (href.indexOf('${funcBase}') === 0) {\n             ev.preventDefault();\n             try {\n               var u = new URL(href);\n               var type = u.searchParams.get('type');\n               var title = document.getElementById('action-title');\n               var desc = document.getElementById('action-desc');\n               var box = document.getElementById('action-confirm');\n               if (type === 'approve') {\n                 if (title) title.textContent = 'Preview: Approval recorded';\n                 if (desc) desc.textContent = 'In a real email, clicking Approve would record your approval.';\n               } else if (type === 'edit') {\n                 if (title) title.textContent = 'Preview: Edit request recorded';\n                 if (desc) desc.textContent = 'In a real email, clicking Request Edits would notify us of your requested changes.';\n               }\n               if (box) box.style.display = 'block';\n             } catch {}\n           }\n         }, true);\n       })();<\/script>\n     ` : '';
+       <div id=\"action-confirm\" style=\"display:none;margin-top:16px;padding:16px;border:1px solid ${borderCol};border-radius:8px;background:#f8fafc;color:#334155;\">\n         <div id=\"action-title\" style=\"font-weight:700;margin-bottom:4px;\"></div>\n         <div id=\"action-desc\"></div>\n       </div>\n       <script>(function(){\n         document.addEventListener('click', function(ev){\n           var t = ev.target;\n           while (t && t.tagName !== 'A') t = t.parentElement;\n           if (!t) return;\n           var href = t.getAttribute('href') || '';\n           if (href.indexOf('${funcBase}') === 0 || href.indexOf('${appBase}/quote-action') === 0 || href.indexOf('/quote-action') === 0) {\n             ev.preventDefault();\n             try {\n               var u = new URL(href, window.location.origin);\n               var type = u.searchParams.get('type');\n               var title = document.getElementById('action-title');\n               var desc = document.getElementById('action-desc');\n               var box = document.getElementById('action-confirm');\n               if (type === 'approve') {\n                 if (title) title.textContent = 'Preview: Approval recorded';\n                 if (desc) desc.textContent = 'In a real email, clicking Approve would record your approval.';\n               } else if (type === 'edit') {\n                 if (title) title.textContent = 'Preview: Edit request recorded';\n                 if (desc) desc.textContent = 'In a real email, clicking Request Edits would notify us of your requested changes.';\n               }\n               if (box) box.style.display = 'block';\n             } catch {}\n           }\n         }, true);\n       })();<\/script>\n     ` : '';
  
      return `
      <div style="background:#f6f9fc;padding:24px 12px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
