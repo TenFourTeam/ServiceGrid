@@ -118,7 +118,7 @@ serve(async (req: Request) => {
 
     const method = existing?.sendgrid_sender_id ? "PATCH" : "POST";
 
-    const sgResp = await fetch(sgUrl, {
+    let sgResp = await fetch(sgUrl, {
       method,
       headers: {
         Authorization: `Bearer ${SENDGRID_API_KEY}`,
@@ -127,12 +127,48 @@ serve(async (req: Request) => {
       body: JSON.stringify(body),
     });
 
-    const text = await sgResp.text();
+    let text = await sgResp.text();
     let sgJson: any = {};
     try {
       sgJson = text ? JSON.parse(text) : {};
     } catch (_e) {
       // ignore
+    }
+
+    // Fallback: if updating an existing sender returns 404, try creating a new one
+    if (!sgResp.ok && method === "PATCH" && sgResp.status === 404) {
+      console.warn(
+        "email-setup-sendgrid: existing sender not found on SendGrid (404). Retrying with POST to create a new sender."
+      );
+      const createResp = await fetch("https://api.sendgrid.com/v3/senders", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${SENDGRID_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      const createText = await createResp.text();
+      let createJson: any = {};
+      try {
+        createJson = createText ? JSON.parse(createText) : {};
+      } catch (_e) {
+        // ignore
+      }
+
+      if (!createResp.ok) {
+        console.error("email-setup-sendgrid: create sender failed", createResp.status, createText);
+        return new Response(
+          JSON.stringify({ error: "SendGrid error", details: createText }),
+          { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+
+      // Use the creation response from now on
+      sgResp = createResp;
+      text = createText;
+      sgJson = createJson;
     }
 
     if (!sgResp.ok) {

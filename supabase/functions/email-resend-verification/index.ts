@@ -57,6 +57,27 @@ serve(async (req: Request) => {
 
     if (!resp.ok) {
       const t = await resp.text();
+      if (resp.status === 404) {
+        console.warn(
+          "email-resend-verification: sender not found on SendGrid (404). Clearing local sender id."
+        );
+        await supabase
+          .from("email_senders")
+          .update({ sendgrid_sender_id: null, verified: false, status: "missing" })
+          .eq("id", sender.id);
+        return new Response(
+          JSON.stringify({ ok: false, clearedId: true, message: "Sender missing in SendGrid. Click Save to recreate, then verify." }),
+          { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      // Treat already-verified as success
+      if ((resp.status === 400 || resp.status === 409) && /already\s*verified/i.test(t)) {
+        console.info("email-resend-verification: sender already verified");
+        return new Response(JSON.stringify({ ok: true, alreadyVerified: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
       console.error("email-resend-verification: sendgrid error", resp.status, t);
       return new Response(JSON.stringify({ error: "SendGrid error", details: t }), {
         status: 500,

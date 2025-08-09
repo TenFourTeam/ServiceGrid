@@ -56,6 +56,19 @@ serve(async (req: Request) => {
     try { sgJson = text ? JSON.parse(text) : {}; } catch { /* ignore */ }
 
     if (!sgResp.ok) {
+      if (sgResp.status === 404) {
+        console.warn("email-sender-status: sender not found on SendGrid (404). Clearing local sender id.");
+        await supabase
+          .from("email_senders")
+          .update({ sendgrid_sender_id: null, verified: false, status: "missing" })
+          .eq("id", sender.id);
+
+        return new Response(
+          JSON.stringify({ ok: true, verified: false, clearedId: true, note: "Sender missing in SendGrid. Please save again to recreate." }),
+          { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+
       console.error("email-sender-status: sendgrid error", sgResp.status, text);
       return new Response(JSON.stringify({ error: "SendGrid error", details: text }), {
         status: 500,

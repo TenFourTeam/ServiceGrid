@@ -79,29 +79,45 @@ export default function EmailSenderSettings() {
     });
     if (error) {
       console.error("email-setup-sendgrid error", error);
-      toast({ title: "Failed to save sender", description: String(error.message), variant: "destructive" });
+      toast({
+        title: "Failed to save sender",
+        description: String(error.message ?? "Unknown error"),
+        variant: "destructive",
+      });
       return;
     }
-    toast({ title: "Sender saved", description: data?.verified ? "Sender is verified and ready." : "Verification email sent. Please verify." });
+    toast({
+      title: "Sender saved",
+      description: data?.verified ? "Sender is verified and ready." : "Verification email sent. Please verify.",
+    });
+    // Immediately refresh status so the badge reflects latest provider state
+    await supabase.functions.invoke("email-sender-status").catch(() => {});
     refetch();
   };
 
   const onResend = async () => {
-    const { error } = await supabase.functions.invoke("email-resend-verification");
+    const { data, error } = await supabase.functions.invoke("email-resend-verification");
     if (error) {
-      toast({ title: "Failed to resend verification", description: String(error.message), variant: "destructive" });
+      toast({ title: "Failed to resend verification", description: String(error.message ?? "Unknown error"), variant: "destructive" });
       return;
     }
-    toast({ title: "Verification email resent" });
+    if (data?.alreadyVerified) {
+      toast({ title: "Already verified", description: "Your sender is already verified." });
+    } else if (data?.clearedId) {
+      toast({ title: "Sender missing", description: "Click Save to recreate the sender, then verify." });
+      refetch();
+    } else {
+      toast({ title: "Verification email resent" });
+    }
   };
 
   const onRefresh = async () => {
     const { data, error } = await supabase.functions.invoke("email-sender-status");
     if (error) {
-      toast({ title: "Failed to refresh", description: String(error.message), variant: "destructive" });
+      toast({ title: "Failed to refresh", description: String(error.message ?? "Unknown error"), variant: "destructive" });
       return;
     }
-    toast({ title: "Status refreshed", description: data?.verified ? "Verified" : "Not verified yet" });
+    toast({ title: "Status refreshed", description: data?.note ?? (data?.verified ? "Verified" : "Not verified yet") });
     refetch();
   };
 
