@@ -124,21 +124,49 @@ async function resolveOwnerId(supabase: ReturnType<typeof createClient>, payload
   }
 
   // 3) Create Supabase auth user (required for profiles.id FK), then insert profile
-  const { data: created, error: createErr } = await supabase.auth.admin.createUser({
-    email,
-    email_confirm: true,
-  });
-  if (createErr) throw createErr;
-  const supaUserId = created.user?.id;
-  if (!supaUserId) throw new Error("Failed to create supabase user");
+  try {
+    const { data: created, error: createErr } = await supabase.auth.admin.createUser({
+      email,
+      email_confirm: true,
+    });
+    if (createErr) throw createErr;
+    const supaUserId = created.user?.id;
+    if (!supaUserId) throw new Error("Failed to create supabase user");
 
-  const { error: insErr } = await supabase.from("profiles").insert({
-    id: supaUserId,
-    email,
-    clerk_user_id: clerkSub,
-  });
-  if (insErr) throw insErr;
-  return supaUserId;
+    const { error: insErr } = await supabase.from("profiles").insert({
+      id: supaUserId,
+      email,
+      clerk_user_id: clerkSub,
+    });
+    if (insErr) throw insErr;
+    return supaUserId;
+  } catch (err) {
+    // If the auth user already exists, link profile to existing auth user
+    const msg = (err as any)?.message || String(err);
+    const code = (err as any)?.code || (err as any)?.status;
+    const isEmailExists = code === "email_exists" || code === 422 || /already been registered/i.test(msg);
+    if (!isEmailExists) throw err;
+
+    // Look up existing auth user by email in auth.users (service role can access this)
+    const { data: authUser, error: authErr } = await supabase
+      .schema('auth')
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .limit(1)
+      .maybeSingle();
+    if (authErr) throw authErr;
+    const existingUserId = authUser?.id as string | undefined;
+    if (!existingUserId) throw new Error('Email exists in auth, but user not found by email');
+
+    // Ensure a profile exists and is linked to Clerk
+    const { error: upsertErr } = await supabase
+      .from('profiles')
+      .upsert({ id: existingUserId, email, clerk_user_id: clerkSub }, { onConflict: 'id' });
+    if (upsertErr) throw upsertErr;
+
+    return existingUserId;
+  }
 }
 
 async function ensureDefaultBusiness(supabase: ReturnType<typeof createClient>, ownerId: string) {
