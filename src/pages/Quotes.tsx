@@ -363,9 +363,10 @@ export default function QuotesPage() {
       toast({ title: 'Select customer', description: 'Please choose a customer before sending.' });
       return;
     }
-    const e = store.upsertQuote({ ...draft, customerId: draft.customerId! });
-    // Defer status update to ensure the freshly upserted quote is in state
-    setTimeout(() => store.sendQuote(e.id), 0);
+    const now = new Date().toISOString();
+    const e = store.upsertQuote({ ...draft, customerId: draft.customerId!, status: 'Sent', sentAt: now, updatedAt: now });
+    // Also trigger store event logging
+    store.sendQuote(e.id);
     await sendEmailForQuote(e);
     setOpen(false);
     resetDraft();
