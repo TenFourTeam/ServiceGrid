@@ -5,3 +5,21 @@ verify_jwt = false
 
 [functions.clerk-whoami]
 verify_jwt = false
+
+[functions.nylas-auth-start]
+verify_jwt = false
+
+[functions.nylas-exchange-code]
+verify_jwt = false
+
+[functions.nylas-disconnect]
+verify_jwt = false
+
+[functions.nylas-send-email]
+verify_jwt = false
+
+[functions.send-quote]
+verify_jwt = false
+
+[functions.email-sender-get]
+verify_jwt = false

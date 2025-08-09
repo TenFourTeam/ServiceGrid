@@ -2,6 +2,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { verifyToken } from "https://esm.sh/@clerk/backend@1.3.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,6 +13,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL") as string;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
 const NYLAS_API_KEY = Deno.env.get("NYLAS_API_KEY") as string;
 const NYLAS_CLIENT_ID = Deno.env.get("NYLAS_CLIENT_ID") as string;
+const CLERK_SECRET_KEY = Deno.env.get("CLERK_SECRET_KEY");
 
 if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
   console.error("nylas-exchange-code: Missing Supabase env");
@@ -25,14 +27,41 @@ serve(async (req: Request) => {
 
   try {
     const authHeader = req.headers.get("Authorization") || "";
-    const accessToken = authHeader.replace("Bearer ", "");
-    if (!accessToken) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+    if (!token) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } });
 
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
-    const { data: auth, error: userErr } = await supabase.auth.getUser(accessToken);
-    if (userErr || !auth?.user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } });
+
+    async function resolveUser(): Promise<{ userId: string; email?: string } | null> {
+      const { data } = await supabase.auth.getUser(token);
+      if (data?.user) return { userId: data.user.id, email: data.user.email ?? undefined };
+      if (!CLERK_SECRET_KEY) return null;
+      try {
+        const payload: any = await verifyToken(token, { secretKey: CLERK_SECRET_KEY });
+        const clerkId: string = payload.sub;
+        const email: string | undefined = payload.email || payload.email_address || undefined;
+        let { data: prof } = await supabase.from("profiles").select("id").eq("clerk_user_id", clerkId).maybeSingle();
+        if (!prof && email) {
+          const { data: byEmail } = await supabase.from("profiles").select("id").eq("email", email).maybeSingle();
+          if (byEmail) {
+            await supabase.from("profiles").update({ clerk_user_id: clerkId }).eq("id", byEmail.id);
+            prof = byEmail as any;
+          }
+        }
+        if (!prof) {
+          const newId = crypto.randomUUID();
+          await supabase.from("profiles").insert({ id: newId, email: email || "", clerk_user_id: clerkId, updated_at: new Date().toISOString(), created_at: new Date().toISOString() });
+          return { userId: newId, email };
+        }
+        return { userId: (prof as any).id as string, email };
+      } catch (e) {
+        console.error("nylas-exchange-code: Clerk verify failed", e);
+        return null;
+      }
     }
+
+    const who = await resolveUser();
+    if (!who) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } });
 
     const { code, redirect_uri }: { code?: string; redirect_uri?: string } = await req.json();
     if (!code) {
@@ -71,7 +100,7 @@ serve(async (req: Request) => {
     }
 
     // Best effort fetch grant details to get mailbox address if not present
-    let mailboxEmail = emailFromToken ?? auth.user.email ?? "";
+    let mailboxEmail = emailFromToken ?? who.email ?? "";
     try {
       const gResp = await fetch(`https://api.us.nylas.com/v3/grants/${grantId}`, {
         headers: { Authorization: `Bearer ${NYLAS_API_KEY}` },
@@ -87,11 +116,11 @@ serve(async (req: Request) => {
 
     // Upsert sender config
     const upsertRow: any = {
-      user_id: auth.user.id,
+      user_id: who.userId,
       provider: "nylas",
-      from_email: mailboxEmail || auth.user.email,
+      from_email: mailboxEmail || who.email,
       from_name: null,
-      reply_to: mailboxEmail || auth.user.email,
+      reply_to: mailboxEmail || who.email,
       nylas_grant_id: grantId,
       verified: true,
       status: "connected",

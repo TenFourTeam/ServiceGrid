@@ -14,24 +14,35 @@ export default function NylasCallbackPage() {
   const code = params.get("code");
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (!code) return;
-    setLoading(true);
+useEffect(() => {
+  if (!code) return;
+  setLoading(true);
+  const run = async () => {
     const redirect_uri = `${window.location.origin}/nylas/callback`;
-    supabase.functions
-      .invoke("nylas-exchange-code", { body: { code, redirect_uri } })
-      .then(({ data, error }) => {
-        if (error) {
-          console.error("nylas-exchange-code error", error);
-          toast({ title: "Connection failed", description: String(error.message ?? "Unknown error"), variant: "destructive" });
-        } else {
-          toast({ title: "Mailbox connected", description: "You're ready to send emails from your mailbox." });
-          console.log("nylas-exchange-code success", data);
-          navigate("/settings", { replace: true });
-        }
-      })
-      .finally(() => setLoading(false));
-  }, [code, navigate]);
+    // Try Supabase token first, else Clerk
+    const { data: sess } = await supabase.auth.getSession();
+    let headers: Record<string, string> = {};
+    if (sess.session?.access_token) headers = { Authorization: `Bearer ${sess.session.access_token}` };
+    else {
+      try {
+        const { getToken } = await import("@clerk/clerk-react");
+        const token = await (getToken as any)();
+        if (token) headers = { Authorization: `Bearer ${token}` };
+      } catch {}
+    }
+    const { data, error } = await supabase.functions.invoke("nylas-exchange-code", { body: { code, redirect_uri }, headers });
+    if (error) {
+      console.error("nylas-exchange-code error", error);
+      toast({ title: "Connection failed", description: String(error.message ?? "Unknown error"), variant: "destructive" });
+    } else {
+      toast({ title: "Mailbox connected", description: "You're ready to send emails from your mailbox." });
+      console.log("nylas-exchange-code success", data);
+      navigate("/settings", { replace: true });
+    }
+    setLoading(false);
+  };
+  run();
+}, [code, navigate]);
 
   return (
     <main className="min-h-screen grid place-items-center p-4">

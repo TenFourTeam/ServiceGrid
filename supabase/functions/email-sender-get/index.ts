@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -14,7 +13,7 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
 const CLERK_SECRET_KEY = Deno.env.get("CLERK_SECRET_KEY");
 
 if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
-  console.error("nylas-disconnect: Missing Supabase env");
+  console.error("email-sender-get: Missing Supabase env");
 }
 
 serve(async (req: Request) => {
@@ -27,16 +26,24 @@ serve(async (req: Request) => {
 
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-    async function getUserId(): Promise<string | null> {
-      const { data } = await supabase.auth.getUser(token);
-      if (data?.user?.id) return data.user.id;
+    async function resolveUser(): Promise<{ userId: string; email?: string } | null> {
+      // Try Supabase JWT first
+      const { data, error } = await supabase.auth.getUser(token);
+      if (!error && data?.user) {
+        return { userId: data.user.id, email: data.user.email ?? undefined };
+      }
+      // Try Clerk token
       if (!CLERK_SECRET_KEY) return null;
       try {
         const payload: any = await verifyToken(token, { secretKey: CLERK_SECRET_KEY });
         const clerkId: string = payload.sub;
-        const email: string | undefined = payload.email || payload.email_address || undefined;
+        const email: string | undefined = payload.email || payload.email_address || payload.primary_email || undefined;
+
+        // Map to profiles.id (UUID)
+        // 1) by clerk_user_id
         let { data: prof } = await supabase.from("profiles").select("id").eq("clerk_user_id", clerkId).maybeSingle();
         if (!prof && email) {
+          // 2) by email (then link)
           const { data: byEmail } = await supabase.from("profiles").select("id").eq("email", email).maybeSingle();
           if (byEmail) {
             await supabase.from("profiles").update({ clerk_user_id: clerkId }).eq("id", byEmail.id);
@@ -44,34 +51,35 @@ serve(async (req: Request) => {
           }
         }
         if (!prof) {
+          // 3) create new profile
           const newId = crypto.randomUUID();
           await supabase.from("profiles").insert({ id: newId, email: email || "", clerk_user_id: clerkId, updated_at: new Date().toISOString(), created_at: new Date().toISOString() });
-          return newId;
+          prof = { id: newId } as any;
         }
-        return (prof as any).id as string;
-      } catch {
+        return { userId: prof.id as string, email };
+      } catch (e) {
+        console.error("email-sender-get: Clerk verify failed", e);
         return null;
       }
     }
 
-    const userId = await getUserId();
-    if (!userId) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    const who = await resolveUser();
+    if (!who) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } });
 
-    const { error: updErr } = await supabase
+    const { data: sender, error: selErr } = await supabase
       .from("email_senders")
-      .update({ nylas_grant_id: null, verified: false, status: "disconnected" })
-      .eq("user_id", userId);
+      .select("*")
+      .eq("user_id", who.userId)
+      .maybeSingle();
 
-    if (updErr) {
-      console.error("nylas-disconnect: update error", updErr);
-      return new Response(JSON.stringify({ error: "Failed to disconnect" }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    if (selErr) {
+      console.error("email-sender-get: select error", selErr);
+      return new Response(JSON.stringify({ error: "Failed to load sender" }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
     }
 
-    return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    return new Response(JSON.stringify({ sender }), { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } });
   } catch (e: any) {
-    console.error("nylas-disconnect error", e);
-    return new Response(JSON.stringify({ error: e?.message ?? "Unknown error" }), {
-      status: 500, headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
+    console.error("email-sender-get error", e);
+    return new Response(JSON.stringify({ error: e?.message ?? "Unknown error" }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
   }
 });
