@@ -116,7 +116,7 @@ export default function EstimatesPage() {
 
     return `
     <div style="background:#f6f9fc;padding:24px 12px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
-      <div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #e6eaf1;border-radius:10px;overflow:hidden;">
+      <div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #e6eaf1;border-radius:10px;overflow.hidden;">
         <div style="background:#0f172a;color:#fff;padding:20px 24px;">
           <div style="font-size:18px;font-weight:600">${params.businessName}</div>
           <div style="opacity:0.85;font-size:14px">Quote ${params.number}</div>
@@ -208,61 +208,40 @@ export default function EstimatesPage() {
        return;
      }
 
-     // Create a public snapshot and token, then include a pretty link in the email
-     const headers = await buildAuthHeaders();
-     const snapshot = {
-       number: e.number,
-       businessName: store.business.name,
-       customerName: customer?.name || 'Customer',
-       items: e.lineItems || [],
-       subtotal: e.subtotal ?? 0,
-       taxRate: e.taxRate ?? 0,
-       discount: e.discount ?? 0,
-       total: e.total,
-       address: e.address,
-       terms: e.terms,
-       depositRequired: e.depositRequired,
-       depositPercent: e.depositPercent,
-       paymentTerms: e.paymentTerms,
-     };
+    const headers = await buildAuthHeaders();
 
-     const pub = await supabase.functions.invoke('estimate-publish', {
-       body: { estimate_id: e.id, customer_email: to, snapshot },
-       headers,
-     });
+    const subject = `Quote ${e.number} — ${store.business.name} — ${formatMoney(e.total)}`;
+    const html = renderQuoteEmailHTML({
+      number: e.number,
+      businessName: store.business.name,
+      customerName: customer.name,
+      items: e.lineItems || [],
+      subtotal: e.subtotal ?? 0,
+      taxRate: e.taxRate ?? 0,
+      discount: e.discount ?? 0,
+      total: e.total,
+      address: e.address,
+      terms: e.terms,
+      depositRequired: e.depositRequired,
+      depositPercent: e.depositPercent,
+      paymentTerms: e.paymentTerms,
+      // No public link included anymore
+    });
 
-     if (pub.error || (pub.data as any)?.error) {
-       console.error('estimate-publish error', pub.error || (pub.data as any)?.error);
-       toast({ title: 'Failed to publish quote', description: 'Could not create public link. Try again.' });
-       return;
-     }
+    const { data, error } = await supabase.functions.invoke('resend-send-email', {
+      body: {
+        to,
+        subject,
+        html,
+        quote_id: e.id,
+        from_name: store.business.name,
+        reply_to: store.business.replyToEmail || undefined,
+      },
+      headers,
+    });
 
-     const { token, slug } = pub.data as { token: string; slug: string };
-     const viewLink = `${window.location.origin}/c/${slug}/q/${token}`;
-
-     const subject = `Quote ${e.number} — ${store.business.name} — ${formatMoney(e.total)}`;
-     const html = renderQuoteEmailHTML({
-       number: e.number,
-       businessName: store.business.name,
-       customerName: customer.name,
-       items: e.lineItems || [],
-       subtotal: e.subtotal ?? 0,
-       taxRate: e.taxRate ?? 0,
-       discount: e.discount ?? 0,
-       total: e.total,
-       address: e.address,
-       terms: e.terms,
-       depositRequired: e.depositRequired,
-       depositPercent: e.depositPercent,
-       paymentTerms: e.paymentTerms,
-       viewLink,
-     });
-
-     const { data, error } = await supabase.functions.invoke('resend-send-email', {
-       body: { to, subject, html, quote_id: e.id, from_name: store.business.name, reply_to: store.business.replyToEmail || undefined },
-       headers,
-     });
     console.log('resend-send-email response', { data, error });
+
     if (error) {
       console.error('resend-send-email error', error);
       const status = (error as any)?.status;
@@ -272,6 +251,7 @@ export default function EstimatesPage() {
       toast({ title: 'Failed to send', description: msg, variant: 'destructive' });
       return;
     }
+
     const payload = data as any;
     if (payload?.error) {
       const raw = String(payload.error);

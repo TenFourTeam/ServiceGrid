@@ -14,175 +14,12 @@ export type Database = {
   }
   public: {
     Tables: {
-      email_domains: {
-        Row: {
-          created_at: string
-          default_from_email: string | null
-          default_from_name: string | null
-          dns_records: Json | null
-          domain: string
-          id: string
-          sendgrid_id: number | null
-          status: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          default_from_email?: string | null
-          default_from_name?: string | null
-          dns_records?: Json | null
-          domain: string
-          id?: string
-          sendgrid_id?: number | null
-          status?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          default_from_email?: string | null
-          default_from_name?: string | null
-          dns_records?: Json | null
-          domain?: string
-          id?: string
-          sendgrid_id?: number | null
-          status?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      email_logs: {
-        Row: {
-          created_at: string
-          error: string | null
-          id: string
-          message_id: string | null
-          payload: Json | null
-          provider: string
-          status: string
-          subject: string
-          to_email: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          error?: string | null
-          id?: string
-          message_id?: string | null
-          payload?: Json | null
-          provider: string
-          status: string
-          subject: string
-          to_email: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          error?: string | null
-          id?: string
-          message_id?: string | null
-          payload?: Json | null
-          provider?: string
-          status?: string
-          subject?: string
-          to_email?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      email_senders: {
-        Row: {
-          created_at: string
-          from_email: string
-          from_name: string | null
-          id: string
-          nylas_grant_id: string | null
-          provider: string
-          reply_to: string | null
-          sendgrid_sender_id: number | null
-          status: string | null
-          updated_at: string
-          user_id: string
-          verified: boolean
-        }
-        Insert: {
-          created_at?: string
-          from_email: string
-          from_name?: string | null
-          id?: string
-          nylas_grant_id?: string | null
-          provider?: string
-          reply_to?: string | null
-          sendgrid_sender_id?: number | null
-          status?: string | null
-          updated_at?: string
-          user_id: string
-          verified?: boolean
-        }
-        Update: {
-          created_at?: string
-          from_email?: string
-          from_name?: string | null
-          id?: string
-          nylas_grant_id?: string | null
-          provider?: string
-          reply_to?: string | null
-          sendgrid_sender_id?: number | null
-          status?: string | null
-          updated_at?: string
-          user_id?: string
-          verified?: boolean
-        }
-        Relationships: []
-      }
-      estimate_public_snapshots: {
-        Row: {
-          approved_at: string | null
-          created_at: string
-          customer_email: string | null
-          estimate_id: string
-          id: string
-          snapshot: Json
-          token: string
-          view_count: number
-          viewed_at: string | null
-        }
-        Insert: {
-          approved_at?: string | null
-          created_at?: string
-          customer_email?: string | null
-          estimate_id: string
-          id?: string
-          snapshot: Json
-          token?: string
-          view_count?: number
-          viewed_at?: string | null
-        }
-        Update: {
-          approved_at?: string | null
-          created_at?: string
-          customer_email?: string | null
-          estimate_id?: string
-          id?: string
-          snapshot?: Json
-          token?: string
-          view_count?: number
-          viewed_at?: string | null
-        }
-        Relationships: []
-      }
       mail_sends: {
         Row: {
           created_at: string
           error_code: string | null
           error_message: string | null
           id: string
-          nylas_grant_id: string | null
           provider_message_id: string | null
           quote_id: string | null
           request_hash: string
@@ -197,7 +34,6 @@ export type Database = {
           error_code?: string | null
           error_message?: string | null
           id?: string
-          nylas_grant_id?: string | null
           provider_message_id?: string | null
           quote_id?: string | null
           request_hash: string
@@ -212,7 +48,6 @@ export type Database = {
           error_code?: string | null
           error_message?: string | null
           id?: string
-          nylas_grant_id?: string | null
           provider_message_id?: string | null
           quote_id?: string | null
           request_hash?: string

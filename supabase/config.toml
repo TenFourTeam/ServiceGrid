@@ -7,6 +7,7 @@ verify_jwt = false
 [functions.clerk-whoami]
 verify_jwt = false
 
+# Keep Nylas auth handlers in case they are still referenced elsewhere, but UI is retired
 [functions.nylas-auth-start]
 verify_jwt = false
 
@@ -16,32 +17,9 @@ verify_jwt = false
 [functions.nylas-disconnect]
 verify_jwt = false
 
-[functions.nylas-send-email]
-verify_jwt = false
-
-[functions.send-quote]
-verify_jwt = false
-
+# Keep these core functions
 [functions.email-sender-get]
 verify_jwt = false
 
-[functions.nylas-webhook]
-verify_jwt = false
-
-[functions.sendgrid-domain-init]
-verify_jwt = false
-
-[functions.sendgrid-domain-verify]
-verify_jwt = false
-
-[functions.sendgrid-send-email]
-verify_jwt = false
-
 [functions.resend-send-email]
-verify_jwt = false
-
-[functions.estimate-view]
-verify_jwt = false
-
-[functions.estimate-publish]
 verify_jwt = false
