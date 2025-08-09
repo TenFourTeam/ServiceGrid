@@ -18,7 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Trash2, Plus, Eye, Send, Download, Copy } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatCurrency } from '@/lib/utils';
+import { formatMoney as formatCurrency } from '@/utils/format';
 import type { Customer, LineItem, Quote, QuoteStatus } from '@/types';
 
 interface QuoteDraft {
