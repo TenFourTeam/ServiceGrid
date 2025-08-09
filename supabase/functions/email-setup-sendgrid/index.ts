@@ -15,6 +15,7 @@ const SENDGRID_API_KEY = Deno.env.get("SENDGRID_API_KEY") as string;
 interface SetupPayload {
   from_email: string;
   from_name?: string;
+  nickname?: string;
   reply_to?: string;
   address: string;
   address2?: string;
@@ -52,7 +53,7 @@ serve(async (req: Request) => {
     }
 
     const payload = (await req.json()) as SetupPayload;
-    const { from_email, from_name, reply_to, address, address2, city, state, zip, country } = payload;
+    const { from_email, from_name, nickname, reply_to, address, address2, city, state, zip, country } = payload;
 
     if (!from_email || !address || !city || !state || !zip || !country) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
@@ -95,10 +96,14 @@ serve(async (req: Request) => {
     }
 
     // Create or update Single Sender in SendGrid
+    const safeFromName = from_name && from_name.trim().length > 0 ? from_name : (from_email || "Sender");
+    const safeNickname = nickname && nickname.trim().length > 0 ? nickname : safeFromName;
+    const safeReplyTo = reply_to && reply_to.trim().length > 0 ? reply_to : from_email;
+
     const body = {
-      nickname: "App Sender",
-      from: { email: from_email, name: from_name || "Sender" },
-      reply_to: { email: reply_to || from_email, name: from_name || "Sender" },
+      nickname: safeNickname,
+      from: { email: from_email, name: safeFromName },
+      reply_to: { email: safeReplyTo, name: safeFromName },
       address,
       address_2: address2 || "",
       city,
