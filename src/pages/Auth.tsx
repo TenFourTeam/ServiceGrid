@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/components/Auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
+import { Eye, EyeOff } from "lucide-react";
 
 const sanitizeEmail = (v: string) => v.trim().toLowerCase();
 const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
@@ -24,6 +25,7 @@ export default function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [resending, setResending] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -131,6 +133,54 @@ export default function AuthPage() {
     }
   };
 
+  const onMagicLink = async () => {
+    const em = sanitizeEmail(email);
+    if (!isValidEmail(em)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    setError(null);
+    setMessage(null);
+    setLoading(true);
+    try {
+      const redirectUrl = `${window.location.origin}/`;
+      const { error } = await supabase.auth.signInWithOtp({
+        email: em,
+        options: { emailRedirectTo: redirectUrl },
+      });
+      if (error) throw error;
+      setMessage(`Magic link sent to ${em}. Check your inbox.`);
+      toast?.({ title: "Magic link sent", description: `We've sent a sign-in link to ${em}.` });
+    } catch (err: any) {
+      const raw = String(err?.message ?? "");
+      let friendly = raw || "Could not send magic link.";
+      if (/rate|limit/i.test(raw)) friendly = "Too many requests. Please wait a moment and try again.";
+      if (/invalid/i.test(raw)) friendly = "That email address looks invalid.";
+      setError(friendly);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onGoogle = async () => {
+    setError(null);
+    setMessage(null);
+    setLoading(true);
+    try {
+      const redirectUrl = `${window.location.origin}/`;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: redirectUrl },
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      const raw = String(err?.message ?? "");
+      setError(raw || "Google sign-in failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <main className="min-h-screen grid place-items-center p-4">
       <Card className="w-full max-w-md">
@@ -145,8 +195,36 @@ export default function AuthPage() {
               <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} onBlur={() => setEmail(sanitizeEmail(email))} required placeholder="you@example.com" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="••••••••" />
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                {mode === "signIn" && (
+                  <button
+                    type="button"
+                    className="text-xs underline underline-offset-4"
+                    onClick={() => navigate("/auth/reset")}
+                  >
+                    Forgot password?
+                  </button>
+                )}
+              </div>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-2 flex items-center text-muted-foreground"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             {message && <p className="text-sm text-muted-foreground">{message}</p>}
@@ -161,6 +239,16 @@ export default function AuthPage() {
             <Button type="submit" className="w-full" disabled={loading || !isValidEmail(email) || !password}>
               {loading ? "Please wait…" : mode === "signIn" ? "Sign in" : "Create account"}
             </Button>
+            <div className="mt-3 grid gap-2">
+              {mode === "signIn" && (
+                <Button type="button" variant="outline" className="w-full" onClick={onMagicLink} disabled={loading || !isValidEmail(email)}>
+                  Send me a magic link
+                </Button>
+              )}
+              <Button type="button" variant="outline" className="w-full" onClick={onGoogle} disabled={loading}>
+                Continue with Google
+              </Button>
+            </div>
           </form>
           <div className="mt-4 text-sm text-muted-foreground">
             {mode === "signIn" ? (

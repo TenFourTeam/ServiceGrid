@@ -20,6 +20,8 @@ const SettingsPage = lazy(() => import("./pages/Settings"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const AuthPage = lazy(() => import("./pages/Auth"));
 const NylasCallbackPage = lazy(() => import("./pages/NylasCallback"));
+const AuthResetPage = lazy(() => import("./pages/AuthReset"));
+const UpdatePasswordPage = lazy(() => import("./pages/UpdatePassword"));
 
 const queryClient = new QueryClient();
 
@@ -35,6 +37,8 @@ const App = () => (
               <Suspense fallback={<LoadingScreen /> }>
                 <Routes>
                   <Route path="/auth" element={<AuthPage />} />
+                  <Route path="/auth/reset" element={<AuthResetPage />} />
+                  <Route path="/auth/update-password" element={<UpdatePasswordPage />} />
                   <Route path="/" element={<Navigate to="/calendar" replace />} />
                   <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
                   <Route path="/work-orders" element={<ProtectedRoute><WorkOrdersPage /></ProtectedRoute>} />
