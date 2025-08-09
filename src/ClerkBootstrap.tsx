@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import App from "./App";
+import { ClerkRuntimeProvider } from "./components/Auth/ClerkRuntime";
 
 const SUPABASE_URL = "https://ijudkzqfriazabiosnvb.supabase.co";
 
@@ -32,13 +33,19 @@ export default function ClerkBootstrap() {
 
   if (error || !pk || !ClerkProviderComp) {
     // Gracefully continue without Clerk so existing Supabase auth still works
-    return <App />;
+    return (
+      <ClerkRuntimeProvider hasClerk={false}>
+        <App />
+      </ClerkRuntimeProvider>
+    );
   }
 
   const ClerkProvider = ClerkProviderComp;
   return (
     <ClerkProvider publishableKey={pk}>
-      <App />
+      <ClerkRuntimeProvider hasClerk={true}>
+        <App />
+      </ClerkRuntimeProvider>
     </ClerkProvider>
   );
 }

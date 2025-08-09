@@ -1,18 +1,47 @@
 import { useEffect, useState } from "react";
-import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton, useAuth } from "@clerk/clerk-react";
+import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton, useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useHasClerk } from "@/components/Auth/ClerkRuntime";
 
 const SUPABASE_URL = "https://ijudkzqfriazabiosnvb.supabase.co";
 
 export default function ClerkAuthPage() {
-  const { getToken, isSignedIn } = useAuth();
+  const hasClerk = useHasClerk();
   const location = useLocation();
   const from: any = (location.state as any)?.from;
   const redirectTarget = from?.pathname ? `${from.pathname}${from.search ?? ""}${from.hash ?? ""}` : "/";
 
+  if (!hasClerk) {
+    useEffect(() => {
+      document.title = "Sign In • TenFour Lawn";
+      const meta = document.querySelector('meta[name="description"]');
+      if (meta) meta.setAttribute('content', 'Clerk is not available. Use email login instead.');
+    }, []);
+
+    return (
+      <main className="container mx-auto max-w-2xl py-10">
+        <header className="mb-6">
+          <h1 className="text-2xl font-bold">Account</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Clerk is loading or unavailable. You can continue with email login.</p>
+          <link rel="canonical" href={`${window.location.origin}/clerk-auth`} />
+        </header>
+        <section>
+          <Button asChild>
+            <Link to="/auth">Use email login</Link>
+          </Button>
+        </section>
+      </main>
+    );
+  }
+
+  return <ClerkAuthInner redirectTarget={redirectTarget} />;
+}
+
+function ClerkAuthInner({ redirectTarget }: { redirectTarget: string }) {
+  const { getToken, isSignedIn } = useClerkAuth();
   const [who, setWho] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [devOpen, setDevOpen] = useState(false);
