@@ -1,2 +1,7 @@
-
 project_id = "ijudkzqfriazabiosnvb"
+
+[functions.clerk-publishable-key]
+verify_jwt = false
+
+[functions.clerk-whoami]
+verify_jwt = false
