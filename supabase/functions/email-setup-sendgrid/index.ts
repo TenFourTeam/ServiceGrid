@@ -95,27 +95,44 @@ serve(async (req: Request) => {
       });
     }
 
-    // Always create a NEW Single Sender in SendGrid to avoid overwriting existing ones
+    // Decide whether to PATCH existing sender (if from_email unchanged) or POST a new one
     const safeFromName = from_name && from_name.trim().length > 0 ? from_name : from_email;
     const baseNickname = (nickname && nickname.trim().length > 0) ? nickname : safeFromName;
     const userPrefix = `WB-${user.id.substring(0,8).toUpperCase()}`;
     const uniqueNickname = `${userPrefix}-${Math.random().toString(36).slice(2,6).toUpperCase()}`;
     const safeReplyTo = reply_to;
 
-    let body: any = {
-      nickname: uniqueNickname,
-      from: { email: from_email, name: safeFromName },
-      reply_to: { email: safeReplyTo, name: safeFromName },
-      address,
-      address_2: address2 || "",
-      city,
-      state,
-      zip,
-      country,
-    };
+    const isPatch = !!(existing?.sendgrid_sender_id && existing?.from_email === from_email);
 
-    const sgUrl = "https://api.sendgrid.com/v3/senders";
-    const method = "POST";
+    const sgUrl = isPatch
+      ? `https://api.sendgrid.com/v3/senders/${existing!.sendgrid_sender_id}`
+      : "https://api.sendgrid.com/v3/senders";
+
+    let body: any = isPatch
+      ? {
+          // Do not change nickname on PATCH to avoid collisions
+          from: { email: from_email, name: safeFromName },
+          reply_to: { email: safeReplyTo, name: safeFromName },
+          address,
+          address_2: address2 || "",
+          city,
+          state,
+          zip,
+          country,
+        }
+      : {
+          nickname: uniqueNickname,
+          from: { email: from_email, name: safeFromName },
+          reply_to: { email: safeReplyTo, name: safeFromName },
+          address,
+          address_2: address2 || "",
+          city,
+          state,
+          zip,
+          country,
+        };
+
+    const method = isPatch ? "PATCH" : "POST";
 
     let sgResp = await fetch(sgUrl, {
       method,
@@ -145,7 +162,7 @@ serve(async (req: Request) => {
           Authorization: `Bearer ${SENDGRID_API_KEY}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ ...body, nickname: uniqueNickname }),
       });
 
       const createText = await createResp.text();

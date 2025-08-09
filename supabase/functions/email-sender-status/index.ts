@@ -93,11 +93,67 @@ serve(async (req: Request) => {
       verified = true;
     }
 
-    const providerStatus = ((): string | null => {
-      if (typeof sgVerifiedRaw?.status === "string") return String(sgVerifiedRaw.status);
-      if (sgVerificationStatus) return sgVerificationStatus;
-      return null;
-    })();
+    // If not verified, attempt reconciliation: find a verified sender for this user/from_email and relink
+    if (!verified) {
+      try {
+        const userPrefix = `WB-${user.id.substring(0,8).toUpperCase()}`;
+        const listResp = await fetch("https://api.sendgrid.com/v3/senders", {
+          headers: { Authorization: `Bearer ${SENDGRID_API_KEY}` },
+        });
+        const listText = await listResp.text();
+        let listJson: any[] = [];
+        try { listJson = listText ? JSON.parse(listText) : []; } catch { /* ignore */ }
+        if (listResp.ok && Array.isArray(listJson)) {
+          const normalize = (v: any) => (typeof v === 'string' ? v.toLowerCase().trim() : '');
+          const fromEmailTarget = normalize(sender.from_email);
+
+          const appSenders = listJson.filter((s: any) =>
+            typeof s?.nickname === 'string' && s.nickname.startsWith(userPrefix + '-')
+          );
+          const sameEmail = appSenders.filter((s: any) =>
+            normalize(s?.from?.email ?? s?.from_email) === fromEmailTarget
+          );
+
+          const isSgVerified = (obj: any): boolean => {
+            if (!obj) return false;
+            if (obj.is_verified === true) return true;
+            const v = obj.verified;
+            if (typeof v === 'boolean') return v;
+            if (typeof v === 'string') return v.toLowerCase() === 'true';
+            const st = typeof v?.status === 'string' ? v.status.toLowerCase() : (typeof obj.verification_status === 'string' ? obj.verification_status.toLowerCase() : null);
+            return st === 'approved' || st === 'verified' || st === 'completed' || st === 'success' || st === 'true';
+          };
+
+          const verifiedCandidates = sameEmail.filter(isSgVerified);
+          if (verifiedCandidates.length > 0) {
+            // Choose the candidate with the largest numeric id
+            verifiedCandidates.sort((a: any, b: any) => (Number(b.id ?? b.sender_id ?? 0) - Number(a.id ?? a.sender_id ?? 0)));
+            const chosen = verifiedCandidates[0];
+            const chosenId = chosen.id ?? chosen.sender_id;
+            if (chosenId) {
+              await supabase
+                .from('email_senders')
+                .update({ sendgrid_sender_id: chosenId, verified: true, status: 'verified' })
+                .eq('id', sender.id);
+
+              // Cleanup extras for this user
+              for (const s of appSenders) {
+                const sid = s.id ?? s.sender_id;
+                if (!sid || sid === chosenId) continue;
+                try { await fetch(`https://api.sendgrid.com/v3/senders/${sid}`, { method: 'DELETE', headers: { Authorization: `Bearer ${SENDGRID_API_KEY}` } }); } catch { /* ignore */ }
+              }
+
+              return new Response(JSON.stringify({ ok: true, verified: true, relinked: true }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json', ...corsHeaders },
+              });
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('email-sender-status: reconciliation failed', e);
+      }
+    }
 
     await supabase
       .from("email_senders")
