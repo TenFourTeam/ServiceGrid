@@ -49,10 +49,42 @@ function createAdminClient() {
   return createClient(url, serviceKey);
 }
 
+async function fetchClerkEmail(userId: string): Promise<string | null> {
+  const secretKey = Deno.env.get("CLERK_SECRET_KEY");
+  if (!secretKey) return null;
+  try {
+    const r = await fetch(`https://api.clerk.com/v1/users/${userId}`, {
+      headers: {
+        Authorization: `Bearer ${secretKey}`,
+      },
+    });
+    if (!r.ok) return null;
+    const u: any = await r.json();
+    const primaryId = u?.primary_email_address_id;
+    const emails = Array.isArray(u?.email_addresses) ? u.email_addresses : [];
+    const primary = emails.find((e: any) => e.id === primaryId) || emails[0];
+    const email = primary?.email_address || u?.email || u?.primary_email_address?.email_address || null;
+    return email?.toLowerCase?.() || null;
+  } catch {
+    return null;
+  }
+}
+
+function serializeError(e: unknown) {
+  if (e instanceof Error) {
+    return { message: e.message, name: e.name };
+  }
+  try {
+    return JSON.parse(JSON.stringify(e));
+  } catch {
+    return { message: String(e) };
+  }
+}
+
 async function resolveOwnerId(supabase: ReturnType<typeof createClient>, payload: any): Promise<string> {
   const clerkSub = payload.sub as string;
   const claimEmail = (payload.email || payload["email"] || payload["primary_email"] || "") as string;
-  const email = claimEmail?.toLowerCase?.() || null;
+  let email: string | null = claimEmail?.toLowerCase?.() || null;
 
   // 1) Lookup by clerk_user_id
   let { data: profByClerk, error: profByClerkErr } = await supabase
@@ -83,33 +115,30 @@ async function resolveOwnerId(supabase: ReturnType<typeof createClient>, payload
     }
   }
 
-  // 3) Create Supabase auth user if email is present, else create profile with random id
-  if (email) {
-    const { data: created, error: createErr } = await supabase.auth.admin.createUser({
-      email,
-      email_confirm: true,
-    });
-    if (createErr) throw createErr;
-    const supaUserId = created.user?.id;
-    if (!supaUserId) throw new Error("Failed to create supabase user");
-    const { error: insErr } = await supabase.from("profiles").insert({
-      id: supaUserId,
-      email,
-      clerk_user_id: clerkSub,
-    });
-    if (insErr) throw insErr;
-    return supaUserId;
+  // Ensure we have an email (fetch from Clerk if missing)
+  if (!email) {
+    email = await fetchClerkEmail(clerkSub);
+  }
+  if (!email) {
+    throw new Error("Unable to determine user email from Clerk; cannot create Supabase user");
   }
 
-  // Fallback: create a profile-only id
-  const fallbackId = crypto.randomUUID();
-  const { error: fallbackErr } = await supabase.from("profiles").insert({
-    id: fallbackId,
-    email: "",
+  // 3) Create Supabase auth user (required for profiles.id FK), then insert profile
+  const { data: created, error: createErr } = await supabase.auth.admin.createUser({
+    email,
+    email_confirm: true,
+  });
+  if (createErr) throw createErr;
+  const supaUserId = created.user?.id;
+  if (!supaUserId) throw new Error("Failed to create supabase user");
+
+  const { error: insErr } = await supabase.from("profiles").insert({
+    id: supaUserId,
+    email,
     clerk_user_id: clerkSub,
   });
-  if (fallbackErr) throw fallbackErr;
-  return fallbackId;
+  if (insErr) throw insErr;
+  return supaUserId;
 }
 
 async function ensureDefaultBusiness(supabase: ReturnType<typeof createClient>, ownerId: string) {
@@ -174,6 +203,6 @@ serve(async (req) => {
     return badRequest("Method not allowed", 405);
   } catch (e) {
     console.error("[customers]", e);
-    return badRequest(String(e), 500);
+    return json({ error: serializeError(e) }, { status: 500 });
   }
 });
