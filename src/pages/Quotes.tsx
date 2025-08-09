@@ -19,7 +19,7 @@ import { useAuth as useAppAuth } from '@/components/Auth/AuthProvider';
 import { useSupabaseQuotes } from '@/hooks/useSupabaseQuotes';
 import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
 import { useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 
 type SortKey = 'customer' | 'amount' | 'status' | 'updated';
@@ -73,6 +73,21 @@ export default function QuotesPage() {
   const { data: dbCustomers } = useSupabaseCustomers({ enabled: !!appUser });
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search || '');
+    const newParam = params.get('new');
+    if (newParam && (newParam === '1' || newParam.toLowerCase() === 'true')) {
+      if (!appUser) {
+        navigate('/clerk-auth', { replace: true });
+        return;
+      }
+      resetDraft();
+      setOpen(true);
+      navigate('/quotes', { replace: true });
+    }
+  }, [location.search, appUser, navigate]);
 
   // session-level guards to avoid duplicate toasts/emails
   const processedEditEmailsRef = useRef<Set<string>>(new Set());
