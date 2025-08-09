@@ -172,11 +172,55 @@ serve(async (req: Request) => {
     }
 
     if (!sgResp.ok) {
-      console.error("email-setup-sendgrid: sendgrid error", sgResp.status, text);
-      return new Response(JSON.stringify({ error: "SendGrid error", details: text }), {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+      // Handle duplicate nickname by relinking to existing sender
+      const isDupNickname =
+        sgResp.status === 400 &&
+        ((Array.isArray(sgJson?.errors) && sgJson.errors.some((e: any) => /same nickname|already have a sender identity/i.test(String(e?.message || ""))))
+         || /same nickname|already have a sender identity/i.test(text || ""));
+      if (isDupNickname) {
+        try {
+          const listResp = await fetch("https://api.sendgrid.com/v3/senders", {
+            headers: { Authorization: `Bearer ${SENDGRID_API_KEY}` },
+          });
+          const listText = await listResp.text();
+          let listJson: any[] = [];
+          try { listJson = listText ? JSON.parse(listText) : []; } catch { /* ignore */ }
+          if (listResp.ok && Array.isArray(listJson)) {
+            const match = listJson.find((s: any) =>
+              (s?.from?.email && String(s.from.email).toLowerCase() === String(from_email).toLowerCase()) ||
+              (s?.nickname && String(s.nickname).toLowerCase() === String(safeNickname).toLowerCase())
+            );
+            if (match) {
+              // Use this sender as the resolved one and continue as success
+              sgJson = match;
+            } else {
+              console.error("email-setup-sendgrid: duplicate nickname but no matching sender found in list", listText);
+              return new Response(JSON.stringify({ error: "SendGrid error", details: text }), {
+                status: 500,
+                headers: { "Content-Type": "application/json", ...corsHeaders },
+              });
+            }
+          } else {
+            console.error("email-setup-sendgrid: failed to list senders", listResp.status, listText);
+            return new Response(JSON.stringify({ error: "SendGrid error", details: text }), {
+              status: 500,
+              headers: { "Content-Type": "application/json", ...corsHeaders },
+            });
+          }
+        } catch (e) {
+          console.error("email-setup-sendgrid: error reconciling duplicate nickname", e);
+          return new Response(JSON.stringify({ error: "SendGrid error", details: text }), {
+            status: 500,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          });
+        }
+      } else {
+        console.error("email-setup-sendgrid: sendgrid error", sgResp.status, text);
+        return new Response(JSON.stringify({ error: "SendGrid error", details: text }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
     }
 
   const senderId: number | undefined =
