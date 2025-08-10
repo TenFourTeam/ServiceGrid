@@ -271,6 +271,11 @@ const dayRefs = useRef<HTMLDivElement[]>([]);
 
 function onDragStart(e: React.PointerEvent, job: Job) {
     e.stopPropagation();
+    if (job.status !== 'Scheduled') {
+      toast.info('You cannot reschedule this job while it is ' + job.status.toLowerCase());
+      setActiveJob(job);
+      return;
+    }
     const original = { ...job };
     const dur = new Date(job.endsAt).getTime() - new Date(job.startsAt).getTime();
     let latest = { startsAt: job.startsAt, endsAt: job.endsAt };
@@ -350,9 +355,12 @@ function onDragStart(e: React.PointerEvent, job: Job) {
 
   function onResizeStart(e: React.PointerEvent, job: Job) {
     e.stopPropagation();
+    if (job.status !== 'Scheduled') {
+      toast.info('You cannot change duration for a job that is ' + job.status.toLowerCase());
+      return;
+    }
     const original = { ...job };
     let latestEnd = job.endsAt;
-
     const onMove = (ev: PointerEvent) => {
       // Determine which day column we're over
       let idx = -1;
@@ -479,15 +487,15 @@ function onDragStart(e: React.PointerEvent, job: Job) {
               const top = startMin / TOTAL_MIN * 100;
               const height = Math.max(8, (endMin - startMin) / TOTAL_MIN * 100);
               const customer = customers.find(c => c.id === j.customerId)?.name ?? 'Customer';
-              const color = j.status === 'Scheduled' ? 'bg-primary/10 border-primary' : j.status === 'In Progress' ? 'bg-background border-2 border-primary' : 'bg-success/10 border-success';
-              return <div key={j.id} className={`absolute left-2 right-2 border rounded-md p-2 text-xs select-none cursor-grab active:cursor-grabbing ${color} ${highlightJobId === j.id ? 'new-job-highlight ring-2 ring-success' : ''}`} style={{
+              const color = j.status === 'Scheduled' ? 'bg-primary/10 border-primary' : j.status === 'In Progress' ? 'bg-background border-primary' : 'bg-success/10 border-success';
+              return <div key={j.id} className={`absolute left-2 right-2 border rounded-md p-2 text-xs select-none ${j.status === 'Scheduled' ? 'cursor-grab active:cursor-grabbing' : 'cursor-not-allowed'} ${color} ${highlightJobId === j.id ? 'new-job-highlight ring-2 ring-success' : ''}`} style={{
                 top: `${top}%`,
                 height: `${height}%`
-              }} onPointerDown={e => onDragStart(e, j)}>
+              }} onPointerDown={j.status === 'Scheduled' ? (e) => onDragStart(e, j) : undefined}>
                       <div className="font-medium truncate">{j.title || 'Job'}</div>
                       <div className="text-[10px] text-muted-foreground truncate">{customer}</div>
                       <div className="text-[10px]">{j.status}</div>
-                      <div className="absolute left-0 right-0 bottom-0 h-2 cursor-ns-resize" onPointerDown={(e)=> onResizeStart(e, j)} />
+                      <div className={`absolute left-0 right-0 bottom-0 h-2 ${j.status === 'Scheduled' ? 'cursor-ns-resize' : 'cursor-not-allowed'}`} onPointerDown={j.status === 'Scheduled' ? (e)=> onResizeStart(e, j) : undefined} />
                     </div>;
             })}
               </div>))}

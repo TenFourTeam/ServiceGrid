@@ -22,7 +22,7 @@ export default function DayCalendar({ date }: { date: Date }) {
           const s = new Date(j.startsAt);
           const e = new Date(j.endsAt);
           const status = j.status as DbJobRow['status'];
-          const liClasses = `rounded px-3 py-2 bg-background/60 border ${status === 'Completed' ? 'border-success bg-success/5' : status === 'In Progress' ? 'border-2 border-primary' : 'border-primary/50'}`;
+          const liClasses = `rounded px-3 py-2 bg-background/60 border ${status === 'Completed' ? 'border-success bg-success/5' : status === 'In Progress' ? 'border-primary' : 'border-primary/50'}`;
           const dotClass = status === 'Completed' ? 'bg-success' : 'bg-primary';
           return (
             <li key={j.id} className={liClasses}>

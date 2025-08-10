@@ -184,7 +184,9 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <Button onClick={handleAdvanceStatus} disabled={(optimisticStatus ?? job.status) === 'Completed' || isAdvancing}>Advance Status</Button>
-              <ReschedulePopover job={job as Job} onDone={()=>{ /* no-op, realtime/subsequent fetch updates UI */ }} />
+              {((optimisticStatus ?? job.status) === 'Scheduled') && (
+                <ReschedulePopover job={job as Job} onDone={()=>{ /* no-op, realtime/subsequent fetch updates UI */ }} />
+              )}
               {!(job as any).quoteId && (
                 <Button variant="outline" onClick={() => setPickerOpen(true)}>Link Quote</Button>
               )}
