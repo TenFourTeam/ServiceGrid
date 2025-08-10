@@ -24,3 +24,6 @@ verify_jwt = false
 
 [functions.invoices]
 verify_jwt = false
+
+[functions.upload-business-logo]
+verify_jwt = false
