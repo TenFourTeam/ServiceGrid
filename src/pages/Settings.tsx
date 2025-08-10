@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import BusinessLogo from '@/components/BusinessLogo';
 import { useState, useEffect } from 'react';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { getClerkTokenStrict } from '@/utils/clerkToken';
@@ -109,23 +111,20 @@ export default function SettingsPage() {
           <CardHeader><CardTitle>Branding</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-4">
-              <div className="h-10 w-10 rounded-full bg-primary ring-1 ring-border overflow-hidden">
-                {store.business.logoUrl && (
-                  <img
-                    src={store.business.logoUrl}
-                    alt={`${store.business.name} logo`}
-                    className="h-10 w-10 object-cover"
-                    loading="lazy"
-                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                  />
-                )}
-              </div>
+              <BusinessLogo size={40} src={store.business.logoUrl} alt={`${store.business.name || 'Business'} logo`} />
               <div className="flex-1 grid gap-2 sm:grid-cols-[1fr_auto]">
                 <Input type="file" accept="image/*" onChange={(e)=>setFile(e.target.files?.[0] || null)} />
-                <Button onClick={uploadLogo} disabled={uploading || !file}>{uploading ? 'Uploading…' : 'Upload logo'}</Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button onClick={uploadLogo} disabled={uploading || !file}>{uploading ? 'Uploading…' : 'Upload logo'}</Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-xs">
+                    Use a square image (PNG/SVG/WebP) for best results. This appears in the sidebar and emails.
+                  </TooltipContent>
+                </Tooltip>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">Use a square image (PNG/SVG/WebP) for best results. This appears in the sidebar and emails.</p>
+            
           </CardContent>
         </Card>
 

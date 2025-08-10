@@ -23,6 +23,8 @@ import {
   Settings as SettingsIcon,
 } from "lucide-react";
 
+import BusinessLogo from "@/components/BusinessLogo";
+
 const items = [
   { title: "Calendar", url: "/calendar", icon: CalendarIcon },
   { title: "Work Orders", url: "/work-orders", icon: ClipboardList },
@@ -46,19 +48,11 @@ export default function AppSidebar() {
         <div className="grid grid-cols-[56px_1fr_auto] items-center px-2 py-1.5">
           {/* Logo column - fixed width so position stays constant in both states */}
           <div className="relative flex items-center justify-center">
-            <div className="size-7 rounded-full ring-1 ring-border overflow-hidden">
-              {business.logoUrl && (
-                <img
-                  src={business.logoUrl}
-                  alt={`${business.name || "Business"} logo`}
-                  className="size-7 object-cover"
-                  loading="lazy"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
-              )}
-            </div>
+            <BusinessLogo
+              size={28}
+              src={business.logoUrl}
+              alt={`${business.name || "Business"} logo`}
+            />
             {collapsed && (
               <SidebarTrigger
                 aria-label="Expand sidebar"
