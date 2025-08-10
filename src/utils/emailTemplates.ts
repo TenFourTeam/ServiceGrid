@@ -3,6 +3,7 @@ import { formatMoney } from "@/utils/format";
 
 interface Params {
   businessName: string;
+  businessLogoUrl?: string;
   customerName?: string;
   quote: Quote;
   approveUrl: string;
@@ -11,42 +12,125 @@ interface Params {
   pixelUrl: string;
 }
 
-export function buildQuoteEmail({ businessName, customerName, quote, approveUrl, editUrl, viewUrl, pixelUrl }: Params) {
+export function buildQuoteEmail({ businessName, businessLogoUrl, customerName, quote, approveUrl, editUrl, viewUrl, pixelUrl }: Params) {
   const subject = `${businessName} • Quote ${quote.number}`;
-  const items = quote.lineItems.map(li => `
+
+  const taxAmount = Math.max(0, (quote.total ?? 0) - ((quote.subtotal ?? 0) - (quote.discount ?? 0)));
+  const taxPctLabel = isFinite(quote.taxRate) ? `${Math.round((quote.taxRate ?? 0) * 100)}%` : '';
+
+  const itemsRows = quote.lineItems.map(li => {
+    const qtyLabel = `${li.qty}${li.unit ? ' ' + escapeHtml(li.unit) : ''}`;
+    return `
+      <tr>
+        <td style="padding:12px 8px; border-bottom:1px solid #e5e7eb;">${escapeHtml(li.name)}</td>
+        <td style="padding:12px 8px; border-bottom:1px solid #e5e7eb; text-align:center; color:#374151;">${qtyLabel}</td>
+        <td style="padding:12px 8px; border-bottom:1px solid #e5e7eb; text-align:right; color:#374151;">${formatMoney(li.unitPrice)}</td>
+        <td style="padding:12px 8px; border-bottom:1px solid #e5e7eb; text-align:right; font-weight:600;">${formatMoney(li.lineTotal)}</td>
+      </tr>
+    `;
+  }).join("");
+
+  const discountRow = (quote.discount ?? 0) > 0 ? `
     <tr>
-      <td style="padding:8px 4px;">${escapeHtml(li.name)}</td>
-      <td style="padding:8px 4px; text-align:right;">${formatMoney(li.lineTotal)}</td>
+      <td colspan="3" style="padding:8px; text-align:right; color:#374151;">Discount</td>
+      <td style="padding:8px; text-align:right; font-weight:600;">- ${formatMoney(quote.discount)}</td>
     </tr>
-  `).join("");
+  ` : '';
+
+  const termsParts: string[] = [];
+  if (quote.paymentTerms) {
+    const pt = quote.paymentTerms === 'due_on_receipt' ? 'Due on receipt' : quote.paymentTerms.replace('net_', 'Net ');
+    termsParts.push(`Payment terms: ${pt}`);
+  }
+  if (quote.depositRequired && typeof quote.depositPercent === 'number') {
+    termsParts.push(`Deposit: ${quote.depositPercent}% due on approval`);
+  }
+  if (quote.frequency) {
+    const freq = quote.frequency.replace('-', ' ');
+    termsParts.push(`Service frequency: ${escapeHtml(freq)}`);
+  }
+
+  const extraTerms = quote.terms ? escapeHtml(quote.terms).replace(/\n/g, '<br />') : '';
+  const combinedTerms = [termsParts.join(' • '), extraTerms].filter(Boolean).join('<br />');
+
+  const headerLeft = businessLogoUrl ? `<img src="${businessLogoUrl}" alt="${escapeHtml(businessName)} logo" style="height:32px; max-height:32px; border-radius:4px; display:block;" />` : `<span style="font-weight:600; font-size:16px; color:#f8fafc;">${escapeHtml(businessName)}</span>`;
 
   const html = `
-    <div style="font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'; color:#111;">
-      <h2 style="margin:0 0 8px;">Quote ${quote.number}</h2>
-      <p style="margin:0 0 16px;">${customerName ? `Hi ${escapeHtml(customerName)},` : 'Hello,'} here is your quote from ${escapeHtml(businessName)}.</p>
-      <table style="width:100%; border-collapse:collapse; margin: 8px 0;">
-        <thead>
+  <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#f1f5f9; padding:24px 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'; color:#111827;">
+    <tr>
+      <td align="center">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="600" style="max-width:600px; background:#ffffff; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
           <tr>
-            <th style="text-align:left; padding:8px 4px; border-bottom:1px solid #eee;">Description</th>
-            <th style="text-align:right; padding:8px 4px; border-bottom:1px solid #eee;">Amount</th>
+            <td style="background:#111827; padding:16px 20px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="left">${headerLeft}</td>
+                  <td align="right" style="color:#f8fafc; font-weight:600;">Quote ${escapeHtml(quote.number)}</td>
+                </tr>
+              </table>
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          ${items}
           <tr>
-            <td style="padding:8px 4px; text-align:right; font-weight:600;">Total</td>
-            <td style="padding:8px 4px; text-align:right; font-weight:600;">${formatMoney(quote.total)}</td>
+            <td style="padding:20px;">
+              <p style="margin:0 0 12px; color:#111827;">${customerName ? `Hi ${escapeHtml(customerName)},` : 'Hello,'} here is your quote.</p>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin-top:8px;">
+                <thead>
+                  <tr>
+                    <th align="left" style="padding:8px; border-bottom:1px solid #e5e7eb; font-size:12px; text-transform:uppercase; letter-spacing:.02em; color:#6b7280;">Description</th>
+                    <th align="center" style="padding:8px; border-bottom:1px solid #e5e7eb; font-size:12px; text-transform:uppercase; letter-spacing:.02em; color:#6b7280;">Qty</th>
+                    <th align="right" style="padding:8px; border-bottom:1px solid #e5e7eb; font-size:12px; text-transform:uppercase; letter-spacing:.02em; color:#6b7280;">Price</th>
+                    <th align="right" style="padding:8px; border-bottom:1px solid #e5e7eb; font-size:12px; text-transform:uppercase; letter-spacing:.02em; color:#6b7280;">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${itemsRows}
+                </tbody>
+              </table>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px;">
+                <tr>
+                  <td style="padding:8px; text-align:right; color:#374151;">Subtotal</td>
+                  <td style="padding:8px; text-align:right; font-weight:600;" width="160">${formatMoney(quote.subtotal)}</td>
+                </tr>
+                ${discountRow}
+                <tr>
+                  <td style="padding:8px; text-align:right; color:#374151;">Tax ${taxPctLabel ? `(${taxPctLabel})` : ''}</td>
+                  <td style="padding:8px; text-align:right; font-weight:600;">${formatMoney(taxAmount)}</td>
+                </tr>
+                <tr>
+                  <td style="padding:12px 8px; text-align:right; font-weight:700; border-top:1px solid #e5e7eb;">Total</td>
+                  <td style="padding:12px 8px; text-align:right; font-weight:700; border-top:1px solid #e5e7eb;">${formatMoney(quote.total)}</td>
+                </tr>
+              </table>
+
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-top:16px;">
+                <tr>
+                  <td align="left" style="padding-right:8px;">
+                    <a href="${approveUrl}" style="display:inline-block; background:#111827; color:#f8fafc; padding:12px 16px; border-radius:8px; text-decoration:none; font-weight:600;">Approve</a>
+                  </td>
+                  <td align="left" style="padding-left:8px;">
+                    <a href="${editUrl}" style="display:inline-block; background:#f1f5f9; color:#111827; padding:12px 16px; border-radius:8px; text-decoration:none; font-weight:600; border:1px solid #e5e7eb;">Request Edits</a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:12px 0 0; font-size:14px;"><a href="${viewUrl}" style="color:#111827; text-decoration:underline;">View online</a></p>
+
+              ${combinedTerms ? `
+              <div style="margin-top:16px; padding:12px; background:#f8fafc; border:1px solid #e5e7eb; border-radius:8px; color:#374151;">
+                <div style="font-weight:600; margin-bottom:6px; color:#111827;">Terms</div>
+                <div style="font-size:14px; line-height:1.5;">${combinedTerms}</div>
+              </div>` : ''}
+
+              <p style="margin-top:16px; font-size:12px; color:#6b7280;">If the buttons don't work, you can copy and paste these links into your browser.</p>
+            </td>
           </tr>
-        </tbody>
-      </table>
-      <div style="margin:16px 0; display:flex; gap:12px;">
-        <a href="${approveUrl}" style="display:inline-block; background:#16a34a; color:#fff; padding:10px 14px; border-radius:8px; text-decoration:none;">Approve</a>
-        <a href="${editUrl}" style="display:inline-block; background:#eab308; color:#111; padding:10px 14px; border-radius:8px; text-decoration:none;">Request Edits</a>
-        <a href="${viewUrl}" style="display:inline-block; background:#2563eb; color:#fff; padding:10px 14px; border-radius:8px; text-decoration:none;">View Online</a>
-      </div>
-      <p style="font-size:12px; color:#666">If the buttons don't work, you can copy and paste these links into your browser.</p>
-      <img src="${pixelUrl}" width="1" height="1" style="display:block; opacity:0;" alt="" />
-    </div>
+        </table>
+        <img src="${pixelUrl}" width="1" height="1" style="display:block; opacity:0;" alt="" />
+      </td>
+    </tr>
+  </table>
   `;
   return { subject, html };
 }

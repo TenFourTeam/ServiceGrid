@@ -31,7 +31,7 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
     const editUrl = `${base}/quote-action?type=edit&quote_id=${encodeURIComponent(quote.id)}&token=${encodeURIComponent(quote.publicToken)}`;
     const viewUrl = `${base}/quote/${encodeURIComponent(quote.publicToken)}`;
     const pixelUrl = `https://ijudkzqfriazabiosnvb.functions.supabase.co/quote-events?type=open&quote_id=${encodeURIComponent(quote.id)}&token=${encodeURIComponent(quote.publicToken)}`;
-    const built = buildQuoteEmail({ businessName: store.business.name, customerName, quote, approveUrl, editUrl, viewUrl, pixelUrl });
+    const built = buildQuoteEmail({ businessName: store.business.name, businessLogoUrl: store.business.logoUrl, customerName, quote, approveUrl, editUrl, viewUrl, pixelUrl });
     return { html: built.html, defaultSubject: built.subject };
   }, [quote, store.business.name, customerName]);
 
