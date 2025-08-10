@@ -65,8 +65,19 @@ export default function QuotesPage() {
   const [open, setOpen] = useState(false);
   const [sendQuoteItem, setSendQuoteItem] = useState<Quote | null>(null);
 
-  
+  const [sortKey, setSortKey] = useState<'number' | 'customer' | 'total' | 'status'>('number');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
+  function handleSort(key: 'number' | 'customer' | 'total' | 'status') {
+    setSortKey((prev) => {
+      if (prev === key) {
+        setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+        return prev;
+      }
+      setSortDir('asc');
+      return key;
+    });
+  }
   const customers = useMemo(() => {
     if (isSignedIn && dbCustomers?.rows) {
       return dbCustomers.rows.map(row => ({
@@ -105,6 +116,17 @@ export default function QuotesPage() {
     return store.quotes;
   }, [isSignedIn, dbQuotes, store.quotes]);
 
+  const sortedQuotes = useMemo(() => {
+    const arr = [...quotes];
+    const baseCompare = (a: Quote, b: Quote) => {
+      if (sortKey === 'number') return (a.number || '').localeCompare(b.number || '', undefined, { numeric: true, sensitivity: 'base' });
+      if (sortKey === 'customer') return getCustomerName(a.customerId).localeCompare(getCustomerName(b.customerId));
+      if (sortKey === 'total') return (a.total || 0) - (b.total || 0);
+      return (a.status || '').localeCompare(b.status || '');
+    };
+    arr.sort((a, b) => (sortDir === 'asc' ? baseCompare(a, b) : -baseCompare(a, b)));
+    return arr;
+  }, [quotes, sortKey, sortDir, customers]);
 
   function getCustomerName(customerId: string): string {
     const customer = customers.find(c => c.id === customerId);
@@ -149,23 +171,38 @@ export default function QuotesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Number</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Total</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Views</TableHead>
+                  <TableHead>
+                    <button className="flex items-center gap-1" onClick={() => handleSort('number')} aria-label="Sort by number">
+                      Number{sortKey === 'number' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button className="flex items-center gap-1" onClick={() => handleSort('customer')} aria-label="Sort by customer">
+                      Customer{sortKey === 'customer' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button className="flex items-center gap-1" onClick={() => handleSort('total')} aria-label="Sort by total">
+                      Total{sortKey === 'total' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button className="flex items-center gap-1" onClick={() => handleSort('status')} aria-label="Sort by status">
+                      Status{sortKey === 'status' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                    </button>
+                  </TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {quotes.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center text-muted-foreground">
                       No quotes yet. Create your first quote!
                     </TableCell>
                   </TableRow>
                 ) : (
-                  quotes.map((quote) => (
+                  sortedQuotes.map((quote) => (
                     <TableRow key={quote.id}>
                       <TableCell className="font-medium">{quote.number}</TableCell>
                       <TableCell>{getCustomerName(quote.customerId)}</TableCell>
@@ -175,17 +212,52 @@ export default function QuotesPage() {
                           {quote.status}
                         </Badge>
                       </TableCell>
-                      <TableCell>{quote.viewCount || 0}</TableCell>
                       <TableCell>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setSendQuoteItem(quote)}
-                              title="Send Quote"
-                            >
-                              <Send className="h-4 w-4" />
-                            </Button>
+                        <div className="flex gap-2">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="inline-flex">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setSendQuoteItem(quote)}
+                                  disabled={quote.status === 'Sent' || quote.status === 'Approved'}
+                                >
+                                  <Send className="h-4 w-4" />
+                                </Button>
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>Send Quote</TooltipContent>
+                          </Tooltip>
+
+                          {quote.status !== 'Draft' && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const existingJob = store.jobs.find((j) => j.quoteId === quote.id);
+                                    if (existingJob) {
+                                      toast.message('Job already exists for this quote', { description: 'Opening Work Orders...' });
+                                      navigate('/work-orders');
+                                      return;
+                                    }
+                                    const jobs = store.convertQuoteToJob(quote.id);
+                                    if (jobs && jobs.length > 0) {
+                                      toast.success('Converted quote to job');
+                                      navigate('/work-orders');
+                                    }
+                                  }}
+                                >
+                                  <Briefcase className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Create Work Order</TooltipContent>
+                            </Tooltip>
+                          )}
+
+                          {quote.status === 'Approved' && (
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
@@ -215,31 +287,8 @@ export default function QuotesPage() {
                               </TooltipTrigger>
                               <TooltipContent>Create Invoice</TooltipContent>
                             </Tooltip>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    const existingJob = store.jobs.find((j) => j.quoteId === quote.id);
-                                    if (existingJob) {
-                                      toast.message('Job already exists for this quote', { description: 'Opening Work Orders...' });
-                                      navigate('/work-orders');
-                                      return;
-                                    }
-                                    const jobs = store.convertQuoteToJob(quote.id);
-                                    if (jobs && jobs.length > 0) {
-                                      toast.success('Converted quote to job');
-                                      navigate('/work-orders');
-                                    }
-                                  }}
-                                >
-                                  <Briefcase className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Convert to Job</TooltipContent>
-                            </Tooltip>
-                          </div>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))

@@ -110,7 +110,7 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={sending}>Cancel</Button>
-              <Button onClick={send} disabled={sending}>{sending ? 'Sending…' : 'Send Email'}</Button>
+              <Button onClick={send} disabled={sending || (!!quote && (quote.status === 'Sent' || quote.status === 'Approved'))}>{sending ? 'Sending…' : 'Send Email'}</Button>
             </div>
           </div>
       </DialogContent>

@@ -160,6 +160,18 @@ serve(async (req: Request): Promise<Response> => {
       quote_id: payload.quote_id || null,
     } as any);
 
+    // Update quote status to Sent after successful email
+    try {
+      if (payload.quote_id) {
+        await supabaseAdmin
+          .from('quotes')
+          .update({ status: 'Sent', updated_at: new Date().toISOString(), sent_at: new Date().toISOString() } as any)
+          .eq('id', payload.quote_id);
+      }
+    } catch (e) {
+      console.warn('Failed to update quote status to Sent:', e);
+    }
+
     return new Response(JSON.stringify({ id: messageId, status: 'sent' }), {
       status: 200,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },

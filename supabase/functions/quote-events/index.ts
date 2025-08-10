@@ -81,48 +81,41 @@ serve(async (req) => {
       return pixel();
     }
 
-    if (type === "approve") {
-      return html(`
-        <!doctype html>
-        <html lang="en">
-          <head>
-            <meta charset="utf-8" />
-            <meta name="viewport" content="width=device-width,initial-scale=1" />
-            <title>Quote Approved</title>
-            <style>
-              :root { --bg:#f6f9fc; --card:#ffffff; --border:#e5e7eb; --ink:#0f172a; --muted:#475569; --primary:#0f172a; }
-              body { font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; padding: 24px; color: var(--ink); background: var(--bg); }
-              .wrap { max-width: 720px; margin: 0 auto; }
-              .hdr { background: var(--primary); color: #fff; border-radius: 12px 12px 0 0; padding: 20px 24px; }
-              .card { background: var(--card); border: 1px solid var(--border); border-top: 0; border-radius: 0 0 12px 12px; padding: 24px; }
-              .title { font-size: 18px; font-weight: 700; margin: 0 0 8px; }
-              .desc { color: var(--muted); margin: 0; }
-              .foot { color: #64748b; font-size: 12px; text-align: center; margin-top: 16px; }
-              .icon { display:inline-block; width:18px; height:18px; border-radius:999px; background:#16a34a; margin-right:8px; vertical-align:-3px; }
-            </style>
-          </head>
-          <body>
-            <div class="wrap">
-              <div class="hdr"><strong>Quote Action</strong></div>
-              <div class="card">
-                <div class="title"><span class="icon"></span>Thanks! Your approval has been recorded.</div>
-                <p class="desc">You can safely close this page now.</p>
-              </div>
-              <div class="foot">Powered by Supabase Edge Functions</div>
-            </div>
-          </body>
-        </html>
-      `);
-    }
+    if (type === "approve" || type === "edit") {
+      // Validate quote and token
+      const { data: q, error: qErr } = await supabase
+        .from("quotes")
+        .select("id,status,public_token,publicToken")
+        .eq("id", quote_id)
+        .single();
 
-    if (type === "edit") {
-      return html(`
+      if (qErr) {
+        console.error('quotes fetch error:', qErr);
+      }
+
+      const qToken = (q as any)?.public_token ?? (q as any)?.publicToken;
+      if (!q || qToken !== token) {
+        return html(`<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Invalid Link</title><style>body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;padding:24px;background:#f6f9fc;color:#0f172a}</style></head><body><div style="max-width:720px;margin:0 auto"><div style="background:#0f172a;color:#fff;border-radius:12px 12px 0 0;padding:20px 24px"><strong>Quote Action</strong></div><div style="background:#fff;border:1px solid #e5e7eb;border-top:0;border-radius:0 0 12px 12px;padding:24px"><div style="font-size:18px;font-weight:700;margin:0 0 8px">Invalid or expired link</div><p style="color:#475569;margin:0">Please contact the sender for a new email.</p></div><div style="color:#64748b;font-size:12px;text-align:center;margin-top:16px">Powered by Supabase Edge Functions</div></div></body></html>`, 400);
+      }
+
+      const already = ["Approved", "Edits Requested", "Declined"].includes((q as any).status);
+      if (!already) {
+        const newStatus = type === "approve" ? "Approved" : "Edits Requested";
+        const { error: upErr } = await supabase
+          .from("quotes")
+          .update({ status: newStatus, updated_at: new Date().toISOString() } as any)
+          .eq("id", quote_id);
+        if (upErr) console.error("quotes update error:", upErr);
+      }
+
+      const commonHead = `
         <!doctype html>
         <html lang="en">
           <head>
             <meta charset="utf-8" />
             <meta name="viewport" content="width=device-width,initial-scale=1" />
-            <title>Edit Request Recorded</title>
+            <title>${type === "approve" ? "Quote Approved" : "Edit Request Recorded"}</title>
             <style>
               :root { --bg:#f6f9fc; --card:#ffffff; --border:#e5e7eb; --ink:#0f172a; --muted:#475569; --primary:#0f172a; }
               body { font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; padding: 24px; color: var(--ink); background: var(--bg); }
@@ -132,21 +125,22 @@ serve(async (req) => {
               .title { font-size: 18px; font-weight: 700; margin: 0 0 8px; }
               .desc { color: var(--muted); margin: 0; }
               .foot { color: #64748b; font-size: 12px; text-align: center; margin-top: 16px; }
-              .icon { display:inline-block; width:18px; height:18px; border-radius:999px; background:#f59e0b; margin-right:8px; vertical-align:-3px; }
+              .icon { display:inline-block; width:18px; height:18px; border-radius:999px; background:${type === "approve" ? "#16a34a" : "#f59e0b"}; margin-right:8px; vertical-align:-3px; }
             </style>
           </head>
           <body>
             <div class="wrap">
               <div class="hdr"><strong>Quote Action</strong></div>
               <div class="card">
-                <div class="title"><span class="icon"></span>Thanks! Your edit request has been recorded.</div>
-                <p class="desc">We’ll reach out shortly to confirm the changes you’d like.</p>
+                <div class="title"><span class="icon"></span>${already ? "This action was already recorded." : (type === "approve" ? "Thanks! Your approval has been recorded." : "Thanks! Your edit request has been recorded.")}</div>
+                <p class="desc">${already ? "You can safely close this page now." : (type === "approve" ? "You can safely close this page now." : "We’ll reach out shortly to confirm the changes you’d like.")}</p>
               </div>
               <div class="foot">Powered by Supabase Edge Functions</div>
             </div>
           </body>
         </html>
-      `);
+      `;
+      return html(commonHead);
     }
 
     return okJSON({ ok: true });
