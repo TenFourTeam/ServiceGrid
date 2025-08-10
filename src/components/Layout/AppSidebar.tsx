@@ -45,11 +45,11 @@ export default function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <div className="grid grid-cols-[56px_1fr_auto] items-center px-2 py-1.5">
+        <div className="grid grid-cols-[56px_1fr_auto] items-center pr-2 py-1.5">
           {/* Logo column - fixed width so position stays constant in both states */}
-          <div className="relative flex items-center justify-center">
+          <div className="relative h-7 w-7 ml-3.5 flex items-center justify-center">
             <BusinessLogo
-              size={32}
+              size={20}
               src={business.logoUrl}
               alt={`${business.name || "Business"} logo`}
             />
