@@ -202,7 +202,7 @@ async function ensureDefaultBusiness(supabase: ReturnType<typeof createClient>, 
 
   const { data: inserted, error: insErr } = await supabase
     .from("businesses")
-    .insert({ name: "My Business", owner_id: ownerId })
+    .insert({ name: "My Business", owner_id: ownerId, est_prefix: "QUO-" })
     .select("id")
     .single();
   if (insErr) throw insErr;

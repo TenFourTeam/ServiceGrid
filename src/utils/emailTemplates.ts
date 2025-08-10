@@ -69,16 +69,28 @@ export function buildQuoteEmail({ businessName, businessLogoUrl, customerName, q
   const depositLabel = quote.depositRequired && typeof quote.depositPercent === 'number' ? `${quote.depositPercent}%` : '';
 
   const detailsHtml = (paymentTermsLabel || frequencyLabel || depositLabel) ? `
-    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-top:12px; background:#f8fafc; border:1px solid #e5e7eb; border-radius:8px;">
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-top:16px; border-collapse:collapse;">
       <tr>
-        <td style="padding:10px 12px; font-weight:600; color:#111827;">Quote details</td>
+        <td style="padding:0 0 8px;">
+          <div style="font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:#6b7280; font-weight:700;">Quote details</div>
+          <div style="height:1px; background:#e5e7eb; margin-top:6px;"></div>
+        </td>
       </tr>
       <tr>
-        <td style="padding:0 12px 12px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="color:#374151;">
-            ${paymentTermsLabel ? `<tr><td style="padding:6px 0; width:160px; color:#6b7280;">Payment terms</td><td style="padding:6px 0;">${paymentTermsLabel}</td></tr>` : ''}
-            ${frequencyLabel ? `<tr><td style="padding:6px 0; width:160px; color:#6b7280;">Frequency</td><td style="padding:6px 0;">${frequencyLabel}</td></tr>` : ''}
-            ${depositLabel ? `<tr><td style="padding:6px 0; width:160px; color:#6b7280;">Deposit</td><td style="padding:6px 0;">${depositLabel} due on approval</td></tr>` : ''}
+        <td>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="color:#111827; border-collapse:collapse;">
+            ${paymentTermsLabel ? `<tr>
+              <td style="padding:10px 0; width:180px; color:#6b7280; border-bottom:1px solid #f1f5f9;">Payment terms</td>
+              <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;">${paymentTermsLabel}</td>
+            </tr>` : ''}
+            ${frequencyLabel ? `<tr>
+              <td style="padding:10px 0; width:180px; color:#6b7280; border-bottom:1px solid #f1f5f9;">Frequency</td>
+              <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;">${frequencyLabel}</td>
+            </tr>` : ''}
+            ${depositLabel ? `<tr>
+              <td style="padding:10px 0; width:180px; color:#6b7280;">Deposit</td>
+              <td style="padding:10px 0;">${depositLabel} due on approval</td>
+            </tr>` : ''}
           </table>
         </td>
       </tr>
