@@ -47,6 +47,12 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+  // Enforce allowed origins on CORS/fetch requests only (allow direct navigation)
+  const origin = req.headers.get("Origin") || req.headers.get("origin");
+  const allowed = (Deno.env.get("ALLOWED_ORIGINS") || "").split(",").map((s) => s.trim()).filter(Boolean);
+  if (origin && allowed.length && !allowed.includes("*") && !allowed.includes(origin)) {
+    return okJSON({ error: "Origin not allowed" }, 403);
+  }
 
   try {
     const url = new URL(req.url);

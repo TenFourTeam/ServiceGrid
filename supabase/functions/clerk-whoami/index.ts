@@ -12,6 +12,15 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+  // Enforce allowed origins from ALLOWED_ORIGINS
+  const origin = req.headers.get("Origin") || req.headers.get("origin");
+  const allowed = (Deno.env.get("ALLOWED_ORIGINS") || "").split(",").map((s) => s.trim()).filter(Boolean);
+  if (origin && allowed.length && !allowed.includes("*") && !allowed.includes(origin)) {
+    return new Response(JSON.stringify({ error: "Origin not allowed" }), {
+      status: 403,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   try {
     const authHeader = req.headers.get("authorization") || req.headers.get("Authorization");
