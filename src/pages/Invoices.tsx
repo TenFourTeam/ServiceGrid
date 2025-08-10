@@ -11,7 +11,7 @@ import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import InvoiceEditor from '@/pages/Invoices/InvoiceEditor';
 import SendInvoiceModal from '@/components/Invoices/SendInvoiceModal';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { Send } from 'lucide-react';
+import { Send, ArrowUpDown } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 export default function InvoicesPage() {
@@ -23,6 +23,8 @@ export default function InvoicesPage() {
   const [status, setStatus] = useState<'All' | 'Draft' | 'Sent' | 'Paid' | 'Overdue'>('All');
   const [activeId, setActiveId] = useState<string | null>(null);
   const [sendId, setSendId] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<'number' | 'customer' | 'amount' | 'due' | 'status'>('number');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const qc = useQueryClient();
 
   useEffect(() => {
@@ -72,7 +74,50 @@ export default function InvoicesPage() {
     return list;
   }, [store.invoices, status, q, store.customers]);
 
-  
+  const sortedInvoices = useMemo(() => {
+    const list = filteredInvoices.slice();
+    list.sort((a, b) => {
+      let va: any;
+      let vb: any;
+      switch (sortKey) {
+        case 'number':
+          va = a.number || '';
+          vb = b.number || '';
+          break;
+        case 'customer':
+          va = store.customers.find(c => c.id === a.customerId)?.name || '';
+          vb = store.customers.find(c => c.id === b.customerId)?.name || '';
+          break;
+        case 'amount':
+          va = a.total ?? 0;
+          vb = b.total ?? 0;
+          break;
+        case 'due':
+          va = a.dueAt ? new Date(a.dueAt).getTime() : Number.POSITIVE_INFINITY;
+          vb = b.dueAt ? new Date(b.dueAt).getTime() : Number.POSITIVE_INFINITY;
+          break;
+        case 'status':
+          va = a.status || '';
+          vb = b.status || '';
+          break;
+        default:
+          va = '';
+          vb = '';
+      }
+      if (va < vb) return sortDir === 'asc' ? -1 : 1;
+      if (va > vb) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return list;
+  }, [filteredInvoices, sortKey, sortDir, store.customers]);
+
+  const requestSort = (key: typeof sortKey) => {
+    if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  };
 
   return (
     <AppLayout title="Invoices">
@@ -106,24 +151,49 @@ export default function InvoicesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Number</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Due</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead>
+                  <Button variant="ghost" size="sm" onClick={() => requestSort('number')} className="px-0">
+                    Number
+                    <ArrowUpDown className="ml-2 h-3.5 w-3.5" />
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button variant="ghost" size="sm" onClick={() => requestSort('customer')} className="px-0">
+                    Customer
+                    <ArrowUpDown className="ml-2 h-3.5 w-3.5" />
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button variant="ghost" size="sm" onClick={() => requestSort('amount')} className="px-0">
+                    Amount
+                    <ArrowUpDown className="ml-2 h-3.5 w-3.5" />
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button variant="ghost" size="sm" onClick={() => requestSort('due')} className="px-0">
+                    Due
+                    <ArrowUpDown className="ml-2 h-3.5 w-3.5" />
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button variant="ghost" size="sm" onClick={() => requestSort('status')} className="px-0">
+                    Status
+                    <ArrowUpDown className="ml-2 h-3.5 w-3.5" />
+                  </Button>
+                </TableHead>
+                <TableHead className="text-center">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredInvoices.map((i)=> (
+              {sortedInvoices.map((i)=> (
                 <TableRow key={i.id}>
                   <TableCell>{i.number}</TableCell>
                   <TableCell>{store.customers.find(c=>c.id===i.customerId)?.name}</TableCell>
                   <TableCell>{formatMoney(i.total)}</TableCell>
                   <TableCell>{formatDate(i.dueAt)}</TableCell>
                   <TableCell>{i.status}</TableCell>
-                  <TableCell className="text-right">
-                        <div className="flex gap-2 justify-end">
+                  <TableCell className="text-center">
+                        <div className="flex gap-2 justify-center">
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <span className="inline-flex">
