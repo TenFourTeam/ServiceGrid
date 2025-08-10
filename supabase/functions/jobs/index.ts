@@ -187,11 +187,28 @@ serve(async (req) => {
     const pathParts = url.pathname.split("/");
 
     if (req.method === "GET") {
-      const { data, error } = await supabase
+      const start = url.searchParams.get("start");
+      const end = url.searchParams.get("end");
+
+      let q = supabase
         .from("jobs")
-        .select("id, customer_id, quote_id, address, starts_at, ends_at, status, total, created_at, updated_at")
-        .eq("owner_id", ownerId)
-        .order("updated_at", { ascending: false });
+        .select(
+          "id, customer_id, quote_id, address, starts_at, ends_at, status, total, created_at, updated_at",
+        )
+        .eq("owner_id", ownerId);
+
+      // Optional range filtering: return jobs that INTERSECT [start, end)
+      if (start && end) {
+        // starts_at < end AND ends_at > start
+        q = q.lt("starts_at", end).gt("ends_at", start);
+      }
+
+      // Keep existing default ordering behavior for clients relying on it
+      q = start && end
+        ? q.order("starts_at", { ascending: true })
+        : q.order("updated_at", { ascending: false });
+
+      const { data, error } = await q;
       if (error) throw error;
       const rows = (data || []).map((r: any) => ({
         id: r.id,

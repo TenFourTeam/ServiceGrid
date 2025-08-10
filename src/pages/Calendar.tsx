@@ -1,5 +1,5 @@
 import AppLayout from '@/components/Layout/AppLayout';
-import { WeekCalendar } from '@/components/Calendar/WeekCalendar';
+import CalendarShell from '@/components/Calendar/CalendarShell';
 import { useSearchParams } from 'react-router-dom';
 
 export default function CalendarPage() {
@@ -8,7 +8,7 @@ export default function CalendarPage() {
   return (
     <AppLayout title="Calendar">
       <section>
-        <WeekCalendar selectedJobId={job} />
+        <CalendarShell selectedJobId={job} />
       </section>
     </AppLayout>
   );
