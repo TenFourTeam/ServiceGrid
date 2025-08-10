@@ -20,14 +20,15 @@ import {
   Receipt,
   Users,
   Settings as SettingsIcon,
+  Wrench,
 } from "lucide-react";
 
 import BusinessLogo from "@/components/BusinessLogo";
-import ToolsMulti from "@/components/icons/ToolsMulti";
+
 
 const items = [
   { title: "Calendar", url: "/calendar", icon: CalendarIcon },
-  { title: "Work Orders", url: "/work-orders", icon: ToolsMulti },
+  { title: "Work Orders", url: "/work-orders", icon: Wrench },
   { title: "Quotes", url: "/quotes", icon: FileText },
   { title: "Invoices", url: "/invoices", icon: Receipt },
   { title: "Customers", url: "/customers", icon: Users },

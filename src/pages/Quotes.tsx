@@ -18,8 +18,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { Trash2, Plus, Send, Download, Receipt } from 'lucide-react';
-import ToolsMulti from '@/components/icons/ToolsMulti';
+import { Trash2, Plus, Send, Download, Receipt, Wrench } from 'lucide-react';
+
 import { toast } from 'sonner';
 import { formatMoney as formatCurrency } from '@/utils/format';
 import type { Customer, LineItem, Quote, QuoteStatus } from '@/types';
@@ -272,7 +272,7 @@ export default function QuotesPage() {
   }
 }}
                               >
-                                <ToolsMulti className="h-4 w-4" />
+                                <Wrench className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>Convert to Work Order</TooltipContent>
