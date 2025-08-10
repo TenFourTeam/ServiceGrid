@@ -55,6 +55,10 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
   const { getToken } = useClerkAuth();
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
+  const [savedQuoteId, setSavedQuoteId] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  const autosaveTimer = useRef<number | null>(null);
   const [draft, setDraft] = useState<QuoteDraft>({
     customerId: "",
     address: "",
@@ -92,6 +96,12 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
 
   const totals = useMemo(() => calculateQuoteTotals(draft.lineItems, draft.taxRate, draft.discount), [draft.lineItems, draft.taxRate, draft.discount]);
 
+  const isValid = useMemo(() => {
+    const hasCustomer = !!draft.customerId;
+    const hasValidItem = draft.lineItems.some((li) => li.name.trim() && (li.lineTotal ?? 0) > 0);
+    return hasCustomer && hasValidItem;
+  }, [draft.customerId, draft.lineItems]);
+
   function addLineItem() {
     const newItem: LineItem = {
       id: `temp-${lineItemIdCounter.current++}`,
@@ -123,15 +133,12 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
   }
 
   async function createQuote(): Promise<Quote | null> {
-    if (!draft.customerId) {
-      toast.error("Please select a customer");
-      return null;
-    }
-    if (draft.lineItems.length === 0) {
-      toast.error("Please add at least one line item");
+    if (!isValid) {
+      toast.error("Please complete required fields");
       return null;
     }
     setSaving(true);
+    setSaveStatus("saving");
     try {
       const token = await getToken();
       if (!token) throw new Error("Not authenticated");
@@ -198,6 +205,10 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
         publicToken: q.publicToken,
       };
 
+      setSavedQuoteId(saved.id);
+      setSaveStatus("saved");
+      setLastSavedAt(Date.now());
+
       // Refresh list
       queryClient.invalidateQueries({ queryKey: ["supabase", "quotes"] });
 
@@ -205,10 +216,42 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
       return saved;
     } catch (e) {
       console.error(e);
+      setSaveStatus("error");
       toast.error((e as any)?.message || "Failed to save quote");
       return null;
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function updateQuote(id: string) {
+    setSaveStatus("saving");
+    try {
+      const token = await getToken();
+      if (!token) throw new Error("Not authenticated");
+      const payload = {
+        address: draft.address || null,
+        lineItems: draft.lineItems.map((li) => ({ name: li.name, qty: 1, unit: li.unit || null, lineTotal: li.lineTotal })),
+        taxRate: draft.taxRate,
+        discount: draft.discount,
+        notesInternal: draft.notesInternal || null,
+        terms: draft.terms || null,
+        paymentTerms: draft.paymentTerms,
+        frequency: draft.frequency,
+        depositRequired: draft.depositRequired,
+        depositPercent: draft.depositPercent,
+      };
+      const res = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/quotes/${id}`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(`Failed to update quote (${res.status})`);
+      setSaveStatus("saved");
+      setLastSavedAt(Date.now());
+    } catch (e) {
+      console.error(e);
+      setSaveStatus("error");
     }
   }
 
@@ -225,9 +268,36 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
     }
   }
 
+  useEffect(() => {
+    if (!savedQuoteId) return;
+    if (autosaveTimer.current) window.clearTimeout(autosaveTimer.current);
+    autosaveTimer.current = window.setTimeout(() => {
+      updateQuote(savedQuoteId);
+    }, 1200);
+    return () => {
+      if (autosaveTimer.current) window.clearTimeout(autosaveTimer.current);
+    };
+  }, [savedQuoteId, draft]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!open) return;
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        if (savedQuoteId) updateQuote(savedQuoteId); else saveQuote();
+      }
+      if (e.shiftKey && e.key === 'Enter') {
+        e.preventDefault();
+        saveAndOpenSend();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, savedQuoteId, draft]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent aria-busy={saving} className="max-w-5xl max-h-[90vh] overflow-y-auto">
+      <DialogContent aria-busy={saving || saveStatus === "saving"} className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create Quote</DialogTitle>
         </DialogHeader>
@@ -302,7 +372,14 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
                     step="0.01"
                     value={draft.discount / 100}
                     onChange={(e) =>
-                      setDraft((prev) => ({ ...prev, discount: Math.round((parseFloat(e.target.value) || 0) * 100) }))
+                      setDraft((prev) => {
+                        const input = Math.max(0, parseFloat(e.target.value) || 0);
+                        const pre = calculateQuoteTotals(prev.lineItems, prev.taxRate, 0);
+                        const max = pre.subtotal + pre.taxAmount;
+                        const cents = Math.round(input * 100);
+                        const clamped = Math.max(0, Math.min(max, cents));
+                        return { ...prev, discount: clamped };
+                      })
                     }
                     disabled={saving}
                   />
@@ -387,13 +464,23 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
                   <span className="font-medium">{formatCurrency(totals.subtotal)}</span>
                 </div>
                 <div className="flex items-center justify-between text-muted-foreground">
-                  <span>Tax</span>
+                  <span>Tax ({Math.round(draft.taxRate * 100)}%)</span>
                   <span>{formatCurrency(totals.taxAmount)}</span>
+                </div>
+                <div className="flex items-center justify-between text-muted-foreground">
+                  <span>Discount</span>
+                  <span>-{formatCurrency(draft.discount)}</span>
                 </div>
                 <div className="flex items-center justify-between font-semibold">
                   <span>Total</span>
                   <span className="font-bold">{formatCurrency(totals.total)}</span>
                 </div>
+                {draft.depositRequired && draft.depositPercent > 0 && (
+                  <div className="flex items-center justify-between text-muted-foreground">
+                    <span>Deposit due on acceptance ({draft.depositPercent}%)</span>
+                    <span>{formatCurrency(Math.round(totals.total * (draft.depositPercent / 100)))}</span>
+                  </div>
+                )}
               </div>
             </div>
           </aside>
@@ -402,12 +489,16 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
         {/* Sticky footer actions */}
         <div className="sticky bottom-0 left-0 right-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t mt-4 z-40">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 md:px-6 py-3">
-            <div className="text-xs text-muted-foreground">Review and send your quote.</div>
+            <div className="text-xs text-muted-foreground" role="status" aria-live="polite">
+              {saveStatus === 'saving' && 'Saving…'}
+              {saveStatus === 'saved' && lastSavedAt ? `Saved ${Math.max(1, Math.round((Date.now()-lastSavedAt)/1000))}s ago` : saveStatus === 'idle' ? 'Review and send your quote.' : null}
+              {saveStatus === 'error' && 'Save failed. Will retry on next change.'}
+            </div>
             <div className="flex items-center gap-2">
-              <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
-              <Button variant="ghost" onClick={saveQuote} disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
-              <Button variant="outline" onClick={saveAndOpenSend} disabled={saving}>Preview Email</Button>
-              <Button onClick={saveAndOpenSend} disabled={saving}>{saving ? "Saving..." : "Save & Send"}</Button>
+              <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={saving || saveStatus === 'saving'}>Cancel</Button>
+              <Button variant="ghost" onClick={async () => { const saved = await createQuote(); if (saved) onOpenChange(false); }} disabled={!isValid || saving || !!savedQuoteId}>{saving ? "Saving..." : "Save"}</Button>
+              <Button variant="outline" onClick={saveAndOpenSend} disabled={!isValid || saving}>{"Preview Email"}</Button>
+              <Button onClick={saveAndOpenSend} disabled={!isValid || saving}>{saving ? "Saving..." : "Save & Send"}</Button>
             </div>
           </div>
         </div>

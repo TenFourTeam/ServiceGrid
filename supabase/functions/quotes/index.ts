@@ -366,6 +366,8 @@ serve(async (req) => {
       const { error: itemsErr } = await supabase.from("quote_line_items").insert(itemsRows);
       if (itemsErr) throw itemsErr;
 
+      console.log("[quotes][POST] created", { ownerId, quoteId, items: items.length, total });
+
       return json({
         ok: true,
         quote: {
@@ -383,6 +385,116 @@ serve(async (req) => {
           subtotal: q.subtotal,
         },
       }, { status: 201 });
+    }
+
+    if (req.method === "PATCH") {
+      // URL can be /functions/v1/quotes/:id or have ?id=
+      const url = new URL(req.url);
+      const pathParts = url.pathname.split("/");
+      const possibleId = pathParts[pathParts.length - 1];
+      const id = url.searchParams.get("id") || (possibleId && possibleId !== "quotes" ? possibleId : null);
+      if (!id) return badRequest("id is required in path or query");
+
+      const body = (await req.json().catch(() => ({}))) as Partial<CreateQuotePayload>;
+
+      // Ensure quote exists and belongs to owner
+      const { data: existing, error: exErr } = await supabase
+        .from("quotes")
+        .select("id, owner_id, customer_id")
+        .eq("id", id)
+        .eq("owner_id", ownerId)
+        .single();
+      if (exErr) return badRequest("Quote not found", 404);
+
+      const lineItems = Array.isArray(body.lineItems) ? body.lineItems : [];
+      // Sanitize items and compute totals (allow empty to keep existing? We'll recompute from provided list)
+      const items = lineItems
+        .map((i) => ({
+          name: String(i.name || "").trim(),
+          qty: Math.max(1, Math.round(Number(i.qty || 1))),
+          unit: i.unit ? String(i.unit) : null,
+          unit_price: typeof i.unitPrice === "number" ? Math.max(0, Math.round(i.unitPrice))
+            : typeof i.lineTotal === "number" ? Math.max(0, Math.round(i.lineTotal)) : 0,
+        }))
+        .filter((i) => i.name && i.unit_price >= 0);
+
+      let subtotal: number | undefined;
+      let taxRate: number | undefined;
+      let discount: number | undefined;
+      let total: number | undefined;
+
+      if (items.length) {
+        subtotal = items.reduce((sum, i) => sum + i.unit_price * i.qty, 0);
+      }
+      if (typeof body.taxRate === "number") taxRate = Math.max(0, Number(body.taxRate));
+      if (typeof body.discount === "number") discount = Math.max(0, Math.round(Number(body.discount)));
+
+      const taxBase = typeof subtotal === "number" ? subtotal : undefined;
+      if (typeof taxRate === "number" && typeof taxBase === "number") {
+        const taxAmount = Math.round(taxBase * taxRate);
+        total = (taxBase + taxAmount) - (typeof discount === "number" ? discount : 0);
+      }
+
+      const upd: any = {};
+      if (body.address !== undefined) upd.address = body.address;
+      if (typeof taxRate === "number") upd.tax_rate = taxRate;
+      if (typeof discount === "number") upd.discount = discount;
+      if (typeof subtotal === "number") upd.subtotal = subtotal;
+      if (typeof total === "number") upd.total = total;
+      if (body.notesInternal !== undefined) upd.notes_internal = body.notesInternal;
+      if (body.terms !== undefined) upd.terms = body.terms;
+      if (body.paymentTerms !== undefined) upd.payment_terms = body.paymentTerms;
+      if (body.frequency !== undefined) upd.frequency = body.frequency;
+      if (body.depositRequired !== undefined) upd.deposit_required = Boolean(body.depositRequired);
+      if (body.depositPercent !== undefined) upd.deposit_percent = body.depositPercent;
+
+      if (Object.keys(upd).length) {
+        const { error: updErr } = await supabase.from("quotes").update(upd).eq("id", id).eq("owner_id", ownerId);
+        if (updErr) throw updErr;
+      }
+
+      if (items.length) {
+        // Replace line items
+        const { error: delErr } = await supabase.from("quote_line_items").delete().eq("quote_id", id).eq("owner_id", ownerId);
+        if (delErr) throw delErr;
+        const itemsRows = items.map((i, idx) => ({
+          owner_id: ownerId,
+          quote_id: id,
+          position: idx,
+          name: i.name,
+          unit: i.unit,
+          qty: i.qty,
+          unit_price: i.unit_price,
+          line_total: i.unit_price * i.qty,
+        }));
+        const { error: insErr } = await supabase.from("quote_line_items").insert(itemsRows);
+        if (insErr) throw insErr;
+      }
+
+      const { data: q2, error: selErr } = await supabase
+        .from("quotes")
+        .select("id, number, total, status, created_at, updated_at, public_token, view_count, customer_id, tax_rate, discount, subtotal")
+        .eq("id", id)
+        .eq("owner_id", ownerId)
+        .single();
+      if (selErr) throw selErr;
+
+      console.log("[quotes][PATCH] updated", { ownerId, id, items: items.length, total: q2.total });
+
+      return json({ ok: true, quote: {
+        id: q2.id,
+        number: q2.number,
+        total: q2.total,
+        status: q2.status,
+        createdAt: q2.created_at,
+        updatedAt: q2.updated_at,
+        publicToken: q2.public_token,
+        viewCount: q2.view_count ?? 0,
+        customerId: q2.customer_id,
+        taxRate: q2.tax_rate,
+        discount: q2.discount,
+        subtotal: q2.subtotal,
+      }});
     }
 
     return badRequest("Method not allowed", 405);

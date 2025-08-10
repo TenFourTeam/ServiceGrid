@@ -13,6 +13,8 @@ interface LineItemsEditorProps {
 }
 
 export function LineItemsEditor({ items, onAdd, onUpdate, onRemove, disabled }: LineItemsEditorProps) {
+  const isInvalid = (item: LineItem) => !item.name.trim() || (item.lineTotal ?? 0) <= 0;
+  const isLast = (id: string) => items.length && items[items.length - 1]?.id === id;
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -40,10 +42,19 @@ export function LineItemsEditor({ items, onAdd, onUpdate, onRemove, disabled }: 
                   <Input
                     id={`li-name-${item.id}`}
                     value={item.name}
+                    aria-invalid={isInvalid(item) && !item.name.trim()}
+                    aria-describedby={isInvalid(item) && !item.name.trim() ? `li-name-${item.id}-error` : undefined}
                     onChange={(e) => onUpdate(item.id, { name: e.target.value })}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && isLast(item.id)) onAdd();
+                      if ((e.key === 'Backspace' || e.key === 'Delete') && !item.name && (item.lineTotal ?? 0) === 0) onRemove(item.id);
+                    }}
                     placeholder="Service or item name"
                     disabled={disabled}
                   />
+                  {isInvalid(item) && !item.name.trim() && (
+                    <p id={`li-name-${item.id}-error`} className="mt-1 text-xs text-destructive">Name is required</p>
+                  )}
                 </div>
                 <div className="col-span-3">
                   <Label className="text-xs" htmlFor={`li-amount-${item.id}`}>$ Amount</Label>
@@ -54,13 +65,22 @@ export function LineItemsEditor({ items, onAdd, onUpdate, onRemove, disabled }: 
                     min="0"
                     step="0.01"
                     value={item.lineTotal / 100}
+                    aria-invalid={isInvalid(item) && (item.lineTotal ?? 0) <= 0}
+                    aria-describedby={isInvalid(item) && (item.lineTotal ?? 0) <= 0 ? `li-amount-${item.id}-error` : undefined}
                     onChange={(e) => {
                       const amount = Math.max(0, parseFloat(e.target.value) || 0)
                       const cents = Math.round(amount * 100)
                       onUpdate(item.id, { lineTotal: cents, qty: 1, unitPrice: cents })
                     }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && isLast(item.id)) onAdd();
+                      if ((e.key === 'Backspace' || e.key === 'Delete') && (!e.currentTarget.value || e.currentTarget.value === '0')) onRemove(item.id);
+                    }}
                     disabled={disabled}
                   />
+                  {isInvalid(item) && (item.lineTotal ?? 0) <= 0 && (
+                    <p id={`li-amount-${item.id}-error`} className="mt-1 text-xs text-destructive">Amount must be greater than $0</p>
+                  )}
                 </div>
                 <div className="col-span-1 flex justify-end">
                   <Button
