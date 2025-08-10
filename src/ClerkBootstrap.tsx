@@ -28,12 +28,12 @@ export default function ClerkBootstrap() {
     return () => { cancelled = true; };
   }, []);
 
-  if (!pk || !ClerkProviderComp) {
-    return <LoadingScreen />;
-  }
-
   if (error) {
     return <div role="alert">Authentication failed to initialize: {error}</div>;
+  }
+
+  if (!pk || !ClerkProviderComp) {
+    return <LoadingScreen />;
   }
 
   const ClerkProvider = ClerkProviderComp;
