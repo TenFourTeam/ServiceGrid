@@ -231,13 +231,12 @@ export default function QuotesPage() {
                             <TooltipContent>Send Quote</TooltipContent>
                           </Tooltip>
 
-                          {quote.status !== 'Draft' && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-onClick={async () => {
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={async () => {
   const existingJob = store.jobs.find((j) => j.quoteId === quote.id);
   if (existingJob) {
     toast.message('Job already exists for this quote', { description: 'Opening Work Orders...' });
@@ -271,21 +270,19 @@ onClick={async () => {
     toast.error('Failed to create job', { description: e?.message || String(e) });
   }
 }}
-                                >
-                                  <Briefcase className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Create Work Order</TooltipContent>
-                            </Tooltip>
-                          )}
+                              >
+                                <Briefcase className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Create Work Order</TooltipContent>
+                          </Tooltip>
 
-                          {quote.status === 'Approved' && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-onClick={async () => {
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={async () => {
   let jobId: string | undefined = store.jobs.find((j) => j.quoteId === quote.id)?.id;
   try {
     const token = await getClerkTokenStrict(getToken);
@@ -346,13 +343,12 @@ onClick={async () => {
     toast.error('Failed to create invoice', { description: e?.message || String(e) });
   }
 }}
-                                >
-                                  <FileText className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Create Invoice</TooltipContent>
-                            </Tooltip>
-                          )}
+                              >
+                                <FileText className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Create Invoice</TooltipContent>
+                          </Tooltip>
                         </div>
                       </TableCell>
                     </TableRow>

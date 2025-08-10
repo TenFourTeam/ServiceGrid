@@ -35,7 +35,7 @@ export default function InvoicesPage() {
         publicToken: row.publicToken || '',
       });
     });
-  }, [isSignedIn, dbInvoices, store]);
+  }, [isSignedIn, dbInvoices]);
 
   function send(id: string) { store.sendInvoice(id); }
 
