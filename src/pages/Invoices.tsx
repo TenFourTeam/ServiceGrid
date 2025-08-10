@@ -131,7 +131,7 @@ export default function InvoicesPage() {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => setSendId(i.id)}
-                                  disabled={i.status==='Sent' || i.status==='Paid'}
+                                  disabled={i.status!=='Draft'}
                                   aria-label="Send invoice"
                                 >
                                   <Send className="h-4 w-4" />
@@ -141,7 +141,6 @@ export default function InvoicesPage() {
                             <TooltipContent>Send Invoice</TooltipContent>
                           </Tooltip>
 
-                          <Button variant="outline" size="sm" onClick={()=>setActiveId(i.id)}>Edit</Button>
                           {i.status==='Sent' && <Button size="sm" onClick={()=>{ setProcessing(i.id); setTimeout(()=>{ store.markInvoicePaid(i.id, '4242'); setProcessing(null); }, 800); }}>Mark Paid</Button>}
                           {processing===i.id && <span className="text-sm text-muted-foreground">Processing…</span>}
                         </div>

@@ -16,6 +16,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import ReschedulePopover from '@/components/WorkOrders/ReschedulePopover';
 import JobShowModal from '@/components/Jobs/JobShowModal';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 function useFilteredJobs() {
   const { jobs, customers, invoices } = useStore();
@@ -153,16 +154,24 @@ export default function WorkOrdersPage() {
       <section aria-label="work-orders" className="space-y-3">
         <div className="sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b py-2">
           <div className="flex items-center gap-2 overflow-x-auto">
-            {([
-              { key: 'unscheduled', label: `Unscheduled (${counts.unscheduled})` },
-              { key: 'today', label: `Today (${counts.today})` },
-              { key: 'upcoming', label: `Upcoming (${counts.upcoming})` },
-              { key: 'completed', label: `Completed (7d) (${counts.completed})` },
-            ] as const).map((c) => (
-              <Button key={c.key} variant={filter===c.key? 'default' : 'secondary'} size="sm" onClick={()=>setFilter(c.key as any)}>
-                {c.label}
-              </Button>
-            ))}
+            <ToggleGroup type="single" value={filter} onValueChange={(v)=> v && setFilter(v as any)} className="flex flex-wrap justify-start">
+              <ToggleGroupItem value="unscheduled" size="sm" aria-label="Unscheduled">
+                <span>Unscheduled</span>
+                <Badge variant="secondary" className="ml-2">{counts.unscheduled}</Badge>
+              </ToggleGroupItem>
+              <ToggleGroupItem value="today" size="sm" aria-label="Today">
+                <span>Today</span>
+                <Badge variant="secondary" className="ml-2">{counts.today}</Badge>
+              </ToggleGroupItem>
+              <ToggleGroupItem value="upcoming" size="sm" aria-label="Upcoming">
+                <span>Upcoming</span>
+                <Badge variant="secondary" className="ml-2">{counts.upcoming}</Badge>
+              </ToggleGroupItem>
+              <ToggleGroupItem value="completed" size="sm" aria-label="Completed (7d)">
+                <span>Completed (7d)</span>
+                <Badge variant="secondary" className="ml-2">{counts.completed}</Badge>
+              </ToggleGroupItem>
+            </ToggleGroup>
             <div className="ml-auto flex items-center gap-2">
               <Input value={q} onChange={(e)=>setQ(e.target.value)} placeholder="Search customer or address" className="h-9 w-48" />
               <select value={sort} onChange={(e)=>setSort(e.target.value as any)} className="h-9 rounded-md border bg-background px-2 text-sm">
