@@ -146,7 +146,9 @@ export default function SettingsPage() {
             <div className="space-y-2">
               <Label>Dark Icon</Label>
               <div className="flex items-center gap-4">
-                <BusinessLogo size={40} src={store.business.logoUrl} alt="Dark icon preview" />
+                <div className="shrink-0 rounded-lg bg-background p-2 border border-border shadow-sm -ml-1">
+                  <BusinessLogo size={40} src={store.business.logoUrl} alt="Dark icon preview" />
+                </div>
                 <div className="flex-1 grid gap-2 sm:grid-cols-[1fr_auto]">
                   <Input type="file" accept="image/png,image/svg+xml,image/webp,image/jpeg" onChange={(e)=>setDarkFile(e.target.files?.[0] || null)} />
                   <Tooltip>
