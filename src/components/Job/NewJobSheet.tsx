@@ -14,17 +14,20 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { getClerkTokenStrict } from '@/utils/clerkToken';
+import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
 
 export function NewJobSheet() {
   const navigate = useNavigate();
   const { customers, upsertCustomer, upsertJob } = useStore();
   const { toast } = useToast();
   const { getToken } = useClerkAuth();
+  const { data: custData } = useSupabaseCustomers();
+  const customersList = useMemo(() => (custData?.rows && custData.rows.length > 0 ? custData.rows : customers), [custData, customers]);
 
   const [open, setOpen] = useState(false);
   const [addingCustomer, setAddingCustomer] = useState(false);
 
-  const [customerId, setCustomerId] = useState<string | undefined>(customers[0]?.id);
+  const [customerId, setCustomerId] = useState<string | undefined>(undefined);
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [startTime, setStartTime] = useState('09:00');
   const [durationMin, setDurationMin] = useState(60);
@@ -41,13 +44,20 @@ export function NewJobSheet() {
   const [newCustName, setNewCustName] = useState('');
   const [newCustAddress, setNewCustAddress] = useState('');
 
-  const selectedCustomer = useMemo(() => customers.find(c => c.id === customerId), [customers, customerId]);
+  const selectedCustomer = useMemo(() => customersList.find(c => c.id === customerId), [customersList, customerId]);
 
   useEffect(() => {
     if (selectedCustomer && !address) {
       if (selectedCustomer.address) setAddress(selectedCustomer.address);
     }
   }, [selectedCustomer, address]);
+
+  // Default to first customer when list becomes available
+  useEffect(() => {
+    if (!customerId && customersList.length > 0) {
+      setCustomerId(customersList[0].id);
+    }
+  }, [customerId, customersList]);
 
   function parseStart(dateVal?: Date, time: string = '09:00') {
     const d = dateVal ? new Date(dateVal) : new Date();
@@ -80,7 +90,6 @@ export function NewJobSheet() {
       }
 
       // 2) Create job via Edge Function
-      const { getToken } = useClerkAuth();
       const token = await getClerkTokenStrict(getToken);
       const r = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/jobs`, {
         method: 'POST',
@@ -140,7 +149,7 @@ export function NewJobSheet() {
   }
 
   function resetState() {
-    setCustomerId(customers[0]?.id);
+    setCustomerId(undefined);
     setDate(new Date());
     setStartTime('09:00');
     setDurationMin(60);
@@ -166,29 +175,29 @@ export function NewJobSheet() {
           <SheetDescription>Schedule a job quickly. All fields can be edited later.</SheetDescription>
         </SheetHeader>
 
-        <div className="mt-4 space-y-4 animate-fade-in flex-1 min-h-0 overflow-y-auto pr-1">
+        <div className="mt-4 space-y-4 animate-fade-in flex-1 min-h-0 overflow-y-auto pl-1 pr-1">
           {/* Customer */}
           <div className="space-y-2">
             <Label htmlFor="customer">Customer</Label>
-            {customers.length > 0 && !addingCustomer ? (
+            {customersList.length > 0 && !addingCustomer ? (
               <Select value={customerId} onValueChange={setCustomerId}>
                 <SelectTrigger id="customer">
                   <SelectValue placeholder="Select customer" />
                 </SelectTrigger>
-                <SelectContent>
-                  {customers.map((c) => (
+                <SelectContent className='z-50 bg-background'>
+                  {customersList.map((c) => (
                     <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             ) : null}
-            {customers.length === 0 || addingCustomer ? (
+            {customersList.length === 0 || addingCustomer ? (
               <div className="space-y-2">
                 <Input placeholder="Customer name" value={newCustName} onChange={(e) => setNewCustName(e.target.value)} />
                 <Input placeholder="Address (optional)" value={newCustAddress} onChange={(e) => setNewCustAddress(e.target.value)} />
                 <div className="flex gap-2">
                   <Button size="sm" onClick={onQuickAddCustomer}>Create customer</Button>
-                  {customers.length > 0 && (
+                  {customersList.length > 0 && (
                     <Button size="sm" variant="secondary" onClick={() => setAddingCustomer(false)}>Cancel</Button>
                   )}
                 </div>
@@ -215,7 +224,7 @@ export function NewJobSheet() {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent align="start" className="p-0">
-                  <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
+                  <Calendar mode="single" selected={date} onSelect={setDate} initialFocus className={cn('p-3 pointer-events-auto')} />
                 </PopoverContent>
               </Popover>
             </div>
@@ -233,7 +242,7 @@ export function NewJobSheet() {
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className='z-50 bg-background'>
                   {[30, 45, 60, 90, 120, 180].map((m) => (
                     <SelectItem key={m} value={String(m)}>{m} min</SelectItem>
                   ))}
