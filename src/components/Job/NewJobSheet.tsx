@@ -11,9 +11,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
-import { edgeFetchJson } from '@/utils/edgeApi';
+import { edgeFetchJson, edgeFetch } from '@/utils/edgeApi';
 import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
 
 export function NewJobSheet() {
@@ -78,16 +77,18 @@ export function NewJobSheet() {
       const end = new Date(start.getTime() + durationMin * 60 * 1000);
       const totalCents = amount ? Math.max(0, Math.round(parseFloat(amount) * 100)) : undefined;
 
-      // 1) Upload photos to storage
+      // 1) Upload photos via secured Edge Function
       const photoUrls: string[] = [];
       for (const file of files) {
-        const ext = file.name.split('.').pop() || 'jpg';
-        const path = `jobs/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-        const { error: upErr } = await supabase.storage.from('job-photos').upload(path, file, { upsert: false, cacheControl: '3600' });
-        if (upErr) throw new Error(`Upload failed: ${upErr.message}`);
-        const { data } = supabase.storage.from('job-photos').getPublicUrl(path);
-        if (!data?.publicUrl) throw new Error('Failed to get public URL');
-        photoUrls.push(data.publicUrl);
+        const fd = new FormData();
+        fd.append('file', file);
+        const resp = await edgeFetch('upload-job-photo', getToken, {
+          method: 'POST',
+          body: fd,
+        });
+        const out = resp as any;
+        if (!out?.url) throw new Error('Upload failed');
+        photoUrls.push(out.url as string);
       }
 
       // 2) Create job via Edge Function

@@ -7,11 +7,11 @@ import { useMemo, useState, useEffect } from "react";
 import { useStore } from "@/store/useAppStore";
 import type { Quote } from "@/types";
 import { buildQuoteEmail } from "@/utils/emailTemplates";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { escapeHtml } from "@/utils/sanitize";
 import { useQueryClient } from "@tanstack/react-query";
-import { SUPABASE_URL } from "@/utils/edgeApi";
+import { SUPABASE_URL, edgeFetchJson } from "@/utils/edgeApi";
+import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 
 export interface SendQuoteModalProps {
   open: boolean;
@@ -24,6 +24,7 @@ export interface SendQuoteModalProps {
 export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, customerName }: SendQuoteModalProps) {
   const store = useStore();
   const queryClient = useQueryClient();
+  const { getToken } = useClerkAuth();
   const [to, setTo] = useState(toEmail ?? "");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");

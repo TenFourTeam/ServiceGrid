@@ -6,10 +6,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useStore } from "@/store/useAppStore";
 import type { Invoice } from "@/types";
 import { buildInvoiceEmail } from "@/utils/emailTemplates";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { escapeHtml } from "@/utils/sanitize";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAuth as useClerkAuth } from "@clerk/clerk-react";
+import { edgeFetchJson } from "@/utils/edgeApi";
 
 export interface SendInvoiceModalProps {
   open: boolean;
@@ -22,6 +23,7 @@ export interface SendInvoiceModalProps {
 export default function SendInvoiceModal({ open, onOpenChange, invoice, toEmail, customerName }: SendInvoiceModalProps) {
   const store = useStore();
   const queryClient = useQueryClient();
+  const { getToken } = useClerkAuth();
   const [to, setTo] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
