@@ -70,32 +70,35 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>Send Quote</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
-          <div>
-            <label className="text-sm">To</label>
-            <Input value={to} onChange={(e) => setTo(e.target.value)} placeholder="customer@example.com" />
+          <div className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-muted-foreground">To</label>
+                <Input value={to} onChange={(e) => setTo(e.target.value)} placeholder="customer@example.com" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-muted-foreground">Subject</label>
+                <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder={defaultSubject} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-muted-foreground">Message (optional)</label>
+              <Textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={3} placeholder="Add a short note..." />
+            </div>
+            <div className="h-px bg-border" />
+            <div className="space-y-2">
+              <div className="text-sm font-medium">Preview</div>
+              <div className="border rounded-md p-4 max-h-[60vh] overflow-auto bg-background" dangerouslySetInnerHTML={{ __html: html }} />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={sending}>Cancel</Button>
+              <Button onClick={send} disabled={sending}>{sending ? 'Sending…' : 'Send Email'}</Button>
+            </div>
           </div>
-          <div>
-            <label className="text-sm">Subject</label>
-            <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder={defaultSubject} />
-          </div>
-          <div>
-            <label className="text-sm">Message (optional)</label>
-            <Textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={3} placeholder="Add a short note..." />
-          </div>
-          <div>
-            <label className="text-sm">Preview</label>
-            <div className="border rounded-md p-3 max-h-64 overflow-auto bg-background" dangerouslySetInnerHTML={{ __html: html }} />
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={sending}>Cancel</Button>
-            <Button onClick={send} disabled={sending}>{sending ? 'Sending…' : 'Send Email'}</Button>
-          </div>
-        </div>
       </DialogContent>
     </Dialog>
   );

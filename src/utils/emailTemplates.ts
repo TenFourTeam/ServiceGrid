@@ -55,6 +55,47 @@ export function buildQuoteEmail({ businessName, businessLogoUrl, customerName, q
 
   const headerLeft = businessLogoUrl ? `<img src="${businessLogoUrl}" alt="${escapeHtml(businessName)} logo" style="height:32px; max-height:32px; border-radius:4px; display:block;" />` : `<span style="font-weight:600; font-size:16px; color:#f8fafc;">${escapeHtml(businessName)}</span>`;
 
+  // New: Service address block
+  const serviceAddressHtml = quote.address ? `
+    <div style="margin:8px 0 0;">
+      <div style="font-weight:600; margin-bottom:4px; color:#111827;">Service address</div>
+      <div style="font-size:14px; line-height:1.6; color:#374151;">${escapeHtml(quote.address).replace(/\n/g, '<br />')}</div>
+    </div>
+  ` : '';
+
+  // New: Quote details (payment terms, frequency, deposit)
+  const paymentTermsLabel = quote.paymentTerms ? (quote.paymentTerms === 'due_on_receipt' ? 'Due on receipt' : quote.paymentTerms.replace('net_', 'Net ')) : '';
+  const frequencyLabel = quote.frequency ? escapeHtml(quote.frequency.replace('-', ' ')) : '';
+  const depositLabel = quote.depositRequired && typeof quote.depositPercent === 'number' ? `${quote.depositPercent}%` : '';
+
+  const detailsHtml = (paymentTermsLabel || frequencyLabel || depositLabel) ? `
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-top:12px; background:#f8fafc; border:1px solid #e5e7eb; border-radius:8px;">
+      <tr>
+        <td style="padding:10px 12px; font-weight:600; color:#111827;">Quote details</td>
+      </tr>
+      <tr>
+        <td style="padding:0 12px 12px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="color:#374151;">
+            ${paymentTermsLabel ? `<tr><td style="padding:6px 0; width:160px; color:#6b7280;">Payment terms</td><td style="padding:6px 0;">${paymentTermsLabel}</td></tr>` : ''}
+            ${frequencyLabel ? `<tr><td style="padding:6px 0; width:160px; color:#6b7280;">Frequency</td><td style="padding:6px 0;">${frequencyLabel}</td></tr>` : ''}
+            ${depositLabel ? `<tr><td style="padding:6px 0; width:160px; color:#6b7280;">Deposit</td><td style="padding:6px 0;">${depositLabel} due on approval</td></tr>` : ''}
+          </table>
+        </td>
+      </tr>
+    </table>
+  ` : '';
+
+  // New: Optional deposit row under totals (display only)
+  const depositRow = (quote.depositRequired && typeof quote.depositPercent === 'number') ? (() => {
+    const amt = Math.round((quote.total ?? 0) * ((quote.depositPercent ?? 0) / 100));
+    return `
+      <tr>
+        <td style="padding:8px; text-align:right; color:#374151;">Deposit due on approval</td>
+        <td style="padding:8px; text-align:right; font-weight:600;">${formatMoney(amt)}</td>
+      </tr>
+    `;
+  })() : '';
+
   const html = `
   <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#f1f5f9; padding:24px 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'; color:#111827;">
     <tr>
@@ -73,6 +114,9 @@ export function buildQuoteEmail({ businessName, businessLogoUrl, customerName, q
           <tr>
             <td style="padding:20px;">
               <p style="margin:0 0 12px; color:#111827;">${customerName ? `Hi ${escapeHtml(customerName)},` : 'Hello,'} here is your quote.</p>
+
+              ${serviceAddressHtml}
+              ${detailsHtml}
 
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin-top:8px;">
                 <thead>
@@ -102,6 +146,7 @@ export function buildQuoteEmail({ businessName, businessLogoUrl, customerName, q
                   <td style="padding:12px 8px; text-align:right; font-weight:700; border-top:1px solid #e5e7eb;">Total</td>
                   <td style="padding:12px 8px; text-align:right; font-weight:700; border-top:1px solid #e5e7eb;">${formatMoney(quote.total)}</td>
                 </tr>
+                ${depositRow}
               </table>
 
               <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-top:16px;">
