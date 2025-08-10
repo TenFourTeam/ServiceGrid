@@ -10,7 +10,7 @@ import { Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useStore } from "@/store/useAppStore";
 import type { Customer, LineItem, Quote } from "@/types";
-import { formatMoney as formatCurrency } from "@/utils/format";
+import { formatMoney as formatCurrency, parseCurrencyInput, formatCurrencyInputNoSymbol, parsePercentInput } from "@/utils/format";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { CustomerCombobox } from "@/components/Quotes/CustomerCombobox";
@@ -59,6 +59,8 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const autosaveTimer = useRef<number | null>(null);
+  const [discountInput, setDiscountInput] = useState<string>("");
+  const [depositPercentInput, setDepositPercentInput] = useState<string>("");
   const [draft, setDraft] = useState<QuoteDraft>({
     customerId: "",
     address: "",
@@ -91,6 +93,8 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
         depositPercent: 0,
       });
       lineItemIdCounter.current = 1;
+      setDiscountInput(formatCurrencyInputNoSymbol(0));
+      setDepositPercentInput("");
     }
   }, [open, store.business.taxRateDefault, defaultTaxRate]);
 
@@ -367,20 +371,20 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
                   <Input
                     id="discount"
                     className="pl-7"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={draft.discount / 100}
-                    onChange={(e) =>
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    value={discountInput}
+                    onChange={(e) => {
                       setDraft((prev) => {
-                        const input = Math.max(0, parseFloat(e.target.value) || 0);
+                        const rawCents = parseCurrencyInput(e.target.value);
                         const pre = calculateQuoteTotals(prev.lineItems, prev.taxRate, 0);
                         const max = pre.subtotal + pre.taxAmount;
-                        const cents = Math.round(input * 100);
-                        const clamped = Math.max(0, Math.min(max, cents));
+                        const clamped = Math.max(0, Math.min(max, rawCents));
+                        setDiscountInput(formatCurrencyInputNoSymbol(clamped));
                         return { ...prev, discount: clamped };
-                      })
-                    }
+                      });
+                    }}
                     disabled={saving}
                   />
                 </div>
@@ -438,21 +442,23 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs" htmlFor="deposit-percent">Deposit percent</Label>
-                  <Input
-                    id="deposit-percent"
-                    type="number"
-                    min={0}
-                    max={100}
-                    step={1}
-                    value={draft.depositPercent}
-                    onChange={(e) =>
-                      setDraft((prev) => ({
-                        ...prev,
-                        depositPercent: Math.max(0, Math.min(100, parseFloat(e.target.value) || 0)),
-                      }))
-                    }
-                    disabled={!draft.depositRequired || saving}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="deposit-percent"
+                      type="text"
+                      inputMode="decimal"
+                      className="pr-7"
+                      placeholder="0"
+                      value={depositPercentInput}
+                      onChange={(e) => {
+                        const n = parsePercentInput(e.target.value);
+                        setDepositPercentInput(String(n));
+                        setDraft((prev) => ({ ...prev, depositPercent: n }));
+                      }}
+                      disabled={!draft.depositRequired || saving}
+                    />
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+                  </div>
                 </div>
               </div>
 

@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useEffect, useState } from "react";
 import type { LineItem } from "@/types";
+import { parseCurrencyInput, formatCurrencyInputNoSymbol } from "@/utils/format";
 interface LineItemsEditorProps {
   items: LineItem[];
   onAdd: () => void;
@@ -18,6 +19,19 @@ export function LineItemsEditor({
   onRemove,
   disabled
 }: LineItemsEditorProps) {
+  const [amountInputs, setAmountInputs] = useState<Record<string, string>>({});
+
+  // Keep local formatted buffers in sync with items
+  useEffect(() => {
+    setAmountInputs((prev) => {
+      const next: Record<string, string> = {};
+      for (const it of items) {
+        next[it.id] = prev[it.id] ?? formatCurrencyInputNoSymbol(it.lineTotal || 0);
+      }
+      return next;
+    });
+  }, [items]);
+
   const isInvalid = (item: LineItem) => !item.name.trim() || (item.lineTotal ?? 0) <= 0;
   const isLast = (id: string) => items.length && items[items.length - 1]?.id === id;
   return <div className="space-y-3">
@@ -49,22 +63,32 @@ export function LineItemsEditor({
                 </div>
                 <div className="col-span-3">
                   <Label className="text-xs" htmlFor={`li-amount-${item.id}`}>$ Amount</Label>
-                  <Input id={`li-amount-${item.id}`} inputMode="decimal" type="number" min="0" step="0.01" value={item.lineTotal / 100} aria-invalid={isInvalid(item) && (item.lineTotal ?? 0) <= 0} aria-describedby={isInvalid(item) && (item.lineTotal ?? 0) <= 0 ? `li-amount-${item.id}-error` : undefined} onChange={e => {
-              const amount = Math.max(0, parseFloat(e.target.value) || 0);
-              const cents = Math.round(amount * 100);
-              onUpdate(item.id, {
-                lineTotal: cents,
-                qty: 1,
-                unitPrice: cents
-              });
-            }} onKeyDown={e => {
-              if (e.key === 'Enter' && isLast(item.id)) onAdd();
-              if ((e.key === 'Backspace' || e.key === 'Delete') && (!e.currentTarget.value || e.currentTarget.value === '0')) onRemove(item.id);
-            }} disabled={disabled} />
+                  <Input
+                    id={`li-amount-${item.id}`}
+                    inputMode="decimal"
+                    type="text"
+                    value={amountInputs[item.id] ?? ''}
+                    aria-invalid={isInvalid(item) && (item.lineTotal ?? 0) <= 0}
+                    aria-describedby={isInvalid(item) && (item.lineTotal ?? 0) <= 0 ? `li-amount-${item.id}-error` : undefined}
+                    onChange={(e) => {
+                      const cents = parseCurrencyInput(e.target.value);
+                      setAmountInputs((prev) => ({ ...prev, [item.id]: formatCurrencyInputNoSymbol(cents) }));
+                      onUpdate(item.id, {
+                        lineTotal: cents,
+                        qty: 1,
+                        unitPrice: cents,
+                      });
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && isLast(item.id)) onAdd();
+                      if ((e.key === 'Backspace' || e.key === 'Delete') && (!e.currentTarget.value || e.currentTarget.value === '0')) onRemove(item.id);
+                    }}
+                    disabled={disabled}
+                  />
                   {isInvalid(item) && (item.lineTotal ?? 0) <= 0}
                 </div>
                 <div className="col-span-1 flex justify-end">
-                  <Button aria-label="Remove line item" type="button" variant="ghost" size="icon" onClick={() => onRemove(item.id)} className="text-destructive hover:text-destructive" disabled={disabled}>
+                  <Button aria-label="Remove line item" type="button" variant="ghost" size="icon" onClick={() => onRemove(item.id)} className="text-foreground hover:text-foreground/80" disabled={disabled}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
