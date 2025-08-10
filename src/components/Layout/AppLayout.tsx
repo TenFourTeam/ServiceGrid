@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { NewJobSheet } from '@/components/Job/NewJobSheet';
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { useClerk } from '@clerk/clerk-react';
-import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/Layout/AppSidebar';
 
 export default function AppLayout({ children, title }: { children: ReactNode; title?: string }) {
@@ -20,10 +20,9 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
     <SidebarProvider>
       <div className="min-h-screen w-full flex">
         <AppSidebar />
-        <SidebarInset className="flex-1 p-4 md:p-6">
+        <SidebarInset className="flex-1 p-4 md:p-6 flex flex-col min-h-0">
           <header className="flex items-center justify-between mb-4 md:mb-6">
             <div className="flex items-center gap-2">
-              <SidebarTrigger aria-label="Toggle navigation" />
               <h1 className="text-xl md:text-2xl font-bold">{title ?? 'Dashboard'}</h1>
             </div>
             <div className="flex items-center gap-2">

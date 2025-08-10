@@ -8,6 +8,7 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
+  SidebarTrigger,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -40,12 +41,15 @@ export default function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-1.5">
-          <div className="size-8 rounded-full bg-primary" aria-hidden />
+        <div className="flex items-center justify-between px-2 py-1.5">
+          <div className="flex items-center gap-2">
+            <div className="size-8 rounded-full bg-primary" aria-hidden />
             <div className="min-w-0 group-data-[collapsible=icon]:hidden">
               <div className="font-semibold truncate">{business.name || "Business"}</div>
               <div className="text-xs text-muted-foreground truncate">Contractor Console</div>
             </div>
+          </div>
+          <SidebarTrigger aria-label="Toggle sidebar" />
         </div>
       </SidebarHeader>
 

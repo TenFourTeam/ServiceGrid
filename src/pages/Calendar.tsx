@@ -7,7 +7,7 @@ export default function CalendarPage() {
   const job = params.get('job') || undefined;
   return (
     <AppLayout title="Calendar">
-      <section>
+      <section className="flex-1 min-h-0 flex flex-col">
         <CalendarShell selectedJobId={job} />
       </section>
     </AppLayout>

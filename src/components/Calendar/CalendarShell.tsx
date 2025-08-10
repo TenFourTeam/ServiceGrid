@@ -42,8 +42,11 @@ export default function CalendarShell({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [stepDate]);
-  return <div className="flex flex-col gap-4">
+  return <div className="flex-1 min-h-0 flex flex-col gap-4">
       <header className="flex items-center justify-between">
+        <div>
+          <h2 className="text-sm md:text-base font-semibold">{rangeTitle}</h2>
+        </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => setDate(startOfDay(new Date()))}>
             Today
@@ -58,13 +61,6 @@ export default function CalendarShell({
             </Tabs>
           </div>
         </div>
-        <div>
-          <h2 className="text-sm md:text-base font-semibold">{rangeTitle}</h2>
-        </div>
-        <div className="flex items-center gap-1">
-          
-          
-        </div>
       </header>
       <div className="md:hidden">
         <Tabs value={view} onValueChange={v => setView(v as any)}>
@@ -76,10 +72,10 @@ export default function CalendarShell({
         </Tabs>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-[260px_1fr_280px]">
+      <div className="flex-1 min-h-0 grid gap-4 md:grid-cols-1">
         
         {/* Main calendar area */}
-        <main className="min-h-[60vh]" role="grid">
+        <main className="h-full min-h-0" role="grid">
           {view === "month" && <MonthCalendar date={date} onDateChange={setDate} />}
           {view === "week" && <WeekCalendar selectedJobId={selectedJobId} />}
           {view === "day" && <DayCalendar date={date} />}
