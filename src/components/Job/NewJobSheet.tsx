@@ -11,11 +11,15 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth as useClerkAuth } from '@clerk/clerk-react';
+import { getClerkTokenStrict } from '@/utils/clerkToken';
 
 export function NewJobSheet() {
   const navigate = useNavigate();
   const { customers, upsertCustomer, upsertJob } = useStore();
   const { toast } = useToast();
+  const { getToken } = useClerkAuth();
 
   const [open, setOpen] = useState(false);
   const [addingCustomer, setAddingCustomer] = useState(false);
@@ -27,6 +31,11 @@ export function NewJobSheet() {
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
   const [amount, setAmount] = useState<string>('');
+
+  // Photos (optional)
+  const [files, setFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
+  const [creating, setCreating] = useState(false);
 
   // New customer quick add
   const [newCustName, setNewCustName] = useState('');
@@ -47,32 +56,74 @@ export function NewJobSheet() {
     return d;
   }
 
-  function onCreate() {
+  async function onCreate() {
     if (!customerId) {
       toast({ title: 'Select a customer', description: 'Please choose or add a customer before creating a job.' });
       return;
     }
-    const start = parseStart(date, startTime);
-    const end = new Date(start.getTime() + durationMin * 60 * 1000);
+    try {
+      setCreating(true);
+      const start = parseStart(date, startTime);
+      const end = new Date(start.getTime() + durationMin * 60 * 1000);
+      const totalCents = amount ? Math.max(0, Math.round(parseFloat(amount) * 100)) : undefined;
 
-    const totalCents = amount ? Math.max(0, Math.round(parseFloat(amount) * 100)) : undefined;
+      // 1) Upload photos to storage
+      const photoUrls: string[] = [];
+      for (const file of files) {
+        const ext = file.name.split('.').pop() || 'jpg';
+        const path = `jobs/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const { error: upErr } = await supabase.storage.from('job-photos').upload(path, file, { upsert: false, cacheControl: '3600' });
+        if (upErr) throw new Error(`Upload failed: ${upErr.message}`);
+        const { data } = supabase.storage.from('job-photos').getPublicUrl(path);
+        if (!data?.publicUrl) throw new Error('Failed to get public URL');
+        photoUrls.push(data.publicUrl);
+      }
 
-    const job = upsertJob({
-      customerId,
-      address: address || selectedCustomer?.address,
-      startsAt: start.toISOString(),
-      endsAt: end.toISOString(),
-      notes: notes || undefined,
-      total: totalCents,
-      status: 'Scheduled',
-    });
+      // 2) Create job via Edge Function
+      const { getToken } = useClerkAuth();
+      const token = await getClerkTokenStrict(getToken);
+      const r = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/jobs`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerId,
+          address: address || selectedCustomer?.address,
+          startsAt: start.toISOString(),
+          endsAt: end.toISOString(),
+          notes: notes || undefined,
+          total: totalCents,
+          photos: photoUrls,
+        }),
+      });
+      if (!r.ok) {
+        const txt = await r.text().catch(()=> '');
+        throw new Error(`Failed to create job (${r.status}): ${txt}`);
+      }
+      const data = await r.json().catch(()=>null);
+      const created = (data?.row || data?.job || data) as any;
 
-    setOpen(false);
-    toast({
-      title: 'Job scheduled',
-      description: 'Your job has been created and scheduled.',
-    });
-    navigate(`/calendar?job=${job.id}`);
+      // 3) Upsert locally for instant UI
+      const local = upsertJob({
+        id: created?.id,
+        customerId,
+        address: address || selectedCustomer?.address,
+        startsAt: start.toISOString(),
+        endsAt: end.toISOString(),
+        notes: notes || undefined,
+        total: totalCents,
+        status: 'Scheduled',
+        photos: photoUrls as any,
+      } as any);
+
+      setOpen(false);
+      toast({ title: 'Job scheduled', description: 'Your job has been created and scheduled.' });
+      navigate(`/calendar?job=${local.id || created?.id || ''}`);
+      resetState();
+    } catch (e: any) {
+      toast({ title: 'Failed to create job', description: e?.message || String(e) });
+    } finally {
+      setCreating(false);
+    }
   }
 
   function onQuickAddCustomer() {
@@ -96,6 +147,9 @@ export function NewJobSheet() {
     setAddress('');
     setNotes('');
     setAmount('');
+    setFiles([]);
+    setPreviews([]);
+    setCreating(false);
     setAddingCustomer(false);
     setNewCustName('');
     setNewCustAddress('');
@@ -200,10 +254,33 @@ export function NewJobSheet() {
             <Label htmlFor="notes">Notes</Label>
             <Textarea id="notes" placeholder="Optional notes for the crew" value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
+
+          {/* Photos */}
+          <div className="space-y-2">
+            <Label htmlFor="photos">Photos (optional)</Label>
+            <Input
+              id="photos"
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(e)=>{
+                const f = Array.from(e.target.files || []);
+                setFiles(f);
+                setPreviews(f.map(file => URL.createObjectURL(file)));
+              }}
+            />
+            {previews.length > 0 && (
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                {previews.map((src, i) => (
+                  <img key={i} src={src} alt={`Preview ${i+1}`} className="w-full h-20 object-cover rounded-md border" />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <SheetFooter className="mt-6">
-          <Button className="w-full" onClick={onCreate}>Create & schedule</Button>
+          <Button className="w-full" onClick={onCreate} disabled={creating}>{creating ? 'Creating…' : 'Create & schedule'}</Button>
         </SheetFooter>
       </SheetContent>
     </Sheet>

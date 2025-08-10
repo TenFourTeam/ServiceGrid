@@ -3,7 +3,7 @@ import { useStore } from "@/store/useAppStore";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Textarea } from "@/components/ui/textarea";
-import { formatDateTime } from "@/utils/format";
+import { formatDateTime, formatMoney } from "@/utils/format";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { getClerkTokenStrict } from "@/utils/clerkToken";
 import { toast } from "sonner";
@@ -13,7 +13,7 @@ import type { Job } from "@/types";
 interface JobShowModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  job: Pick<Job, "id" | "customerId" | "startsAt" | "endsAt" | "status"> & Partial<Pick<Job, "notes" | "address" | "total" >>;
+  job: Pick<Job, "id" | "customerId" | "startsAt" | "endsAt" | "status"> & Partial<Pick<Job, "notes" | "address" | "total" | "photos" >>;
 }
 
 export default function JobShowModal({ open, onOpenChange, job }: JobShowModalProps) {
@@ -70,6 +70,14 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
               <div className="text-sm text-muted-foreground">Ends</div>
               <div>{formatDateTime(job.endsAt)}</div>
             </div>
+            <div>
+              <div className="text-sm text-muted-foreground">Address</div>
+              <div className="truncate">{job.address || "—"}</div>
+            </div>
+            <div>
+              <div className="text-sm text-muted-foreground">Total</div>
+              <div>{typeof job.total === 'number' ? formatMoney(job.total) : '—'}</div>
+            </div>
           </div>
           <div>
             <div className="text-sm text-muted-foreground mb-1">Notes</div>
@@ -93,6 +101,26 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                 }, 600) as unknown as number;
               }}
             />
+          </div>
+
+          <div>
+            <div className="text-sm text-muted-foreground mb-1">Photos</div>
+            {Array.isArray((job as any).photos) && (job as any).photos.length > 0 ? (
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                {(job as any).photos.map((url: string, idx: number) => (
+                  <a key={idx} href={url} target="_blank" rel="noreferrer" className="block">
+                    <img
+                      src={url}
+                      alt={`Job photo ${idx + 1}`}
+                      loading="lazy"
+                      className="w-full h-20 object-cover rounded-md border"
+                    />
+                  </a>
+                ))}
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground">No photos yet.</div>
+            )}
           </div>
         </div>
         <DrawerFooter>

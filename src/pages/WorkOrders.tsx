@@ -242,12 +242,31 @@ export default function WorkOrdersPage() {
                       const addr = j.address || customers.find(c=>c.id===j.customerId)?.address;
                       if (addr) window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`, '_blank');
                     }}
+                    onOpen={() => setActiveJob(j)}
                   />
                 );
               })
             )}
           </CardContent>
         </Card>
+        {activeJob && (
+          <JobShowModal
+            open={!!activeJob}
+            onOpenChange={(o)=>{ if (!o) setActiveJob(null); }}
+            job={{
+              id: activeJob.id,
+              customerId: activeJob.customerId,
+              startsAt: activeJob.startsAt,
+              endsAt: activeJob.endsAt,
+              status: activeJob.status,
+              notes: activeJob.notes,
+              address: activeJob.address,
+              total: activeJob.total as any,
+              // photos may be undefined here; JobShowModal handles optional
+              ...(activeJob as any),
+            } as any}
+          />
+        )}
       </section>
     </AppLayout>
   );
