@@ -6,6 +6,7 @@ export interface DbCustomerRow {
   id: string;
   name: string;
   email?: string | null;
+  phone?: string | null;
   address?: string | null;
 }
 
@@ -38,6 +39,7 @@ export function useSupabaseCustomers(opts?: { enabled?: boolean }) {
         id: c.id,
         name: c.name,
         email: c.email ?? null,
+        phone: c.phone ?? null,
         address: c.address ?? null,
       }));
       return { rows };

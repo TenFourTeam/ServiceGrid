@@ -14,6 +14,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 import { Send } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
 export default function InvoicesPage() {
   const store = useStore();
   const { isSignedIn } = useClerkAuth();
@@ -26,6 +27,11 @@ export default function InvoicesPage() {
   const [sortKey, setSortKey] = useState<'number' | 'customer' | 'amount' | 'due' | 'status'>('number');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const qc = useQueryClient();
+  const { data: dbCustomers } = useSupabaseCustomers({ enabled: !!isSignedIn });
+  const customers = useMemo(() => {
+    if (isSignedIn && dbCustomers?.rows) return dbCustomers.rows;
+    return store.customers.map(c => ({ id: c.id, name: c.name, email: c.email ?? null, address: c.address ?? null, phone: (c as any).phone ?? null }));
+  }, [isSignedIn, dbCustomers, store.customers]);
 
   useEffect(() => {
     if (!isSignedIn) return;
@@ -69,10 +75,10 @@ export default function InvoicesPage() {
     if (status !== 'All') list = list.filter(i => i.status === status);
     const query = q.trim().toLowerCase();
     if (query) {
-      list = list.filter(i => i.number.toLowerCase().includes(query) || (store.customers.find(c=>c.id===i.customerId)?.name?.toLowerCase().includes(query) ?? false));
+      list = list.filter(i => i.number.toLowerCase().includes(query) || ((customers.find(c=>c.id===i.customerId)?.name?.toLowerCase().includes(query)) ?? false));
     }
     return list;
-  }, [store.invoices, status, q, store.customers]);
+  }, [store.invoices, status, q, customers]);
 
   const sortedInvoices = useMemo(() => {
     const list = filteredInvoices.slice();
@@ -85,8 +91,8 @@ export default function InvoicesPage() {
           vb = b.number || '';
           break;
         case 'customer':
-          va = store.customers.find(c => c.id === a.customerId)?.name || '';
-          vb = store.customers.find(c => c.id === b.customerId)?.name || '';
+          va = customers.find(c => c.id === a.customerId)?.name || '';
+          vb = customers.find(c => c.id === b.customerId)?.name || '';
           break;
         case 'amount':
           va = a.total ?? 0;
@@ -109,7 +115,7 @@ export default function InvoicesPage() {
       return 0;
     });
     return list;
-  }, [filteredInvoices, sortKey, sortDir, store.customers]);
+  }, [filteredInvoices, sortKey, sortDir, customers]);
 
   const requestSort = (key: typeof sortKey) => {
     if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
@@ -183,7 +189,7 @@ export default function InvoicesPage() {
               {sortedInvoices.map((i)=> (
                 <TableRow key={i.id}>
                   <TableCell>{i.number}</TableCell>
-                  <TableCell>{store.customers.find(c=>c.id===i.customerId)?.name}</TableCell>
+                  <TableCell>{customers.find(c=>c.id===i.customerId)?.name}</TableCell>
                   <TableCell>{formatMoney(i.total)}</TableCell>
                   <TableCell>{formatDate(i.dueAt)}</TableCell>
                   <TableCell>{i.status}</TableCell>
@@ -227,12 +233,12 @@ export default function InvoicesPage() {
         invoice={store.invoices.find(inv=>inv.id===sendId) || null}
         toEmail={( () => {
           const inv = store.invoices.find(i=>i.id===sendId);
-          const cust = inv ? store.customers.find(c=>c.id===inv.customerId) : undefined;
+          const cust = inv ? customers.find(c=>c.id===inv.customerId) : undefined;
           return cust?.email || '';
         })()}
         customerName={( () => {
           const inv = store.invoices.find(i=>i.id===sendId);
-          const cust = inv ? store.customers.find(c=>c.id===inv.customerId) : undefined;
+          const cust = inv ? customers.find(c=>c.id===inv.customerId) : undefined;
           return cust?.name || undefined;
         })()}
       />

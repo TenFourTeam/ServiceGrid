@@ -22,7 +22,7 @@ export interface SendInvoiceModalProps {
 export default function SendInvoiceModal({ open, onOpenChange, invoice, toEmail, customerName }: SendInvoiceModalProps) {
   const store = useStore();
   const queryClient = useQueryClient();
-  const [to, setTo] = useState(toEmail ?? "");
+  const [to, setTo] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
@@ -34,21 +34,27 @@ export default function SendInvoiceModal({ open, onOpenChange, invoice, toEmail,
     return { html: built.html, defaultSubject: built.subject };
   }, [invoice, store.business.name, store.business.logoUrl, store.business.lightLogoUrl, customerName]);
 
-  const previewHtml = useMemo(() => {
-    if (!message?.trim()) return html;
-    const safe = escapeHtml(message).replace(/\n/g, '<br />');
-    const introBlock = `<div style="margin-bottom:12px; line-height:1.6; font-size:14px; color:#111827;">${safe}</div>`;
-    const hr = `<hr style="border:none; border-top:1px solid #e5e7eb; margin:12px 0;" />`;
-    return `${introBlock}${hr}${html}`;
-  }, [message, html]);
+const previewHtml = useMemo(() => {
+  if (!message?.trim()) return html;
+  const safe = escapeHtml(message).replace(/\n/g, '<br />');
+  const introBlock = `<div style="margin-bottom:12px; line-height:1.6; font-size:14px; color:#111827;">${safe}</div>`;
+  const hr = `<hr style="border:none; border-top:1px solid #e5e7eb; margin:12px 0;" />`;
+  return `${introBlock}${hr}${html}`;
+}, [message, html]);
 
   useEffect(() => {
     if (open) {
-      setTo(toEmail ?? "");
+      const defaultTo = (() => {
+        if (toEmail && toEmail.trim()) return toEmail;
+        if (!invoice) return "";
+        const cust = store.customers.find(c => c.id === invoice.customerId);
+        return cust?.email || "";
+      })();
+      setTo(defaultTo);
       setSubject(invoice ? `${store.business.name} • Invoice ${invoice.number}` : "");
       setMessage("");
     }
-  }, [open, invoice, toEmail, store.business.name]);
+  }, [open, invoice, toEmail, store.business.name, store.customers]);
 
   async function send() {
     if (!invoice) return;

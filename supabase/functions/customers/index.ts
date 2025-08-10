@@ -236,7 +236,7 @@ serve(async (req) => {
     if (req.method === "GET") {
       const { data, error } = await supabase
         .from("customers")
-        .select("id,name,email,address")
+        .select("id,name,email,phone,address")
         .eq("owner_id", ownerId)
         .order("updated_at", { ascending: false });
       if (error) throw error;
@@ -247,6 +247,7 @@ serve(async (req) => {
       const body = await req.json().catch(() => ({}));
       const name = (body.name || "").toString().trim();
       const email = (body.email ?? null) ? String(body.email).trim() : null;
+      const phone = (body.phone ?? null) ? String(body.phone).trim() : null;
       const address = (body.address ?? null) ? String(body.address).trim() : null;
       if (!name) return badRequest("Name is required");
 
@@ -254,7 +255,7 @@ serve(async (req) => {
 
       const { data, error } = await supabase
         .from("customers")
-        .insert({ name, email, address, owner_id: ownerId, business_id: businessId })
+        .insert({ name, email, phone, address, owner_id: ownerId, business_id: businessId })
         .select("id")
         .single();
       if (error) throw error;

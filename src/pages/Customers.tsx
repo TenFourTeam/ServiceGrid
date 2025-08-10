@@ -22,7 +22,7 @@ export default function CustomersPage() {
 
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [draft, setDraft] = useState({ name: '', email: '', address: '' });
+  const [draft, setDraft] = useState({ name: '', email: '', phone: '', address: '' });
 
   async function save() {
     if (!isSignedIn) {
@@ -44,11 +44,12 @@ export default function CustomersPage() {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          name: draft.name.trim(),
-          email: draft.email.trim() || null,
-          address: draft.address.trim() || null,
-        }),
+          body: JSON.stringify({
+            name: draft.name.trim(),
+            email: draft.email.trim() || null,
+            phone: draft.phone.trim() || null,
+            address: draft.address.trim() || null,
+          }),
       });
 
       if (!res.ok) {
@@ -58,7 +59,7 @@ export default function CustomersPage() {
 
       toast.success('Customer created');
       setOpen(false);
-      setDraft({ name: '', email: '', address: '' });
+      setDraft({ name: '', email: '', phone: '', address: '' });
       await queryClient.invalidateQueries({ queryKey: ['supabase', 'customers'] });
     } catch (e: any) {
       console.error('[CustomersPage] create customer failed:', e);
@@ -90,13 +91,14 @@ export default function CustomersPage() {
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
+                    <TableHead>Phone</TableHead>
                     <TableHead>Address</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {rows.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={3} className="text-muted-foreground">
+                      <TableCell colSpan={4} className="text-muted-foreground">
                         No customers yet.
                       </TableCell>
                     </TableRow>
@@ -105,6 +107,7 @@ export default function CustomersPage() {
                       <TableRow key={c.id}>
                         <TableCell>{c.name}</TableCell>
                         <TableCell>{c.email ?? ''}</TableCell>
+                        <TableCell>{(c as any).phone ?? ''}</TableCell>
                         <TableCell>{c.address ?? ''}</TableCell>
                       </TableRow>
                     ))
@@ -137,6 +140,12 @@ export default function CustomersPage() {
               placeholder="Address"
               value={draft.address}
               onChange={(e) => setDraft({ ...draft, address: e.target.value })}
+            />
+            <Input
+              placeholder="Phone"
+              type="tel"
+              value={draft.phone}
+              onChange={(e) => setDraft({ ...draft, phone: e.target.value })}
             />
             <div className="flex justify-end gap-2">
               <Button variant="secondary" onClick={() => setOpen(false)} disabled={saving}>
