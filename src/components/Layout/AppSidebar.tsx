@@ -49,7 +49,7 @@ export default function AppSidebar() {
           {/* Logo column - fixed width so position stays constant in both states */}
           <div className="relative flex items-center justify-center">
             <BusinessLogo
-              size={28}
+              size={32}
               src={business.logoUrl}
               alt={`${business.name || "Business"} logo`}
             />

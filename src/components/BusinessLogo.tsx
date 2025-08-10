@@ -80,7 +80,7 @@ export default function BusinessLogo({ src, alt = "Logo", size = 28, className, 
         src={src}
         alt={alt}
         crossOrigin="anonymous"
-        className="size-full object-cover"
+        className="size-full object-contain p-0.5"
         loading="lazy"
         onLoad={(e) => handleAnalyze(e.currentTarget)}
         onError={() => setBroken(true)}
