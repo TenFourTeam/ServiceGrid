@@ -11,6 +11,7 @@ import { getClerkTokenStrict } from '@/utils/clerkToken';
 import { toast } from 'sonner';
 import PickQuoteModal from '@/components/Jobs/PickQuoteModal';
 import { supabase } from '@/integrations/supabase/client';
+import JobShowModal from '@/components/Jobs/JobShowModal';
 const START_HOUR = 7;
 const END_HOUR = 19;
 const TOTAL_MIN = (END_HOUR - START_HOUR) * 60;
@@ -400,13 +401,13 @@ function onDragStart(e: React.PointerEvent, job: Job) {
               return <div key={j.id} className={`absolute left-2 right-2 border rounded-md p-2 text-xs select-none cursor-grab active:cursor-grabbing ${color}`} style={{
                 top: `${top}%`,
                 height: `${height}%`
-              }} onPointerDown={e => onDragStart(e, j)} onDoubleClick={(e) => { e.stopPropagation(); setActiveJob(j); }}>
+              }} onPointerDown={e => onDragStart(e, j)} onClick={(e) => { e.stopPropagation(); setActiveJob(j); }}>
                       <div className="font-medium">{`${j.notes || 'Job'} — ${customer}`}</div>
                       <div className="text-[10px] text-muted-foreground">{formatDateTime(j.startsAt)}</div>
                       <div className="text-[10px]">{j.status}</div>
                     </div>;
             })}
-              </div>)}
+              </div>))}
           </div>
         </div>
       </div>
