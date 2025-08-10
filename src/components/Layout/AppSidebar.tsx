@@ -46,7 +46,7 @@ export default function AppSidebar() {
         <div className="flex items-center justify-between px-2 py-1.5">
           <div className="flex items-center gap-2">
             <div className="relative">
-              <div className="size-8 rounded-full bg-primary" aria-hidden />
+              <div className="size-7 rounded-full bg-primary" aria-hidden />
               {collapsed && (
                 <SidebarTrigger aria-label="Expand sidebar" className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity rounded-full" />
               )}
@@ -88,9 +88,6 @@ export default function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter>
-        <div className="text-xs text-muted-foreground px-2 py-1.5">v0 Prototype</div>
-      </SidebarFooter>
     </Sidebar>
   );
 }
