@@ -22,6 +22,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 
 const ClerkAuthPage = lazy(() => import("./pages/ClerkAuth"));
 const QuoteActionPage = lazy(() => import("./pages/QuoteAction"));
+const QuotePublicPage = lazy(() => import("./pages/QuotePublic"));
 
 const queryClient = new QueryClient();
 
