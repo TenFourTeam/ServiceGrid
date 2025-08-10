@@ -10,6 +10,7 @@ import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { getClerkTokenStrict } from '@/utils/clerkToken';
 import { toast } from 'sonner';
 import PickQuoteModal from '@/components/Jobs/PickQuoteModal';
+import { supabase } from '@/integrations/supabase/client';
 const START_HOUR = 7;
 const END_HOUR = 19;
 const TOTAL_MIN = (END_HOUR - START_HOUR) * 60;
@@ -93,6 +94,37 @@ export function WeekCalendar({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobsRange]);
+
+  useEffect(() => {
+    if (!isSignedIn) return;
+    const channel = supabase
+      .channel('jobs-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'jobs' }, (payload: any) => {
+        try {
+          if (payload.eventType === 'DELETE') {
+            const id = (payload as any).old?.id as string | undefined;
+            if (id) deleteJob(id);
+            return;
+          }
+          const row: any = (payload as any).new;
+          if (!row) return;
+          upsertJob({
+            id: row.id,
+            customerId: row.customer_id || row.customerId,
+            quoteId: row.quote_id ?? row.quoteId ?? undefined,
+            address: row.address ?? undefined,
+            startsAt: row.starts_at || row.startsAt,
+            endsAt: row.ends_at || row.endsAt,
+            status: row.status,
+            total: row.total ?? undefined,
+            notes: row.notes ?? undefined,
+            createdAt: row.created_at || row.createdAt,
+          });
+        } catch {}
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [isSignedIn, upsertJob, deleteJob]);
 
   const dayJobs = useMemo(() => {
     const map: Record<string, Job[]> = {};
@@ -188,6 +220,33 @@ export function WeekCalendar({
     }
   }
 
+  async function createInvoiceFromJob(jobId: string) {
+    try {
+      const token = await getClerkTokenStrict(getToken);
+      const r = await fetch(
+        `https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/invoices`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ jobId }),
+        }
+      );
+      if (!r.ok) {
+        const txt = await r.text().catch(() => "");
+        throw new Error(`Failed to create invoice (${r.status}): ${txt}`);
+      }
+      const data = await r.json();
+      const num = data?.invoice?.number || '';
+      toast.success(num ? `Invoice ${num} created` : 'Invoice created');
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || 'Failed to create invoice');
+    }
+  }
+
   function handleEmptyDoubleClick(e: React.MouseEvent<HTMLDivElement>, day: Date) {
     const bounds = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const y = clamp(e.clientY - bounds.top, 0, bounds.height);
@@ -206,25 +265,52 @@ export function WeekCalendar({
   function onDragStart(e: React.PointerEvent, job: Job) {
     const bounds = (e.currentTarget.parentElement as HTMLElement | null)?.getBoundingClientRect() ?? gridRef.current?.getBoundingClientRect();
     if (!bounds) return;
-    const original = new Date(job.startsAt);
-    const dur = new Date(job.endsAt).getTime() - original.getTime();
+    const original = { ...job };
+    const dur = new Date(job.endsAt).getTime() - new Date(job.startsAt).getTime();
+    let latest = { startsAt: job.startsAt, endsAt: job.endsAt };
+
     const onMove = (ev: PointerEvent) => {
       const y = clamp(ev.clientY - bounds.top, 0, bounds.height);
       const minsFromTop = y / bounds.height * TOTAL_MIN;
       const startMins = Math.round(minsFromTop / 15) * 15 + START_HOUR * 60; // snap 15m
-      const d = new Date(original);
+      const d = new Date(original.startsAt);
       d.setHours(0, 0, 0, 0);
       d.setMinutes(startMins);
       const end = new Date(d.getTime() + dur);
+      latest = { startsAt: d.toISOString(), endsAt: end.toISOString() };
       upsertJob({
         ...job,
-        startsAt: d.toISOString(),
-        endsAt: end.toISOString()
+        startsAt: latest.startsAt,
+        endsAt: latest.endsAt
       });
     };
-    const onUp = () => {
+
+    const onUp = async () => {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
+      try {
+        const token = await getClerkTokenStrict(getToken);
+        const r = await fetch(
+          `https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/jobs`,
+          {
+            method: 'PATCH',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ id: job.id, startsAt: latest.startsAt, endsAt: latest.endsAt }),
+          }
+        );
+        if (!r.ok) {
+          upsertJob(original);
+          const txt = await r.text().catch(() => "");
+          throw new Error(`Failed to reschedule (${r.status}): ${txt}`);
+        }
+        toast.success('Rescheduled');
+      } catch (err: any) {
+        console.error(err);
+        toast.error(err?.message || 'Failed to reschedule');
+      }
     };
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
@@ -340,12 +426,32 @@ export function WeekCalendar({
               <div>
                 <div className="text-sm text-muted-foreground mb-1">Notes</div>
                 <Textarea value={activeJob.notes ?? ''} onChange={e => {
+              const val = e.target.value;
               const j = {
                 ...activeJob,
-                notes: e.target.value
+                notes: val
               };
               setActiveJob(j);
               upsertJob(j);
+              if (notesTimer.current) window.clearTimeout(notesTimer.current);
+              notesTimer.current = window.setTimeout(async () => {
+                try {
+                  const token = await getClerkTokenStrict(getToken);
+                  await fetch(
+                    `https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/jobs`,
+                    {
+                      method: 'PATCH',
+                      headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({ id: activeJob.id, notes: val }),
+                    }
+                  );
+                } catch (err) {
+                  // no-op; optimistic update remains
+                }
+              }, 600) as unknown as number;
             }} />
               </div>
             </div>}
@@ -354,6 +460,7 @@ export function WeekCalendar({
                 <Button onClick={() => {
               updateJobStatus(activeJob.id, activeJob.status === 'Scheduled' ? 'In Progress' : 'Completed');
             }}>Advance Status</Button>
+                <Button variant="outline" onClick={() => createInvoiceFromJob(activeJob.id)}>Create Invoice</Button>
                 <Button variant="secondary" onClick={() => {
               setActiveJob(null);
             }}>Close</Button>
