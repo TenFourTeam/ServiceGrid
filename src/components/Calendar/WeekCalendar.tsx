@@ -72,6 +72,7 @@ export function WeekCalendar({
           endsAt: row.endsAt,
           status: row.status,
           total: row.total ?? undefined,
+          notes: row.notes ?? undefined,
           createdAt: row.createdAt,
         });
       });
@@ -159,6 +160,7 @@ export function WeekCalendar({
         endsAt: row.endsAt || row.ends_at,
         status: row.status,
         total: row.total ?? null,
+        notes: row.notes ?? null,
         createdAt: row.createdAt || row.created_at,
       } as Job;
       upsertJob(created);
@@ -287,7 +289,7 @@ export function WeekCalendar({
                 top: `${top}%`,
                 height: `${height}%`
               }} onPointerDown={e => onDragStart(e, j)} onDoubleClick={(e) => { e.stopPropagation(); setActiveJob(j); }}>
-                      <div className="font-medium">{customer}</div>
+                      <div className="font-medium">{j.notes || customer}</div>
                       <div className="text-[10px] text-muted-foreground">{formatDateTime(j.startsAt)}</div>
                       <div className="text-[10px]">{j.status}</div>
                     </div>;

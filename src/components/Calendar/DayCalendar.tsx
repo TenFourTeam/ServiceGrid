@@ -26,7 +26,7 @@ export default function DayCalendar({ date }: { date: Date }) {
                 <span className="opacity-70">–</span>
                 <span>{e.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
               </div>
-              <div className="text-xs opacity-80">Job{j.total ? ` — ${formatMoney(j.total)}` : ''}</div>
+              <div className="text-xs opacity-80">{j.notes || (j.total ? `Job — ${formatMoney(j.total)}` : 'Job')}</div>
               {j.address && <div className="text-xs text-muted-foreground">{j.address}</div>}
             </li>
           );

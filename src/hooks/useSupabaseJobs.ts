@@ -11,6 +11,7 @@ export interface DbJobRow {
   endsAt: string;
   status: "Scheduled" | "In Progress" | "Completed";
   total?: number | null;
+  notes?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -41,6 +42,7 @@ export function useSupabaseJobs(opts?: { enabled?: boolean }) {
         endsAt: row.endsAt || row.ends_at,
         status: row.status,
         total: row.total ?? null,
+        notes: row.notes ?? null,
         createdAt: row.createdAt || row.created_at,
         updatedAt: row.updatedAt || row.updated_at,
       }));

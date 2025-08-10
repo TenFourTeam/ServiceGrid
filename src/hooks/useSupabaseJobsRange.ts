@@ -48,6 +48,7 @@ export function useSupabaseJobsRange(
         endsAt: row.endsAt || row.ends_at,
         status: row.status,
         total: row.total ?? null,
+        notes: row.notes ?? null,
         createdAt: row.createdAt || row.created_at,
         updatedAt: row.updatedAt || row.updated_at,
       }));

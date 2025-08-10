@@ -63,7 +63,7 @@ export default function MonthCalendar({ date, onDateChange }: { date: Date; onDa
                         {t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                       </span>
                       <span className="mx-1 opacity-70">•</span>
-                      <span>Job{j.total ? ` — ${formatMoney(j.total)}` : ''}</span>
+                      <span>{j.notes || (j.total ? `Job — ${formatMoney(j.total)}` : 'Job')}</span>
                     </li>
                   );
                 })}
