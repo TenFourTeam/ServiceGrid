@@ -43,33 +43,42 @@ export default function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <div className={"flex items-center px-2 py-1.5 " + (collapsed ? "justify-center" : "justify-between") }>
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <div className="size-7 rounded-full bg-primary ring-1 ring-border overflow-hidden">
-                {business.logoUrl && (
-                  <img
-                    src={business.logoUrl}
-                    alt={`${business.name || "Business"} logo`}
-                    className="size-7 object-cover"
-                    loading="lazy"
-                    onError={(e) => {
-                      // Hide broken images to reveal the placeholder behind
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
-                )}
-              </div>
-              {collapsed && (
-                <SidebarTrigger aria-label="Expand sidebar" className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity rounded-full" />
+        <div className="grid grid-cols-[56px_1fr_auto] items-center px-2 py-1.5">
+          {/* Logo column - fixed width so position stays constant in both states */}
+          <div className="relative flex items-center justify-center">
+            <div className="size-7 rounded-full ring-1 ring-border overflow-hidden">
+              {business.logoUrl && (
+                <img
+                  src={business.logoUrl}
+                  alt={`${business.name || "Business"} logo`}
+                  className="size-7 object-cover"
+                  loading="lazy"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
               )}
             </div>
-            <div className="min-w-0 group-data-[collapsible=icon]:hidden">
-              <div className="font-semibold truncate">{business.name || "Business"}</div>
-              <div className="text-xs text-muted-foreground truncate">Contractor Console</div>
-            </div>
+            {collapsed && (
+              <SidebarTrigger
+                aria-label="Expand sidebar"
+                className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity rounded-full"
+              />
+            )}
           </div>
-          {!collapsed && <SidebarTrigger aria-label="Toggle sidebar" />}
+
+          {/* Title column - hidden when collapsed */}
+          <div className="min-w-0 group-data-[collapsible=icon]:hidden">
+            <div className="font-semibold truncate">{business.name || "Business"}</div>
+            <div className="text-xs text-muted-foreground truncate">Contractor Console</div>
+          </div>
+
+          {/* Trigger column - only show when expanded */}
+          {!collapsed && (
+            <div className="justify-self-end">
+              <SidebarTrigger aria-label="Toggle sidebar" />
+            </div>
+          )}
         </div>
       </SidebarHeader>
 
