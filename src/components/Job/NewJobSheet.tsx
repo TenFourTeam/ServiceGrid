@@ -160,13 +160,13 @@ export function NewJobSheet() {
       <SheetTrigger asChild>
         <Button>New Job</Button>
       </SheetTrigger>
-      <SheetContent side="right" className="sm:max-w-md">
+      <SheetContent side="right" className="sm:max-w-md flex h-full flex-col">
         <SheetHeader>
           <SheetTitle>New Job</SheetTitle>
           <SheetDescription>Schedule a job quickly. All fields can be edited later.</SheetDescription>
         </SheetHeader>
 
-        <div className="mt-4 space-y-4 animate-fade-in">
+        <div className="mt-4 space-y-4 animate-fade-in flex-1 min-h-0 overflow-y-auto pr-1">
           {/* Customer */}
           <div className="space-y-2">
             <Label htmlFor="customer">Customer</Label>
@@ -270,7 +270,7 @@ export function NewJobSheet() {
               }}
             />
             {previews.length > 0 && (
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 max-h-48 overflow-y-auto pr-1">
                 {previews.map((src, i) => (
                   <img key={i} src={src} alt={`Preview ${i+1}`} className="w-full h-20 object-cover rounded-md border" />
                 ))}
