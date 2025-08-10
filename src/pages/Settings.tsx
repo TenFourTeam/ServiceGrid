@@ -16,24 +16,26 @@ import { toast } from 'sonner';
 export default function SettingsPage() {
   const store = useStore();
   const { getToken, isSignedIn } = useClerkAuth();
-  const [file, setFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const [darkFile, setDarkFile] = useState<File | null>(null);
+  const [lightFile, setLightFile] = useState<File | null>(null);
+  const [uploadingDark, setUploadingDark] = useState(false);
+  const [uploadingLight, setUploadingLight] = useState(false);
 
-  async function uploadLogo() {
+  async function uploadLogoDark() {
     if (!isSignedIn) {
       toast.error('You must be signed in');
       return;
     }
-    if (!file) {
+    if (!darkFile) {
       toast.error('Please choose an image file');
       return;
     }
     try {
-      setUploading(true);
+      setUploadingDark(true);
       const token = await getClerkTokenStrict(getToken);
       const form = new FormData();
-      form.append('file', file);
-      const r = await fetch('https://ijudkzqfriazabiosnvb.functions.supabase.co/upload-business-logo', {
+      form.append('file', darkFile);
+      const r = await fetch('https://ijudkzqfriazabiosnvb.functions.supabase.co/upload-business-logo?kind=dark', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: form,
@@ -43,13 +45,47 @@ export default function SettingsPage() {
       const url = data?.url as string;
       if (url) {
         store.setBusiness({ logoUrl: url });
-        toast.success('Logo updated');
+        toast.success('Dark icon updated');
       }
     } catch (e: any) {
       console.error(e);
-      toast.error(e?.message || 'Failed to upload logo');
+      toast.error(e?.message || 'Failed to upload dark icon');
     } finally {
-      setUploading(false);
+      setUploadingDark(false);
+    }
+  }
+
+  async function uploadLogoLight() {
+    if (!isSignedIn) {
+      toast.error('You must be signed in');
+      return;
+    }
+    if (!lightFile) {
+      toast.error('Please choose an image file');
+      return;
+    }
+    try {
+      setUploadingLight(true);
+      const token = await getClerkTokenStrict(getToken);
+      const form = new FormData();
+      form.append('file', lightFile);
+      const r = await fetch('https://ijudkzqfriazabiosnvb.functions.supabase.co/upload-business-logo?kind=light', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: form,
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data?.error || `Upload failed (${r.status})`);
+      const url = data?.url as string;
+      if (url) {
+        store.setBusiness({ lightLogoUrl: url });
+        toast.success('Light icon updated');
+      }
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || 'Failed to upload light icon');
+    } finally {
+      setUploadingLight(false);
     }
   }
 
@@ -72,6 +108,7 @@ export default function SettingsPage() {
             phone: b.phone ?? '',
             replyToEmail: b.reply_to_email ?? '',
             logoUrl: b.logo_url ?? '',
+            lightLogoUrl: b.light_logo_url ?? '',
             taxRateDefault: Number(b.tax_rate_default ?? store.business.taxRateDefault) || 0,
             numbering: {
               estPrefix: b.est_prefix ?? store.business.numbering.estPrefix,
@@ -109,22 +146,42 @@ export default function SettingsPage() {
         </Card>
         <Card>
           <CardHeader><CardTitle>Branding</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-4">
-              <BusinessLogo size={40} src={store.business.logoUrl} alt={`${store.business.name || 'Business'} logo`} />
-              <div className="flex-1 grid gap-2 sm:grid-cols-[1fr_auto]">
-                <Input type="file" accept="image/*" onChange={(e)=>setFile(e.target.files?.[0] || null)} />
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button onClick={uploadLogo} disabled={uploading || !file}>{uploading ? 'Uploading…' : 'Upload logo'}</Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-xs">
-                    Use a square image (PNG/SVG/WebP) for best results. This appears in the sidebar and emails.
-                  </TooltipContent>
-                </Tooltip>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Label>Dark Icon</Label>
+              <div className="flex items-center gap-4">
+                <BusinessLogo size={40} src={store.business.logoUrl} alt="Dark icon preview" />
+                <div className="flex-1 grid gap-2 sm:grid-cols-[1fr_auto]">
+                  <Input type="file" accept="image/png,image/svg+xml,image/webp,image/jpeg" onChange={(e)=>setDarkFile(e.target.files?.[0] || null)} />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button onClick={uploadLogoDark} disabled={uploadingDark || !darkFile}>{uploadingDark ? 'Uploading…' : 'Upload dark icon'}</Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs">
+                      Used across the app (sidebar, headers). Use PNG/SVG/WebP. Recommended size: 32x32.
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
               </div>
             </div>
-            
+
+            <div className="space-y-2">
+              <Label>Light Icon</Label>
+              <div className="flex items-center gap-4">
+                <BusinessLogo size={40} src={store.business.lightLogoUrl} alt="Light icon preview" />
+                <div className="flex-1 grid gap-2 sm:grid-cols-[1fr_auto]">
+                  <Input type="file" accept="image/png,image/svg+xml,image/webp,image/jpeg" onChange={(e)=>setLightFile(e.target.files?.[0] || null)} />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button onClick={uploadLogoLight} disabled={uploadingLight || !lightFile}>{uploadingLight ? 'Uploading…' : 'Upload light icon'}</Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs">
+                      Used in emails and email previews. Use a white/light version. Use PNG/SVG/WebP. Recommended size: 32x32.
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
