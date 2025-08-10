@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useStore } from "@/store/useAppStore";
-import type { Customer, LineItem } from "@/types";
+import type { Customer, LineItem, Quote } from "@/types";
 import { formatMoney as formatCurrency } from "@/utils/format";
 
 export interface CreateQuoteModalProps {
@@ -17,6 +18,7 @@ export interface CreateQuoteModalProps {
   onOpenChange: (open: boolean) => void;
   customers: Customer[];
   defaultTaxRate?: number;
+  onRequestSend?: (quote: Quote) => void;
 }
 
 interface QuoteDraft {
@@ -27,6 +29,10 @@ interface QuoteDraft {
   discount: number;
   notesInternal: string;
   terms: string;
+  paymentTerms: 'due_on_receipt' | 'net_15' | 'net_30' | 'net_60';
+  frequency: 'one-off' | 'bi-monthly' | 'monthly' | 'bi-yearly' | 'yearly';
+  depositRequired: boolean;
+  depositPercent: number; // 0..100
 }
 
 function calculateLineTotal(qty: number, unitPrice: number): number {
@@ -40,7 +46,7 @@ function calculateQuoteTotals(lineItems: LineItem[], taxRate: number, discount: 
   return { subtotal, taxAmount, total };
 }
 
-export default function CreateQuoteModal({ open, onOpenChange, customers, defaultTaxRate = 0.1 }: CreateQuoteModalProps) {
+export default function CreateQuoteModal({ open, onOpenChange, customers, defaultTaxRate = 0.1, onRequestSend }: CreateQuoteModalProps) {
   const store = useStore();
   const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState<QuoteDraft>({
@@ -51,6 +57,10 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
     discount: 0,
     notesInternal: "",
     terms: "",
+    paymentTerms: "due_on_receipt",
+    frequency: "one-off",
+    depositRequired: false,
+    depositPercent: 0,
   });
   const lineItemIdCounter = useRef(1);
 
@@ -65,6 +75,10 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
         discount: 0,
         notesInternal: "",
         terms: "",
+        paymentTerms: "due_on_receipt",
+        frequency: "one-off",
+        depositRequired: false,
+        depositPercent: 0,
       });
       lineItemIdCounter.current = 1;
     }
@@ -102,19 +116,19 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
     setDraft((prev) => ({ ...prev, lineItems: prev.lineItems.filter((i) => i.id !== id) }));
   }
 
-  async function saveQuote() {
+  async function createQuote(): Promise<Quote | null> {
     if (!draft.customerId) {
       toast.error("Please select a customer");
-      return;
+      return null;
     }
     if (draft.lineItems.length === 0) {
       toast.error("Please add at least one line item");
-      return;
+      return null;
     }
     setSaving(true);
     try {
       const { subtotal, total } = calculateQuoteTotals(draft.lineItems, draft.taxRate, draft.discount);
-      store.upsertQuote({
+      const saved = store.upsertQuote({
         businessId: store.business.id,
         customerId: draft.customerId,
         address: draft.address,
@@ -127,14 +141,32 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
         files: [],
         notesInternal: draft.notesInternal,
         terms: draft.terms,
+        paymentTerms: draft.paymentTerms,
+        frequency: draft.frequency,
+        depositRequired: draft.depositRequired,
+        depositPercent: draft.depositPercent,
       });
-      toast.success("Quote created successfully");
-      onOpenChange(false);
+      toast.success("Quote saved");
+      return saved;
     } catch (e) {
       console.error(e);
       toast.error("Failed to save quote");
+      return null;
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function saveQuote() {
+    const saved = await createQuote();
+    if (saved) onOpenChange(false);
+  }
+
+  async function saveAndOpenSend() {
+    const saved = await createQuote();
+    if (saved) {
+      onOpenChange(false);
+      onRequestSend?.(saved);
     }
   }
 
@@ -229,6 +261,46 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
             </div>
           </div>
 
+          <div className="grid grid-cols-3 gap-6">
+            <div className="space-y-2">
+              <Label>Payment Terms</Label>
+              <Select value={draft.paymentTerms} onValueChange={(value) => setDraft((prev) => ({ ...prev, paymentTerms: value as any }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select terms" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="due_on_receipt">Due on receipt</SelectItem>
+                  <SelectItem value="net_15">Net 15</SelectItem>
+                  <SelectItem value="net_30">Net 30</SelectItem>
+                  <SelectItem value="net_60">Net 60</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Frequency</Label>
+              <Select value={draft.frequency} onValueChange={(value) => setDraft((prev) => ({ ...prev, frequency: value as any }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select frequency" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="one-off">One-off</SelectItem>
+                  <SelectItem value="bi-monthly">Bi-monthly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="bi-yearly">Bi-yearly</SelectItem>
+                  <SelectItem value="yearly">Yearly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Deposit</Label>
+              <div className="flex items-center gap-3">
+                <Switch checked={draft.depositRequired} onCheckedChange={(checked) => setDraft((prev) => ({ ...prev, depositRequired: Boolean(checked) }))} />
+                <Input type="number" min={0} max={100} step={1} value={draft.depositPercent} onChange={(e) => setDraft((prev) => ({ ...prev, depositPercent: Math.max(0, Math.min(100, parseFloat(e.target.value) || 0)) }))} disabled={!draft.depositRequired} />
+                <span className="text-sm text-muted-foreground">% up front</span>
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="notes">Internal Notes</Label>
@@ -240,9 +312,14 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
             </div>
           </div>
 
-          <div className="flex justify-end gap-2">
-            <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
-            <Button onClick={saveQuote} disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
+          <div className="border-t pt-4 mt-2 flex items-center justify-between">
+            <div className="text-xs text-muted-foreground">Autosaves</div>
+            <div className="flex items-center gap-2">
+              <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
+              <Button variant="outline" onClick={saveAndOpenSend} disabled={saving}>Preview Email</Button>
+              <Button onClick={saveAndOpenSend} disabled={saving}>{saving ? "Saving..." : "Save & Send"}</Button>
+              <Button variant="ghost" onClick={saveQuote} disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
+            </div>
           </div>
         </div>
       </DialogContent>

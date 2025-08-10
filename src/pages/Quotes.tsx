@@ -215,6 +215,7 @@ export default function QuotesPage() {
         onOpenChange={setOpen}
         customers={customers as Customer[]}
         defaultTaxRate={store.business.taxRateDefault}
+        onRequestSend={(q) => setSendQuoteItem(q)}
       />
 
       <SendQuoteModal
