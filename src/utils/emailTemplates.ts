@@ -113,7 +113,7 @@ export function buildQuoteEmail({ businessName, businessLogoUrl, customerName, q
           </tr>
           <tr>
             <td style="padding:20px;">
-              <p style="margin:0 0 12px; color:#111827;">${customerName ? `Hi ${escapeHtml(customerName)},` : 'Hello,'} here is your quote.</p>
+              
 
               ${serviceAddressHtml}
               ${detailsHtml}
@@ -151,24 +151,18 @@ export function buildQuoteEmail({ businessName, businessLogoUrl, customerName, q
 
               <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-top:16px;">
                 <tr>
-                  <td align="left" style="padding-right:8px;">
+                  <td align="left">
                     <a href="${approveUrl}" style="display:inline-block; background:#111827; color:#f8fafc; padding:12px 16px; border-radius:8px; text-decoration:none; font-weight:600;">Approve</a>
-                  </td>
-                  <td align="left" style="padding-left:8px;">
+                    <span style="display:inline-block; width:8px;">&nbsp;</span>
                     <a href="${editUrl}" style="display:inline-block; background:#f1f5f9; color:#111827; padding:12px 16px; border-radius:8px; text-decoration:none; font-weight:600; border:1px solid #e5e7eb;">Request Edits</a>
                   </td>
                 </tr>
               </table>
 
-              <p style="margin:12px 0 0; font-size:14px;"><a href="${viewUrl}" style="color:#111827; text-decoration:underline;">View online</a></p>
+              
 
-              ${combinedTerms ? `
-              <div style="margin-top:16px; padding:12px; background:#f8fafc; border:1px solid #e5e7eb; border-radius:8px; color:#374151;">
-                <div style="font-weight:600; margin-bottom:6px; color:#111827;">Terms</div>
-                <div style="font-size:14px; line-height:1.5;">${combinedTerms}</div>
-              </div>` : ''}
 
-              <p style="margin-top:16px; font-size:12px; color:#6b7280;">If the buttons don't work, you can copy and paste these links into your browser.</p>
+              
             </td>
           </tr>
         </table>
