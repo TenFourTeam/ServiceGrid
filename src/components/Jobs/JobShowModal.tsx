@@ -142,15 +142,18 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
           </div>
         </div>
         <DrawerFooter>
-          <div className="flex items-center gap-2">
-            <ReschedulePopover job={job as Job} onDone={()=>{ /* no-op, realtime/subsequent fetch updates UI */ }} />
-            <Button onClick={() => updateJobStatus(job.id, job.status === 'Scheduled' ? 'In Progress' : 'Completed')}>Advance Status</Button>
-            {!(job as any).quoteId && (
-              <Button variant="outline" onClick={() => setPickerOpen(true)}>Link Quote</Button>
-            )}
-            <Button variant="outline" onClick={handleCreateInvoice}>Create Invoice</Button>
-            <Button variant="secondary" onClick={() => onOpenChange(false)}>Close</Button>
-            <Button variant="destructive" onClick={() => { deleteJob(job.id); onOpenChange(false); }}>Delete</Button>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Button onClick={() => updateJobStatus(job.id, job.status === 'Scheduled' ? 'In Progress' : 'Completed')}>Advance Status</Button>
+              <ReschedulePopover job={job as Job} onDone={()=>{ /* no-op, realtime/subsequent fetch updates UI */ }} />
+              {!(job as any).quoteId && (
+                <Button variant="outline" onClick={() => setPickerOpen(true)}>Link Quote</Button>
+              )}
+              <Button variant="outline" onClick={handleCreateInvoice}>Create Invoice</Button>
+            </div>
+            <div>
+              <Button variant="destructive" onClick={() => { deleteJob(job.id); onOpenChange(false); }}>Delete</Button>
+            </div>
           </div>
         </DrawerFooter>
 
