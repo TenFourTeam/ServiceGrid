@@ -62,29 +62,44 @@ export function LineItemsEditor({
                   {isInvalid(item) && !item.name.trim()}
                 </div>
                 <div className="col-span-3">
-                  <Label className="text-xs" htmlFor={`li-amount-${item.id}`}>$ Amount</Label>
-                  <Input
-                    id={`li-amount-${item.id}`}
-                    inputMode="decimal"
-                    type="text"
-                    value={amountInputs[item.id] ?? ''}
-                    aria-invalid={isInvalid(item) && (item.lineTotal ?? 0) <= 0}
-                    aria-describedby={isInvalid(item) && (item.lineTotal ?? 0) <= 0 ? `li-amount-${item.id}-error` : undefined}
-                    onChange={(e) => {
-                      const cents = parseCurrencyInput(e.target.value);
-                      setAmountInputs((prev) => ({ ...prev, [item.id]: formatCurrencyInputNoSymbol(cents) }));
-                      onUpdate(item.id, {
-                        lineTotal: cents,
-                        qty: 1,
-                        unitPrice: cents,
-                      });
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && isLast(item.id)) onAdd();
-                      if ((e.key === 'Backspace' || e.key === 'Delete') && (!e.currentTarget.value || e.currentTarget.value === '0')) onRemove(item.id);
-                    }}
-                    disabled={disabled}
-                  />
+                  <Label className="text-xs" htmlFor={`li-amount-${item.id}`}>Amount</Label>
+                  <div className="relative">
+                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                    <Input
+                      id={`li-amount-${item.id}`}
+                      inputMode="decimal"
+                      type="text"
+                      className="pl-7"
+                      placeholder="0.00"
+                      value={amountInputs[item.id] ?? ''}
+                      aria-invalid={isInvalid(item) && (item.lineTotal ?? 0) <= 0}
+                      aria-describedby={isInvalid(item) && (item.lineTotal ?? 0) <= 0 ? `li-amount-${item.id}-error` : undefined}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setAmountInputs((prev) => ({ ...prev, [item.id]: val }));
+                        const cents = parseCurrencyInput(val);
+                        onUpdate(item.id, {
+                          lineTotal: cents,
+                          qty: 1,
+                          unitPrice: cents,
+                        });
+                      }}
+                      onBlur={(e) => {
+                        const cents = parseCurrencyInput(e.currentTarget.value);
+                        setAmountInputs((prev) => ({ ...prev, [item.id]: formatCurrencyInputNoSymbol(cents) }));
+                        onUpdate(item.id, {
+                          lineTotal: cents,
+                          qty: 1,
+                          unitPrice: cents,
+                        });
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && isLast(item.id)) onAdd();
+                        if ((e.key === 'Backspace' || e.key === 'Delete') && (!e.currentTarget.value || e.currentTarget.value === '0')) onRemove(item.id);
+                      }}
+                      disabled={disabled}
+                    />
+                  </div>
                   {isInvalid(item) && (item.lineTotal ?? 0) <= 0}
                 </div>
                 <div className="col-span-1 flex justify-end">

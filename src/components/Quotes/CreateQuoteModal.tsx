@@ -376,8 +376,19 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
                     placeholder="0.00"
                     value={discountInput}
                     onChange={(e) => {
+                      const val = e.target.value;
+                      setDiscountInput(val);
                       setDraft((prev) => {
-                        const rawCents = parseCurrencyInput(e.target.value);
+                        const rawCents = parseCurrencyInput(val);
+                        const pre = calculateQuoteTotals(prev.lineItems, prev.taxRate, 0);
+                        const max = pre.subtotal + pre.taxAmount;
+                        const clamped = Math.max(0, Math.min(max, rawCents));
+                        return { ...prev, discount: clamped };
+                      });
+                    }}
+                    onBlur={() => {
+                      setDraft((prev) => {
+                        const rawCents = parseCurrencyInput(discountInput);
                         const pre = calculateQuoteTotals(prev.lineItems, prev.taxRate, 0);
                         const max = pre.subtotal + pre.taxAmount;
                         const clamped = Math.max(0, Math.min(max, rawCents));
