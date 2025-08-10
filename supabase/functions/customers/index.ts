@@ -246,7 +246,7 @@ serve(async (req) => {
     if (req.method === "POST") {
       const body = await req.json().catch(() => ({}));
       const name = (body.name || "").toString().trim();
-      const email = (body.email ?? null) ? String(body.email).trim() : null;
+      const email = (body.email ?? null) ? String(body.email).trim().toLowerCase() : null;
       const phone = (body.phone ?? null) ? String(body.phone).trim() : null;
       const address = (body.address ?? null) ? String(body.address).trim() : null;
       if (!name) return badRequest("Name is required");
@@ -274,7 +274,7 @@ serve(async (req) => {
         update.name = name;
       }
       if (Object.prototype.hasOwnProperty.call(body, 'email')) {
-        const email = (body.email ?? null) ? String(body.email).trim() : null;
+        const email = (body.email ?? null) ? String(body.email).trim().toLowerCase() : null;
         update.email = email;
       }
       if (Object.prototype.hasOwnProperty.call(body, 'phone')) {
