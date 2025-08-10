@@ -73,6 +73,19 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
         body: { to, subject: subject || defaultSubject, html: finalHtml, quote_id: quote.id, from_name: store.business.name },
       });
       if (error) throw error;
+      // Optimistically mark as Sent in React Query cache for immediate UI update
+      queryClient.setQueryData<{ rows: Array<{ id: string; status: string; updatedAt?: string }> }>(
+        ["supabase", "quotes"],
+        (old) => {
+          if (!old) return old;
+          const now = new Date().toISOString();
+          return {
+            rows: old.rows.map((r) =>
+              r.id === quote.id ? { ...r, status: "Sent", updatedAt: now } : r
+            ),
+          };
+        }
+      );
       store.sendQuote(quote.id);
       await queryClient.invalidateQueries({ queryKey: ["supabase", "quotes"] });
       toast.success("Quote sent successfully");
