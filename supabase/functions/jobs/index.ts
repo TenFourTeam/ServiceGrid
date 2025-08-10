@@ -193,7 +193,7 @@ serve(async (req) => {
       let q = supabase
         .from("jobs")
         .select(
-          "id, customer_id, quote_id, address, starts_at, ends_at, status, total, notes, photos, created_at, updated_at",
+          "id, customer_id, quote_id, address, title, starts_at, ends_at, status, total, notes, photos, created_at, updated_at",
         )
         .eq("owner_id", ownerId);
 
@@ -215,6 +215,7 @@ serve(async (req) => {
         customerId: r.customer_id,
         quoteId: r.quote_id,
         address: r.address,
+        title: r.title,
         startsAt: r.starts_at,
         endsAt: r.ends_at,
         status: r.status,
@@ -232,6 +233,7 @@ serve(async (req) => {
         quoteId: string;
         customerId: string;
         address?: string | null;
+        title?: string | null;
         startsAt?: string;
         endsAt?: string;
         status?: string;
@@ -264,6 +266,7 @@ serve(async (req) => {
           quote_id: quoteId,
           customer_id: (quote as any).customer_id,
           address: (quote as any).address ?? null,
+          title: body.title ?? null,
           starts_at: startsAt,
           ends_at: endsAt,
           status: body.status ?? "Scheduled",
@@ -276,7 +279,7 @@ serve(async (req) => {
         const { data: ins, error: insErr } = await supabase
           .from("jobs")
           .insert(insertPayload)
-          .select("id, customer_id, quote_id, address, starts_at, ends_at, status, total, notes, photos, created_at, updated_at")
+          .select("id, customer_id, quote_id, address, title, starts_at, ends_at, status, total, notes, photos, created_at, updated_at")
           .single();
         if (insErr) throw insErr;
 
@@ -287,6 +290,7 @@ serve(async (req) => {
           customerId: j.customer_id,
           quoteId: j.quote_id,
           address: j.address,
+          title: j.title,
           startsAt: j.starts_at,
           endsAt: j.ends_at,
           status: j.status,
@@ -317,6 +321,7 @@ serve(async (req) => {
         quote_id: null,
         customer_id: (customer as any).id,
         address: body.address ?? (customer as any).address ?? null,
+        title: body.title ?? null,
         starts_at: sched.startsAt,
         ends_at: sched.endsAt,
         status: body.status ?? "Scheduled",
@@ -329,7 +334,7 @@ serve(async (req) => {
       const { data: ins2, error: insErr2 } = await supabase
         .from("jobs")
         .insert(insertPayload2)
-        .select("id, customer_id, quote_id, address, starts_at, ends_at, status, total, notes, photos, created_at, updated_at")
+        .select("id, customer_id, quote_id, address, title, starts_at, ends_at, status, total, notes, photos, created_at, updated_at")
         .single();
       if (insErr2) throw insErr2;
 
@@ -340,6 +345,7 @@ serve(async (req) => {
         customerId: j2.customer_id,
         quoteId: j2.quote_id,
         address: j2.address,
+        title: j2.title,
         startsAt: j2.starts_at,
         endsAt: j2.ends_at,
         status: j2.status,
@@ -362,6 +368,7 @@ serve(async (req) => {
         endsAt: string | null;
         notes: string | null;
         photos: string[] | null;
+        title: string | null;
       }>;
 
       // Ensure job exists and belongs to owner
@@ -388,6 +395,7 @@ serve(async (req) => {
 
       if (body.notes !== undefined) upd.notes = body.notes;
       if (body.photos !== undefined) upd.photos = body.photos ?? [];
+      if (body.title !== undefined) upd.title = body.title;
 
       if (Object.keys(upd).length) {
         const { error: updErr } = await supabase.from("jobs").update(upd).eq("id", id).eq("owner_id", ownerId);
@@ -396,7 +404,7 @@ serve(async (req) => {
 
       const { data: j2, error: selErr } = await supabase
         .from("jobs")
-        .select("id, customer_id, quote_id, address, starts_at, ends_at, status, total, notes, photos, created_at, updated_at")
+        .select("id, customer_id, quote_id, address, title, starts_at, ends_at, status, total, notes, photos, created_at, updated_at")
         .eq("id", id)
         .eq("owner_id", ownerId)
         .single();
@@ -408,6 +416,7 @@ serve(async (req) => {
         customerId: j.customer_id,
         quoteId: j.quote_id,
         address: j.address,
+        title: j.title,
         startsAt: j.starts_at,
         endsAt: j.ends_at,
         status: j.status,

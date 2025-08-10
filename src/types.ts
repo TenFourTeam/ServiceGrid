@@ -85,6 +85,7 @@ export interface Job {
   quoteId?: ID;
   customerId: ID;
   address?: string;
+  title?: string;
   startsAt: ISODate;
   endsAt: ISODate;
   status: JobStatus;

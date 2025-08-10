@@ -256,6 +256,7 @@ export type Database = {
           recurrence: string | null
           starts_at: string | null
           status: Database["public"]["Enums"]["job_status"]
+          title: string | null
           total: number | null
           updated_at: string
         }
@@ -273,6 +274,7 @@ export type Database = {
           recurrence?: string | null
           starts_at?: string | null
           status?: Database["public"]["Enums"]["job_status"]
+          title?: string | null
           total?: number | null
           updated_at?: string
         }
@@ -290,6 +292,7 @@ export type Database = {
           recurrence?: string | null
           starts_at?: string | null
           status?: Database["public"]["Enums"]["job_status"]
+          title?: string | null
           total?: number | null
           updated_at?: string
         }

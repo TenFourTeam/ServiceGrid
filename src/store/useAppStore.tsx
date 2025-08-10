@@ -268,6 +268,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         quoteId: (j as any).quoteId ?? (j as any).estimateId, // backward compat
         customerId: j.customerId,
         address: j.address,
+        title: (j as any).title,
         startsAt: j.startsAt,
         endsAt: j.endsAt,
         status: (j.status as Job['status']) ?? 'Scheduled',

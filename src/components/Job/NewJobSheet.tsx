@@ -32,6 +32,7 @@ export function NewJobSheet() {
   const [startTime, setStartTime] = useState('09:00');
   const [durationMin, setDurationMin] = useState(60);
   const [address, setAddress] = useState('');
+  const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
   const [amount, setAmount] = useState<string>('');
 
@@ -97,6 +98,7 @@ export function NewJobSheet() {
         body: JSON.stringify({
           customerId,
           address: address || selectedCustomer?.address,
+          title: title || undefined,
           startsAt: start.toISOString(),
           endsAt: end.toISOString(),
           notes: notes || undefined,
@@ -116,6 +118,7 @@ export function NewJobSheet() {
         id: created?.id,
         customerId,
         address: address || selectedCustomer?.address,
+        title: title || undefined,
         startsAt: start.toISOString(),
         endsAt: end.toISOString(),
         notes: notes || undefined,
@@ -155,6 +158,7 @@ export function NewJobSheet() {
     setDurationMin(60);
     setAddress('');
     setNotes('');
+    setTitle('');
     setAmount('');
     setFiles([]);
     setPreviews([]);
@@ -176,6 +180,10 @@ export function NewJobSheet() {
         </SheetHeader>
 
         <div className="mt-4 space-y-4 animate-fade-in flex-1 min-h-0 overflow-y-auto pl-1 pr-1">
+          <div className="space-y-2">
+            <Label htmlFor="job-title">Job name</Label>
+            <Input id="job-title" placeholder="e.g. Spring cleanup" value={title} onChange={(e) => setTitle(e.target.value)} />
+          </div>
           {/* Customer */}
           <div className="space-y-2">
             <Label htmlFor="customer">Customer</Label>

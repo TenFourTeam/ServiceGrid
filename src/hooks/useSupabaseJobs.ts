@@ -7,6 +7,7 @@ export interface DbJobRow {
   customerId: string;
   quoteId?: string | null;
   address?: string | null;
+  title?: string | null;
   startsAt: string;
   endsAt: string;
   status: "Scheduled" | "In Progress" | "Completed";
@@ -43,6 +44,7 @@ export function useSupabaseJobs(opts?: { enabled?: boolean; refetchInterval?: nu
         customerId: row.customerId || row.customer_id,
         quoteId: row.quoteId ?? row.quote_id ?? null,
         address: row.address ?? null,
+        title: row.title ?? null,
         startsAt: row.startsAt || row.starts_at,
         endsAt: row.endsAt || row.ends_at,
         status: row.status,

@@ -9,6 +9,7 @@ import { getClerkTokenStrict } from "@/utils/clerkToken";
 import { toast } from "sonner";
 import ReschedulePopover from "@/components/WorkOrders/ReschedulePopover";
 import type { Job } from "@/types";
+import { Dialog, DialogContent, DialogHeader, DialogTitle as ModalTitle } from "@/components/ui/dialog";
 
 interface JobShowModalProps {
   open: boolean;
@@ -21,6 +22,8 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
   const [localNotes, setLocalNotes] = useState(job.notes ?? "");
   const notesTimer = useRef<number | null>(null);
   const { getToken } = useClerkAuth();
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerIndex, setViewerIndex] = useState(0);
 
   useEffect(() => {
     setLocalNotes(job.notes ?? "");

@@ -44,6 +44,7 @@ export function useSupabaseJobsRange(
         customerId: row.customerId || row.customer_id,
         quoteId: row.quoteId ?? row.quote_id ?? null,
         address: row.address ?? null,
+        title: row.title ?? null,
         startsAt: row.startsAt || row.starts_at,
         endsAt: row.endsAt || row.ends_at,
         status: row.status,
