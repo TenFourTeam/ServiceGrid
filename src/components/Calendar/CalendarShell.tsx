@@ -77,12 +77,7 @@ export default function CalendarShell({
         </main>
 
         {/* Right rail (search/shortcuts placeholder) */}
-        <aside className="hidden md:block">
-          <section className="rounded-lg border p-3">
-            <h2 className="text-sm font-medium">Search</h2>
-            <p className="text-xs opacity-70">Coming soon: search titles, customers, addresses.</p>
-          </section>
-        </aside>
+        
       </div>
     </div>;
 }
