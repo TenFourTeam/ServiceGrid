@@ -25,8 +25,14 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [optimisticStatus, setOptimisticStatus] = useState<Job['status'] | null>(null);
+  const [isAdvancing, setIsAdvancing] = useState(false);
   useEffect(() => {
     setLocalNotes(job.notes ?? "");
+  }, [job.id]);
+  useEffect(() => {
+    setOptimisticStatus(null);
+    setIsAdvancing(false);
   }, [job.id]);
 
   const customerName = useMemo(() => customers.find(c => c.id === job.customerId)?.name || "Customer", [customers, job.customerId]);
@@ -65,7 +71,16 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
   }
 
   async function handleAdvanceStatus() {
-    const nextStatus: Job['status'] = job.status === 'Scheduled' ? 'In Progress' : 'Completed';
+    const current = optimisticStatus ?? job.status;
+    if (current === 'Completed' || isAdvancing) return;
+    const nextStatus: Job['status'] = current === 'Scheduled' ? 'In Progress' : 'Completed';
+
+    const prevStatus = current;
+    setIsAdvancing(true);
+    setOptimisticStatus(nextStatus);
+    // Optimistically update global store so other views reflect immediately
+    updateJobStatus(job.id, nextStatus);
+
     try {
       const token = await getClerkTokenStrict(getToken);
       const r = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/jobs?id=${job.id}`, {
@@ -77,10 +92,14 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
         const txt = await r.text().catch(()=> '');
         throw new Error(`Failed to update job (${r.status}): ${txt}`);
       }
-      updateJobStatus(job.id, nextStatus);
       toast.success(`Status updated to ${nextStatus}`);
     } catch (e: any) {
+      // Revert on failure
+      setOptimisticStatus(prevStatus);
+      updateJobStatus(job.id, prevStatus);
       toast.error(e?.message || 'Failed to advance status');
+    } finally {
+      setIsAdvancing(false);
     }
   }
 
@@ -98,7 +117,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
             </div>
             <div>
               <div className="text-sm text-muted-foreground">Status</div>
-              <div className="font-medium">{job.status}</div>
+              <div className="font-medium">{(optimisticStatus ?? job.status)}</div>
             </div>
             <div>
               <div className="text-sm text-muted-foreground">Starts</div>
@@ -164,7 +183,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
         <DrawerFooter>
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <Button onClick={handleAdvanceStatus} disabled={job.status === 'Completed'}>Advance Status</Button>
+              <Button onClick={handleAdvanceStatus} disabled={(optimisticStatus ?? job.status) === 'Completed' || isAdvancing}>Advance Status</Button>
               <ReschedulePopover job={job as Job} onDone={()=>{ /* no-op, realtime/subsequent fetch updates UI */ }} />
               {!(job as any).quoteId && (
                 <Button variant="outline" onClick={() => setPickerOpen(true)}>Link Quote</Button>
