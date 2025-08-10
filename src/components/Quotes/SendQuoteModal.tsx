@@ -68,7 +68,7 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
         return `${introBlock}${hr}${html}`;
       })();
       const { error } = await supabase.functions.invoke("resend-send-email", {
-        body: { to, subject: subject || defaultSubject, html: finalHtml, quote_id: quote.id },
+        body: { to, subject: subject || defaultSubject, html: finalHtml, quote_id: quote.id, from_name: store.business.name },
       });
       if (error) throw error;
       store.sendQuote(quote.id);

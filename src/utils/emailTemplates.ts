@@ -128,8 +128,7 @@ export function buildQuoteEmail({ businessName, businessLogoUrl, customerName, q
               
 
               ${serviceAddressHtml}
-              ${detailsHtml}
-
+              
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin-top:8px;">
                 <thead>
                   <tr>
@@ -170,6 +169,8 @@ export function buildQuoteEmail({ businessName, businessLogoUrl, customerName, q
                   </td>
                 </tr>
               </table>
+
+              ${detailsHtml}
 
               
 
