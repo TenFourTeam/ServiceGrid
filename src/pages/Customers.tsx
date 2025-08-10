@@ -23,6 +23,19 @@ export default function CustomersPage() {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState({ name: '', email: '', phone: '', address: '' });
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  function openNew() {
+    setEditingId(null);
+    setDraft({ name: '', email: '', phone: '', address: '' });
+    setOpen(true);
+  }
+
+  function openEdit(c: any) {
+    setEditingId(c.id);
+    setDraft({ name: c.name || '', email: c.email || '', phone: (c as any).phone || '', address: c.address || '' });
+    setOpen(true);
+  }
 
   async function save() {
     if (!isSignedIn) {
@@ -37,33 +50,36 @@ export default function CustomersPage() {
     setSaving(true);
     try {
       const token = await getClerkTokenStrict(getToken);
+      const isEdit = !!editingId;
 
       const res = await fetch(`${SUPABASE_URL}/functions/v1/customers`, {
-        method: 'POST',
+        method: isEdit ? 'PATCH' : 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-          body: JSON.stringify({
-            name: draft.name.trim(),
-            email: draft.email.trim() || null,
-            phone: draft.phone.trim() || null,
-            address: draft.address.trim() || null,
-          }),
+        body: JSON.stringify({
+          ...(isEdit ? { id: editingId } : {}),
+          name: draft.name.trim(),
+          email: draft.email.trim() || null,
+          phone: draft.phone.trim() || null,
+          address: draft.address.trim() || null,
+        }),
       });
 
       if (!res.ok) {
         const txt = await res.text().catch(() => '');
-        throw new Error(txt || 'Failed to create customer');
+        throw new Error(txt || (isEdit ? 'Failed to update customer' : 'Failed to create customer'));
       }
 
-      toast.success('Customer created');
+      toast.success(isEdit ? 'Customer updated' : 'Customer created');
       setOpen(false);
+      setEditingId(null);
       setDraft({ name: '', email: '', phone: '', address: '' });
       await queryClient.invalidateQueries({ queryKey: ['supabase', 'customers'] });
     } catch (e: any) {
-      console.error('[CustomersPage] create customer failed:', e);
-      toast.error(e?.message || 'Failed to create customer');
+      console.error('[CustomersPage] save customer failed:', e);
+      toast.error(e?.message || 'Failed to save customer');
     } finally {
       setSaving(false);
     }
@@ -73,7 +89,7 @@ export default function CustomersPage() {
     <AppLayout title="Customers">
       <section className="space-y-4">
         <div className="flex justify-end">
-          <Button onClick={() => setOpen(true)}>New Customer</Button>
+          <Button onClick={() => openNew()}>New Customer</Button>
         </div>
 
         <Card>
@@ -104,7 +120,15 @@ export default function CustomersPage() {
                     </TableRow>
                   ) : (
                     rows.map((c) => (
-                      <TableRow key={c.id}>
+                      <TableRow
+                        key={c.id}
+                        className="cursor-pointer hover:bg-muted"
+                        onClick={() => openEdit(c)}
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') openEdit(c);
+                        }}
+                      >
                         <TableCell>{c.name}</TableCell>
                         <TableCell>{c.email ?? ''}</TableCell>
                         <TableCell>{(c as any).phone ?? ''}</TableCell>
@@ -122,7 +146,7 @@ export default function CustomersPage() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>New Customer</DialogTitle>
+            <DialogTitle>{editingId ? 'Edit Customer' : 'New Customer'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <Input

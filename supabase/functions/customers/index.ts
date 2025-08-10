@@ -262,6 +262,44 @@ serve(async (req) => {
       return json({ ok: true, id: data?.id }, { status: 201 });
     }
 
+    if (req.method === "PATCH") {
+      const body = await req.json().catch(() => ({}));
+      const id = (body.id || "").toString().trim();
+      if (!id) return badRequest("id is required");
+
+      const update: Record<string, string | null> = {};
+      if (Object.prototype.hasOwnProperty.call(body, 'name')) {
+        const name = (body.name || "").toString().trim();
+        if (!name) return badRequest("Name is required");
+        update.name = name;
+      }
+      if (Object.prototype.hasOwnProperty.call(body, 'email')) {
+        const email = (body.email ?? null) ? String(body.email).trim() : null;
+        update.email = email;
+      }
+      if (Object.prototype.hasOwnProperty.call(body, 'phone')) {
+        const phone = (body.phone ?? null) ? String(body.phone).trim() : null;
+        update.phone = phone;
+      }
+      if (Object.prototype.hasOwnProperty.call(body, 'address')) {
+        const address = (body.address ?? null) ? String(body.address).trim() : null;
+        update.address = address;
+      }
+      if (Object.keys(update).length === 0) return badRequest("No fields to update");
+
+      const { data, error } = await supabase
+        .from("customers")
+        .update(update)
+        .eq("id", id)
+        .eq("owner_id", ownerId)
+        .select("id")
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return badRequest("Customer not found", 404);
+      return json({ ok: true, id: data.id });
+    }
+
     return badRequest("Method not allowed", 405);
   } catch (e) {
     console.error("[customers]", e);
