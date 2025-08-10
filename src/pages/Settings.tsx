@@ -138,10 +138,6 @@ export default function SettingsPage() {
               <Label>Phone</Label>
               <Input value={store.business.phone} onChange={(e)=>store.setBusiness({ phone: e.target.value })} />
             </div>
-            <div>
-              <Label>Default Tax Rate</Label>
-              <Input type="number" step="0.01" value={store.business.taxRateDefault} onChange={(e)=>store.setBusiness({ taxRateDefault: Number(e.target.value) })} />
-            </div>
           </CardContent>
         </Card>
         <Card>
@@ -155,7 +151,9 @@ export default function SettingsPage() {
                   <Input type="file" accept="image/png,image/svg+xml,image/webp,image/jpeg" onChange={(e)=>setDarkFile(e.target.files?.[0] || null)} />
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button onClick={uploadLogoDark} disabled={uploadingDark || !darkFile}>{uploadingDark ? 'Uploading…' : 'Upload dark icon'}</Button>
+                      <span className="inline-flex">
+                        <Button onClick={uploadLogoDark} disabled={uploadingDark || !darkFile}>{uploadingDark ? 'Uploading…' : 'Upload dark icon'}</Button>
+                      </span>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-xs">
                       Used across the app (sidebar, headers). Use PNG/SVG/WebP. Recommended size: 32x32.
@@ -167,20 +165,24 @@ export default function SettingsPage() {
 
             <div className="space-y-2">
               <Label>Light Icon</Label>
-              <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4">
+              <div className="shrink-0 rounded-lg bg-muted p-2 border border-border shadow-sm">
                 <BusinessLogo size={40} src={store.business.lightLogoUrl} alt="Light icon preview" />
-                <div className="flex-1 grid gap-2 sm:grid-cols-[1fr_auto]">
-                  <Input type="file" accept="image/png,image/svg+xml,image/webp,image/jpeg" onChange={(e)=>setLightFile(e.target.files?.[0] || null)} />
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button onClick={uploadLogoLight} disabled={uploadingLight || !lightFile}>{uploadingLight ? 'Uploading…' : 'Upload light icon'}</Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-xs">
-                      Used in emails and email previews. Use a white/light version. Use PNG/SVG/WebP. Recommended size: 32x32.
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
               </div>
+              <div className="flex-1 grid gap-2 sm:grid-cols-[1fr_auto]">
+                <Input type="file" accept="image/png,image/svg+xml,image/webp,image/jpeg" onChange={(e)=>setLightFile(e.target.files?.[0] || null)} />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex">
+                      <Button onClick={uploadLogoLight} disabled={uploadingLight || !lightFile}>{uploadingLight ? 'Uploading…' : 'Upload light icon'}</Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-xs">
+                    Used in emails and email previews. Use a white/light version. Use PNG/SVG/WebP. Recommended size: 32x32.
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            </div>
             </div>
           </CardContent>
         </Card>

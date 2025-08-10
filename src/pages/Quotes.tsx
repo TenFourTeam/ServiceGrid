@@ -18,7 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { Trash2, Plus, Send, Download, FileText, Briefcase } from 'lucide-react';
+import { Trash2, Plus, Send, Download, DollarSign, Wrench } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatMoney as formatCurrency } from '@/utils/format';
 import type { Customer, LineItem, Quote, QuoteStatus } from '@/types';
@@ -271,7 +271,7 @@ export default function QuotesPage() {
   }
 }}
                               >
-                                <Briefcase className="h-4 w-4" />
+                                <Wrench className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>Create Work Order</TooltipContent>
@@ -344,7 +344,7 @@ export default function QuotesPage() {
   }
 }}
                               >
-                                <FileText className="h-4 w-4" />
+                                <DollarSign className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>Create Invoice</TooltipContent>
