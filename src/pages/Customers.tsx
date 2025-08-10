@@ -9,9 +9,7 @@ import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { getClerkTokenStrict } from "@/utils/clerkToken";
-
-const SUPABASE_URL = "https://ijudkzqfriazabiosnvb.supabase.co";
+import { edgeFetchJson } from "@/utils/edgeApi";
 
 export default function CustomersPage() {
   const { isSignedIn, getToken } = useClerkAuth();
@@ -49,28 +47,18 @@ export default function CustomersPage() {
 
     setSaving(true);
     try {
-      const token = await getClerkTokenStrict(getToken);
       const isEdit = !!editingId;
 
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/customers`, {
+      await edgeFetchJson("customers", getToken, {
         method: isEdit ? 'PATCH' : 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+        body: {
           ...(isEdit ? { id: editingId } : {}),
           name: draft.name.trim(),
           email: draft.email.trim() || null,
           phone: draft.phone.trim() || null,
           address: draft.address.trim() || null,
-        }),
+        },
       });
-
-      if (!res.ok) {
-        const txt = await res.text().catch(() => '');
-        throw new Error(txt || (isEdit ? 'Failed to update customer' : 'Failed to create customer'));
-      }
 
       toast.success(isEdit ? 'Customer updated' : 'Customer created');
       setOpen(false);

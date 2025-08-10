@@ -2,8 +2,7 @@ import React, { useEffect, useState } from "react";
 import App from "./App";
 import { ClerkRuntimeProvider } from "./components/Auth/ClerkRuntime";
 import LoadingScreen from "./components/LoadingScreen";
-const SUPABASE_URL = "https://ijudkzqfriazabiosnvb.supabase.co";
-
+import { edgePublicJson } from "@/utils/edgeApi";
 export default function ClerkBootstrap() {
   const [pk, setPk] = useState<string | null>(null);
   const [ClerkProviderComp, setClerkProviderComp] = useState<any>(null);
@@ -13,9 +12,7 @@ export default function ClerkBootstrap() {
     let cancelled = false;
     const run = async () => {
       try {
-        const r = await fetch(`${SUPABASE_URL}/functions/v1/clerk-publishable-key`);
-        if (!r.ok) throw new Error(`Failed to fetch Clerk key (${r.status})`);
-        const data = await r.json();
+        const data = await edgePublicJson("clerk-publishable-key");
         if (!data.publishableKey) throw new Error("No publishableKey in response");
         if (cancelled) return;
         setPk(data.publishableKey);

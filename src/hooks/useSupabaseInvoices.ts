@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
-import { getClerkTokenStrict } from "@/utils/clerkToken";
-
+import { edgeFetchJson } from "@/utils/edgeApi";
 export interface DbInvoiceRow {
   id: string;
   number: string;
@@ -26,15 +25,8 @@ export function useSupabaseInvoices(opts?: { enabled?: boolean }) {
     queryKey: ["supabase", "invoices"],
     enabled,
     queryFn: async () => {
-      const token = await getClerkTokenStrict(getToken);
-      const r = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/invoices`, {
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      });
-      if (!r.ok) {
-        const txt = await r.text().catch(() => "");
-        throw new Error(`Failed to load invoices (${r.status}): ${txt}`);
-      }
-      const data = await r.json();
+      const data = await edgeFetchJson("invoices", getToken);
+
       const rows: DbInvoiceRow[] = (data?.rows || []).map((row: any) => ({
         id: row.id,
         number: row.number,

@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Input } from "@/components/ui/input";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { getClerkTokenStrict } from "@/utils/clerkToken";
+import { edgeFetchJson } from "@/utils/edgeApi";
 
 interface CustomerComboboxProps {
   customers: Customer[];
@@ -36,15 +36,10 @@ export function CustomerCombobox({ customers, value, onChange, placeholder = "Se
     if (!name.trim()) return;
     setCreating(true);
     try {
-      const token = await getClerkTokenStrict(getToken);
-      const SUPABASE_URL = "https://ijudkzqfriazabiosnvb.supabase.co";
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/customers`, {
+      const data = await edgeFetchJson("customers", getToken, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), email: email.trim() || null, address: address.trim() || null }),
+        body: { name: name.trim(), email: email.trim() || null, address: address.trim() || null },
       });
-      if (!res.ok) throw new Error(`Failed to create customer (${res.status})`);
-      const data = await res.json();
       const newId = data?.customer?.id || data?.id || data?.customer_id;
       const newName = data?.customer?.name || name.trim();
       if (newId) {

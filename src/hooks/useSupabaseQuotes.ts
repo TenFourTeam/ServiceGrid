@@ -1,8 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import type { Tables } from "@/integrations/supabase/types";
-import { getClerkTokenStrict } from "@/utils/clerkToken";
-
+import { edgeFetchJson } from "@/utils/edgeApi";
 
 export interface DbQuoteRow {
   id: string;
@@ -25,21 +24,8 @@ export function useSupabaseQuotes(opts?: { enabled?: boolean }) {
     queryKey: ["supabase", "quotes"],
     enabled,
     queryFn: async () => {
-      const token = await getClerkTokenStrict(getToken);
+      const data = await edgeFetchJson("quotes", getToken);
 
-      const r = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/quotes`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!r.ok) {
-        const txt = await r.text().catch(() => "");
-        throw new Error(`Failed to load quotes (${r.status}): ${txt}`);
-      }
-
-      const data = await r.json();
       const rows: DbQuoteRow[] = (data?.rows || []).map((row: any) => ({
         id: row.id,
         number: row.number,

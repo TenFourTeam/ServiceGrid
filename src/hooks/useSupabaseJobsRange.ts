@@ -20,25 +20,12 @@ export function useSupabaseJobsRange(
     ],
     enabled,
     queryFn: async () => {
-      const token = await getClerkTokenStrict(getToken);
       const params = new URLSearchParams({
         start: range.start.toISOString(),
         end: range.end.toISOString(),
       });
-      const r = await fetch(
-        `https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/jobs?${params.toString()}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      if (!r.ok) {
-        const txt = await r.text().catch(() => "");
-        throw new Error(`Failed to load jobs (${r.status}): ${txt}`);
-      }
-      const data = await r.json();
+      const data = await edgeFetchJson(`jobs?${params.toString()}`, getToken);
+
       const rows: DbJobRow[] = (data?.rows || []).map((row: any) => ({
         id: row.id,
         customerId: row.customerId || row.customer_id,

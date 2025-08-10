@@ -7,8 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useHasClerk } from "@/components/Auth/ClerkRuntime";
 import { getClerkTokenStrict } from "@/utils/clerkToken";
-
-const SUPABASE_URL = "https://ijudkzqfriazabiosnvb.supabase.co";
+import { edgeFetchJson } from "@/utils/edgeApi";
 
 export default function ClerkAuthPage() {
   const hasClerk = useHasClerk();
@@ -39,11 +38,7 @@ function ClerkAuthInner({ redirectTarget }: { redirectTarget: string }) {
     try {
       setLoading(true);
       setWho("");
-      const token = await getClerkTokenStrict(getToken);
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/clerk-whoami`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
+      const data = await edgeFetchJson("clerk-whoami", getToken);
       setWho(JSON.stringify(data, null, 2));
     } catch (e: any) {
       setWho(`Error: ${e.message || String(e)}`);
