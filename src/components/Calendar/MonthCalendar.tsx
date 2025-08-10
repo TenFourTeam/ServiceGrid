@@ -60,8 +60,8 @@ export default function MonthCalendar({ date, onDateChange }: { date: Date; onDa
                 {visible.map((j) => {
                   const t = new Date(j.startsAt);
                   return (
-                    <li key={j.id} className="truncate rounded border px-2 py-1 text-xs bg-background/60">
-                      <span className="mr-2 inline-block h-2 w-2 rounded-full bg-primary align-middle" aria-hidden="true" />
+                    <li key={j.id} className={`truncate rounded px-2 py-1 text-xs border bg-background/60 ${j.status === 'Completed' ? 'border-success bg-success/5' : j.status === 'In Progress' ? 'border-2 border-primary' : 'border-primary/50'}`}>
+                      <span className={`mr-2 inline-block h-2 w-2 rounded-full align-middle ${j.status === 'Completed' ? 'bg-success' : 'bg-primary'}`} aria-hidden="true" />
                       <span className="font-medium">
                         {t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                       </span>

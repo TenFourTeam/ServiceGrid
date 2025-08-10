@@ -35,6 +35,7 @@ export function WeekCalendar({
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pendingSlot, setPendingSlot] = useState<{ start: Date; end: Date } | null>(null);
   const notesTimer = useRef<number | null>(null);
+  const [highlightJobId, setHighlightJobId] = useState<string | null>(null);
   const [weekStart, setWeekStart] = useState(() => {
     const initial = (() => {
       if (selectedJobId) {
@@ -215,6 +216,8 @@ const dayRefs = useRef<HTMLDivElement[]>([]);
       } as Job;
       upsertJob(created);
       setActiveJob(created);
+      setHighlightJobId(created.id);
+      setTimeout(() => setHighlightJobId(null), 3000);
       setPickerOpen(false);
       setPendingSlot(null);
       toast.success('Work order created');
@@ -476,8 +479,8 @@ function onDragStart(e: React.PointerEvent, job: Job) {
               const top = startMin / TOTAL_MIN * 100;
               const height = Math.max(8, (endMin - startMin) / TOTAL_MIN * 100);
               const customer = customers.find(c => c.id === j.customerId)?.name ?? 'Customer';
-              const color = j.status === 'Scheduled' ? 'bg-primary/10 border-primary' : j.status === 'In Progress' ? 'bg-accent/10 border-accent' : 'bg-muted/30 border-muted-foreground';
-              return <div key={j.id} className={`absolute left-2 right-2 border rounded-md p-2 text-xs select-none cursor-grab active:cursor-grabbing ${color}`} style={{
+              const color = j.status === 'Scheduled' ? 'bg-primary/10 border-primary' : j.status === 'In Progress' ? 'bg-background border-2 border-primary' : 'bg-success/10 border-success';
+              return <div key={j.id} className={`absolute left-2 right-2 border rounded-md p-2 text-xs select-none cursor-grab active:cursor-grabbing ${color} ${highlightJobId === j.id ? 'new-job-highlight ring-2 ring-success' : ''}`} style={{
                 top: `${top}%`,
                 height: `${height}%`
               }} onPointerDown={e => onDragStart(e, j)}>

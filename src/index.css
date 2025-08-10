@@ -32,10 +32,13 @@ All colors MUST be HSL.
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
+    /* Success semantic tokens */
+    --success: 142.1 70.6% 45.3%;
+    --success-foreground: 144 61% 96%;
+
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
-
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
@@ -121,5 +124,15 @@ All colors MUST be HSL.
   .attention-ring {
     position: relative;
     animation: attention-ring 2.4s ease-out infinite;
+  }
+
+  @keyframes new-job-highlight {
+    0% { box-shadow: 0 0 0 0 hsl(var(--success) / 0.45); }
+    60% { box-shadow: 0 0 0 10px hsl(var(--success) / 0); }
+    100% { box-shadow: 0 0 0 0 hsl(var(--success) / 0); }
+  }
+
+  .new-job-highlight {
+    animation: new-job-highlight 1.5s ease-out 2;
   }
 }
