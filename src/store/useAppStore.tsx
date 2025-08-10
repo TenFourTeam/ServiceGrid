@@ -274,6 +274,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         recurrence: j.recurrence,
         notes: j.notes,
         total: j.total,
+        photos: (j as any).photos ?? [],
         createdAt: j.createdAt ?? nowISO(),
         updatedAt: nowISO(),
       };

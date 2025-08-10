@@ -193,7 +193,7 @@ serve(async (req) => {
       let q = supabase
         .from("jobs")
         .select(
-          "id, customer_id, quote_id, address, starts_at, ends_at, status, total, created_at, updated_at",
+          "id, customer_id, quote_id, address, starts_at, ends_at, status, total, notes, photos, created_at, updated_at",
         )
         .eq("owner_id", ownerId);
 
@@ -219,6 +219,8 @@ serve(async (req) => {
         endsAt: r.ends_at,
         status: r.status,
         total: r.total,
+        notes: r.notes,
+        photos: r.photos ?? [],
         createdAt: r.created_at,
         updatedAt: r.updated_at,
       }));
@@ -228,58 +230,124 @@ serve(async (req) => {
     if (req.method === "POST") {
       const body = (await req.json().catch(() => ({}))) as Partial<{
         quoteId: string;
+        customerId: string;
+        address?: string | null;
         startsAt?: string;
         endsAt?: string;
+        status?: string;
+        total?: number | null;
+        notes?: string | null;
+        photos?: string[];
         recurrence?: string | null;
       }>;
-      const quoteId = (body.quoteId || "").toString();
-      if (!quoteId) return badRequest("quoteId is required");
 
-      const { data: quote, error: qErr } = await supabase
-        .from("quotes")
-        .select("id, owner_id, business_id, customer_id, address, total")
-        .eq("id", quoteId)
+      // Branch 1: Create from quote
+      if (body.quoteId) {
+        const quoteId = (body.quoteId || "").toString();
+        if (!quoteId) return badRequest("quoteId is required");
+
+        const { data: quote, error: qErr } = await supabase
+          .from("quotes")
+          .select("id, owner_id, business_id, customer_id, address, total")
+          .eq("id", quoteId)
+          .eq("owner_id", ownerId)
+          .single();
+        if (qErr) return badRequest("Quote not found", 404);
+
+        const { startsAt, endsAt } = body.startsAt && body.endsAt
+          ? { startsAt: body.startsAt, endsAt: body.endsAt }
+          : defaultSchedule();
+
+        const insertPayload: any = {
+          owner_id: ownerId,
+          business_id: (quote as any).business_id,
+          quote_id: quoteId,
+          customer_id: (quote as any).customer_id,
+          address: (quote as any).address ?? null,
+          starts_at: startsAt,
+          ends_at: endsAt,
+          status: body.status ?? "Scheduled",
+          total: (quote as any).total,
+          recurrence: body.recurrence ?? null,
+          notes: body.notes ?? null,
+          photos: body.photos ?? [],
+        };
+
+        const { data: ins, error: insErr } = await supabase
+          .from("jobs")
+          .insert(insertPayload)
+          .select("id, customer_id, quote_id, address, starts_at, ends_at, status, total, notes, photos, created_at, updated_at")
+          .single();
+        if (insErr) throw insErr;
+
+        const j = ins as any;
+        console.log("[jobs][POST] created from quote", { ownerId, jobId: j.id, quoteId });
+        return json({ ok: true, job: {
+          id: j.id,
+          customerId: j.customer_id,
+          quoteId: j.quote_id,
+          address: j.address,
+          startsAt: j.starts_at,
+          endsAt: j.ends_at,
+          status: j.status,
+          total: j.total,
+          notes: j.notes,
+          photos: j.photos ?? [],
+          createdAt: j.created_at,
+          updatedAt: j.updated_at,
+        } }, { status: 201 });
+      }
+
+      // Branch 2: Ad-hoc job creation (no quote)
+      if (!body.customerId) return badRequest("customerId is required");
+
+      const { data: customer, error: custErr } = await supabase
+        .from("customers")
+        .select("id, owner_id, business_id, address")
+        .eq("id", body.customerId)
         .eq("owner_id", ownerId)
         .single();
-      if (qErr) return badRequest("Quote not found", 404);
+      if (custErr) return badRequest("Customer not found", 404);
 
-      const { startsAt, endsAt } = body.startsAt && body.endsAt
-        ? { startsAt: body.startsAt, endsAt: body.endsAt }
-        : defaultSchedule();
+      const sched = body.startsAt && body.endsAt ? { startsAt: body.startsAt, endsAt: body.endsAt } : defaultSchedule();
 
-      const insertPayload: any = {
+      const insertPayload2: any = {
         owner_id: ownerId,
-        business_id: (quote as any).business_id,
-        quote_id: quoteId,
-        customer_id: (quote as any).customer_id,
-        address: (quote as any).address ?? null,
-        starts_at: startsAt,
-        ends_at: endsAt,
-        status: "Scheduled",
-        total: (quote as any).total,
+        business_id: (customer as any).business_id,
+        quote_id: null,
+        customer_id: (customer as any).id,
+        address: body.address ?? (customer as any).address ?? null,
+        starts_at: sched.startsAt,
+        ends_at: sched.endsAt,
+        status: body.status ?? "Scheduled",
+        total: body.total ?? null,
         recurrence: body.recurrence ?? null,
+        notes: body.notes ?? null,
+        photos: body.photos ?? [],
       };
 
-      const { data: ins, error: insErr } = await supabase
+      const { data: ins2, error: insErr2 } = await supabase
         .from("jobs")
-        .insert(insertPayload)
-        .select("id, customer_id, quote_id, address, starts_at, ends_at, status, total, created_at, updated_at")
+        .insert(insertPayload2)
+        .select("id, customer_id, quote_id, address, starts_at, ends_at, status, total, notes, photos, created_at, updated_at")
         .single();
-      if (insErr) throw insErr;
+      if (insErr2) throw insErr2;
 
-      const j = ins as any;
-      console.log("[jobs][POST] created", { ownerId, jobId: j.id, quoteId });
+      const j2 = ins2 as any;
+      console.log("[jobs][POST] created ad-hoc", { ownerId, jobId: j2.id });
       return json({ ok: true, job: {
-        id: j.id,
-        customerId: j.customer_id,
-        quoteId: j.quote_id,
-        address: j.address,
-        startsAt: j.starts_at,
-        endsAt: j.ends_at,
-        status: j.status,
-        total: j.total,
-        createdAt: j.created_at,
-        updatedAt: j.updated_at,
+        id: j2.id,
+        customerId: j2.customer_id,
+        quoteId: j2.quote_id,
+        address: j2.address,
+        startsAt: j2.starts_at,
+        endsAt: j2.ends_at,
+        status: j2.status,
+        total: j2.total,
+        notes: j2.notes,
+        photos: j2.photos ?? [],
+        createdAt: j2.created_at,
+        updatedAt: j2.updated_at,
       } }, { status: 201 });
     }
 
@@ -293,6 +361,7 @@ serve(async (req) => {
         startsAt: string | null;
         endsAt: string | null;
         notes: string | null;
+        photos: string[] | null;
       }>;
 
       // Ensure job exists and belongs to owner
@@ -318,6 +387,7 @@ serve(async (req) => {
       }
 
       if (body.notes !== undefined) upd.notes = body.notes;
+      if (body.photos !== undefined) upd.photos = body.photos ?? [];
 
       if (Object.keys(upd).length) {
         const { error: updErr } = await supabase.from("jobs").update(upd).eq("id", id).eq("owner_id", ownerId);
@@ -326,7 +396,7 @@ serve(async (req) => {
 
       const { data: j2, error: selErr } = await supabase
         .from("jobs")
-        .select("id, customer_id, quote_id, address, starts_at, ends_at, status, total, created_at, updated_at")
+        .select("id, customer_id, quote_id, address, starts_at, ends_at, status, total, notes, photos, created_at, updated_at")
         .eq("id", id)
         .eq("owner_id", ownerId)
         .single();
@@ -342,6 +412,8 @@ serve(async (req) => {
         endsAt: j.ends_at,
         status: j.status,
         total: j.total,
+        notes: j.notes,
+        photos: j.photos ?? [],
         createdAt: j.created_at,
         updatedAt: j.updated_at,
       } });

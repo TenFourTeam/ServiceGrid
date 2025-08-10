@@ -49,6 +49,7 @@ export function useSupabaseJobsRange(
         status: row.status,
         total: row.total ?? null,
         notes: row.notes ?? null,
+        photos: Array.isArray(row.photos) ? row.photos : [],
         createdAt: row.createdAt || row.created_at,
         updatedAt: row.updatedAt || row.updated_at,
       }));

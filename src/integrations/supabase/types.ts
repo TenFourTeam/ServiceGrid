@@ -251,6 +251,7 @@ export type Database = {
           id: string
           notes: string | null
           owner_id: string
+          photos: Json
           quote_id: string | null
           recurrence: string | null
           starts_at: string | null
@@ -267,6 +268,7 @@ export type Database = {
           id?: string
           notes?: string | null
           owner_id: string
+          photos?: Json
           quote_id?: string | null
           recurrence?: string | null
           starts_at?: string | null
@@ -283,6 +285,7 @@ export type Database = {
           id?: string
           notes?: string | null
           owner_id?: string
+          photos?: Json
           quote_id?: string | null
           recurrence?: string | null
           starts_at?: string | null

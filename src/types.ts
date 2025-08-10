@@ -91,6 +91,7 @@ export interface Job {
   recurrence?: 'biweekly';
   notes?: string;
   total?: Money;
+  photos?: string[]; // public URLs for job photos
   createdAt: ISODate;
   updatedAt: ISODate;
 }

@@ -15,6 +15,7 @@ import { getClerkTokenStrict } from '@/utils/clerkToken';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import ReschedulePopover from '@/components/WorkOrders/ReschedulePopover';
+import JobShowModal from '@/components/Jobs/JobShowModal';
 
 function useFilteredJobs() {
   const { jobs, customers, invoices } = useStore();
@@ -74,7 +75,7 @@ function StatusChip({ status }: { status: Job['status'] }) {
   return <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${styles}`}>{status}</span>;
 }
 
-function WorkOrderRow({ job, onRescheduled, onComplete, onInvoice, onViewInvoice, onNavigate, uninvoiced, customerName, when }: {
+function WorkOrderRow({ job, onRescheduled, onComplete, onInvoice, onViewInvoice, onNavigate, uninvoiced, customerName, when, onOpen }: {
   job: Job;
   onRescheduled: () => void | Promise<void>;
   onComplete: () => void;
@@ -84,9 +85,10 @@ function WorkOrderRow({ job, onRescheduled, onComplete, onInvoice, onViewInvoice
   uninvoiced: boolean;
   customerName: string;
   when: string;
+  onOpen: () => void;
 }) {
   return (
-    <div className="p-3 border rounded-md bg-card shadow-sm">
+    <div onClick={onOpen} className="p-3 border rounded-md bg-card shadow-sm cursor-pointer hover:bg-accent/30 transition-colors">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -104,10 +106,12 @@ function WorkOrderRow({ job, onRescheduled, onComplete, onInvoice, onViewInvoice
         </div>
       </div>
       <div className="mt-3 grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
-        <ReschedulePopover job={job} onDone={onRescheduled} />
-        <Button size="sm" onClick={onComplete} disabled={job.status === 'Completed'}>Complete</Button>
-        {job.status==='Completed' && uninvoiced && <Button size="sm" onClick={onInvoice}>Invoice</Button>}
-        <Button size="sm" variant="outline" onClick={onNavigate}>Navigate</Button>
+        <div onClick={(e)=>e.stopPropagation()}>
+          <ReschedulePopover job={job} onDone={onRescheduled} />
+        </div>
+        <Button size="sm" onClick={(e)=>{ e.stopPropagation(); onComplete(); }} disabled={job.status === 'Completed'}>Complete</Button>
+        {job.status==='Completed' && uninvoiced && <Button size="sm" onClick={(e)=>{ e.stopPropagation(); onInvoice(); }}>Invoice</Button>}
+        <Button size="sm" variant="outline" onClick={(e)=>{ e.stopPropagation(); onNavigate(); }}>Navigate</Button>
       </div>
     </div>
   );
@@ -120,6 +124,7 @@ export default function WorkOrdersPage() {
   const { filter, setFilter, q, setQ, sort, setSort, jobs, counts, hasInvoice } = useFilteredJobs();
   const navigate = useNavigate();
   const lastSyncKeyRef = useRef<string | null>(null);
+  const [activeJob, setActiveJob] = useState<Job | null>(null);
 
   useEffect(() => {
     if (!isSignedIn || !dbJobs?.rows) return;

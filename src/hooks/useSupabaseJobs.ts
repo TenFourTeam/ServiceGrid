@@ -12,6 +12,7 @@ export interface DbJobRow {
   status: "Scheduled" | "In Progress" | "Completed";
   total?: number | null;
   notes?: string | null;
+  photos?: string[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -47,6 +48,7 @@ export function useSupabaseJobs(opts?: { enabled?: boolean; refetchInterval?: nu
         status: row.status,
         total: row.total ?? null,
         notes: row.notes ?? null,
+        photos: Array.isArray(row.photos) ? row.photos : [],
         createdAt: row.createdAt || row.created_at,
         updatedAt: row.updatedAt || row.updated_at,
       }));
