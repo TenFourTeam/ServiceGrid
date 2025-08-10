@@ -326,6 +326,8 @@ export type Database = {
           error_code: string | null
           error_message: string | null
           id: string
+          invoice_id: string | null
+          job_id: string | null
           provider_message_id: string | null
           quote_id: string | null
           request_hash: string
@@ -340,6 +342,8 @@ export type Database = {
           error_code?: string | null
           error_message?: string | null
           id?: string
+          invoice_id?: string | null
+          job_id?: string | null
           provider_message_id?: string | null
           quote_id?: string | null
           request_hash: string
@@ -354,6 +358,8 @@ export type Database = {
           error_code?: string | null
           error_message?: string | null
           id?: string
+          invoice_id?: string | null
+          job_id?: string | null
           provider_message_id?: string | null
           quote_id?: string | null
           request_hash?: string

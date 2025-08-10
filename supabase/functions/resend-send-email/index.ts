@@ -13,6 +13,8 @@ type SendRequest = {
   subject: string;
   html: string;
   quote_id?: string;
+  job_id?: string;
+  invoice_id?: string;
   reply_to?: string;
   from_name?: string;
 };
@@ -78,7 +80,7 @@ serve(async (req: Request): Promise<Response> => {
   // Compute request hash for idempotency/logging
   const encoder = new TextEncoder();
   const hash = toHex(await crypto.subtle.digest("SHA-256", encoder.encode(JSON.stringify({
-    to: payload.to, subject: payload.subject, html: payload.html, quote_id: payload.quote_id || null
+    to: payload.to, subject: payload.subject, html: payload.html, quote_id: payload.quote_id || null, job_id: payload.job_id || null, invoice_id: payload.invoice_id || null
   }))));
 
   const resend = new Resend(resendApiKey);
@@ -131,6 +133,8 @@ serve(async (req: Request): Promise<Response> => {
         provider_message_id: null,
         request_hash: hash,
         quote_id: payload.quote_id || null,
+        job_id: payload.job_id || null,
+        invoice_id: payload.invoice_id || null,
       } as any);
 
       // Friendly errors
@@ -158,6 +162,8 @@ serve(async (req: Request): Promise<Response> => {
       provider_message_id: messageId,
       request_hash: hash,
       quote_id: payload.quote_id || null,
+      job_id: payload.job_id || null,
+      invoice_id: payload.invoice_id || null,
     } as any);
 
     // Update quote status to Sent after successful email
@@ -170,6 +176,18 @@ serve(async (req: Request): Promise<Response> => {
       }
     } catch (e) {
       console.warn('Failed to update quote status to Sent:', e);
+    }
+
+    // Optionally update invoice status to Sent after successful email
+    try {
+      if (payload.invoice_id) {
+        await supabaseAdmin
+          .from('invoices')
+          .update({ status: 'Sent', updated_at: new Date().toISOString() } as any)
+          .eq('id', payload.invoice_id);
+      }
+    } catch (e) {
+      console.warn('Failed to update invoice status to Sent:', e);
     }
 
     return new Response(JSON.stringify({ id: messageId, status: 'sent' }), {
@@ -189,6 +207,8 @@ serve(async (req: Request): Promise<Response> => {
       provider_message_id: null,
       request_hash: hash,
       quote_id: payload.quote_id || null,
+      job_id: payload.job_id || null,
+      invoice_id: payload.invoice_id || null,
     } as any);
 
     return new Response(JSON.stringify({ error: e?.message || 'Send failed' }), {

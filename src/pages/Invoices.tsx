@@ -9,9 +9,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSupabaseInvoices } from '@/hooks/useSupabaseInvoices';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import InvoiceEditor from '@/pages/Invoices/InvoiceEditor';
+import SendInvoiceModal from '@/components/Invoices/SendInvoiceModal';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-
 export default function InvoicesPage() {
   const store = useStore();
   const { isSignedIn } = useClerkAuth();
@@ -20,6 +20,7 @@ export default function InvoicesPage() {
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<'All' | 'Draft' | 'Sent' | 'Paid' | 'Overdue'>('All');
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [sendId, setSendId] = useState<string | null>(null);
   const qc = useQueryClient();
 
   useEffect(() => {
@@ -122,6 +123,7 @@ export default function InvoicesPage() {
                   <TableCell className="text-right">
                     <div className="flex gap-2 justify-end">
                       <Button variant="outline" size="sm" onClick={()=>setActiveId(i.id)}>Edit</Button>
+                      <Button variant="secondary" size="sm" onClick={()=>setSendId(i.id)}>Send Email</Button>
                       {i.status==='Draft' && <Button size="sm" onClick={()=>send(i.id)}>Mark Sent</Button>}
                       {i.status==='Sent' && <Button size="sm" onClick={()=>{ setProcessing(i.id); setTimeout(()=>{ store.markInvoicePaid(i.id, '4242'); setProcessing(null); }, 800); }}>Mark Paid</Button>}
                       {processing===i.id && <span className="text-sm text-muted-foreground">Processing…</span>}
@@ -137,6 +139,21 @@ export default function InvoicesPage() {
         open={!!activeId}
         onOpenChange={(o)=>{ if(!o) setActiveId(null); }}
         invoice={store.invoices.find(inv=>inv.id===activeId) || null}
+      />
+      <SendInvoiceModal
+        open={!!sendId}
+        onOpenChange={(o)=>{ if(!o) setSendId(null); }}
+        invoice={store.invoices.find(inv=>inv.id===sendId) || null}
+        toEmail={( () => {
+          const inv = store.invoices.find(i=>i.id===sendId);
+          const cust = inv ? store.customers.find(c=>c.id===inv.customerId) : undefined;
+          return cust?.email || '';
+        })()}
+        customerName={( () => {
+          const inv = store.invoices.find(i=>i.id===sendId);
+          const cust = inv ? store.customers.find(c=>c.id===inv.customerId) : undefined;
+          return cust?.name || undefined;
+        })()}
       />
     </AppLayout>
   );

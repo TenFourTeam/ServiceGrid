@@ -196,6 +196,66 @@ export function buildQuoteEmail({ businessName, businessLogoUrl, customerName, q
   return { subject, html };
 }
 
+import type { Invoice } from "@/types";
+
+export function buildInvoiceEmail({ businessName, businessLogoUrl, customerName, invoice }: { businessName: string; businessLogoUrl?: string; customerName?: string; invoice: Invoice; }) {
+  const subject = `${businessName} • Invoice ${invoice.number}`;
+  const headerLeft = businessLogoUrl ? `<img src="${businessLogoUrl}" alt="${escapeHtml(businessName)} logo" style="height:32px; max-height:32px; border-radius:4px; display:block;" />` : `<span style="font-weight:600; font-size:16px; color:#f8fafc;">${escapeHtml(businessName)}</span>`;
+  const due = invoice.dueAt ? new Date(invoice.dueAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null;
+
+  const html = `
+  <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#f1f5f9; padding:24px 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'; color:#111827;">
+    <tr>
+      <td align="center">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="600" style="max-width:600px; background:#ffffff; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
+          <tr>
+            <td style="background:#111827; padding:16px 20px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="left">${headerLeft}</td>
+                  <td align="right" style="color:#f8fafc; font-weight:600;">Invoice ${escapeHtml(invoice.number)}</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:20px;">
+              <div style="font-size:14px; line-height:1.6; color:#374151;">
+                ${customerName ? `<div style=\"margin-bottom:6px; color:#111827;\">Hello ${escapeHtml(customerName)},</div>` : ''}
+                <div>Thank you for your business. Please find your invoice details below.</div>
+              </div>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px;">
+                <tr>
+                  <td style="padding:8px; text-align:right; color:#374151;">Subtotal</td>
+                  <td style="padding:8px; text-align:right; font-weight:600;" width="160">${formatMoney(invoice.subtotal)}</td>
+                </tr>
+                ${(invoice.discount ?? 0) > 0 ? `<tr>
+                  <td style=\"padding:8px; text-align:right; color:#374151;\">Discount</td>
+                  <td style=\"padding:8px; text-align:right; font-weight:600;\">- ${formatMoney(invoice.discount)}</td>
+                </tr>` : ''}
+                <tr>
+                  <td style="padding:8px; text-align:right; color:#374151;">Tax</td>
+                  <td style="padding:8px; text-align:right; font-weight:600;">${formatMoney(Math.max(0, (invoice.total ?? 0) - ((invoice.subtotal ?? 0) - (invoice.discount ?? 0))))}</td>
+                </tr>
+                <tr>
+                  <td style="padding:12px 8px; text-align:right; font-weight:700; border-top:1px solid #e5e7eb;">Total</td>
+                  <td style="padding:12px 8px; text-align:right; font-weight:700; border-top:1px solid #e5e7eb;">${formatMoney(invoice.total)}</td>
+                </tr>
+                ${due ? `<tr>
+                  <td style=\"padding:8px; text-align:right; color:#374151;\">Due</td>
+                  <td style=\"padding:8px; text-align:right; font-weight:600;\">${due}</td>
+                </tr>` : ''}
+              </table>
+              <div style="margin-top:16px; font-size:13px; color:#6b7280;">Reply to this email if you have any questions.</div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>`;
+  return { subject, html };
+}
+
 function escapeHtml(str: string) {
   return String(str)
     .replace(/&/g, "&amp;")
