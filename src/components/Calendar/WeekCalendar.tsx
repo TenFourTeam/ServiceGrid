@@ -289,7 +289,7 @@ export function WeekCalendar({
                 top: `${top}%`,
                 height: `${height}%`
               }} onPointerDown={e => onDragStart(e, j)} onDoubleClick={(e) => { e.stopPropagation(); setActiveJob(j); }}>
-                      <div className="font-medium">{j.notes || customer}</div>
+                      <div className="font-medium">{`${j.notes || 'Job'} — ${customer}`}</div>
                       <div className="text-[10px] text-muted-foreground">{formatDateTime(j.startsAt)}</div>
                       <div className="text-[10px]">{j.status}</div>
                     </div>;

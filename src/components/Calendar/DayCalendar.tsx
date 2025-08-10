@@ -1,13 +1,16 @@
+import { useMemo } from "react";
 import { endOfDay, startOfDay } from "date-fns";
 import { useSupabaseJobsRange } from "@/hooks/useSupabaseJobsRange";
 import type { DbJobRow } from "@/hooks/useSupabaseJobs";
+import { useSupabaseCustomers } from "@/hooks/useSupabaseCustomers";
 import { formatMoney } from "@/utils/format";
 
 export default function DayCalendar({ date }: { date: Date }) {
   const range = { start: startOfDay(date), end: endOfDay(date) };
   const { data } = useSupabaseJobsRange(range);
   const jobs: DbJobRow[] = (data?.rows ?? []).slice().sort((a, b) => a.startsAt.localeCompare(b.startsAt));
-
+  const { data: customersData } = useSupabaseCustomers();
+  const customersMap = useMemo(() => new Map((customersData?.rows ?? []).map(c => [c.id, c.name])), [customersData]);
   return (
     <section className="rounded-lg border p-3">
       <h2 className="sr-only">Day view</h2>
@@ -26,7 +29,7 @@ export default function DayCalendar({ date }: { date: Date }) {
                 <span className="opacity-70">–</span>
                 <span>{e.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
               </div>
-              <div className="text-xs opacity-80">{j.notes || (j.total ? `Job — ${formatMoney(j.total)}` : 'Job')}</div>
+              <div className="text-xs opacity-80">{(j.notes || (j.total ? `Job — ${formatMoney(j.total)}` : "Job")) + (customersMap.get(j.customerId) ? ` — ${customersMap.get(j.customerId)}` : "")}</div>
               {j.address && <div className="text-xs text-muted-foreground">{j.address}</div>}
             </li>
           );

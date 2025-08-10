@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { addDays, endOfMonth, endOfWeek, format, isSameDay, isSameMonth, parseISO, startOfMonth, startOfWeek } from "date-fns";
 import { useSupabaseJobsRange } from "@/hooks/useSupabaseJobsRange";
 import type { DbJobRow } from "@/hooks/useSupabaseJobs";
+import { useSupabaseCustomers } from "@/hooks/useSupabaseCustomers";
 import { formatMoney } from "@/utils/format";
 
 function useMonthGrid(date: Date) {
@@ -17,6 +18,8 @@ export default function MonthCalendar({ date, onDateChange }: { date: Date; onDa
   const { data } = useSupabaseJobsRange({ start, end });
   const jobs: DbJobRow[] = data?.rows ?? [];
 
+  const { data: customersData } = useSupabaseCustomers();
+  const customersMap = useMemo(() => new Map((customersData?.rows ?? []).map(c => [c.id, c.name])), [customersData]);
   const jobsByDay = useMemo(() => {
     const map = new Map<string, DbJobRow[]>();
     for (const job of jobs) {
@@ -63,7 +66,7 @@ export default function MonthCalendar({ date, onDateChange }: { date: Date; onDa
                         {t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                       </span>
                       <span className="mx-1 opacity-70">•</span>
-                      <span>{j.notes || (j.total ? `Job — ${formatMoney(j.total)}` : 'Job')}</span>
+                      <span>{(j.notes || (j.total ? `Job — ${formatMoney(j.total)}` : "Job")) + (customersMap.get(j.customerId) ? ` — ${customersMap.get(j.customerId)}` : "")}</span>
                     </li>
                   );
                 })}
