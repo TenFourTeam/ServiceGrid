@@ -6,20 +6,19 @@ import MonthCalendar from "@/components/Calendar/MonthCalendar";
 import DayCalendar from "@/components/Calendar/DayCalendar";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { addMonths, startOfDay, addDays } from "date-fns";
-
-export default function CalendarShell({ selectedJobId }: { selectedJobId?: string }) {
+export default function CalendarShell({
+  selectedJobId
+}: {
+  selectedJobId?: string;
+}) {
   const [view, setView] = useState<"month" | "week" | "day">("week");
   const [date, setDate] = useState<Date>(startOfDay(new Date()));
-
   const month = useMemo(() => new Date(date), [date]);
 
   // Keyboard shortcuts: 1/2/3 to switch views, T for today, arrows to navigate
   const stepDate = useCallback((dir: 1 | -1) => {
-    if (view === "month") setDate(addMonths(date, dir));
-    else if (view === "week") setDate(addDays(date, 7 * dir));
-    else setDate(addDays(date, dir));
+    if (view === "month") setDate(addMonths(date, dir));else if (view === "week") setDate(addDays(date, 7 * dir));else setDate(addDays(date, dir));
   }, [date, view]);
-
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement)?.tagName === 'INPUT' || (e.target as HTMLElement)?.tagName === 'TEXTAREA') return;
@@ -33,16 +32,14 @@ export default function CalendarShell({ selectedJobId }: { selectedJobId?: strin
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [stepDate]);
-
-  return (
-    <div className="flex flex-col gap-4">
+  return <div className="flex flex-col gap-4">
       <header className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => setDate(startOfDay(new Date()))}>
             Today
           </Button>
           <div className="hidden md:block">
-            <Tabs value={view} onValueChange={(v) => setView(v as any)}>
+            <Tabs value={view} onValueChange={v => setView(v as any)}>
               <TabsList>
                 <TabsTrigger value="day">Day</TabsTrigger>
                 <TabsTrigger value="week">Week</TabsTrigger>
@@ -51,19 +48,9 @@ export default function CalendarShell({ selectedJobId }: { selectedJobId?: strin
             </Tabs>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => setDate(addMonths(date, -1))}>
-            ◀
-          </Button>
-          <div className="text-sm font-medium" aria-live="polite">
-            {month.toLocaleString(undefined, { month: "long", year: "numeric" })}
-          </div>
-          <Button variant="ghost" size="sm" onClick={() => setDate(addMonths(date, 1))}>
-            ▶
-          </Button>
-        </div>
+        
         <div className="md:hidden">
-          <Tabs value={view} onValueChange={(v) => setView(v as any)}>
+          <Tabs value={view} onValueChange={v => setView(v as any)}>
             <TabsList>
               <TabsTrigger value="day">D</TabsTrigger>
               <TabsTrigger value="week">W</TabsTrigger>
@@ -77,31 +64,9 @@ export default function CalendarShell({ selectedJobId }: { selectedJobId?: strin
         {/* Left rail (mini calendar + scheduling) */}
         <aside className="hidden md:block">
           <div className="rounded-lg border">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={(d) => d && setDate(startOfDay(d))}
-              className="p-2"
-            />
+            <Calendar mode="single" selected={date} onSelect={d => d && setDate(startOfDay(d))} className="p-2" />
           </div>
-          <section className="mt-3 rounded-lg border p-3">
-            <h2 className="text-sm font-medium mb-2">Scheduling</h2>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li className="flex items-center justify-between">
-                <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-primary" aria-hidden="true"/> Crew Alpha</span>
-                <span className="opacity-70">on</span>
-              </li>
-              <li className="flex items-center justify-between">
-                <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-secondary" aria-hidden="true"/> Crew Beta</span>
-                <span className="opacity-70">on</span>
-              </li>
-              <li className="flex items-center justify-between">
-                <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-accent" aria-hidden="true"/> Crew Gamma</span>
-                <span className="opacity-70">on</span>
-              </li>
-            </ul>
-            <p className="mt-2 text-xs text-muted-foreground">Crew filters coming soon.</p>
-          </section>
+          
         </aside>
 
         {/* Main calendar area */}
@@ -119,6 +84,5 @@ export default function CalendarShell({ selectedJobId }: { selectedJobId?: strin
           </section>
         </aside>
       </div>
-    </div>
-  );
+    </div>;
 }
