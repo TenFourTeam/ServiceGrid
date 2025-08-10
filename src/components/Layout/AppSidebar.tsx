@@ -62,7 +62,7 @@ export default function AppSidebar() {
           </div>
 
           {/* Title column - hidden when collapsed */}
-          <div className="min-w-0 group-data-[collapsible=icon]:hidden">
+          <div className="min-w-0 pl-1 group-data-[collapsible=icon]:hidden">
             <div className="font-semibold truncate">{business.name || "Business"}</div>
             <div className="text-xs text-muted-foreground truncate">Contractor Console</div>
           </div>
