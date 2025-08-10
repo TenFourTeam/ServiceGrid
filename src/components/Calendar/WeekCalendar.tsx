@@ -121,6 +121,72 @@ export function WeekCalendar({
     return `${left} – ${right}`;
   }
   const gridRef = useRef<HTMLDivElement>(null);
+
+  async function createJobFromQuote(quoteId: string) {
+    try {
+      if (!pendingSlot) {
+        toast.error("No time slot selected");
+        return;
+      }
+      const token = await getClerkTokenStrict(getToken);
+      const r = await fetch(
+        `https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/jobs`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            quoteId,
+            startsAt: pendingSlot.start.toISOString(),
+            endsAt: pendingSlot.end.toISOString(),
+          }),
+        }
+      );
+      if (!r.ok) {
+        const txt = await r.text().catch(() => "");
+        throw new Error(`Failed to create job (${r.status}): ${txt}`);
+      }
+      const data = await r.json();
+      const row: any = data?.row ?? data?.job ?? data;
+      const created = {
+        id: row.id,
+        customerId: row.customerId || row.customer_id,
+        quoteId: row.quoteId ?? row.quote_id ?? null,
+        address: row.address ?? null,
+        startsAt: row.startsAt || row.starts_at,
+        endsAt: row.endsAt || row.ends_at,
+        status: row.status,
+        total: row.total ?? null,
+        createdAt: row.createdAt || row.created_at,
+      } as Job;
+      upsertJob(created);
+      setActiveJob(created);
+      setPickerOpen(false);
+      setPendingSlot(null);
+      toast.success('Work order created');
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || 'Failed to create job');
+    }
+  }
+
+  function handleEmptyDoubleClick(e: React.MouseEvent<HTMLDivElement>, day: Date) {
+    const bounds = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const y = clamp(e.clientY - bounds.top, 0, bounds.height);
+    const minsFromTop = y / bounds.height * TOTAL_MIN;
+    const startBlock = Math.round(minsFromTop / 15) * 15; // snap 15m
+
+    const start = new Date(day);
+    start.setHours(0, 0, 0, 0);
+    start.setMinutes(START_HOUR * 60 + startBlock);
+
+    const end = new Date(start.getTime() + 60 * 60 * 1000); // default 60m
+    setPendingSlot({ start, end });
+    setPickerOpen(true);
+  }
+
   function onDragStart(e: React.PointerEvent, job: Job) {
     const bounds = (e.currentTarget.parentElement as HTMLElement | null)?.getBoundingClientRect() ?? gridRef.current?.getBoundingClientRect();
     if (!bounds) return;
@@ -180,7 +246,7 @@ export function WeekCalendar({
               length: END_HOUR - START_HOUR + 1
             }, (_, i) => START_HOUR + i).map(h => <div key={h} className="h-16 pr-2 text-right">{h}:00</div>)}
             </div>
-            {days.map(day => <div key={day.toISOString()} className="border rounded-md p-2 relative overflow-hidden" ref={gridRef}>
+            {days.map(day => <div key={day.toISOString()} className="border rounded-md p-2 relative overflow-hidden" ref={gridRef} onDoubleClick={(e) => handleEmptyDoubleClick(e, day)}>
                 {/* Weekend shading */}
                 {(day.getDay() === 0 || day.getDay() === 6) && <div className="absolute inset-0 bg-muted/20 pointer-events-none" />}
                 {/* transparent overlay */}
@@ -220,7 +286,7 @@ export function WeekCalendar({
               return <div key={j.id} className={`absolute left-2 right-2 border rounded-md p-2 text-xs select-none cursor-grab active:cursor-grabbing ${color}`} style={{
                 top: `${top}%`,
                 height: `${height}%`
-              }} onPointerDown={e => onDragStart(e, j)} onDoubleClick={() => setActiveJob(j)}>
+              }} onPointerDown={e => onDragStart(e, j)} onDoubleClick={(e) => { e.stopPropagation(); setActiveJob(j); }}>
                       <div className="font-medium">{customer}</div>
                       <div className="text-[10px] text-muted-foreground">{formatDateTime(j.startsAt)}</div>
                       <div className="text-[10px]">{j.status}</div>
@@ -284,5 +350,13 @@ export function WeekCalendar({
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
+
+      <PickQuoteModal
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        onSelect={async (quoteId) => {
+          await createJobFromQuote(quoteId);
+        }}
+      />
     </div>;
-}
+  }
