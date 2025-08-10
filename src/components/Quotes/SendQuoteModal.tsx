@@ -36,7 +36,7 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
     const pixelUrl = `https://ijudkzqfriazabiosnvb.functions.supabase.co/quote-events?type=open&quote_id=${encodeURIComponent(quote.id)}&token=${encodeURIComponent(quote.publicToken)}`;
     const built = buildQuoteEmail({ businessName: store.business.name, businessLogoUrl: store.business.logoUrl, customerName, quote, approveUrl, editUrl, viewUrl, pixelUrl });
     return { html: built.html, defaultSubject: built.subject };
-  }, [quote, store.business.name, customerName]);
+  }, [quote, store.business.name, store.business.logoUrl, customerName]);
   const previewHtml = useMemo(() => {
     if (!message?.trim()) return html;
     const safe = escapeHtml(message).replace(/\n/g, '<br />');

@@ -86,7 +86,7 @@ serve(async (req) => {
       // Validate quote and token
       const { data: q, error: qErr } = await supabase
         .from("quotes")
-        .select("id,status,public_token,number,customer_id,businesses(name),customers(email,name)")
+        .select("id,status,public_token,number,customer_id,businesses(name,logo_url),customers(email,name)")
         .eq("id", quote_id)
         .single();
 
@@ -114,6 +114,7 @@ serve(async (req) => {
           const custEmail = (q as any)?.customers?.email as string | null;
           const custName = (q as any)?.customers?.name as string | null;
           const businessName = (q as any)?.businesses?.name as string | null;
+          const businessLogoUrl = (q as any)?.businesses?.logo_url as string | null;
           const quoteNumber = (q as any)?.number as string | null;
           try {
             const resendApiKey = Deno.env.get("RESEND_API_KEY");
@@ -123,11 +124,15 @@ serve(async (req) => {
               const from = businessName ? `${businessName} <${fromEmail}>` : fromEmail;
               const subject = `We received your edit request for Quote ${quoteNumber ?? ""}`.trim();
               const safeName = custName || "there";
+              const header = businessLogoUrl ? `<div style=\"padding:12px 16px; background:#111827; border-radius:8px 8px 0 0\"><img src=\"${businessLogoUrl}\" alt=\"${(businessName || 'Business').replace(/"/g, '&quot;')} logo\" style=\"height:24px; display:block; border-radius:4px\" /></div>` : '';
               const html = `
-                <div style="font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; color:#111827;">
-                  <p>Hi ${safeName},</p>
-                  <p>Thanks for requesting edits to Quote ${quoteNumber ?? ""}. Please reply to this email with the details of the changes you’d like and we’ll update the quote right away.</p>
-                  <p>Best regards,<br/>${businessName || "Our Team"}</p>
+                <div style="font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; color:#111827; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden">
+                  ${header}
+                  <div style="padding:16px">
+                    <p>Hi ${safeName},</p>
+                    <p>Thanks for requesting edits to Quote ${quoteNumber ?? ""}. Please reply to this email with the details of the changes you’d like and we’ll update the quote right away.</p>
+                    <p>Best regards,<br/>${businessName || "Our Team"}</p>
+                  </div>
                 </div>
               `;
               await resend.emails.send({ from, to: [custEmail], subject, html });

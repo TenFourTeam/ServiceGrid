@@ -43,10 +43,18 @@ export default function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <div className="flex items-center justify-between px-2 py-1.5">
+        <div className={"flex items-center px-2 py-1.5 " + (collapsed ? "justify-center" : "justify-between") }>
           <div className="flex items-center gap-2">
             <div className="relative">
-              <div className="size-7 rounded-full bg-primary" aria-hidden />
+              {business.logoUrl ? (
+                <img
+                  src={business.logoUrl}
+                  alt={`${business.name || "Business"} logo`}
+                  className="size-7 rounded-full object-cover ring-1 ring-border"
+                />
+              ) : (
+                <div className="size-7 rounded-full bg-primary" aria-hidden />
+              )}
               {collapsed && (
                 <SidebarTrigger aria-label="Expand sidebar" className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity rounded-full" />
               )}
