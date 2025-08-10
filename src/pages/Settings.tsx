@@ -9,8 +9,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import BusinessLogo from '@/components/BusinessLogo';
 import { useState, useEffect } from 'react';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
-import { getClerkTokenStrict } from '@/utils/clerkToken';
-import { toast } from 'sonner';
+import { edgeFetchJson, edgeFetch } from '@/utils/edgeApi';
+
 
 
 export default function SettingsPage() {
@@ -32,17 +32,13 @@ export default function SettingsPage() {
     }
     try {
       setUploadingDark(true);
-      const token = await getClerkTokenStrict(getToken);
       const form = new FormData();
       form.append('file', darkFile);
-      const r = await fetch('https://ijudkzqfriazabiosnvb.functions.supabase.co/upload-business-logo?kind=dark', {
+      const data = await edgeFetch("upload-business-logo?kind=dark", getToken, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
         body: form,
       });
-      const data = await r.json();
-      if (!r.ok) throw new Error(data?.error || `Upload failed (${r.status})`);
-      const url = data?.url as string;
+      const url = (data as any)?.url as string;
       if (url) {
         store.setBusiness({ logoUrl: url });
         toast.success('Dark icon updated');
@@ -66,17 +62,13 @@ export default function SettingsPage() {
     }
     try {
       setUploadingLight(true);
-      const token = await getClerkTokenStrict(getToken);
       const form = new FormData();
       form.append('file', lightFile);
-      const r = await fetch('https://ijudkzqfriazabiosnvb.functions.supabase.co/upload-business-logo?kind=light', {
+      const data = await edgeFetch("upload-business-logo?kind=light", getToken, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
         body: form,
       });
-      const data = await r.json();
-      if (!r.ok) throw new Error(data?.error || `Upload failed (${r.status})`);
-      const url = data?.url as string;
+      const url = (data as any)?.url as string;
       if (url) {
         store.setBusiness({ lightLogoUrl: url });
         toast.success('Light icon updated');
@@ -94,13 +86,8 @@ export default function SettingsPage() {
     if (!isSignedIn) return;
     (async () => {
       try {
-        const token = await getClerkTokenStrict(getToken);
-        const r = await fetch('https://ijudkzqfriazabiosnvb.functions.supabase.co/get-business', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await r.json();
-        if (!r.ok) throw new Error(data?.error || `Failed to load business (${r.status})`);
-        const b = data?.business;
+        const data = await edgeFetchJson('get-business', getToken);
+        const b = (data as any)?.business;
         if (b?.id) {
           store.setBusiness({
             id: b.id,

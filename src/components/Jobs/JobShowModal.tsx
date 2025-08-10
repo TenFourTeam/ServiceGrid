@@ -5,7 +5,7 @@ import { Drawer, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle } from "
 import { Textarea } from "@/components/ui/textarea";
 import { formatDateTime, formatMoney } from "@/utils/format";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
-import { getClerkTokenStrict } from "@/utils/clerkToken";
+import { edgeFetchJson } from "@/utils/edgeApi";
 import { toast } from "sonner";
 import ReschedulePopover from "@/components/WorkOrders/ReschedulePopover";
 import type { Job } from "@/types";
@@ -54,16 +54,10 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
   async function handleCreateInvoice() {
     if (!(job as any).quoteId) { setPickerOpen(true); toast.info('Link a quote to this job before creating an invoice.'); return; }
     try {
-      const token = await getClerkTokenStrict(getToken);
-      const r = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/invoices`, {
+      const data = await edgeFetchJson(`invoices`, getToken, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobId: job.id }),
+        body: { jobId: job.id },
       });
-      if (!r.ok) {
-        const txt = await r.text().catch(()=>"");
-        throw new Error(`Failed to create invoice (${r.status}): ${txt}`);
-      }
       toast.success('Invoice created');
     } catch (e: any) {
       toast.error(e?.message || 'Failed to create invoice');
@@ -82,16 +76,10 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
     updateJobStatus(job.id, nextStatus);
 
     try {
-      const token = await getClerkTokenStrict(getToken);
-      const r = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/jobs?id=${job.id}`, {
+      const data = await edgeFetchJson(`jobs?id=${job.id}`, getToken, {
         method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: nextStatus }),
+        body: { status: nextStatus },
       });
-      if (!r.ok) {
-        const txt = await r.text().catch(()=> '');
-        throw new Error(`Failed to update job (${r.status}): ${txt}`);
-      }
       toast.success(`Status updated to ${nextStatus}`);
     } catch (e: any) {
       // Revert on failure
@@ -147,14 +135,12 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                 upsertJob(updated);
                 if (notesTimer.current) window.clearTimeout(notesTimer.current);
                 notesTimer.current = window.setTimeout(async ()=>{
-                  try {
-                    const token = await getClerkTokenStrict(getToken);
-                    await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/jobs?id=${job.id}`, {
-                      method: 'PATCH',
-                      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ notes: val }),
-                    });
-                  } catch {}
+                    try {
+                      await edgeFetchJson(`jobs?id=${job.id}`, getToken, {
+                        method: 'PATCH',
+                        body: { notes: val },
+                      });
+                    } catch {}
                 }, 600) as unknown as number;
               }}
             />
@@ -238,16 +224,10 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
           customerId={job.customerId}
           onSelect={async (quoteId) => {
             try {
-              const token = await getClerkTokenStrict(getToken);
-              const r = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/jobs?id=${job.id}`, {
+              const data = await edgeFetchJson(`jobs?id=${job.id}`, getToken, {
                 method: 'PATCH',
-                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ quoteId }),
+                body: { quoteId },
               });
-              if (!r.ok) {
-                const txt = await r.text().catch(()=> '');
-                throw new Error(`Failed to link quote (${r.status}): ${txt}`);
-              }
               upsertJob({ ...(job as any), quoteId } as any);
               toast.success('Quote linked to job');
               setPickerOpen(false);

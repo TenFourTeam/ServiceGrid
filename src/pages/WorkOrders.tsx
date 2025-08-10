@@ -11,7 +11,7 @@ import { Job } from '@/types';
 import { toast } from '@/components/ui/use-toast';
 import { useSupabaseJobs } from '@/hooks/useSupabaseJobs';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
-import { getClerkTokenStrict } from '@/utils/clerkToken';
+import { edgeFetchJson } from '@/utils/edgeApi';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import ReschedulePopover from '@/components/WorkOrders/ReschedulePopover';
@@ -212,39 +212,27 @@ export default function WorkOrdersPage() {
                     uninvoiced={uninvoiced}
                     onRescheduled={async ()=> { await refetch(); }}
                     onComplete={async ()=> {
-                      try {
-                        const token = await getClerkTokenStrict(getToken);
-                        const r = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/jobs?id=${j.id}`, {
-                          method: 'PATCH',
-                          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ status: 'Completed' }),
-                        });
-                        if (!r.ok) {
-                          const txt = await r.text().catch(()=> '');
-                          throw new Error(`Failed to update job (${r.status}): ${txt}`);
-                        }
-                        updateJobStatus(j.id, 'Completed');
-                        toast({ title: 'Marked complete' });
-                        await refetch();
-                      } catch (e: any) {
-                        toast({ title: 'Failed to mark complete', description: e?.message || String(e) });
-                      }
+                    try {
+                      const data = await edgeFetchJson(`jobs?id=${j.id}`, getToken, {
+                        method: 'PATCH',
+                        body: { status: 'Completed' },
+                      });
+                      updateJobStatus(j.id, 'Completed');
+                      toast({ title: 'Marked complete' });
+                      await refetch();
+                    } catch (e: any) {
+                      toast({ title: 'Failed to mark complete', description: e?.message || String(e) });
+                    }
                     }}
                     onInvoice={async ()=> {
                       try {
-                        const token = await getClerkTokenStrict(getToken);
-                        const r = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/invoices`, {
-                          method: 'POST',
-                          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ jobId: j.id }),
-                        });
-                        if (!r.ok) {
-                          const txt = await r.text().catch(()=> '');
-                          throw new Error(`Failed to create invoice (${r.status}): ${txt}`);
-                        }
-                        toast({ title: 'Invoice created' });
-                        await refetch();
-                        navigate('/invoices');
+                      const data = await edgeFetchJson(`invoices`, getToken, {
+                        method: 'POST',
+                        body: { jobId: j.id },
+                      });
+                      toast({ title: 'Invoice created' });
+                      await refetch();
+                      navigate('/invoices');
                       } catch (e: any) {
                         toast({ title: 'Failed to create invoice', description: e?.message || String(e) });
                       }

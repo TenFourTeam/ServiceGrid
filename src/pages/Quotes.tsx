@@ -23,7 +23,7 @@ import { Trash2, Plus, Send, Download, Receipt, Wrench } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatMoney as formatCurrency } from '@/utils/format';
 import type { Customer, LineItem, Quote, QuoteStatus } from '@/types';
-import { getClerkTokenStrict } from '@/utils/clerkToken';
+import { edgeFetchJson } from '@/utils/edgeApi';
 
 interface QuoteDraft {
   customerId: string;
@@ -245,15 +245,11 @@ export default function QuotesPage() {
     return;
   }
   try {
-    const token = await getClerkTokenStrict(getToken);
-    const r = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/jobs`, {
+    const data = await edgeFetchJson(`jobs`, getToken, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ quoteId: quote.id }),
+      body: { quoteId: quote.id },
     });
-    if (!r.ok) throw new Error(await r.text());
-    const data = await r.json();
-    const j = data.job;
+    const j = (data as any).job || (data as any).row || data;
     store.upsertJob({
       id: j.id,
       customerId: j.customerId,
@@ -286,16 +282,12 @@ export default function QuotesPage() {
                                 onClick={async () => {
   let jobId: string | undefined = store.jobs.find((j) => j.quoteId === quote.id)?.id;
   try {
-    const token = await getClerkTokenStrict(getToken);
     if (!jobId) {
-      const rJob = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/jobs`, {
+      const jData = await edgeFetchJson(`jobs`, getToken, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ quoteId: quote.id }),
+        body: { quoteId: quote.id },
       });
-      if (!rJob.ok) throw new Error(await rJob.text());
-      const jData = await rJob.json();
-      const j = jData.job;
+      const j = (jData as any).job || (jData as any).row || jData;
       store.upsertJob({
         id: j.id,
         customerId: j.customerId,
@@ -312,14 +304,11 @@ export default function QuotesPage() {
     }
 
     if (jobId) {
-      const rInv = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/invoices`, {
+      const iData = await edgeFetchJson(`invoices`, getToken, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobId }),
+        body: { jobId },
       });
-      if (!rInv.ok) throw new Error(await rInv.text());
-      const iData = await rInv.json();
-      const inv = iData.invoice;
+      const inv = (iData as any).invoice || iData;
       store.upsertInvoice({
         id: inv.id,
         number: inv.number,

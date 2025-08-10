@@ -16,7 +16,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { CustomerCombobox } from "@/components/Quotes/CustomerCombobox";
 import { LineItemsEditor } from "@/components/Quotes/LineItemsEditor";
 import { useNavigate } from "react-router-dom";
-import { getClerkTokenStrict } from "@/utils/clerkToken";
+import { edgeFetchJson } from "@/utils/edgeApi";
 
 export interface CreateQuoteModalProps {
   open: boolean;
@@ -169,8 +169,6 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
     setSaving(true);
     setSaveStatus("saving");
     try {
-      const token = await getClerkTokenStrict(getToken);
-
       const payload = {
         customerId: draft.customerId,
         address: draft.address || null,
@@ -190,22 +188,12 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
         depositPercent: draft.depositPercent,
       };
 
-      const res = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/quotes`, {
+      const data = await edgeFetchJson(`quotes`, getToken, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
+        body: payload,
       });
 
-      if (!res.ok) {
-        const txt = await res.text().catch(() => "");
-        throw new Error(`Failed to create quote (${res.status}): ${txt}`);
-      }
-
-      const data = await res.json();
-      const q = data?.quote;
+      const q = (data as any)?.quote || (data as any);
 
       const saved: Quote = {
         id: q.id,
@@ -263,7 +251,6 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
   async function updateQuote(id: string) {
     setSaveStatus("saving");
     try {
-      const token = await getClerkTokenStrict(getToken);
       const payload = {
         address: draft.address || null,
         lineItems: draft.lineItems.map((li) => ({ name: li.name, qty: 1, unit: li.unit || null, lineTotal: li.lineTotal })),
@@ -276,12 +263,10 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
         depositRequired: draft.depositRequired,
         depositPercent: draft.depositPercent,
       };
-      const res = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/quotes/${id}`, {
+      await edgeFetchJson(`quotes/${id}`, getToken, {
         method: "PATCH",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: payload,
       });
-      if (!res.ok) throw new Error(`Failed to update quote (${res.status})`);
       setSaveStatus("saved");
       setLastSavedAt(Date.now());
     } catch (e) {

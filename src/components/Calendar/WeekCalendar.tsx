@@ -7,7 +7,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerC
 import { Textarea } from '@/components/ui/textarea';
 import { useSupabaseJobsRange } from '@/hooks/useSupabaseJobsRange';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
-import { getClerkTokenStrict } from '@/utils/clerkToken';
+import { edgeFetchJson } from '@/utils/edgeApi';
 import { toast } from 'sonner';
 import PickQuoteModal from '@/components/Jobs/PickQuoteModal';
 import { supabase } from '@/integrations/supabase/client';
@@ -179,28 +179,19 @@ const dayRefs = useRef<HTMLDivElement[]>([]);
         toast.error("No time slot selected");
         return;
       }
-      const token = await getClerkTokenStrict(getToken);
-      const r = await fetch(
-        `https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/jobs`,
+      const data = await edgeFetchJson(
+        `jobs`,
+        getToken,
         {
           method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
+          body: {
             quoteId,
             startsAt: pendingSlot.start.toISOString(),
             endsAt: pendingSlot.end.toISOString(),
-          }),
+          },
         }
       );
-      if (!r.ok) {
-        const txt = await r.text().catch(() => "");
-        throw new Error(`Failed to create job (${r.status}): ${txt}`);
-      }
-      const data = await r.json();
-      const row: any = data?.row ?? data?.job ?? data;
+      const row: any = (data as any)?.row ?? (data as any)?.job ?? data;
       const created = {
         id: row.id,
         customerId: row.customerId || row.customer_id,
@@ -229,24 +220,15 @@ const dayRefs = useRef<HTMLDivElement[]>([]);
 
   async function createInvoiceFromJob(jobId: string) {
     try {
-      const token = await getClerkTokenStrict(getToken);
-      const r = await fetch(
-        `https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/invoices`,
+      const data = await edgeFetchJson(
+        `invoices`,
+        getToken,
         {
           method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ jobId }),
+          body: { jobId },
         }
       );
-      if (!r.ok) {
-        const txt = await r.text().catch(() => "");
-        throw new Error(`Failed to create invoice (${r.status}): ${txt}`);
-      }
-      const data = await r.json();
-      const num = data?.invoice?.number || '';
+      const num = (data as any)?.invoice?.number || '';
       toast.success(num ? `Invoice ${num} created` : 'Invoice created');
     } catch (e: any) {
       console.error(e);
@@ -326,26 +308,18 @@ function onDragStart(e: React.PointerEvent, job: Job) {
         return;
       }
       try {
-        const token = await getClerkTokenStrict(getToken);
-        const r = await fetch(
-          `https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/jobs?id=${job.id}`,
+        await edgeFetchJson(
+          `jobs?id=${job.id}`,
+          getToken,
           {
             method: 'PATCH',
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ startsAt: latest.startsAt, endsAt: latest.endsAt }),
+            body: { startsAt: latest.startsAt, endsAt: latest.endsAt },
           }
         );
-        if (!r.ok) {
-          upsertJob(original);
-          const txt = await r.text().catch(() => "");
-          throw new Error(`Failed to reschedule (${r.status}): ${txt}`);
-        }
         toast.success('Rescheduled');
       } catch (err: any) {
         console.error(err);
+        upsertJob(original);
         toast.error(err?.message || 'Failed to reschedule');
       }
     };
@@ -391,26 +365,18 @@ function onDragStart(e: React.PointerEvent, job: Job) {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       try {
-        const token = await getClerkTokenStrict(getToken);
-        const r = await fetch(
-          `https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/jobs?id=${job.id}`,
+        await edgeFetchJson(
+          `jobs?id=${job.id}`,
+          getToken,
           {
             method: 'PATCH',
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ endsAt: latestEnd }),
+            body: { endsAt: latestEnd },
           }
         );
-        if (!r.ok) {
-          upsertJob(original);
-          const txt = await r.text().catch(() => "");
-          throw new Error(`Failed to resize (${r.status}): ${txt}`);
-        }
         toast.success('Updated');
       } catch (err: any) {
         console.error(err);
+        upsertJob(original);
         toast.error(err?.message || 'Failed to update');
       }
     };

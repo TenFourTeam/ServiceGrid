@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
-import { getClerkTokenStrict } from '@/utils/clerkToken';
+import { edgeFetchJson } from '@/utils/edgeApi';
 import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
 
 export function NewJobSheet() {
@@ -91,11 +91,9 @@ export function NewJobSheet() {
       }
 
       // 2) Create job via Edge Function
-      const token = await getClerkTokenStrict(getToken);
-      const r = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/jobs`, {
+      const data = await edgeFetchJson(`jobs`, getToken, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: {
           customerId,
           address: address || selectedCustomer?.address,
           title: title || undefined,
@@ -104,14 +102,9 @@ export function NewJobSheet() {
           notes: notes || undefined,
           total: totalCents,
           photos: photoUrls,
-        }),
+        },
       });
-      if (!r.ok) {
-        const txt = await r.text().catch(()=> '');
-        throw new Error(`Failed to create job (${r.status}): ${txt}`);
-      }
-      const data = await r.json().catch(()=>null);
-      const created = (data?.row || data?.job || data) as any;
+      const created = (data as any)?.row || (data as any)?.job || data;
 
       // 3) Upsert locally for instant UI
       const local = upsertJob({

@@ -4,7 +4,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
-import { getClerkTokenStrict } from "@/utils/clerkToken";
+import { edgeFetchJson } from "@/utils/edgeApi";
 import { toast } from "@/components/ui/use-toast";
 import { addMinutes, format } from "date-fns";
 import type { Job } from "@/types";
@@ -34,16 +34,10 @@ export default function ReschedulePopover({ job, onDone }: ReschedulePopoverProp
       starts.setHours(h || 0, m || 0, 0, 0);
       const ends = addMinutes(starts, durationMins);
 
-      const token = await getClerkTokenStrict(getToken);
-      const res = await fetch("https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/jobs?id=" + job.id, {
+      const data = await edgeFetchJson("jobs?id=" + job.id, getToken, {
         method: "PATCH",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ startsAt: starts.toISOString(), endsAt: ends.toISOString() }),
+        body: { startsAt: starts.toISOString(), endsAt: ends.toISOString() },
       });
-      if (!res.ok) {
-        const txt = await res.text().catch(() => "");
-        throw new Error(`Failed to schedule (${res.status}): ${txt}`);
-      }
       toast({ title: "Scheduled" });
       setOpen(false);
       await onDone?.();
@@ -57,16 +51,10 @@ export default function ReschedulePopover({ job, onDone }: ReschedulePopoverProp
   const handleUnschedule = async () => {
     try {
       setSubmitting(true);
-      const token = await getClerkTokenStrict(getToken);
-      const res = await fetch("https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/jobs?id=" + job.id, {
+      const data = await edgeFetchJson("jobs?id=" + job.id, getToken, {
         method: "PATCH",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ startsAt: null, endsAt: null }),
+        body: { startsAt: null, endsAt: null },
       });
-      if (!res.ok) {
-        const txt = await res.text().catch(() => "");
-        throw new Error(`Failed to unschedule (${res.status}): ${txt}`);
-      }
       toast({ title: "Unscheduled" });
       setOpen(false);
       await onDone?.();
