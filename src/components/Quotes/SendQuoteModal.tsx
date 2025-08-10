@@ -8,6 +8,7 @@ import type { Quote } from "@/types";
 import { buildQuoteEmail } from "@/utils/emailTemplates";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { escapeHtml } from "@/utils/sanitize";
 
 export interface SendQuoteModalProps {
   open: boolean;
@@ -34,6 +35,13 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
     const built = buildQuoteEmail({ businessName: store.business.name, businessLogoUrl: store.business.logoUrl, customerName, quote, approveUrl, editUrl, viewUrl, pixelUrl });
     return { html: built.html, defaultSubject: built.subject };
   }, [quote, store.business.name, customerName]);
+  const previewHtml = useMemo(() => {
+    if (!message?.trim()) return html;
+    const safe = escapeHtml(message).replace(/\n/g, '<br />');
+    const introBlock = `<div style="margin-bottom:12px; line-height:1.6; font-size:14px; color:#111827;">${safe}</div>`;
+    const hr = `<hr style="border:none; border-top:1px solid #e5e7eb; margin:12px 0;" />`;
+    return `${introBlock}${hr}${html}`;
+  }, [message, html]);
 
   // Reset state on open/quote change
   useEffect(() => {
@@ -52,7 +60,13 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
     }
     setSending(true);
     try {
-      const finalHtml = message ? `${message}<hr />${html}` : html;
+      const finalHtml = (() => {
+        if (!message?.trim()) return html;
+        const safe = escapeHtml(message).replace(/\n/g, '<br />');
+        const introBlock = `<div style="margin-bottom:12px; line-height:1.6; font-size:14px; color:#111827;">${safe}</div>`;
+        const hr = `<hr style=\"border:none; border-top:1px solid #e5e7eb; margin:12px 0;\" />`;
+        return `${introBlock}${hr}${html}`;
+      })();
       const { error } = await supabase.functions.invoke("resend-send-email", {
         body: { to, subject: subject || defaultSubject, html: finalHtml, quote_id: quote.id },
       });
@@ -70,7 +84,7 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Send Quote</DialogTitle>
         </DialogHeader>
@@ -92,7 +106,7 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
             <div className="h-px bg-border" />
             <div className="space-y-2">
               <div className="text-sm font-medium">Preview</div>
-              <div className="border rounded-md p-4 max-h-[60vh] overflow-auto bg-background" dangerouslySetInnerHTML={{ __html: html }} />
+              <div className="border rounded-md p-4 max-h-[50vh] overflow-auto bg-background" dangerouslySetInnerHTML={{ __html: previewHtml }} />
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={sending}>Cancel</Button>
