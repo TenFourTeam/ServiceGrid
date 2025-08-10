@@ -59,3 +59,31 @@ export function formatPercentInput(value?: number): string {
   if (value === undefined || value === null || isNaN(value)) return '';
   return `${value}%`;
 }
+
+// Sanitize user typing for currency fields. Allows digits and a single decimal separator,
+// normalizes comma to dot, and limits to two decimal places while typing.
+export function sanitizeMoneyTyping(raw: string): string {
+  const s = (raw ?? '').toString();
+  if (!s) return '';
+  // Keep only digits, dots, and commas
+  const cleaned = s.replace(/[^0-9.,]/g, '');
+  let out = '';
+  let seenDot = false;
+  for (const ch of cleaned) {
+    if (ch >= '0' && ch <= '9') {
+      if (!seenDot) {
+        out += ch;
+      } else {
+        const parts = out.split('.');
+        const decimals = parts[1] ?? '';
+        if (decimals.length < 2) out += ch;
+      }
+    } else if (ch === '.' || ch === ',') {
+      if (!seenDot) {
+        out += '.';
+        seenDot = true;
+      }
+    }
+  }
+  return out;
+}

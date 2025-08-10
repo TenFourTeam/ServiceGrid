@@ -10,7 +10,7 @@ import { Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useStore } from "@/store/useAppStore";
 import type { Customer, LineItem, Quote } from "@/types";
-import { formatMoney as formatCurrency, parseCurrencyInput, formatCurrencyInputNoSymbol, parsePercentInput } from "@/utils/format";
+import { formatMoney as formatCurrency, parseCurrencyInput, formatCurrencyInputNoSymbol, parsePercentInput, sanitizeMoneyTyping } from "@/utils/format";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { CustomerCombobox } from "@/components/Quotes/CustomerCombobox";
@@ -93,7 +93,7 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
         depositPercent: 0,
       });
       lineItemIdCounter.current = 1;
-      setDiscountInput(formatCurrencyInputNoSymbol(0));
+      setDiscountInput("");
       setDepositPercentInput("");
     }
   }, [open, store.business.taxRateDefault, defaultTaxRate]);
@@ -370,16 +370,17 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
                   <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                   <Input
                     id="discount"
-                    className="pl-7"
+                    className="pl-7 placeholder:text-transparent focus:placeholder:text-transparent"
                     type="text"
                     inputMode="decimal"
                     placeholder="0.00"
                     value={discountInput}
                     onChange={(e) => {
                       const val = e.target.value;
-                      setDiscountInput(val);
+                      const sanitized = sanitizeMoneyTyping(val);
+                      setDiscountInput(sanitized);
                       setDraft((prev) => {
-                        const rawCents = parseCurrencyInput(val);
+                        const rawCents = parseCurrencyInput(sanitized);
                         const pre = calculateQuoteTotals(prev.lineItems, prev.taxRate, 0);
                         const max = pre.subtotal + pre.taxAmount;
                         const clamped = Math.max(0, Math.min(max, rawCents));

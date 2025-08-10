@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useEffect, useState } from "react";
 import type { LineItem } from "@/types";
-import { parseCurrencyInput, formatCurrencyInputNoSymbol } from "@/utils/format";
+import { parseCurrencyInput, formatCurrencyInputNoSymbol, sanitizeMoneyTyping } from "@/utils/format";
 interface LineItemsEditorProps {
   items: LineItem[];
   onAdd: () => void;
@@ -26,7 +26,7 @@ export function LineItemsEditor({
     setAmountInputs((prev) => {
       const next: Record<string, string> = {};
       for (const it of items) {
-        next[it.id] = prev[it.id] ?? formatCurrencyInputNoSymbol(it.lineTotal || 0);
+        next[it.id] = prev[it.id] ?? (it.lineTotal ? formatCurrencyInputNoSymbol(it.lineTotal || 0) : '');
       }
       return next;
     });
@@ -69,15 +69,16 @@ export function LineItemsEditor({
                       id={`li-amount-${item.id}`}
                       inputMode="decimal"
                       type="text"
-                      className="pl-7"
+                      className="pl-7 placeholder:text-transparent focus:placeholder:text-transparent"
                       placeholder="0.00"
                       value={amountInputs[item.id] ?? ''}
                       aria-invalid={isInvalid(item) && (item.lineTotal ?? 0) <= 0}
                       aria-describedby={isInvalid(item) && (item.lineTotal ?? 0) <= 0 ? `li-amount-${item.id}-error` : undefined}
                       onChange={(e) => {
                         const val = e.target.value;
-                        setAmountInputs((prev) => ({ ...prev, [item.id]: val }));
-                        const cents = parseCurrencyInput(val);
+                        const sanitized = sanitizeMoneyTyping(val);
+                        setAmountInputs((prev) => ({ ...prev, [item.id]: sanitized }));
+                        const cents = parseCurrencyInput(sanitized);
                         onUpdate(item.id, {
                           lineTotal: cents,
                           qty: 1,
