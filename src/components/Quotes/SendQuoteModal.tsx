@@ -9,6 +9,7 @@ import { buildQuoteEmail } from "@/utils/emailTemplates";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { escapeHtml } from "@/utils/sanitize";
+import { useQueryClient } from "@tanstack/react-query";
 
 export interface SendQuoteModalProps {
   open: boolean;
@@ -20,6 +21,7 @@ export interface SendQuoteModalProps {
 
 export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, customerName }: SendQuoteModalProps) {
   const store = useStore();
+  const queryClient = useQueryClient();
   const [to, setTo] = useState(toEmail ?? "");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
@@ -72,6 +74,7 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
       });
       if (error) throw error;
       store.sendQuote(quote.id);
+      await queryClient.invalidateQueries({ queryKey: ["supabase", "quotes"] });
       toast.success("Quote sent successfully");
       onOpenChange(false);
     } catch (e: any) {

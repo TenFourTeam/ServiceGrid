@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Resend } from "npm:resend@2.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -85,7 +86,7 @@ serve(async (req) => {
       // Validate quote and token
       const { data: q, error: qErr } = await supabase
         .from("quotes")
-        .select("id,status,public_token,publicToken")
+        .select("id,status,public_token,number,customer_id,businesses(name),customers(email,name)")
         .eq("id", quote_id)
         .single();
 
@@ -93,7 +94,7 @@ serve(async (req) => {
         console.error('quotes fetch error:', qErr);
       }
 
-      const qToken = (q as any)?.public_token ?? (q as any)?.publicToken;
+      const qToken = (q as any)?.public_token;
       if (!q || qToken !== token) {
         return html(`<!doctype html>
 <html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Invalid Link</title><style>body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;padding:24px;background:#f6f9fc;color:#0f172a}</style></head><body><div style="max-width:720px;margin:0 auto"><div style="background:#0f172a;color:#fff;border-radius:12px 12px 0 0;padding:20px 24px"><strong>Quote Action</strong></div><div style="background:#fff;border:1px solid #e5e7eb;border-top:0;border-radius:0 0 12px 12px;padding:24px"><div style="font-size:18px;font-weight:700;margin:0 0 8px">Invalid or expired link</div><p style="color:#475569;margin:0">Please contact the sender for a new email.</p></div><div style="color:#64748b;font-size:12px;text-align:center;margin-top:16px">Powered by Supabase Edge Functions</div></div></body></html>`, 400);
@@ -107,6 +108,34 @@ serve(async (req) => {
           .update({ status: newStatus, updated_at: new Date().toISOString() } as any)
           .eq("id", quote_id);
         if (upErr) console.error("quotes update error:", upErr);
+
+        // Send follow-up email requesting details when edits are requested
+        if (type === "edit") {
+          const custEmail = (q as any)?.customers?.email as string | null;
+          const custName = (q as any)?.customers?.name as string | null;
+          const businessName = (q as any)?.businesses?.name as string | null;
+          const quoteNumber = (q as any)?.number as string | null;
+          try {
+            const resendApiKey = Deno.env.get("RESEND_API_KEY");
+            const fromEmail = Deno.env.get("RESEND_FROM_EMAIL");
+            if (resendApiKey && fromEmail && custEmail) {
+              const resend = new Resend(resendApiKey);
+              const from = businessName ? `${businessName} <${fromEmail}>` : fromEmail;
+              const subject = `We received your edit request for Quote ${quoteNumber ?? ""}`.trim();
+              const safeName = custName || "there";
+              const html = `
+                <div style="font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; color:#111827;">
+                  <p>Hi ${safeName},</p>
+                  <p>Thanks for requesting edits to Quote ${quoteNumber ?? ""}. Please reply to this email with the details of the changes you’d like and we’ll update the quote right away.</p>
+                  <p>Best regards,<br/>${businessName || "Our Team"}</p>
+                </div>
+              `;
+              await resend.emails.send({ from, to: [custEmail], subject, html });
+            }
+          } catch (e) {
+            console.error("follow-up email error:", e);
+          }
+        }
       }
 
       const commonHead = `

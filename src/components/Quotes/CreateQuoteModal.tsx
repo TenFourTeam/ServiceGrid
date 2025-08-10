@@ -15,6 +15,7 @@ import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { CustomerCombobox } from "@/components/Quotes/CustomerCombobox";
 import { LineItemsEditor } from "@/components/Quotes/LineItemsEditor";
+import { useNavigate } from "react-router-dom";
 
 export interface CreateQuoteModalProps {
   open: boolean;
@@ -54,6 +55,7 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
   const store = useStore();
   const { getToken } = useClerkAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
   const [savedQuoteId, setSavedQuoteId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -243,7 +245,15 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
     } catch (e) {
       console.error(e);
       setSaveStatus("error");
-      toast.error((e as any)?.message || "Failed to save quote");
+      const msg = (e as any)?.message ? String((e as any).message) : "";
+      if (msg.includes("Not authenticated") || /401/.test(msg)) {
+        toast.error("Please sign in to save and send quotes");
+        navigate("/clerk-auth");
+      } else if (msg.toLowerCase().includes("too many requests")) {
+        toast.error("Authentication is rate-limited. Please try again in a moment.");
+      } else {
+        toast.error(msg || "Failed to save quote");
+      }
       return null;
     } finally {
       setSaving(false);
