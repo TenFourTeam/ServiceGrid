@@ -30,3 +30,6 @@ verify_jwt = false
 
 [functions.get-business]
 verify_jwt = false
+
+[functions.upload-job-photo]
+verify_jwt = false

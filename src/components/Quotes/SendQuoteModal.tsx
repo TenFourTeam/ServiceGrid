@@ -73,10 +73,10 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
         return `${introBlock}${hr}${html}`;
       })();
       console.info('[SendQuoteModal] sending quote email', { quoteId: quote.id, to });
-      const { error } = await supabase.functions.invoke("resend-send-email", {
+      await edgeFetchJson("resend-send-email", getToken, {
+        method: "POST",
         body: { to, subject: subject || defaultSubject, html: finalHtml, quote_id: quote.id, from_name: store.business.name },
       });
-      if (error) throw error;
       console.info('[SendQuoteModal] sent', { quoteId: quote.id });
       // Optimistically mark as Sent in React Query cache for immediate UI update
       queryClient.setQueryData<{ rows: Array<{ id: string; status: string; updatedAt?: string }> }>(
