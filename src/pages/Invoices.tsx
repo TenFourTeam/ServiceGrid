@@ -4,11 +4,38 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatDate, formatMoney } from '@/utils/format';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSupabaseInvoices } from '@/hooks/useSupabaseInvoices';
+import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 
 export default function InvoicesPage() {
   const store = useStore();
+  const { isSignedIn } = useClerkAuth();
+  const { data: dbInvoices } = useSupabaseInvoices({ enabled: !!isSignedIn });
   const [processing, setProcessing] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isSignedIn || !dbInvoices?.rows) return;
+    dbInvoices.rows.forEach((row) => {
+      store.upsertInvoice({
+        id: row.id,
+        number: row.number,
+        businessId: '',
+        customerId: row.customerId,
+        jobId: row.jobId || undefined,
+        lineItems: [],
+        taxRate: row.taxRate,
+        discount: row.discount,
+        subtotal: row.subtotal,
+        total: row.total,
+        status: row.status,
+        dueAt: row.dueAt || undefined,
+        createdAt: row.createdAt || new Date().toISOString(),
+        updatedAt: row.updatedAt || new Date().toISOString(),
+        publicToken: row.publicToken || '',
+      });
+    });
+  }, [isSignedIn, dbInvoices, store]);
 
   function send(id: string) { store.sendInvoice(id); }
 

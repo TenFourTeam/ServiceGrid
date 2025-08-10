@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import AppLayout from '@/components/Layout/AppLayout';
 import { useStore } from '@/store/useAppStore';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,8 @@ import { formatDateTime, formatMoney } from '@/utils/format';
 import { useNavigate } from 'react-router-dom';
 import { Job } from '@/types';
 import { toast } from '@/components/ui/use-toast';
+import { useSupabaseJobs } from '@/hooks/useSupabaseJobs';
+import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 
 function useFilteredJobs() {
   const { jobs, customers, invoices } = useStore();
@@ -108,9 +110,28 @@ function WorkOrderRow({ job, onSchedule, onComplete, onInvoice, onViewInvoice, o
 }
 
 export default function WorkOrdersPage() {
-  const { customers, updateJobStatus, createInvoiceFromJob } = useStore();
+  const { customers, updateJobStatus, createInvoiceFromJob, upsertJob } = useStore();
+  const { isSignedIn } = useClerkAuth();
+  const { data: dbJobs } = useSupabaseJobs({ enabled: !!isSignedIn });
   const { filter, setFilter, q, setQ, sort, setSort, jobs, counts, hasInvoice } = useFilteredJobs();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isSignedIn || !dbJobs?.rows) return;
+    dbJobs.rows.forEach((row) => {
+      upsertJob({
+        id: row.id,
+        customerId: row.customerId,
+        quoteId: row.quoteId || undefined,
+        address: row.address || undefined,
+        startsAt: row.startsAt,
+        endsAt: row.endsAt,
+        status: row.status,
+        total: row.total || undefined,
+        createdAt: row.createdAt,
+      });
+    });
+  }, [isSignedIn, dbJobs, upsertJob]);
 
   return (
     <AppLayout title="Work Orders">

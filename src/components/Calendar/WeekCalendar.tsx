@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerClose } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useSupabaseJobs } from '@/hooks/useSupabaseJobs';
 
 const START_HOUR = 7;
 const END_HOUR = 19;

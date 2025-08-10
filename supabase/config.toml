@@ -18,3 +18,9 @@ verify_jwt = false
 
 [functions.quotes]
 verify_jwt = false
+
+[functions.jobs]
+verify_jwt = false
+
+[functions.invoices]
+verify_jwt = false

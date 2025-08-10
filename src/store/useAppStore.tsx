@@ -111,6 +111,7 @@ export interface Store extends AppState {
   upsertJob(j: Partial<Job> & { customerId: string; startsAt: string; endsAt: string }): Job;
   updateJobStatus(id: string, status: Job['status']): void;
   deleteJob(id: string): void;
+  upsertInvoice(i: Invoice): void;
   createInvoiceFromJob(jobId: string, dueAt?: Date): Invoice;
   sendInvoice(id: string): void;
   markInvoicePaid(id: string, last4?: string): void;
@@ -288,6 +289,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }
     },
     deleteJob(id) { dispatch({ type: 'DELETE_JOB', id }); },
+    upsertInvoice(i) { dispatch({ type: 'UPSERT_INVOICE', payload: i }); },
     createInvoiceFromJob(jobId, dueAt) {
       const job = state.jobs.find((j) => j.id === jobId);
       if (!job) throw new Error('Job not found');

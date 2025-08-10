@@ -22,6 +22,7 @@ import { Trash2, Plus, Send, Download, FileText, Briefcase } from 'lucide-react'
 import { toast } from 'sonner';
 import { formatMoney as formatCurrency } from '@/utils/format';
 import type { Customer, LineItem, Quote, QuoteStatus } from '@/types';
+import { getClerkTokenStrict } from '@/utils/clerkToken';
 
 interface QuoteDraft {
   customerId: string;
@@ -54,7 +55,7 @@ function calculateQuoteTotals(lineItems: LineItem[], taxRate: number, discount: 
 }
 
 export default function QuotesPage() {
-  const { isSignedIn } = useClerkAuth();
+  const { isSignedIn, getToken } = useClerkAuth();
   const store = useStore();
   const { data: dbQuotes } = useSupabaseQuotes({ enabled: !!isSignedIn });
   const { data: dbCustomers } = useSupabaseCustomers({ enabled: !!isSignedIn });
@@ -236,19 +237,40 @@ export default function QuotesPage() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => {
-                                    const existingJob = store.jobs.find((j) => j.quoteId === quote.id);
-                                    if (existingJob) {
-                                      toast.message('Job already exists for this quote', { description: 'Opening Work Orders...' });
-                                      navigate('/work-orders');
-                                      return;
-                                    }
-                                    const jobs = store.convertQuoteToJob(quote.id);
-                                    if (jobs && jobs.length > 0) {
-                                      toast.success('Converted quote to job');
-                                      navigate('/work-orders');
-                                    }
-                                  }}
+onClick={async () => {
+  const existingJob = store.jobs.find((j) => j.quoteId === quote.id);
+  if (existingJob) {
+    toast.message('Job already exists for this quote', { description: 'Opening Work Orders...' });
+    navigate('/work-orders');
+    return;
+  }
+  try {
+    const token = await getClerkTokenStrict(getToken);
+    const r = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/jobs`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ quoteId: quote.id }),
+    });
+    if (!r.ok) throw new Error(await r.text());
+    const data = await r.json();
+    const j = data.job;
+    store.upsertJob({
+      id: j.id,
+      customerId: j.customerId,
+      quoteId: j.quoteId,
+      address: j.address,
+      startsAt: j.startsAt,
+      endsAt: j.endsAt,
+      status: j.status,
+      total: j.total,
+      createdAt: j.createdAt,
+    });
+    toast.success('Converted quote to job');
+    navigate('/work-orders');
+  } catch (e: any) {
+    toast.error('Failed to create job', { description: e?.message || String(e) });
+  }
+}}
                                 >
                                   <Briefcase className="h-4 w-4" />
                                 </Button>
@@ -263,24 +285,67 @@ export default function QuotesPage() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => {
-                                    const existingJob = store.jobs.find((j) => j.quoteId === quote.id);
-                                    let jobId: string | undefined = existingJob?.id;
-                                    if (!jobId) {
-                                      const jobs = store.convertQuoteToJob(quote.id);
-                                      if (jobs && jobs.length > 0) {
-                                        jobId = jobs[0].id;
-                                        toast.success('Job created from quote');
-                                      }
-                                    }
-                                    if (jobId) {
-                                      const invoice = store.createInvoiceFromJob(jobId);
-                                      if (invoice) {
-                                        toast.success('Invoice created');
-                                        navigate('/invoices');
-                                      }
-                                    }
-                                  }}
+onClick={async () => {
+  let jobId: string | undefined = store.jobs.find((j) => j.quoteId === quote.id)?.id;
+  try {
+    const token = await getClerkTokenStrict(getToken);
+    if (!jobId) {
+      const rJob = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/jobs`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quoteId: quote.id }),
+      });
+      if (!rJob.ok) throw new Error(await rJob.text());
+      const jData = await rJob.json();
+      const j = jData.job;
+      store.upsertJob({
+        id: j.id,
+        customerId: j.customerId,
+        quoteId: j.quoteId,
+        address: j.address,
+        startsAt: j.startsAt,
+        endsAt: j.endsAt,
+        status: j.status,
+        total: j.total,
+        createdAt: j.createdAt,
+      });
+      jobId = j.id;
+      toast.success('Job created from quote');
+    }
+
+    if (jobId) {
+      const rInv = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/invoices`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId }),
+      });
+      if (!rInv.ok) throw new Error(await rInv.text());
+      const iData = await rInv.json();
+      const inv = iData.invoice;
+      store.upsertInvoice({
+        id: inv.id,
+        number: inv.number,
+        businessId: '',
+        customerId: inv.customerId,
+        jobId: inv.jobId,
+        lineItems: [],
+        taxRate: inv.taxRate,
+        discount: inv.discount,
+        subtotal: inv.subtotal,
+        total: inv.total,
+        status: inv.status,
+        dueAt: inv.dueAt,
+        createdAt: inv.createdAt,
+        updatedAt: inv.updatedAt,
+        publicToken: inv.publicToken,
+      });
+      toast.success('Invoice created');
+      navigate('/invoices');
+    }
+  } catch (e: any) {
+    toast.error('Failed to create invoice', { description: e?.message || String(e) });
+  }
+}}
                                 >
                                   <FileText className="h-4 w-4" />
                                 </Button>
