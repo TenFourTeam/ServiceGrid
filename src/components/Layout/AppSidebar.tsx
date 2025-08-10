@@ -47,7 +47,7 @@ export default function AppSidebar() {
       <SidebarHeader>
         <div className="grid grid-cols-[56px_1fr_auto] items-center pr-2 py-1.5">
           {/* Logo column - fixed width so position stays constant in both states */}
-          <div className="relative h-8 w-8 ml-2 flex items-center justify-center">
+          <div className="relative h-8 w-8 ml-1 flex items-center justify-center">
             <BusinessLogo
               size={20}
               src={business.logoUrl}
