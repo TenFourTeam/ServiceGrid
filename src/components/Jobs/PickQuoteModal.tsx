@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSupabaseQuotes } from "@/hooks/useSupabaseQuotes";
+import { Loader2 } from "lucide-react";
 
 interface PickQuoteModalProps {
   open: boolean;
@@ -15,8 +16,9 @@ interface PickQuoteModalProps {
 
 export default function PickQuoteModal({ open, onOpenChange, onSelect, customerId }: PickQuoteModalProps) {
   const { data } = useSupabaseQuotes({ enabled: open });
-  const [query, setQuery] = useState("");
-
+const [query, setQuery] = useState("");
+const [busy, setBusy] = useState(false);
+const [selectedId, setSelectedId] = useState<string | null>(null);
   const quotes = useMemo(() => {
     let rows = data?.rows ?? [];
     if (customerId) rows = rows.filter((r) => r.customerId === customerId);
@@ -55,8 +57,14 @@ export default function PickQuoteModal({ open, onOpenChange, onSelect, customerI
                 <button
                   key={q.id}
                   type="button"
-                  onClick={() => onSelect(q.id)}
-                  className="w-full text-left px-3 py-2 rounded-md hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  disabled={busy}
+                  onClick={() => {
+                    if (busy) return;
+                    setBusy(true);
+                    setSelectedId(q.id);
+                    onSelect(q.id);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-md hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary/50 ${busy ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
@@ -64,6 +72,9 @@ export default function PickQuoteModal({ open, onOpenChange, onSelect, customerI
                       <div className="text-xs text-muted-foreground truncate">{q.customerEmail}</div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
+                      {busy && selectedId === q.id && (
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" aria-label="Loading" />
+                      )}
                       <Badge variant="outline" className="text-xs">{q.status}</Badge>
                       <span className="text-sm tabular-nums">
                         {new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format((q.total ?? 0) / 100)}
