@@ -61,6 +61,7 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
   const autosaveTimer = useRef<number | null>(null);
   const [discountInput, setDiscountInput] = useState<string>("");
   const [depositPercentInput, setDepositPercentInput] = useState<string>("");
+  const [isDiscountFocused, setIsDiscountFocused] = useState(false);
   const [draft, setDraft] = useState<QuoteDraft>({
     customerId: "",
     address: "",
@@ -97,6 +98,27 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
       setDepositPercentInput("");
     }
   }, [open, store.business.taxRateDefault, defaultTaxRate]);
+
+  // Keep discount input display in sync with canonical value when not focused
+  useEffect(() => {
+    if (!open) return;
+    if (isDiscountFocused) return;
+    setDiscountInput(draft.discount > 0 ? formatCurrencyInputNoSymbol(draft.discount) : "");
+  }, [open, draft.discount, isDiscountFocused]);
+
+  // Clamp discount if subtotal/tax shrink below current discount
+  useEffect(() => {
+    if (!open) return;
+    setDraft((prev) => {
+      const pre = calculateQuoteTotals(prev.lineItems, prev.taxRate, 0);
+      const max = pre.subtotal + pre.taxAmount;
+      if (prev.discount > max) {
+        if (!isDiscountFocused) setDiscountInput(formatCurrencyInputNoSymbol(max));
+        return { ...prev, discount: max };
+      }
+      return prev;
+    });
+  }, [open, draft.lineItems, draft.taxRate, isDiscountFocused]);
 
   const totals = useMemo(() => calculateQuoteTotals(draft.lineItems, draft.taxRate, draft.discount), [draft.lineItems, draft.taxRate, draft.discount]);
 
@@ -375,6 +397,7 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
                     inputMode="decimal"
                     placeholder="0.00"
                     value={discountInput}
+                    onFocus={() => setIsDiscountFocused(true)}
                     onChange={(e) => {
                       const val = e.target.value;
                       const sanitized = sanitizeMoneyTyping(val);
@@ -388,6 +411,7 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
                       });
                     }}
                     onBlur={() => {
+                      setIsDiscountFocused(false);
                       setDraft((prev) => {
                         const rawCents = parseCurrencyInput(discountInput);
                         const pre = calculateQuoteTotals(prev.lineItems, prev.taxRate, 0);

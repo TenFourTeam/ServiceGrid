@@ -57,7 +57,6 @@ export function LineItemsEditor({
               name: e.target.value
             })} onKeyDown={e => {
               if (e.key === 'Enter' && isLast(item.id)) onAdd();
-              if ((e.key === 'Backspace' || e.key === 'Delete') && !item.name && (item.lineTotal ?? 0) === 0) onRemove(item.id);
             }} placeholder="Service or item name" disabled={disabled} />
                   {isInvalid(item) && !item.name.trim()}
                 </div>
@@ -96,7 +95,6 @@ export function LineItemsEditor({
                       }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && isLast(item.id)) onAdd();
-                        if ((e.key === 'Backspace' || e.key === 'Delete') && (!e.currentTarget.value || e.currentTarget.value === '0')) onRemove(item.id);
                       }}
                       disabled={disabled}
                     />
