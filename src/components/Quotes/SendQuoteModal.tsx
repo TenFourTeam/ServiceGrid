@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { escapeHtml } from "@/utils/sanitize";
 import { useQueryClient } from "@tanstack/react-query";
+import { SUPABASE_URL } from "@/utils/edgeApi";
 
 export interface SendQuoteModalProps {
   open: boolean;
@@ -33,10 +34,9 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
     const base = window.location.origin;
     const approveUrl = `${base}/quote-action?type=approve&quote_id=${encodeURIComponent(quote.id)}&token=${encodeURIComponent(quote.publicToken)}`;
     const editUrl = `${base}/quote-action?type=edit&quote_id=${encodeURIComponent(quote.id)}&token=${encodeURIComponent(quote.publicToken)}`;
-    const viewUrl = `${base}/quote/${encodeURIComponent(quote.publicToken)}`;
-    const pixelUrl = `https://ijudkzqfriazabiosnvb.functions.supabase.co/quote-events?type=open&quote_id=${encodeURIComponent(quote.id)}&token=${encodeURIComponent(quote.publicToken)}`;
+    const pixelUrl = `${SUPABASE_URL}/functions/v1/quote-events?type=open&quote_id=${encodeURIComponent(quote.id)}&token=${encodeURIComponent(quote.publicToken)}`;
     const logo = store.business.lightLogoUrl || store.business.logoUrl;
-    const built = buildQuoteEmail({ businessName: store.business.name, businessLogoUrl: logo, customerName, quote, approveUrl, editUrl, viewUrl, pixelUrl });
+    const built = buildQuoteEmail({ businessName: store.business.name, businessLogoUrl: logo, customerName, quote, approveUrl, editUrl, pixelUrl });
     return { html: built.html, defaultSubject: built.subject };
   }, [quote, store.business.name, store.business.logoUrl, store.business.lightLogoUrl, customerName]);
   const previewHtml = useMemo(() => {
@@ -71,10 +71,12 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
         const hr = `<hr style=\"border:none; border-top:1px solid #e5e7eb; margin:12px 0;\" />`;
         return `${introBlock}${hr}${html}`;
       })();
+      console.info('[SendQuoteModal] sending quote email', { quoteId: quote.id, to });
       const { error } = await supabase.functions.invoke("resend-send-email", {
         body: { to, subject: subject || defaultSubject, html: finalHtml, quote_id: quote.id, from_name: store.business.name },
       });
       if (error) throw error;
+      console.info('[SendQuoteModal] sent', { quoteId: quote.id });
       // Optimistically mark as Sent in React Query cache for immediate UI update
       queryClient.setQueryData<{ rows: Array<{ id: string; status: string; updatedAt?: string }> }>(
         ["supabase", "quotes"],

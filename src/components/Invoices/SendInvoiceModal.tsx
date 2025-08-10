@@ -71,10 +71,12 @@ const previewHtml = useMemo(() => {
         const hr = `<hr style=\"border:none; border-top:1px solid #e5e7eb; margin:12px 0;\" />`;
         return `${introBlock}${hr}${html}`;
       })();
+      console.info('[SendInvoiceModal] sending invoice email', { invoiceId: invoice.id, to });
       const { error } = await supabase.functions.invoke("resend-send-email", {
         body: { to, subject: subject || defaultSubject, html: finalHtml, invoice_id: invoice.id, from_name: store.business.name, reply_to: store.business.replyToEmail },
       });
       if (error) throw error;
+      console.info('[SendInvoiceModal] sent', { invoiceId: invoice.id });
       // Optimistically mark as Sent
       queryClient.setQueryData<{ rows: Array<{ id: string; status: string; updatedAt?: string }> }>(
         ["supabase", "invoices"],

@@ -8,11 +8,10 @@ interface Params {
   quote: Quote;
   approveUrl: string;
   editUrl: string;
-  viewUrl: string;
   pixelUrl: string;
 }
 
-export function buildQuoteEmail({ businessName, businessLogoUrl, customerName, quote, approveUrl, editUrl, viewUrl, pixelUrl }: Params) {
+export function buildQuoteEmail({ businessName, businessLogoUrl, customerName, quote, approveUrl, editUrl, pixelUrl }: Params) {
   const subject = `${businessName} • Quote ${quote.number}`;
 
   const taxAmount = Math.max(0, (quote.total ?? 0) - ((quote.subtotal ?? 0) - (quote.discount ?? 0)));

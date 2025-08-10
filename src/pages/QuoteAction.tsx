@@ -2,8 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-
-const FUNC_BASE = 'https://ijudkzqfriazabiosnvb.functions.supabase.co/quote-events';
+import { edgePublicJson } from '@/utils/edgeApi';
 
 type ActionType = 'approve' | 'edit';
 
@@ -42,9 +41,8 @@ export default function QuoteActionPage() {
     async function run() {
       if (!type || !quoteId || !token) { setStatus('error'); return; }
       try {
-        const url = `${FUNC_BASE}?type=${encodeURIComponent(type)}&quote_id=${encodeURIComponent(quoteId)}&token=${encodeURIComponent(token)}`;
-        const res = await fetch(url, { method: 'GET' });
-        if (!res.ok) throw new Error('Request failed');
+        const path = `quote-events?type=${encodeURIComponent(type)}&quote_id=${encodeURIComponent(quoteId)}&token=${encodeURIComponent(token)}`;
+        await edgePublicJson(path);
         setStatus('ok');
       } catch (e) {
         console.error('quote action error', e);
