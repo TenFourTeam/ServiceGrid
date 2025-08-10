@@ -62,12 +62,7 @@ export default function CalendarShell({
 
       <div className="grid gap-4 md:grid-cols-[260px_1fr_280px]">
         {/* Left rail (mini calendar + scheduling) */}
-        <aside className="hidden md:block">
-          <div className="rounded-lg border">
-            <Calendar mode="single" selected={date} onSelect={d => d && setDate(startOfDay(d))} className="p-2" />
-          </div>
-          
-        </aside>
+        
 
         {/* Main calendar area */}
         <main className="min-h-[60vh]" role="grid">
