@@ -1,9 +1,10 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { addDays, endOfMonth, endOfWeek, format, isSameDay, isSameMonth, parseISO, startOfMonth, startOfWeek } from "date-fns";
 import { useSupabaseJobsRange } from "@/hooks/useSupabaseJobsRange";
 import type { DbJobRow } from "@/hooks/useSupabaseJobs";
 import { useSupabaseCustomers } from "@/hooks/useSupabaseCustomers";
 import { formatMoney } from "@/utils/format";
+import JobShowModal from "@/components/Jobs/JobShowModal";
 
 function useMonthGrid(date: Date) {
   const start = startOfWeek(startOfMonth(date), { weekStartsOn: 1 });
@@ -18,6 +19,8 @@ export default function MonthCalendar({ date, onDateChange }: { date: Date; onDa
   const { data } = useSupabaseJobsRange({ start, end });
   const jobs: DbJobRow[] = data?.rows ?? [];
 
+  const [activeJob, setActiveJob] = useState<DbJobRow | null>(null);
+  const [open, setOpen] = useState(false);
   const { data: customersData } = useSupabaseCustomers();
   const customersMap = useMemo(() => new Map((customersData?.rows ?? []).map(c => [c.id, c.name])), [customersData]);
   const jobsByDay = useMemo(() => {
@@ -47,9 +50,12 @@ export default function MonthCalendar({ date, onDateChange }: { date: Date; onDa
           const isToday = isSameDay(d, new Date());
           const inMonth = isSameMonth(d, date);
           return (
-            <button
+            <div
               key={key}
+              role="button"
+              tabIndex={0}
               onClick={() => onDateChange(d)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onDateChange(d); } }}
               aria-current={isToday ? 'date' : undefined}
               className={`border p-2 text-left align-top focus:outline-none focus:ring-2 focus:ring-primary ${inMonth ? '' : 'opacity-60'} ${isToday ? 'bg-muted/40' : ''}`}
             >
@@ -60,16 +66,23 @@ export default function MonthCalendar({ date, onDateChange }: { date: Date; onDa
                 {visible.map((j) => {
                   const t = new Date(j.startsAt);
                   return (
-                    <li key={j.id} className={`truncate rounded px-2 py-1 text-xs border bg-background/60 ${j.status === 'Completed' ? 'border-success bg-success/5' : j.status === 'In Progress' ? 'border-primary' : 'border-primary/50'}`}>
-                      <span className={`mr-2 inline-block h-2 w-2 rounded-full align-middle ${j.status === 'Completed' ? 'bg-success' : 'bg-primary'}`} aria-hidden="true" />
-                      <span className="font-medium">
-                        {t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                      </span>
-                      <span className="mx-1 opacity-70">•</span>
-                      <span className="truncate">{(j as any).title || 'Job'}</span>
-                      {customersMap.get(j.customerId) && (
-                        <span className="opacity-70"> — {customersMap.get(j.customerId)}</span>
-                      )}
+                    <li key={j.id} className="truncate">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setActiveJob(j); setOpen(true); }}
+                        className={`w-full truncate rounded px-2 py-1 text-xs border bg-background/60 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary ${j.status === 'Completed' ? 'border-success bg-success/5' : j.status === 'In Progress' ? 'border-primary' : 'border-primary/50'}`}
+                        aria-label={`Open job ${(j as any).title || 'Job'} at ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
+                      >
+                        <span className={`mr-2 inline-block h-2 w-2 rounded-full align-middle ${j.status === 'Completed' ? 'bg-success' : 'bg-primary'}`} aria-hidden="true" />
+                        <span className="font-medium">
+                          {t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                        </span>
+                        <span className="mx-1 opacity-70">•</span>
+                        <span className="truncate">{(j as any).title || 'Job'}</span>
+                        {customersMap.get(j.customerId) && (
+                          <span className="opacity-70"> — {customersMap.get(j.customerId)}</span>
+                        )}
+                      </button>
                     </li>
                   );
                 })}
@@ -77,10 +90,17 @@ export default function MonthCalendar({ date, onDateChange }: { date: Date; onDa
                   <li className="text-xs opacity-70">+{overflow} more</li>
                 )}
               </ul>
-            </button>
+            </div>
           );
         })}
       </div>
+      {activeJob && (
+        <JobShowModal
+          open={open}
+          onOpenChange={(v) => { setOpen(v); if (!v) setActiveJob(null); }}
+          job={activeJob as any}
+        />
+      )}
     </section>
   );
 }
