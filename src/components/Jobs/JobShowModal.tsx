@@ -64,6 +64,26 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
     }
   }
 
+  async function handleAdvanceStatus() {
+    const nextStatus: Job['status'] = job.status === 'Scheduled' ? 'In Progress' : 'Completed';
+    try {
+      const token = await getClerkTokenStrict(getToken);
+      const r = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/jobs?id=${job.id}`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      if (!r.ok) {
+        const txt = await r.text().catch(()=> '');
+        throw new Error(`Failed to update job (${r.status}): ${txt}`);
+      }
+      updateJobStatus(job.id, nextStatus);
+      toast.success(`Status updated to ${nextStatus}`);
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to advance status');
+    }
+  }
+
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent>
@@ -144,7 +164,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
         <DrawerFooter>
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <Button onClick={() => updateJobStatus(job.id, job.status === 'Scheduled' ? 'In Progress' : 'Completed')}>Advance Status</Button>
+              <Button onClick={handleAdvanceStatus} disabled={job.status === 'Completed'}>Advance Status</Button>
               <ReschedulePopover job={job as Job} onDone={()=>{ /* no-op, realtime/subsequent fetch updates UI */ }} />
               {!(job as any).quoteId && (
                 <Button variant="outline" onClick={() => setPickerOpen(true)}>Link Quote</Button>
