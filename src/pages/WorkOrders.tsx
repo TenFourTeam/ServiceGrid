@@ -14,6 +14,7 @@ import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { getClerkTokenStrict } from '@/utils/clerkToken';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
+import ReschedulePopover from '@/components/WorkOrders/ReschedulePopover';
 
 function useFilteredJobs() {
   const { jobs, customers, invoices } = useStore();
@@ -73,9 +74,9 @@ function StatusChip({ status }: { status: Job['status'] }) {
   return <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${styles}`}>{status}</span>;
 }
 
-function WorkOrderRow({ job, onSchedule, onComplete, onInvoice, onViewInvoice, onNavigate, uninvoiced, customerName, when }: {
+function WorkOrderRow({ job, onRescheduled, onComplete, onInvoice, onViewInvoice, onNavigate, uninvoiced, customerName, when }: {
   job: Job;
-  onSchedule: () => void;
+  onRescheduled: () => void | Promise<void>;
   onComplete: () => void;
   onInvoice: () => void;
   onViewInvoice?: () => void;
@@ -103,7 +104,7 @@ function WorkOrderRow({ job, onSchedule, onComplete, onInvoice, onViewInvoice, o
         </div>
       </div>
       <div className="mt-3 grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
-        <Button size="sm" variant="secondary" onClick={onSchedule}>Schedule</Button>
+        <ReschedulePopover job={job} onDone={onRescheduled} />
         <Button size="sm" onClick={onComplete} disabled={job.status === 'Completed'}>Complete</Button>
         {job.status==='Completed' && uninvoiced && <Button size="sm" onClick={onInvoice}>Invoice</Button>}
         <Button size="sm" variant="outline" onClick={onNavigate}>Navigate</Button>
@@ -193,7 +194,7 @@ export default function WorkOrdersPage() {
                     customerName={customerName}
                     when={when}
                     uninvoiced={uninvoiced}
-                    onSchedule={()=> { navigate(`/calendar?job=${j.id}`); toast({ title: 'Scheduling', description: 'Pick a time in Calendar' }); }}
+                    onRescheduled={async ()=> { await refetch(); }}
                     onComplete={async ()=> {
                       try {
                         const token = await getClerkTokenStrict(getToken);
