@@ -119,7 +119,7 @@ export function WeekCalendar({
       <div className="md:overflow-visible overflow-x-auto -mx-2 md:mx-0">
         <div className="px-2 md:px-0 min-w-[900px] md:min-w-0">
           {/* Day headers */}
-          <div className="grid grid-cols-8 gap-1 mb-2">
+          <div className="grid grid-cols-[64px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-1 mb-2">
             <div />
             {days.map(day => {
             const isToday = isSameDay(day, now);
@@ -138,7 +138,7 @@ export function WeekCalendar({
           </div>
 
           {/* Calendar grid */}
-          <div className="grid grid-cols-8 gap-1">
+          <div className="grid grid-cols-[64px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-1">
             <div className="text-xs text-muted-foreground">
               {Array.from({
               length: END_HOUR - START_HOUR + 1
