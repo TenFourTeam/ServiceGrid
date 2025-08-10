@@ -10,11 +10,11 @@ import { toast } from "sonner";
 import ReschedulePopover from "@/components/WorkOrders/ReschedulePopover";
 import type { Job } from "@/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle as ModalTitle } from "@/components/ui/dialog";
-
+import PickQuoteModal from "@/components/Jobs/PickQuoteModal";
 interface JobShowModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  job: Pick<Job, "id" | "customerId" | "startsAt" | "endsAt" | "status"> & Partial<Pick<Job, "notes" | "address" | "total" | "photos" >>;
+  job: Pick<Job, "id" | "customerId" | "startsAt" | "endsAt" | "status"> & Partial<Pick<Job, "notes" | "address" | "total" | "photos" | "quoteId" >>;
 }
 
 export default function JobShowModal({ open, onOpenChange, job }: JobShowModalProps) {
@@ -24,7 +24,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
   const { getToken } = useClerkAuth();
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
-
+  const [pickerOpen, setPickerOpen] = useState(false);
   useEffect(() => {
     setLocalNotes(job.notes ?? "");
   }, [job.id]);
@@ -46,6 +46,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
   }, [viewerOpen, photos.length]);
 
   async function handleCreateInvoice() {
+    if (!(job as any).quoteId) { setPickerOpen(true); toast.info('Link a quote to this job before creating an invoice.'); return; }
     try {
       const token = await getClerkTokenStrict(getToken);
       const r = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/invoices`, {
@@ -144,6 +145,9 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
           <div className="flex items-center gap-2">
             <ReschedulePopover job={job as Job} onDone={()=>{ /* no-op, realtime/subsequent fetch updates UI */ }} />
             <Button onClick={() => updateJobStatus(job.id, job.status === 'Scheduled' ? 'In Progress' : 'Completed')}>Advance Status</Button>
+            {!(job as any).quoteId && (
+              <Button variant="outline" onClick={() => setPickerOpen(true)}>Link Quote</Button>
+            )}
             <Button variant="outline" onClick={handleCreateInvoice}>Create Invoice</Button>
             <Button variant="secondary" onClick={() => onOpenChange(false)}>Close</Button>
             <Button variant="destructive" onClick={() => { deleteJob(job.id); onOpenChange(false); }}>Delete</Button>
@@ -184,6 +188,30 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
             )}
           </DialogContent>
         </Dialog>
+        <PickQuoteModal
+          open={pickerOpen}
+          onOpenChange={setPickerOpen}
+          customerId={job.customerId}
+          onSelect={async (quoteId) => {
+            try {
+              const token = await getClerkTokenStrict(getToken);
+              const r = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/jobs?id=${job.id}`, {
+                method: 'PATCH',
+                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ quoteId }),
+              });
+              if (!r.ok) {
+                const txt = await r.text().catch(()=> '');
+                throw new Error(`Failed to link quote (${r.status}): ${txt}`);
+              }
+              upsertJob({ ...(job as any), quoteId } as any);
+              toast.success('Quote linked to job');
+              setPickerOpen(false);
+            } catch (e: any) {
+              toast.error(e?.message || 'Failed to link quote');
+            }
+          }}
+        />
       </DrawerContent>
     </Drawer>
   );

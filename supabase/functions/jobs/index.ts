@@ -369,12 +369,13 @@ serve(async (req) => {
         notes: string | null;
         photos: string[] | null;
         title: string | null;
+        quoteId: string | null;
       }>;
 
       // Ensure job exists and belongs to owner
       const { data: existing, error: exErr } = await supabase
         .from("jobs")
-        .select("id")
+        .select("id, customer_id")
         .eq("id", id)
         .eq("owner_id", ownerId)
         .single();
@@ -396,6 +397,26 @@ serve(async (req) => {
       if (body.notes !== undefined) upd.notes = body.notes;
       if (body.photos !== undefined) upd.photos = body.photos ?? [];
       if (body.title !== undefined) upd.title = body.title;
+
+      // Link or unlink a quote
+      if (Object.prototype.hasOwnProperty.call(body, 'quoteId')) {
+        const qid = (body as any).quoteId;
+        if (qid === null) {
+          upd.quote_id = null;
+        } else if (qid) {
+          const { data: quote, error: qErr } = await supabase
+            .from('quotes')
+            .select('id, customer_id')
+            .eq('id', qid)
+            .eq('owner_id', ownerId)
+            .single();
+          if (qErr) return badRequest('Quote not found', 404);
+          if ((quote as any).customer_id !== (existing as any).customer_id) {
+            return badRequest('Quote and job must belong to the same customer', 400);
+          }
+          upd.quote_id = qid;
+        }
+      }
 
       if (Object.keys(upd).length) {
         const { error: updErr } = await supabase.from("jobs").update(upd).eq("id", id).eq("owner_id", ownerId);

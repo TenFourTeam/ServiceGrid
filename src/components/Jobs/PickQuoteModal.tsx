@@ -10,14 +10,16 @@ interface PickQuoteModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSelect: (quoteId: string) => void;
+  customerId?: string;
 }
 
-export default function PickQuoteModal({ open, onOpenChange, onSelect }: PickQuoteModalProps) {
+export default function PickQuoteModal({ open, onOpenChange, onSelect, customerId }: PickQuoteModalProps) {
   const { data } = useSupabaseQuotes({ enabled: open });
   const [query, setQuery] = useState("");
 
   const quotes = useMemo(() => {
-    const rows = data?.rows ?? [];
+    let rows = data?.rows ?? [];
+    if (customerId) rows = rows.filter((r) => r.customerId === customerId);
     if (!query.trim()) return rows;
     const q = query.toLowerCase();
     return rows.filter((r) => (
@@ -25,7 +27,7 @@ export default function PickQuoteModal({ open, onOpenChange, onSelect }: PickQuo
       (r.customerName || "").toLowerCase().includes(q) ||
       (r.customerEmail || "").toLowerCase().includes(q)
     ));
-  }, [data, query]);
+  }, [data, query, customerId]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
