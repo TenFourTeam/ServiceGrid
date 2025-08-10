@@ -9,6 +9,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSupabaseInvoices } from '@/hooks/useSupabaseInvoices';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import InvoiceEditor from '@/pages/Invoices/InvoiceEditor';
+import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function InvoicesPage() {
   const store = useStore();
@@ -18,6 +20,21 @@ export default function InvoicesPage() {
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<'All' | 'Draft' | 'Sent' | 'Paid' | 'Overdue'>('All');
   const [activeId, setActiveId] = useState<string | null>(null);
+  const qc = useQueryClient();
+
+  useEffect(() => {
+    if (!isSignedIn) return;
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, () => {
+        qc.invalidateQueries({ queryKey: ['supabase', 'invoices'] });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'invoice_line_items' }, () => {
+        qc.invalidateQueries({ queryKey: ['supabase', 'invoices'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [qc, isSignedIn]);
 
   useEffect(() => {
     if (!isSignedIn || !dbInvoices?.rows) return;

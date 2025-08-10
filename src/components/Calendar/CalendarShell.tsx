@@ -44,7 +44,13 @@ export default function CalendarShell({
   }, [stepDate]);
   return <div className="flex-1 min-h-0 flex flex-col gap-4">
       <header className="flex items-center justify-between">
-        <div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" aria-label="Previous" onClick={() => stepDate(-1)}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="icon" aria-label="Next" onClick={() => stepDate(1)}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
           <h2 className="text-sm md:text-base font-semibold">{rangeTitle}</h2>
         </div>
         <div className="flex items-center gap-2">
@@ -77,7 +83,7 @@ export default function CalendarShell({
         {/* Main calendar area */}
         <main className="h-full min-h-0" role="grid">
           {view === "month" && <MonthCalendar date={date} onDateChange={setDate} />}
-          {view === "week" && <WeekCalendar selectedJobId={selectedJobId} />}
+          {view === "week" && <WeekCalendar selectedJobId={selectedJobId} date={date} />}
           {view === "day" && <DayCalendar date={date} />}
         </main>
 

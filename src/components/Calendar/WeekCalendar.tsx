@@ -17,9 +17,11 @@ function dayKey(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().slice(0, 10);
 }
 export function WeekCalendar({
-  selectedJobId
+  selectedJobId,
+  date,
 }: {
   selectedJobId?: string;
+  date?: Date;
 }) {
   const {
     jobs,
@@ -56,6 +58,18 @@ export function WeekCalendar({
     d.setHours(23, 59, 59, 999);
     return d;
   }, [weekStart]);
+
+  // Sync week start when parent date changes
+  useEffect(() => {
+    if (!date) return;
+    const d = new Date(date);
+    const day = d.getDay();
+    const mondayOffset = (day + 6) % 7;
+    const monday = new Date(d);
+    monday.setDate(d.getDate() - mondayOffset);
+    monday.setHours(0, 0, 0, 0);
+    setWeekStart(monday);
+  }, [date]);
 
   const { isSignedIn, getToken } = useClerkAuth();
   const { data: jobsRange } = useSupabaseJobsRange({ start: weekStart, end: weekEnd }, { enabled: !!isSignedIn });
