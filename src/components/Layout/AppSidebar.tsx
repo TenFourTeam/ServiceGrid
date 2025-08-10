@@ -46,15 +46,20 @@ export default function AppSidebar() {
         <div className={"flex items-center px-2 py-1.5 " + (collapsed ? "justify-center" : "justify-between") }>
           <div className="flex items-center gap-2">
             <div className="relative">
-              {business.logoUrl ? (
-                <img
-                  src={business.logoUrl}
-                  alt={`${business.name || "Business"} logo`}
-                  className="size-7 rounded-full object-cover ring-1 ring-border"
-                />
-              ) : (
-                <div className="size-7 rounded-full bg-primary" aria-hidden />
-              )}
+              <div className="size-7 rounded-full bg-primary ring-1 ring-border overflow-hidden">
+                {business.logoUrl && (
+                  <img
+                    src={business.logoUrl}
+                    alt={`${business.name || "Business"} logo`}
+                    className="size-7 object-cover"
+                    loading="lazy"
+                    onError={(e) => {
+                      // Hide broken images to reveal the placeholder behind
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                )}
+              </div>
               {collapsed && (
                 <SidebarTrigger aria-label="Expand sidebar" className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity rounded-full" />
               )}

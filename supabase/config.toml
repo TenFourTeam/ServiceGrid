@@ -27,3 +27,6 @@ verify_jwt = false
 
 [functions.upload-business-logo]
 verify_jwt = false
+
+[functions.get-business]
+verify_jwt = false

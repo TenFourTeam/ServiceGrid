@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { getClerkTokenStrict } from '@/utils/clerkToken';
 import { toast } from 'sonner';
@@ -51,6 +51,40 @@ export default function SettingsPage() {
     }
   }
 
+  useEffect(() => {
+    // Hydrate business from server to ensure persistence across devices
+    if (!isSignedIn) return;
+    (async () => {
+      try {
+        const token = await getClerkTokenStrict(getToken);
+        const r = await fetch('https://ijudkzqfriazabiosnvb.functions.supabase.co/get-business', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data?.error || `Failed to load business (${r.status})`);
+        const b = data?.business;
+        if (b?.id) {
+          store.setBusiness({
+            id: b.id,
+            name: b.name ?? store.business.name,
+            phone: b.phone ?? '',
+            replyToEmail: b.reply_to_email ?? '',
+            logoUrl: b.logo_url ?? '',
+            taxRateDefault: Number(b.tax_rate_default ?? store.business.taxRateDefault) || 0,
+            numbering: {
+              estPrefix: b.est_prefix ?? store.business.numbering.estPrefix,
+              estSeq: Number(b.est_seq ?? store.business.numbering.estSeq) || store.business.numbering.estSeq,
+              invPrefix: b.inv_prefix ?? store.business.numbering.invPrefix,
+              invSeq: Number(b.inv_seq ?? store.business.numbering.invSeq) || store.business.numbering.invSeq,
+            },
+          });
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    })();
+  }, [isSignedIn]);
+
   return (
     <AppLayout title="Settings">
       <div className="grid md:grid-cols-2 gap-6">
@@ -75,15 +109,17 @@ export default function SettingsPage() {
           <CardHeader><CardTitle>Branding</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-4">
-              {store.business.logoUrl ? (
-                <img
-                  src={store.business.logoUrl}
-                  alt={`${store.business.name} logo`}
-                  className="h-10 w-10 rounded-full object-cover ring-1 ring-border"
-                />
-              ) : (
-                <div className="h-10 w-10 rounded-full bg-primary" aria-hidden />
-              )}
+              <div className="h-10 w-10 rounded-full bg-primary ring-1 ring-border overflow-hidden">
+                {store.business.logoUrl && (
+                  <img
+                    src={store.business.logoUrl}
+                    alt={`${store.business.name} logo`}
+                    className="h-10 w-10 object-cover"
+                    loading="lazy"
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  />
+                )}
+              </div>
               <div className="flex-1 grid gap-2 sm:grid-cols-[1fr_auto]">
                 <Input type="file" accept="image/*" onChange={(e)=>setFile(e.target.files?.[0] || null)} />
                 <Button onClick={uploadLogo} disabled={uploading || !file}>{uploading ? 'Uploading…' : 'Upload logo'}</Button>

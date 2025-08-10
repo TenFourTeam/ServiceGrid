@@ -4,17 +4,53 @@ import { ReactNode, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { NewJobSheet } from '@/components/Job/NewJobSheet';
 import { useAuth } from '@/components/Auth/AuthProvider';
-import { useClerk } from '@clerk/clerk-react';
+import { useClerk, useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/Layout/AppSidebar';
-
+import { useStore } from '@/store/useAppStore';
+import { getClerkTokenStrict } from '@/utils/clerkToken';
 export default function AppLayout({ children, title }: { children: ReactNode; title?: string }) {
+  const store = useStore();
   const { signOut } = useAuth();
   const { signOut: clerkSignOut } = useClerk();
+  const { getToken, isSignedIn } = useClerkAuth();
 
   useEffect(() => {
     document.title = title ? `${title} • TenFour Lawn` : 'TenFour Lawn';
   }, [title]);
+
+  useEffect(() => {
+    if (!isSignedIn) return;
+    (async () => {
+      try {
+        const token = await getClerkTokenStrict(getToken);
+        const r = await fetch('https://ijudkzqfriazabiosnvb.functions.supabase.co/get-business', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data?.error || `Failed to load business (${r.status})`);
+        const b = data?.business;
+        if (b?.id) {
+          store.setBusiness({
+            id: b.id,
+            name: b.name ?? store.business.name,
+            phone: b.phone ?? '',
+            replyToEmail: b.reply_to_email ?? '',
+            logoUrl: b.logo_url ?? '',
+            taxRateDefault: Number(b.tax_rate_default ?? store.business.taxRateDefault) || 0,
+            numbering: {
+              estPrefix: b.est_prefix ?? store.business.numbering.estPrefix,
+              estSeq: Number(b.est_seq ?? store.business.numbering.estSeq) || store.business.numbering.estSeq,
+              invPrefix: b.inv_prefix ?? store.business.numbering.invPrefix,
+              invSeq: Number(b.inv_seq ?? store.business.numbering.invSeq) || store.business.numbering.invSeq,
+            },
+          });
+        }
+      } catch (e) {
+        console.error('[AppLayout] hydrate business failed', e);
+      }
+    })();
+  }, [isSignedIn]);
 
   return (
     <SidebarProvider>
