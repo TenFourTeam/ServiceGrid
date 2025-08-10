@@ -11,6 +11,8 @@ import { toast } from "sonner";
 import { useStore } from "@/store/useAppStore";
 import type { Customer, LineItem, Quote } from "@/types";
 import { formatMoney as formatCurrency } from "@/utils/format";
+import { useAuth as useClerkAuth } from "@clerk/clerk-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 export interface CreateQuoteModalProps {
   open: boolean;
@@ -19,6 +21,7 @@ export interface CreateQuoteModalProps {
   defaultTaxRate?: number;
   onRequestSend?: (quote: Quote) => void;
 }
+
 
 interface QuoteDraft {
   customerId: string;
@@ -47,6 +50,8 @@ function calculateQuoteTotals(lineItems: LineItem[], taxRate: number, discount: 
 
 export default function CreateQuoteModal({ open, onOpenChange, customers, defaultTaxRate = 0.1, onRequestSend }: CreateQuoteModalProps) {
   const store = useStore();
+  const { getToken } = useClerkAuth();
+  const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState<QuoteDraft>({
     customerId: "",
@@ -126,17 +131,57 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
     }
     setSaving(true);
     try {
-      const { subtotal, total } = calculateQuoteTotals(draft.lineItems, draft.taxRate, draft.discount);
-      const saved = store.upsertQuote({
+      const token = await getToken();
+      if (!token) throw new Error("Not authenticated");
+
+      const payload = {
+        customerId: draft.customerId,
+        address: draft.address || null,
+        lineItems: draft.lineItems.map((li) => ({
+          name: li.name,
+          qty: 1,
+          unit: li.unit || null,
+          lineTotal: li.lineTotal,
+        })),
+        taxRate: draft.taxRate,
+        discount: draft.discount,
+        notesInternal: draft.notesInternal || null,
+        terms: draft.terms || null,
+        paymentTerms: draft.paymentTerms,
+        frequency: draft.frequency,
+        depositRequired: draft.depositRequired,
+        depositPercent: draft.depositPercent,
+      };
+
+      const res = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/quotes`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        throw new Error(`Failed to create quote (${res.status}): ${txt}`);
+      }
+
+      const data = await res.json();
+      const q = data?.quote;
+
+      const saved: Quote = {
+        id: q.id,
+        number: q.number,
         businessId: store.business.id,
         customerId: draft.customerId,
         address: draft.address,
         lineItems: draft.lineItems,
-        taxRate: draft.taxRate,
-        discount: draft.discount,
-        subtotal,
-        total,
-        status: "Draft",
+        taxRate: q.taxRate ?? draft.taxRate,
+        discount: q.discount ?? draft.discount,
+        subtotal: q.subtotal ?? 0,
+        total: q.total,
+        status: q.status,
         files: [],
         notesInternal: draft.notesInternal,
         terms: draft.terms,
@@ -144,12 +189,21 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
         frequency: draft.frequency,
         depositRequired: draft.depositRequired,
         depositPercent: draft.depositPercent,
-      });
+        sentAt: undefined,
+        viewCount: q.viewCount ?? 0,
+        createdAt: q.createdAt ?? new Date().toISOString(),
+        updatedAt: q.updatedAt ?? new Date().toISOString(),
+        publicToken: q.publicToken,
+      };
+
+      // Refresh list
+      queryClient.invalidateQueries({ queryKey: ["supabase", "quotes"] });
+
       toast.success("Quote saved");
       return saved;
     } catch (e) {
       console.error(e);
-      toast.error("Failed to save quote");
+      toast.error((e as any)?.message || "Failed to save quote");
       return null;
     } finally {
       setSaving(false);

@@ -15,3 +15,6 @@ verify_jwt = false
 
 [functions.customers]
 verify_jwt = false
+
+[functions.quotes]
+verify_jwt = false
