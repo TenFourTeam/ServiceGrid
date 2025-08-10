@@ -351,7 +351,7 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
                   type="number"
                   min="0"
                   max="100"
-                  step="0.01"
+                  step="1"
                   value={draft.taxRate * 100}
                   onChange={(e) =>
                     setDraft((prev) => ({ ...prev, taxRate: (parseFloat(e.target.value) || 0) / 100 }))
