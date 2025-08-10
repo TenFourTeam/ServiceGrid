@@ -3,15 +3,15 @@ import { ReactNode, useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { NewJobSheet } from '@/components/Job/NewJobSheet';
-import { useAuth } from '@/components/Auth/AuthProvider';
+
 import { useClerk, useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/Layout/AppSidebar';
 import { useStore } from '@/store/useAppStore';
-import { getClerkTokenStrict } from '@/utils/clerkToken';
+import { edgeFetchJson } from '@/utils/edgeApi';
 export default function AppLayout({ children, title }: { children: ReactNode; title?: string }) {
   const store = useStore();
-  const { signOut } = useAuth();
+  
   const { signOut: clerkSignOut } = useClerk();
   const { getToken, isSignedIn } = useClerkAuth();
 
@@ -23,12 +23,7 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
     if (!isSignedIn) return;
     (async () => {
       try {
-        const token = await getClerkTokenStrict(getToken);
-        const r = await fetch('https://ijudkzqfriazabiosnvb.functions.supabase.co/get-business', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await r.json();
-        if (!r.ok) throw new Error(data?.error || `Failed to load business (${r.status})`);
+        const data = await edgeFetchJson("get-business", getToken);
         const b = data?.business;
         if (b?.id) {
           store.setBusiness({
@@ -65,7 +60,7 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
               <Button asChild variant="secondary"><Link to="/quotes?new=1">New Quote</Link></Button>
               {/* New Job Sheet trigger */}
               <NewJobSheet />
-              <Button variant="outline" onClick={async () => { try { await clerkSignOut?.(); } catch {} finally { await signOut(); } }}>Sign out</Button>
+              <Button variant="outline" onClick={async () => { try { await clerkSignOut?.(); } catch {} }}>Sign out</Button>
             </div>
           </header>
           {children}

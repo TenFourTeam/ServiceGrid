@@ -8,7 +8,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { StoreProvider } from "./store/useAppStore";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import LoadingScreen from "@/components/LoadingScreen";
-import AuthProvider from "@/components/Auth/AuthProvider";
+
 import ProtectedRoute from "@/components/Auth/ProtectedRoute";
 
 const CalendarPage = lazy(() => import("./pages/Calendar"));
@@ -22,7 +22,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 
 const ClerkAuthPage = lazy(() => import("./pages/ClerkAuth"));
 const QuoteActionPage = lazy(() => import("./pages/QuoteAction"));
-const QuotePublicPage = lazy(() => import("./pages/QuotePublic"));
+
 
 const queryClient = new QueryClient();
 
@@ -32,14 +32,14 @@ const App = () => (
       <Toaster />
       <Sonner />
       <StoreProvider>
-        <AuthProvider>
+        
           <BrowserRouter>
             <ErrorBoundary>
               <Suspense fallback={<LoadingScreen /> }>
                  <Routes>
                    <Route path="/clerk-auth" element={<ClerkAuthPage />} />
                    <Route path="/quote-action" element={<QuoteActionPage />} />
-                   <Route path="/quote/:token" element={<QuotePublicPage />} />
+                   
                    <Route path="/" element={<Navigate to="/calendar" replace />} />
                    <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
                    <Route path="/work-orders" element={<ProtectedRoute><WorkOrdersPage /></ProtectedRoute>} />
@@ -53,7 +53,7 @@ const App = () => (
               </Suspense>
             </ErrorBoundary>
           </BrowserRouter>
-        </AuthProvider>
+        
       </StoreProvider>
     </TooltipProvider>
   </QueryClientProvider>

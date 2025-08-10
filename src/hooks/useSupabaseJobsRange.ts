@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
-import { getClerkTokenStrict } from "@/utils/clerkToken";
+import { edgeFetchJson } from "@/utils/edgeApi";
 import type { DbJobRow } from "@/hooks/useSupabaseJobs";
 
 export function useSupabaseJobsRange(

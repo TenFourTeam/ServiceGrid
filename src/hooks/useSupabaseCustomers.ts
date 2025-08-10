@@ -27,15 +27,6 @@ export function useSupabaseCustomers(opts?: { enabled?: boolean }) {
       }));
       return { rows };
     },
-      const rows: DbCustomerRow[] = (data?.rows || []).map((c: any) => ({
-        id: c.id,
-        name: c.name,
-        email: c.email ?? null,
-        phone: c.phone ?? null,
-        address: c.address ?? null,
-      }));
-      return { rows };
-    },
     staleTime: 30_000,
   });
 }
