@@ -167,8 +167,8 @@ export function WeekCalendar({
     });
     return `${left} – ${right}`;
   }
-  const gridRef = useRef<HTMLDivElement>(null);
-
+const gridRef = useRef<HTMLDivElement>(null);
+const dayRefs = useRef<HTMLDivElement[]>([]);
   async function createJobFromQuote(quoteId: string) {
     try {
       if (!pendingSlot) {
@@ -262,27 +262,39 @@ export function WeekCalendar({
     setPickerOpen(true);
   }
 
-  function onDragStart(e: React.PointerEvent, job: Job) {
-    const bounds = (e.currentTarget.parentElement as HTMLElement | null)?.getBoundingClientRect() ?? gridRef.current?.getBoundingClientRect();
-    if (!bounds) return;
+function onDragStart(e: React.PointerEvent, job: Job) {
     const original = { ...job };
     const dur = new Date(job.endsAt).getTime() - new Date(job.startsAt).getTime();
     let latest = { startsAt: job.startsAt, endsAt: job.endsAt };
 
     const onMove = (ev: PointerEvent) => {
-      const y = clamp(ev.clientY - bounds.top, 0, bounds.height);
-      const minsFromTop = y / bounds.height * TOTAL_MIN;
+      // Determine which day column we're over
+      let idx = -1;
+      for (let i = 0; i < dayRefs.current.length; i++) {
+        const r = dayRefs.current[i]?.getBoundingClientRect();
+        if (r && ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom) {
+          idx = i; break;
+        }
+      }
+      if (idx === -1) {
+        // Fallback to original job day index
+        const startDate = new Date(original.startsAt);
+        const base = new Date(weekStart); base.setHours(0,0,0,0);
+        idx = Math.max(0, Math.min(6, Math.floor((startDate.getTime() - base.getTime()) / (24*3600*1000))));
+      }
+      const dayEl = dayRefs.current[idx];
+      if (!dayEl) return;
+      const rect = dayEl.getBoundingClientRect();
+      const y = clamp(ev.clientY - rect.top, 0, rect.height);
+      const minsFromTop = y / rect.height * TOTAL_MIN;
       const startMins = Math.round(minsFromTop / 15) * 15 + START_HOUR * 60; // snap 15m
-      const d = new Date(original.startsAt);
+
+      const d = new Date(days[idx]);
       d.setHours(0, 0, 0, 0);
       d.setMinutes(startMins);
       const end = new Date(d.getTime() + dur);
       latest = { startsAt: d.toISOString(), endsAt: end.toISOString() };
-      upsertJob({
-        ...job,
-        startsAt: latest.startsAt,
-        endsAt: latest.endsAt
-      });
+      upsertJob({ ...job, startsAt: latest.startsAt, endsAt: latest.endsAt });
     };
 
     const onUp = async () => {
@@ -291,14 +303,14 @@ export function WeekCalendar({
       try {
         const token = await getClerkTokenStrict(getToken);
         const r = await fetch(
-          `https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/jobs`,
+          `https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/jobs?id=${job.id}`,
           {
             method: 'PATCH',
             headers: {
               Authorization: `Bearer ${token}`,
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ id: job.id, startsAt: latest.startsAt, endsAt: latest.endsAt }),
+            body: JSON.stringify({ startsAt: latest.startsAt, endsAt: latest.endsAt }),
           }
         );
         if (!r.ok) {
@@ -348,7 +360,7 @@ export function WeekCalendar({
               length: END_HOUR - START_HOUR + 1
             }, (_, i) => START_HOUR + i).map(h => <div key={h} className="h-16 pr-2 text-right">{h}:00</div>)}
             </div>
-            {days.map(day => <div key={day.toISOString()} className="border rounded-md p-2 relative overflow-hidden" ref={gridRef} onDoubleClick={(e) => handleEmptyDoubleClick(e, day)}>
+            {days.map((day, i) => (<div key={day.toISOString()} className="border rounded-md p-2 relative overflow-hidden" ref={(el) => { if (el) dayRefs.current[i] = el; }} onDoubleClick={(e) => handleEmptyDoubleClick(e, day)}>
                 {/* Weekend shading */}
                 {(day.getDay() === 0 || day.getDay() === 6) && <div className="absolute inset-0 bg-muted/20 pointer-events-none" />}
                 {/* transparent overlay */}
@@ -399,80 +411,13 @@ export function WeekCalendar({
         </div>
       </div>
 
-      <Drawer open={!!activeJob} onOpenChange={o => !o && setActiveJob(null)}>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>Job Details</DrawerTitle>
-          </DrawerHeader>
-          {activeJob && <div className="px-4 space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <div className="text-sm text-muted-foreground">Customer</div>
-                  <div className="font-medium">{customers.find(c => c.id === activeJob.customerId)?.name}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">Status</div>
-                  <div className="font-medium">{activeJob.status}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">Starts</div>
-                  <div>{formatDateTime(activeJob.startsAt)}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">Ends</div>
-                  <div>{formatDateTime(activeJob.endsAt)}</div>
-                </div>
-              </div>
-              <div>
-                <div className="text-sm text-muted-foreground mb-1">Notes</div>
-                <Textarea value={activeJob.notes ?? ''} onChange={e => {
-              const val = e.target.value;
-              const j = {
-                ...activeJob,
-                notes: val
-              };
-              setActiveJob(j);
-              upsertJob(j);
-              if (notesTimer.current) window.clearTimeout(notesTimer.current);
-              notesTimer.current = window.setTimeout(async () => {
-                try {
-                  const token = await getClerkTokenStrict(getToken);
-                  await fetch(
-                    `https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/jobs`,
-                    {
-                      method: 'PATCH',
-                      headers: {
-                        Authorization: `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify({ id: activeJob.id, notes: val }),
-                    }
-                  );
-                } catch (err) {
-                  // no-op; optimistic update remains
-                }
-              }, 600) as unknown as number;
-            }} />
-              </div>
-            </div>}
-          <DrawerFooter>
-            {activeJob && <div className="flex items-center gap-2">
-                <Button onClick={() => {
-              updateJobStatus(activeJob.id, activeJob.status === 'Scheduled' ? 'In Progress' : 'Completed');
-            }}>Advance Status</Button>
-                <Button variant="outline" onClick={() => createInvoiceFromJob(activeJob.id)}>Create Invoice</Button>
-                <Button variant="secondary" onClick={() => {
-              setActiveJob(null);
-            }}>Close</Button>
-                <Button variant="destructive" onClick={() => {
-              deleteJob(activeJob.id);
-              setActiveJob(null);
-            }}>Delete</Button>
-              </div>}
-            <DrawerClose />
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
+      {activeJob && (
+        <JobShowModal
+          open={true}
+          onOpenChange={(o)=>{ if(!o) setActiveJob(null); }}
+          job={activeJob}
+        />
+      )}
 
       <PickQuoteModal
         open={pickerOpen}
