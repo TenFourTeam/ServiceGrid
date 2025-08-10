@@ -47,18 +47,23 @@ export default function MonthCalendar({ date, onDateChange }: { date: Date; onDa
             <button
               key={key}
               onClick={() => onDateChange(d)}
-              className={`border p-2 text-left align-top ${inMonth ? '' : 'opacity-60'} ${isToday ? 'bg-muted/40' : ''}`}
+              aria-current={isToday ? 'date' : undefined}
+              className={`border p-2 text-left align-top focus:outline-none focus:ring-2 focus:ring-primary ${inMonth ? '' : 'opacity-60'} ${isToday ? 'bg-muted/40' : ''}`}
             >
               <div className="flex items-center justify-between text-xs mb-1">
-                <span className="font-medium">{format(d, "d")}</span>
+                <span className="font-medium" aria-label={format(d, 'PPPP')}>{format(d, "d")}</span>
               </div>
               <ul className="space-y-1">
                 {visible.map((j) => {
                   const t = new Date(j.startsAt);
                   return (
-                    <li key={j.id} className="truncate rounded bg-muted px-2 py-1 text-xs">
-                      {t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                      {" "}Job{j.total ? ` — ${formatMoney(j.total)}` : ''}
+                    <li key={j.id} className="truncate rounded border px-2 py-1 text-xs bg-background/60">
+                      <span className="mr-2 inline-block h-2 w-2 rounded-full bg-primary align-middle" aria-hidden="true" />
+                      <span className="font-medium">
+                        {t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                      </span>
+                      <span className="mx-1 opacity-70">•</span>
+                      <span>Job{j.total ? ` — ${formatMoney(j.total)}` : ''}</span>
                     </li>
                   );
                 })}

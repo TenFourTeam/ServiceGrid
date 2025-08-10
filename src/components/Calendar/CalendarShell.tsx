@@ -4,14 +4,35 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WeekCalendar } from "@/components/Calendar/WeekCalendar";
 import MonthCalendar from "@/components/Calendar/MonthCalendar";
 import DayCalendar from "@/components/Calendar/DayCalendar";
-import { useMemo, useState } from "react";
-import { addMonths, startOfDay } from "date-fns";
+import { useMemo, useState, useEffect, useCallback } from "react";
+import { addMonths, startOfDay, addDays } from "date-fns";
 
 export default function CalendarShell({ selectedJobId }: { selectedJobId?: string }) {
   const [view, setView] = useState<"month" | "week" | "day">("week");
   const [date, setDate] = useState<Date>(startOfDay(new Date()));
 
   const month = useMemo(() => new Date(date), [date]);
+
+  // Keyboard shortcuts: 1/2/3 to switch views, T for today, arrows to navigate
+  const stepDate = useCallback((dir: 1 | -1) => {
+    if (view === "month") setDate(addMonths(date, dir));
+    else if (view === "week") setDate(addDays(date, 7 * dir));
+    else setDate(addDays(date, dir));
+  }, [date, view]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.target as HTMLElement)?.tagName === 'INPUT' || (e.target as HTMLElement)?.tagName === 'TEXTAREA') return;
+      if (e.key === '1') setView('day');
+      if (e.key === '2') setView('week');
+      if (e.key === '3') setView('month');
+      if (e.key.toLowerCase() === 't') setDate(startOfDay(new Date()));
+      if (e.key === 'ArrowLeft') stepDate(-1);
+      if (e.key === 'ArrowRight') stepDate(1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [stepDate]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -53,7 +74,7 @@ export default function CalendarShell({ selectedJobId }: { selectedJobId?: strin
       </header>
 
       <div className="grid gap-4 md:grid-cols-[260px_1fr_280px]">
-        {/* Left rail (mini calendar) */}
+        {/* Left rail (mini calendar + scheduling) */}
         <aside className="hidden md:block">
           <div className="rounded-lg border">
             <Calendar
@@ -63,6 +84,24 @@ export default function CalendarShell({ selectedJobId }: { selectedJobId?: strin
               className="p-2"
             />
           </div>
+          <section className="mt-3 rounded-lg border p-3">
+            <h2 className="text-sm font-medium mb-2">Scheduling</h2>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li className="flex items-center justify-between">
+                <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-primary" aria-hidden="true"/> Crew Alpha</span>
+                <span className="opacity-70">on</span>
+              </li>
+              <li className="flex items-center justify-between">
+                <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-secondary" aria-hidden="true"/> Crew Beta</span>
+                <span className="opacity-70">on</span>
+              </li>
+              <li className="flex items-center justify-between">
+                <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-accent" aria-hidden="true"/> Crew Gamma</span>
+                <span className="opacity-70">on</span>
+              </li>
+            </ul>
+            <p className="mt-2 text-xs text-muted-foreground">Crew filters coming soon.</p>
+          </section>
         </aside>
 
         {/* Main calendar area */}
