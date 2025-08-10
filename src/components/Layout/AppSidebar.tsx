@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/sidebar";
 import {
   Calendar as CalendarIcon,
-  ClipboardList,
   FileText,
   Receipt,
   Users,
@@ -24,10 +23,11 @@ import {
 } from "lucide-react";
 
 import BusinessLogo from "@/components/BusinessLogo";
+import ToolsMulti from "@/components/icons/ToolsMulti";
 
 const items = [
   { title: "Calendar", url: "/calendar", icon: CalendarIcon },
-  { title: "Work Orders", url: "/work-orders", icon: ClipboardList },
+  { title: "Work Orders", url: "/work-orders", icon: ToolsMulti },
   { title: "Quotes", url: "/quotes", icon: FileText },
   { title: "Invoices", url: "/invoices", icon: Receipt },
   { title: "Customers", url: "/customers", icon: Users },
@@ -49,7 +49,7 @@ export default function AppSidebar() {
           {/* Logo column - fixed width so position stays constant in both states */}
           <div className="relative h-8 w-8 ml-0 flex items-center justify-center">
             <BusinessLogo
-              size={28}
+              size={26}
               src={business.logoUrl}
               alt={`${business.name || "Business"} logo`}
             />

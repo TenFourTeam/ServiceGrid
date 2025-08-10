@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Job } from '@/types';
 import { useStore } from '@/store/useAppStore';
-import { clamp, formatDate, formatDateTime, minutesSinceStartOfDay } from '@/utils/format';
+import { clamp, formatDateTime, minutesSinceStartOfDay } from '@/utils/format';
 import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerClose } from '@/components/ui/drawer';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { useSupabaseJobs } from '@/hooks/useSupabaseJobs';
+import { useSupabaseJobsRange } from '@/hooks/useSupabaseJobsRange';
+import { useAuth as useClerkAuth } from '@clerk/clerk-react';
+import { getClerkTokenStrict } from '@/utils/clerkToken';
+import { toast } from 'sonner';
+import PickQuoteModal from '@/components/Jobs/PickQuoteModal';
 const START_HOUR = 7;
 const END_HOUR = 19;
 const TOTAL_MIN = (END_HOUR - START_HOUR) * 60;
@@ -25,6 +28,9 @@ export function WeekCalendar({
     upsertJob,
     deleteJob
   } = useStore();
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pendingSlot, setPendingSlot] = useState<{ start: Date; end: Date } | null>(null);
+  const notesTimer = useRef<number | null>(null);
   const [weekStart, setWeekStart] = useState(() => {
     const initial = (() => {
       if (selectedJobId) {
@@ -43,6 +49,36 @@ export function WeekCalendar({
   const days = Array.from({
     length: 7
   }, (_, i) => new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + i));
+
+  const weekEnd = useMemo(() => {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + 7);
+    d.setHours(23, 59, 59, 999);
+    return d;
+  }, [weekStart]);
+
+  const { isSignedIn, getToken } = useClerkAuth();
+  const { data: jobsRange } = useSupabaseJobsRange({ start: weekStart, end: weekEnd }, { enabled: !!isSignedIn });
+
+  useEffect(() => {
+    if (jobsRange?.rows) {
+      jobsRange.rows.forEach((row) => {
+        upsertJob({
+          id: row.id,
+          customerId: row.customerId,
+          quoteId: row.quoteId ?? undefined,
+          address: row.address ?? undefined,
+          startsAt: row.startsAt,
+          endsAt: row.endsAt,
+          status: row.status,
+          total: row.total ?? undefined,
+          createdAt: row.createdAt,
+        });
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobsRange]);
+
   const dayJobs = useMemo(() => {
     const map: Record<string, Job[]> = {};
     days.forEach(d => map[dayKey(d)] = []);
