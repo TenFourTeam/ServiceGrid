@@ -69,15 +69,31 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Missing file" }), { status: 400, headers: getCorsHeaders(req) });
     }
 
+    // Validate type and size
+    const allowedTypes = ["image/jpeg","image/png","image/webp","image/heic","image/heif"];
+    const maxMb = parseInt(Deno.env.get("JOB_PHOTO_MAX_MB") || "10", 10);
+    const maxBytes = isFinite(maxMb) ? maxMb * 1024 * 1024 : 10 * 1024 * 1024;
+
+    const contentType = (file as File).type || "application/octet-stream";
+    if (!allowedTypes.includes(contentType)) {
+      return new Response(JSON.stringify({ error: "Unsupported file type" }), { status: 415, headers: getCorsHeaders(req) });
+    }
+    const size = (file as File).size ?? 0;
+    if (size > maxBytes) {
+      return new Response(JSON.stringify({ error: `File too large. Max ${maxMb}MB` }), { status: 413, headers: getCorsHeaders(req) });
+    }
+
     const email = (clerk as any).email || (clerk as any).claims?.email;
     const ownerId = await resolveOwnerId(admin, clerk.sub, email);
 
-    const origName = (file as File).name || "upload.bin";
-    const ext = origName.includes('.') ? origName.split('.').pop() : 'bin';
+    const origName = (file as File).name || "upload";
+    const nameExt = origName.includes('.') ? origName.split('.').pop() || '' : '';
+    const extByType: Record<string, string> = { "image/jpeg":"jpg", "image/png":"png", "image/webp":"webp", "image/heic":"heic", "image/heif":"heif" };
+    const ext = extByType[contentType] || (nameExt || "bin");
     const key = `${ownerId}/jobs/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
 
     // Upload to storage bucket
-    const { error: upErr } = await admin.storage.from('job-photos').upload(key, file, { cacheControl: '3600', upsert: false });
+    const { error: upErr } = await admin.storage.from('job-photos').upload(key, file, { cacheControl: '3600', upsert: false, contentType });
     if (upErr) {
       return new Response(JSON.stringify({ error: upErr.message }), { status: 500, headers: getCorsHeaders(req) });
     }

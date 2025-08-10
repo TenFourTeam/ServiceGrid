@@ -9,10 +9,13 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { verifyToken } from "https://esm.sh/@clerk/backend@1.3.2";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.54.0";
 
+const JOBS_NOTIFY_INTERNAL = (Deno.env.get("JOBS_NOTIFY_INTERNAL") || "").toLowerCase() === "true";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "*",
+  "Vary": "Origin",
 };
 
 function json(data: unknown, init: ResponseInit = {}) {
@@ -286,45 +289,46 @@ serve(async (req) => {
         const j = ins as any;
         console.log("[jobs][POST] created from quote", { ownerId, jobId: j.id, quoteId });
 
-        // Fire-and-forget: notify business about job creation
-        try {
-          const businessId = (quote as any).business_id;
-          const { data: biz } = await supabase
-            .from('businesses')
-            .select('name, reply_to_email')
-            .eq('id', businessId)
-            .eq('owner_id', ownerId)
-            .maybeSingle();
-          const fromName = (biz as any)?.name || undefined;
-          const replyTo = (biz as any)?.reply_to_email || null;
-          let to: string | null = replyTo || null;
-          if (!to) {
-            const { data: prof } = await supabase
-              .from('profiles')
-              .select('email')
-              .eq('id', ownerId)
+        if (JOBS_NOTIFY_INTERNAL) {
+          try {
+            const businessId = (quote as any).business_id;
+            const { data: biz } = await supabase
+              .from('businesses')
+              .select('name, reply_to_email')
+              .eq('id', businessId)
+              .eq('owner_id', ownerId)
               .maybeSingle();
-            to = (prof as any)?.email || null;
+            const fromName = (biz as any)?.name || undefined;
+            const replyTo = (biz as any)?.reply_to_email || null;
+            let to: string | null = replyTo || null;
+            if (!to) {
+              const { data: prof } = await supabase
+                .from('profiles')
+                .select('email')
+                .eq('id', ownerId)
+                .maybeSingle();
+              to = (prof as any)?.email || null;
+            }
+            if (to) {
+              const fmt = (iso: string | null) => iso ? new Date(iso).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'TBD';
+              const subject = `${fromName || 'Job'} • Job Created`;
+              const html = `
+                <div style="font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica Neue,Arial; color:#111827;">
+                  <h2 style="margin:0 0 8px; font-size:18px;">Job Created</h2>
+                  <div style="font-size:14px; line-height:1.6;">
+                    <div><strong>Title:</strong> ${j.title ? String(j.title).replace(/</g,'&lt;') : 'Untitled'}</div>
+                    <div><strong>Window:</strong> ${fmt(j.starts_at)} – ${fmt(j.ends_at)}</div>
+                    ${j.address ? `<div><strong>Address:</strong> ${String(j.address).replace(/</g,'&lt;')}</div>` : ''}
+                    <div style="margin-top:8px; color:#6b7280;">Job ID: ${j.id}</div>
+                  </div>
+                </div>`;
+              await (supabase as any).functions.invoke('resend-send-email', {
+                body: { to, subject, html, job_id: j.id, from_name: fromName, reply_to: replyTo || undefined },
+              });
+            }
+          } catch (e) {
+            console.warn('[jobs][POST] notify failed', e);
           }
-          if (to) {
-            const fmt = (iso: string | null) => iso ? new Date(iso).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'TBD';
-            const subject = `${fromName || 'Job'} • Job Created`;
-            const html = `
-              <div style="font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica Neue,Arial; color:#111827;">
-                <h2 style="margin:0 0 8px; font-size:18px;">Job Created</h2>
-                <div style="font-size:14px; line-height:1.6;">
-                  <div><strong>Title:</strong> ${j.title ? String(j.title).replace(/</g,'&lt;') : 'Untitled'}</div>
-                  <div><strong>Window:</strong> ${fmt(j.starts_at)} – ${fmt(j.ends_at)}</div>
-                  ${j.address ? `<div><strong>Address:</strong> ${String(j.address).replace(/</g,'&lt;')}</div>` : ''}
-                  <div style="margin-top:8px; color:#6b7280;">Job ID: ${j.id}</div>
-                </div>
-              </div>`;
-            await (supabase as any).functions.invoke('resend-send-email', {
-              body: { to, subject, html, job_id: j.id, from_name: fromName, reply_to: replyTo || undefined },
-            });
-          }
-        } catch (e) {
-          console.warn('[jobs][POST] notify failed', e);
         }
 
         return json({ ok: true, job: {
@@ -383,30 +387,30 @@ serve(async (req) => {
       const j2 = ins2 as any;
       console.log("[jobs][POST] created ad-hoc", { ownerId, jobId: j2.id });
 
-      // Fire-and-forget: notify business about job creation
-      try {
-        const businessId = (customer as any).business_id;
-        const { data: biz } = await supabase
-          .from('businesses')
-          .select('name, reply_to_email')
-          .eq('id', businessId)
-          .eq('owner_id', ownerId)
-          .maybeSingle();
-        const fromName = (biz as any)?.name || undefined;
-        const replyTo = (biz as any)?.reply_to_email || null;
-        let to: string | null = replyTo || null;
-        if (!to) {
-          const { data: prof } = await supabase
-            .from('profiles')
-            .select('email')
-            .eq('id', ownerId)
+      if (JOBS_NOTIFY_INTERNAL) {
+        try {
+          const businessId = (customer as any).business_id;
+          const { data: biz } = await supabase
+            .from('businesses')
+            .select('name, reply_to_email')
+            .eq('id', businessId)
+            .eq('owner_id', ownerId)
             .maybeSingle();
-          to = (prof as any)?.email || null;
-        }
-        if (to) {
-          const fmt = (iso: string | null) => iso ? new Date(iso).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'TBD';
-          const subject = `${fromName || 'Job'} • Job Created`;
-          const html = `
+          const fromName = (biz as any)?.name || undefined;
+          const replyTo = (biz as any)?.reply_to_email || null;
+          let to: string | null = replyTo || null;
+          if (!to) {
+            const { data: prof } = await supabase
+              .from('profiles')
+              .select('email')
+              .eq('id', ownerId)
+              .maybeSingle();
+            to = (prof as any)?.email || null;
+          }
+          if (to) {
+            const fmt = (iso: string | null) => iso ? new Date(iso).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'TBD';
+            const subject = `${fromName || 'Job'} • Job Created`;
+            const html = `
             <div style="font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica Neue,Arial; color:#111827;">
               <h2 style="margin:0 0 8px; font-size:18px;">Job Created</h2>
               <div style="font-size:14px; line-height:1.6;">
@@ -416,12 +420,13 @@ serve(async (req) => {
                 <div style="margin-top:8px; color:#6b7280;">Job ID: ${j2.id}</div>
               </div>
             </div>`;
-          await (supabase as any).functions.invoke('resend-send-email', {
-            body: { to, subject, html, job_id: j2.id, from_name: fromName, reply_to: replyTo || undefined },
-          });
+            await (supabase as any).functions.invoke('resend-send-email', {
+              body: { to, subject, html, job_id: j2.id, from_name: fromName, reply_to: replyTo || undefined },
+            });
+          }
+        } catch (e) {
+          console.warn('[jobs][POST] notify failed', e);
         }
-      } catch (e) {
-        console.warn('[jobs][POST] notify failed', e);
       }
 
       return json({ ok: true, job: {
@@ -524,47 +529,49 @@ serve(async (req) => {
       const j = j2 as any;
 
       // Notify on reschedule if time window changed
-      try {
-        const changed = (hasStartsAt ? (((body as any).startsAt ?? null) !== prevStarts) : false) || (hasEndsAt ? (((body as any).endsAt ?? null) !== prevEnds) : false);
-        if (changed) {
-          const { data: biz } = await supabase
-            .from('businesses')
-            .select('name, reply_to_email')
-            .eq('id', prevBusinessId)
-            .eq('owner_id', ownerId)
-            .maybeSingle();
-          const fromName = (biz as any)?.name || undefined;
-          const replyTo = (biz as any)?.reply_to_email || null;
-          let to: string | null = replyTo || null;
-          if (!to) {
-            const { data: prof } = await supabase
-              .from('profiles')
-              .select('email')
-              .eq('id', ownerId)
+      if (JOBS_NOTIFY_INTERNAL) {
+        try {
+          const changed = (hasStartsAt ? (((body as any).startsAt ?? null) !== prevStarts) : false) || (hasEndsAt ? (((body as any).endsAt ?? null) !== prevEnds) : false);
+          if (changed) {
+            const { data: biz } = await supabase
+              .from('businesses')
+              .select('name, reply_to_email')
+              .eq('id', prevBusinessId)
+              .eq('owner_id', ownerId)
               .maybeSingle();
-            to = (prof as any)?.email || null;
+            const fromName = (biz as any)?.name || undefined;
+            const replyTo = (biz as any)?.reply_to_email || null;
+            let to: string | null = replyTo || null;
+            if (!to) {
+              const { data: prof } = await supabase
+                .from('profiles')
+                .select('email')
+                .eq('id', ownerId)
+                .maybeSingle();
+              to = (prof as any)?.email || null;
+            }
+            if (to) {
+              const fmt = (iso: string | null) => iso ? new Date(iso).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'TBD';
+              const subject = `${fromName || 'Job'} • Job Rescheduled`;
+              const html = `
+                <div style="font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica Neue,Arial; color:#111827;">
+                  <h2 style="margin:0 0 8px; font-size:18px;">Job Rescheduled</h2>
+                  <div style="font-size:14px; line-height:1.6;">
+                    <div><strong>Title:</strong> ${j.title ? String(j.title).replace(/</g,'&lt;') : (prevTitle ? String(prevTitle).replace(/</g,'&lt;') : 'Untitled')}</div>
+                    <div><strong>Old Window:</strong> ${fmt(prevStarts)} – ${fmt(prevEnds)}</div>
+                    <div><strong>New Window:</strong> ${fmt(j.starts_at)} – ${fmt(j.ends_at)}</div>
+                    ${j.address ? `<div><strong>Address:</strong> ${String(j.address).replace(/</g,'&lt;')}</div>` : (prevAddress ? `<div><strong>Address:</strong> ${String(prevAddress).replace(/</g,'&lt;') }</div>` : '')}
+                    <div style="margin-top:8px; color:#6b7280;">Job ID: ${j.id}</div>
+                  </div>
+                </div>`;
+              await (supabase as any).functions.invoke('resend-send-email', {
+                body: { to, subject, html, job_id: j.id, from_name: fromName, reply_to: replyTo || undefined },
+              });
+            }
           }
-          if (to) {
-            const fmt = (iso: string | null) => iso ? new Date(iso).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'TBD';
-            const subject = `${fromName || 'Job'} • Job Rescheduled`;
-            const html = `
-              <div style="font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica Neue,Arial; color:#111827;">
-                <h2 style="margin:0 0 8px; font-size:18px;">Job Rescheduled</h2>
-                <div style="font-size:14px; line-height:1.6;">
-                  <div><strong>Title:</strong> ${j.title ? String(j.title).replace(/</g,'&lt;') : (prevTitle ? String(prevTitle).replace(/</g,'&lt;') : 'Untitled')}</div>
-                  <div><strong>Old Window:</strong> ${fmt(prevStarts)} – ${fmt(prevEnds)}</div>
-                  <div><strong>New Window:</strong> ${fmt(j.starts_at)} – ${fmt(j.ends_at)}</div>
-                  ${j.address ? `<div><strong>Address:</strong> ${String(j.address).replace(/</g,'&lt;')}</div>` : (prevAddress ? `<div><strong>Address:</strong> ${String(prevAddress).replace(/</g,'&lt;')}</div>` : '')}
-                  <div style="margin-top:8px; color:#6b7280;">Job ID: ${j.id}</div>
-                </div>
-              </div>`;
-            await (supabase as any).functions.invoke('resend-send-email', {
-              body: { to, subject, html, job_id: j.id, from_name: fromName, reply_to: replyTo || undefined },
-            });
-          }
+        } catch (e) {
+          console.warn('[jobs][PATCH] reschedule notify failed', e);
         }
-      } catch (e) {
-        console.warn('[jobs][PATCH] reschedule notify failed', e);
       }
 
       return json({ ok: true, job: {

@@ -93,6 +93,26 @@ serve(async (req: Request): Promise<Response> => {
     });
   }
 
+  // Basic validations
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRe.test(payload.to)) {
+    return new Response(JSON.stringify({ error: "Invalid recipient email" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json", ...getCorsHeaders(req) },
+    });
+  }
+  if (payload.subject.length > 200) {
+    return new Response(JSON.stringify({ error: "Subject too long (max 200 chars)" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json", ...getCorsHeaders(req) },
+    });
+  }
+  if (payload.html.length > 200_000) {
+    return new Response(JSON.stringify({ error: "HTML content too large (max ~200KB)" }), {
+      status: 413,
+      headers: { "Content-Type": "application/json", ...getCorsHeaders(req) },
+    });
+  }
   // Compute request hash for idempotency/logging
   const encoder = new TextEncoder();
   const hash = toHex(await crypto.subtle.digest("SHA-256", encoder.encode(JSON.stringify({
