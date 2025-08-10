@@ -1,6 +1,9 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { edgeFetchJson } from "@/utils/edgeApi";
+import { z } from "zod";
+
 export interface DbInvoiceRow {
   id: string;
   number: string;
@@ -17,6 +20,10 @@ export interface DbInvoiceRow {
   publicToken?: string;
 }
 
+const InvoicesResponseSchema = z.object({
+  rows: z.array(z.any()).optional().default([]),
+});
+
 export function useSupabaseInvoices(opts?: { enabled?: boolean }) {
   const { isSignedIn, getToken } = useClerkAuth();
   const enabled = !!isSignedIn && (opts?.enabled ?? true);
@@ -25,9 +32,14 @@ export function useSupabaseInvoices(opts?: { enabled?: boolean }) {
     queryKey: ["supabase", "invoices"],
     enabled,
     queryFn: async () => {
+      console.info("[useSupabaseInvoices] fetching...");
       const data = await edgeFetchJson("invoices", getToken);
-
-      const rows: DbInvoiceRow[] = (data?.rows || []).map((row: any) => ({
+      if (!data) {
+        console.info("[useSupabaseInvoices] no data (null) – likely signed out");
+        return { rows: [] };
+      }
+      const parsed = InvoicesResponseSchema.parse(data);
+      const rows: DbInvoiceRow[] = (parsed.rows || []).map((row: any) => ({
         id: row.id,
         number: row.number,
         customerId: row.customerId || row.customer_id,
@@ -42,6 +54,7 @@ export function useSupabaseInvoices(opts?: { enabled?: boolean }) {
         updatedAt: row.updatedAt || row.updated_at,
         publicToken: row.publicToken || row.public_token,
       }));
+      console.info("[useSupabaseInvoices] fetched", rows.length, "rows");
       return { rows };
     },
     staleTime: 30_000,

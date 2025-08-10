@@ -1,7 +1,9 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { edgeFetchJson } from "@/utils/edgeApi";
+import { z } from "zod";
 
 export interface DbQuoteRow {
   id: string;
@@ -16,6 +18,10 @@ export interface DbQuoteRow {
   customerEmail?: string;
 }
 
+const QuotesResponseSchema = z.object({
+  rows: z.array(z.any()).optional().default([]),
+});
+
 export function useSupabaseQuotes(opts?: { enabled?: boolean }) {
   const { isSignedIn, getToken } = useClerkAuth();
   const enabled = !!isSignedIn && (opts?.enabled ?? true);
@@ -24,9 +30,14 @@ export function useSupabaseQuotes(opts?: { enabled?: boolean }) {
     queryKey: ["supabase", "quotes"],
     enabled,
     queryFn: async () => {
+      console.info("[useSupabaseQuotes] fetching...");
       const data = await edgeFetchJson("quotes", getToken);
-
-      const rows: DbQuoteRow[] = (data?.rows || []).map((row: any) => ({
+      if (!data) {
+        console.info("[useSupabaseQuotes] no data (null) – likely signed out");
+        return { rows: [] };
+      }
+      const parsed = QuotesResponseSchema.parse(data);
+      const rows: DbQuoteRow[] = (parsed.rows || []).map((row: any) => ({
         id: row.id,
         number: row.number,
         total: row.total,
@@ -38,6 +49,7 @@ export function useSupabaseQuotes(opts?: { enabled?: boolean }) {
         customerName: row.customerName ?? row.customers?.name,
         customerEmail: row.customerEmail ?? row.customers?.email,
       }));
+      console.info("[useSupabaseQuotes] fetched", rows.length, "rows");
       return { rows };
     },
     staleTime: 30_000,

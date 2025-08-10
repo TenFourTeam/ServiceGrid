@@ -1,6 +1,9 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { edgeFetchJson } from "@/utils/edgeApi";
+import { z } from "zod";
+
 export interface DbJobRow {
   id: string;
   customerId: string;
@@ -17,6 +20,10 @@ export interface DbJobRow {
   updatedAt?: string;
 }
 
+const JobsResponseSchema = z.object({
+  rows: z.array(z.any()).optional().default([]),
+});
+
 export function useSupabaseJobs(opts?: { enabled?: boolean; refetchInterval?: number | false; refetchOnWindowFocus?: boolean; refetchOnReconnect?: boolean }) {
   const { isSignedIn, getToken } = useClerkAuth();
   const enabled = !!isSignedIn && (opts?.enabled ?? true);
@@ -29,9 +36,17 @@ export function useSupabaseJobs(opts?: { enabled?: boolean; refetchInterval?: nu
     refetchOnReconnect: opts?.refetchOnReconnect ?? true,
     refetchIntervalInBackground: false,
     queryFn: async () => {
+      console.info("[useSupabaseJobs] fetching...");
       const data = await edgeFetchJson("jobs", getToken);
 
-      const rows: DbJobRow[] = (data?.rows || []).map((row: any) => ({
+      if (!data) {
+        console.info("[useSupabaseJobs] no data (null) – likely signed out");
+        return { rows: [] };
+      }
+
+      const parsed = JobsResponseSchema.parse(data);
+
+      const rows: DbJobRow[] = (parsed.rows || []).map((row: any) => ({
         id: row.id,
         customerId: row.customerId || row.customer_id,
         quoteId: row.quoteId ?? row.quote_id ?? null,
@@ -46,6 +61,7 @@ export function useSupabaseJobs(opts?: { enabled?: boolean; refetchInterval?: nu
         createdAt: row.createdAt || row.created_at,
         updatedAt: row.updatedAt || row.updated_at,
       }));
+      console.info("[useSupabaseJobs] fetched", rows.length, "rows");
       return { rows };
     },
     staleTime: 30_000,
