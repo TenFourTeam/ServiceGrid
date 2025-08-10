@@ -1,3 +1,4 @@
+
 export type ID = string;
 export type Money = number; // cents
 export type ISODate = string;
@@ -10,6 +11,7 @@ export interface Business {
   id: ID;
   name: string;
   logoUrl?: string;
+  lightLogoUrl?: string; // NEW: light icon for emails
   phone?: string;
   replyToEmail?: string;
   taxRateDefault: number; // 0.0 - 1.0
@@ -144,3 +146,4 @@ export interface AppState {
   payments: Payment[];
   events: AppEvent[];
 }
+

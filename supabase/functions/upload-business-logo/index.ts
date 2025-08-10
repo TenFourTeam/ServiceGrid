@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { verifyToken } from "https://esm.sh/@clerk/backend@1.3.2";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.54.0";
@@ -65,7 +66,6 @@ serve(async (req) => {
     let ownerId: string | null = profByClerk?.id as string | null;
 
     if (!ownerId) {
-      // As a fallback, try to ensure profile via ensure-profile function or by email in profiles
       const email = (payload as any)?.email as string | undefined;
       if (email) {
         const { data: profByEmail, error: profByEmailErr } = await supabase
@@ -83,8 +83,12 @@ serve(async (req) => {
       return json({ error: "Unable to resolve user profile" }, { status: 401 });
     }
 
+    // Determine which icon to update from query string: ?kind=light|dark (default: dark)
+    const url = new URL(req.url);
+    const kind = url.searchParams.get("kind")?.toLowerCase() === "light" ? "light" : "dark";
+
     const form = await req.formData();
-    const file = form.get("file") as File | null || (form.get("logo") as File | null);
+    const file = (form.get("file") as File | null) || (form.get("logo") as File | null);
     if (!file) return json({ error: "Missing file" }, { status: 400 });
 
     const type = (file.type || "").toLowerCase();
@@ -93,8 +97,13 @@ serve(async (req) => {
       return json({ error: "Unsupported file type" }, { status: 400 });
     }
 
-    const ext = type.includes("png") ? "png" : type.includes("jpeg") || type.includes("jpg") ? "jpg" : type.includes("webp") ? "webp" : type.includes("gif") ? "gif" : type.includes("svg") ? "svg" : "bin";
-    const path = `${ownerId}/logo-${Date.now()}.${ext}`;
+    const ext =
+      type.includes("png") ? "png" :
+      type.includes("jpeg") || type.includes("jpg") ? "jpg" :
+      type.includes("webp") ? "webp" :
+      type.includes("gif") ? "gif" :
+      type.includes("svg") ? "svg" : "bin";
+    const path = `${ownerId}/logo-${kind}-${Date.now()}.${ext}`;
     const bytes = new Uint8Array(await file.arrayBuffer());
 
     // Upload to Storage
@@ -128,16 +137,18 @@ serve(async (req) => {
       biz = ins;
     }
 
-    // Update logo_url
+    // Update the correct column based on kind
+    const updateData = kind === "light" ? { light_logo_url: publicUrl } : { logo_url: publicUrl };
     const { error: updErr } = await supabase
       .from("businesses")
-      .update({ logo_url: publicUrl })
+      .update(updateData)
       .eq("id", biz.id);
     if (updErr) throw updErr;
 
-    return json({ url: publicUrl });
+    return json({ url: publicUrl, kind });
   } catch (e: any) {
     console.error(e);
     return json({ error: e?.message || "Unexpected error" }, { status: 500 });
   }
 });
+

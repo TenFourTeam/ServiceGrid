@@ -1,3 +1,4 @@
+
 import { AppEvent, AppState, Business, Customer, Quote, Invoice, Job, LineItem, Money } from '@/types';
 import { loadState, saveState } from './storage';
 import React, { createContext, useContext, useEffect, useMemo, useReducer } from 'react';
@@ -20,6 +21,7 @@ const defaultBusiness = (): Business => ({
   phone: '',
   replyToEmail: '',
   logoUrl: '',
+  lightLogoUrl: '', // NEW default
   taxRateDefault: 0.08,
   numbering: { estPrefix: 'QUO-', estSeq: 1, invPrefix: 'INV-', invSeq: 1 },
 });
@@ -375,3 +377,4 @@ export function useStore() {
   if (!ctx) throw new Error('Store not available');
   return ctx;
 }
+

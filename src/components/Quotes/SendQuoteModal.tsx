@@ -1,3 +1,4 @@
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,9 +35,10 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
     const editUrl = `${base}/quote-action?type=edit&quote_id=${encodeURIComponent(quote.id)}&token=${encodeURIComponent(quote.publicToken)}`;
     const viewUrl = `${base}/quote/${encodeURIComponent(quote.publicToken)}`;
     const pixelUrl = `https://ijudkzqfriazabiosnvb.functions.supabase.co/quote-events?type=open&quote_id=${encodeURIComponent(quote.id)}&token=${encodeURIComponent(quote.publicToken)}`;
-    const built = buildQuoteEmail({ businessName: store.business.name, businessLogoUrl: store.business.logoUrl, customerName, quote, approveUrl, editUrl, viewUrl, pixelUrl });
+    const logo = store.business.lightLogoUrl || store.business.logoUrl;
+    const built = buildQuoteEmail({ businessName: store.business.name, businessLogoUrl: logo, customerName, quote, approveUrl, editUrl, viewUrl, pixelUrl });
     return { html: built.html, defaultSubject: built.subject };
-  }, [quote, store.business.name, store.business.logoUrl, customerName]);
+  }, [quote, store.business.name, store.business.logoUrl, store.business.lightLogoUrl, customerName]);
   const previewHtml = useMemo(() => {
     if (!message?.trim()) return html;
     const safe = escapeHtml(message).replace(/\n/g, '<br />');
@@ -133,3 +135,4 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
     </Dialog>
   );
 }
+

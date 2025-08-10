@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { verifyToken } from "https://esm.sh/@clerk/backend@1.3.2";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.54.0";
@@ -78,7 +79,7 @@ serve(async (req) => {
     // Find existing business (oldest) or create a new one
     let { data: biz, error: selErr } = await supabase
       .from("businesses")
-      .select("id, name, phone, reply_to_email, logo_url, tax_rate_default, inv_prefix, inv_seq, est_prefix, est_seq, created_at")
+      .select("id, name, phone, reply_to_email, logo_url, light_logo_url, tax_rate_default, inv_prefix, inv_seq, est_prefix, est_seq, created_at")
       .eq("owner_id", ownerId)
       .order("created_at", { ascending: true })
       .limit(1)
@@ -89,7 +90,7 @@ serve(async (req) => {
       const { data: ins, error: insErr } = await supabase
         .from("businesses")
         .insert({ name: "My Business", owner_id: ownerId })
-        .select("id, name, phone, reply_to_email, logo_url, tax_rate_default, inv_prefix, inv_seq, est_prefix, est_seq, created_at")
+        .select("id, name, phone, reply_to_email, logo_url, light_logo_url, tax_rate_default, inv_prefix, inv_seq, est_prefix, est_seq, created_at")
         .single();
       if (insErr) throw insErr;
       biz = ins;
@@ -103,3 +104,4 @@ serve(async (req) => {
     return json({ error: msg }, { status });
   }
 });
+

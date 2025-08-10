@@ -20,6 +20,7 @@ export const BusinessSchema = z.object({
   id: ID,
   name: z.string(),
   logoUrl: z.string().url().optional(),
+  lightLogoUrl: z.string().url().optional(), // NEW
   phone: z.string().optional(),
   replyToEmail: z.string().email().optional(),
   taxRateDefault: z.number(),
@@ -152,3 +153,4 @@ export const AppStateSchema = z.object({
   payments: z.array(PaymentSchema),
   events: z.array(AppEventSchema),
 })
+

@@ -22,6 +22,7 @@ export type Database = {
           id: string
           inv_prefix: string
           inv_seq: number
+          light_logo_url: string | null
           logo_url: string | null
           name: string
           owner_id: string
@@ -37,6 +38,7 @@ export type Database = {
           id?: string
           inv_prefix?: string
           inv_seq?: number
+          light_logo_url?: string | null
           logo_url?: string | null
           name: string
           owner_id: string
@@ -52,6 +54,7 @@ export type Database = {
           id?: string
           inv_prefix?: string
           inv_seq?: number
+          light_logo_url?: string | null
           logo_url?: string | null
           name?: string
           owner_id?: string
@@ -617,6 +620,7 @@ export type Database = {
           id: string
           inv_prefix: string
           inv_seq: number
+          light_logo_url: string | null
           logo_url: string | null
           name: string
           owner_id: string
