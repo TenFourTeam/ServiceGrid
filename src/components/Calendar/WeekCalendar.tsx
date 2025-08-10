@@ -111,7 +111,7 @@ export function WeekCalendar({
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
   }
-  return <div className="w-full">
+  return <div className="w-full -ml-4 md:-ml-6 w-[calc(100%+1rem)] md:w-[calc(100%+1.5rem)]">
       <div className="flex items-center justify-end mb-3">
         
       </div>
@@ -119,7 +119,7 @@ export function WeekCalendar({
       <div className="md:overflow-visible overflow-x-auto -mx-2 md:mx-0">
         <div className="px-2 md:px-0 min-w-[900px] md:min-w-0">
           {/* Day headers */}
-          <div className="grid grid-cols-8 gap-2 mb-2">
+          <div className="grid grid-cols-8 gap-1 mb-2">
             <div />
             {days.map(day => {
             const isToday = isSameDay(day, now);
@@ -138,7 +138,7 @@ export function WeekCalendar({
           </div>
 
           {/* Calendar grid */}
-          <div className="grid grid-cols-8 gap-2">
+          <div className="grid grid-cols-8 gap-1">
             <div className="text-xs text-muted-foreground">
               {Array.from({
               length: END_HOUR - START_HOUR + 1

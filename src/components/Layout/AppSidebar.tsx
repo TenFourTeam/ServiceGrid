@@ -12,6 +12,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import {
   Calendar as CalendarIcon,
@@ -34,8 +35,9 @@ const items = [
 export default function AppSidebar() {
   const { business } = useStore();
   const location = useLocation();
+  const { state } = useSidebar();
+  const collapsed = state === "collapsed";
   
-
   const isActivePath = (path: string) => location.pathname.startsWith(path);
 
   return (
@@ -43,13 +45,18 @@ export default function AppSidebar() {
       <SidebarHeader>
         <div className="flex items-center justify-between px-2 py-1.5">
           <div className="flex items-center gap-2">
-            <div className="size-8 rounded-full bg-primary" aria-hidden />
+            <div className="relative">
+              <div className="size-8 rounded-full bg-primary" aria-hidden />
+              {collapsed && (
+                <SidebarTrigger aria-label="Expand sidebar" className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity rounded-full" />
+              )}
+            </div>
             <div className="min-w-0 group-data-[collapsible=icon]:hidden">
               <div className="font-semibold truncate">{business.name || "Business"}</div>
               <div className="text-xs text-muted-foreground truncate">Contractor Console</div>
             </div>
           </div>
-          <SidebarTrigger aria-label="Toggle sidebar" />
+          {!collapsed && <SidebarTrigger aria-label="Toggle sidebar" />}
         </div>
       </SidebarHeader>
 
