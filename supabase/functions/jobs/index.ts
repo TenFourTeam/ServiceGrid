@@ -290,8 +290,8 @@ serve(async (req) => {
 
       const body = (await req.json().catch(() => ({}))) as Partial<{
         status: string;
-        startsAt: string;
-        endsAt: string;
+        startsAt: string | null;
+        endsAt: string | null;
         notes: string | null;
       }>;
 
@@ -306,8 +306,17 @@ serve(async (req) => {
 
       const upd: any = {};
       if (body.status) upd.status = body.status;
-      if (body.startsAt) upd.starts_at = body.startsAt;
-      if (body.endsAt) upd.ends_at = body.endsAt;
+
+      const hasStartsAt = Object.prototype.hasOwnProperty.call(body, 'startsAt');
+      const hasEndsAt = Object.prototype.hasOwnProperty.call(body, 'endsAt');
+
+      if (hasStartsAt) upd.starts_at = (body as any).startsAt ?? null;
+      if (hasEndsAt) upd.ends_at = (body as any).endsAt ?? null;
+
+      if (body.status === 'Completed' && !hasEndsAt) {
+        upd.ends_at = new Date().toISOString();
+      }
+
       if (body.notes !== undefined) upd.notes = body.notes;
 
       if (Object.keys(upd).length) {

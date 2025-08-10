@@ -12,6 +12,8 @@ import { toast } from '@/components/ui/use-toast';
 import { useSupabaseJobs } from '@/hooks/useSupabaseJobs';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { getClerkTokenStrict } from '@/utils/clerkToken';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
 
 function useFilteredJobs() {
   const { jobs, customers, invoices } = useStore();
@@ -102,7 +104,7 @@ function WorkOrderRow({ job, onSchedule, onComplete, onInvoice, onViewInvoice, o
       </div>
       <div className="mt-3 grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
         <Button size="sm" variant="secondary" onClick={onSchedule}>Schedule</Button>
-        <Button size="sm" onClick={onComplete}>Complete</Button>
+        <Button size="sm" onClick={onComplete} disabled={job.status === 'Completed'}>Complete</Button>
         {job.status==='Completed' && uninvoiced && <Button size="sm" onClick={onInvoice}>Invoice</Button>}
         <Button size="sm" variant="outline" onClick={onNavigate}>Navigate</Button>
       </div>
@@ -113,7 +115,7 @@ function WorkOrderRow({ job, onSchedule, onComplete, onInvoice, onViewInvoice, o
 export default function WorkOrdersPage() {
   const { customers, updateJobStatus, upsertJob } = useStore();
   const { isSignedIn, getToken } = useClerkAuth();
-  const { data: dbJobs } = useSupabaseJobs({ enabled: !!isSignedIn });
+  const { data: dbJobs, isLoading, error, refetch } = useSupabaseJobs({ enabled: !!isSignedIn, refetchInterval: 15000, refetchOnWindowFocus: true, refetchOnReconnect: true });
   const { filter, setFilter, q, setQ, sort, setSort, jobs, counts, hasInvoice } = useFilteredJobs();
   const navigate = useNavigate();
   const lastSyncKeyRef = useRef<string | null>(null);
@@ -166,7 +168,18 @@ export default function WorkOrdersPage() {
 
         <Card>
           <CardContent className="p-3 space-y-3">
-            {jobs.length === 0 ? (
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error.message}</AlertDescription>
+              </Alert>
+            )}
+            {isLoading && jobs.length === 0 ? (
+              <div className="space-y-2">
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-20 w-full" />
+              </div>
+            ) : jobs.length === 0 ? (
               <div className="text-sm text-muted-foreground p-8 text-center">No jobs in this view.</div>
             ) : (
               jobs.map((j)=>{
@@ -195,6 +208,7 @@ export default function WorkOrdersPage() {
                         }
                         updateJobStatus(j.id, 'Completed');
                         toast({ title: 'Marked complete' });
+                        await refetch();
                       } catch (e: any) {
                         toast({ title: 'Failed to mark complete', description: e?.message || String(e) });
                       }
@@ -212,6 +226,7 @@ export default function WorkOrdersPage() {
                           throw new Error(`Failed to create invoice (${r.status}): ${txt}`);
                         }
                         toast({ title: 'Invoice created' });
+                        await refetch();
                         navigate('/invoices');
                       } catch (e: any) {
                         toast({ title: 'Failed to create invoice', description: e?.message || String(e) });

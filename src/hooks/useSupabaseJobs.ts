@@ -16,13 +16,17 @@ export interface DbJobRow {
   updatedAt?: string;
 }
 
-export function useSupabaseJobs(opts?: { enabled?: boolean }) {
+export function useSupabaseJobs(opts?: { enabled?: boolean; refetchInterval?: number | false; refetchOnWindowFocus?: boolean; refetchOnReconnect?: boolean }) {
   const { isSignedIn, getToken } = useClerkAuth();
   const enabled = !!isSignedIn && (opts?.enabled ?? true);
 
   return useQuery<{ rows: DbJobRow[] } | null, Error>({
     queryKey: ["supabase", "jobs"],
     enabled,
+    refetchInterval: opts?.refetchInterval ?? false,
+    refetchOnWindowFocus: opts?.refetchOnWindowFocus ?? true,
+    refetchOnReconnect: opts?.refetchOnReconnect ?? true,
+    refetchIntervalInBackground: false,
     queryFn: async () => {
       const token = await getClerkTokenStrict(getToken);
       const r = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/jobs`, {
