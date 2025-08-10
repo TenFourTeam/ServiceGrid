@@ -247,13 +247,13 @@ export type Database = {
           business_id: string
           created_at: string
           customer_id: string
-          ends_at: string
+          ends_at: string | null
           id: string
           notes: string | null
           owner_id: string
           quote_id: string | null
           recurrence: string | null
-          starts_at: string
+          starts_at: string | null
           status: Database["public"]["Enums"]["job_status"]
           total: number | null
           updated_at: string
@@ -263,13 +263,13 @@ export type Database = {
           business_id: string
           created_at?: string
           customer_id: string
-          ends_at: string
+          ends_at?: string | null
           id?: string
           notes?: string | null
           owner_id: string
           quote_id?: string | null
           recurrence?: string | null
-          starts_at: string
+          starts_at?: string | null
           status?: Database["public"]["Enums"]["job_status"]
           total?: number | null
           updated_at?: string
@@ -279,13 +279,13 @@ export type Database = {
           business_id?: string
           created_at?: string
           customer_id?: string
-          ends_at?: string
+          ends_at?: string | null
           id?: string
           notes?: string | null
           owner_id?: string
           quote_id?: string | null
           recurrence?: string | null
-          starts_at?: string
+          starts_at?: string | null
           status?: Database["public"]["Enums"]["job_status"]
           total?: number | null
           updated_at?: string
