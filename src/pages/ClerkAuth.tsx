@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useHasClerk } from "@/components/Auth/ClerkRuntime";
+import { getClerkTokenStrict } from "@/utils/clerkToken";
 
 const SUPABASE_URL = "https://ijudkzqfriazabiosnvb.supabase.co";
 
@@ -38,8 +39,7 @@ function ClerkAuthInner({ redirectTarget }: { redirectTarget: string }) {
     try {
       setLoading(true);
       setWho("");
-      const token = await getToken();
-      if (!token) throw new Error("No Clerk token");
+      const token = await getClerkTokenStrict(getToken);
       const res = await fetch(`${SUPABASE_URL}/functions/v1/clerk-whoami`, {
         headers: { Authorization: `Bearer ${token}` },
       });

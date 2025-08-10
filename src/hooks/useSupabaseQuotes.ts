@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import type { Tables } from "@/integrations/supabase/types";
+import { getClerkTokenStrict } from "@/utils/clerkToken";
 
 
 export interface DbQuoteRow {
@@ -24,8 +25,7 @@ export function useSupabaseQuotes(opts?: { enabled?: boolean }) {
     queryKey: ["supabase", "quotes"],
     enabled,
     queryFn: async () => {
-      const token = await getToken();
-      if (!token) throw new Error("Not authenticated");
+      const token = await getClerkTokenStrict(getToken);
 
       const r = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/quotes`, {
         headers: {

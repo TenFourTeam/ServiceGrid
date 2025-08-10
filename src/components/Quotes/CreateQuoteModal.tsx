@@ -16,6 +16,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { CustomerCombobox } from "@/components/Quotes/CustomerCombobox";
 import { LineItemsEditor } from "@/components/Quotes/LineItemsEditor";
 import { useNavigate } from "react-router-dom";
+import { getClerkTokenStrict } from "@/utils/clerkToken";
 
 export interface CreateQuoteModalProps {
   open: boolean;
@@ -168,8 +169,7 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
     setSaving(true);
     setSaveStatus("saving");
     try {
-      const token = await getToken();
-      if (!token) throw new Error("Not authenticated");
+      const token = await getClerkTokenStrict(getToken);
 
       const payload = {
         customerId: draft.customerId,
@@ -263,8 +263,7 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
   async function updateQuote(id: string) {
     setSaveStatus("saving");
     try {
-      const token = await getToken();
-      if (!token) throw new Error("Not authenticated");
+      const token = await getClerkTokenStrict(getToken);
       const payload = {
         address: draft.address || null,
         lineItems: draft.lineItems.map((li) => ({ name: li.name, qty: 1, unit: li.unit || null, lineTotal: li.lineTotal })),

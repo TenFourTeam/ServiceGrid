@@ -9,6 +9,7 @@ import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { getClerkTokenStrict } from "@/utils/clerkToken";
 
 const SUPABASE_URL = "https://ijudkzqfriazabiosnvb.supabase.co";
 
@@ -35,8 +36,7 @@ export default function CustomersPage() {
 
     setSaving(true);
     try {
-      const token = await getToken();
-      if (!token) throw new Error('Not authenticated');
+      const token = await getClerkTokenStrict(getToken);
 
       const res = await fetch(`${SUPABASE_URL}/functions/v1/customers`, {
         method: 'POST',

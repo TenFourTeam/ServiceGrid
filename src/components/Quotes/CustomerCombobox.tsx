@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Input } from "@/components/ui/input";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { getClerkTokenStrict } from "@/utils/clerkToken";
 
 interface CustomerComboboxProps {
   customers: Customer[];
@@ -35,8 +36,7 @@ export function CustomerCombobox({ customers, value, onChange, placeholder = "Se
     if (!name.trim()) return;
     setCreating(true);
     try {
-      const token = await getToken();
-      if (!token) throw new Error("Not authenticated");
+      const token = await getClerkTokenStrict(getToken);
       const SUPABASE_URL = "https://ijudkzqfriazabiosnvb.supabase.co";
       const res = await fetch(`${SUPABASE_URL}/functions/v1/customers`, {
         method: "POST",

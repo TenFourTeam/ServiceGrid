@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
+import { getClerkTokenStrict } from "@/utils/clerkToken";
 
 export interface DbCustomerRow {
   id: string;
@@ -18,8 +19,7 @@ export function useSupabaseCustomers(opts?: { enabled?: boolean }) {
     queryKey: ["supabase", "customers"],
     enabled,
     queryFn: async () => {
-      const token = await getToken();
-      if (!token) throw new Error("Not authenticated");
+      const token = await getClerkTokenStrict(getToken);
 
       const r = await fetch(`${SUPABASE_URL}/functions/v1/customers`, {
         headers: {
