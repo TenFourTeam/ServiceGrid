@@ -10,6 +10,8 @@ import { useSupabaseInvoices } from '@/hooks/useSupabaseInvoices';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import InvoiceEditor from '@/pages/Invoices/InvoiceEditor';
 import SendInvoiceModal from '@/components/Invoices/SendInvoiceModal';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { Send } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 export default function InvoicesPage() {
@@ -70,7 +72,7 @@ export default function InvoicesPage() {
     return list;
   }, [store.invoices, status, q, store.customers]);
 
-  function send(id: string) { store.sendInvoice(id); }
+  
 
   return (
     <AppLayout title="Invoices">
@@ -109,7 +111,7 @@ export default function InvoicesPage() {
                 <TableHead>Amount</TableHead>
                 <TableHead>Due</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead></TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -121,13 +123,28 @@ export default function InvoicesPage() {
                   <TableCell>{formatDate(i.dueAt)}</TableCell>
                   <TableCell>{i.status}</TableCell>
                   <TableCell className="text-right">
-                    <div className="flex gap-2 justify-end">
-                      <Button variant="outline" size="sm" onClick={()=>setActiveId(i.id)}>Edit</Button>
-                      <Button variant="secondary" size="sm" onClick={()=>setSendId(i.id)}>Send Email</Button>
-                      {i.status==='Draft' && <Button size="sm" onClick={()=>send(i.id)}>Mark Sent</Button>}
-                      {i.status==='Sent' && <Button size="sm" onClick={()=>{ setProcessing(i.id); setTimeout(()=>{ store.markInvoicePaid(i.id, '4242'); setProcessing(null); }, 800); }}>Mark Paid</Button>}
-                      {processing===i.id && <span className="text-sm text-muted-foreground">Processing…</span>}
-                    </div>
+                        <div className="flex gap-2 justify-end">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="inline-flex">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setSendId(i.id)}
+                                  disabled={i.status==='Sent' || i.status==='Paid'}
+                                  aria-label="Send invoice"
+                                >
+                                  <Send className="h-4 w-4" />
+                                </Button>
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>Send Invoice</TooltipContent>
+                          </Tooltip>
+
+                          <Button variant="outline" size="sm" onClick={()=>setActiveId(i.id)}>Edit</Button>
+                          {i.status==='Sent' && <Button size="sm" onClick={()=>{ setProcessing(i.id); setTimeout(()=>{ store.markInvoicePaid(i.id, '4242'); setProcessing(null); }, 800); }}>Mark Paid</Button>}
+                          {processing===i.id && <span className="text-sm text-muted-foreground">Processing…</span>}
+                        </div>
                   </TableCell>
                 </TableRow>
               ))}
