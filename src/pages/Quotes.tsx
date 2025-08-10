@@ -17,7 +17,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Trash2, Plus, Eye, Send, Download, Copy } from 'lucide-react';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { Trash2, Plus, Send, Download, FileText, Briefcase } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatMoney as formatCurrency } from '@/utils/format';
 import type { Customer, LineItem, Quote, QuoteStatus } from '@/types';
@@ -185,20 +186,59 @@ export default function QuotesPage() {
                             >
                               <Send className="h-4 w-4" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => navigate(`/quote/${quote.publicToken}`)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => copyPublicLink(quote)}
-                            >
-                              <Copy className="h-4 w-4" />
-                            </Button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const existingJob = store.jobs.find((j) => j.quoteId === quote.id);
+                                    let jobId: string | undefined = existingJob?.id;
+                                    if (!jobId) {
+                                      const jobs = store.convertQuoteToJob(quote.id);
+                                      if (jobs && jobs.length > 0) {
+                                        jobId = jobs[0].id;
+                                        toast.success('Job created from quote');
+                                      }
+                                    }
+                                    if (jobId) {
+                                      const invoice = store.createInvoiceFromJob(jobId);
+                                      if (invoice) {
+                                        toast.success('Invoice created');
+                                        navigate('/invoices');
+                                      }
+                                    }
+                                  }}
+                                >
+                                  <FileText className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Create Invoice</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const existingJob = store.jobs.find((j) => j.quoteId === quote.id);
+                                    if (existingJob) {
+                                      toast.message('Job already exists for this quote', { description: 'Opening Work Orders...' });
+                                      navigate('/work-orders');
+                                      return;
+                                    }
+                                    const jobs = store.convertQuoteToJob(quote.id);
+                                    if (jobs && jobs.length > 0) {
+                                      toast.success('Converted quote to job');
+                                      navigate('/work-orders');
+                                    }
+                                  }}
+                                >
+                                  <Briefcase className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Convert to Job</TooltipContent>
+                            </Tooltip>
                           </div>
                       </TableCell>
                     </TableRow>

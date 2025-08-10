@@ -39,15 +39,16 @@ export function buildQuoteEmail({ businessName, businessLogoUrl, customerName, q
 
   const termsParts: string[] = [];
   if (quote.paymentTerms) {
-    const pt = quote.paymentTerms === 'due_on_receipt' ? 'Due on receipt' : quote.paymentTerms.replace('net_', 'Net ');
-    termsParts.push(`Payment terms: ${pt}`);
+    const pt = quote.paymentTerms === 'due_on_receipt' ? 'Due on Receipt' : quote.paymentTerms.replace('net_', 'Net ');
+    termsParts.push(`Payment Terms: ${pt}`);
   }
   if (quote.depositRequired && typeof quote.depositPercent === 'number') {
-    termsParts.push(`Deposit: ${quote.depositPercent}% due on approval`);
+    termsParts.push(`Deposit: ${quote.depositPercent}% Due on Approval`);
   }
   if (quote.frequency) {
-    const freq = quote.frequency.replace('-', ' ');
-    termsParts.push(`Service frequency: ${escapeHtml(freq)}`);
+    const toTitleCase = (s: string) => s.replace(/[-_]/g, ' ').split(' ').filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    const freq = quote.frequency.includes('-') ? toTitleCase(quote.frequency).replace(/ /g, '-') : toTitleCase(quote.frequency);
+    termsParts.push(`Service Frequency: ${escapeHtml(freq)}`);
   }
 
   const extraTerms = quote.terms ? escapeHtml(quote.terms).replace(/\n/g, '<br />') : '';
@@ -64,15 +65,23 @@ export function buildQuoteEmail({ businessName, businessLogoUrl, customerName, q
   ` : '';
 
   // New: Quote details (payment terms, frequency, deposit)
-  const paymentTermsLabel = quote.paymentTerms ? (quote.paymentTerms === 'due_on_receipt' ? 'Due on receipt' : quote.paymentTerms.replace('net_', 'Net ')) : '';
-  const frequencyLabel = quote.frequency ? escapeHtml(quote.frequency.replace('-', ' ')) : '';
+  const paymentTermsLabel = quote.paymentTerms
+    ? (quote.paymentTerms === 'due_on_receipt' ? 'Due on Receipt' : quote.paymentTerms.replace('net_', 'Net '))
+    : '';
+
+  const toTitleCase = (s: string) => s.replace(/[-_]/g, ' ').split(' ').filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  const originalFreq = quote.frequency ? String(quote.frequency) : '';
+  const frequencyLabel = originalFreq
+    ? escapeHtml(originalFreq.includes('-') ? toTitleCase(originalFreq).replace(/ /g, '-') : toTitleCase(originalFreq))
+    : '';
+
   const depositLabel = quote.depositRequired && typeof quote.depositPercent === 'number' ? `${quote.depositPercent}%` : '';
 
   const detailsHtml = (paymentTermsLabel || frequencyLabel || depositLabel) ? `
     <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-top:16px; border-collapse:collapse;">
       <tr>
         <td style="padding:0 0 8px;">
-          <div style="font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:#6b7280; font-weight:700;">Quote details</div>
+          <div style="font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:#6b7280; font-weight:700;">Quote Details</div>
           <div style="height:1px; background:#e5e7eb; margin-top:6px;"></div>
         </td>
       </tr>
@@ -80,7 +89,7 @@ export function buildQuoteEmail({ businessName, businessLogoUrl, customerName, q
         <td>
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="color:#111827; border-collapse:collapse;">
             ${paymentTermsLabel ? `<tr>
-              <td style="padding:10px 0; width:180px; color:#6b7280; border-bottom:1px solid #f1f5f9;">Payment terms</td>
+              <td style="padding:10px 0; width:180px; color:#6b7280; border-bottom:1px solid #f1f5f9;">Payment Terms</td>
               <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;">${paymentTermsLabel}</td>
             </tr>` : ''}
             ${frequencyLabel ? `<tr>
@@ -89,7 +98,7 @@ export function buildQuoteEmail({ businessName, businessLogoUrl, customerName, q
             </tr>` : ''}
             ${depositLabel ? `<tr>
               <td style="padding:10px 0; width:180px; color:#6b7280;">Deposit</td>
-              <td style="padding:10px 0;">${depositLabel} due on approval</td>
+              <td style="padding:10px 0;">${depositLabel} Due on Approval</td>
             </tr>` : ''}
           </table>
         </td>
