@@ -20,9 +20,7 @@ export default function CalendarShell({
     if (view === "week") {
       const s = startOfWeek(date);
       const e = endOfWeek(date);
-      return s.getMonth() === e.getMonth()
-        ? `${format(s, "MMM d")}–${format(e, "d, yyyy")}`
-        : `${format(s, "MMM d")}–${format(e, "MMM d, yyyy")}`;
+      return s.getMonth() === e.getMonth() ? `${format(s, "MMM d")}–${format(e, "d, yyyy")}` : `${format(s, "MMM d")}–${format(e, "MMM d, yyyy")}`;
     }
     return format(date, "EEE, MMM d");
   }, [date, view]);
@@ -51,7 +49,7 @@ export default function CalendarShell({
             Today
           </Button>
           <div className="hidden md:block">
-            <Tabs value={view} onValueChange={(v) => setView(v as any)}>
+            <Tabs value={view} onValueChange={v => setView(v as any)}>
               <TabsList>
                 <TabsTrigger value="day">Day</TabsTrigger>
                 <TabsTrigger value="week">Week</TabsTrigger>
@@ -64,16 +62,12 @@ export default function CalendarShell({
           <h2 className="text-sm md:text-base font-semibold">{rangeTitle}</h2>
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="outline" size="icon" aria-label="Previous" onClick={() => stepDate(-1)}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="icon" aria-label="Next" onClick={() => stepDate(1)}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          
+          
         </div>
       </header>
       <div className="md:hidden">
-        <Tabs value={view} onValueChange={(v) => setView(v as any)}>
+        <Tabs value={view} onValueChange={v => setView(v as any)}>
           <TabsList>
             <TabsTrigger value="day">D</TabsTrigger>
             <TabsTrigger value="week">W</TabsTrigger>
@@ -83,14 +77,7 @@ export default function CalendarShell({
       </div>
 
       <div className="grid gap-4 md:grid-cols-[260px_1fr_280px]">
-        <aside className="hidden md:block rounded-lg border p-3 bg-card" aria-label="Mini month navigator">
-          <Calendar
-            mode="single"
-            selected={date}
-            onSelect={(d) => d && setDate(startOfDay(d))}
-            className="w-full"
-          />
-        </aside>
+        
         {/* Main calendar area */}
         <main className="min-h-[60vh]" role="grid">
           {view === "month" && <MonthCalendar date={date} onDateChange={setDate} />}
