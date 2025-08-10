@@ -3,16 +3,21 @@ import { useStore } from '@/store/useAppStore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
 import { formatDate, formatMoney } from '@/utils/format';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSupabaseInvoices } from '@/hooks/useSupabaseInvoices';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
+import InvoiceEditor from '@/pages/Invoices/InvoiceEditor';
 
 export default function InvoicesPage() {
   const store = useStore();
   const { isSignedIn } = useClerkAuth();
   const { data: dbInvoices } = useSupabaseInvoices({ enabled: !!isSignedIn });
   const [processing, setProcessing] = useState<string | null>(null);
+  const [q, setQ] = useState('');
+  const [status, setStatus] = useState<'All' | 'Draft' | 'Sent' | 'Paid' | 'Overdue'>('All');
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isSignedIn || !dbInvoices?.rows) return;
@@ -37,12 +42,46 @@ export default function InvoicesPage() {
     });
   }, [isSignedIn, dbInvoices]);
 
+  const filteredInvoices = useMemo(() => {
+    let list = store.invoices.slice();
+    if (status !== 'All') list = list.filter(i => i.status === status);
+    const query = q.trim().toLowerCase();
+    if (query) {
+      list = list.filter(i => i.number.toLowerCase().includes(query) || (store.customers.find(c=>c.id===i.customerId)?.name?.toLowerCase().includes(query) ?? false));
+    }
+    return list;
+  }, [store.invoices, status, q, store.customers]);
+
   function send(id: string) { store.sendInvoice(id); }
 
   return (
     <AppLayout title="Invoices">
       <Card>
-        <CardHeader><CardTitle>All Invoices</CardTitle></CardHeader>
+        <CardHeader>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <CardTitle>All Invoices</CardTitle>
+            <div className="flex items-center gap-2">
+              <Input
+                placeholder="Search number or customer…"
+                value={q}
+                onChange={(e)=>setQ(e.target.value)}
+                className="w-48 sm:w-64"
+              />
+              <div className="flex gap-1">
+                {(['All','Draft','Sent','Paid','Overdue'] as const).map(s => (
+                  <Button
+                    key={s}
+                    variant={status===s ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={()=>setStatus(s)}
+                  >
+                    {s}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
@@ -56,7 +95,7 @@ export default function InvoicesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {store.invoices.map((i)=> (
+              {filteredInvoices.map((i)=> (
                 <TableRow key={i.id}>
                   <TableCell>{i.number}</TableCell>
                   <TableCell>{store.customers.find(c=>c.id===i.customerId)?.name}</TableCell>
@@ -65,8 +104,9 @@ export default function InvoicesPage() {
                   <TableCell>{i.status}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex gap-2 justify-end">
-                      {i.status==='Draft' && <Button onClick={()=>send(i.id)}>Send</Button>}
-                      {i.status==='Sent' && <Button onClick={()=>{ setProcessing(i.id); setTimeout(()=>{ store.markInvoicePaid(i.id, '4242'); setProcessing(null); }, 800); }}>Mark Paid (Fake)</Button>}
+                      <Button variant="outline" size="sm" onClick={()=>setActiveId(i.id)}>Edit</Button>
+                      {i.status==='Draft' && <Button size="sm" onClick={()=>send(i.id)}>Mark Sent</Button>}
+                      {i.status==='Sent' && <Button size="sm" onClick={()=>{ setProcessing(i.id); setTimeout(()=>{ store.markInvoicePaid(i.id, '4242'); setProcessing(null); }, 800); }}>Mark Paid</Button>}
                       {processing===i.id && <span className="text-sm text-muted-foreground">Processing…</span>}
                     </div>
                   </TableCell>
@@ -76,6 +116,11 @@ export default function InvoicesPage() {
           </Table>
         </CardContent>
       </Card>
+      <InvoiceEditor
+        open={!!activeId}
+        onOpenChange={(o)=>{ if(!o) setActiveId(null); }}
+        invoice={store.invoices.find(inv=>inv.id===activeId) || null}
+      />
     </AppLayout>
   );
 }
