@@ -11,7 +11,7 @@ import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import InvoiceEditor from '@/pages/Invoices/InvoiceEditor';
 import SendInvoiceModal from '@/components/Invoices/SendInvoiceModal';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { Send, ArrowUpDown } from 'lucide-react';
+import { Send } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 export default function InvoicesPage() {
@@ -152,34 +152,29 @@ export default function InvoicesPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>
-                  <Button variant="ghost" size="sm" onClick={() => requestSort('number')} className="px-0">
-                    Number
-                    <ArrowUpDown className="ml-2 h-3.5 w-3.5" />
-                  </Button>
+                    <button className="flex items-center gap-1" onClick={() => requestSort('number')} aria-label="Sort by number">
+                      Number{sortKey === 'number' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                    </button>
                 </TableHead>
                 <TableHead>
-                  <Button variant="ghost" size="sm" onClick={() => requestSort('customer')} className="px-0">
-                    Customer
-                    <ArrowUpDown className="ml-2 h-3.5 w-3.5" />
-                  </Button>
+                    <button className="flex items-center gap-1" onClick={() => requestSort('customer')} aria-label="Sort by customer">
+                      Customer{sortKey === 'customer' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                    </button>
                 </TableHead>
                 <TableHead>
-                  <Button variant="ghost" size="sm" onClick={() => requestSort('amount')} className="px-0">
-                    Amount
-                    <ArrowUpDown className="ml-2 h-3.5 w-3.5" />
-                  </Button>
+                    <button className="flex items-center gap-1" onClick={() => requestSort('amount')} aria-label="Sort by amount">
+                      Amount{sortKey === 'amount' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                    </button>
                 </TableHead>
                 <TableHead>
-                  <Button variant="ghost" size="sm" onClick={() => requestSort('due')} className="px-0">
-                    Due
-                    <ArrowUpDown className="ml-2 h-3.5 w-3.5" />
-                  </Button>
+                    <button className="flex items-center gap-1" onClick={() => requestSort('due')} aria-label="Sort by due date">
+                      Due{sortKey === 'due' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                    </button>
                 </TableHead>
                 <TableHead>
-                  <Button variant="ghost" size="sm" onClick={() => requestSort('status')} className="px-0">
-                    Status
-                    <ArrowUpDown className="ml-2 h-3.5 w-3.5" />
-                  </Button>
+                    <button className="flex items-center gap-1" onClick={() => requestSort('status')} aria-label="Sort by status">
+                      Status{sortKey === 'status' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                    </button>
                 </TableHead>
                 <TableHead className="text-center">Actions</TableHead>
               </TableRow>

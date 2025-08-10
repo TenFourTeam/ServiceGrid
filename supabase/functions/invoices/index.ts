@@ -253,7 +253,8 @@ serve(async (req) => {
       if (jErr) return badRequest("Job not found", 404);
 
       const businessId = (job as any).business_id as string;
-      const customerId = (job as any).customer_id as string;
+      const customerId = (job as any).customer_id as string | null;
+      if (!customerId) return badRequest("Job has no linked customer; cannot create invoice");
       const quoteId = (job as any).quote_id as string | null;
 
       // Load items from quote
