@@ -1,13 +1,11 @@
 import React from "react";
-import { Hammer, Wrench, type LucideProps } from "lucide-react";
+import { Wrench, Ruler, type LucideProps } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export default function ToolsMulti({ className, size = 24, strokeWidth = 2, color, ...rest }: LucideProps) {
-  const dim = typeof size === "number" ? `${size}px` : (size as string);
+export default function ToolsMulti({ className, strokeWidth = 2, color, ...rest }: LucideProps) {
   return (
     <span
-      className={cn("relative inline-block", className)}
-      style={{ width: dim, height: dim }}
+      className={cn("relative inline-block align-middle", className)}
     >
       <Wrench
         {...rest}
@@ -17,7 +15,7 @@ export default function ToolsMulti({ className, size = 24, strokeWidth = 2, colo
         style={{ transform: "rotate(18deg) translate(6%, -2%)" }}
         aria-hidden
       />
-      <Hammer
+      <Ruler
         {...rest}
         color={color}
         strokeWidth={strokeWidth}
