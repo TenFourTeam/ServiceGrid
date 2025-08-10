@@ -66,7 +66,10 @@ export default function MonthCalendar({ date, onDateChange }: { date: Date; onDa
                         {t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                       </span>
                       <span className="mx-1 opacity-70">•</span>
-                      <span>{(j.notes || (j.total ? `Job — ${formatMoney(j.total)}` : "Job")) + (customersMap.get(j.customerId) ? ` — ${customersMap.get(j.customerId)}` : "")}</span>
+                      <span className="truncate">{(j as any).title || 'Job'}</span>
+                      {customersMap.get(j.customerId) && (
+                        <span className="opacity-70"> — {customersMap.get(j.customerId)}</span>
+                      )}
                     </li>
                   );
                 })}

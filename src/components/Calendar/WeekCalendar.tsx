@@ -89,6 +89,7 @@ export function WeekCalendar({
           status: row.status,
           total: row.total ?? undefined,
           notes: row.notes ?? undefined,
+          title: (row as any).title ?? undefined,
           createdAt: row.createdAt,
         });
       });
@@ -119,6 +120,7 @@ export function WeekCalendar({
             status: row.status,
             total: row.total ?? undefined,
             notes: row.notes ?? undefined,
+            title: row.title ?? (row as any).title ?? undefined,
             createdAt: row.created_at || row.createdAt,
           });
         } catch {}
@@ -208,6 +210,7 @@ const dayRefs = useRef<HTMLDivElement[]>([]);
         status: row.status,
         total: row.total ?? null,
         notes: row.notes ?? null,
+        title: row.title ?? (row as any).title ?? undefined,
         createdAt: row.createdAt || row.created_at,
       } as Job;
       upsertJob(created);
@@ -264,11 +267,20 @@ const dayRefs = useRef<HTMLDivElement[]>([]);
   }
 
 function onDragStart(e: React.PointerEvent, job: Job) {
+    e.stopPropagation();
     const original = { ...job };
     const dur = new Date(job.endsAt).getTime() - new Date(job.startsAt).getTime();
     let latest = { startsAt: job.startsAt, endsAt: job.endsAt };
+    const startX = e.clientX;
+    const startY = e.clientY;
+    let movedEnough = false;
 
     const onMove = (ev: PointerEvent) => {
+      const dx = Math.abs(ev.clientX - startX);
+      const dy = Math.abs(ev.clientY - startY);
+      if (!movedEnough && Math.sqrt(dx*dx + dy*dy) < 4) return; // threshold to distinguish click vs drag
+      movedEnough = true;
+
       // Determine which day column we're over
       let idx = -1;
       for (let i = 0; i < dayRefs.current.length; i++) {
@@ -301,6 +313,10 @@ function onDragStart(e: React.PointerEvent, job: Job) {
     const onUp = async () => {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
+      if (!movedEnough) {
+        setActiveJob(job);
+        return;
+      }
       try {
         const token = await getClerkTokenStrict(getToken);
         const r = await fetch(
@@ -325,6 +341,69 @@ function onDragStart(e: React.PointerEvent, job: Job) {
         toast.error(err?.message || 'Failed to reschedule');
       }
     };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  }
+
+  function onResizeStart(e: React.PointerEvent, job: Job) {
+    e.stopPropagation();
+    const original = { ...job };
+    let latestEnd = job.endsAt;
+
+    const onMove = (ev: PointerEvent) => {
+      // Determine which day column we're over
+      let idx = -1;
+      for (let i = 0; i < dayRefs.current.length; i++) {
+        const r = dayRefs.current[i]?.getBoundingClientRect();
+        if (r && ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom) { idx = i; break; }
+      }
+      if (idx === -1) return;
+      const dayEl = dayRefs.current[idx];
+      if (!dayEl) return;
+      const rect = dayEl.getBoundingClientRect();
+      const y = clamp(ev.clientY - rect.top, 0, rect.height);
+      const minsFromTop = y / rect.height * TOTAL_MIN;
+      const endMins = Math.round(minsFromTop / 15) * 15 + START_HOUR * 60; // snap 15m
+
+      const d = new Date(days[idx]);
+      d.setHours(0,0,0,0);
+      const newEnd = new Date(d);
+      newEnd.setMinutes(endMins);
+
+      const minEnd = new Date(new Date(job.startsAt).getTime() + 15*60*1000);
+      latestEnd = newEnd < minEnd ? minEnd.toISOString() : newEnd.toISOString();
+
+      upsertJob({ ...job, endsAt: latestEnd });
+    };
+
+    const onUp = async () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      try {
+        const token = await getClerkTokenStrict(getToken);
+        const r = await fetch(
+          `https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/jobs?id=${job.id}`,
+          {
+            method: 'PATCH',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ endsAt: latestEnd }),
+          }
+        );
+        if (!r.ok) {
+          upsertJob(original);
+          const txt = await r.text().catch(() => "");
+          throw new Error(`Failed to resize (${r.status}): ${txt}`);
+        }
+        toast.success('Updated');
+      } catch (err: any) {
+        console.error(err);
+        toast.error(err?.message || 'Failed to update');
+      }
+    };
+
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
   }
@@ -401,10 +480,11 @@ function onDragStart(e: React.PointerEvent, job: Job) {
               return <div key={j.id} className={`absolute left-2 right-2 border rounded-md p-2 text-xs select-none cursor-grab active:cursor-grabbing ${color}`} style={{
                 top: `${top}%`,
                 height: `${height}%`
-              }} onPointerDown={e => onDragStart(e, j)} onClick={(e) => { e.stopPropagation(); setActiveJob(j); }}>
-                      <div className="font-medium">{`${j.notes || 'Job'} — ${customer}`}</div>
-                      <div className="text-[10px] text-muted-foreground">{formatDateTime(j.startsAt)}</div>
+              }} onPointerDown={e => onDragStart(e, j)}>
+                      <div className="font-medium truncate">{j.title || 'Job'}</div>
+                      <div className="text-[10px] text-muted-foreground truncate">{customer}</div>
                       <div className="text-[10px]">{j.status}</div>
+                      <div className="absolute left-0 right-0 bottom-0 h-2 cursor-ns-resize" onPointerDown={(e)=> onResizeStart(e, j)} />
                     </div>;
             })}
               </div>))}

@@ -92,11 +92,12 @@ function WorkOrderRow({ job, onRescheduled, onComplete, onInvoice, onViewInvoice
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <div className="font-medium truncate">{customerName}</div>
+            <div className="font-medium truncate">{job.title || 'Job'}</div>
             <div className="text-sm text-muted-foreground">{formatMoney(job.total || 0)}</div>
             {uninvoiced && job.status==='Completed' && <Badge variant="secondary">Uninvoiced</Badge>}
           </div>
-          <div className="text-xs text-muted-foreground truncate">{job.address}</div>
+          <div className="text-xs text-muted-foreground truncate">Customer: {customerName}</div>
+          {job.address && <div className="text-xs text-muted-foreground truncate">{job.address}</div>}
         </div>
         <div className="flex items-center gap-2">
           <div className="text-xs text-muted-foreground text-right">
@@ -141,6 +142,7 @@ export default function WorkOrdersPage() {
         endsAt: row.endsAt,
         status: row.status,
         total: row.total || undefined,
+        title: (row as any).title || undefined,
         createdAt: row.createdAt,
       });
     });

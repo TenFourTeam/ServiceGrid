@@ -30,6 +30,20 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
   }, [job.id]);
 
   const customerName = useMemo(() => customers.find(c => c.id === job.customerId)?.name || "Customer", [customers, job.customerId]);
+  const photos: string[] = Array.isArray((job as any).photos) ? ((job as any).photos as string[]) : [];
+
+  useEffect(() => {
+    if (!viewerOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setViewerOpen(false);
+      if (photos.length > 0) {
+        if (e.key === 'ArrowRight') setViewerIndex((i) => (i + 1) % photos.length);
+        if (e.key === 'ArrowLeft') setViewerIndex((i) => (i - 1 + photos.length) % photos.length);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [viewerOpen, photos.length]);
 
   async function handleCreateInvoice() {
     try {
@@ -135,6 +149,41 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
             <Button variant="destructive" onClick={() => { deleteJob(job.id); onOpenChange(false); }}>Delete</Button>
           </div>
         </DrawerFooter>
+
+        <Dialog open={viewerOpen} onOpenChange={setViewerOpen}>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader>
+              <ModalTitle>Photo {viewerIndex + 1} of {photos.length}</ModalTitle>
+            </DialogHeader>
+            {photos.length > 0 && (
+              <div className="relative">
+                <img
+                  src={photos[viewerIndex]}
+                  alt={`Job photo ${viewerIndex + 1}`}
+                  className="max-h-[70vh] w-full object-contain rounded"
+                />
+                <div className="absolute inset-0 flex items-center justify-between pointer-events-none px-2">
+                  <button
+                    type="button"
+                    aria-label="Previous photo"
+                    onClick={(e)=>{ e.stopPropagation(); setViewerIndex((i)=> (i - 1 + photos.length) % photos.length); }}
+                    className="pointer-events-auto px-3 py-2 rounded-md bg-background/60 border"
+                  >
+                    Prev
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Next photo"
+                    onClick={(e)=>{ e.stopPropagation(); setViewerIndex((i)=> (i + 1) % photos.length); }}
+                    className="pointer-events-auto px-3 py-2 rounded-md bg-background/60 border"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </DrawerContent>
     </Drawer>
   );

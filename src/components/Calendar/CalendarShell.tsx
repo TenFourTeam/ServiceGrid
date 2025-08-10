@@ -46,9 +46,6 @@ export default function CalendarShell({
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <h2 className="text-sm md:text-base font-semibold">{rangeTitle}</h2>
-            <Button variant="outline" size="sm" onClick={() => setDate(startOfDay(new Date()))}>
-              Today
-            </Button>
           </div>
           <div className="flex items-center gap-2">
             <div className="hidden md:block">
@@ -60,6 +57,9 @@ export default function CalendarShell({
                 </TabsList>
               </Tabs>
             </div>
+            <Button variant="outline" size="sm" className="hidden md:inline-flex" onClick={() => setDate(startOfDay(new Date()))}>
+              Today
+            </Button>
             <Button variant="outline" size="icon" aria-label="Previous" onClick={() => stepDate(-1)}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -68,7 +68,7 @@ export default function CalendarShell({
             </Button>
           </div>
         </header>
-      <div className="md:hidden">
+      <div className="md:hidden flex items-center justify-between">
         <Tabs value={view} onValueChange={v => setView(v as any)}>
           <TabsList>
             <TabsTrigger value="day">D</TabsTrigger>
@@ -76,6 +76,9 @@ export default function CalendarShell({
             <TabsTrigger value="month">M</TabsTrigger>
           </TabsList>
         </Tabs>
+        <Button variant="outline" size="sm" onClick={() => setDate(startOfDay(new Date()))}>
+          Today
+        </Button>
       </div>
 
       <div className="flex-1 min-h-0 grid gap-4 md:grid-cols-1">
