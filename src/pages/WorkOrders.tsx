@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import AppLayout from '@/components/Layout/AppLayout';
 import { useStore } from '@/store/useAppStore';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { Job } from '@/types';
 import { toast } from '@/components/ui/use-toast';
 import { useSupabaseJobs } from '@/hooks/useSupabaseJobs';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
+import { getClerkTokenStrict } from '@/utils/clerkToken';
 
 function useFilteredJobs() {
   const { jobs, customers, invoices } = useStore();
@@ -110,14 +111,18 @@ function WorkOrderRow({ job, onSchedule, onComplete, onInvoice, onViewInvoice, o
 }
 
 export default function WorkOrdersPage() {
-  const { customers, updateJobStatus, createInvoiceFromJob, upsertJob } = useStore();
-  const { isSignedIn } = useClerkAuth();
+  const { customers, updateJobStatus, upsertJob } = useStore();
+  const { isSignedIn, getToken } = useClerkAuth();
   const { data: dbJobs } = useSupabaseJobs({ enabled: !!isSignedIn });
   const { filter, setFilter, q, setQ, sort, setSort, jobs, counts, hasInvoice } = useFilteredJobs();
   const navigate = useNavigate();
+  const lastSyncKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!isSignedIn || !dbJobs?.rows) return;
+    const key = dbJobs.rows.map((r) => `${r.id}:${r.updatedAt ?? ''}`).join('|');
+    if (lastSyncKeyRef.current === key) return;
+    lastSyncKeyRef.current = key;
     dbJobs.rows.forEach((row) => {
       upsertJob({
         id: row.id,
@@ -131,7 +136,7 @@ export default function WorkOrdersPage() {
         createdAt: row.createdAt,
       });
     });
-  }, [isSignedIn, dbJobs, upsertJob]);
+  }, [isSignedIn, dbJobs]);
 
   return (
     <AppLayout title="Work Orders">
@@ -176,8 +181,42 @@ export default function WorkOrdersPage() {
                     when={when}
                     uninvoiced={uninvoiced}
                     onSchedule={()=> { navigate(`/calendar?job=${j.id}`); toast({ title: 'Scheduling', description: 'Pick a time in Calendar' }); }}
-                    onComplete={()=> { updateJobStatus(j.id, 'Completed'); toast({ title: 'Marked complete' }); }}
-                    onInvoice={()=> { const inv = createInvoiceFromJob(j.id); toast({ title: 'Invoice created', description: `${inv.number} ready to send` }); navigate('/invoices'); }}
+                    onComplete={async ()=> {
+                      try {
+                        const token = await getClerkTokenStrict(getToken);
+                        const r = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/jobs?id=${j.id}`, {
+                          method: 'PATCH',
+                          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ status: 'Completed' }),
+                        });
+                        if (!r.ok) {
+                          const txt = await r.text().catch(()=> '');
+                          throw new Error(`Failed to update job (${r.status}): ${txt}`);
+                        }
+                        updateJobStatus(j.id, 'Completed');
+                        toast({ title: 'Marked complete' });
+                      } catch (e: any) {
+                        toast({ title: 'Failed to mark complete', description: e?.message || String(e) });
+                      }
+                    }}
+                    onInvoice={async ()=> {
+                      try {
+                        const token = await getClerkTokenStrict(getToken);
+                        const r = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/invoices`, {
+                          method: 'POST',
+                          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ jobId: j.id }),
+                        });
+                        if (!r.ok) {
+                          const txt = await r.text().catch(()=> '');
+                          throw new Error(`Failed to create invoice (${r.status}): ${txt}`);
+                        }
+                        toast({ title: 'Invoice created' });
+                        navigate('/invoices');
+                      } catch (e: any) {
+                        toast({ title: 'Failed to create invoice', description: e?.message || String(e) });
+                      }
+                    }}
                     onNavigate={()=> {
                       const addr = j.address || customers.find(c=>c.id===j.customerId)?.address;
                       if (addr) window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`, '_blank');
