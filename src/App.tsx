@@ -39,6 +39,7 @@ const App = () => (
                  <Routes>
                    <Route path="/clerk-auth" element={<ClerkAuthPage />} />
                    <Route path="/quote-action" element={<QuoteActionPage />} />
+                   <Route path="/quote/:token" element={<QuotePublicPage />} />
                    <Route path="/" element={<Navigate to="/calendar" replace />} />
                    <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
                    <Route path="/work-orders" element={<ProtectedRoute><WorkOrdersPage /></ProtectedRoute>} />

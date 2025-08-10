@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -183,7 +182,7 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
               <Label htmlFor="customer">Customer *</Label>
               <Select value={draft.customerId} onValueChange={(value) => setDraft((prev) => ({ ...prev, customerId: value }))}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a customer" />
+                  <SelectValue placeholder="Select…" />
                 </SelectTrigger>
                 <SelectContent>
                   {customers.map((c) => (
@@ -243,21 +242,17 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
 
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="tax-rate">Tax Rate (%)</Label>
-                <Input id="tax-rate" type="number" min="0" max="100" step="0.01" value={draft.taxRate * 100} onChange={(e) => setDraft((prev) => ({ ...prev, taxRate: (parseFloat(e.target.value) || 0) / 100 }))} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="discount">Discount ($)</Label>
-                <Input id="discount" type="number" min="0" step="0.01" value={draft.discount / 100} onChange={(e) => setDraft((prev) => ({ ...prev, discount: Math.round((parseFloat(e.target.value) || 0) * 100) }))} />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between"><span>Subtotal:</span><span>{formatCurrency(totals.subtotal)}</span></div>
-              <div className="flex justify-between"><span>Tax:</span><span>{formatCurrency(totals.taxAmount)}</span></div>
-              <div className="flex justify-between"><span>Discount:</span><span>-{formatCurrency(draft.discount)}</span></div>
-              <Separator />
-              <div className="flex justify-between font-bold text-lg"><span>Total:</span><span>{formatCurrency(totals.total)}</span></div>
+                <div className="space-y-2">
+                  <Label htmlFor="tax-rate">Tax rate</Label>
+                  <Input id="tax-rate" type="number" min="0" max="100" step="0.01" value={draft.taxRate * 100} onChange={(e) => setDraft((prev) => ({ ...prev, taxRate: (parseFloat(e.target.value) || 0) / 100 }))} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="discount">Discount (dollars)</Label>
+                  <div className="relative">
+                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                    <Input id="discount" className="pl-7" type="number" min="0" step="0.01" value={draft.discount / 100} onChange={(e) => setDraft((prev) => ({ ...prev, discount: Math.round((parseFloat(e.target.value) || 0) * 100) }))} />
+                  </div>
+                </div>
             </div>
           </div>
 
@@ -291,34 +286,32 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>Deposit</Label>
-              <div className="flex items-center gap-3">
-                <Switch checked={draft.depositRequired} onCheckedChange={(checked) => setDraft((prev) => ({ ...prev, depositRequired: Boolean(checked) }))} />
-                <Input type="number" min={0} max={100} step={1} value={draft.depositPercent} onChange={(e) => setDraft((prev) => ({ ...prev, depositPercent: Math.max(0, Math.min(100, parseFloat(e.target.value) || 0)) }))} disabled={!draft.depositRequired} />
-                <span className="text-sm text-muted-foreground">% up front</span>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Checkbox id="deposit-required" checked={draft.depositRequired} onCheckedChange={(checked) => setDraft((prev) => ({ ...prev, depositRequired: Boolean(checked) }))} />
+                  <Label htmlFor="deposit-required" className="text-sm font-normal">Deposit required</Label>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs" htmlFor="deposit-percent">Deposit percent</Label>
+                  <Input id="deposit-percent" type="number" min={0} max={100} step={1} value={draft.depositPercent} onChange={(e) => setDraft((prev) => ({ ...prev, depositPercent: Math.max(0, Math.min(100, parseFloat(e.target.value) || 0)) }))} disabled={!draft.depositRequired} />
+                </div>
               </div>
-            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="notes">Internal Notes</Label>
-              <Textarea id="notes" value={draft.notesInternal} onChange={(e) => setDraft((prev) => ({ ...prev, notesInternal: e.target.value }))} placeholder="Internal notes (not visible to customer)" rows={3} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="terms">Terms & Conditions</Label>
-              <Textarea id="terms" value={draft.terms} onChange={(e) => setDraft((prev) => ({ ...prev, terms: e.target.value }))} placeholder="Terms and conditions" rows={3} />
-            </div>
-          </div>
 
-          <div className="border-t pt-4 mt-2 flex items-center justify-between">
-            <div className="text-xs text-muted-foreground">Autosaves</div>
-            <div className="flex items-center gap-2">
-              <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
-              <Button variant="outline" onClick={saveAndOpenSend} disabled={saving}>Preview Email</Button>
-              <Button onClick={saveAndOpenSend} disabled={saving}>{saving ? "Saving..." : "Save & Send"}</Button>
-              <Button variant="ghost" onClick={saveQuote} disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
+          <div className="border-t pt-4 mt-2 space-y-3">
+            <div className="flex justify-end gap-6">
+              <div className="text-sm"><span className="mr-2">Subtotal:</span><span className="font-medium">{formatCurrency(totals.subtotal)}</span></div>
+              <div className="text-sm font-semibold"><span className="mr-2">Total:</span><span className="font-bold">{formatCurrency(totals.total)}</span></div>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="text-xs text-muted-foreground">Autosaves</div>
+              <div className="flex items-center gap-2">
+                <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
+                <Button variant="ghost" onClick={saveQuote} disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
+                <Button variant="outline" onClick={saveAndOpenSend} disabled={saving}>Preview Email</Button>
+                <Button onClick={saveAndOpenSend} disabled={saving}>{saving ? "Saving..." : "Save & Send"}</Button>
+              </div>
             </div>
           </div>
         </div>

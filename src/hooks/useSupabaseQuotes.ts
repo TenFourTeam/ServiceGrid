@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
-import { useAuth } from "@/components/Auth/AuthProvider";
+
 
 export interface DbQuoteRow {
   id: string;
@@ -17,8 +17,7 @@ export interface DbQuoteRow {
 }
 
 export function useSupabaseQuotes(opts?: { enabled?: boolean }) {
-  const { user } = useAuth();
-  const enabled = !!user && (opts?.enabled ?? true);
+  const enabled = (opts?.enabled ?? true);
 
   return useQuery<{ rows: DbQuoteRow[] } | null, Error>({
     queryKey: ["supabase", "quotes"],

@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import CreateQuoteModal from '@/components/Quotes/CreateQuoteModal';
 import SendQuoteModal from '@/components/Quotes/SendQuoteModal';
 import { Input } from '@/components/ui/input';
-import { useAuth } from '@/components/Auth/AuthProvider';
+import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { useSupabaseQuotes } from '@/hooks/useSupabaseQuotes';
 import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
 import { useQueryClient } from '@tanstack/react-query';
@@ -53,10 +53,10 @@ function calculateQuoteTotals(lineItems: LineItem[], taxRate: number, discount: 
 }
 
 export default function QuotesPage() {
-  const { user: appUser } = useAuth();
+  const { isSignedIn } = useClerkAuth();
   const store = useStore();
-  const { data: dbQuotes } = useSupabaseQuotes({ enabled: !!appUser });
-  const { data: dbCustomers } = useSupabaseCustomers({ enabled: !!appUser });
+  const { data: dbQuotes } = useSupabaseQuotes({ enabled: !!isSignedIn });
+  const { data: dbCustomers } = useSupabaseCustomers({ enabled: !!isSignedIn });
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
@@ -67,7 +67,7 @@ export default function QuotesPage() {
   
 
   const customers = useMemo(() => {
-    if (appUser && dbCustomers?.rows) {
+    if (isSignedIn && dbCustomers?.rows) {
       return dbCustomers.rows.map(row => ({
         id: row.id,
         businessId: '',
@@ -78,10 +78,10 @@ export default function QuotesPage() {
       }));
     }
     return store.customers;
-  }, [appUser, dbCustomers, store.customers]);
+  }, [isSignedIn, dbCustomers, store.customers]);
 
   const quotes = useMemo(() => {
-    if (appUser && dbQuotes?.rows) {
+    if (isSignedIn && dbQuotes?.rows) {
       return dbQuotes.rows.map(row => ({
         id: row.id,
         number: row.number,
@@ -102,7 +102,7 @@ export default function QuotesPage() {
       }));
     }
     return store.quotes;
-  }, [appUser, dbQuotes, store.quotes]);
+  }, [isSignedIn, dbQuotes, store.quotes]);
 
 
   function getCustomerName(customerId: string): string {
