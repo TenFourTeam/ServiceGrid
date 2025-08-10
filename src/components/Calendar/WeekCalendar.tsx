@@ -89,79 +89,84 @@ const gridRef = useRef<HTMLDivElement>(null);
       <div className="flex items-center justify-end mb-3">
         <div className="text-sm text-muted-foreground">{formatRangeTitle(days)}</div>
       </div>
-      {/* Day headers */}
-      <div className="grid grid-cols-8 gap-2 mb-2">
-        <div />
-        {days.map((day) => {
-          const isToday = isSameDay(day, now);
-          return (
-            <div
-              key={day.toISOString()}
-              className={`rounded-md px-2 py-2 text-sm font-medium ${isToday ? 'bg-primary/10 text-primary' : 'bg-muted/30 text-foreground'}`}
-            >
-              <div className="flex items-baseline justify-between">
-                <span>{day.toLocaleDateString(undefined, { weekday: 'short' })}</span>
-                <span>{day.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Calendar grid */}
-      <div className="grid grid-cols-8 gap-2">
-        <div className="text-xs text-muted-foreground">
-          {Array.from({ length: END_HOUR-START_HOUR + 1 }, (_, i) => START_HOUR + i).map((h) => (
-            <div key={h} className="h-16 pr-2 text-right">{h}:00</div>
-          ))}
-        </div>
-        {days.map((day) => (
-          <div key={day.toISOString()} className="border rounded-md p-2 relative overflow-hidden" ref={gridRef}>
-            {/* Weekend shading */}
-            {(day.getDay() === 0 || day.getDay() === 6) && (
-              <div className="absolute inset-0 bg-muted/20 pointer-events-none" />
-            )}
-            {/* transparent overlay */}
-            <div className="absolute inset-2" style={{ background: 'transparent' }} />
-            {/* hour lines */}
-            {Array.from({ length: END_HOUR-START_HOUR }, (_, i) => (
-              <div key={i} className="absolute left-0 right-0 border-t border-dashed" style={{ top: `${(i/(END_HOUR-START_HOUR))*100}%` }} />
-            ))}
-            {/* current time line */}
-            {(() => {
-              const mins = minutesSinceStartOfDay(now) - START_HOUR*60;
-              if (isSameDay(day, now) && mins >= 0 && mins <= TOTAL_MIN) {
-                const top = (mins / TOTAL_MIN) * 100;
-                return (
-                  <div className="absolute left-2 right-2" style={{ top: `${top}%` }}>
-                    <div className="h-px bg-destructive" />
-                    <div className="absolute -top-1 -left-1 w-2 h-2 rounded-full bg-destructive" />
-                  </div>
-                );
-              }
-              return null;
-            })()}
-            {/* jobs */}
-            {dayJobs[dayKey(day)]?.map((j) => {
-              const start = new Date(j.startsAt);
-              const end = new Date(j.endsAt);
-              const startMin = minutesSinceStartOfDay(start) - START_HOUR*60;
-              const endMin = minutesSinceStartOfDay(end) - START_HOUR*60;
-              const top = (startMin / TOTAL_MIN) * 100;
-              const height = Math.max(8, ((endMin - startMin) / TOTAL_MIN) * 100);
-              const customer = customers.find((c) => c.id === j.customerId)?.name ?? 'Customer';
-              const color = j.status === 'Scheduled' ? 'bg-primary/10 border-primary' : j.status === 'In Progress' ? 'bg-accent/10 border-accent' : 'bg-muted/30 border-muted-foreground';
+      {/* Mobile-friendly scroll wrapper */}
+      <div className="md:overflow-visible overflow-x-auto -mx-2 md:mx-0">
+        <div className="px-2 md:px-0 min-w-[900px] md:min-w-0">
+          {/* Day headers */}
+          <div className="grid grid-cols-8 gap-2 mb-2">
+            <div />
+            {days.map((day) => {
+              const isToday = isSameDay(day, now);
               return (
-                <div key={j.id} className={`absolute left-2 right-2 border rounded-md p-2 text-xs select-none cursor-grab active:cursor-grabbing ${color}`} style={{ top: `${top}%`, height: `${height}%` }}
-                  onPointerDown={(e) => onDragStart(e, j)} onDoubleClick={() => setActiveJob(j)}>
-                  <div className="font-medium">{customer}</div>
-                  <div className="text-[10px] text-muted-foreground">{formatDateTime(j.startsAt)}</div>
-                  <div className="text-[10px]">{j.status}</div>
+                <div
+                  key={day.toISOString()}
+                  className={`${isToday ? 'bg-primary/10 text-primary' : 'bg-muted/30 text-foreground'} rounded-md px-2 py-2 text-sm font-medium`}
+                >
+                  <div className="flex items-baseline justify-between">
+                    <span>{day.toLocaleDateString(undefined, { weekday: 'short' })}</span>
+                    <span>{day.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                  </div>
                 </div>
               );
             })}
           </div>
-        ))}
+
+          {/* Calendar grid */}
+          <div className="grid grid-cols-8 gap-2">
+            <div className="text-xs text-muted-foreground">
+              {Array.from({ length: END_HOUR-START_HOUR + 1 }, (_, i) => START_HOUR + i).map((h) => (
+                <div key={h} className="h-16 pr-2 text-right">{h}:00</div>
+              ))}
+            </div>
+            {days.map((day) => (
+              <div key={day.toISOString()} className="border rounded-md p-2 relative overflow-hidden" ref={gridRef}>
+                {/* Weekend shading */}
+                {(day.getDay() === 0 || day.getDay() === 6) && (
+                  <div className="absolute inset-0 bg-muted/20 pointer-events-none" />
+                )}
+                {/* transparent overlay */}
+                <div className="absolute inset-2" style={{ background: 'transparent' }} />
+                {/* hour lines */}
+                {Array.from({ length: END_HOUR-START_HOUR }, (_, i) => (
+                  <div key={i} className="absolute left-0 right-0 border-t border-dashed" style={{ top: `${(i/(END_HOUR-START_HOUR))*100}%` }} />
+                ))}
+                {/* current time line */}
+                {(() => {
+                  const mins = minutesSinceStartOfDay(now) - START_HOUR*60;
+                  if (isSameDay(day, now) && mins >= 0 && mins <= TOTAL_MIN) {
+                    const top = (mins / TOTAL_MIN) * 100;
+                    return (
+                      <div className="absolute left-2 right-2" style={{ top: `${top}%` }}>
+                        <div className="h-px bg-destructive" />
+                        <div className="absolute -top-1 -left-1 w-2 h-2 rounded-full bg-destructive" />
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+                {/* jobs */}
+                {dayJobs[dayKey(day)]?.map((j) => {
+                  const start = new Date(j.startsAt);
+                  const end = new Date(j.endsAt);
+                  const startMin = minutesSinceStartOfDay(start) - START_HOUR*60;
+                  const endMin = minutesSinceStartOfDay(end) - START_HOUR*60;
+                  const top = (startMin / TOTAL_MIN) * 100;
+                  const height = Math.max(8, ((endMin - startMin) / TOTAL_MIN) * 100);
+                  const customer = customers.find((c) => c.id === j.customerId)?.name ?? 'Customer';
+                  const color = j.status === 'Scheduled' ? 'bg-primary/10 border-primary' : j.status === 'In Progress' ? 'bg-accent/10 border-accent' : 'bg-muted/30 border-muted-foreground';
+                  return (
+                    <div key={j.id} className={`absolute left-2 right-2 border rounded-md p-2 text-xs select-none cursor-grab active:cursor-grabbing ${color}`} style={{ top: `${top}%`, height: `${height}%` }}
+                      onPointerDown={(e) => onDragStart(e, j)} onDoubleClick={() => setActiveJob(j)}>
+                      <div className="font-medium">{customer}</div>
+                      <div className="text-[10px] text-muted-foreground">{formatDateTime(j.startsAt)}</div>
+                      <div className="text-[10px]">{j.status}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       <Drawer open={!!activeJob} onOpenChange={(o) => !o && setActiveJob(null)}>
