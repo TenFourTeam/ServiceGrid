@@ -142,7 +142,7 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>New Quote</DialogTitle>
+          <DialogTitle>Create Quote</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -184,27 +184,19 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
               <div className="space-y-3">
                 {draft.lineItems.map((item) => (
                   <div key={item.id} className="grid grid-cols-12 gap-2 items-end p-3 border rounded-lg">
-                    <div className="col-span-4">
-                      <Label className="text-xs">Description</Label>
-                      <Input value={item.name} onChange={(e) => updateLineItem(item.id, { name: e.target.value })} placeholder="Item description" />
+                    <div className="col-span-8">
+                      <Label className="text-xs">Name</Label>
+                      <Input value={item.name} onChange={(e) => updateLineItem(item.id, { name: e.target.value })} placeholder="Service or item name" />
                     </div>
-                    <div className="col-span-2">
-                      <Label className="text-xs">Qty</Label>
-                      <Input type="number" min="0" step="0.01" value={item.qty} onChange={(e) => updateLineItem(item.id, { qty: parseFloat(e.target.value) || 0 })} />
+                    <div className="col-span-3">
+                      <Label className="text-xs">$ Amount</Label>
+                      <Input type="number" min="0" step="0.01" value={item.lineTotal / 100} onChange={(e) => {
+                        const amount = Math.max(0, parseFloat(e.target.value) || 0)
+                        const cents = Math.round(amount * 100)
+                        updateLineItem(item.id, { lineTotal: cents, qty: 1, unitPrice: cents })
+                      }} />
                     </div>
-                    <div className="col-span-2">
-                      <Label className="text-xs">Unit</Label>
-                      <Input value={item.unit || ""} onChange={(e) => updateLineItem(item.id, { unit: e.target.value })} placeholder="ea, hrs, etc." />
-                    </div>
-                    <div className="col-span-2">
-                      <Label className="text-xs">Unit Price</Label>
-                      <Input type="number" min="0" step="0.01" value={item.unitPrice / 100} onChange={(e) => updateLineItem(item.id, { unitPrice: Math.round((parseFloat(e.target.value) || 0) * 100) })} />
-                    </div>
-                    <div className="col-span-1">
-                      <Label className="text-xs">Total</Label>
-                      <div className="text-sm font-medium py-2">{formatCurrency(item.lineTotal)}</div>
-                    </div>
-                    <div className="col-span-1">
+                    <div className="col-span-1 flex justify-end">
                       <Button type="button" variant="ghost" size="sm" onClick={() => removeLineItem(item.id)} className="text-destructive hover:text-destructive">
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -250,7 +242,7 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
 
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
-            <Button onClick={saveQuote} disabled={saving}>{saving ? "Creating..." : "Create Quote"}</Button>
+            <Button onClick={saveQuote} disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
           </div>
         </div>
       </DialogContent>

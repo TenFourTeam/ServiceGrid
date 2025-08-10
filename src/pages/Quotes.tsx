@@ -136,7 +136,7 @@ export default function QuotesPage() {
       <section className="space-y-4">
         <div className="flex justify-end">
           <Button onClick={() => { setOpen(true); }}>
-            New Quote
+            Create Quote
           </Button>
         </div>
 
