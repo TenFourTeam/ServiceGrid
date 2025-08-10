@@ -5,7 +5,8 @@ import { WeekCalendar } from "@/components/Calendar/WeekCalendar";
 import MonthCalendar from "@/components/Calendar/MonthCalendar";
 import DayCalendar from "@/components/Calendar/DayCalendar";
 import { useMemo, useState, useEffect, useCallback } from "react";
-import { addMonths, startOfDay, addDays } from "date-fns";
+import { addMonths, startOfDay, addDays, format, startOfWeek, endOfWeek } from "date-fns";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 export default function CalendarShell({
   selectedJobId
 }: {
@@ -14,6 +15,17 @@ export default function CalendarShell({
   const [view, setView] = useState<"month" | "week" | "day">("week");
   const [date, setDate] = useState<Date>(startOfDay(new Date()));
   const month = useMemo(() => new Date(date), [date]);
+  const rangeTitle = useMemo(() => {
+    if (view === "month") return format(date, "MMMM yyyy");
+    if (view === "week") {
+      const s = startOfWeek(date);
+      const e = endOfWeek(date);
+      return s.getMonth() === e.getMonth()
+        ? `${format(s, "MMM d")}–${format(e, "d, yyyy")}`
+        : `${format(s, "MMM d")}–${format(e, "MMM d, yyyy")}`;
+    }
+    return format(date, "EEE, MMM d");
+  }, [date, view]);
 
   // Keyboard shortcuts: 1/2/3 to switch views, T for today, arrows to navigate
   const stepDate = useCallback((dir: 1 | -1) => {
@@ -39,7 +51,7 @@ export default function CalendarShell({
             Today
           </Button>
           <div className="hidden md:block">
-            <Tabs value={view} onValueChange={v => setView(v as any)}>
+            <Tabs value={view} onValueChange={(v) => setView(v as any)}>
               <TabsList>
                 <TabsTrigger value="day">Day</TabsTrigger>
                 <TabsTrigger value="week">Week</TabsTrigger>
@@ -48,22 +60,37 @@ export default function CalendarShell({
             </Tabs>
           </div>
         </div>
-        
-        <div className="md:hidden">
-          <Tabs value={view} onValueChange={v => setView(v as any)}>
-            <TabsList>
-              <TabsTrigger value="day">D</TabsTrigger>
-              <TabsTrigger value="week">W</TabsTrigger>
-              <TabsTrigger value="month">M</TabsTrigger>
-            </TabsList>
-          </Tabs>
+        <div>
+          <h2 className="text-sm md:text-base font-semibold">{rangeTitle}</h2>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button variant="outline" size="icon" aria-label="Previous" onClick={() => stepDate(-1)}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="icon" aria-label="Next" onClick={() => stepDate(1)}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
       </header>
+      <div className="md:hidden">
+        <Tabs value={view} onValueChange={(v) => setView(v as any)}>
+          <TabsList>
+            <TabsTrigger value="day">D</TabsTrigger>
+            <TabsTrigger value="week">W</TabsTrigger>
+            <TabsTrigger value="month">M</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
 
       <div className="grid gap-4 md:grid-cols-[260px_1fr_280px]">
-        {/* Left rail (mini calendar + scheduling) */}
-        
-
+        <aside className="hidden md:block rounded-lg border p-3 bg-card" aria-label="Mini month navigator">
+          <Calendar
+            mode="single"
+            selected={date}
+            onSelect={(d) => d && setDate(startOfDay(d))}
+            className="w-full"
+          />
+        </aside>
         {/* Main calendar area */}
         <main className="min-h-[60vh]" role="grid">
           {view === "month" && <MonthCalendar date={date} onDateChange={setDate} />}
