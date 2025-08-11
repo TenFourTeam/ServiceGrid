@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { content } from "../content";
 
+type HighlightStep = (typeof content.highlights.steps)[number] & { imageSrc?: string; alt?: string };
+
 function VisualCard({ title, imageSrc, alt }: { title: string; imageSrc?: string; alt?: string }) {
   const [broken, setBroken] = useState(false);
   const label = alt ?? title;
@@ -18,6 +20,7 @@ function VisualCard({ title, imageSrc, alt }: { title: string; imageSrc?: string
             decoding="async"
             className="mx-auto max-h-56 w-auto object-contain rounded-md"
             loading="lazy"
+            sizes="(min-width: 1024px) 600px, (min-width: 768px) 480px, 100vw"
             onError={() => { console.warn('Visual image failed to load', { src: imageSrc, alt: label }); setBroken(true); }}
           />
         ) : isInvoice ? (
@@ -88,7 +91,7 @@ export function HighlightsSticky() {
         {/* Visuals */}
         <div aria-live="polite" className="relative" data-visuals>
           <span id="highlights-live" className="sr-only" />
-          {content.highlights.steps.map((s: any) => (
+          {content.highlights.steps.map((s: HighlightStep) => (
             <div key={s.key} aria-label={s.title} data-visual={s.key}>
               <VisualCard
                 title={s.title}

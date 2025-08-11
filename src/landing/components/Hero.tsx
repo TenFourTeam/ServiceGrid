@@ -39,7 +39,7 @@ export function Hero() {
             </Button>
           </SignUpButton>
           <Button asChild size="lg" variant="outline" className="hover-scale">
-            
+            <a href="#invoice" aria-label="See invoicing">See invoicing</a>
           </Button>
         </div>
 
