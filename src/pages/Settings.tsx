@@ -150,7 +150,8 @@ export default function SettingsPage() {
   }
   useEffect(() => {
     if (userLoaded) {
-      setUserName(user?.fullName || '');
+      const metaName = (user?.unsafeMetadata as any)?.displayName as string | undefined;
+      setUserName(metaName || user?.fullName || '');
     }
   }, [userLoaded, user]);
 
@@ -158,15 +159,21 @@ export default function SettingsPage() {
     if (!userLoaded || !user) return;
     const name = userName.trim();
     if (!name) return;
-    if (name === (user.fullName || '')) return;
+    const currentName = ((user.unsafeMetadata as any)?.displayName as string | undefined) || (user.fullName || '');
+    if (name === currentName) return;
     const handle = setTimeout(async () => {
+      const parts = name.split(' ');
+      const firstName = parts.shift() || '';
+      const lastName = parts.join(' ');
       try {
-        const parts = name.split(' ');
-        const firstName = parts.shift() || '';
-        const lastName = parts.join(' ');
         await user.update({ firstName, lastName });
-      } catch (e: any) {
-        toast.error(e?.message || 'Failed to update name');
+      } catch (err: any) {
+        try {
+          const existingMeta = (user.unsafeMetadata as any) || {};
+          await user.update({ unsafeMetadata: { ...existingMeta, displayName: name } });
+        } catch (err2: any) {
+          toast.error(err2?.message || err?.message || 'Failed to update name');
+        }
       }
     }, 600);
     return () => clearTimeout(handle);
