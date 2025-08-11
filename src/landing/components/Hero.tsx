@@ -27,24 +27,18 @@ export function Hero() {
       <BWAnimatedBackground />
 
       <div className="mx-auto max-w-3xl text-center">
-        
-        <h1 id="hero-title" className="mt-3 text-4xl md:text-6xl font-bold tracking-tight" data-reveal style={{
-        "--stagger": 1
-      } as any}>
+        <p className="eyebrow" data-reveal>{copy.eyebrow}</p>
+        <h1 id="hero-title" className="mt-3 text-4xl md:text-6xl font-bold tracking-tight" data-reveal>
           {copy.title}
         </h1>
-        <p className="mt-4 text-lg md:text-xl text-muted-foreground" data-reveal style={{
-        "--stagger": 2
-      } as any}>
+        <p className="mt-4 text-lg md:text-xl text-muted-foreground" data-reveal>
           {copy.subtitle}
         </p>
 
-        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3" data-reveal style={{
-        "--stagger": 3
-      } as any}>
+        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3" data-reveal>
           <SignUpButton mode="modal" forceRedirectUrl="/calendar">
             <Button size="lg" variant="primary" className="hover-scale">
-              Try for free
+              {copy.primaryCta.label}
             </Button>
           </SignUpButton>
           {copy.secondaryCta.label ? (

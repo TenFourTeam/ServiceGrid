@@ -20,7 +20,7 @@ export function Benefits() {
 
       <div className="mt-10 grid sm:grid-cols-2 gap-6">
         {content.benefits.map((b, i) => (
-          <article key={b.title} className="rounded-lg border bg-card p-6 shadow-subtle" data-reveal style={{"--stagger": i} as any}>
+          <article key={b.title} className="rounded-lg border bg-card p-6 shadow-subtle" data-reveal>
             <div className="flex items-start gap-3">
               <div className="mt-1">
                 <CheckIcon />

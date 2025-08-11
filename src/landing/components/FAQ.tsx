@@ -11,7 +11,7 @@ export function FAQ() {
       </div>
       <div className="mt-8 mx-auto max-w-3xl divide-y">
         {content.faq.map((f, i) => (
-          <details key={f.q} className="py-4" data-reveal style={{"--stagger": i} as any}>
+          <details key={f.q} className="py-4" data-reveal>
             <summary className="cursor-pointer list-none flex items-center justify-between gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded">
               <span className="font-medium">{f.q}</span>
               <span aria-hidden>+</span>

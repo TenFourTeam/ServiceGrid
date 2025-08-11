@@ -55,6 +55,7 @@ export function HighlightsSticky() {
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
     try { history.replaceState(null, "", `#${key}`); } catch {}
   };
+  const activeKey = (location.hash || "").replace("#", "");
   return (
     <Section ariaLabel={content.highlights.heading}>
       <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-start">
@@ -71,7 +72,7 @@ export function HighlightsSticky() {
                 data-step={s.key}
                 className="p-4 rounded-md border bg-card shadow-subtle hover-scale focus:outline-none focus:ring-2 focus:ring-primary"
                 data-reveal
-                style={{ "--stagger": i } as any}
+                aria-current={activeKey === s.key ? 'step' : undefined}
                 role="button"
                 tabIndex={0}
                 aria-label={s.title}
