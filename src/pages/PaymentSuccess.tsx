@@ -21,14 +21,15 @@ export default function PaymentSuccess() {
           method: 'POST',
           body: { session_id: sessionId }
         });
-        if ((data as any)?.status === 'paid') {
-          setStatus('paid');
-          setMessage('Payment confirmed. Thank you!');
-        } else if ((data as any)?.status) {
-          setStatus('pending');
-          setMessage('Payment is still pending. You may refresh this page shortly.');
-        } else if ((data as any)?.error) {
-          throw new Error((data as any).error);
+          if ((data as any)?.status === 'paid') {
+            const receiptSent = (data as any)?.receipt_sent === true;
+            setStatus('paid');
+            setMessage(receiptSent ? 'Payment confirmed. Receipt emailed to you.' : 'Payment confirmed. Thank you!');
+          } else if ((data as any)?.status) {
+            setStatus('pending');
+            setMessage('Payment is still pending. You may refresh this page shortly.');
+          } else if ((data as any)?.error) {
+            throw new Error((data as any).error);
         } else {
           setStatus('error');
           setMessage('Verification failed.');
