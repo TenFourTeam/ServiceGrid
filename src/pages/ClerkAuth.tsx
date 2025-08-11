@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton, useAuth as useClerkAuth } from "@clerk/clerk-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import LoadingScreen from "@/components/LoadingScreen";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +24,7 @@ export default function ClerkAuthPage() {
 
 function ClerkAuthInner({ redirectTarget }: { redirectTarget: string }) {
   const { getToken, isSignedIn } = useClerkAuth();
+  const navigate = useNavigate();
   const [who, setWho] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [devOpen, setDevOpen] = useState(false);
@@ -33,6 +34,12 @@ function ClerkAuthInner({ redirectTarget }: { redirectTarget: string }) {
     const meta = document.querySelector('meta[name="description"]');
     if (meta) meta.setAttribute('content', 'Sign in or create an account with Clerk for TenFour Lawn');
   }, []);
+
+  useEffect(() => {
+    if (isSignedIn) {
+      navigate(redirectTarget, { replace: true });
+    }
+  }, [isSignedIn, redirectTarget, navigate]);
 
   const callWhoAmI = async () => {
     try {
@@ -85,9 +92,6 @@ function ClerkAuthInner({ redirectTarget }: { redirectTarget: string }) {
             <CardContent>
               <div className="flex flex-wrap items-center gap-3">
                 <UserButton />
-                <Button asChild>
-                  <Link to={redirectTarget}>Continue</Link>
-                </Button>
                 <Button variant="outline" asChild>
                   <Link to="/calendar">Open Calendar</Link>
                 </Button>
