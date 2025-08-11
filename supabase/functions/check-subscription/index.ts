@@ -1,15 +1,54 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.54.0";
+import { verifyToken } from "https://esm.sh/@clerk/backend@1.3.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const log = (step: string, meta?: unknown) => {
-  console.log(`[CHECK-SUBSCRIPTION] ${step}${meta ? ` ${JSON.stringify(meta)}` : ''}`);
-};
+function createAdminClient() {
+  const url = Deno.env.get("SUPABASE_URL");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !serviceKey) throw new Error("Missing Supabase env vars");
+  return createClient(url, serviceKey, { auth: { persistSession: false } });
+}
+
+async function resolveOwnerIdFromClerk(req: Request) {
+  const authHeader = req.headers.get("authorization") || req.headers.get("Authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) throw new Error("Missing Authorization header");
+  const token = authHeader.replace(/^Bearer\s+/i, "");
+  const secretKey = Deno.env.get("CLERK_SECRET_KEY");
+  if (!secretKey) throw new Error("Missing CLERK_SECRET_KEY");
+  const payload = await verifyToken(token, { secretKey });
+  const clerkSub = (payload as any).sub as string;
+  const email = (payload as any)?.email as string | undefined;
+  const supabase = createAdminClient();
+
+  // Try mapping by clerk_user_id first
+  let { data: profByClerk, error: profErr } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("clerk_user_id", clerkSub)
+    .limit(1)
+    .maybeSingle();
+  if (profErr) throw profErr;
+  if (profByClerk?.id) return { ownerId: profByClerk.id as string, email };
+
+  if (email) {
+    const { data: profByEmail, error: profByEmailErr } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("email", email.toLowerCase())
+      .limit(1)
+      .maybeSingle();
+    if (profByEmailErr) throw profByEmailErr;
+    if (profByEmail?.id) return { ownerId: profByEmail.id as string, email };
+  }
+
+  throw new Error("Unable to resolve user profile");
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -17,63 +56,49 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      { auth: { persistSession: false } }
-    );
+    const { ownerId, email } = await resolveOwnerIdFromClerk(req);
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("Missing STRIPE_SECRET_KEY");
 
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("Missing Authorization header");
-    const token = authHeader.replace("Bearer ", "");
-
-    const { data: userData, error: userErr } = await supabase.auth.getUser(token);
-    if (userErr) throw new Error(userErr.message);
-    const user = userData.user;
-    if (!user?.email) throw new Error("User not authenticated or no email");
-
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
+    const customers = await stripe.customers.list({ email: email || undefined, limit: 1 });
 
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     let customerId: string | undefined = customers.data[0]?.id;
-
-    if (!customerId) {
-      const created = await stripe.customers.create({ email: user.email });
+    if (!customerId && email) {
+      const created = await stripe.customers.create({ email });
       customerId = created.id;
     }
 
-    const subs = await stripe.subscriptions.list({ customer: customerId, status: "active", limit: 1 });
-    let subscribed = subs.data.length > 0;
-    let subscriptionTier: string | null = null;
-    let subscriptionEnd: string | null = null;
+    const subs = await stripe.subscriptions.list({ customer: customerId!, status: "active", limit: 1 });
+    const subscribed = subs.data.length > 0;
+    let subscription_tier: string | null = null;
+    let subscription_end: string | null = null;
 
     if (subscribed) {
       const sub = subs.data[0];
-      subscriptionEnd = new Date(sub.current_period_end * 1000).toISOString();
-      const amount = sub.items.data[0].price.unit_amount || 0;
-      subscriptionTier = amount >= 50400 ? "Yearly" : "Monthly";
+      subscription_end = new Date(sub.current_period_end * 1000).toISOString();
+      const amt = sub.items.data[0].price.unit_amount || 0;
+      subscription_tier = amt >= 50400 ? "Yearly" : "Monthly";
     }
 
+    const supabase = createAdminClient();
     await supabase.from("subscribers").upsert({
-      email: user.email,
-      user_id: user.id,
+      email,
+      user_id: ownerId,
       stripe_customer_id: customerId,
       subscribed,
-      subscription_tier: subscriptionTier,
-      subscription_end: subscriptionEnd,
+      subscription_tier,
+      subscription_end,
       updated_at: new Date().toISOString(),
-    }, { onConflict: 'email' });
+    }, { onConflict: "email" });
 
-    return new Response(JSON.stringify({ subscribed, subscription_tier: subscriptionTier, subscription_end: subscriptionEnd }), {
+    return new Response(JSON.stringify({ subscribed, subscription_tier, subscription_end }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    log('ERROR', { msg });
     return new Response(JSON.stringify({ error: msg }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

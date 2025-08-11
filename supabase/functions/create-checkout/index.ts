@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { verifyToken } from "https://esm.sh/@clerk/backend@1.3.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,18 +13,16 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-    );
-
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("Missing Authorization header");
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userErr } = await supabase.auth.getUser(token);
-    if (userErr) throw new Error(`Auth error: ${userErr.message}`);
-    const user = userData.user;
-    if (!user?.email) throw new Error("User email not available");
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+
+    const secretKey = Deno.env.get("CLERK_SECRET_KEY");
+    if (!secretKey) throw new Error("Missing CLERK_SECRET_KEY");
+    const payload = await verifyToken(token, { secretKey });
+
+    const email = (payload as any)?.email as string | undefined;
+    if (!email) throw new Error("User email not available");
 
     const body = await req.json().catch(() => ({}));
     const plan = (body?.plan as string) || "monthly"; // 'monthly' | 'yearly'
@@ -33,7 +31,7 @@ serve(async (req) => {
       apiVersion: "2023-10-16",
     });
 
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+    const customers = await stripe.customers.list({ email, limit: 1 });
     const customerId = customers.data[0]?.id;
 
     const unitAmount = plan === "yearly" ? 50400 : 5000; // $504/yr or $50/mo
@@ -43,7 +41,7 @@ serve(async (req) => {
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      customer_email: customerId ? undefined : user.email,
+      customer_email: customerId ? undefined : email,
       line_items: [
         {
           price_data: {

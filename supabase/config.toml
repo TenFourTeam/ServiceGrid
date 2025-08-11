@@ -36,16 +36,16 @@ verify_jwt = false
 
 # Subscriptions & Payments
 [functions.create-checkout]
-verify_jwt = true
+verify_jwt = false
 
 [functions.check-subscription]
-verify_jwt = true
+verify_jwt = false
 
 [functions.customer-portal]
-verify_jwt = true
+verify_jwt = false
 
 [functions.create-invoice-payment]
-verify_jwt = true
+verify_jwt = false
 
 # Public endpoint used by Stripe Checkout success redirect
 [functions.verify-payment]

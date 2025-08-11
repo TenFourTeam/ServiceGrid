@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { edgePublicJson } from '@/utils/edgeApi';
 
 export default function PaymentSuccess() {
   const [status, setStatus] = useState<'pending' | 'paid' | 'error'>('pending');
@@ -17,16 +17,21 @@ export default function PaymentSuccess() {
     }
     (async () => {
       try {
-        const { data, error } = await supabase.functions.invoke('verify-payment', {
+        const data = await edgePublicJson('verify-payment', {
+          method: 'POST',
           body: { session_id: sessionId }
         });
-        if (error) throw new Error(error.message);
         if ((data as any)?.status === 'paid') {
           setStatus('paid');
           setMessage('Payment confirmed. Thank you!');
-        } else {
+        } else if ((data as any)?.status) {
           setStatus('pending');
           setMessage('Payment is still pending. You may refresh this page shortly.');
+        } else if ((data as any)?.error) {
+          throw new Error((data as any).error);
+        } else {
+          setStatus('error');
+          setMessage('Verification failed.');
         }
       } catch (e: any) {
         setStatus('error');

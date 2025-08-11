@@ -87,8 +87,7 @@ const [uploadingLight, setUploadingLight] = useState(false);
   async function refreshSubscription() {
     try {
       setSubLoading(true);
-      const { data, error } = await supabase.functions.invoke('check-subscription');
-      if (error) throw new Error(error.message);
+      const data = await edgeFetchJson('check-subscription', getToken, { method: 'POST' });
       setSub(data || null);
     } catch (e: any) {
       toast.error(e?.message || 'Failed to refresh subscription');
@@ -99,11 +98,12 @@ const [uploadingLight, setUploadingLight] = useState(false);
 
   async function startCheckout(plan: 'monthly' | 'yearly') {
     try {
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
+      const data = await edgeFetchJson('create-checkout', getToken, {
+        method: 'POST',
         body: { plan },
       });
       const url = (data as any)?.url as string | undefined;
-      if (!url || error) throw new Error(error?.message || 'No checkout URL');
+      if (!url) throw new Error('No checkout URL');
       window.open(url, '_blank');
     } catch (e: any) {
       toast.error(e?.message || 'Failed to start checkout');
@@ -112,9 +112,9 @@ const [uploadingLight, setUploadingLight] = useState(false);
 
   async function openPortal() {
     try {
-      const { data, error } = await supabase.functions.invoke('customer-portal');
+      const data = await edgeFetchJson('customer-portal', getToken, { method: 'POST' });
       const url = (data as any)?.url as string | undefined;
-      if (!url || error) throw new Error(error?.message || 'No portal URL');
+      if (!url) throw new Error('No portal URL');
       window.open(url, '_blank');
     } catch (e: any) {
       toast.error(e?.message || 'Failed to open portal');
@@ -144,6 +144,13 @@ const [uploadingLight, setUploadingLight] = useState(false);
               invSeq: Number(b.inv_seq ?? store.business.numbering.invSeq) || store.business.numbering.invSeq,
             },
           });
+        }
+        // Auto-refresh subscription on mount and after checkout redirect
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('checkout') === 'success' || params.get('checkout') === 'canceled') {
+          await refreshSubscription();
+        } else {
+          await refreshSubscription();
         }
       } catch (e) {
         console.error(e);

@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { formatDate, formatMoney } from '@/utils/format';
 import { useStore } from '@/store/useAppStore';
 import type { Invoice } from '@/types';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuth as useClerkAuth } from '@clerk/clerk-react';
+import { edgeFetchJson } from '@/utils/edgeApi';
 import { toast } from 'sonner';
 
 interface InvoiceShowModalProps {
@@ -16,15 +17,18 @@ export default function InvoiceShowModal({ open, onOpenChange, invoice }: Invoic
   const { customers, sendInvoice, markInvoicePaid } = useStore();
   const customerName = invoice ? (customers.find(c => c.id === invoice.customerId)?.name || 'Unknown') : '';
 
+  const { getToken } = useClerkAuth();
+
   const handlePayOnline = async () => {
     try {
       if (!invoice) return;
-      const { data, error } = await supabase.functions.invoke('create-invoice-payment', {
+      const data = await edgeFetchJson('create-invoice-payment', getToken, {
+        method: 'POST',
         body: { invoiceId: invoice.id },
       });
       const url = (data as any)?.url as string | undefined;
-      if (error || !url) {
-        toast.error(error?.message || 'Failed to start checkout');
+      if (!url) {
+        toast.error('Failed to start checkout');
         return;
       }
       window.open(url, '_blank');
