@@ -22,8 +22,8 @@ export function initScrollOrchestrator() {
           const el = entry.target as HTMLElement;
           if (entry.isIntersecting) {
             el.classList.add("is-revealed");
-            // TODO: event section_inview when a section wrapper becomes visible
-            revealObserver.unobserve(el);
+          } else {
+            el.classList.remove("is-revealed");
           }
         }
       },
@@ -46,8 +46,10 @@ export function initScrollOrchestrator() {
   const steps = selectAll<HTMLElement>("[data-step]");
   const visualsContainer = document.querySelector<HTMLElement>("[data-visuals]");
   const visuals = selectAll<HTMLElement>("[data-visual]");
+  const progressEl = document.getElementById("highlights-progress");
 
   function activate(key: HighlightKey) {
+    // Toggle visuals
     visuals.forEach((v) => {
       if (v.getAttribute("data-visual") === key) {
         v.setAttribute("data-active", "");
@@ -55,9 +57,27 @@ export function initScrollOrchestrator() {
         v.removeAttribute("data-active");
       }
     });
+
+    // Toggle current step
+    steps.forEach((s) => {
+      if (s.getAttribute("data-step") === key) {
+        s.setAttribute("data-current", "");
+      } else {
+        s.removeAttribute("data-current");
+      }
+    });
+
     // Update aria-live region if present
     const live = document.getElementById("highlights-live");
     if (live) live.textContent = content.highlights.steps.find((s) => s.key === key)?.title || "";
+
+    // Update progress bar
+    if (progressEl) {
+      const total = content.highlights.steps.length;
+      const idx = content.highlights.steps.findIndex((s) => s.key === key);
+      const pct = Math.max(0, ((idx + 1) / total) * 100);
+      (progressEl as HTMLElement).style.width = `${pct}%`;
+    }
   }
 
   if (steps.length && visualsContainer && visuals.length) {

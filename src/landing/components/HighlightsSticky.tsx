@@ -20,6 +20,9 @@ export function HighlightsSticky() {
           <h2 id="how-title" className="text-3xl md:text-4xl font-bold tracking-tight" data-reveal>
             {content.highlights.heading}
           </h2>
+          <div className="mt-4 h-1.5 w-full rounded bg-muted overflow-hidden" aria-hidden="true">
+            <div id="highlights-progress" className="h-full w-0 bg-primary transition-[width] duration-300" />
+          </div>
           <ol className="mt-6 space-y-6">
             {content.highlights.steps.map((s, i) => (
               <li key={s.key} data-step={s.key} className="p-4 rounded-md border bg-card shadow-subtle" data-reveal style={{"--stagger": i} as any}>

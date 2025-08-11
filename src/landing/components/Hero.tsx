@@ -17,18 +17,7 @@ export function Hero() {
   const copy = content.hero[variant as "A" | "B"];
 
   return (
-    <section aria-labelledby="hero-title" className="container py-16 md:py-24">
-      <header className="flex items-center justify-between mb-10">
-        <div className="flex items-center gap-2">
-          <LogoMark />
-          <span className="sr-only">TenFour Lawn</span>
-        </div>
-        <SignInButton mode="modal" forceRedirectUrl="/calendar">
-          <Button variant="ghost" size="sm" className="hover-scale">
-            Sign in
-          </Button>
-        </SignInButton>
-      </header>
+    <section aria-labelledby="hero-title" className="relative container py-16 md:py-24 bg-gradient-to-b from-primary/5 to-background">
 
       <div className="mx-auto max-w-3xl text-center">
         <p className="text-sm text-muted-foreground" data-reveal style={{"--stagger": 0} as any}>{copy.eyebrow}</p>
@@ -41,7 +30,7 @@ export function Hero() {
 
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3" data-reveal style={{"--stagger": 3} as any}>
           <SignUpButton mode="modal" forceRedirectUrl="/calendar">
-            <Button size="lg" variant="default" className="hover-scale">
+            <Button size="lg" variant="cta" className="hover-scale">
               Try for free
             </Button>
           </SignUpButton>
