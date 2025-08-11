@@ -479,18 +479,6 @@ function onDragStart(e: React.PointerEvent, job: Job) {
               </div>
             ))}
           </div>
-              return <div key={j.id} className={`absolute left-2 right-2 border rounded-md p-2 text-xs select-none ${j.status === 'Scheduled' ? 'cursor-grab active:cursor-grabbing' : 'cursor-not-allowed'} ${color} ${highlightJobId === j.id ? 'new-job-highlight ring-2 ring-success' : ''}`} style={{
-                top: `${top}%`,
-                height: `${height}%`
-              }} onPointerDown={j.status === 'Scheduled' ? (e) => onDragStart(e, j) : undefined}>
-                      <div className="font-medium truncate">{j.title || 'Job'}</div>
-                      <div className="text-[10px] text-muted-foreground truncate">{customer}</div>
-                      <div className="text-[10px]">{j.status}</div>
-                      <div className={`absolute left-0 right-0 bottom-0 h-2 ${j.status === 'Scheduled' ? 'cursor-ns-resize' : 'cursor-not-allowed'}`} onPointerDown={j.status === 'Scheduled' ? (e)=> onResizeStart(e, j) : undefined} />
-                    </div>;
-            })}
-              </div>))}
-          </div>
         </div>
       </div>
 
