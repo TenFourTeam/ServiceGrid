@@ -14,18 +14,15 @@ import SendInvoiceModal from '@/components/Invoices/SendInvoiceModal';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Send } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
-import ConnectBanner from '@/components/Stripe/ConnectBanner';
-import { useStripeConnectStatus } from '@/hooks/useStripeConnectStatus';
+import { supabase } from '@/integrations/supabase/client';
 
-const SUPABASE_URL = "https://ijudkzqfriazabiosnvb.supabase.co";
 
 export default function InvoicesPage() {
   const store = useStore();
-  const { isSignedIn, getToken } = useClerkAuth();
+  const { isSignedIn } = useClerkAuth();
   const { data: dbInvoices } = useSupabaseInvoices({ enabled: !!isSignedIn });
-  const [processing, setProcessing] = useState<string | null>(null);
+  
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<'All' | 'Draft' | 'Sent' | 'Paid' | 'Overdue'>('All');
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -34,7 +31,7 @@ export default function InvoicesPage() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const qc = useQueryClient();
   const { data: dbCustomers } = useSupabaseCustomers({ enabled: !!isSignedIn });
-  const { data: connectStatus, isLoading: statusLoading, error: statusError, refetch: refetchStatus } = useStripeConnectStatus({ enabled: !!isSignedIn });
+  
 
   const customers = useMemo(() => {
     if (isSignedIn && dbCustomers?.rows) return dbCustomers.rows;
@@ -133,48 +130,9 @@ export default function InvoicesPage() {
     }
   };
 
-  const handleStripeConnect = async () => {
-    try {
-      const token = await getToken();
-      if (!token) return;
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/connect-onboarding-link`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        console.error("[connect-onboarding-link] failed:", data);
-        return;
-      }
-      if (data?.url) {
-        window.open(data.url, "_blank", "noopener,noreferrer");
-      }
-    } catch (e) {
-      console.error("[connect-onboarding-link] error:", e);
-    }
-  };
 
   return (
     <AppLayout title="Invoices">
-      <div className="mb-4">
-        {isSignedIn && (
-          <ConnectBanner
-            loading={!!statusLoading}
-            error={statusError ? statusError.message : null}
-            chargesEnabled={connectStatus?.chargesEnabled}
-            payoutsEnabled={connectStatus?.payoutsEnabled}
-            detailsSubmitted={connectStatus?.detailsSubmitted}
-            bankLast4={connectStatus?.bank?.last4 ?? null}
-            scheduleText={connectStatus?.schedule ? `${connectStatus.schedule.interval}${connectStatus.schedule.delay_days ? `, +${connectStatus.schedule.delay_days} days` : ""}` : null}
-            onConnect={handleStripeConnect}
-            onRefresh={() => refetchStatus()}
-          />
-        )}
-      </div>
-
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -260,8 +218,6 @@ export default function InvoicesPage() {
                             <TooltipContent>Send Invoice</TooltipContent>
                           </Tooltip>
 
-                          {i.status==='Sent' && <Button size="sm" onClick={()=>{ setProcessing(i.id); setTimeout(()=>{ store.markInvoicePaid(i.id, '4242'); setProcessing(null); }, 800); }}>Mark Paid</Button>}
-                          {processing===i.id && <span className="text-sm text-muted-foreground">Processing…</span>}
                         </div>
                   </TableCell>
                 </TableRow>

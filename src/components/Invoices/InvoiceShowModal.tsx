@@ -14,7 +14,7 @@ interface InvoiceShowModalProps {
 }
 
 export default function InvoiceShowModal({ open, onOpenChange, invoice }: InvoiceShowModalProps) {
-  const { customers, sendInvoice, markInvoicePaid } = useStore();
+  const { customers, sendInvoice } = useStore();
   const customerName = invoice ? (customers.find(c => c.id === invoice.customerId)?.name || 'Unknown') : '';
 
   const { getToken } = useClerkAuth();
@@ -81,9 +81,6 @@ export default function InvoiceShowModal({ open, onOpenChange, invoice }: Invoic
               {(invoice.status === 'Sent' || invoice.status === 'Overdue') && (
                 <>
                   <Button size="sm" variant="secondary" onClick={handlePayOnline}>Pay Online</Button>
-                  {invoice.status === 'Sent' && (
-                    <Button size="sm" onClick={() => markInvoicePaid(invoice.id, '4242')}>Mark Paid</Button>
-                  )}
                 </>
               )}
               <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>

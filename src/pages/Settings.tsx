@@ -12,7 +12,8 @@ import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { edgeFetchJson, edgeFetch } from '@/utils/edgeApi';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-
+import ConnectBanner from '@/components/Stripe/ConnectBanner';
+import { useStripeConnectStatus } from '@/hooks/useStripeConnectStatus';
 
 export default function SettingsPage() {
   const store = useStore();
@@ -23,6 +24,7 @@ export default function SettingsPage() {
 const [uploadingLight, setUploadingLight] = useState(false);
   const [sub, setSub] = useState<any>(null);
   const [subLoading, setSubLoading] = useState(false);
+  const { data: connectStatus, isLoading: statusLoading, error: statusError, refetch: refetchStatus } = useStripeConnectStatus({ enabled: !!isSignedIn });
 
   async function uploadLogoDark() {
     if (!isSignedIn) {
@@ -118,6 +120,16 @@ const [uploadingLight, setUploadingLight] = useState(false);
       window.open(url, '_blank');
     } catch (e: any) {
       toast.error(e?.message || 'Failed to open portal');
+    }
+  }
+
+  async function handleStripeConnect() {
+    try {
+      const data = await edgeFetchJson('connect-onboarding-link', getToken, { method: 'POST' });
+      const url = (data as any)?.url as string | undefined;
+      if (url) window.open(url, '_blank');
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to start Stripe onboarding');
     }
   }
 
@@ -238,6 +250,23 @@ const [uploadingLight, setUploadingLight] = useState(false);
               <Button size="sm" onClick={() => startCheckout('yearly')}>Start Yearly ($504)</Button>
               <Button size="sm" variant="secondary" onClick={openPortal}>Manage Subscription</Button>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="md:col-span-2">
+          <CardHeader><CardTitle>Payouts</CardTitle></CardHeader>
+          <CardContent>
+            <ConnectBanner
+              loading={!!statusLoading}
+              error={statusError ? statusError.message : null}
+              chargesEnabled={connectStatus?.chargesEnabled}
+              payoutsEnabled={connectStatus?.payoutsEnabled}
+              detailsSubmitted={connectStatus?.detailsSubmitted}
+              bankLast4={connectStatus?.bank?.last4 ?? null}
+              scheduleText={connectStatus?.schedule ? `${connectStatus.schedule.interval}${connectStatus.schedule.delay_days ? `, +${connectStatus.schedule.delay_days} days` : ""}` : null}
+              onConnect={handleStripeConnect}
+              onRefresh={() => refetchStatus()}
+            />
           </CardContent>
         </Card>
 
