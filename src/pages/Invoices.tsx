@@ -1,3 +1,4 @@
+
 import AppLayout from '@/components/Layout/AppLayout';
 import { useStore } from '@/store/useAppStore';
 import { Button } from '@/components/ui/button';
@@ -15,9 +16,14 @@ import { Send } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
+import ConnectBanner from '@/components/Stripe/ConnectBanner';
+import { useStripeConnectStatus } from '@/hooks/useStripeConnectStatus';
+
+const SUPABASE_URL = "https://ijudkzqfriazabiosnvb.supabase.co";
+
 export default function InvoicesPage() {
   const store = useStore();
-  const { isSignedIn } = useClerkAuth();
+  const { isSignedIn, getToken } = useClerkAuth();
   const { data: dbInvoices } = useSupabaseInvoices({ enabled: !!isSignedIn });
   const [processing, setProcessing] = useState<string | null>(null);
   const [q, setQ] = useState('');
@@ -28,6 +34,8 @@ export default function InvoicesPage() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const qc = useQueryClient();
   const { data: dbCustomers } = useSupabaseCustomers({ enabled: !!isSignedIn });
+  const { data: connectStatus, isLoading: statusLoading, error: statusError, refetch: refetchStatus } = useStripeConnectStatus({ enabled: !!isSignedIn });
+
   const customers = useMemo(() => {
     if (isSignedIn && dbCustomers?.rows) return dbCustomers.rows;
     return store.customers.map(c => ({ id: c.id, name: c.name, email: c.email ?? null, address: c.address ?? null, phone: (c as any).phone ?? null }));
@@ -125,8 +133,48 @@ export default function InvoicesPage() {
     }
   };
 
+  const handleStripeConnect = async () => {
+    try {
+      const token = await getToken();
+      if (!token) return;
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/connect-onboarding-link`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        console.error("[connect-onboarding-link] failed:", data);
+        return;
+      }
+      if (data?.url) {
+        window.open(data.url, "_blank", "noopener,noreferrer");
+      }
+    } catch (e) {
+      console.error("[connect-onboarding-link] error:", e);
+    }
+  };
+
   return (
     <AppLayout title="Invoices">
+      <div className="mb-4">
+        {isSignedIn && (
+          <ConnectBanner
+            loading={!!statusLoading}
+            error={statusError ? statusError.message : null}
+            chargesEnabled={connectStatus?.chargesEnabled}
+            payoutsEnabled={connectStatus?.payoutsEnabled}
+            detailsSubmitted={connectStatus?.detailsSubmitted}
+            bankLast4={connectStatus?.bank?.last4 ?? null}
+            scheduleText={connectStatus?.schedule ? `${connectStatus.schedule.interval}${connectStatus.schedule.delay_days ? `, +${connectStatus.schedule.delay_days} days` : ""}` : null}
+            onConnect={handleStripeConnect}
+            onRefresh={() => refetchStatus()}
+          />
+        )}
+      </div>
+
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

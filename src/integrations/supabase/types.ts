@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       businesses: {
         Row: {
+          application_fee_bps: number
           created_at: string
           est_prefix: string
           est_seq: number
@@ -28,10 +29,15 @@ export type Database = {
           owner_id: string
           phone: string | null
           reply_to_email: string | null
+          stripe_account_id: string | null
+          stripe_charges_enabled: boolean
+          stripe_details_submitted: boolean
+          stripe_payouts_enabled: boolean
           tax_rate_default: number
           updated_at: string
         }
         Insert: {
+          application_fee_bps?: number
           created_at?: string
           est_prefix?: string
           est_seq?: number
@@ -44,10 +50,15 @@ export type Database = {
           owner_id: string
           phone?: string | null
           reply_to_email?: string | null
+          stripe_account_id?: string | null
+          stripe_charges_enabled?: boolean
+          stripe_details_submitted?: boolean
+          stripe_payouts_enabled?: boolean
           tax_rate_default?: number
           updated_at?: string
         }
         Update: {
+          application_fee_bps?: number
           created_at?: string
           est_prefix?: string
           est_seq?: number
@@ -60,6 +71,10 @@ export type Database = {
           owner_id?: string
           phone?: string | null
           reply_to_email?: string | null
+          stripe_account_id?: string | null
+          stripe_charges_enabled?: boolean
+          stripe_details_submitted?: boolean
+          stripe_payouts_enabled?: boolean
           tax_rate_default?: number
           updated_at?: string
         }
@@ -618,6 +633,42 @@ export type Database = {
           },
         ]
       }
+      subscribers: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          stripe_customer_id: string | null
+          subscribed: boolean
+          subscription_end: string | null
+          subscription_tier: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          stripe_customer_id?: string | null
+          subscribed?: boolean
+          subscription_end?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          stripe_customer_id?: string | null
+          subscribed?: boolean
+          subscription_end?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -626,6 +677,7 @@ export type Database = {
       ensure_default_business: {
         Args: Record<PropertyKey, never>
         Returns: {
+          application_fee_bps: number
           created_at: string
           est_prefix: string
           est_seq: number
@@ -638,6 +690,10 @@ export type Database = {
           owner_id: string
           phone: string | null
           reply_to_email: string | null
+          stripe_account_id: string | null
+          stripe_charges_enabled: boolean
+          stripe_details_submitted: boolean
+          stripe_payouts_enabled: boolean
           tax_rate_default: number
           updated_at: string
         }
