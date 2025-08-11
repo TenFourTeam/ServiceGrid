@@ -65,12 +65,31 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				brand: {
+					50: 'hsl(152 76% 97%)',
+					100: 'hsl(150 70% 94%)',
+					200: 'hsl(149 72% 86%)',
+					300: 'hsl(151 64% 74%)',
+					400: 'hsl(152 55% 60%)',
+					500: 'hsl(151 55% 45%)',
+					600: 'hsl(152 60% 35%)',
+					700: 'hsl(153 63% 27%)',
+					800: 'hsl(154 65% 20%)',
+					900: 'hsl(155 67% 15%)',
+				},
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
 				sm: 'calc(var(--radius) - 4px)'
+			},
+			boxShadow: {
+				'elev-1': '0 8px 20px -8px hsl(var(--ring) / 0.18)',
+				'elev-2': '0 16px 40px -16px hsl(var(--ring) / 0.22)'
+			},
+			transitionTimingFunction: {
+				standard: 'cubic-bezier(0.4,0,0.2,1)'
 			},
 			keyframes: {
 				'accordion-down': {

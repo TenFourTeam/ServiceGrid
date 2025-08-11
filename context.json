@@ -1,0 +1,20 @@
+{
+  "sections": [
+    {"id":"hero","purpose":"Communicate core value proposition and convert via primary CTA","hypothesis":"Brand-colored primary button increases CTR","ICE":{"impact":8,"confidence":7,"effort":3},"MBN":"Better"},
+    {"id":"proof","purpose":"Build trust with recognizable logos","hypothesis":"Showing 5 logos beats 3 for trust without clutter","ICE":{"impact":5,"confidence":6,"effort":2},"MBN":"More"},
+    {"id":"benefits","purpose":"Explain key benefits succinctly","hypothesis":"3 benefits is the sweet spot","ICE":{"impact":6,"confidence":6,"effort":4},"MBN":"Better"},
+    {"id":"highlights","purpose":"Scrollytelling walkthrough","hypothesis":"Sticky narrative improves comprehension","ICE":{"impact":7,"confidence":5,"effort":6},"MBN":"New"},
+    {"id":"cta","purpose":"Drive signups post-exposition","hypothesis":"Single CTA reduces choice paralysis","ICE":{"impact":8,"confidence":6,"effort":2},"MBN":"Better"}
+  ],
+  "tokens": {
+    "brand": {"50":"152 76% 97%","100":"150 70% 94%","200":"149 72% 86%","300":"151 64% 74%","400":"152 55% 60%","500":"151 55% 45%","600":"152 60% 35%","700":"153 63% 27%","800":"154 65% 20%","900":"155 67% 15%"},
+    "radius": {"sm":"0.375rem","md":"0.5rem","lg":"0.75rem","full":"9999px"},
+    "motion": {"durations":{"d150":150,"d200":200,"d300":300,"d500":500,"d800":800},"easing":{"standard":"cubic-bezier(0.4,0,0.2,1)"}}
+  },
+  "events": [
+    {"name":"hero_cta_click","selector":"#hero-cta"},
+    {"name":"section_inview","selector":"[data-reveal]"},
+    {"name":"proof_logo_view","selector":"[aria-label^=logo]"},
+    {"name":"footer_cta_click","selector":"#footer-cta"}
+  ]
+}
