@@ -78,6 +78,12 @@
   50% { transform: translateY(12px); }
 }
 
+/* New: diagonal drift for plain pattern */
+@keyframes bw-pan-diagonal {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(-160px, -120px); }
+}
+
 .bw-pan-slow {
   animation: bw-pan 30s linear infinite;
   will-change: transform;
@@ -88,7 +94,12 @@
   will-change: transform;
 }
 
+.bw-pan-diagonal {
+  animation: bw-pan-diagonal 40s linear infinite;
+  will-change: transform;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .bw-pan-slow, .bw-float { animation: none !important; }
+  .bw-pan-slow, .bw-float, .bw-pan-diagonal { animation: none !important; }
 }
 
