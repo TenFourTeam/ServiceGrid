@@ -243,7 +243,7 @@ export default function SettingsPage() {
             <div className="space-y-2">
               <Label>Dark Icon</Label>
               <div className="flex items-center gap-4">
-                <div className="shrink-0 rounded-lg bg-background p-2 border border-border shadow-sm -ml-1">
+                <div className="shrink-0 w-14 h-14 rounded-lg bg-background p-2 border border-border shadow-sm -ml-1 flex items-center justify-center overflow-hidden">
                   <BusinessLogo size={40} src={store.business.logoUrl} alt="Dark icon preview" />
                 </div>
                 <div className="flex-1 grid gap-2 sm:grid-cols-[1fr_auto]">
@@ -265,7 +265,7 @@ export default function SettingsPage() {
             <div className="space-y-2">
               <Label>Light Icon</Label>
             <div className="flex items-center gap-4">
-              <div className="shrink-0 rounded-lg bg-primary p-2 shadow-sm -ml-1">
+              <div className="shrink-0 w-14 h-14 rounded-lg bg-primary p-2 shadow-sm -ml-1 flex items-center justify-center overflow-hidden">
                 <BusinessLogo size={40} src={store.business.lightLogoUrl} alt="Light icon preview" />
               </div>
               <div className="flex-1 grid gap-2 sm:grid-cols-[1fr_auto]">
