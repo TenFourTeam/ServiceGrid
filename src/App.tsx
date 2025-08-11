@@ -19,6 +19,7 @@ const CustomersPage = lazy(() => import("./pages/Customers"));
 const SettingsPage = lazy(() => import("./pages/Settings"));
 const LegalPage = lazy(() => import("./pages/Legal"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const LandingPage = lazy(() => import("./pages/Landing"));
 
 const ClerkAuthPage = lazy(() => import("./pages/ClerkAuth"));
 const QuoteActionPage = lazy(() => import("./pages/QuoteAction"));
@@ -42,7 +43,7 @@ const App = () => (
                    <Route path="/clerk-auth" element={<ClerkAuthPage />} />
                    <Route path="/quote-action" element={<QuoteActionPage />} />
                    
-                   <Route path="/" element={<Navigate to="/calendar" replace />} />
+                   <Route path="/" element={<LandingPage />} />
                    <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
                    <Route path="/work-orders" element={<ProtectedRoute><WorkOrdersPage /></ProtectedRoute>} />
                    <Route path="/quotes" element={<ProtectedRoute><QuotesPage /></ProtectedRoute>} />
