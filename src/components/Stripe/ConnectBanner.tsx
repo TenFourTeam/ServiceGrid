@@ -50,16 +50,26 @@ export default function ConnectBanner({
         Stripe payouts {ok ? "ready" : "not set up"}
         
       </AlertTitle>
-      <AlertDescription className="mt-2 flex flex-wrap items-center gap-2">
-        {!ok ? <>
+      <AlertDescription className="mt-2 space-y-3">
+        {!ok ? (
+          <>
             <span className="text-sm">Complete Stripe onboarding to receive funds directly to your bank account.</span>
-            <Button onClick={onConnect} size="sm">Set up payouts</Button>
-            <Button variant="outline" onClick={onRefresh} size="sm">Refresh</Button>
-          </> : <>
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button onClick={onConnect} size="sm">Set up payouts</Button>
+              <Button variant="secondary" onClick={onRefresh} size="sm">Refresh</Button>
+            </div>
+          </>
+        ) : (
+          <>
             <span className="text-sm">Your account is connected. You can manage payout settings in your Stripe Dashboard.</span>
-            <Button variant="outline" onClick={onRefresh} size="sm">Refresh</Button>
-            {onDisconnect && <Button variant="outline" onClick={onDisconnect} size="sm">Disconnect</Button>}
-          </>}
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button variant="secondary" onClick={onRefresh} size="sm">Refresh</Button>
+              {onDisconnect && (
+                <Button variant="outline" onClick={onDisconnect} size="sm">Disconnect</Button>
+              )}
+            </div>
+          </>
+        )}
       </AlertDescription>
     </Alert>;
 }

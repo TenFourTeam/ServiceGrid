@@ -21,11 +21,14 @@ import {
   Users,
   Wrench,
   User as UserIcon,
+  Settings as SettingsIcon,
+  LifeBuoy,
+  LogOut,
 } from "lucide-react";
 
 import BusinessLogo from "@/components/BusinessLogo";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useClerk } from "@clerk/clerk-react";
+import { useClerk, useUser } from "@clerk/clerk-react";
 
 const items = [
   { title: "Calendar", url: "/calendar", icon: CalendarIcon },
@@ -42,6 +45,7 @@ export default function AppSidebar() {
   const { signOut } = useClerk();
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
+  const { user } = useUser();
   
   const isActivePath = (path: string) => location.pathname.startsWith(path);
 
@@ -120,12 +124,21 @@ export default function AppSidebar() {
                 <span className="truncate group-data-[collapsible=icon]:hidden">Account</span>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent side="right" align="start" className="w-56">
-              <DropdownMenuLabel>Account</DropdownMenuLabel>
+            <DropdownMenuContent side="top" align="start" sideOffset={8} alignOffset={-4} className="w-56">
+              <DropdownMenuLabel className="text-xs text-muted-foreground">
+                {user?.primaryEmailAddress?.emailAddress || user?.emailAddresses?.[0]?.emailAddress || "Account"}
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate('/settings')}>Settings</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/settings')}>
+                <SettingsIcon className="mr-2 h-4 w-4" /> Settings
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => window.open('https://docs.lovable.dev/', '_blank')}>
+                <LifeBuoy className="mr-2 h-4 w-4" /> Help
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => signOut()}>Sign out</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => signOut()}>
+                <LogOut className="mr-2 h-4 w-4" /> Sign out
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
