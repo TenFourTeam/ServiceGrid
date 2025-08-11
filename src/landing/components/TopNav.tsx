@@ -5,16 +5,40 @@ import { SignInButton, SignUpButton } from "@clerk/clerk-react";
 export function TopNav() {
   const [logoError, setLogoError] = useState(false);
   return (
-    <header role="banner" className="sticky top-0 z-50 border-b bg-background/60 dark:bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header role="banner" className="sticky top-0 z-50 bg-background/60 dark:bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex items-center justify-between py-3">
         <div className="flex items-center gap-2">
           {logoError ? (
-            <span className="text-sm font-semibold">The Tenfour Project</span>
+            <svg
+              width="112"
+              height="24"
+              viewBox="0 0 112 24"
+              role="img"
+              aria-label="TenFour logo"
+              className="h-6 w-auto"
+            >
+              <text
+                x="0"
+                y="18"
+                fontFamily="Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto"
+                fontWeight="700"
+                fontSize="18"
+                fill="currentColor"
+                letterSpacing="0.5"
+              >
+                TenFour
+              </text>
+            </svg>
           ) : (
             <img
-              src="/lovable-uploads/97c32918-f6f6-439d-a007-257d62db52a9.png"
-              alt="The Tenfour Project logo"
+              src="/lovable-uploads/d50d4982-ebf1-4468-be0a-a5ce37ecdd6a.png"
+              alt="TenFour logo"
               className="h-6 w-auto"
+              width="112"
+              height="24"
+              loading="eager"
+              fetchPriority="high"
+              decoding="sync"
               onError={() => setLogoError(true)}
             />
           )}
