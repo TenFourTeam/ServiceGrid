@@ -1,7 +1,7 @@
 export const content = {
   brand: {
     name: "TenFour",
-    logoSrc: "/lovable-uploads/d50d4982-ebf1-4468-be0a-a5ce37ecdd6a.png"
+    logoSrc: "/lovable-uploads/951c56be-efa2-4785-88ee-910605f59ec9.png"
   },
   hero: {
     A: {
@@ -73,8 +73,8 @@ export const content = {
         key: "invoice",
         title: "Invoice and get paid",
         desc: "Send instantly. Clients pay online. You see it in your dashboard.",
-        imageSrc: "/lovable-uploads/42854089-cd59-4b57-ba5c-47f279ef79f1.png",
-        alt: "Invoice and get paid",
+        imageSrc: "/lovable-uploads/96c77dc9-19fe-460d-b602-5a3baeb9e8b7.png",
+        alt: "Product screenshot: Invoice and payment dashboard",
       },
     ],
   },
