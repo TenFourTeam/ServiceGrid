@@ -4,7 +4,7 @@ export const content = {
       eyebrow: "For growing field service teams",
       title: "Schedule, quote, and invoice without the back-and-forth",
       subtitle:
-        "TenFour Lawn keeps your day moving: drag-and-drop scheduling, one-click quotes, and instant payments in a single lightweight app.",
+        "The Tenfour Project keeps your day moving: drag-and-drop scheduling, one-click quotes, and instant payments in a single lightweight app.",
       primaryCta: { label: "Try for free", href: "#" },
       secondaryCta: { label: "", href: "#" },
     },

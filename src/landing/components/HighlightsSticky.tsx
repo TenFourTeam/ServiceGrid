@@ -1,11 +1,20 @@
 import { content } from "../content";
 
-function VisualCard({ title }: { title: string }) {
+function VisualCard({ title, imageSrc, alt }: { title: string; imageSrc?: string; alt?: string }) {
   return (
-    <div className="h-72 md:h-80 lg:h-96 rounded-lg border bg-card shadow-subtle grid place-items-center">
-      <div className="text-center">
-        <div className="mx-auto h-12 w-12 rounded-md bg-muted mb-4" />
-        <p className="text-sm text-muted-foreground">{title}</p>
+    <div className="h-72 md:h-80 lg:h-96 rounded-lg border bg-card shadow-subtle grid place-items-center overflow-hidden">
+      <div className="text-center p-4">
+        {imageSrc ? (
+          <img
+            src={imageSrc}
+            alt={alt ?? title}
+            className="mx-auto max-h-56 w-auto object-contain rounded-md"
+            loading="lazy"
+          />
+        ) : (
+          <div className="mx-auto h-12 w-12 rounded-md bg-muted mb-4" />
+        )}
+        <p className="mt-2 text-sm text-muted-foreground">{title}</p>
       </div>
     </div>
   );
@@ -20,9 +29,6 @@ export function HighlightsSticky() {
           <h2 id="how-title" className="text-3xl md:text-4xl font-bold tracking-tight" data-reveal>
             {content.highlights.heading}
           </h2>
-          <div className="mt-4 h-1.5 w-full rounded bg-muted overflow-hidden" aria-hidden="true">
-            <div id="highlights-progress" className="h-full w-0 bg-primary transition-[width] duration-300" />
-          </div>
           <ol className="mt-6 space-y-6">
             {content.highlights.steps.map((s, i) => (
               <li key={s.key} data-step={s.key} className="p-4 rounded-md border bg-card shadow-subtle" data-reveal style={{"--stagger": i} as any}>
@@ -38,7 +44,11 @@ export function HighlightsSticky() {
           <span id="highlights-live" className="sr-only" />
           {content.highlights.steps.map((s) => (
             <div key={s.key} aria-label={s.title} data-visual={s.key}>
-              <VisualCard title={s.title} />
+              <VisualCard
+                title={s.title}
+                imageSrc={s.key === "invoice" ? "/lovable-uploads/invoice-image.png" : undefined}
+                alt={s.key === "invoice" ? "Invoice and get paid" : undefined}
+              />
             </div>
           ))}
         </div>

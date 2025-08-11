@@ -9,7 +9,7 @@ import { CTASection } from "@/landing/components/CTASection";
 import { Footer } from "@/landing/components/Footer";
 import { initScrollOrchestrator } from "@/landing/scrollOrchestrator";
 import { TopNav } from "@/landing/components/TopNav";
-import { BackToTop } from "@/landing/components/BackToTop";
+
 
 export default function Landing() {
   const { isSignedIn } = useAuth();
@@ -94,7 +94,7 @@ export default function Landing() {
       <HighlightsSticky />
       <CTASection />
       <Footer />
-      <BackToTop />
+      
     </main>
   );
 }
