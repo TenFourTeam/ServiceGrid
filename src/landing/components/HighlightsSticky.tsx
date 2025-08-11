@@ -45,6 +45,11 @@ function VisualCard({ title, imageSrc, alt }: { title: string; imageSrc?: string
 }
 
 export function HighlightsSticky() {
+  const handleSelect = (key: string) => {
+    const el = document.querySelector<HTMLElement>(`[data-step="${key}"]`);
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    try { history.replaceState(null, "", `#${key}`); } catch {}
+  };
   return (
     <section aria-labelledby="how-title" className="container py-16 md:py-24">
       <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-start">
@@ -55,7 +60,24 @@ export function HighlightsSticky() {
           </h2>
           <ol className="mt-6 space-y-6">
             {content.highlights.steps.map((s, i) => (
-              <li key={s.key} data-step={s.key} className="p-4 rounded-md border bg-card shadow-subtle" data-reveal style={{"--stagger": i} as any}>
+              <li
+                key={s.key}
+                id={s.key}
+                data-step={s.key}
+                className="p-4 rounded-md border bg-card shadow-subtle hover-scale focus:outline-none focus:ring-2 focus:ring-primary"
+                data-reveal
+                style={{ "--stagger": i } as any}
+                role="button"
+                tabIndex={0}
+                aria-label={s.title}
+                onClick={() => handleSelect(s.key)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleSelect(s.key);
+                  }
+                }}
+              >
                 <h3 className="font-semibold">{i + 1}. {s.title}</h3>
                 <p className="mt-1 text-muted-foreground">{s.desc}</p>
               </li>

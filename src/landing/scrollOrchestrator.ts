@@ -78,6 +78,11 @@ export function initScrollOrchestrator() {
       const pct = Math.max(0, ((idx + 1) / total) * 100);
       (progressEl as HTMLElement).style.width = `${pct}%`;
     }
+
+    // Update URL hash without causing scroll
+    try {
+      if (location.hash !== `#${key}`) history.replaceState(null, "", `#${key}`);
+    } catch {}
   }
 
   if (steps.length && visualsContainer && visuals.length) {
@@ -95,8 +100,35 @@ export function initScrollOrchestrator() {
 
     steps.forEach((s) => stepObserver.observe(s));
 
-    // Initialize first
-    const firstKey = (steps[0]?.getAttribute("data-step") as HighlightKey) || content.highlights.steps[0].key;
-    activate(firstKey);
+    // Determine desired step from URL (hash or ?step=)
+    const keys = content.highlights.steps.map((s) => s.key);
+    const url = new URL(window.location.href);
+    const hashKey = window.location.hash?.slice(1);
+    const queryKey = url.searchParams.get("step");
+    const desiredKey = (keys.includes(hashKey as HighlightKey)
+      ? (hashKey as HighlightKey)
+      : keys.includes(queryKey as HighlightKey)
+      ? (queryKey as HighlightKey)
+      : null) as HighlightKey | null;
+
+    if (desiredKey) {
+      activate(desiredKey);
+      const el = steps.find((s) => s.getAttribute("data-step") === desiredKey);
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    } else {
+      // Initialize first
+      const firstKey = (steps[0]?.getAttribute("data-step") as HighlightKey) || content.highlights.steps[0].key;
+      activate(firstKey);
+    }
+
+    // React to manual hash changes
+    window.addEventListener("hashchange", () => {
+      const key = window.location.hash?.slice(1) as HighlightKey;
+      if (keys.includes(key)) {
+        activate(key);
+        const el = steps.find((s) => s.getAttribute("data-step") === key);
+        el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    });
   }
 }
