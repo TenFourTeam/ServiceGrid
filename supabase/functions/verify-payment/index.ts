@@ -26,9 +26,14 @@ serve(async (req) => {
       });
     }
 
-    const amount = session.amount_total || 0;
-    const invoiceId = (session.metadata as any)?.invoice_id as string | undefined;
-    const ownerId = (session.metadata as any)?.owner_id as string | undefined;
+    const pi = session.payment_intent as any;
+    const sessionMeta = (session.metadata || {}) as Record<string, string>;
+    const piMeta = (pi?.metadata || {}) as Record<string, string>;
+    const invoiceId = (sessionMeta.invoice_id || piMeta.invoice_id) as string | undefined;
+    const ownerId = (sessionMeta.owner_id || piMeta.owner_id) as string | undefined;
+    const amount =
+      (typeof session.amount_total === 'number' ? session.amount_total : 0) ||
+      (typeof pi?.amount_received === 'number' ? pi.amount_received : 0);
 
     if (!invoiceId || !ownerId) throw new Error("Missing invoice metadata");
 
