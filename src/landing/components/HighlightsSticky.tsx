@@ -2,6 +2,7 @@ import { useState } from "react";
 import { content } from "../content";
 import { Section } from "@/components/Section";
 import { Heading } from "@/components/Heading";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 type HighlightStep = (typeof content.highlights.steps)[number] & { imageSrc?: string; alt?: string };
 
@@ -11,27 +12,27 @@ function VisualCard({ title, imageSrc, alt }: { title: string; imageSrc?: string
   const isInvoice = label.toLowerCase().includes("invoice");
 
   return (
-    <div className="h-72 md:h-80 lg:h-96 rounded-lg border bg-card shadow-subtle grid place-items-center overflow-hidden">
-      <div className="text-center p-4">
+    <div className="rounded-lg border bg-card shadow-subtle overflow-hidden">
+      <AspectRatio ratio={16 / 9}>
         {imageSrc && !broken ? (
           <img
             src={imageSrc}
             alt={label}
-            width={1024}
-            height={512}
+            width={1600}
+            height={900}
             decoding="async"
-            className="mx-auto max-h-56 w-auto object-contain rounded-md"
+            className="h-full w-full object-cover"
             loading="lazy"
-            sizes="(min-width: 1024px) 600px, (min-width: 768px) 480px, 100vw"
+            sizes="(min-width: 1024px) 640px, (min-width: 768px) 560px, 100vw"
             onError={() => { console.warn('Visual image failed to load', { src: imageSrc, alt: label }); setBroken(true); }}
           />
         ) : isInvoice ? (
-          <div className="mx-auto mb-4 h-40 w-auto text-muted-foreground">
+          <div className="mx-auto mb-0 h-full w-full text-muted-foreground grid place-items-center">
             <svg
               viewBox="0 0 160 160"
               role="img"
               aria-label={label}
-              className="mx-auto h-full w-auto"
+              className="mx-auto h-24 w-24"
             >
               <rect x="32" y="24" width="96" height="112" rx="8" fill="none" stroke="currentColor" strokeWidth="2" />
               <line x1="48" y1="56" x2="112" y2="56" stroke="currentColor" strokeWidth="2" />
@@ -41,11 +42,14 @@ function VisualCard({ title, imageSrc, alt }: { title: string; imageSrc?: string
             </svg>
           </div>
         ) : (
-          <div className="mx-auto h-12 w-12 rounded-md bg-muted mb-4" />
+          <div className="mx-auto h-full w-full bg-muted" />
         )}
-        <p className="mt-2 text-sm text-muted-foreground">{title}</p>
+      </AspectRatio>
+      <div className="p-4">
+        <p className="mt-2 text-sm text-muted-foreground text-center">{title}</p>
       </div>
     </div>
+
   );
 }
 
@@ -56,6 +60,9 @@ export function HighlightsSticky() {
     try { history.replaceState(null, "", `#${key}`); } catch {}
   };
   const activeKey = (location.hash || "").replace("#", "");
+  const firstVisual = (content.highlights.steps as ReadonlyArray<HighlightStep>).find((s) => !!s.imageSrc);
+  const singleImageSrc = firstVisual?.imageSrc ?? "/images/how-schedule.jpg";
+  const singleAlt = firstVisual?.alt ?? firstVisual?.title ?? content.highlights.heading;
   return (
     <Section ariaLabel={content.highlights.heading}>
       <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-start">
@@ -92,17 +99,16 @@ export function HighlightsSticky() {
         </div>
 
         {/* Visuals */}
-        <div aria-live="polite" className="relative mt-6" data-visuals>
+        <div aria-live="polite" className="relative mt-6 lg:mt-20" data-visuals>
           <span id="highlights-live" className="sr-only" />
-          {content.highlights.steps.map((s: HighlightStep) => (
-            <div key={s.key} aria-label={s.title} data-visual={s.key}>
-              <VisualCard
-                title={s.title}
-                imageSrc={s.imageSrc}
-                alt={s.alt ?? s.title}
-              />
-            </div>
-          ))}
+          { /* Single visual only */ }
+          <div aria-label={singleAlt} data-visual="how-visual">
+            <VisualCard
+              title={singleAlt}
+              imageSrc={singleImageSrc}
+              alt={singleAlt}
+            />
+          </div>
         </div>
       </div>
     </Section>
