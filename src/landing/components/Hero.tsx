@@ -2,6 +2,7 @@ import { SignInButton, SignUpButton } from "@clerk/clerk-react";
 import { Button } from "@/components/ui/button";
 import { content } from "../content";
 import { BWAnimatedBackground } from "./BWAnimatedBackground";
+import { useRef } from "react";
 function LogoMark() {
   return <svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" className="text-primary">
       <path fill="currentColor" d="M12 2c5.523 0 10 4.477 10 10h-2a8 8 0 1 0-8 8v2C6.477 22 2 17.523 2 12S6.477 2 12 2Z" />
@@ -12,7 +13,17 @@ export function Hero() {
   const params = new URLSearchParams(location.search);
   const variant = params.get("v")?.toLowerCase() === "b" ? "B" : "A";
   const copy = content.hero[variant as "A" | "B"];
-  return <section aria-labelledby="hero-title" className="relative container py-16 md:py-24">
+  const heroRef = useRef<HTMLElement | null>(null);
+  const onMove = (e: React.MouseEvent) => {
+    const el = heroRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    el.style.setProperty("--mx", `${x}px`);
+    el.style.setProperty("--my", `${y}px`);
+  };
+  return <section aria-labelledby="hero-title" ref={heroRef as any} onMouseMove={onMove} className="relative container py-16 md:py-24 hero-spotlight">
       <BWAnimatedBackground />
 
       <div className="mx-auto max-w-3xl text-center">
@@ -32,7 +43,7 @@ export function Hero() {
         "--stagger": 3
       } as any}>
           <SignUpButton mode="modal" forceRedirectUrl="/calendar">
-            <Button size="lg" variant="cta" className="hover-scale attention-ring cta-shine">
+            <Button size="lg" variant="cta" className="hover-scale attention-ring">
               Try for free
             </Button>
           </SignUpButton>

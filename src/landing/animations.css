@@ -103,24 +103,20 @@
   .bw-pan-slow, .bw-float, .bw-pan-diagonal { animation: none !important; }
 }
 
-/* CTA shine effect */
-.cta-shine{position:relative;overflow:hidden}
-.cta-shine::after{
-  content:"";
-  position:absolute;
-  inset:-1px;
-  background: linear-gradient(120deg, transparent 45%, rgba(255,255,255,.22) 50%, transparent 55%);
-  transform: translateX(-150%);
-  pointer-events:none;
-  mix-blend-mode: screen;
-  transition: opacity .2s ease;
-  animation: cta-shine-sweep 2.8s ease-in-out infinite;
-}
-@keyframes cta-shine-sweep{
-  0%{ transform: translateX(-150%) }
-  60%{ transform: translateX(110%) }
-  100%{ transform: translateX(110%) }
-}
+/* Aurora background blobs */
+.aurora{position:absolute;inset:auto;pointer-events:none;border-radius:9999px;filter:blur(60px);opacity:.6;mix-blend-mode:screen;will-change:transform}
+.aurora--1{width:60vw;height:60vw;left:-20vw;top:-10vw;background:radial-gradient(circle at 30% 30%, hsl(var(--primary) / 0.5), transparent 60%);animation:aurora-move 22s ease-in-out infinite}
+.aurora--2{width:50vw;height:50vw;right:-15vw;top:5vw;background:radial-gradient(circle at 70% 30%, hsl(var(--accent) / 0.45), transparent 60%);animation:aurora-move 28s ease-in-out infinite}
+.aurora--3{width:55vw;height:55vw;left:15vw;bottom:-20vw;background:radial-gradient(circle at 50% 70%, hsl(var(--secondary) / 0.48), transparent 65%);animation:aurora-move 34s ease-in-out infinite}
+@keyframes aurora-move{0%,100%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(20px,-10px,0) scale(1.06)}}
+
+/* Mouse spotlight for hero */
+.hero-spotlight{position:relative}
+.hero-spotlight::before{content:"";position:absolute;inset:-40px;background:radial-gradient(600px circle at var(--mx, 50%) var(--my, 40%), hsl(var(--primary) / 0.12), transparent 60%);mix-blend-mode:screen;pointer-events:none;transition:opacity .2s ease}
+
+/* Soft vignette to focus content */
+.hero-vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 100% at 50% 30%, transparent 60%, hsl(var(--background) / 0.75))}
+
 @media (prefers-reduced-motion: reduce){
-  .cta-shine::after{ animation: none }
+  .aurora{animation:none !important}
 }

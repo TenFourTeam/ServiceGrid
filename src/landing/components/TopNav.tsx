@@ -48,7 +48,7 @@ export function TopNav() {
             <Button variant="ghost" size="sm" className="hover-scale">Sign in</Button>
           </SignInButton>
           <SignUpButton mode="modal" forceRedirectUrl="/calendar">
-            <Button variant="cta" size="sm" className="hover-scale attention-ring cta-shine">Try for free</Button>
+            <Button variant="cta" size="sm" className="hover-scale attention-ring">Try for free</Button>
           </SignUpButton>
         </div>
       </div>

@@ -23,6 +23,12 @@ export function BWAnimatedBackground() {
         {/* Subtle diagonal pattern that slowly drifts */}
         <rect width="100%" height="100%" fill="url(#diagonal)" className="bw-pan-diagonal" />
       </svg>
+      {/* Aurora blobs */}
+      <div className="aurora aurora--1" />
+      <div className="aurora aurora--2" />
+      <div className="aurora aurora--3" />
+      {/* Soft vignette */}
+      <div className="hero-vignette" />
     </div>
   );
 }
