@@ -16,9 +16,7 @@ export function Hero() {
       <BWAnimatedBackground />
 
       <div className="mx-auto max-w-3xl text-center">
-        <p className="text-sm text-muted-foreground" data-reveal style={{
-        "--stagger": 0
-      } as any}>{copy.eyebrow}</p>
+        
         <h1 id="hero-title" className="mt-3 text-4xl md:text-6xl font-bold tracking-tight" data-reveal style={{
         "--stagger": 1
       } as any}>
@@ -39,15 +37,11 @@ export function Hero() {
             </Button>
           </SignUpButton>
           <Button asChild size="lg" variant="outline" className="hover-scale">
-            <a href="#invoice" aria-label="See invoicing">See invoicing</a>
+            
           </Button>
         </div>
 
-        <p className="mt-3 text-xs text-muted-foreground" data-reveal style={{
-        "--stagger": 4
-      } as any}>
-          No credit card required
-        </p>
+        
       </div>
     </section>;
 }
