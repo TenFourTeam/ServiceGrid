@@ -15,7 +15,7 @@ export function TopNav() {
               viewBox="0 0 112 24"
               role="img"
               aria-label="TenFour logo"
-              className="h-6 w-auto"
+              className="h-7 w-auto"
             >
               <text
                 x="0"
@@ -33,7 +33,7 @@ export function TopNav() {
             <img
               src="/lovable-uploads/d50d4982-ebf1-4468-be0a-a5ce37ecdd6a.png"
               alt="TenFour logo"
-              className="h-6 w-auto"
+              className="h-7 w-auto"
               width="112"
               height="24"
               loading="eager"
@@ -48,7 +48,7 @@ export function TopNav() {
             <Button variant="ghost" size="sm" className="hover-scale">Sign in</Button>
           </SignInButton>
           <SignUpButton mode="modal" forceRedirectUrl="/calendar">
-            <Button variant="cta" size="sm" className="hover-scale">Try for free</Button>
+            <Button variant="cta" size="sm" className="hover-scale attention-ring">Try for free</Button>
           </SignUpButton>
         </div>
       </div>
