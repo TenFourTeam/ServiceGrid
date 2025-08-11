@@ -89,7 +89,7 @@ export default {
 				'elev-2': '0 16px 40px -16px hsl(var(--ring) / 0.22)'
 			},
 			transitionTimingFunction: {
-				standard: 'cubic-bezier(0.4,0,0.2,1)'
+				standard: 'cubic-bezier(0.2,0.8,0.2,1)'
 			},
 			keyframes: {
 				'accordion-down': {

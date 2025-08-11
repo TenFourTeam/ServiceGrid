@@ -9,6 +9,8 @@ import { CTASection } from "@/landing/components/CTASection";
 import { Footer } from "@/landing/components/Footer";
 import { initScrollOrchestrator } from "@/landing/scrollOrchestrator";
 import { TopNav } from "@/landing/components/TopNav";
+import { FAQ } from "@/landing/components/FAQ";
+import { Industries } from "@/landing/components/Industries";
 
 
 export default function Landing() {
@@ -91,7 +93,9 @@ export default function Landing() {
       <TopNav />
       <Hero />
       <Benefits />
+      <Industries />
       <HighlightsSticky />
+      <FAQ />
       <CTASection />
       <Footer />
       
