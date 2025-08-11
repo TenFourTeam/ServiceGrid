@@ -1,16 +1,40 @@
+import { useState } from "react";
 import { content } from "../content";
 
 function VisualCard({ title, imageSrc, alt }: { title: string; imageSrc?: string; alt?: string }) {
+  const [broken, setBroken] = useState(false);
+  const label = alt ?? title;
+  const isInvoice = label.toLowerCase().includes("invoice");
+
   return (
     <div className="h-72 md:h-80 lg:h-96 rounded-lg border bg-card shadow-subtle grid place-items-center overflow-hidden">
       <div className="text-center p-4">
-        {imageSrc ? (
+        {imageSrc && !broken ? (
           <img
             src={imageSrc}
-            alt={alt ?? title}
+            alt={label}
+            width={1024}
+            height={512}
+            decoding="async"
             className="mx-auto max-h-56 w-auto object-contain rounded-md"
             loading="lazy"
+            onError={() => setBroken(true)}
           />
+        ) : isInvoice ? (
+          <div className="mx-auto mb-4 h-40 w-auto text-muted-foreground">
+            <svg
+              viewBox="0 0 160 160"
+              role="img"
+              aria-label={label}
+              className="mx-auto h-full w-auto"
+            >
+              <rect x="32" y="24" width="96" height="112" rx="8" fill="none" stroke="currentColor" strokeWidth="2" />
+              <line x1="48" y1="56" x2="112" y2="56" stroke="currentColor" strokeWidth="2" />
+              <line x1="48" y1="72" x2="112" y2="72" stroke="currentColor" strokeWidth="2" />
+              <line x1="48" y1="88" x2="96" y2="88" stroke="currentColor" strokeWidth="2" />
+              <path d="M56 120l12 12 28-28" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
         ) : (
           <div className="mx-auto h-12 w-12 rounded-md bg-muted mb-4" />
         )}
@@ -47,7 +71,7 @@ export function HighlightsSticky() {
               <VisualCard
                 title={s.title}
                 imageSrc={s.key === "invoice" ? "/lovable-uploads/11215732-46ca-4740-9950-73ef597b21af.png" : undefined}
-                alt={s.key === "invoice" ? "Invoice and get paid" : undefined}
+                alt={s.key === "invoice" ? "Invoice and get paid" : s.title}
               />
             </div>
           ))}
