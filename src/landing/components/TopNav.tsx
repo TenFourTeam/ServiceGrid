@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/Button";
 import { SignInButton, SignUpButton } from "@clerk/clerk-react";
+import { content } from "../content";
 
 export function TopNav() {
   const [logoError, setLogoError] = useState(false);
@@ -14,7 +15,7 @@ export function TopNav() {
               height="24"
               viewBox="0 0 112 24"
               role="img"
-              aria-label="TenFour logo"
+              aria-label={`${content.brand.name} logo`}
               className="h-7 w-auto"
             >
               <text
@@ -26,13 +27,13 @@ export function TopNav() {
                 fill="currentColor"
                 letterSpacing="0.5"
               >
-                TenFour
+                {content.brand.name}
               </text>
             </svg>
           ) : (
             <img
-              src="/lovable-uploads/d50d4982-ebf1-4468-be0a-a5ce37ecdd6a.png"
-              alt="TenFour logo"
+              src={content.brand.logoSrc}
+              alt={`${content.brand.name} logo`}
               className="h-7 w-auto"
               width="112"
               height="24"

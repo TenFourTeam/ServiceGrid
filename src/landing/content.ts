@@ -1,4 +1,8 @@
 export const content = {
+  brand: {
+    name: "TenFour",
+    logoSrc: "/lovable-uploads/d50d4982-ebf1-4468-be0a-a5ce37ecdd6a.png"
+  },
   hero: {
     A: {
       eyebrow: "For growing field service teams",

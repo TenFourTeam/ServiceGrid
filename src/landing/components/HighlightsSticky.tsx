@@ -60,9 +60,11 @@ export function HighlightsSticky() {
     try { history.replaceState(null, "", `#${key}`); } catch {}
   };
   const activeKey = (location.hash || "").replace("#", "");
-  const firstVisual = (content.highlights.steps as ReadonlyArray<HighlightStep>).find((s) => !!s.imageSrc);
-  const singleImageSrc = firstVisual?.imageSrc ?? "/images/how-schedule.jpg";
-  const singleAlt = firstVisual?.alt ?? firstVisual?.title ?? content.highlights.heading;
+  const steps = content.highlights.steps as ReadonlyArray<HighlightStep>;
+  const visuals = steps.filter((s) => !!s.imageSrc);
+  const chosen = visuals.length ? visuals[visuals.length - 1] : undefined;
+  const singleImageSrc = chosen?.imageSrc ?? "/images/how-schedule.jpg";
+  const singleAlt = chosen?.alt ?? chosen?.title ?? content.highlights.heading;
   return (
     <Section ariaLabel={content.highlights.heading}>
       <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-start">
