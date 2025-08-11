@@ -120,7 +120,7 @@ export function HeroMedia({ className }: { className?: string }) {
 
       {/* Floating badge */}
       <div className="absolute right-8 bottom-8 rounded-full border bg-background px-4 py-2 shadow-elev-1">
-        <span className="text-xs text-muted-foreground">Automations on</span>
+        <span className="text-xs text-muted-foreground">Avg 6h/week saved</span>
       </div>
     </div>
   );

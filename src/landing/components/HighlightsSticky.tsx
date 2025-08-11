@@ -92,7 +92,7 @@ export function HighlightsSticky() {
         </div>
 
         {/* Visuals */}
-        <div aria-live="polite" className="relative" data-visuals>
+        <div aria-live="polite" className="relative mt-6" data-visuals>
           <span id="highlights-live" className="sr-only" />
           {content.highlights.steps.map((s: HighlightStep) => (
             <div key={s.key} aria-label={s.title} data-visual={s.key}>

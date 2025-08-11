@@ -1,12 +1,12 @@
 import { Section } from "@/components/Section";
 import { Heading } from "@/components/Heading";
-import { Leaf, Snowflake, Waves, Droplets, Sparkles, Wrench } from "lucide-react";
+import { Leaf, Sprout, Waves, Droplets, Sparkles, Wrench } from "lucide-react";
 
 const industries = [
   { icon: Leaf, label: "Lawn Care" },
   { icon: Sparkles, label: "Window Cleaning" },
   { icon: Droplets, label: "Pressure Washing" },
-  { icon: Snowflake, label: "Snow Removal" },
+  { icon: Sprout, label: "Irrigation" },
   { icon: Waves, label: "Pool Service" },
   { icon: Wrench, label: "Handyman" },
 ];

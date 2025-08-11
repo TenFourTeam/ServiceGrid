@@ -30,7 +30,7 @@ export function Hero() {
       <div className="grid lg:grid-cols-2 gap-10 items-center">
         {/* Copy */}
         <div className="mx-auto max-w-3xl text-center lg:text-left">
-          <p className="eyebrow" data-reveal>{copy.eyebrow}</p>
+          <p className="eyebrow font-jakarta" data-reveal>{copy.eyebrow}</p>
           <h1 id="hero-title" className="mt-3 text-4xl md:text-6xl font-bold tracking-tight bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text text-transparent" data-reveal>
             {copy.title}
           </h1>
@@ -40,12 +40,12 @@ export function Hero() {
 
           <div className="mt-8 flex flex-col sm:flex-row items-center lg:items-start justify-center lg:justify-start gap-3" data-reveal>
             <SignUpButton mode="modal" forceRedirectUrl="/calendar">
-              <Button size="lg" variant="primary" className="hover-scale" id="hero-cta">
+              <Button size="lg" variant="primary" className="hover-scale attention-ring" id="hero-cta">
                 {copy.primaryCta.label}
               </Button>
             </SignUpButton>
             {copy.secondaryCta.label ? (
-              <Button size="lg" variant="secondary" className="hover-scale" onClick={() => { location.href = copy.secondaryCta.href; }}>
+              <Button size="lg" variant="secondary" className="hover-scale attention-ring" onClick={() => { location.href = copy.secondaryCta.href; }}>
                 {copy.secondaryCta.label}
               </Button>
             ) : null}

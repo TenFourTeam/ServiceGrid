@@ -52,6 +52,8 @@ export const content = {
         key: "schedule",
         title: "Plan your day fast",
         desc: "Drag jobs onto the calendar. We handle conflicts and travel time.",
+        imageSrc: "/images/how-schedule.jpg",
+        alt: "Plan your day fast with drag-and-drop calendar",
       },
       {
         key: "quote",

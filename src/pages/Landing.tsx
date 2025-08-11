@@ -91,7 +91,7 @@ export default function Landing() {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <TopNav />
-      <div className="space-y-24 md:space-y-32 lg:space-y-40">
+      <div className="space-y-20 md:space-y-28 lg:space-y-36">
         <Hero />
         <Benefits />
         <Industries />
@@ -99,6 +99,7 @@ export default function Landing() {
         <FAQ />
         <CTASection />
       </div>
+      <div aria-hidden className="py-8 md:py-12 lg:py-14" />
       <Footer />
     </main>
   );
