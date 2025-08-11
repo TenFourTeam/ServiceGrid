@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { formatDate, formatMoney } from '@/utils/format';
 import { useStore } from '@/store/useAppStore';
 import type { Invoice } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface InvoiceShowModalProps {
   open: boolean;
@@ -13,6 +15,23 @@ interface InvoiceShowModalProps {
 export default function InvoiceShowModal({ open, onOpenChange, invoice }: InvoiceShowModalProps) {
   const { customers, sendInvoice, markInvoicePaid } = useStore();
   const customerName = invoice ? (customers.find(c => c.id === invoice.customerId)?.name || 'Unknown') : '';
+
+  const handlePayOnline = async () => {
+    try {
+      if (!invoice) return;
+      const { data, error } = await supabase.functions.invoke('create-invoice-payment', {
+        body: { invoiceId: invoice.id },
+      });
+      const url = (data as any)?.url as string | undefined;
+      if (error || !url) {
+        toast.error(error?.message || 'Failed to start checkout');
+        return;
+      }
+      window.open(url, '_blank');
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to start checkout');
+    }
+  };
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -55,8 +74,13 @@ export default function InvoiceShowModal({ open, onOpenChange, invoice }: Invoic
               {invoice.status === 'Draft' && (
                 <Button size="sm" onClick={() => sendInvoice(invoice.id)}>Mark Sent</Button>
               )}
-              {invoice.status === 'Sent' && (
-                <Button size="sm" onClick={() => markInvoicePaid(invoice.id, '4242')}>Mark Paid</Button>
+              {(invoice.status === 'Sent' || invoice.status === 'Overdue') && (
+                <>
+                  <Button size="sm" variant="secondary" onClick={handlePayOnline}>Pay Online</Button>
+                  {invoice.status === 'Sent' && (
+                    <Button size="sm" onClick={() => markInvoicePaid(invoice.id, '4242')}>Mark Paid</Button>
+                  )}
+                </>
               )}
               <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
             </div>

@@ -33,3 +33,20 @@ verify_jwt = false
 
 [functions.upload-job-photo]
 verify_jwt = false
+
+# Subscriptions & Payments
+[functions.create-checkout]
+verify_jwt = true
+
+[functions.check-subscription]
+verify_jwt = true
+
+[functions.customer-portal]
+verify_jwt = true
+
+[functions.create-invoice-payment]
+verify_jwt = true
+
+# Public endpoint used by Stripe Checkout success redirect
+[functions.verify-payment]
+verify_jwt = false

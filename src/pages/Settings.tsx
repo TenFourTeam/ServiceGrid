@@ -11,7 +11,7 @@ import { useState, useEffect } from 'react';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { edgeFetchJson, edgeFetch } from '@/utils/edgeApi';
 import { toast } from 'sonner';
-
+import { supabase } from '@/integrations/supabase/client';
 
 
 export default function SettingsPage() {
@@ -20,7 +20,9 @@ export default function SettingsPage() {
   const [darkFile, setDarkFile] = useState<File | null>(null);
   const [lightFile, setLightFile] = useState<File | null>(null);
   const [uploadingDark, setUploadingDark] = useState(false);
-  const [uploadingLight, setUploadingLight] = useState(false);
+const [uploadingLight, setUploadingLight] = useState(false);
+  const [sub, setSub] = useState<any>(null);
+  const [subLoading, setSubLoading] = useState(false);
 
   async function uploadLogoDark() {
     if (!isSignedIn) {
@@ -79,6 +81,43 @@ export default function SettingsPage() {
       toast.error(e?.message || 'Failed to upload light icon');
     } finally {
       setUploadingLight(false);
+    }
+  }
+
+  async function refreshSubscription() {
+    try {
+      setSubLoading(true);
+      const { data, error } = await supabase.functions.invoke('check-subscription');
+      if (error) throw new Error(error.message);
+      setSub(data || null);
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to refresh subscription');
+    } finally {
+      setSubLoading(false);
+    }
+  }
+
+  async function startCheckout(plan: 'monthly' | 'yearly') {
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { plan },
+      });
+      const url = (data as any)?.url as string | undefined;
+      if (!url || error) throw new Error(error?.message || 'No checkout URL');
+      window.open(url, '_blank');
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to start checkout');
+    }
+  }
+
+  async function openPortal() {
+    try {
+      const { data, error } = await supabase.functions.invoke('customer-portal');
+      const url = (data as any)?.url as string | undefined;
+      if (!url || error) throw new Error(error?.message || 'No portal URL');
+      window.open(url, '_blank');
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to open portal');
     }
   }
 
@@ -173,6 +212,24 @@ export default function SettingsPage() {
                 </Tooltip>
               </div>
             </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="md:col-span-2">
+          <CardHeader><CardTitle>Subscription</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm text-muted-foreground">Status</div>
+                <div className="text-sm">{sub?.subscribed ? `Active • ${sub?.subscription_tier || ''}` : 'Not subscribed'}</div>
+              </div>
+              <Button size="sm" variant="outline" onClick={refreshSubscription} disabled={subLoading}>{subLoading ? 'Refreshing…' : 'Refresh'}</Button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" onClick={() => startCheckout('monthly')}>Start Monthly ($50)</Button>
+              <Button size="sm" onClick={() => startCheckout('yearly')}>Start Yearly ($504)</Button>
+              <Button size="sm" variant="secondary" onClick={openPortal}>Manage Subscription</Button>
             </div>
           </CardContent>
         </Card>

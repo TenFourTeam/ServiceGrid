@@ -22,7 +22,8 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 
 const ClerkAuthPage = lazy(() => import("./pages/ClerkAuth"));
 const QuoteActionPage = lazy(() => import("./pages/QuoteAction"));
-
+const PaymentSuccessPage = lazy(() => import("./pages/PaymentSuccess"));
+const PaymentCanceledPage = lazy(() => import("./pages/PaymentCanceled"));
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,8 @@ const App = () => (
                    <Route path="/invoices" element={<ProtectedRoute><InvoicesPage /></ProtectedRoute>} />
                    <Route path="/customers" element={<ProtectedRoute><CustomersPage /></ProtectedRoute>} />
                    <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+                   <Route path="/payment-success" element={<PaymentSuccessPage />} />
+                   <Route path="/payment-canceled" element={<PaymentCanceledPage />} />
                    <Route path="*" element={<NotFound />} />
                  </Routes>
               </Suspense>
