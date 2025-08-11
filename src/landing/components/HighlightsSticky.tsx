@@ -88,12 +88,12 @@ export function HighlightsSticky() {
         {/* Visuals */}
         <div aria-live="polite" className="relative" data-visuals>
           <span id="highlights-live" className="sr-only" />
-          {content.highlights.steps.map((s) => (
+          {content.highlights.steps.map((s: any) => (
             <div key={s.key} aria-label={s.title} data-visual={s.key}>
               <VisualCard
                 title={s.title}
-                imageSrc={s.key === "invoice" ? "/lovable-uploads/42854089-cd59-4b57-ba5c-47f279ef79f1.png" : undefined}
-                alt={s.key === "invoice" ? "Invoice and get paid" : s.title}
+                imageSrc={s.imageSrc}
+                alt={s.alt ?? s.title}
               />
             </div>
           ))}

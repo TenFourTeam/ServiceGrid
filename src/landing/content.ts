@@ -67,6 +67,8 @@ export const content = {
         key: "invoice",
         title: "Invoice and get paid",
         desc: "Send instantly. Clients pay online. You see it in your dashboard.",
+        imageSrc: "/lovable-uploads/42854089-cd59-4b57-ba5c-47f279ef79f1.png",
+        alt: "Invoice and get paid",
       },
     ],
   },
