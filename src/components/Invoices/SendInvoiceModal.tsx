@@ -32,7 +32,9 @@ export default function SendInvoiceModal({ open, onOpenChange, invoice, toEmail,
   const { html, defaultSubject } = useMemo(() => {
     if (!invoice) return { html: "", defaultSubject: "" };
     const logo = store.business.lightLogoUrl || store.business.logoUrl;
-    const built = buildInvoiceEmail({ businessName: store.business.name, businessLogoUrl: logo, customerName, invoice });
+    const token = (invoice as any).publicToken as string | undefined;
+    const payUrl = token ? `${window.location.origin}/invoice-pay?i=${invoice.id}&t=${token}` : undefined;
+    const built = buildInvoiceEmail({ businessName: store.business.name, businessLogoUrl: logo, customerName, invoice, payUrl });
     return { html: built.html, defaultSubject: built.subject };
   }, [invoice, store.business.name, store.business.logoUrl, store.business.lightLogoUrl, customerName]);
 

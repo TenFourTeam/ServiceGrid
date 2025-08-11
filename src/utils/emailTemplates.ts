@@ -197,10 +197,20 @@ export function buildQuoteEmail({ businessName, businessLogoUrl, customerName, q
 
 import type { Invoice } from "@/types";
 
-export function buildInvoiceEmail({ businessName, businessLogoUrl, customerName, invoice }: { businessName: string; businessLogoUrl?: string; customerName?: string; invoice: Invoice; }) {
+export function buildInvoiceEmail({ businessName, businessLogoUrl, customerName, invoice, payUrl }: { businessName: string; businessLogoUrl?: string; customerName?: string; invoice: Invoice; payUrl?: string; }) {
   const subject = `${businessName} • Invoice ${invoice.number}`;
   const headerLeft = businessLogoUrl ? `<img src="${businessLogoUrl}" alt="${escapeHtml(businessName)} logo" style="height:32px; max-height:32px; border-radius:4px; display:block;" />` : `<span style="font-weight:600; font-size:16px; color:#f8fafc;">${escapeHtml(businessName)}</span>`;
   const due = invoice.dueAt ? new Date(invoice.dueAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null;
+
+  const payCta = payUrl ? `
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:16px;">
+      <tr>
+        <td>
+          <a href="${payUrl}" style="display:inline-block; background:#111827; color:#f8fafc; padding:12px 16px; border-radius:8px; text-decoration:none; font-weight:600;">Pay Invoice</a>
+        </td>
+      </tr>
+    </table>
+  ` : '';
 
   const html = `
   <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#f1f5f9; padding:24px 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'; color:#111827;">
@@ -245,6 +255,7 @@ export function buildInvoiceEmail({ businessName, businessLogoUrl, customerName,
                   <td style=\"padding:8px; text-align:right; font-weight:600;\">${due}</td>
                 </tr>` : ''}
               </table>
+              ${payCta}
               <div style="margin-top:16px; font-size:13px; color:#6b7280;">Reply to this email if you have any questions.</div>
             </td>
           </tr>
@@ -254,6 +265,7 @@ export function buildInvoiceEmail({ businessName, businessLogoUrl, customerName,
   </table>`;
   return { subject, html };
 }
+
 
 function escapeHtml(str: string) {
   return String(str)

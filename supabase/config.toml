@@ -50,3 +50,7 @@ verify_jwt = false
 # Public endpoint used by Stripe Checkout success redirect
 [functions.verify-payment]
 verify_jwt = false
+
+# Public function to start invoice payment without auth (uses public token)
+[functions.create-invoice-payment-public]
+verify_jwt = false
