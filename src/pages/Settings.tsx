@@ -1,6 +1,5 @@
 import AppLayout from '@/components/Layout/AppLayout';
 import { useStore } from '@/store/useAppStore';
-
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,18 +13,26 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import ConnectBanner from '@/components/Stripe/ConnectBanner';
 import { useStripeConnectStatus } from '@/hooks/useStripeConnectStatus';
-
 export default function SettingsPage() {
   const store = useStore();
-  const { getToken, isSignedIn } = useClerkAuth();
+  const {
+    getToken,
+    isSignedIn
+  } = useClerkAuth();
   const [darkFile, setDarkFile] = useState<File | null>(null);
   const [lightFile, setLightFile] = useState<File | null>(null);
   const [uploadingDark, setUploadingDark] = useState(false);
-const [uploadingLight, setUploadingLight] = useState(false);
+  const [uploadingLight, setUploadingLight] = useState(false);
   const [sub, setSub] = useState<any>(null);
   const [subLoading, setSubLoading] = useState(false);
-  const { data: connectStatus, isLoading: statusLoading, error: statusError, refetch: refetchStatus } = useStripeConnectStatus({ enabled: !!isSignedIn });
-
+  const {
+    data: connectStatus,
+    isLoading: statusLoading,
+    error: statusError,
+    refetch: refetchStatus
+  } = useStripeConnectStatus({
+    enabled: !!isSignedIn
+  });
   async function uploadLogoDark() {
     if (!isSignedIn) {
       toast.error('You must be signed in');
@@ -41,11 +48,13 @@ const [uploadingLight, setUploadingLight] = useState(false);
       form.append('file', darkFile);
       const data = await edgeFetch("upload-business-logo?kind=dark", getToken, {
         method: 'POST',
-        body: form,
+        body: form
       });
       const url = (data as any)?.url as string;
       if (url) {
-        store.setBusiness({ logoUrl: url });
+        store.setBusiness({
+          logoUrl: url
+        });
         toast.success('Dark icon updated');
       }
     } catch (e: any) {
@@ -55,7 +64,6 @@ const [uploadingLight, setUploadingLight] = useState(false);
       setUploadingDark(false);
     }
   }
-
   async function uploadLogoLight() {
     if (!isSignedIn) {
       toast.error('You must be signed in');
@@ -71,11 +79,13 @@ const [uploadingLight, setUploadingLight] = useState(false);
       form.append('file', lightFile);
       const data = await edgeFetch("upload-business-logo?kind=light", getToken, {
         method: 'POST',
-        body: form,
+        body: form
       });
       const url = (data as any)?.url as string;
       if (url) {
-        store.setBusiness({ lightLogoUrl: url });
+        store.setBusiness({
+          lightLogoUrl: url
+        });
         toast.success('Light icon updated');
       }
     } catch (e: any) {
@@ -85,11 +95,12 @@ const [uploadingLight, setUploadingLight] = useState(false);
       setUploadingLight(false);
     }
   }
-
   async function refreshSubscription() {
     try {
       setSubLoading(true);
-      const data = await edgeFetchJson('check-subscription', getToken, { method: 'POST' });
+      const data = await edgeFetchJson('check-subscription', getToken, {
+        method: 'POST'
+      });
       setSub(data || null);
     } catch (e: any) {
       toast.error(e?.message || 'Failed to refresh subscription');
@@ -97,12 +108,13 @@ const [uploadingLight, setUploadingLight] = useState(false);
       setSubLoading(false);
     }
   }
-
   async function startCheckout(plan: 'monthly' | 'yearly') {
     try {
       const data = await edgeFetchJson('create-checkout', getToken, {
         method: 'POST',
-        body: { plan },
+        body: {
+          plan
+        }
       });
       const url = (data as any)?.url as string | undefined;
       if (!url) throw new Error('No checkout URL');
@@ -111,10 +123,11 @@ const [uploadingLight, setUploadingLight] = useState(false);
       toast.error(e?.message || 'Failed to start checkout');
     }
   }
-
   async function openPortal() {
     try {
-      const data = await edgeFetchJson('customer-portal', getToken, { method: 'POST' });
+      const data = await edgeFetchJson('customer-portal', getToken, {
+        method: 'POST'
+      });
       const url = (data as any)?.url as string | undefined;
       if (!url) throw new Error('No portal URL');
       window.open(url, '_blank');
@@ -122,17 +135,17 @@ const [uploadingLight, setUploadingLight] = useState(false);
       toast.error(e?.message || 'Failed to open portal');
     }
   }
-
   async function handleStripeConnect() {
     try {
-      const data = await edgeFetchJson('connect-onboarding-link', getToken, { method: 'POST' });
+      const data = await edgeFetchJson('connect-onboarding-link', getToken, {
+        method: 'POST'
+      });
       const url = (data as any)?.url as string | undefined;
       if (url) window.open(url, '_blank');
     } catch (e: any) {
       toast.error(e?.message || 'Failed to start Stripe onboarding');
     }
   }
-
   useEffect(() => {
     // Hydrate business from server to ensure persistence across devices
     if (!isSignedIn) return;
@@ -153,8 +166,8 @@ const [uploadingLight, setUploadingLight] = useState(false);
               estPrefix: b.est_prefix ?? store.business.numbering.estPrefix,
               estSeq: Number(b.est_seq ?? store.business.numbering.estSeq) || store.business.numbering.estSeq,
               invPrefix: b.inv_prefix ?? store.business.numbering.invPrefix,
-              invSeq: Number(b.inv_seq ?? store.business.numbering.invSeq) || store.business.numbering.invSeq,
-            },
+              invSeq: Number(b.inv_seq ?? store.business.numbering.invSeq) || store.business.numbering.invSeq
+            }
           });
         }
         // Auto-refresh subscription on mount and after checkout redirect
@@ -169,20 +182,22 @@ const [uploadingLight, setUploadingLight] = useState(false);
       }
     })();
   }, [isSignedIn]);
-
-  return (
-    <AppLayout title="Settings">
+  return <AppLayout title="Settings">
       <div className="grid md:grid-cols-2 gap-6">
         <Card>
           <CardHeader><CardTitle>Business Profile</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             <div>
               <Label>Name</Label>
-              <Input value={store.business.name} onChange={(e)=>store.setBusiness({ name: e.target.value })} />
+              <Input value={store.business.name} onChange={e => store.setBusiness({
+              name: e.target.value
+            })} />
             </div>
             <div>
               <Label>Phone</Label>
-              <Input value={store.business.phone} onChange={(e)=>store.setBusiness({ phone: e.target.value })} />
+              <Input value={store.business.phone} onChange={e => store.setBusiness({
+              phone: e.target.value
+            })} />
             </div>
           </CardContent>
         </Card>
@@ -196,7 +211,7 @@ const [uploadingLight, setUploadingLight] = useState(false);
                   <BusinessLogo size={40} src={store.business.logoUrl} alt="Dark icon preview" />
                 </div>
                 <div className="flex-1 grid gap-2 sm:grid-cols-[1fr_auto]">
-                  <Input type="file" accept="image/png,image/svg+xml,image/webp,image/jpeg" onChange={(e)=>setDarkFile(e.target.files?.[0] || null)} />
+                  <Input type="file" accept="image/png,image/svg+xml,image/webp,image/jpeg" onChange={e => setDarkFile(e.target.files?.[0] || null)} />
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span className="inline-flex">
@@ -218,7 +233,7 @@ const [uploadingLight, setUploadingLight] = useState(false);
                 <BusinessLogo size={40} src={store.business.lightLogoUrl} alt="Light icon preview" />
               </div>
               <div className="flex-1 grid gap-2 sm:grid-cols-[1fr_auto]">
-                <Input type="file" accept="image/png,image/svg+xml,image/webp,image/jpeg" onChange={(e)=>setLightFile(e.target.files?.[0] || null)} />
+                <Input type="file" accept="image/png,image/svg+xml,image/webp,image/jpeg" onChange={e => setLightFile(e.target.files?.[0] || null)} />
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <span className="inline-flex">
@@ -243,7 +258,7 @@ const [uploadingLight, setUploadingLight] = useState(false);
                 <div className="text-sm text-muted-foreground">Status</div>
                 <div className="text-sm">{sub?.subscribed ? `Active • ${sub?.subscription_tier || ''}` : 'Not subscribed'}</div>
               </div>
-              <Button size="sm" variant="outline" onClick={refreshSubscription} disabled={subLoading}>{subLoading ? 'Refreshing…' : 'Refresh'}</Button>
+              
             </div>
             <div className="flex flex-wrap gap-2">
               <Button size="sm" onClick={() => startCheckout('monthly')}>Start Monthly ($50)</Button>
@@ -256,21 +271,10 @@ const [uploadingLight, setUploadingLight] = useState(false);
         <Card className="md:col-span-2">
           <CardHeader><CardTitle>Payouts</CardTitle></CardHeader>
           <CardContent>
-            <ConnectBanner
-              loading={!!statusLoading}
-              error={statusError ? statusError.message : null}
-              chargesEnabled={connectStatus?.chargesEnabled}
-              payoutsEnabled={connectStatus?.payoutsEnabled}
-              detailsSubmitted={connectStatus?.detailsSubmitted}
-              bankLast4={connectStatus?.bank?.last4 ?? null}
-              scheduleText={connectStatus?.schedule ? `${connectStatus.schedule.interval}${connectStatus.schedule.delay_days ? `, +${connectStatus.schedule.delay_days} days` : ""}` : null}
-              onConnect={handleStripeConnect}
-              onRefresh={() => refetchStatus()}
-            />
+            <ConnectBanner loading={!!statusLoading} error={statusError ? statusError.message : null} chargesEnabled={connectStatus?.chargesEnabled} payoutsEnabled={connectStatus?.payoutsEnabled} detailsSubmitted={connectStatus?.detailsSubmitted} bankLast4={connectStatus?.bank?.last4 ?? null} scheduleText={connectStatus?.schedule ? `${connectStatus.schedule.interval}${connectStatus.schedule.delay_days ? `, +${connectStatus.schedule.delay_days} days` : ""}` : null} onConnect={handleStripeConnect} onRefresh={() => refetchStatus()} />
           </CardContent>
         </Card>
 
       </div>
-    </AppLayout>
-  );
+    </AppLayout>;
 }
