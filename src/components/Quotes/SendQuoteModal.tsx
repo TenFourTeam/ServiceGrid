@@ -127,7 +127,18 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
             <div className="h-px bg-border" />
             <div className="space-y-2">
               <div className="text-sm font-medium">Preview</div>
-              <div className="border rounded-md p-4 max-h-[50vh] overflow-auto bg-background" dangerouslySetInnerHTML={{ __html: previewHtml }} />
+              <div className="relative">
+                <div className="absolute inset-x-0 top-0 z-10 flex justify-center">
+                  <div className="mt-2 px-2 py-0.5 text-xs rounded-md bg-muted text-muted-foreground">
+                    Preview only. Links and buttons are disabled.
+                  </div>
+                </div>
+                <div
+                  className="email-preview border rounded-md p-4 pt-8 max-h-[50vh] overflow-auto bg-background"
+                  aria-label="Email preview (non-interactive)"
+                  dangerouslySetInnerHTML={{ __html: previewHtml }}
+                />
+              </div>
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={sending}>Cancel</Button>

@@ -136,3 +136,9 @@ All colors MUST be HSL.
     animation: new-job-highlight 1.5s ease-out 2;
   }
 }
+
+/* Email preview safety: disable interactivity inside previews */
+.email-preview :is(a, button, [role="button"], input, select, textarea, label, summary, .btn, [onclick]) {
+  pointer-events: none !important;
+  cursor: default !important;
+}
