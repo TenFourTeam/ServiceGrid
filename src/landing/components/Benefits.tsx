@@ -1,0 +1,36 @@
+import { content } from "../content";
+
+function CheckIcon() {
+  return (
+    <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" className="text-primary">
+      <path fill="currentColor" d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/>
+    </svg>
+  );
+}
+
+export function Benefits() {
+  return (
+    <section id="benefits" aria-labelledby="benefits-title" className="container py-16 md:py-24">
+      <div className="mx-auto max-w-3xl text-center" data-reveal>
+        <h2 id="benefits-title" className="text-3xl md:text-4xl font-bold tracking-tight">Why teams switch to TenFour</h2>
+        <p className="mt-3 text-muted-foreground">Fewer clicks, fewer calls, faster cashflow.</p>
+      </div>
+
+      <div className="mt-10 grid sm:grid-cols-2 gap-6">
+        {content.benefits.map((b, i) => (
+          <article key={b.title} className="rounded-lg border bg-card p-6 shadow-subtle" data-reveal style={{"--stagger": i} as any}>
+            <div className="flex items-start gap-3">
+              <div className="mt-1">
+                <CheckIcon />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg">{b.title}</h3>
+                <p className="mt-1 text-muted-foreground">{b.desc}</p>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}

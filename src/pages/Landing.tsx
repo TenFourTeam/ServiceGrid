@@ -1,17 +1,25 @@
 import { useEffect } from "react";
-import { SignedOut, SignedIn, SignInButton, useAuth } from "@clerk/clerk-react";
+import { useAuth } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import "@/landing/animations.css";
+import { Hero } from "@/landing/components/Hero";
+import { ProofStrip } from "@/landing/components/ProofStrip";
+import { Benefits } from "@/landing/components/Benefits";
+import { HighlightsSticky } from "@/landing/components/HighlightsSticky";
+import { FAQ } from "@/landing/components/FAQ";
+import { CTASection } from "@/landing/components/CTASection";
+import { Footer } from "@/landing/components/Footer";
+import { initScrollOrchestrator } from "@/landing/scrollOrchestrator";
 
 export default function Landing() {
   const { isSignedIn } = useAuth();
   const navigate = useNavigate();
 
-  // SEO: title, meta description, canonical, structured data
+  // SEO: title, meta description, canonical, structured data, OG/Twitter
   useEffect(() => {
-    document.title = "TenFour Lawn — Simple scheduling, quotes, invoices";
+    document.title = "TenFour Lawn — Schedule, quotes, invoices without the back-and-forth.";
 
-    const ensureMeta = (name: string, content: string) => {
+    const ensureMetaName = (name: string, content: string) => {
       let el = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement | null;
       if (!el) {
         el = document.createElement("meta");
@@ -21,11 +29,22 @@ export default function Landing() {
       el.setAttribute("content", content);
     };
 
-    ensureMeta(
+    const ensureMetaProp = (property: string, content: string) => {
+      let el = document.querySelector(`meta[property="${property}"]`) as HTMLMetaElement | null;
+      if (!el) {
+        el = document.createElement("meta");
+        el.setAttribute("property", property);
+        document.head.appendChild(el);
+      }
+      el.setAttribute("content", content);
+    };
+
+    ensureMetaName(
       "description",
       "Run your lawn business with effortless scheduling, quotes and invoices."
     );
 
+    // Canonical
     let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
     if (!canonical) {
       canonical = document.createElement("link");
@@ -33,6 +52,15 @@ export default function Landing() {
       document.head.appendChild(canonical);
     }
     canonical.setAttribute("href", `${window.location.origin}/`);
+
+    // OG/Twitter
+    ensureMetaProp("og:title", document.title);
+    ensureMetaProp("og:description", "Run your lawn business with effortless scheduling, quotes and invoices.");
+    ensureMetaProp("og:type", "website");
+    ensureMetaProp("og:url", window.location.href);
+    ensureMetaName("twitter:card", "summary_large_image");
+    ensureMetaName("twitter:title", document.title);
+    ensureMetaName("twitter:description", "Run your lawn business with effortless scheduling, quotes and invoices.");
 
     const ld = document.createElement("script");
     ld.type = "application/ld+json";
@@ -46,6 +74,8 @@ export default function Landing() {
     });
     document.head.appendChild(ld);
 
+    initScrollOrchestrator();
+
     return () => {
       document.head.contains(ld) && document.head.removeChild(ld);
     };
@@ -58,40 +88,13 @@ export default function Landing() {
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <section className="container mx-auto px-6 py-16 flex min-h-screen items-center">
-        <article className="mx-auto max-w-3xl text-center space-y-8">
-          <header>
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
-              Run your lawn business on autopilot
-            </h1>
-            <p className="mt-4 text-lg md:text-xl text-muted-foreground">
-              Scheduling, quotes, invoices, and payments — all in one simple app.
-            </p>
-          </header>
-
-          <div className="flex items-center justify-center gap-3">
-            <SignedOut>
-              <SignInButton
-                mode="modal"
-                forceRedirectUrl="/calendar"
-                appearance={{
-                  elements: {
-                    modalBackdrop: "fixed inset-0 bg-background",
-                  },
-                }}
-              >
-                <Button size="lg" variant="cta">Get started</Button>
-              </SignInButton>
-            </SignedOut>
-
-            <SignedIn>
-              <Button size="lg" onClick={() => navigate("/calendar", { replace: true })}>
-                Open app
-              </Button>
-            </SignedIn>
-          </div>
-        </article>
-      </section>
+      <Hero />
+      <ProofStrip />
+      <Benefits />
+      <HighlightsSticky />
+      <FAQ />
+      <CTASection />
+      <Footer />
     </main>
   );
 }
