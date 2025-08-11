@@ -36,6 +36,9 @@ export function Hero() {
               Try for free
             </Button>
           </SignUpButton>
+          <Button asChild size="lg" variant="outline" className="hover-scale">
+            <a href="#invoice" aria-label="See invoicing step">See invoicing</a>
+          </Button>
         </div>
 
         <p className="mt-3 text-xs text-muted-foreground" data-reveal style={{"--stagger": 4} as any}>

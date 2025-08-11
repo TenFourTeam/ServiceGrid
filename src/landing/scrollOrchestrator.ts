@@ -116,9 +116,12 @@ export function initScrollOrchestrator() {
       const el = steps.find((s) => s.getAttribute("data-step") === desiredKey);
       el?.scrollIntoView({ behavior: "smooth", block: "center" });
     } else {
-      // Initialize first
-      const firstKey = (steps[0]?.getAttribute("data-step") as HighlightKey) || content.highlights.steps[0].key;
-      activate(firstKey);
+      // Initialize to "invoice" if present, otherwise first
+      const invoiceKey = (keys.includes("invoice" as HighlightKey) ? ("invoice" as HighlightKey) : null);
+      const initialKey =
+        invoiceKey ??
+        ((steps[0]?.getAttribute("data-step") as HighlightKey) || content.highlights.steps[0].key);
+      activate(initialKey);
     }
 
     // React to manual hash changes

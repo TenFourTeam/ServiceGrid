@@ -18,7 +18,7 @@ function VisualCard({ title, imageSrc, alt }: { title: string; imageSrc?: string
             decoding="async"
             className="mx-auto max-h-56 w-auto object-contain rounded-md"
             loading="lazy"
-            onError={() => setBroken(true)}
+            onError={() => { console.warn('Visual image failed to load', { src: imageSrc, alt: label }); setBroken(true); }}
           />
         ) : isInvoice ? (
           <div className="mx-auto mb-4 h-40 w-auto text-muted-foreground">
