@@ -66,3 +66,29 @@
   }
   .hover-scale { transition: none !important; }
 }
+
+/* Black & white animated background utilities */
+@keyframes bw-pan {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-120px); }
+}
+
+@keyframes bw-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(12px); }
+}
+
+.bw-pan-slow {
+  animation: bw-pan 30s linear infinite;
+  will-change: transform;
+}
+
+.bw-float {
+  animation: bw-float 14s ease-in-out infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bw-pan-slow, .bw-float { animation: none !important; }
+}
+

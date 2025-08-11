@@ -1,6 +1,7 @@
 import { SignInButton, SignUpButton } from "@clerk/clerk-react";
 import { Button } from "@/components/ui/button";
 import { content } from "../content";
+import { BWAnimatedBackground } from "./BWAnimatedBackground";
 
 function LogoMark() {
   return (
@@ -17,11 +18,8 @@ export function Hero() {
   const copy = content.hero[variant as "A" | "B"];
 
   return (
-    <section aria-labelledby="hero-title" className="relative container py-16 md:py-24 bg-gradient-to-b from-primary/5 to-background">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute left-1/2 -top-10 h-64 w-64 -translate-x-1/2 rounded-full bg-primary/30 blur-3xl" />
-        <div className="absolute right-[10%] -bottom-10 h-40 w-40 rounded-full bg-secondary/30 blur-2xl" />
-      </div>
+    <section aria-labelledby="hero-title" className="relative container py-16 md:py-24">
+      <BWAnimatedBackground />
 
       <div className="mx-auto max-w-3xl text-center">
         <p className="text-sm text-muted-foreground" data-reveal style={{"--stagger": 0} as any}>{copy.eyebrow}</p>
