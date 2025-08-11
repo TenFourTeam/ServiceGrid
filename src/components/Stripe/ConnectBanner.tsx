@@ -57,8 +57,8 @@ export default function ConnectBanner({
             <Button variant="outline" onClick={onRefresh} size="sm">Refresh</Button>
           </> : <>
             <span className="text-sm">Your account is connected. You can manage payout settings in your Stripe Dashboard.</span>
-            {onDisconnect && <Button variant="destructive" onClick={onDisconnect} size="sm">Disconnect</Button>}
             <Button variant="outline" onClick={onRefresh} size="sm">Refresh</Button>
+            {onDisconnect && <Button variant="outline" onClick={onDisconnect} size="sm">Disconnect</Button>}
           </>}
       </AlertDescription>
     </Alert>;

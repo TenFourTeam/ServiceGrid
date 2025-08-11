@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "@/store/useAppStore";
 import {
   Sidebar,
@@ -19,12 +19,13 @@ import {
   FileText,
   Receipt,
   Users,
-  Settings as SettingsIcon,
   Wrench,
+  User as UserIcon,
 } from "lucide-react";
 
 import BusinessLogo from "@/components/BusinessLogo";
-
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useClerk } from "@clerk/clerk-react";
 
 const items = [
   { title: "Calendar", url: "/calendar", icon: CalendarIcon },
@@ -32,12 +33,13 @@ const items = [
   { title: "Quotes", url: "/quotes", icon: FileText },
   { title: "Invoices", url: "/invoices", icon: Receipt },
   { title: "Customers", url: "/customers", icon: Users },
-  { title: "Settings", url: "/settings", icon: SettingsIcon },
 ];
 
 export default function AppSidebar() {
   const { business } = useStore();
   const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut } = useClerk();
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   
@@ -104,6 +106,30 @@ export default function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+
+      <SidebarFooter>
+        <div className="p-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="w-full flex items-center gap-2 rounded-md border px-2 py-2 bg-background hover:bg-muted transition"
+                aria-label="User menu"
+              >
+                <UserIcon className="h-5 w-5 text-primary" />
+                <span className="truncate group-data-[collapsible=icon]:hidden">Account</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="right" align="start" className="w-56">
+              <DropdownMenuLabel>Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate('/settings')}>Settings</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => signOut()}>Sign out</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </SidebarFooter>
 
     </Sidebar>
   );
