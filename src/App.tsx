@@ -17,8 +17,8 @@ const QuotesPage = lazy(() => import("./pages/Quotes"));
 const InvoicesPage = lazy(() => import("./pages/Invoices"));
 const CustomersPage = lazy(() => import("./pages/Customers"));
 const SettingsPage = lazy(() => import("./pages/Settings"));
+const LegalPage = lazy(() => import("./pages/Legal"));
 const NotFound = lazy(() => import("./pages/NotFound"));
-
 
 const ClerkAuthPage = lazy(() => import("./pages/ClerkAuth"));
 const QuoteActionPage = lazy(() => import("./pages/QuoteAction"));
@@ -47,12 +47,13 @@ const App = () => (
                    <Route path="/work-orders" element={<ProtectedRoute><WorkOrdersPage /></ProtectedRoute>} />
                    <Route path="/quotes" element={<ProtectedRoute><QuotesPage /></ProtectedRoute>} />
                    <Route path="/estimates" element={<Navigate to="/quotes" replace />} />
-                   <Route path="/invoices" element={<ProtectedRoute><InvoicesPage /></ProtectedRoute>} />
-                   <Route path="/customers" element={<ProtectedRoute><CustomersPage /></ProtectedRoute>} />
-                   <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-                   <Route path="/payment-success" element={<PaymentSuccessPage />} />
-                   <Route path="/payment-canceled" element={<PaymentCanceledPage />} />
-                   <Route path="/invoice-pay" element={<InvoicePayPage />} />
+                    <Route path="/invoices" element={<ProtectedRoute><InvoicesPage /></ProtectedRoute>} />
+                    <Route path="/customers" element={<ProtectedRoute><CustomersPage /></ProtectedRoute>} />
+                    <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+                    <Route path="/legal" element={<ProtectedRoute><LegalPage /></ProtectedRoute>} />
+                    <Route path="/payment-success" element={<PaymentSuccessPage />} />
+                    <Route path="/payment-canceled" element={<PaymentCanceledPage />} />
+                    <Route path="/invoice-pay" element={<InvoicePayPage />} />
                    <Route path="*" element={<NotFound />} />
                  </Routes>
               </Suspense>
