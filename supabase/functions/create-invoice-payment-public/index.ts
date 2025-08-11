@@ -38,7 +38,7 @@ serve(async (req) => {
     // Fetch invoice with service role (bypass RLS), verify token
     const { data: invoice, error: invErr } = await supabase
       .from("invoices")
-      .select("id, number, total, status, public_token, owner_id, customer_id")
+      .select("id, number, total, status, public_token, owner_id, customer_id, business_id")
       .eq("id", invoice_id)
       .single();
 
@@ -64,12 +64,24 @@ serve(async (req) => {
       });
     }
 
-    // Optionally fetch customer email to prefill Checkout
+    // Optionally fetch customer email to prefill Checkout and vendor account details
     const { data: customer } = await supabase
       .from("customers")
       .select("email, name")
       .eq("id", invoice.customer_id)
       .maybeSingle();
+
+    // Fetch business Stripe Connect info
+    const { data: business } = await supabase
+      .from("businesses")
+      .select("stripe_account_id, application_fee_bps")
+      .eq("id", invoice.business_id)
+      .maybeSingle();
+
+    const destination = business?.stripe_account_id || null;
+    const feeBps = typeof business?.application_fee_bps === "number" ? business.application_fee_bps : 0;
+    const amount = invoice.total || 0;
+    const applicationFeeAmount = destination && feeBps > 0 ? Math.round((amount * feeBps) / 10000) : undefined;
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) {
@@ -79,6 +91,19 @@ serve(async (req) => {
       });
     }
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
+
+    const paymentIntentData: Record<string, any> = {
+      metadata: {
+        invoice_id: invoice.id,
+        owner_id: invoice.owner_id,
+      },
+    };
+    if (destination) {
+      paymentIntentData.transfer_data = { destination };
+      if (typeof applicationFeeAmount === "number") {
+        paymentIntentData.application_fee_amount = applicationFeeAmount;
+      }
+    }
 
     const session = await stripe.checkout.sessions.create({
       customer_email: customer?.email || undefined,
@@ -95,10 +120,7 @@ serve(async (req) => {
       ],
       success_url: `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/payment-canceled`,
-      metadata: {
-        invoice_id: invoice.id,
-        owner_id: invoice.owner_id,
-      },
+      payment_intent_data: paymentIntentData,
     });
 
     return new Response(JSON.stringify({ url: session.url }), {

@@ -54,3 +54,10 @@ verify_jwt = false
 # Public function to start invoice payment without auth (uses public token)
 [functions.create-invoice-payment-public]
 verify_jwt = false
+
+# Stripe Connect onboarding and status (public, uses Clerk bearer token internally)
+[functions.connect-onboarding-link]
+verify_jwt = false
+
+[functions.connect-account-status]
+verify_jwt = false
