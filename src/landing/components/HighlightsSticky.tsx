@@ -92,7 +92,7 @@ export function HighlightsSticky() {
             <div key={s.key} aria-label={s.title} data-visual={s.key}>
               <VisualCard
                 title={s.title}
-                imageSrc={s.key === "invoice" ? "/lovable-uploads/11215732-46ca-4740-9950-73ef597b21af.png" : undefined}
+                imageSrc={s.key === "invoice" ? "/lovable-uploads/42854089-cd59-4b57-ba5c-47f279ef79f1.png" : undefined}
                 alt={s.key === "invoice" ? "Invoice and get paid" : s.title}
               />
             </div>
