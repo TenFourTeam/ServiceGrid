@@ -3,10 +3,8 @@ import { useAuth } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
 import "@/landing/animations.css";
 import { Hero } from "@/landing/components/Hero";
-import { ProofStrip } from "@/landing/components/ProofStrip";
 import { Benefits } from "@/landing/components/Benefits";
 import { HighlightsSticky } from "@/landing/components/HighlightsSticky";
-import { FAQ } from "@/landing/components/FAQ";
 import { CTASection } from "@/landing/components/CTASection";
 import { Footer } from "@/landing/components/Footer";
 import { initScrollOrchestrator } from "@/landing/scrollOrchestrator";
@@ -89,10 +87,8 @@ export default function Landing() {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <Hero />
-      <ProofStrip />
       <Benefits />
       <HighlightsSticky />
-      <FAQ />
       <CTASection />
       <Footer />
     </main>

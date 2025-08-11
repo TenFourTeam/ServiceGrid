@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { SignUpButton } from "@clerk/clerk-react";
 import { content } from "../content";
 
 export function CTASection() {
@@ -11,14 +12,11 @@ export function CTASection() {
       <div className="mx-auto max-w-2xl text-center" data-reveal>
         <h2 id="cta-title" className="text-3xl md:text-4xl font-bold tracking-tight">{content.cta.heading}</h2>
         <div className="mt-6 flex items-center justify-center gap-3">
-          <Button asChild size="lg" className="hover-scale">
-            <a href={cta.href}
-               // TODO: event footer_cta_click { cta: "join_waitlist" | "book_demo" }
-            >
+          <SignUpButton mode="modal" forceRedirectUrl="/calendar">
+            <Button size="lg" className="hover-scale">
               {cta.label}
-            </a>
-          </Button>
-          <a href="#benefits" className="story-link text-sm text-muted-foreground">Learn more</a>
+            </Button>
+          </SignUpButton>
         </div>
         <p className="mt-3 text-xs text-muted-foreground">{content.cta.subcopy}</p>
       </div>

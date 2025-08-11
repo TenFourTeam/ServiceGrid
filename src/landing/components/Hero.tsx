@@ -1,4 +1,4 @@
-import { SignInButton } from "@clerk/clerk-react";
+import { SignInButton, SignUpButton } from "@clerk/clerk-react";
 import { Button } from "@/components/ui/button";
 import { content } from "../content";
 
@@ -24,9 +24,9 @@ export function Hero() {
           <span className="sr-only">TenFour Lawn</span>
         </div>
         <SignInButton mode="modal" forceRedirectUrl="/calendar">
-          <button className="text-sm underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded">
+          <Button variant="ghost" size="sm" className="hover-scale">
             Sign in
-          </button>
+          </Button>
         </SignInButton>
       </header>
 
@@ -40,18 +40,11 @@ export function Hero() {
         </p>
 
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3" data-reveal style={{"--stagger": 3} as any}>
-          <Button asChild size="lg" variant="default" className="hover-scale">
-            <a href={copy.primaryCta.href} aria-label={copy.primaryCta.label}
-               // TODO: event hero_cta_click { cta: "join_waitlist" | "book_demo", variant: "A" | "B" }
-            >
-              {copy.primaryCta.label}
-            </a>
-          </Button>
-          <Button asChild size="lg" variant="secondary" className="hover-scale">
-            <a href={copy.secondaryCta.href} aria-label={copy.secondaryCta.label}>
-              {copy.secondaryCta.label}
-            </a>
-          </Button>
+          <SignUpButton mode="modal" forceRedirectUrl="/calendar">
+            <Button size="lg" variant="default" className="hover-scale">
+              Try for free
+            </Button>
+          </SignUpButton>
         </div>
 
         <p className="mt-3 text-xs text-muted-foreground" data-reveal style={{"--stagger": 4} as any}>
