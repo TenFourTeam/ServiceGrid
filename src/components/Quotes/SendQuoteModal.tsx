@@ -51,7 +51,13 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
   // Reset state on open/quote change
   useEffect(() => {
     if (open) {
-      setTo(toEmail ?? "");
+      const defaultTo = (() => {
+        if (toEmail && toEmail.trim()) return toEmail;
+        if (!quote) return "";
+        const cust = store.customers.find(c => c.id === quote.customerId);
+        return cust?.email || "";
+      })();
+      setTo(defaultTo);
       setSubject(quote ? `${store.business.name} • Quote ${quote.number}` : "");
       setMessage("");
     }
@@ -60,7 +66,7 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
   async function send() {
     if (!quote) return;
     if (!to) {
-      toast.error("Please enter a recipient email");
+      toast.error("Customer has no email on file. Add an email to the customer to send.");
       return;
     }
     setSending(true);
@@ -75,7 +81,7 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
       console.info('[SendQuoteModal] sending quote email', { quoteId: quote.id, to });
       await edgeFetchJson("resend-send-email", getToken, {
         method: "POST",
-        body: { to, subject: subject || defaultSubject, html: finalHtml, quote_id: quote.id, from_name: store.business.name },
+        body: { subject: subject || defaultSubject, html: finalHtml, quote_id: quote.id, from_name: store.business.name },
       });
       console.info('[SendQuoteModal] sent', { quoteId: quote.id });
       // Optimistically mark as Sent in React Query cache for immediate UI update
@@ -112,8 +118,8 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
           <div className="space-y-6">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-muted-foreground">To</label>
-                <Input value={to} onChange={(e) => setTo(e.target.value)} placeholder="customer@example.com" />
+                <label className="text-sm font-medium text-muted-foreground">To (from customer)</label>
+                <Input value={to} disabled placeholder="No email on file" />
               </div>
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-muted-foreground">Subject</label>
@@ -142,7 +148,7 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={sending}>Cancel</Button>
-              <Button onClick={send} disabled={sending || (!!quote && (quote.status === 'Sent' || quote.status === 'Approved'))}>{sending ? 'Sending…' : 'Send Email'}</Button>
+              <Button onClick={send} disabled={sending || !to || (!!quote && (quote.status === 'Sent' || quote.status === 'Approved'))}>{sending ? 'Sending…' : 'Send Email'}</Button>
             </div>
           </div>
       </DialogContent>

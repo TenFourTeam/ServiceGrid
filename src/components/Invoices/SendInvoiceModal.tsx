@@ -63,7 +63,7 @@ const previewHtml = useMemo(() => {
   async function send() {
     if (!invoice) return;
     if (!to) {
-      toast.error("Please enter a recipient email");
+      toast.error("Customer has no email on file. Add an email to the customer to send.");
       return;
     }
     setSending(true);
@@ -78,7 +78,7 @@ const previewHtml = useMemo(() => {
       console.info('[SendInvoiceModal] sending invoice email', { invoiceId: invoice.id, to });
       await edgeFetchJson("resend-send-email", getToken, {
         method: "POST",
-        body: { to, subject: subject || defaultSubject, html: finalHtml, invoice_id: invoice.id, from_name: store.business.name, reply_to: store.business.replyToEmail },
+        body: { subject: subject || defaultSubject, html: finalHtml, invoice_id: invoice.id, from_name: store.business.name, reply_to: store.business.replyToEmail },
       });
       console.info('[SendInvoiceModal] sent', { invoiceId: invoice.id });
       // Optimistically mark as Sent
@@ -115,8 +115,8 @@ const previewHtml = useMemo(() => {
         <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-muted-foreground">To</label>
-              <Input value={to} onChange={(e) => setTo(e.target.value)} placeholder="customer@example.com" />
+              <label className="text-sm font-medium text-muted-foreground">To (from customer)</label>
+              <Input value={to} disabled placeholder="No email on file" />
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-muted-foreground">Subject</label>
@@ -145,7 +145,7 @@ const previewHtml = useMemo(() => {
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={sending}>Cancel</Button>
-            <Button onClick={send} disabled={sending}>{sending ? 'Sending…' : 'Send Email'}</Button>
+            <Button onClick={send} disabled={sending || !to}>{sending ? 'Sending…' : 'Send Email'}</Button>
           </div>
         </div>
       </DialogContent>

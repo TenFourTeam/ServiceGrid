@@ -75,7 +75,7 @@ serve(async (req: Request): Promise<Response> => {
   const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
 
   let payload: {
-    to: string; subject: string; html: string; quote_id?: string; job_id?: string; invoice_id?: string; reply_to?: string; from_name?: string;
+    to?: string; subject: string; html: string; quote_id?: string; job_id?: string; invoice_id?: string; reply_to?: string; from_name?: string;
   };
   try {
     payload = await req.json();
@@ -86,37 +86,85 @@ serve(async (req: Request): Promise<Response> => {
     });
   }
 
-  if (!payload?.to || !payload?.subject || !payload?.html) {
-    return new Response(JSON.stringify({ error: "Missing required fields (to, subject, html)" }), {
+  // Require subject and html
+  if (!payload?.subject || !payload?.html) {
+    return new Response(JSON.stringify({ error: "Missing required fields (subject, html)" }), {
       status: 400,
       headers: { "Content-Type": "application/json", ...getCorsHeaders(req) },
     });
   }
 
-  // Basic validations
+  // Resolve recipient from related entity (invoice, quote, or job) tied to the authenticated owner
+  let recipientEmail: string | null = null;
+  try {
+    if (payload.invoice_id) {
+      const { data: inv } = await supabaseAdmin
+        .from('invoices')
+        .select('id,customer_id,business_id')
+        .eq('id', payload.invoice_id)
+        .limit(1);
+      if (!inv || !inv.length) {
+        return new Response(JSON.stringify({ error: 'Invoice not found' }), { status: 404, headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) } });
+      }
+      const businessId = inv[0].business_id;
+      const { data: b } = await supabaseAdmin.from('businesses').select('owner_id').eq('id', businessId).limit(1);
+      if (!b || !b.length || b[0].owner_id !== ownerId) {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) } });
+      }
+      const { data: cust } = await supabaseAdmin.from('customers').select('email').eq('id', inv[0].customer_id).limit(1);
+      recipientEmail = (cust && cust.length) ? (cust[0].email as string | null) : null;
+    } else if (payload.quote_id) {
+      const { data: q } = await supabaseAdmin
+        .from('quotes')
+        .select('id,customer_id,business_id')
+        .eq('id', payload.quote_id)
+        .limit(1);
+      if (!q || !q.length) {
+        return new Response(JSON.stringify({ error: 'Quote not found' }), { status: 404, headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) } });
+      }
+      const businessId = q[0].business_id;
+      const { data: b } = await supabaseAdmin.from('businesses').select('owner_id').eq('id', businessId).limit(1);
+      if (!b || !b.length || b[0].owner_id !== ownerId) {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) } });
+      }
+      const { data: cust } = await supabaseAdmin.from('customers').select('email').eq('id', q[0].customer_id).limit(1);
+      recipientEmail = (cust && cust.length) ? (cust[0].email as string | null) : null;
+    } else if (payload.job_id) {
+      const { data: j } = await supabaseAdmin
+        .from('jobs')
+        .select('id,customer_id,business_id')
+        .eq('id', payload.job_id)
+        .limit(1);
+      if (!j || !j.length) {
+        return new Response(JSON.stringify({ error: 'Job not found' }), { status: 404, headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) } });
+      }
+      const businessId = j[0].business_id;
+      const { data: b } = await supabaseAdmin.from('businesses').select('owner_id').eq('id', businessId).limit(1);
+      if (!b || !b.length || b[0].owner_id !== ownerId) {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) } });
+      }
+      const { data: cust } = await supabaseAdmin.from('customers').select('email').eq('id', j[0].customer_id).limit(1);
+      recipientEmail = (cust && cust.length) ? (cust[0].email as string | null) : null;
+    } else {
+      return new Response(JSON.stringify({ error: 'Missing quote_id, invoice_id, or job_id' }), { status: 400, headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) } });
+    }
+  } catch (e) {
+    console.error('[resend-send-email] recipient resolution failed', e);
+    return new Response(JSON.stringify({ error: 'Failed to resolve recipient' }), { status: 500, headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) } });
+  }
+
   const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRe.test(payload.to)) {
-    return new Response(JSON.stringify({ error: "Invalid recipient email" }), {
+  if (!recipientEmail || !emailRe.test(recipientEmail)) {
+    return new Response(JSON.stringify({ error: 'Customer has no valid email on file' }), {
       status: 400,
-      headers: { "Content-Type": "application/json", ...getCorsHeaders(req) },
+      headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) },
     });
   }
-  if (payload.subject.length > 200) {
-    return new Response(JSON.stringify({ error: "Subject too long (max 200 chars)" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json", ...getCorsHeaders(req) },
-    });
-  }
-  if (payload.html.length > 200_000) {
-    return new Response(JSON.stringify({ error: "HTML content too large (max ~200KB)" }), {
-      status: 413,
-      headers: { "Content-Type": "application/json", ...getCorsHeaders(req) },
-    });
-  }
-  // Compute request hash for idempotency/logging
+
+  // Compute request hash for idempotency/logging (using derived recipient)
   const encoder = new TextEncoder();
-  const hash = toHex(await crypto.subtle.digest("SHA-256", encoder.encode(JSON.stringify({
-    to: payload.to, subject: payload.subject, html: payload.html, quote_id: payload.quote_id || null, job_id: payload.job_id || null, invoice_id: payload.invoice_id || null
+  const hash = toHex(await crypto.subtle.digest('SHA-256', encoder.encode(JSON.stringify({
+    to: recipientEmail, subject: payload.subject, html: payload.html, quote_id: payload.quote_id || null, job_id: payload.job_id || null, invoice_id: payload.invoice_id || null,
   }))));
 
   const resend = new Resend(resendApiKey);
@@ -147,7 +195,7 @@ serve(async (req: Request): Promise<Response> => {
   try {
     const sendRes = await resend.emails.send({
       from,
-      to: [payload.to],
+      to: [recipientEmail],
       subject: payload.subject,
       html: payload.html,
       text,
@@ -159,8 +207,8 @@ serve(async (req: Request): Promise<Response> => {
       console.error('Resend send error:', (sendRes as any)?.error);
 
       await supabaseAdmin.from('mail_sends').insert({
-        user_id: null, // Supabase auth not used; keeping null
-        to_email: payload.to,
+        user_id: ownerId,
+        to_email: recipientEmail,
         subject: payload.subject,
         status: 'failed',
         error_code: 'resend_error',
@@ -187,8 +235,8 @@ serve(async (req: Request): Promise<Response> => {
     const messageId = (sendRes as any)?.data?.id ?? null;
 
     await supabaseAdmin.from('mail_sends').insert({
-      user_id: null,
-      to_email: payload.to,
+      user_id: ownerId,
+      to_email: recipientEmail,
       subject: payload.subject,
       status: 'sent',
       error_code: null,
