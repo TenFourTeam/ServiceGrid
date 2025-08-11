@@ -12,9 +12,8 @@ import { toast } from 'sonner';
 import PickQuoteModal from '@/components/Jobs/PickQuoteModal';
 import { supabase } from '@/integrations/supabase/client';
 import JobShowModal from '@/components/Jobs/JobShowModal';
-const START_HOUR = 7;
-const END_HOUR = 19;
-const TOTAL_MIN = (END_HOUR - START_HOUR) * 60;
+const START_ANCHOR_HOUR = 5; // visual start at 5:00
+const TOTAL_MIN = 24 * 60;
 function dayKey(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().slice(0, 10);
 }
@@ -173,6 +172,15 @@ export function WeekCalendar({
   }
 const gridRef = useRef<HTMLDivElement>(null);
 const dayRefs = useRef<HTMLDivElement[]>([]);
+const minutesFromAnchor = (d: Date) => {
+  const m = minutesSinceStartOfDay(d);
+  const anchor = START_ANCHOR_HOUR * 60;
+  return m >= anchor ? m - anchor : m + (24 * 60 - anchor);
+};
+const minuteOfDayFromAnchorOffset = (offset: number) => {
+  const anchor = START_ANCHOR_HOUR * 60;
+  return (anchor + offset) % (24 * 60);
+};
   async function createJobFromQuote(quoteId: string) {
     try {
       if (!pendingSlot) {
@@ -244,7 +252,8 @@ const dayRefs = useRef<HTMLDivElement[]>([]);
 
     const start = new Date(day);
     start.setHours(0, 0, 0, 0);
-    start.setMinutes(START_HOUR * 60 + startBlock);
+    const minuteOfDay = minuteOfDayFromAnchorOffset(startBlock);
+    start.setMinutes(minuteOfDay);
 
     const end = new Date(start.getTime() + 60 * 60 * 1000); // default 60m
     setPendingSlot({ start, end });
@@ -290,11 +299,11 @@ function onDragStart(e: React.PointerEvent, job: Job) {
       const rect = dayEl.getBoundingClientRect();
       const y = clamp(ev.clientY - rect.top, 0, rect.height);
       const minsFromTop = y / rect.height * TOTAL_MIN;
-      const startMins = Math.round(minsFromTop / 15) * 15 + START_HOUR * 60; // snap 15m
-
+      const rounded = Math.round(minsFromTop / 15) * 15; // snap 15m
       const d = new Date(days[idx]);
       d.setHours(0, 0, 0, 0);
-      d.setMinutes(startMins);
+      const minuteOfDay = minuteOfDayFromAnchorOffset(rounded);
+      d.setMinutes(minuteOfDay);
       const end = new Date(d.getTime() + dur);
       latest = { startsAt: d.toISOString(), endsAt: end.toISOString() };
       upsertJob({ ...job, startsAt: latest.startsAt, endsAt: latest.endsAt });
@@ -348,12 +357,12 @@ function onDragStart(e: React.PointerEvent, job: Job) {
       const rect = dayEl.getBoundingClientRect();
       const y = clamp(ev.clientY - rect.top, 0, rect.height);
       const minsFromTop = y / rect.height * TOTAL_MIN;
-      const endMins = Math.round(minsFromTop / 15) * 15 + START_HOUR * 60; // snap 15m
+      const rounded = Math.round(minsFromTop / 15) * 15; // snap 15m
 
       const d = new Date(days[idx]);
       d.setHours(0,0,0,0);
       const newEnd = new Date(d);
-      newEnd.setMinutes(endMins);
+      newEnd.setMinutes(minuteOfDayFromAnchorOffset(rounded));
 
       const minEnd = new Date(new Date(job.startsAt).getTime() + 15*60*1000);
       latestEnd = newEnd < minEnd ? minEnd.toISOString() : newEnd.toISOString();
@@ -413,47 +422,63 @@ function onDragStart(e: React.PointerEvent, job: Job) {
           {/* Calendar grid */}
           <div className="grid grid-cols-[64px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-1">
             <div className="text-xs text-muted-foreground">
-              {Array.from({
-              length: END_HOUR - START_HOUR + 1
-            }, (_, i) => START_HOUR + i).map(h => <div key={h} className="h-16 pr-2 text-right">{h}:00</div>)}
+              {Array.from({ length: 25 }, (_, i) => (START_ANCHOR_HOUR + i) % 24).map(h => (
+                <div key={h + '-' + Math.random()} className="h-16 pr-2 text-right">{h}:00</div>
+              ))}
             </div>
-            {days.map((day, i) => (<div key={day.toISOString()} className="border rounded-md p-2 relative overflow-hidden" ref={(el) => { if (el) dayRefs.current[i] = el; }} onDoubleClick={(e) => handleEmptyDoubleClick(e, day)}>
+            {days.map((day, i) => (
+              <div
+                key={day.toISOString()}
+                className="border rounded-md p-2 relative overflow-hidden"
+                ref={(el) => { if (el) dayRefs.current[i] = el; }}
+                onDoubleClick={(e) => handleEmptyDoubleClick(e, day)}
+              >
                 {/* Weekend shading */}
                 {(day.getDay() === 0 || day.getDay() === 6) && <div className="absolute inset-0 bg-muted/20 pointer-events-none" />}
                 {/* transparent overlay */}
-                <div className="absolute inset-2" style={{
-              background: 'transparent'
-            }} />
+                <div className="absolute inset-2" style={{ background: 'transparent' }} />
                 {/* hour lines */}
-                {Array.from({
-              length: END_HOUR - START_HOUR
-            }, (_, i) => <div key={i} className="absolute left-0 right-0 border-t border-dashed" style={{
-              top: `${i / (END_HOUR - START_HOUR) * 100}%`
-            }} />)}
+                {Array.from({ length: 24 }, (_, i) => (
+                  <div key={i} className="absolute left-0 right-0 border-t border-dashed" style={{ top: `${i / 24 * 100}%` }} />
+                ))}
                 {/* current time line */}
                 {(() => {
-              const mins = minutesSinceStartOfDay(now) - START_HOUR * 60;
-              if (isSameDay(day, now) && mins >= 0 && mins <= TOTAL_MIN) {
-                const top = mins / TOTAL_MIN * 100;
-                return <div className="absolute left-2 right-2" style={{
-                  top: `${top}%`
-                }}>
-                        <div className="h-px bg-destructive" />
-                        <div className="absolute -top-1 -left-1 w-2 h-2 rounded-full bg-destructive" />
-                      </div>;
-              }
-              return null;
-            })()}
+                  if (!isSameDay(day, now)) return null;
+                  const mins = minutesFromAnchor(now);
+                  const top = mins / TOTAL_MIN * 100;
+                  return (
+                    <div className="absolute left-2 right-2" style={{ top: `${top}%` }}>
+                      <div className="h-px bg-destructive" />
+                      <div className="absolute -top-1 -left-1 w-2 h-2 rounded-full bg-destructive" />
+                    </div>
+                  );
+                })()}
                 {/* jobs */}
                 {dayJobs[dayKey(day)]?.map(j => {
-              const start = new Date(j.startsAt);
-              const end = new Date(j.endsAt);
-              const startMin = minutesSinceStartOfDay(start) - START_HOUR * 60;
-              const endMin = minutesSinceStartOfDay(end) - START_HOUR * 60;
-              const top = startMin / TOTAL_MIN * 100;
-              const height = Math.max(8, (endMin - startMin) / TOTAL_MIN * 100);
-              const customer = customers.find(c => c.id === j.customerId)?.name ?? 'Customer';
-              const color = j.status === 'Scheduled' ? 'bg-primary/10 border-primary' : j.status === 'In Progress' ? 'bg-background border-primary' : 'bg-success/10 border-success';
+                  const start = new Date(j.startsAt);
+                  const end = new Date(j.endsAt);
+                  const top = minutesFromAnchor(start) / TOTAL_MIN * 100;
+                  const minutesDuration = Math.max(15, Math.round((end.getTime() - start.getTime()) / 60000));
+                  const height = Math.max(8, minutesDuration / TOTAL_MIN * 100);
+                  const customer = customers.find(c => c.id === j.customerId)?.name ?? 'Customer';
+                  const color = j.status === 'Scheduled' ? 'bg-primary/10 border-primary' : j.status === 'In Progress' ? 'bg-background border-primary' : 'bg-success/10 border-success';
+                  return (
+                    <div key={j.id} className={`absolute left-2 right-2 border rounded-md px-2 py-1 text-xs ${color} ${highlightJobId === j.id ? 'ring-2 ring-primary' : ''}`}
+                      style={{ top: `${top}%`, height: `${height}%` }}
+                      onPointerDown={(e) => onDragStart(e, j)}
+                    >
+                      <div className="flex items-center justify-between gap-1">
+                        <div className="truncate font-medium">{(j as any).title || 'Job'}</div>
+                        <div className="opacity-70 whitespace-nowrap">{new Date(j.startsAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</div>
+                      </div>
+                      <div className="truncate text-muted-foreground">{customer}</div>
+                      <div className="absolute bottom-0 right-0 w-2 h-2 bg-primary rounded-sm cursor-ns-resize" onPointerDown={(e) => { e.stopPropagation(); onResizeStart(e as any, j); }} />
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
               return <div key={j.id} className={`absolute left-2 right-2 border rounded-md p-2 text-xs select-none ${j.status === 'Scheduled' ? 'cursor-grab active:cursor-grabbing' : 'cursor-not-allowed'} ${color} ${highlightJobId === j.id ? 'new-job-highlight ring-2 ring-success' : ''}`} style={{
                 top: `${top}%`,
                 height: `${height}%`

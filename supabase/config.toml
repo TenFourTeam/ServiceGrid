@@ -61,3 +61,6 @@ verify_jwt = false
 
 [functions.connect-account-status]
 verify_jwt = false
+
+[functions.connect-disconnect]
+verify_jwt = false

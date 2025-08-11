@@ -12,6 +12,7 @@ type Props = {
   scheduleText?: string | null;
   onConnect: () => void;
   onRefresh: () => void;
+  onDisconnect?: () => void;
 };
 export default function ConnectBanner({
   loading,
@@ -22,7 +23,8 @@ export default function ConnectBanner({
   bankLast4,
   scheduleText,
   onConnect,
-  onRefresh
+  onRefresh,
+  onDisconnect
 }: Props) {
   if (loading) {
     return <Alert>
@@ -55,6 +57,7 @@ export default function ConnectBanner({
             <Button variant="outline" onClick={onRefresh} size="sm">Refresh</Button>
           </> : <>
             <span className="text-sm">Your account is connected. You can manage payout settings in your Stripe Dashboard.</span>
+            {onDisconnect && <Button variant="destructive" onClick={onDisconnect} size="sm">Disconnect</Button>}
             <Button variant="outline" onClick={onRefresh} size="sm">Refresh</Button>
           </>}
       </AlertDescription>
