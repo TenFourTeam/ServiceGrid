@@ -103,3 +103,24 @@
   .bw-pan-slow, .bw-float, .bw-pan-diagonal { animation: none !important; }
 }
 
+/* CTA shine effect */
+.cta-shine{position:relative;overflow:hidden}
+.cta-shine::after{
+  content:"";
+  position:absolute;
+  inset:-1px;
+  background: linear-gradient(120deg, transparent 45%, rgba(255,255,255,.22) 50%, transparent 55%);
+  transform: translateX(-150%);
+  pointer-events:none;
+  mix-blend-mode: screen;
+  transition: opacity .2s ease;
+  animation: cta-shine-sweep 2.8s ease-in-out infinite;
+}
+@keyframes cta-shine-sweep{
+  0%{ transform: translateX(-150%) }
+  60%{ transform: translateX(110%) }
+  100%{ transform: translateX(110%) }
+}
+@media (prefers-reduced-motion: reduce){
+  .cta-shine::after{ animation: none }
+}

@@ -32,7 +32,7 @@ export function Hero() {
         "--stagger": 3
       } as any}>
           <SignUpButton mode="modal" forceRedirectUrl="/calendar">
-            <Button size="lg" variant="cta" className="hover-scale attention-ring">
+            <Button size="lg" variant="cta" className="hover-scale attention-ring cta-shine">
               Try for free
             </Button>
           </SignUpButton>
