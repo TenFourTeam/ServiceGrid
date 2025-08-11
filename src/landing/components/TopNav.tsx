@@ -38,8 +38,7 @@ export function TopNav() {
               width="112"
               height="24"
               loading="eager"
-              fetchPriority="high"
-              decoding="sync"
+              crossOrigin="anonymous"
               onError={() => setLogoError(true)}
             />
           )}
