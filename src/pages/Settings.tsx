@@ -35,30 +35,6 @@ export default function SettingsPage() {
   });
   const { user, isLoaded: userLoaded } = useUser();
   const [userName, setUserName] = useState('');
-  const [savingName, setSavingName] = useState(false);
-  const saveUserName = async () => {
-    if (!isSignedIn || !user) {
-      toast.error('You must be signed in');
-      return;
-    }
-    const name = userName.trim();
-    if (!name) {
-      toast.error('Please enter your name');
-      return;
-    }
-    try {
-      setSavingName(true);
-      const parts = name.split(' ');
-      const firstName = parts.shift() || '';
-      const lastName = parts.join(' ');
-      await user.update({ firstName, lastName });
-      toast.success('Name updated');
-    } catch (e: any) {
-      toast.error(e?.message || 'Failed to update name');
-    } finally {
-      setSavingName(false);
-    }
-  };
   async function uploadLogoDark() {
     if (!isSignedIn) {
       toast.error('You must be signed in');
@@ -177,6 +153,24 @@ export default function SettingsPage() {
       setUserName(user?.fullName || '');
     }
   }, [userLoaded, user]);
+
+  useEffect(() => {
+    if (!userLoaded || !user) return;
+    const name = userName.trim();
+    if (!name) return;
+    if (name === (user.fullName || '')) return;
+    const handle = setTimeout(async () => {
+      try {
+        const parts = name.split(' ');
+        const firstName = parts.shift() || '';
+        const lastName = parts.join(' ');
+        await user.update({ firstName, lastName });
+      } catch (e: any) {
+        toast.error(e?.message || 'Failed to update name');
+      }
+    }, 600);
+    return () => clearTimeout(handle);
+  }, [userName, userLoaded, user]);
   useEffect(() => {
     // Hydrate business from server to ensure persistence across devices
     if (!isSignedIn) return;
@@ -220,10 +214,7 @@ export default function SettingsPage() {
           <CardContent className="space-y-3">
             <div>
               <Label>Name</Label>
-              <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
-                <Input value={userName} onChange={e => setUserName(e.target.value)} placeholder="Your name" />
-                <Button onClick={saveUserName} disabled={!userLoaded || savingName || userName.trim().length === 0 || userName === (user?.fullName ?? '')}>{savingName ? 'Saving…' : 'Save'}</Button>
-              </div>
+              <Input value={userName} onChange={e => setUserName(e.target.value)} placeholder="Your name" />
             </div>
             <div>
               <Label>Business Name</Label>
