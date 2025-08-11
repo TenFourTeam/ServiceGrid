@@ -91,14 +91,15 @@ export default function Landing() {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <TopNav />
-      <Hero />
-      <Benefits />
-      <Industries />
-      <HighlightsSticky />
-      <FAQ />
-      <CTASection />
+      <div className="space-y-24 md:space-y-32 lg:space-y-40">
+        <Hero />
+        <Benefits />
+        <Industries />
+        <HighlightsSticky />
+        <FAQ />
+        <CTASection />
+      </div>
       <Footer />
-      
     </main>
   );
 }
