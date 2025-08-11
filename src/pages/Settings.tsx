@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import BusinessLogo from '@/components/BusinessLogo';
 import { useState, useEffect } from 'react';
-import { useAuth as useClerkAuth } from '@clerk/clerk-react';
+import { useAuth as useClerkAuth, useUser } from '@clerk/clerk-react';
 import { edgeFetchJson, edgeFetch } from '@/utils/edgeApi';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,6 +33,32 @@ export default function SettingsPage() {
   } = useStripeConnectStatus({
     enabled: !!isSignedIn
   });
+  const { user, isLoaded: userLoaded } = useUser();
+  const [userName, setUserName] = useState('');
+  const [savingName, setSavingName] = useState(false);
+  const saveUserName = async () => {
+    if (!isSignedIn || !user) {
+      toast.error('You must be signed in');
+      return;
+    }
+    const name = userName.trim();
+    if (!name) {
+      toast.error('Please enter your name');
+      return;
+    }
+    try {
+      setSavingName(true);
+      const parts = name.split(' ');
+      const firstName = parts.shift() || '';
+      const lastName = parts.join(' ');
+      await user.update({ firstName, lastName });
+      toast.success('Name updated');
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to update name');
+    } finally {
+      setSavingName(false);
+    }
+  };
   async function uploadLogoDark() {
     if (!isSignedIn) {
       toast.error('You must be signed in');
@@ -147,6 +173,11 @@ export default function SettingsPage() {
     }
   }
   useEffect(() => {
+    if (userLoaded) {
+      setUserName(user?.fullName || '');
+    }
+  }, [userLoaded, user]);
+  useEffect(() => {
     // Hydrate business from server to ensure persistence across devices
     if (!isSignedIn) return;
     (async () => {
@@ -189,6 +220,13 @@ export default function SettingsPage() {
           <CardContent className="space-y-3">
             <div>
               <Label>Name</Label>
+              <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                <Input value={userName} onChange={e => setUserName(e.target.value)} placeholder="Your name" />
+                <Button onClick={saveUserName} disabled={!userLoaded || savingName || userName.trim().length === 0 || userName === (user?.fullName ?? '')}>{savingName ? 'Saving…' : 'Save'}</Button>
+              </div>
+            </div>
+            <div>
+              <Label>Business Name</Label>
               <Input value={store.business.name} onChange={e => store.setBusiness({
               name: e.target.value
             })} />

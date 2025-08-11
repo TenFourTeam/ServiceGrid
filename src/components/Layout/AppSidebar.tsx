@@ -121,7 +121,7 @@ export default function AppSidebar() {
                 aria-label="User menu"
               >
                 <UserIcon className="h-5 w-5 text-primary" />
-                <span className="truncate group-data-[collapsible=icon]:hidden">Account</span>
+                <span className="truncate group-data-[collapsible=icon]:hidden">{user?.fullName || "Account"}</span>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent side="top" align="start" sideOffset={8} alignOffset={-4} className="w-56">
