@@ -1,4 +1,5 @@
 import { content } from "../content";
+import { Section } from "@/components/Section";
 
 function Logo({ label }: { label: string }) {
   return (
@@ -10,13 +11,13 @@ function Logo({ label }: { label: string }) {
 
 export function ProofStrip() {
   return (
-    <section aria-labelledby="proof-heading" className="container py-8">
+    <Section ariaLabel={content.proof.heading}>
       <h2 id="proof-heading" className="sr-only">{content.proof.heading}</h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 items-center justify-items-center gap-6 opacity-80" data-reveal>
         {content.proof.logos.map((l) => (
           <Logo key={l.name} label={l.name} />
         ))}
       </div>
-    </section>
+    </Section>
   );
 }

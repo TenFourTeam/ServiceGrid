@@ -1,5 +1,5 @@
 import { SignInButton, SignUpButton } from "@clerk/clerk-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/Button";
 import { content } from "../content";
 import { BWAnimatedBackground } from "./BWAnimatedBackground";
 import { useRef } from "react";
@@ -43,13 +43,15 @@ export function Hero() {
         "--stagger": 3
       } as any}>
           <SignUpButton mode="modal" forceRedirectUrl="/calendar">
-            <Button size="lg" variant="cta" className="hover-scale attention-ring">
+            <Button size="lg" variant="primary" className="hover-scale">
               Try for free
             </Button>
           </SignUpButton>
-          <Button asChild size="lg" variant="outline" className="hover-scale">
-            
-          </Button>
+          {copy.secondaryCta.label ? (
+            <Button size="lg" variant="secondary" className="hover-scale" onClick={() => { location.href = copy.secondaryCta.href; }}>
+              {copy.secondaryCta.label}
+            </Button>
+          ) : null}
         </div>
 
         

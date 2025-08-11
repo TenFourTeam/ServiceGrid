@@ -1,10 +1,12 @@
 import { content } from "../content";
+import { Section } from "@/components/Section";
+import { Heading } from "@/components/Heading";
 
 export function FAQ() {
   return (
-    <section aria-labelledby="faq-title" className="container py-16 md:py-24">
+    <Section ariaLabel="Frequently asked questions">
       <div className="mx-auto max-w-3xl text-center" data-reveal>
-        <h2 id="faq-title" className="text-3xl md:text-4xl font-bold tracking-tight">Frequently asked questions</h2>
+        <Heading as="h2" intent="section" id="faq-title">Frequently asked questions</Heading>
         <p className="mt-3 text-muted-foreground">Quick answers to common questions.</p>
       </div>
       <div className="mt-8 mx-auto max-w-3xl divide-y">
@@ -19,6 +21,6 @@ export function FAQ() {
           </details>
         ))}
       </div>
-    </section>
+    </Section>
   );
 }

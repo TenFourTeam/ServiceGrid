@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/Button";
 import { SignInButton, SignUpButton } from "@clerk/clerk-react";
 
 export function TopNav() {
@@ -48,7 +48,7 @@ export function TopNav() {
             <Button variant="ghost" size="sm" className="hover-scale">Sign in</Button>
           </SignInButton>
           <SignUpButton mode="modal" forceRedirectUrl="/calendar">
-            <Button variant="cta" size="sm" className="hover-scale attention-ring">Try for free</Button>
+            <Button variant="primary" size="sm" className="hover-scale">Try for free</Button>
           </SignUpButton>
         </div>
       </div>

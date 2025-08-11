@@ -1,4 +1,6 @@
 import { content } from "../content";
+import { Section } from "@/components/Section";
+import { Heading } from "@/components/Heading";
 
 function CheckIcon() {
   return (
@@ -10,9 +12,9 @@ function CheckIcon() {
 
 export function Benefits() {
   return (
-    <section id="benefits" aria-labelledby="benefits-title" className="container py-16 md:py-24">
+    <Section id="benefits" ariaLabel="Benefits">
       <div className="mx-auto max-w-3xl text-center" data-reveal>
-        <h2 id="benefits-title" className="text-3xl md:text-4xl font-bold tracking-tight">Why teams switch to TenFour</h2>
+        <Heading as="h2" intent="section" id="benefits-title">Why teams switch to TenFour</Heading>
         <p className="mt-3 text-muted-foreground">Fewer clicks, fewer calls, faster cashflow.</p>
       </div>
 
@@ -31,6 +33,6 @@ export function Benefits() {
           </article>
         ))}
       </div>
-    </section>
+    </Section>
   );
 }

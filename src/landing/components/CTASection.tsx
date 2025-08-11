@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/Button";
 import { SignUpButton } from "@clerk/clerk-react";
 import { content } from "../content";
 export function CTASection() {
@@ -10,7 +10,7 @@ export function CTASection() {
         <h2 id="cta-title" className="text-3xl md:text-4xl font-bold tracking-tight">{content.cta.heading}</h2>
         <div className="mt-6 flex items-center justify-center gap-3">
           <SignUpButton mode="modal" forceRedirectUrl="/calendar">
-            <Button size="lg" variant="cta" className="hover-scale attention-ring">
+            <Button size="lg" variant="primary" className="hover-scale">
               {cta.label}
             </Button>
           </SignUpButton>

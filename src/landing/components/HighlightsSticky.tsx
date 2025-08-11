@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { content } from "../content";
+import { Section } from "@/components/Section";
+import { Heading } from "@/components/Heading";
 
 type HighlightStep = (typeof content.highlights.steps)[number] & { imageSrc?: string; alt?: string };
 
@@ -54,13 +56,13 @@ export function HighlightsSticky() {
     try { history.replaceState(null, "", `#${key}`); } catch {}
   };
   return (
-    <section aria-labelledby="how-title" className="container py-16 md:py-24">
+    <Section ariaLabel={content.highlights.heading}>
       <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-start">
         {/* Sticky narrative */}
         <div className="lg:sticky lg:top-24">
-          <h2 id="how-title" className="text-3xl md:text-4xl font-bold tracking-tight" data-reveal>
+          <Heading as="h2" intent="section" id="how-title" data-reveal>
             {content.highlights.heading}
-          </h2>
+          </Heading>
           <ol className="mt-6 space-y-6">
             {content.highlights.steps.map((s, i) => (
               <li
@@ -102,6 +104,6 @@ export function HighlightsSticky() {
           ))}
         </div>
       </div>
-    </section>
+    </Section>
   );
 }
