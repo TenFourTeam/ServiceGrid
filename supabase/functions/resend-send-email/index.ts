@@ -75,20 +75,29 @@ serve(async (req: Request): Promise<Response> => {
   const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
 
   let payload: {
-    to?: string; subject: string; html: string; quote_id?: string; job_id?: string; invoice_id?: string; reply_to?: string; from_name?: string;
-  };
+    to?: string; subject?: string; html?: string; quote_id?: string; job_id?: string; invoice_id?: string; reply_to?: string; from_name?: string;
+  } = {};
   try {
     payload = await req.json();
-  } catch {
+  } catch (e) {
+    console.warn('[resend-send-email] Invalid JSON payload', e);
     return new Response(JSON.stringify({ error: "Invalid JSON" }), {
       status: 400,
       headers: { "Content-Type": "application/json", ...getCorsHeaders(req) },
     });
   }
 
+  const presentKeys = Object.keys(payload || {}).filter(k => k !== 'html');
+  console.info('[resend-send-email] payload received keys', presentKeys);
+  if (payload?.to) {
+    console.info("[resend-send-email] 'to' provided by client will be ignored; recipient resolved server-side");
+  }
+
   // Require subject and html
   if (!payload?.subject || !payload?.html) {
-    return new Response(JSON.stringify({ error: "Missing required fields (subject, html)" }), {
+    const missing = [!payload?.subject ? 'subject' : null, !payload?.html ? 'html' : null].filter(Boolean).join(', ');
+    console.warn('[resend-send-email] missing fields', missing);
+    return new Response(JSON.stringify({ error: `Missing required fields (${missing})` }), {
       status: 400,
       headers: { "Content-Type": "application/json", ...getCorsHeaders(req) },
     });

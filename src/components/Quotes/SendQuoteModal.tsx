@@ -81,7 +81,7 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
       console.info('[SendQuoteModal] sending quote email', { quoteId: quote.id, to });
       await edgeFetchJson("resend-send-email", getToken, {
         method: "POST",
-        body: { subject: subject || defaultSubject, html: finalHtml, quote_id: quote.id, from_name: store.business.name },
+        body: { to, subject: subject || defaultSubject, html: finalHtml, quote_id: quote.id, from_name: store.business.name },
       });
       console.info('[SendQuoteModal] sent', { quoteId: quote.id });
       // Optimistically mark as Sent in React Query cache for immediate UI update
