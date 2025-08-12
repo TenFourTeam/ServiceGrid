@@ -87,16 +87,58 @@ function MiniQuotePreview() {
   );
 }
 
+function MiniWorkOrderPreview() {
+  return (
+    <div className="rounded-lg border bg-card shadow-elev-2">
+      <div className="px-4 py-3 border-b">
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <span>Work order</span>
+          <span className="inline-flex items-center gap-1">
+            <span className="h-2 w-2 rounded-full bg-brand-600" aria-hidden />
+            <span className="text-xs">Scheduled</span>
+          </span>
+        </div>
+      </div>
+      <div className="p-4 space-y-3">
+        <div className="rounded-md border bg-background p-3">
+          <p className="text-xs text-muted-foreground">Job</p>
+          <p className="text-sm font-medium leading-tight truncate">Mow + edge — 123 Maple St</p>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-md border bg-background p-3">
+            <p className="text-xs text-muted-foreground">Route</p>
+            <p className="text-sm font-medium leading-tight">AM Window</p>
+          </div>
+          <div className="rounded-md border bg-background p-3">
+            <p className="text-xs text-muted-foreground">Crew</p>
+            <p className="text-sm font-medium leading-tight">Team A</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Collage of UI previews to make the hero feel product-first and premium
 export function HeroMedia({ className }: { className?: string }) {
+  const framed = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("hm") === "framed";
+
   return (
     <div className={cn("relative h-[420px] md:h-[520px] lg:h-[560px]", className)}>
       {/* Back plate */}
-      <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-background to-muted/40 border shadow-elev-1" aria-hidden />
+      {framed && (
+        <div
+          className="absolute inset-0 rounded-xl bg-gradient-to-b from-background to-muted/40 border shadow-elev-1"
+          aria-hidden
+        />
+      )}
 
       {/* Calendar card */}
       <div
-        className="absolute left-2 top-6 md:left-4 md:top-8 w-[62%] md:w-[58%] lg:w-[52%] rotate-[-0.5deg] will-change-transform rounded-lg border bg-card shadow-elev-2 hover:shadow-elev-2/90 transition-transform duration-300 hover:scale-[1.02]"
+        className={cn(
+          "absolute left-2 top-6 md:left-4 md:top-8 w-[62%] md:w-[58%] lg:w-[52%] rotate-[-0.5deg] will-change-transform transition-transform duration-300 hover:scale-[1.02]",
+          framed && "rounded-lg border bg-card shadow-elev-2 hover:shadow-elev-2/90"
+        )}
         aria-label="Mini month calendar preview"
       >
         <MiniMonthPreview />
@@ -104,7 +146,10 @@ export function HeroMedia({ className }: { className?: string }) {
 
       {/* Invoice card */}
       <div
-        className="absolute right-3 top-16 md:right-6 md:top-20 w-[48%] md:w-[44%] lg:w-[40%] rotate-1 will-change-transform rounded-lg border bg-card shadow-elev-2 transition-transform duration-300 hover:scale-[1.02]"
+        className={cn(
+          "absolute right-3 top-16 md:right-6 md:top-20 w-[48%] md:w-[44%] lg:w-[40%] rotate-1 will-change-transform transition-transform duration-300 hover:scale-[1.02]",
+          framed && "rounded-lg border bg-card shadow-elev-2"
+        )}
         aria-label="Mini invoice preview"
       >
         <MiniInvoicePreview />
@@ -112,15 +157,24 @@ export function HeroMedia({ className }: { className?: string }) {
 
       {/* Quote card */}
       <div
-        className="absolute left-6 bottom-6 md:left-10 md:bottom-10 w-[44%] md:w-[40%] lg:w-[36%] -rotate-2 will-change-transform rounded-lg border bg-card shadow-elev-1 transition-transform duration-300 hover:scale-[1.02]"
+        className={cn(
+          "absolute left-6 bottom-6 md:left-10 md:bottom-10 w-[44%] md:w-[40%] lg:w-[36%] -rotate-2 will-change-transform transition-transform duration-300 hover:scale-[1.02]",
+          framed && "rounded-lg border bg-card shadow-elev-1"
+        )}
         aria-label="Mini quote preview"
       >
         <MiniQuotePreview />
       </div>
 
-      {/* Floating badge */}
-      <div className="absolute right-8 bottom-8 rounded-full border bg-background px-4 py-2 shadow-elev-1">
-        <span className="text-xs text-muted-foreground">Avg 6h/week saved</span>
+      {/* Work order card (replaces badge) */}
+      <div
+        className={cn(
+          "absolute right-4 bottom-6 md:right-6 md:bottom-8 w-[44%] md:w-[40%] lg:w-[36%] rotate-[1.5deg] will-change-transform transition-transform duration-300 hover:scale-[1.02]",
+          framed && "rounded-lg border bg-card shadow-elev-1"
+        )}
+        aria-label="Mini work order preview"
+      >
+        <MiniWorkOrderPreview />
       </div>
     </div>
   );
