@@ -15,11 +15,11 @@ export function BackToTop() {
   return (
     <div className="fixed bottom-6 right-6 z-50">
       <Button
-        variant="secondary"
+        variant="default"
         size="icon"
         aria-label="Back to top"
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-        className={`transition-opacity ${visible ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        className={`bg-brand-600 text-white hover:bg-brand-700 transition-opacity ${visible ? "opacity-100" : "opacity-0 pointer-events-none"}` }
       >
         <ArrowUp />
       </Button>

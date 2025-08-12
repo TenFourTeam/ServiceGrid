@@ -40,12 +40,12 @@ export function Hero() {
 
           <div className="mt-8 flex flex-col sm:flex-row items-center lg:items-start justify-center lg:justify-start gap-3" data-reveal>
             <SignUpButton mode="modal" forceRedirectUrl="/calendar">
-              <Button size="lg" variant="primary" className="hover-scale attention-ring bg-gradient-to-r from-brand-500 to-brand-700 hover:from-brand-600 hover:to-brand-800 [--ring:hsl(var(--brand-600))]" id="hero-cta">
+              <Button size="lg" variant="primary" className="hover-scale" id="hero-cta">
                 {copy.primaryCta.label}
               </Button>
             </SignUpButton>
             {copy.secondaryCta.label ? (
-              <Button size="lg" variant="secondary" className="hover-scale attention-ring" onClick={() => { location.href = copy.secondaryCta.href; }}>
+              <Button size="lg" variant="primary" className="hover-scale" onClick={() => { location.href = copy.secondaryCta.href; }}>
                 {copy.secondaryCta.label}
               </Button>
             ) : null}
