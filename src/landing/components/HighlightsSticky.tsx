@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { content } from "../content";
 import { Section } from "@/components/Section";
 import { Heading } from "@/components/Heading";
@@ -54,17 +54,44 @@ function VisualCard({ title, imageSrc, alt }: { title: string; imageSrc?: string
 }
 
 export function HighlightsSticky() {
+  const steps = content.highlights.steps as ReadonlyArray<HighlightStep>;
+  const computeDefaultKey = () => {
+    const hashKey = (location.hash || "").replace("#", "");
+    return (
+      hashKey ||
+      steps.find((s) => s.key === "invoice")?.key ||
+      steps.find((s) => !!s.imageSrc)?.key ||
+      steps[0]?.key || ""
+    );
+  };
+  const [activeKey, setActiveKey] = useState<string>(computeDefaultKey());
+
+  useEffect(() => {
+    const onHashChange = () => {
+      const k = (location.hash || "").replace("#", "");
+      setActiveKey(
+        k ||
+          steps.find((s) => s.key === "invoice")?.key ||
+          steps.find((s) => !!s.imageSrc)?.key ||
+          steps[0]?.key || ""
+      );
+    };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, [steps]);
+
   const handleSelect = (key: string) => {
     const el = document.querySelector<HTMLElement>(`[data-step="${key}"]`);
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
-    try { history.replaceState(null, "", `#${key}`); } catch {}
+    try {
+      history.replaceState(null, "", `#${key}`);
+    } catch {}
+    setActiveKey(key);
   };
-  const activeKey = (location.hash || "").replace("#", "");
-  const steps = content.highlights.steps as ReadonlyArray<HighlightStep>;
-  const visuals = steps.filter((s) => !!s.imageSrc);
-  const chosen = visuals.length ? visuals[visuals.length - 1] : undefined;
-  const singleImageSrc = chosen?.imageSrc ?? "/images/how-schedule.jpg";
-  const singleAlt = chosen?.alt ?? chosen?.title ?? content.highlights.heading;
+
+  const current = steps.find((s) => s.key === activeKey);
+  const singleImageSrc = current?.imageSrc ?? "/images/how-schedule.jpg";
+  const singleAlt = current?.alt ?? current?.title ?? content.highlights.heading;
   return (
     <Section ariaLabel={content.highlights.heading}>
       <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-start">
