@@ -8,7 +8,7 @@ export function TopNav() {
   return (
     <header role="banner" className="sticky top-0 z-50 bg-background/60 dark:bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex items-center justify-between py-3">
-        <div className="flex items-center gap-2 -ml-1 md:-ml-2">
+        <div className="flex items-center gap-2">
           {logoError ? (
             <svg
               width="112"
@@ -34,7 +34,7 @@ export function TopNav() {
             <img
               src={content.brand.logoSrc}
               alt={`${content.brand.name} logo`}
-              className="h-20 md:h-24 w-auto"
+              className="h-20 md:h-24 w-auto -ml-[2px] md:-ml-[4px]"
               width="112"
               height="24"
               loading="eager"
