@@ -38,7 +38,7 @@ export function TopNav() {
               width="112"
               height="24"
               loading="eager"
-              crossOrigin="anonymous"
+              
               onError={() => setLogoError(true)}
             />
           )}

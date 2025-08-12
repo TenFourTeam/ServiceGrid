@@ -18,7 +18,7 @@ export default function BusinessLogo({ src, alt = "Logo", size = 24, className }
     <img
       src={src}
       alt={alt}
-      crossOrigin="anonymous"
+      
       loading="lazy"
       onError={() => setBroken(true)}
       className={cn("inline-block align-middle", className)}
