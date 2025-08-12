@@ -34,7 +34,7 @@ export function TopNav() {
             <img
               src={content.brand.logoSrc}
               alt={`${content.brand.name} logo`}
-              className="h-20 md:h-24 w-auto -ml-[10px] md:-ml-[12px]"
+              className="h-20 md:h-24 w-auto -ml-[14px] md:-ml-[16px]"
               width="112"
               height="24"
               loading="eager"

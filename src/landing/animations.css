@@ -103,6 +103,15 @@
   .bw-pan-slow, .bw-float, .bw-pan-diagonal { animation: none !important; }
 }
 
+/* Marquee auto-scroll (pause on hover/focus) */
+@keyframes marquee-left { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.marquee { overflow: hidden; }
+.marquee-track { display: flex; gap: 1rem; width: max-content; will-change: transform; animation: marquee-left 30s linear infinite; animation-play-state: running; }
+.marquee:hover .marquee-track,
+.marquee:focus-within .marquee-track { animation-play-state: paused; }
+@media (min-width: 768px) { .marquee-track { gap: 1.5rem; } }
+@media (prefers-reduced-motion: reduce) { .marquee-track { animation: none !important; } }
+
 /* Aurora background blobs */
 .aurora{position:absolute;inset:auto;pointer-events:none;border-radius:9999px;filter:blur(60px);opacity:.6;mix-blend-mode:screen;will-change:transform}
 .aurora--1{width:60vw;height:60vw;left:-20vw;top:-10vw;background:radial-gradient(circle at 30% 30%, hsl(var(--primary) / 0.5), transparent 60%);animation:aurora-move 22s ease-in-out infinite}
