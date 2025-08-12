@@ -136,8 +136,6 @@ export function HighlightsSticky() {
     setActiveKey(key);
   };
 
-  const singleImageSrc = "/images/Screenshot%202025-08-10%20at%207.00.47%20PM.png";
-  const singleAlt = "Invoice dashboard screenshot";
   const displayKey = hoveredKey ?? activeKey;
   const currentStep = steps.find((s) => s.key === displayKey) ?? steps[0];
   const kind = currentStep?.key === 'invoice' ? 'invoice'
@@ -145,8 +143,8 @@ export function HighlightsSticky() {
     : currentStep?.key === 'work' ? 'work'
     : currentStep?.key === 'schedule' ? 'schedule'
     : undefined;
-  const visualSrc = currentStep?.imageSrc ?? (kind === 'invoice' ? singleImageSrc : undefined);
-  const visualAlt = currentStep?.alt ?? currentStep?.title ?? singleAlt;
+  const visualSrc = currentStep?.imageSrc;
+  const visualAlt = currentStep?.alt ?? currentStep?.title ?? "Highlight visual";
   return (
 
     <Section ariaLabel={content.highlights.heading}>
