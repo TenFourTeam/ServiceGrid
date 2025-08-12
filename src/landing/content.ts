@@ -85,7 +85,7 @@ export const content = {
   faq: [
     {
       q: "Is there a free trial?",
-      a: "Yes. Start your free trial today — no credit card required.",
+      a: "Yes. Enjoy a 7-day free trial — no credit card required.",
     },
     {
       q: "Can I bring my customer list?",
