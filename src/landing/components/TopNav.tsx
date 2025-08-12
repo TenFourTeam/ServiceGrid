@@ -18,6 +18,8 @@ export function TopNav() {
             width="112"
             height="24"
             loading="eager"
+            decoding="async"
+            fetchPriority="high"
           />
         </div>
         <div className="flex items-center gap-2">

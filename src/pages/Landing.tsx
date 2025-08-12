@@ -15,71 +15,27 @@ import { Industries } from "@/landing/components/Industries";
 
 
 export default function Landing() {
-  // SEO: title, meta description, canonical, structured data, OG/Twitter
+  // Defer scroll orchestrator to avoid blocking first paint
   useEffect(() => {
-    console.log("[Landing] href:", window.location.href);
-    document.title = "TenFour Lawn — Schedule, quotes, invoices without the back-and-forth.";
+    let dispose: undefined | (() => void);
+    let cancel: undefined | (() => void);
 
-    const ensureMetaName = (name: string, content: string) => {
-      let el = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement | null;
-      if (!el) {
-        el = document.createElement("meta");
-        el.setAttribute("name", name);
-        document.head.appendChild(el);
+    const schedule = (cb: () => void) => {
+      if ('requestIdleCallback' in window) {
+        const id = (window as any).requestIdleCallback(cb, { timeout: 1200 });
+        return () => (window as any).cancelIdleCallback?.(id);
       }
-      el.setAttribute("content", content);
+      const t = setTimeout(cb, 0);
+      return () => clearTimeout(t);
     };
 
-    const ensureMetaProp = (property: string, content: string) => {
-      let el = document.querySelector(`meta[property="${property}"]`) as HTMLMetaElement | null;
-      if (!el) {
-        el = document.createElement("meta");
-        el.setAttribute("property", property);
-        document.head.appendChild(el);
-      }
-      el.setAttribute("content", content);
-    };
-
-    ensureMetaName(
-      "description",
-      "Run your lawn business with effortless scheduling, quotes and invoices."
-    );
-
-    // Canonical
-    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
-    if (!canonical) {
-      canonical = document.createElement("link");
-      canonical.setAttribute("rel", "canonical");
-      document.head.appendChild(canonical);
-    }
-    canonical.setAttribute("href", `${window.location.origin}/`);
-
-    // OG/Twitter
-    ensureMetaProp("og:title", document.title);
-    ensureMetaProp("og:description", "Run your lawn business with effortless scheduling, quotes and invoices.");
-    ensureMetaProp("og:type", "website");
-    ensureMetaProp("og:url", window.location.href);
-    ensureMetaName("twitter:card", "summary_large_image");
-    ensureMetaName("twitter:title", document.title);
-    ensureMetaName("twitter:description", "Run your lawn business with effortless scheduling, quotes and invoices.");
-
-    const ld = document.createElement("script");
-    ld.type = "application/ld+json";
-    ld.textContent = JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      name: "TenFour Lawn",
-      url: window.location.origin,
-      description:
-        "Run your lawn business with effortless scheduling, quotes and invoices.",
+    cancel = schedule(() => {
+      dispose = initScrollOrchestrator?.();
     });
-    document.head.appendChild(ld);
-
-    const dispose = initScrollOrchestrator?.();
 
     return () => {
-      document.head.contains(ld) && document.head.removeChild(ld);
-      dispose && dispose();
+      cancel?.();
+      dispose?.();
     };
   }, []);
 
