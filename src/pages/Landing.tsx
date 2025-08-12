@@ -75,10 +75,11 @@ export default function Landing() {
     });
     document.head.appendChild(ld);
 
-    initScrollOrchestrator();
+    const dispose = initScrollOrchestrator?.();
 
     return () => {
       document.head.contains(ld) && document.head.removeChild(ld);
+      dispose && dispose();
     };
   }, []);
 

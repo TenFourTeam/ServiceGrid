@@ -2,21 +2,40 @@ import { useEffect } from "react";
 import { DURATIONS, EASING, HIGHLIGHT_THRESHOLD, REVEAL_ROOT_MARGIN, REVEAL_THRESHOLD, STAGGER_MS } from "./tokens";
 import { content, type HighlightKey } from "./content";
 
-let initialized = false;
+let revealObserverRef: IntersectionObserver | null = null;
+let stepObserverRef: IntersectionObserver | null = null;
+let hashHandlerRef: ((this: Window, ev: HashChangeEvent) => any) | null = null;
 
 function selectAll<T extends Element>(selector: string, root: ParentNode = document): T[] {
   return Array.from(root.querySelectorAll(selector)) as T[];
 }
 
-export function initScrollOrchestrator() {
-  if (initialized || typeof window === "undefined") return;
-  initialized = true;
+function cleanup() {
+  try {
+    revealObserverRef?.disconnect();
+  } catch {}
+  revealObserverRef = null;
+  try {
+    stepObserverRef?.disconnect();
+  } catch {}
+  stepObserverRef = null;
+  if (hashHandlerRef) {
+    try {
+      window.removeEventListener("hashchange", hashHandlerRef);
+    } catch {}
+    hashHandlerRef = null;
+  }
+}
 
+export function initScrollOrchestrator() {
+  if (typeof window === "undefined") return () => {};
+  // Tear down any previous observers/listeners to allow re-init
+  cleanup();
   const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   // Reveal observer
   if (!prefersReduced) {
-    const revealObserver = new IntersectionObserver(
+    const revealObserver = (revealObserverRef = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
           const el = entry.target as HTMLElement;
@@ -31,7 +50,7 @@ export function initScrollOrchestrator() {
         threshold: REVEAL_THRESHOLD,
         rootMargin: REVEAL_ROOT_MARGIN,
       }
-    );
+    ));
 
     selectAll<HTMLElement>("[data-reveal]").forEach((el, idx) => {
       el.style.setProperty("--ease", EASING);
@@ -86,7 +105,7 @@ export function initScrollOrchestrator() {
   }
 
   if (steps.length && visualsContainer && visuals.length) {
-    const stepObserver = new IntersectionObserver(
+    const stepObserver = (stepObserverRef = new IntersectionObserver(
       (entries) => {
         entries
           .filter((e) => e.isIntersecting)
@@ -96,7 +115,7 @@ export function initScrollOrchestrator() {
           });
       },
       { threshold: HIGHLIGHT_THRESHOLD }
-    );
+    ));
 
     steps.forEach((s) => stepObserver.observe(s));
 
@@ -125,13 +144,15 @@ export function initScrollOrchestrator() {
     }
 
     // React to manual hash changes
-    window.addEventListener("hashchange", () => {
+    hashHandlerRef = () => {
       const key = window.location.hash?.slice(1) as HighlightKey;
       if (keys.includes(key)) {
         activate(key);
         const el = steps.find((s) => s.getAttribute("data-step") === key);
         el?.scrollIntoView({ behavior: "smooth", block: "center" });
       }
-    });
+    };
+    window.addEventListener("hashchange", hashHandlerRef);
   }
+  return cleanup;
 }
