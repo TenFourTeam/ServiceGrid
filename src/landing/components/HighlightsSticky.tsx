@@ -169,13 +169,12 @@ export function HighlightsSticky() {
                 tabIndex={0}
                 aria-label={s.title}
                 onMouseEnter={() => setHoveredKey(s.key)}
-                onMouseLeave={() => setHoveredKey(null)}
                 onFocus={() => setHoveredKey(s.key)}
-                onBlur={() => setHoveredKey(null)}
-                onClick={() => handleSelect(s.key)}
+                onClick={() => { setHoveredKey(s.key); handleSelect(s.key); }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
+                    setHoveredKey(s.key);
                     handleSelect(s.key);
                   }
                 }}
