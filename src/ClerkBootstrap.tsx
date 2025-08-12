@@ -28,21 +28,25 @@ export default function ClerkBootstrap() {
     return () => { cancelled = true; };
   }, []);
 
-  if (error) {
-    return <div role="alert">Authentication failed to initialize: {error}</div>;
-  }
-
-  if (!pk || !ClerkProviderComp) {
-    return <LoadingScreen />;
-  }
-
+  // Render app immediately to avoid landing flicker; enable Clerk when ready
+  const hasClerk = !!pk && !!ClerkProviderComp;
   const ClerkProvider = ClerkProviderComp;
+
+  if (hasClerk) {
+    return (
+      <ClerkProvider publishableKey={pk!}>
+        <ClerkRuntimeProvider hasClerk={true}>
+          <App />
+        </ClerkRuntimeProvider>
+      </ClerkProvider>
+    );
+  }
+
   return (
-    <ClerkProvider publishableKey={pk}>
-      <ClerkRuntimeProvider hasClerk={true}>
-        <App />
-      </ClerkRuntimeProvider>
-    </ClerkProvider>
+    <ClerkRuntimeProvider hasClerk={false}>
+      <App />
+    </ClerkRuntimeProvider>
   );
 }
+
 

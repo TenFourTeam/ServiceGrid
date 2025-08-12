@@ -4,6 +4,7 @@ import { content } from "../content";
 import { BWAnimatedBackground } from "./BWAnimatedBackground";
 import { useRef } from "react";
 import { HeroMedia } from "./HeroMedia";
+import { useHasClerk } from "@/components/Auth/ClerkRuntime";
 function LogoMark() {
   return <svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" className="text-primary">
       <path fill="currentColor" d="M12 2c5.523 0 10 4.477 10 10h-2a8 8 0 1 0-8 8v2C6.477 22 2 17.523 2 12S6.477 2 12 2Z" />
@@ -15,6 +16,7 @@ export function Hero() {
   const variant = params.get("v")?.toLowerCase() === "b" ? "B" : "A";
   const copy = content.hero[variant as "A" | "B"];
   const heroRef = useRef<HTMLElement | null>(null);
+  const hasClerk = useHasClerk();
   const onMove = (e: React.MouseEvent) => {
     const el = heroRef.current;
     if (!el) return;
@@ -39,11 +41,17 @@ export function Hero() {
           </p>
 
           <div className="mt-8 flex flex-col sm:flex-row items-center lg:items-start justify-center lg:justify-start gap-3" data-reveal>
-            <SignUpButton mode="modal" forceRedirectUrl="/calendar">
-              <Button size="lg" variant="primary" className="hover-scale attention-ring [--ring:var(--brand-600)]" id="hero-cta">
+            {hasClerk ? (
+              <SignUpButton mode="modal" forceRedirectUrl="/calendar">
+                <Button size="lg" variant="primary" className="hover-scale attention-ring [--ring:var(--brand-600)]" id="hero-cta">
+                  {copy.primaryCta.label}
+                </Button>
+              </SignUpButton>
+            ) : (
+              <Button size="lg" variant="primary" className="hover-scale attention-ring [--ring:var(--brand-600)]" id="hero-cta" onClick={() => { location.href = "/clerk-auth"; }}>
                 {copy.primaryCta.label}
               </Button>
-            </SignUpButton>
+            )}
             {copy.secondaryCta.label ? (
               <Button size="lg" variant="primary" className="hover-scale" onClick={() => { location.href = copy.secondaryCta.href; }}>
                 {copy.secondaryCta.label}

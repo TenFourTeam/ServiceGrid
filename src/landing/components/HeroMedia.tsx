@@ -136,7 +136,7 @@ export function HeroMedia({ className }: { className?: string }) {
       {/* Calendar card */}
       <div
         className={cn(
-          "absolute left-6 top-6 md:left-8 md:top-8 w-[56%] md:w-[52%] lg:w-[46%] rotate-[-0.5deg] will-change-transform transition-transform duration-300 hover:scale-[1.01] z-10",
+          "absolute left-10 top-6 md:left-14 md:top-8 w-[52%] md:w-[48%] lg:w-[44%] rotate-[-0.5deg] will-change-transform transition-transform duration-300 hover:scale-[1.01] z-10",
           framed && "rounded-lg border bg-card shadow-elev-2 hover:shadow-elev-2/90"
         )}
         aria-label="Mini month calendar preview"
@@ -158,7 +158,7 @@ export function HeroMedia({ className }: { className?: string }) {
       {/* Quote card */}
       <div
         className={cn(
-          "absolute left-12 bottom-8 md:left-16 md:bottom-12 w-[38%] md:w-[34%] lg:w-[30%] -rotate-2 will-change-transform transition-transform duration-300 hover:scale-[1.01] z-20",
+          "absolute left-16 bottom-8 md:left-24 md:bottom-12 w-[34%] md:w-[30%] lg:w-[28%] -rotate-2 will-change-transform transition-transform duration-300 hover:scale-[1.01] z-20",
           framed && "rounded-lg border bg-card shadow-elev-1"
         )}
         aria-label="Mini quote preview"

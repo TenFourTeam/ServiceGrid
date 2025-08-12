@@ -11,10 +11,11 @@ import { initScrollOrchestrator } from "@/landing/scrollOrchestrator";
 import { TopNav } from "@/landing/components/TopNav";
 import { FAQ } from "@/landing/components/FAQ";
 import { Industries } from "@/landing/components/Industries";
+import { useHasClerk } from "@/components/Auth/ClerkRuntime";
 
 
 export default function Landing() {
-  const { isSignedIn } = useAuth();
+  const hasClerk = useHasClerk();
   const navigate = useNavigate();
 
   // SEO: title, meta description, canonical, structured data, OG/Twitter
@@ -82,14 +83,18 @@ export default function Landing() {
       document.head.contains(ld) && document.head.removeChild(ld);
     };
   }, []);
-
-  // If already signed in, go straight to the calendar
+function RedirectIfSignedIn() {
+  const { isSignedIn } = useAuth();
+  const navigate = useNavigate();
   useEffect(() => {
     if (isSignedIn) navigate("/calendar", { replace: true });
   }, [isSignedIn, navigate]);
+  return null;
+}
 
   return (
     <main className="min-h-screen bg-background text-foreground">
+      {hasClerk && <RedirectIfSignedIn />}
       <TopNav />
       <div className="space-y-20 md:space-y-28 lg:space-y-36">
         <Hero />
