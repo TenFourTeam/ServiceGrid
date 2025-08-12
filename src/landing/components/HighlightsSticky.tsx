@@ -78,9 +78,9 @@ function VisualCard({ title, imageSrc, alt, kind }: { title: string; imageSrc?: 
             <button
               type="button"
               aria-label={`View larger: ${label}`}
-              className="group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="group block w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
-              <AspectRatio ratio={16 / 9}>
+              <AspectRatio ratio={16 / 9} className="w-full">
                 <img
                   src={imageSrc}
                   alt={label}
