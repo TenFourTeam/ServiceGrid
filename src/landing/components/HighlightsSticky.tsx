@@ -4,29 +4,17 @@ import { Section } from "@/components/Section";
 import { Heading } from "@/components/Heading";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 
+
 type HighlightStep = (typeof content.highlights.steps)[number] & { imageSrc?: string; alt?: string };
 
-function VisualCard({ title, imageSrc, alt }: { title: string; imageSrc?: string; alt?: string }) {
+function VisualCard({ title, imageSrc, alt, kind }: { title: string; imageSrc?: string; alt?: string; kind?: 'schedule' | 'quote' | 'work' | 'invoice' }) {
   const [broken, setBroken] = useState(false);
   const label = alt ?? title;
-  const isInvoice = label.toLowerCase().includes("invoice");
 
-  return (
-    <div className="rounded-lg border bg-card shadow-subtle overflow-hidden">
-      <AspectRatio ratio={16 / 9}>
-        {imageSrc && !broken ? (
-          <img
-            src={imageSrc}
-            alt={label}
-            width={1600}
-            height={900}
-            decoding="async"
-            className="h-full w-full object-cover"
-            loading="lazy"
-            sizes="(min-width: 1024px) 640px, (min-width: 768px) 560px, 100vw"
-            onError={() => { console.warn('Visual image failed to load', { src: imageSrc, alt: label }); setBroken(true); }}
-          />
-        ) : isInvoice ? (
+  const renderPlaceholder = () => {
+    switch (kind) {
+      case 'invoice':
+        return (
           <div className="mx-auto mb-0 h-full w-full text-muted-foreground grid place-items-center">
             <svg
               viewBox="0 0 160 160"
@@ -41,15 +29,73 @@ function VisualCard({ title, imageSrc, alt }: { title: string; imageSrc?: string
               <path d="M56 120l12 12 28-28" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
+        );
+      case 'quote':
+        return (
+          <div className="mx-auto mb-0 h-full w-full text-muted-foreground grid place-items-center">
+            <svg viewBox="0 0 160 160" role="img" aria-label={label} className="mx-auto h-24 w-24">
+              <rect x="32" y="28" width="96" height="104" rx="8" fill="none" stroke="currentColor" strokeWidth="2" />
+              <text x="80" y="92" textAnchor="middle" fontSize="48" fill="currentColor">$</text>
+              <line x1="48" y1="56" x2="112" y2="56" stroke="currentColor" strokeWidth="2" />
+              <line x1="48" y1="72" x2="96" y2="72" stroke="currentColor" strokeWidth="2" />
+            </svg>
+          </div>
+        );
+      case 'work':
+        return (
+          <div className="mx-auto mb-0 h-full w-full text-muted-foreground grid place-items-center">
+            <svg viewBox="0 0 160 160" role="img" aria-label={label} className="mx-auto h-24 w-24">
+              <path d="M40 112l48-48" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
+              <circle cx="104" cy="56" r="16" fill="none" stroke="currentColor" strokeWidth="3" />
+              <rect x="32" y="112" width="64" height="12" rx="6" fill="currentColor" />
+            </svg>
+          </div>
+        );
+      case 'schedule':
+        return (
+          <div className="mx-auto mb-0 h-full w-full text-muted-foreground grid place-items-center">
+            <svg viewBox="0 0 160 160" role="img" aria-label={label} className="mx-auto h-24 w-24">
+              <rect x="28" y="32" width="104" height="100" rx="8" fill="none" stroke="currentColor" strokeWidth="2" />
+              <line x1="28" y1="56" x2="132" y2="56" stroke="currentColor" strokeWidth="2" />
+              <line x1="52" y1="24" x2="52" y2="40" stroke="currentColor" strokeWidth="3" />
+              <line x1="108" y1="24" x2="108" y2="40" stroke="currentColor" strokeWidth="3" />
+              <rect x="40" y="68" width="20" height="16" rx="2" fill="currentColor" />
+              <rect x="66" y="68" width="20" height="16" rx="2" fill="currentColor" opacity="0.6" />
+              <rect x="92" y="68" width="20" height="16" rx="2" fill="currentColor" opacity="0.3" />
+            </svg>
+          </div>
+        );
+      default:
+        return <div className="mx-auto h-full w-full bg-muted" />;
+    }
+  };
+
+  return (
+    <div className="rounded-lg border bg-card shadow-subtle overflow-hidden">
+      <AspectRatio ratio={16 / 9}>
+        {imageSrc && !broken ? (
+          <img
+            src={imageSrc}
+            alt={label}
+            width={1600}
+            height={900}
+            decoding="async"
+            className="h-full w-full object-cover"
+            loading="lazy"
+            sizes="(min-width: 1024px) 640px, (min-width: 768px) 560px, 100vw"
+            onError={() => {
+              console.warn('Visual image failed to load', { src: imageSrc, alt: label });
+              setBroken(true);
+            }}
+          />
         ) : (
-          <div className="mx-auto h-full w-full bg-muted" />
+          renderPlaceholder()
         )}
       </AspectRatio>
       <div className="p-4">
         <p className="mt-2 text-sm text-muted-foreground text-center">{title}</p>
       </div>
     </div>
-
   );
 }
 
@@ -65,6 +111,7 @@ export function HighlightsSticky() {
     );
   };
   const [activeKey, setActiveKey] = useState<string>(computeDefaultKey());
+  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
 
   useEffect(() => {
     const onHashChange = () => {
@@ -91,7 +138,17 @@ export function HighlightsSticky() {
 
   const singleImageSrc = "/images/Screenshot%202025-08-10%20at%207.00.47%20PM.png";
   const singleAlt = "Invoice dashboard screenshot";
+  const displayKey = hoveredKey ?? activeKey;
+  const currentStep = steps.find((s) => s.key === displayKey) ?? steps[0];
+  const kind = currentStep?.key === 'invoice' ? 'invoice'
+    : currentStep?.key === 'quote' ? 'quote'
+    : currentStep?.key === 'work' ? 'work'
+    : currentStep?.key === 'schedule' ? 'schedule'
+    : undefined;
+  const visualSrc = currentStep?.imageSrc ?? (kind === 'invoice' ? singleImageSrc : undefined);
+  const visualAlt = currentStep?.alt ?? currentStep?.title ?? singleAlt;
   return (
+
     <Section ariaLabel={content.highlights.heading}>
       <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-start">
         {/* Sticky narrative */}
@@ -111,6 +168,10 @@ export function HighlightsSticky() {
                 role="button"
                 tabIndex={0}
                 aria-label={s.title}
+                onMouseEnter={() => setHoveredKey(s.key)}
+                onMouseLeave={() => setHoveredKey(null)}
+                onFocus={() => setHoveredKey(s.key)}
+                onBlur={() => setHoveredKey(null)}
                 onClick={() => handleSelect(s.key)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
@@ -127,27 +188,10 @@ export function HighlightsSticky() {
         </div>
 
         {/* Visuals */}
-        <div aria-live="polite" className="relative mt-6 lg:mt-20" data-visuals>
-          <span id="highlights-live" className="sr-only" />
-          <div aria-label={singleAlt} data-visual="how-visual" className="rounded-lg border bg-card shadow-subtle overflow-hidden">
-            <AspectRatio ratio={16 / 9}>
-              <img
-                src={singleImageSrc}
-                alt={singleAlt}
-                width={1600}
-                height={900}
-                decoding="async"
-                loading="lazy"
-                className="h-full w-full object-cover"
-                sizes="(min-width: 1024px) 640px, (min-width: 768px) 560px, 100vw"
-                onError={(e) => {
-                  const target = e.currentTarget as HTMLImageElement;
-                  if (target.src.includes('Screenshot')) target.src = '/images/how-schedule.jpg';
-                }}
-              />
-            </AspectRatio>
+          <div aria-live="polite" className="relative mt-6 lg:mt-20" data-visuals>
+            <span id="highlights-live" className="sr-only" />
+            <VisualCard title={currentStep.title} imageSrc={visualSrc} alt={visualAlt} kind={kind} />
           </div>
-        </div>
       </div>
     </Section>
   );
