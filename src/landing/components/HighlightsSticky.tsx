@@ -89,7 +89,7 @@ export function HighlightsSticky() {
     setActiveKey(key);
   };
 
-  const singleImageSrc = "/images/Screenshot 2025-08-10 at 7.00.47 PM.png";
+  const singleImageSrc = "/images/Screenshot%202025-08-10%20at%207.00.47%20PM.png";
   const singleAlt = "Invoice dashboard screenshot";
   return (
     <Section ariaLabel={content.highlights.heading}>

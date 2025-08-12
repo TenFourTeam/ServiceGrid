@@ -73,7 +73,7 @@ export const content = {
         key: "invoice",
         title: "Invoice and get paid",
         desc: "Send instantly. Clients pay online. You see it in your dashboard.",
-        imageSrc: "/images/Screenshot 2025-08-10 at 7.00.47 PM.png",
+        imageSrc: "/images/Screenshot%202025-08-10%20at%207.00.47%20PM.png",
         alt: "Product screenshot: Invoice and payment dashboard",
       },
     ],
