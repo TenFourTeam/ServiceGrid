@@ -1,5 +1,5 @@
 
-import React, { Suspense, lazy } from "react";
+import React, { Suspense, lazy, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -29,6 +29,28 @@ const InvoicePayPage = lazy(() => import("./pages/InvoicePay"));
 
 const queryClient = new QueryClient();
 
+function PrefetchRoutes() {
+  useEffect(() => {
+    void Promise.all([
+      import("./pages/Calendar"),
+      import("./pages/WorkOrders"),
+      import("./pages/Quotes"),
+      import("./pages/Invoices"),
+      import("./pages/Customers"),
+      import("./pages/Settings"),
+      import("./pages/Legal"),
+      import("./pages/NotFound"),
+      import("./pages/ClerkAuth"),
+      import("./pages/QuoteAction"),
+      import("./pages/PaymentSuccess"),
+      import("./pages/PaymentCanceled"),
+      import("./pages/InvoicePay"),
+    ]);
+  }, []);
+  return null;
+}
+
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -39,6 +61,7 @@ const App = () => (
           <BrowserRouter>
             <ErrorBoundary>
               <Suspense fallback={<LoadingScreen /> }>
+                 <PrefetchRoutes />
                  <Routes>
                    <Route path="/clerk-auth" element={<ClerkAuthPage />} />
                    <Route path="/quote-action" element={<QuoteActionPage />} />

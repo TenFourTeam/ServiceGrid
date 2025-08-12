@@ -29,6 +29,7 @@ import {
 import BusinessLogo from "@/components/BusinessLogo";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useClerk, useUser } from "@clerk/clerk-react";
+import { usePreloadImage } from "@/hooks/usePreloadImage";
 
 const items = [
   { title: "Calendar", url: "/calendar", icon: CalendarIcon },
@@ -46,6 +47,9 @@ export default function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { user } = useUser();
+  
+  // Warm the cache for the logo ASAP
+  usePreloadImage(business.lightLogoUrl || business.logoUrl);
   
   const isActivePath = (path: string) => location.pathname.startsWith(path);
 
