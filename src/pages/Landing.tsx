@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import { useAuth } from "@clerk/clerk-react";
-import { useNavigate } from "react-router-dom";
+
+
 import "@/landing/animations.css";
 import { Hero } from "@/landing/components/Hero";
 import { Benefits } from "@/landing/components/Benefits";
@@ -11,15 +11,13 @@ import { initScrollOrchestrator } from "@/landing/scrollOrchestrator";
 import { TopNav } from "@/landing/components/TopNav";
 import { FAQ } from "@/landing/components/FAQ";
 import { Industries } from "@/landing/components/Industries";
-import { useHasClerk } from "@/components/Auth/ClerkRuntime";
+
 
 
 export default function Landing() {
-  const hasClerk = useHasClerk();
-  const navigate = useNavigate();
-
   // SEO: title, meta description, canonical, structured data, OG/Twitter
   useEffect(() => {
+    console.log("[Landing] href:", window.location.href);
     document.title = "TenFour Lawn — Schedule, quotes, invoices without the back-and-forth.";
 
     const ensureMetaName = (name: string, content: string) => {
@@ -83,18 +81,10 @@ export default function Landing() {
       document.head.contains(ld) && document.head.removeChild(ld);
     };
   }, []);
-function RedirectIfSignedIn() {
-  const { isSignedIn } = useAuth();
-  const navigate = useNavigate();
-  useEffect(() => {
-    if (isSignedIn) navigate("/calendar", { replace: true });
-  }, [isSignedIn, navigate]);
-  return null;
-}
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-      {hasClerk && <RedirectIfSignedIn />}
+      
       <TopNav />
       <div className="space-y-20 md:space-y-28 lg:space-y-36">
         <Hero />
