@@ -13,7 +13,7 @@ export function CTASection() {
         <Heading as="h2" intent="section" id="cta-title">{content.cta.heading}</Heading>
         <div className="mt-6 flex items-center justify-center gap-3">
           <SignUpButton mode="modal" forceRedirectUrl="/calendar">
-            <Button size="lg" variant="primary" className="hover-scale attention-ring">
+            <Button size="lg" variant="primary" className="hover-scale attention-ring bg-gradient-to-r from-brand-500 to-brand-700 hover:from-brand-600 hover:to-brand-800 [--ring:hsl(var(--brand-600))]">
               {cta.label}
             </Button>
           </SignUpButton>

@@ -39,7 +39,7 @@ function MiniInvoicePreview() {
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-md border bg-background p-3">
             <p className="text-xs text-muted-foreground">Amount due</p>
-            <p className="text-lg font-semibold">$245.00</p>
+            <p className="text-base font-semibold leading-tight whitespace-nowrap">$245.00</p>
           </div>
           <div className="rounded-md border bg-background p-3">
             <p className="text-xs text-muted-foreground">Status</p>
