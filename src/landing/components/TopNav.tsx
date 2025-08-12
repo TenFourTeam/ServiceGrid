@@ -18,7 +18,7 @@ export function TopNav() {
               viewBox="0 0 112 24"
               role="img"
               aria-label={`${content.brand.name} logo`}
-              className="block h-[60px] md:h-[76px] w-auto -ml-2"
+              className="block h-[60px] md:h-[76px] w-auto -ml-4"
             >
               <text
                 x="0"
@@ -36,7 +36,7 @@ export function TopNav() {
             <img
               src={content.brand.logoSrc}
               alt={`${content.brand.name} logo`}
-              className="block h-[60px] md:h-[76px] w-auto origin-left transform-gpu scale-x-[1.05] -ml-2"
+              className="block h-[60px] md:h-[76px] w-auto origin-left transform-gpu scale-x-[1.05] -ml-4"
               width="112"
               height="24"
               loading="eager"
