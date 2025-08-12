@@ -8,7 +8,7 @@ export const content = {
       eyebrow: "For growing field service teams",
       title: "Schedule, quote, and invoice without the back-and-forth",
       subtitle:
-        "The Tenfour Project keeps your day moving: drag-and-drop scheduling, one-click quotes, and instant payments in a single lightweight app.",
+        "The TenFour Project keeps your day moving: drag-and-drop scheduling, one-click quotes, and instant payments in a single lightweight app.",
       primaryCta: { label: "Try for free", href: "#" },
       secondaryCta: { label: "", href: "#" },
     },
@@ -63,7 +63,7 @@ export const content = {
         key: "quote",
         title: "Send a quote that sells",
         desc: "Itemized options, clear totals, and one‑tap approval.",
-        imageSrc: "/images/How It Works 2.png",
+        imageSrc: "/images/How It Works 2 (new).png",
         alt: "How it works — quote: simple, one-tap approval",
       },
       {
