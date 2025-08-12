@@ -24,14 +24,14 @@ export function Industries() {
       <div className="mt-8 marquee" data-reveal>
         <div className="marquee-track" aria-label="Industries carousel">
           {industries.map(({ icon: Icon, label }) => (
-            <article key={label} className="rounded-lg border bg-card p-4 md:p-5 shadow-subtle grid place-items-center text-center">
+            <article key={label} className="shrink-0 w-40 md:w-44 rounded-lg border bg-card p-4 md:p-5 shadow-subtle grid place-items-center text-center">
               <Icon aria-hidden className="text-primary" />
               <h3 className="mt-3 font-medium">{label}</h3>
             </article>
           ))}
           <span aria-hidden="true" className="contents">
             {industries.map(({ icon: Icon, label }) => (
-              <article key={`${label}-dup`} className="rounded-lg border bg-card p-4 md:p-5 shadow-subtle grid place-items-center text-center">
+              <article key={`${label}-dup`} className="shrink-0 w-40 md:w-44 rounded-lg border bg-card p-4 md:p-5 shadow-subtle grid place-items-center text-center">
                 <Icon aria-hidden className="text-primary" />
                 <h3 className="mt-3 font-medium">{label}</h3>
               </article>

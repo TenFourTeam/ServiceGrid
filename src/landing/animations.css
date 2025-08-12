@@ -106,9 +106,9 @@
 /* Marquee auto-scroll (pause on hover/focus) */
 @keyframes marquee-left { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 .marquee { overflow: hidden; }
-.marquee-track { display: flex; gap: 1rem; width: max-content; will-change: transform; animation: marquee-left 30s linear infinite; animation-play-state: running; }
+.marquee-track { display: flex; gap: 1rem; width: max-content; will-change: transform; animation: marquee-left 30s linear infinite; animation-play-state: paused; }
 .marquee:hover .marquee-track,
-.marquee:focus-within .marquee-track { animation-play-state: paused; }
+.marquee:focus-within .marquee-track { animation-play-state: running; }
 @media (min-width: 768px) { .marquee-track { gap: 1.5rem; } }
 @media (prefers-reduced-motion: reduce) { .marquee-track { animation: none !important; } }
 
