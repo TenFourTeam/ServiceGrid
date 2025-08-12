@@ -61,7 +61,7 @@ export default function AppSidebar() {
           <div className="relative h-8 w-8 ml-0 flex items-center justify-center">
             <BusinessLogo
               size={26}
-              src={business.logoUrl}
+              src={business.lightLogoUrl || business.logoUrl}
               alt={`${business.name || "Business"} logo`}
             />
             {collapsed && (

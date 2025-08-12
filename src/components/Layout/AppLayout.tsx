@@ -29,9 +29,11 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
           store.setBusiness({
             id: b.id,
             name: b.name ?? store.business.name,
-            phone: b.phone ?? '',
-            replyToEmail: b.reply_to_email ?? '',
-            logoUrl: b.logo_url ?? '',
+            phone: b.phone || store.business.phone || '',
+            replyToEmail: b.reply_to_email || store.business.replyToEmail || '',
+            logoUrl: b.logo_url || store.business.logoUrl,
+            // prefer light logo if your backend provides it
+            lightLogoUrl: (b as any).light_logo_url || store.business.lightLogoUrl,
             taxRateDefault: Number(b.tax_rate_default ?? store.business.taxRateDefault) || 0,
             numbering: {
               estPrefix: b.est_prefix ?? store.business.numbering.estPrefix,

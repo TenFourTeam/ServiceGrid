@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface BusinessLogoProps {
@@ -12,9 +12,26 @@ interface BusinessLogoProps {
 export default function BusinessLogo({ src, alt = "Logo", size = 24, className }: BusinessLogoProps) {
   const [broken, setBroken] = useState(false);
 
+  // Synchronously resolve a last-known logo from localStorage to avoid initial fallback blink
+  let lastKnown: string | undefined;
+  try {
+    const raw = localStorage.getItem('tenfour-lawn-store-v1');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      const data = parsed && typeof parsed === 'object' && 'version' in parsed && 'data' in parsed ? parsed.data : parsed;
+      const b = data?.business;
+      const candidate: string | undefined = b?.lightLogoUrl || b?.logoUrl;
+      if (candidate && typeof candidate === 'string' && candidate.trim().length > 0) lastKnown = candidate;
+    }
+  } catch {
+    // ignore
+  }
+
+  const resolvedSrc = !broken ? (src && src.trim().length > 0 ? src : lastKnown) : undefined;
+
   const letter = (alt?.trim()?.[0]?.toUpperCase() || 'B');
 
-  if (!src || broken) {
+  if (!resolvedSrc) {
     return (
       <div
         aria-hidden
@@ -28,7 +45,7 @@ export default function BusinessLogo({ src, alt = "Logo", size = 24, className }
 
   return (
     <img
-      src={src}
+      src={resolvedSrc}
       alt={alt}
       loading="eager"
       fetchPriority="high"
@@ -36,7 +53,7 @@ export default function BusinessLogo({ src, alt = "Logo", size = 24, className }
       width={size}
       height={size}
       onError={() => setBroken(true)}
-      className={cn("inline-block align-middle animate-fade-in", className)}
+      className={cn("inline-block align-middle", className)}
       style={{ width: size, height: size }}
     />
   );

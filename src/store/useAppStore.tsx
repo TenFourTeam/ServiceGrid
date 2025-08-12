@@ -20,8 +20,6 @@ const defaultBusiness = (): Business => ({
   name: 'TenFour Lawn',
   phone: '',
   replyToEmail: '',
-  logoUrl: '',
-  lightLogoUrl: '', // NEW default
   taxRateDefault: 0.08,
   numbering: { estPrefix: 'QUO-', estSeq: 1, invPrefix: 'INV-', invSeq: 1 },
 });
