@@ -1,49 +1,24 @@
-import { useState } from "react";
+
 import { Button } from "@/components/Button";
 import { SignInButton, SignUpButton } from "@clerk/clerk-react";
 import { useHasClerk } from "@/components/Auth/ClerkRuntime";
 import { content } from "../content";
 
 export function TopNav() {
-  const [logoError, setLogoError] = useState(false);
+  
   const hasClerk = useHasClerk();
   return (
     <header role="banner" className="sticky top-0 z-50 bg-background/60 dark:bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex items-center justify-between py-3">
         <div className="flex items-center gap-2">
-          {logoError ? (
-            <svg
-              width="112"
-              height="24"
-              viewBox="0 0 112 24"
-              role="img"
-              aria-label={`${content.brand.name} logo`}
-              className="block h-[60px] md:h-[76px] w-auto -ml-4"
-            >
-              <text
-                x="0"
-                y="18"
-                fontFamily="Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto"
-                fontWeight="700"
-                fontSize="18"
-                fill="currentColor"
-                letterSpacing="0.5"
-              >
-                {content.brand.name}
-              </text>
-            </svg>
-          ) : (
-            <img
-              src={content.brand.logoSrc}
-              alt={`${content.brand.name} logo`}
-              className="block h-[60px] md:h-[76px] w-auto origin-left transform-gpu scale-x-[1.05] -ml-4"
-              width="112"
-              height="24"
-              loading="eager"
-              
-              onError={() => setLogoError(true)}
-            />
-          )}
+          <img
+            src={content.brand.logoSrc}
+            alt={`${content.brand.name} logo`}
+            className="block h-[60px] md:h-[76px] w-auto origin-left transform-gpu scale-x-[1.07] -ml-4"
+            width="112"
+            height="24"
+            loading="eager"
+          />
         </div>
         <div className="flex items-center gap-2">
           {hasClerk ? (
