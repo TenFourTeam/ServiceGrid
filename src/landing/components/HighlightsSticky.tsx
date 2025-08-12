@@ -3,7 +3,7 @@ import { content } from "../content";
 import { Section } from "@/components/Section";
 import { Heading } from "@/components/Heading";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-
+import { Dialog, DialogTrigger, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 type HighlightStep = (typeof content.highlights.steps)[number] & { imageSrc?: string; alt?: string };
 
@@ -72,26 +72,45 @@ function VisualCard({ title, imageSrc, alt, kind }: { title: string; imageSrc?: 
 
   return (
     <div className="rounded-lg border bg-card shadow-subtle overflow-hidden">
-      <AspectRatio ratio={16 / 9}>
-        {imageSrc && !broken ? (
-          <img
-            src={imageSrc}
-            alt={label}
-            width={1600}
-            height={900}
-            decoding="async"
-            className="h-full w-full object-cover"
-            loading="lazy"
-            sizes="(min-width: 1024px) 640px, (min-width: 768px) 560px, 100vw"
-            onError={() => {
-              console.warn('Visual image failed to load', { src: imageSrc, alt: label });
-              setBroken(true);
-            }}
-          />
-        ) : (
-          renderPlaceholder()
-        )}
-      </AspectRatio>
+      {imageSrc && !broken ? (
+        <Dialog>
+          <DialogTrigger asChild>
+            <button
+              type="button"
+              aria-label={`View larger: ${label}`}
+              className="group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              <AspectRatio ratio={16 / 9}>
+                <img
+                  src={imageSrc}
+                  alt={label}
+                  width={1600}
+                  height={900}
+                  decoding="async"
+                  className="h-full w-full object-cover cursor-zoom-in"
+                  loading="lazy"
+                  sizes="(min-width: 1024px) 640px, (min-width: 768px) 560px, 100vw"
+                  onError={() => {
+                    console.warn('Visual image failed to load', { src: imageSrc, alt: label });
+                    setBroken(true);
+                  }}
+                />
+              </AspectRatio>
+            </button>
+          </DialogTrigger>
+          <DialogContent className="max-w-5xl p-0 bg-transparent border-none shadow-none">
+            <DialogTitle className="sr-only">{label}</DialogTitle>
+            <img
+              src={imageSrc}
+              alt={label}
+              className="w-full h-auto max-h-[80vh] rounded-lg"
+              decoding="async"
+            />
+          </DialogContent>
+        </Dialog>
+      ) : (
+        <AspectRatio ratio={16 / 9}>{renderPlaceholder()}</AspectRatio>
+      )}
       <div className="p-4">
         <p className="mt-2 text-sm text-muted-foreground text-center">{title}</p>
       </div>
