@@ -1,7 +1,7 @@
 export const content = {
   brand: {
     name: "TenFour",
-    logoSrc: "/images/a86a00c8-341b-4bbd-b9b5-8b15c1bd5227-removebg-preview%20(1).png"
+    logoSrc: "/images/Tenfour_Logo-removebg-preview.png"
   },
   hero: {
     A: {
