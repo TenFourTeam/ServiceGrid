@@ -32,15 +32,15 @@ export function Hero() {
       <div className="grid lg:grid-cols-2 gap-10 items-center">
         {/* Copy */}
         <div className="mx-auto max-w-3xl text-center lg:text-left">
-          <p className="eyebrow font-jakarta" data-reveal>{copy.eyebrow}</p>
-          <h1 id="hero-title" className="mt-3 text-4xl md:text-6xl font-bold tracking-tight bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text text-transparent" data-reveal>
+          <p className="eyebrow font-jakarta is-revealed" data-reveal>{copy.eyebrow}</p>
+          <h1 id="hero-title" className="mt-3 text-4xl md:text-6xl font-bold tracking-tight bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text text-transparent is-revealed" data-reveal>
             {copy.title}
           </h1>
-          <p className="mt-4 text-lg md:text-xl text-muted-foreground" data-reveal>
+          <p className="mt-4 text-lg md:text-xl text-muted-foreground is-revealed" data-reveal>
             {copy.subtitle}
           </p>
 
-          <div className="mt-8 flex flex-col sm:flex-row items-center lg:items-start justify-center lg:justify-start gap-3" data-reveal>
+          <div className="mt-8 flex flex-col sm:flex-row items-center lg:items-start justify-center lg:justify-start gap-3 is-revealed" data-reveal>
             {hasClerk ? (
               <SignUpButton mode="modal" forceRedirectUrl="/calendar">
                 <Button size="lg" variant="primary" className="hover-scale attention-ring [--ring:var(--brand-600)]" id="hero-cta">

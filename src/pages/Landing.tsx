@@ -21,12 +21,8 @@ export default function Landing() {
     let cancel: undefined | (() => void);
 
     const schedule = (cb: () => void) => {
-      if ('requestIdleCallback' in window) {
-        const id = (window as any).requestIdleCallback(cb, { timeout: 1200 });
-        return () => (window as any).cancelIdleCallback?.(id);
-      }
-      const t = setTimeout(cb, 0);
-      return () => clearTimeout(t);
+      const id = requestAnimationFrame(() => cb());
+      return () => cancelAnimationFrame(id);
     };
 
     cancel = schedule(() => {
