@@ -63,7 +63,7 @@ export const content = {
         key: "quote",
         title: "Send a quote that sells",
         desc: "Itemized options, clear totals, and one‑tap approval.",
-        imageSrc: "/images/How It Works 2 (new).png",
+        imageSrc: "/images/How It Works 2.png",
         alt: "How it works — quote: simple, one-tap approval",
       },
       {

@@ -169,7 +169,7 @@ export function HeroMedia({ className }: { className?: string }) {
       {/* Work order card (replaces badge) */}
       <div
         className={cn(
-          "absolute right-12 bottom-2 md:right-20 md:bottom-4 lg:right-28 lg:bottom-6 w-[44%] md:w-[40%] lg:w-[36%] rotate-[1deg] will-change-transform transition-transform duration-300 hover:scale-[1.02]",
+          "absolute right-6 bottom-0 md:right-16 md:bottom-2 lg:right-24 lg:bottom-4 w-[44%] md:w-[40%] lg:w-[36%] rotate-[1deg] will-change-transform transition-transform duration-300 hover:scale-[1.02]",
           framed && "rounded-lg border bg-card shadow-elev-1"
         )}
         aria-label="Mini work order preview"
