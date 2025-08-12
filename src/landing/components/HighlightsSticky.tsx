@@ -89,9 +89,8 @@ export function HighlightsSticky() {
     setActiveKey(key);
   };
 
-  const current = steps.find((s) => s.key === activeKey);
-  const singleImageSrc = current?.imageSrc ?? "/images/how-schedule.jpg";
-  const singleAlt = current?.alt ?? current?.title ?? content.highlights.heading;
+  const singleImageSrc = "/images/Screenshot 2025-08-10 at 7.00.47 PM.png";
+  const singleAlt = "Invoice dashboard screenshot";
   return (
     <Section ariaLabel={content.highlights.heading}>
       <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-start">
