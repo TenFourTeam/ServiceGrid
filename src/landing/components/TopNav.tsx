@@ -34,7 +34,7 @@ export function TopNav() {
             <img
               src={content.brand.logoSrc}
               alt={`${content.brand.name} logo`}
-              className="h-20 md:h-24 w-auto -ml-[8px] md:-ml-[10px]"
+              className="h-20 md:h-24 w-auto -ml-[10px] md:-ml-[12px]"
               width="112"
               height="24"
               loading="eager"
@@ -48,7 +48,7 @@ export function TopNav() {
             <Button variant="ghost" size="sm" className="hover-scale">Sign in</Button>
           </SignInButton>
           <SignUpButton mode="modal" forceRedirectUrl="/calendar">
-            <Button variant="primary" size="sm" className="hover-scale attention-ring [--ring:hsl(var(--brand-600))]">Try for free</Button>
+            <Button variant="primary" size="sm" className="hover-scale attention-ring [--ring:var(--brand-600)]">Try for free</Button>
           </SignUpButton>
         </div>
       </div>

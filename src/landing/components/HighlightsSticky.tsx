@@ -129,13 +129,23 @@ export function HighlightsSticky() {
         {/* Visuals */}
         <div aria-live="polite" className="relative mt-6 lg:mt-20" data-visuals>
           <span id="highlights-live" className="sr-only" />
-          { /* Single visual only */ }
-          <div aria-label={singleAlt} data-visual="how-visual">
-            <VisualCard
-              title={singleAlt}
-              imageSrc={singleImageSrc}
-              alt={singleAlt}
-            />
+          <div aria-label={singleAlt} data-visual="how-visual" className="rounded-lg border bg-card shadow-subtle overflow-hidden">
+            <AspectRatio ratio={16 / 9}>
+              <img
+                src={singleImageSrc}
+                alt={singleAlt}
+                width={1600}
+                height={900}
+                decoding="async"
+                loading="lazy"
+                className="h-full w-full object-cover"
+                sizes="(min-width: 1024px) 640px, (min-width: 768px) 560px, 100vw"
+                onError={(e) => {
+                  const target = e.currentTarget as HTMLImageElement;
+                  if (target.src.includes('Screenshot')) target.src = '/images/how-schedule.jpg';
+                }}
+              />
+            </AspectRatio>
           </div>
         </div>
       </div>
