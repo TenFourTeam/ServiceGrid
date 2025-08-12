@@ -136,7 +136,7 @@ export function HeroMedia({ className }: { className?: string }) {
       {/* Calendar card */}
       <div
         className={cn(
-          "absolute left-2 top-6 md:left-4 md:top-8 w-[62%] md:w-[58%] lg:w-[52%] rotate-[-0.5deg] will-change-transform transition-transform duration-300 hover:scale-[1.02]",
+          "absolute left-2 top-6 md:left-4 md:top-8 w-[58%] md:w-[54%] lg:w-[48%] rotate-[-0.5deg] will-change-transform transition-transform duration-300 hover:scale-[1.01] z-10",
           framed && "rounded-lg border bg-card shadow-elev-2 hover:shadow-elev-2/90"
         )}
         aria-label="Mini month calendar preview"
@@ -147,7 +147,7 @@ export function HeroMedia({ className }: { className?: string }) {
       {/* Invoice card */}
       <div
         className={cn(
-          "absolute right-3 top-16 md:right-6 md:top-20 w-[48%] md:w-[44%] lg:w-[40%] rotate-1 will-change-transform transition-transform duration-300 hover:scale-[1.02]",
+          "absolute right-3 top-16 md:right-6 md:top-20 w-[46%] md:w-[42%] lg:w-[38%] rotate-1 will-change-transform transition-transform duration-300 hover:scale-[1.01] z-40",
           framed && "rounded-lg border bg-card shadow-elev-2"
         )}
         aria-label="Mini invoice preview"
@@ -158,7 +158,7 @@ export function HeroMedia({ className }: { className?: string }) {
       {/* Quote card */}
       <div
         className={cn(
-          "absolute left-6 bottom-6 md:left-10 md:bottom-10 w-[44%] md:w-[40%] lg:w-[36%] -rotate-2 will-change-transform transition-transform duration-300 hover:scale-[1.02]",
+          "absolute left-6 bottom-6 md:left-10 md:bottom-10 w-[40%] md:w-[36%] lg:w-[32%] -rotate-2 will-change-transform transition-transform duration-300 hover:scale-[1.01] z-20",
           framed && "rounded-lg border bg-card shadow-elev-1"
         )}
         aria-label="Mini quote preview"
@@ -169,7 +169,7 @@ export function HeroMedia({ className }: { className?: string }) {
       {/* Work order card (replaces badge) */}
       <div
   className={cn(
-    "absolute right-6 bottom-0 md:right-16 md:bottom-2 lg:right-24 lg:bottom-4 w-[44%] md:w-[40%] lg:w-[36%] rotate-[1deg] will-change-transform transition-transform duration-300 hover:scale-[1.02] translate-y-3 md:translate-y-5 lg:translate-y-7",
+    "absolute right-6 bottom-0 md:right-16 md:bottom-2 lg:right-24 lg:bottom-4 w-[40%] md:w-[36%] lg:w-[32%] rotate-[1deg] will-change-transform transition-transform duration-300 hover:scale-[1.01] z-30",
     framed && "rounded-lg border bg-card shadow-elev-1"
   )}
         aria-label="Mini work order preview"
