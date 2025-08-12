@@ -12,20 +12,23 @@ export default function ClerkBootstrap() {
     let cancelled = false;
     const run = async () => {
       try {
-        const data = await edgePublicJson("clerk-publishable-key");
+        const [data, mod] = await Promise.all([
+          edgePublicJson("clerk-publishable-key"),
+          import("@clerk/clerk-react"),
+        ]);
+        if (cancelled) return;
         if (!data.publishableKey) throw new Error("No publishableKey in response");
-        if (cancelled) return;
         setPk(data.publishableKey);
-        const mod = await import("@clerk/clerk-react");
-        if (cancelled) return;
-        setClerkProviderComp(() => mod.ClerkProvider);
+        setClerkProviderComp(() => (mod as any).ClerkProvider);
       } catch (e: any) {
         console.error("[ClerkBootstrap]", e);
         if (!cancelled) setError(e.message || String(e));
       }
     };
     run();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Render app immediately to avoid landing flicker; enable Clerk when ready
@@ -42,11 +45,15 @@ export default function ClerkBootstrap() {
     );
   }
 
-  return (
-    <ClerkRuntimeProvider hasClerk={false}>
-      <App />
-    </ClerkRuntimeProvider>
-  );
+  if (error) {
+    return (
+      <ClerkRuntimeProvider hasClerk={false}>
+        <App />
+      </ClerkRuntimeProvider>
+    );
+  }
+
+  return <LoadingScreen full />;
 }
 
 
