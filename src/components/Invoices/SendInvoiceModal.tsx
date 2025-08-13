@@ -78,7 +78,7 @@ const previewHtml = useMemo(() => {
       console.info('[SendInvoiceModal] sending invoice email', { invoiceId: invoice.id, to });
       await edgeFetchJson("resend-send-email", getToken, {
         method: "POST",
-        body: { to, subject: subject || defaultSubject, html: finalHtml, invoice_id: invoice.id, from_name: store.business.name, reply_to: store.business.replyToEmail || undefined },
+        body: { to, subject: subject || defaultSubject, html: finalHtml, invoice_id: invoice.id, reply_to: store.business.replyToEmail || undefined },
       });
       console.info('[SendInvoiceModal] sent', { invoiceId: invoice.id });
       // Optimistically mark as Sent

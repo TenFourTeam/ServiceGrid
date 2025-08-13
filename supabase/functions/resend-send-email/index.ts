@@ -103,8 +103,11 @@ serve(async (req: Request): Promise<Response> => {
     });
   }
 
-  // Resolve recipient from related entity (invoice, quote, or job) tied to the authenticated owner
+  // Resolve recipient and business info from related entity tied to the authenticated owner
   let recipientEmail: string | null = null;
+  let businessName: string | null = null;
+  let emailType: 'system' | 'business' = 'business';
+  
   try {
     if (payload.invoice_id) {
       const { data: inv } = await supabaseAdmin
@@ -116,10 +119,11 @@ serve(async (req: Request): Promise<Response> => {
         return new Response(JSON.stringify({ error: 'Invoice not found' }), { status: 404, headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) } });
       }
       const businessId = inv[0].business_id;
-      const { data: b } = await supabaseAdmin.from('businesses').select('owner_id').eq('id', businessId).limit(1);
+      const { data: b } = await supabaseAdmin.from('businesses').select('owner_id,name').eq('id', businessId).limit(1);
       if (!b || !b.length || b[0].owner_id !== ownerId) {
         return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) } });
       }
+      businessName = b[0].name;
       const { data: cust } = await supabaseAdmin.from('customers').select('email').eq('id', inv[0].customer_id).limit(1);
       recipientEmail = (cust && cust.length) ? (cust[0].email as string | null) : null;
     } else if (payload.quote_id) {
@@ -132,10 +136,11 @@ serve(async (req: Request): Promise<Response> => {
         return new Response(JSON.stringify({ error: 'Quote not found' }), { status: 404, headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) } });
       }
       const businessId = q[0].business_id;
-      const { data: b } = await supabaseAdmin.from('businesses').select('owner_id').eq('id', businessId).limit(1);
+      const { data: b } = await supabaseAdmin.from('businesses').select('owner_id,name').eq('id', businessId).limit(1);
       if (!b || !b.length || b[0].owner_id !== ownerId) {
         return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) } });
       }
+      businessName = b[0].name;
       const { data: cust } = await supabaseAdmin.from('customers').select('email').eq('id', q[0].customer_id).limit(1);
       recipientEmail = (cust && cust.length) ? (cust[0].email as string | null) : null;
     } else if (payload.job_id) {
@@ -148,10 +153,11 @@ serve(async (req: Request): Promise<Response> => {
         return new Response(JSON.stringify({ error: 'Job not found' }), { status: 404, headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) } });
       }
       const businessId = j[0].business_id;
-      const { data: b } = await supabaseAdmin.from('businesses').select('owner_id').eq('id', businessId).limit(1);
+      const { data: b } = await supabaseAdmin.from('businesses').select('owner_id,name').eq('id', businessId).limit(1);
       if (!b || !b.length || b[0].owner_id !== ownerId) {
         return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) } });
       }
+      businessName = b[0].name;
       const { data: cust } = await supabaseAdmin.from('customers').select('email').eq('id', j[0].customer_id).limit(1);
       recipientEmail = (cust && cust.length) ? (cust[0].email as string | null) : null;
     } else {
@@ -177,8 +183,19 @@ serve(async (req: Request): Promise<Response> => {
   }))));
 
   const resend = new Resend(resendApiKey);
-  const fromName = payload.from_name || undefined;
-  const from = fromName ? `${fromName} <${fromEmail}>` : fromEmail;
+  
+  // Smart sender logic: use business name for business emails, system name for system emails
+  let from: string;
+  if (payload.from_name) {
+    // Explicit from_name provided (backwards compatibility)
+    from = `${payload.from_name} <${fromEmail}>`;
+  } else if (businessName && emailType === 'business') {
+    // Business email: use business name as sender
+    from = `${businessName} <${fromEmail}>`;
+  } else {
+    // System email or fallback: use configured email only
+    from = fromEmail;
+  }
 
   // Idempotency: if we've already sent this request successfully, return previous result
   try {

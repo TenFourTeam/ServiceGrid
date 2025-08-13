@@ -146,7 +146,7 @@ serve(async (req) => {
     // 3) Send welcome email once
     let sentWelcome = false;
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "onboarding@resend.dev";
+    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "team@tenfourproject.com";
     if (resendApiKey && profileId && email) {
       const subject = "Welcome to ServiceGrid";
       const { data: already } = await supabase
@@ -167,7 +167,7 @@ serve(async (req) => {
               <p style="margin:24px 0 0; font-size:12px; color:#6b7280;">If you didn't sign up for this, you can ignore this email.</p>
             </div>`;
           const res = await resend.emails.send({
-            from: `ServiceGrid <${fromEmail}>`,
+            from: `ServiceGrid Team <${fromEmail}>`,
             to: [email],
             subject,
             html,
