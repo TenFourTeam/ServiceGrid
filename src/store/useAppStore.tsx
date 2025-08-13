@@ -1,5 +1,6 @@
 import { AppEvent, AppState, Business, Customer, Quote, Invoice, Job, LineItem, Money } from '@/types';
 import { loadState, saveState } from './storage';
+import { useAuthSnapshot } from '@/auth';
 import React, { createContext, useContext, useEffect, useMemo, useReducer } from 'react';
 
 function nowISO() { return new Date().toISOString(); }
@@ -157,8 +158,33 @@ const StoreContext = createContext<Store | null>(null);
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const { snapshot } = useAuthSnapshot();
 
   useEffect(() => saveState(state), [state]);
+
+  // Sync business data from auth snapshot
+  useEffect(() => {
+    if (snapshot.phase === 'authenticated' && snapshot.business) {
+      const authBusiness: Business = {
+        id: snapshot.business.id,
+        name: snapshot.business.name,
+        phone: snapshot.business.phone || '',
+        replyToEmail: snapshot.business.replyToEmail || '',
+        taxRateDefault: snapshot.business.taxRateDefault || 0.08,
+        numbering: {
+          estPrefix: snapshot.business.estPrefix || 'QUO-',
+          estSeq: snapshot.business.estSeq || 1,
+          invPrefix: snapshot.business.invPrefix || 'INV-',
+          invSeq: snapshot.business.invSeq || 1,
+        },
+      };
+      
+      // Only update if business data has changed
+      if (state.business.id !== authBusiness.id || state.business.name !== authBusiness.name) {
+        dispatch({ type: 'SET_BUSINESS', payload: authBusiness });
+      }
+    }
+  }, [snapshot.phase, snapshot.business, state.business.id, state.business.name]);
 
   const api: Store = useMemo(() => ({
     ...state,

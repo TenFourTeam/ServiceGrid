@@ -163,6 +163,13 @@ export function AuthKernel({ children }: { children: React.ReactNode }) {
           roles: bootstrap.roles,
           claimsVersion: prev.claimsVersion + 1,
           token,
+          // Update business context
+          businessId: bootstrap.businessId,
+          businessName: bootstrap.businessName,
+          business: {
+            id: bootstrap.businessId,
+            name: bootstrap.businessName,
+          },
         }));
         
         if (token) {
@@ -222,6 +229,13 @@ export function AuthKernel({ children }: { children: React.ReactNode }) {
             claimsVersion: 1,
             token,
             lastActivityAt: Date.now(),
+            // Add business context
+            businessId: bootstrap.businessId,
+            businessName: bootstrap.businessName,
+            business: {
+              id: bootstrap.businessId,
+              name: bootstrap.businessName,
+            },
           }));
 
           if (token) {

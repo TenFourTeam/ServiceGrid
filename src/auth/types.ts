@@ -12,6 +12,20 @@ export interface AuthSnapshot {
   claimsVersion: number;          // bump to force refresh across app
   lastActivityAt: number;         // for idle/lock
   token?: string;                 // short-lived (memory only)
+  // Business context data
+  businessId?: string;
+  businessName?: string;
+  business?: {
+    id: string;
+    name: string;
+    phone?: string;
+    replyToEmail?: string;
+    taxRateDefault?: number;
+    estPrefix?: string;
+    invPrefix?: string;
+    estSeq?: number;
+    invSeq?: number;
+  };
 }
 
 export interface AuthBootstrapResult {

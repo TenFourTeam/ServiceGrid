@@ -135,9 +135,9 @@ export function useApiClient() {
     if (snapshot.token) {
       return { 
         Authorization: `Bearer ${snapshot.token}`,
-        // Include business context if available
-        ...(snapshot.tenantId && snapshot.tenantId !== 'default' 
-          ? { 'X-Business-Id': snapshot.tenantId } 
+        // Always include business context from auth snapshot
+        ...(snapshot.businessId 
+          ? { 'X-Business-Id': snapshot.businessId } 
           : {}
         )
       };
