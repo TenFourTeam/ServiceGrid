@@ -18,6 +18,17 @@ export function useDataHydration() {
   const { data: jobsData } = useSupabaseJobs();
   const { data: invoicesData } = useSupabaseInvoices();
 
+  // Add logging to verify business scoping
+  console.log('[DataHydration] Business context:', {
+    authBusinessId: snapshot.businessId,
+    storeBusinessId: store.business.id,
+    phase: snapshot.phase,
+    customerCount: customersData?.rows?.length || 0,
+    quoteCount: quotesData?.rows?.length || 0,
+    jobCount: jobsData?.rows?.length || 0,
+    invoiceCount: invoicesData?.rows?.length || 0,
+  });
+
   // Hydrate customers from server
   useEffect(() => {
     if (snapshot.phase === 'authenticated' && customersData?.rows) {
@@ -49,15 +60,24 @@ export function useDataHydration() {
         if (!existsInLocal) {
           store.upsertQuote({
             id: quote.id,
+            number: quote.number || '',
+            businessId: snapshot.businessId || store.business.id,
             customerId: quote.customerId,
-            // Basic quote data - full schema sync will happen over time
+            lineItems: [], // Start with empty line items, will be loaded separately
+            taxRate: 0,
+            discount: 0,
+            subtotal: quote.total || 0, // Use total as subtotal for now
             total: quote.total || 0,
             status: quote.status,
+            createdAt: quote.updatedAt || new Date().toISOString(),
+            updatedAt: quote.updatedAt || new Date().toISOString(),
+            publicToken: quote.publicToken || '',
+            viewCount: quote.viewCount || 0,
           });
         }
       });
     }
-  }, [quotesData, snapshot.phase, store]);
+  }, [quotesData, snapshot.phase, snapshot.businessId, store]);
 
   // Hydrate jobs from server
   useEffect(() => {
@@ -67,20 +87,24 @@ export function useDataHydration() {
         if (!existsInLocal) {
           store.upsertJob({
             id: job.id,
+            businessId: snapshot.businessId || store.business.id,
             customerId: job.customerId,
+            quoteId: job.quoteId || undefined,
             startsAt: job.startsAt,
             endsAt: job.endsAt,
-            address: job.address,
-            title: job.title,
+            address: job.address || undefined,
+            title: job.title || undefined,
             status: job.status,
-            total: job.total,
-            notes: job.notes,
-            createdAt: job.createdAt,
+            total: job.total || undefined,
+            notes: job.notes || undefined,
+            photos: job.photos || [],
+            createdAt: job.createdAt || new Date().toISOString(),
+            updatedAt: job.updatedAt || new Date().toISOString(),
           });
         }
       });
     }
-  }, [jobsData, snapshot.phase, store]);
+  }, [jobsData, snapshot.phase, snapshot.businessId, store]);
 
   // Hydrate invoices from server
   useEffect(() => {

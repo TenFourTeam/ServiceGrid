@@ -16,6 +16,7 @@ import { useDashboardData } from '@/hooks/useDashboardData';
 import { BusinessMembersList } from '@/components/Business/BusinessMembersList';
 import { AuditLogsList } from '@/components/Business/AuditLogsList';
 import { useBusinessRole } from '@/hooks/useBusinessRole';
+import { DataFlowTest } from '@/components/Debug/DataFlowTest';
 export default function SettingsPage() {
   const store = useStore();
   const {
@@ -345,6 +346,14 @@ export default function SettingsPage() {
                 toast.error(e?.message || 'Failed to disconnect');
               }
             }} />
+          </CardContent>
+        </Card>
+
+        {/* Debug section for development */}
+        <Card className="md:col-span-2">
+          <CardHeader><CardTitle>Data Flow Test (Debug)</CardTitle></CardHeader>
+          <CardContent>
+            <DataFlowTest />
           </CardContent>
         </Card>
 

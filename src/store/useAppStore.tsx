@@ -44,6 +44,7 @@ type Action =
   | { type: 'UPSERT_CUSTOMER'; payload: Customer }
   | { type: 'DELETE_CUSTOMER'; id: string }
   | { type: 'UPSERT_QUOTE'; payload: Quote }
+  | { type: 'DELETE_QUOTE'; id: string }
   | { type: 'UPSERT_JOB'; payload: Job }
   | { type: 'DELETE_JOB'; id: string }
   | { type: 'UPSERT_INVOICE'; payload: Invoice }
@@ -93,6 +94,9 @@ function reducer(state: AppState, action: Action): AppState {
         : [action.payload, ...state.quotes];
       return { ...state, quotes };
     }
+    case 'DELETE_QUOTE': {
+      return { ...state, quotes: state.quotes.filter((q) => q.id !== action.id) };
+    }
     case 'UPSERT_JOB': {
       const exists = state.jobs.some((j) => j.id === action.payload.id);
       const jobs = exists
@@ -124,7 +128,9 @@ export interface Store extends AppState {
   nextEstimateNumber(): string;
   nextInvoiceNumber(): string;
   upsertCustomer(c: Partial<Customer> & { name: string }): Customer;
+  deleteCustomer(id: string): void;
   upsertQuote(e: Partial<Quote> & { customerId: string }): Quote;
+  deleteQuote(id: string): void;
   upsertEstimate(e: Partial<Quote> & { customerId: string }): Quote;
   sendQuote(id: string): void;
   sendEstimate(id: string): void;
@@ -190,6 +196,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'UPSERT_CUSTOMER', payload: customer });
       return customer;
     },
+    deleteCustomer(id) {
+      dispatch({ type: 'DELETE_CUSTOMER', id });
+    },
     upsertQuote(e) {
       const lineItems = (e.lineItems ?? []).map((li) => ({
         id: li.id ?? uuid(),
@@ -235,6 +244,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'UPSERT_QUOTE', payload: quote });
       dispatch({ type: 'ADD_EVENT', payload: { id: uuid(), ts: nowISO(), type: 'quote.created', entityId: quote.id } });
       return quote;
+    },
+    deleteQuote(id) {
+      dispatch({ type: 'DELETE_QUOTE', id });
     },
     upsertEstimate(e) { return (api as any).upsertQuote(e); },
     sendQuote(id) {
