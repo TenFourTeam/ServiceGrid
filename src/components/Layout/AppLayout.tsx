@@ -3,7 +3,7 @@ import { ReactNode, useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { NewJobSheet } from '@/components/Job/NewJobSheet';
-import { SetupChecklist } from '@/components/Onboarding/SetupChecklist';
+
 import { useOnboarding } from '@/components/Onboarding/OnboardingProvider';
 
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
@@ -71,22 +71,10 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
               
             </div>
           </header>
-          <div className="flex gap-6 flex-1 min-h-0">
-            <div className="flex-1">
-              <PageFade key={String(title)}>
-                {children}
-              </PageFade>
-            </div>
-            {/* Setup Checklist in right rail */}
-            <aside className="hidden lg:block">
-              <SetupChecklist
-                onAddCustomer={onboarding.openAddCustomer}
-                onCreateJob={onboarding.openNewJobSheet}
-                onCreateQuote={onboarding.openCreateQuote}
-                onLinkBank={onboarding.openBankLink}
-                onStartSubscription={onboarding.openSubscription}
-              />
-            </aside>
+          <div className="flex-1">
+            <PageFade key={String(title)}>
+              {children}
+            </PageFade>
           </div>
         </SidebarInset>
         </div>

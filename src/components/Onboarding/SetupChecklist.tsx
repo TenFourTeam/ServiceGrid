@@ -1,12 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Check, ChevronRight, X, Users, Calendar, CreditCard, Crown } from 'lucide-react';
+import { Check, ChevronRight, X, Users, Calendar, CreditCard, Crown, User } from 'lucide-react';
 import { useState } from 'react';
 import { useOnboardingState } from '@/hooks/useOnboardingState';
 import { cn } from '@/lib/utils';
 
 interface SetupChecklistProps {
+  onSetupProfile: () => void;
   onAddCustomer: () => void;
   onCreateJob: () => void;
   onCreateQuote: () => void;
@@ -15,6 +16,7 @@ interface SetupChecklistProps {
 }
 
 export function SetupChecklist({
+  onSetupProfile,
   onAddCustomer,
   onCreateJob,
   onCreateQuote,
@@ -23,6 +25,7 @@ export function SetupChecklist({
 }: SetupChecklistProps) {
   const [collapsed, setCollapsed] = useState(false);
   const {
+    hasNameAndBusiness,
     hasCustomers,
     hasJobs,
     hasQuotes,
@@ -36,6 +39,13 @@ export function SetupChecklist({
   if (isComplete) return null;
 
   const steps = [
+    {
+      id: 'profile',
+      label: 'Set up your profile',
+      completed: hasNameAndBusiness,
+      icon: User,
+      action: onSetupProfile
+    },
     {
       id: 'customer',
       label: 'Create first Customer',

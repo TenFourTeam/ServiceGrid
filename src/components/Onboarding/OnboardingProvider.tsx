@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 import { IntentPickerModal } from './IntentPickerModal';
+import { FloatingSetupWidget } from './FloatingSetupWidget';
 import { useOnboardingState } from '@/hooks/useOnboardingState';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useNavigate } from 'react-router-dom';
@@ -7,6 +8,7 @@ import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 
 interface OnboardingContextType {
   showIntentPicker: () => void;
+  openSetupProfile: () => void;
   openNewJobSheet: () => void;
   openCreateQuote: () => void;
   openAddCustomer: () => void;
@@ -34,6 +36,11 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       return () => clearTimeout(timer);
     }
   }, [isSignedIn, shouldShowIntentPicker]);
+
+  const openSetupProfile = () => {
+    track('onboarding_step_completed', { step: 'setup_profile_initiated' });
+    navigate('/settings');
+  };
 
   const openNewJobSheet = () => {
     track('onboarding_step_completed', { step: 'new_job_initiated' });
@@ -71,6 +78,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
 
   const contextValue: OnboardingContextType = {
     showIntentPicker: () => setIntentPickerOpen(true),
+    openSetupProfile,
     openNewJobSheet,
     openCreateQuote,
     openAddCustomer,
@@ -89,6 +97,14 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         onCreateQuote={openCreateQuote}
         onAddCustomer={openAddCustomer}
         onImportCustomers={openImportCustomers}
+      />
+      <FloatingSetupWidget
+        onSetupProfile={openSetupProfile}
+        onAddCustomer={openAddCustomer}
+        onCreateJob={openNewJobSheet}
+        onCreateQuote={openCreateQuote}
+        onLinkBank={openBankLink}
+        onStartSubscription={openSubscription}
       />
     </OnboardingContext.Provider>
   );
