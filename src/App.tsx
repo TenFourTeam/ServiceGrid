@@ -1,7 +1,6 @@
 
 import React, { Suspense, lazy, useEffect } from "react";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+import { ConsolidatedToaster } from "@/components/ui/toast-consolidated";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
@@ -69,8 +68,7 @@ function PrefetchRoutes() {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner position="bottom-right" offset="16px" style={{ zIndex: 40 }} />
+      <ConsolidatedToaster />
       <AutoSignOut />
       <ClerkBootstrap />
       <GlobalLoadingIndicator />

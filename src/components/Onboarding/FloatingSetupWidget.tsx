@@ -92,7 +92,7 @@ export function FloatingSetupWidget({
   }));
 
   return (
-    <div className="fixed bottom-20 right-4 z-50 w-80 max-w-[calc(100vw-2rem)]">
+    <div className="fixed bottom-4 left-4 z-40 w-80 max-w-[calc(100vw-2rem)]">
       <Card className="bg-background border shadow-lg animate-pulse-subtle">
         {!isExpanded ? (
           // Collapsed state

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 import { IntentPickerModal } from './IntentPickerModal';
 import { FloatingSetupWidget } from './FloatingSetupWidget';
 import { TrialNotifications } from './TrialNotifications';
@@ -41,11 +41,15 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   }, [isSignedIn, shouldShowIntentPicker]);
 
   // Reset dismissals on fresh login
-  React.useEffect(() => {
+  const resetDismissals = useCallback(() => {
     if (isLoaded && isSignedIn) {
       store.resetDismissals();
     }
-  }, [isLoaded, isSignedIn, store]);
+  }, [isLoaded, isSignedIn]);
+
+  React.useEffect(() => {
+    resetDismissals();
+  }, [resetDismissals]);
 
   const openSetupProfile = () => {
     track('onboarding_step_completed', { step: 'setup_profile_initiated' });

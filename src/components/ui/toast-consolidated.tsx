@@ -19,9 +19,9 @@ export function ConsolidatedToaster() {
           cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
         },
       }}
-      // Ensure toasts don't collide with floating widgets
+      // Ensure toasts appear above floating widgets
       style={{
-        zIndex: 40, // Lower than floating widgets (z-50)
+        zIndex: 50, // Above floating widgets (z-40)
       }}
     />
   );
