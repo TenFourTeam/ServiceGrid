@@ -1,6 +1,6 @@
 // Re-export all auth components and hooks for easy importing
 export { AuthKernel, useAuthSnapshot, useAuthEvent } from './AuthKernel';
-export { AuthBoundary, RequireAuth, PublicOnly } from './AuthBoundary';
+export { AuthBoundary } from './AuthBoundary';
 export { useApiClient } from './ApiClient';
 export { default as AuthErrorBoundary } from './AuthErrorBoundary';
 export { default as LockScreen } from './LockScreen';

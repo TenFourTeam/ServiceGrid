@@ -1,6 +1,4 @@
 import { useEffect } from "react";
-import { useAuth } from "@clerk/clerk-react";
-import { useNavigate } from "react-router-dom";
 import { useHasClerk } from "@/components/Auth/ClerkRuntime";
 import LoadingScreen from "@/components/LoadingScreen";
 
@@ -19,10 +17,6 @@ import { Industries } from "@/landing/components/Industries";
 
 export default function Landing() {
   const hasClerk = useHasClerk();
-  const { isLoaded, isSignedIn } = useAuth();
-  const navigate = useNavigate();
-
-  // Pure landing page - no redirect logic needed here
 
   // Defer scroll orchestrator to avoid blocking first paint
   useEffect(() => {
@@ -44,8 +38,8 @@ export default function Landing() {
     };
   }, []);
 
-  // Show loading while checking auth state for Clerk users or during initial load
-  if (!hasClerk || (hasClerk && !isLoaded)) {
+  // Show loading while Clerk is not loaded (optional check)
+  if (!hasClerk) {
     return <LoadingScreen full />;
   }
 
