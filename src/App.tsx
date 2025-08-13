@@ -14,6 +14,7 @@ import { AuthKernel } from "@/auth/AuthKernel";
 import { AuthBoundary, RequireAuth, PublicOnly } from "@/auth/AuthBoundary";
 import AuthErrorBoundary from "@/auth/AuthErrorBoundary";
 import { QueryClientIntegration } from "@/auth/QueryClientIntegration";
+import { BusinessSync } from "@/components/Business/BusinessSync";
 const CalendarPage = lazy(() => import("./pages/Calendar"));
 const WorkOrdersPage = lazy(() => import("./pages/WorkOrders"));
 const QuotesPage = lazy(() => import("./pages/Quotes"));
@@ -83,6 +84,7 @@ const App = () => (
       <StoreProvider>
         <ClerkLoaded>
           <AuthKernel>
+            <BusinessSync />
             <GlobalLoadingIndicator />
             <QueryClientIntegration />
             <AuthErrorBoundary>
