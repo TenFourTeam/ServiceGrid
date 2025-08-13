@@ -100,9 +100,39 @@ serve(async (req) => {
         .single();
       if (insErr) throw insErr;
       biz = ins;
+      
+      // Auto-create owner membership for new business
+      await supabase
+        .from("business_members")
+        .insert({ 
+          business_id: biz.id, 
+          user_id: ownerId, 
+          role: 'owner',
+          joined_at: new Date().toISOString()
+        });
     }
 
-    return json({ business: biz });
+    // Determine user's role in the business
+    let role = 'owner'; // Default if they own the business
+    if (biz.owner_id !== ownerId) {
+      // Check business_members table for role
+      const { data: memberData } = await supabase
+        .from("business_members")
+        .select("role")
+        .eq("business_id", biz.id)
+        .eq("user_id", ownerId)
+        .limit(1)
+        .maybeSingle();
+      
+      role = memberData?.role || 'worker';
+    }
+
+    return json({ 
+      business: biz,
+      role: role,
+      tenantId: biz.id,
+      roles: [role]
+    });
   } catch (e: any) {
     console.error("[get-business] error:", e);
     const msg = e?.message || String(e);
