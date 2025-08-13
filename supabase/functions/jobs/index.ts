@@ -1,171 +1,15 @@
 // Supabase Edge Function: jobs
-// - Verifies Clerk token
-// - Resolves/creates a Supabase user mapping via profiles (owner_id)
-// - GET: list jobs
-// - POST: create a job from a quote
+// - GET: list jobs with optional date filtering
+// - POST: create a job from a quote or ad-hoc
 // - PATCH: update a job (status/times/notes)
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { verifyToken } from "https://esm.sh/@clerk/backend@1.3.2";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.54.0";
+import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
 
 const JOBS_NOTIFY_INTERNAL = (Deno.env.get("JOBS_NOTIFY_INTERNAL") || "").toLowerCase() === "true";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "*",
-  "Vary": "Origin",
-};
-
-function json(data: unknown, init: ResponseInit = {}) {
-  return new Response(JSON.stringify(data), {
-    headers: { "Content-Type": "application/json", ...corsHeaders },
-    ...init,
-  });
-}
-
 function badRequest(message: string, status = 400) {
   return json({ error: message }, { status });
-}
-
-function createAdminClient() {
-  const url = Deno.env.get("SUPABASE_URL");
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!url || !serviceKey) throw new Error("Missing Supabase env vars");
-  return createClient(url, serviceKey);
-}
-
-async function getClerkPayload(req: Request) {
-  const authHeader = req.headers.get("authorization") || req.headers.get("Authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return { error: "Missing Bearer token" } as const;
-  }
-  const token = authHeader.replace(/^Bearer\s+/i, "");
-  const secretKey = Deno.env.get("CLERK_SECRET_KEY");
-  if (!secretKey) return { error: "Missing CLERK_SECRET_KEY" } as const;
-  try {
-    const payload = await verifyToken(token, { secretKey });
-    return { payload } as const;
-  } catch (e) {
-    return { error: `Invalid token: ${e}` } as const;
-  }
-}
-
-async function fetchClerkEmail(userId: string): Promise<string | null> {
-  const secretKey = Deno.env.get("CLERK_SECRET_KEY");
-  if (!secretKey) return null;
-  try {
-    const r = await fetch(`https://api.clerk.com/v1/users/${userId}`, {
-      headers: { Authorization: `Bearer ${secretKey}` },
-    });
-    if (!r.ok) return null;
-    const u: any = await r.json();
-    const primaryId = u?.primary_email_address_id;
-    const emails = Array.isArray(u?.email_addresses) ? u.email_addresses : [];
-    const primary = emails.find((e: any) => e.id === primaryId) || emails[0];
-    const email = primary?.email_address || u?.email || u?.primary_email_address?.email_address || null;
-    return email?.toLowerCase?.() || null;
-  } catch {
-    return null;
-  }
-}
-
-async function findAuthUserIdByEmail(
-  supabase: ReturnType<typeof createClient>,
-  email: string,
-): Promise<string | null> {
-  const target = email.toLowerCase();
-  let page = 1;
-  const perPage = 200;
-  while (page <= 10) {
-    const { data, error } = await (supabase as any).auth.admin.listUsers({ page, perPage });
-    if (error) throw error;
-    const users = (data as any)?.users || [];
-    const match = users.find((u: any) =>
-      (u.email && u.email.toLowerCase() === target) ||
-      (Array.isArray(u?.email_addresses) && u.email_addresses.some((e: any) => (e.email_address || e.email)?.toLowerCase?.() === target))
-    );
-    if (match) return match.id as string;
-    if (!users.length || users.length < perPage) break;
-    page++;
-  }
-  return null;
-}
-
-async function resolveOwnerId(supabase: ReturnType<typeof createClient>, payload: any): Promise<string> {
-  const clerkSub = payload.sub as string;
-  const claimEmail = (payload.email || payload["email"] || payload["primary_email"] || "") as string;
-  let email: string | null = claimEmail?.toLowerCase?.() || null;
-
-  let { data: profByClerk, error: profByClerkErr } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("clerk_user_id", clerkSub)
-    .limit(1)
-    .maybeSingle();
-  if (profByClerkErr) throw profByClerkErr;
-  if (profByClerk?.id) return profByClerk.id as string;
-
-  if (email) {
-    const { data: profByEmail, error: profByEmailErr } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("email", email)
-      .limit(1)
-      .maybeSingle();
-    if (profByEmailErr) throw profByEmailErr;
-    if (profByEmail?.id) {
-      const { error: updErr } = await supabase
-        .from("profiles")
-        .update({ clerk_user_id: clerkSub })
-        .eq("id", profByEmail.id);
-      if (updErr) throw updErr;
-      return profByEmail.id as string;
-    }
-  }
-
-  if (!email) {
-    email = await fetchClerkEmail(clerkSub);
-  }
-  if (!email) {
-    throw new Error("Unable to determine user email from Clerk; cannot create Supabase user");
-  }
-
-  try {
-    const { data: created, error: createErr } = await (supabase as any).auth.admin.createUser({
-      email,
-      email_confirm: true,
-    });
-    if (createErr) throw createErr;
-    const supaUserId = created.user?.id;
-    if (!supaUserId) throw new Error("Failed to create supabase user");
-
-    const { error: insErr } = await supabase.from("profiles").insert({
-      id: supaUserId,
-      email,
-      clerk_user_id: clerkSub,
-    });
-    if (insErr) throw insErr;
-    return supaUserId;
-  } catch (err) {
-    const msg = (err as any)?.message || String(err);
-    const code = (err as any)?.code || (err as any)?.status;
-    const isEmailExists = code === "email_exists" || code === 422 || /already been registered/i.test(msg);
-    if (!isEmailExists) throw err;
-
-    const existingUserId = await findAuthUserIdByEmail(supabase, email);
-    if (!existingUserId) {
-      throw new Error("Email exists in auth, but no matching user id could be found via Admin API");
-    }
-
-    const { error: upsertErr } = await supabase
-      .from("profiles")
-      .upsert({ id: existingUserId, email, clerk_user_id: clerkSub }, { onConflict: "id" });
-    if (upsertErr) throw upsertErr;
-
-    return existingUserId;
-  }
 }
 
 function defaultSchedule(): { startsAt: string; endsAt: string } {
@@ -179,22 +23,9 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
-  const origin = req.headers.get("Origin") || req.headers.get("origin");
-  const allowed = (Deno.env.get("ALLOWED_ORIGINS") || "").split(",").map((s) => s.trim()).filter(Boolean);
-  if (origin && allowed.length && !allowed.includes("*") && !allowed.includes(origin)) {
-    return new Response(JSON.stringify({ error: "Origin not allowed" }), {
-      status: 403,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
 
   try {
-    const auth = await getClerkPayload(req);
-    if ("error" in auth) return badRequest(auth.error, 401);
-    const { payload } = auth;
-
-    const supabase = createAdminClient();
-    const ownerId = await resolveOwnerId(supabase, payload);
+    const ctx = await requireCtx(req);
 
     const url = new URL(req.url);
     const pathParts = url.pathname.split("/");
@@ -203,12 +34,12 @@ serve(async (req) => {
       const start = url.searchParams.get("start");
       const end = url.searchParams.get("end");
 
-      let q = supabase
+      let q = ctx.supaAdmin
         .from("jobs")
         .select(
           "id, customer_id, quote_id, address, title, starts_at, ends_at, status, total, notes, photos, created_at, updated_at",
         )
-        .eq("owner_id", ownerId);
+        .eq("business_id", ctx.businessId);
 
       // Optional range filtering: return jobs that INTERSECT [start, end)
       if (start && end) {
@@ -261,11 +92,11 @@ serve(async (req) => {
         const quoteId = (body.quoteId || "").toString();
         if (!quoteId) return badRequest("quoteId is required");
 
-        const { data: quote, error: qErr } = await supabase
+        const { data: quote, error: qErr } = await ctx.supaAdmin
           .from("quotes")
           .select("id, owner_id, business_id, customer_id, address, total")
           .eq("id", quoteId)
-          .eq("owner_id", ownerId)
+          .eq("business_id", ctx.businessId)
           .single();
         if (qErr) return badRequest("Quote not found", 404);
 
@@ -274,8 +105,8 @@ serve(async (req) => {
           : defaultSchedule();
 
         const insertPayload: any = {
-          owner_id: ownerId,
-          business_id: (quote as any).business_id,
+          owner_id: ctx.userId,
+          business_id: ctx.businessId,
           quote_id: quoteId,
           customer_id: (quote as any).customer_id,
           address: (quote as any).address ?? null,
@@ -289,7 +120,7 @@ serve(async (req) => {
           photos: body.photos ?? [],
         };
 
-        const { data: ins, error: insErr } = await supabase
+        const { data: ins, error: insErr } = await ctx.supaAdmin
           .from("jobs")
           .insert(insertPayload)
           .select("id, customer_id, quote_id, address, title, starts_at, ends_at, status, total, notes, photos, created_at, updated_at")
@@ -297,25 +128,23 @@ serve(async (req) => {
         if (insErr) throw insErr;
 
         const j = ins as any;
-        console.log("[jobs][POST] created from quote", { ownerId, jobId: j.id, quoteId });
+        console.log("[jobs][POST] created from quote", { ownerId: ctx.userId, jobId: j.id, quoteId });
 
         if (JOBS_NOTIFY_INTERNAL) {
           try {
-            const businessId = (quote as any).business_id;
-            const { data: biz } = await supabase
+            const { data: biz } = await ctx.supaAdmin
               .from('businesses')
               .select('name, reply_to_email')
-              .eq('id', businessId)
-              .eq('owner_id', ownerId)
+              .eq('id', ctx.businessId)
               .maybeSingle();
             const fromName = (biz as any)?.name || undefined;
             const replyTo = (biz as any)?.reply_to_email || null;
             let to: string | null = replyTo || null;
             if (!to) {
-              const { data: prof } = await supabase
+              const { data: prof } = await ctx.supaAdmin
                 .from('profiles')
                 .select('email')
-                .eq('id', ownerId)
+                .eq('id', ctx.userId)
                 .maybeSingle();
               to = (prof as any)?.email || null;
             }
@@ -332,7 +161,7 @@ serve(async (req) => {
                     <div style="margin-top:8px; color:#6b7280;">Job ID: ${j.id}</div>
                   </div>
                 </div>`;
-              await (supabase as any).functions.invoke('resend-send-email', {
+              await (ctx.supaAdmin as any).functions.invoke('resend-send-email', {
                 body: { to, subject, html, job_id: j.id, from_name: fromName, reply_to: replyTo || undefined },
               });
             }
@@ -361,19 +190,19 @@ serve(async (req) => {
       // Branch 2: Ad-hoc job creation (no quote)
       if (!body.customerId) return badRequest("customerId is required");
 
-      const { data: customer, error: custErr } = await supabase
+      const { data: customer, error: custErr } = await ctx.supaAdmin
         .from("customers")
         .select("id, owner_id, business_id, address")
         .eq("id", body.customerId)
-        .eq("owner_id", ownerId)
+        .eq("business_id", ctx.businessId)
         .single();
       if (custErr) return badRequest("Customer not found", 404);
 
       const sched = body.startsAt && body.endsAt ? { startsAt: body.startsAt, endsAt: body.endsAt } : defaultSchedule();
 
       const insertPayload2: any = {
-        owner_id: ownerId,
-        business_id: (customer as any).business_id,
+        owner_id: ctx.userId,
+        business_id: ctx.businessId,
         quote_id: null,
         customer_id: (customer as any).id,
         address: body.address ?? (customer as any).address ?? null,
@@ -387,7 +216,7 @@ serve(async (req) => {
         photos: body.photos ?? [],
       };
 
-      const { data: ins2, error: insErr2 } = await supabase
+      const { data: ins2, error: insErr2 } = await ctx.supaAdmin
         .from("jobs")
         .insert(insertPayload2)
         .select("id, customer_id, quote_id, address, title, starts_at, ends_at, status, total, notes, photos, created_at, updated_at")
@@ -395,25 +224,23 @@ serve(async (req) => {
       if (insErr2) throw insErr2;
 
       const j2 = ins2 as any;
-      console.log("[jobs][POST] created ad-hoc", { ownerId, jobId: j2.id });
+      console.log("[jobs][POST] created ad-hoc", { ownerId: ctx.userId, jobId: j2.id });
 
       if (JOBS_NOTIFY_INTERNAL) {
         try {
-          const businessId = (customer as any).business_id;
-          const { data: biz } = await supabase
+          const { data: biz } = await ctx.supaAdmin
             .from('businesses')
             .select('name, reply_to_email')
-            .eq('id', businessId)
-            .eq('owner_id', ownerId)
+            .eq('id', ctx.businessId)
             .maybeSingle();
           const fromName = (biz as any)?.name || undefined;
           const replyTo = (biz as any)?.reply_to_email || null;
           let to: string | null = replyTo || null;
           if (!to) {
-            const { data: prof } = await supabase
+            const { data: prof } = await ctx.supaAdmin
               .from('profiles')
               .select('email')
-              .eq('id', ownerId)
+              .eq('id', ctx.userId)
               .maybeSingle();
             to = (prof as any)?.email || null;
           }
@@ -430,7 +257,7 @@ serve(async (req) => {
                 <div style="margin-top:8px; color:#6b7280;">Job ID: ${j2.id}</div>
               </div>
             </div>`;
-            await (supabase as any).functions.invoke('resend-send-email', {
+            await (ctx.supaAdmin as any).functions.invoke('resend-send-email', {
               body: { to, subject, html, job_id: j2.id, from_name: fromName, reply_to: replyTo || undefined },
             });
           }
@@ -471,12 +298,12 @@ serve(async (req) => {
         quoteId: string | null;
       }>;
 
-      // Ensure job exists and belongs to owner
-      const { data: existing, error: exErr } = await supabase
+      // Ensure job exists and belongs to business
+      const { data: existing, error: exErr } = await ctx.supaAdmin
         .from("jobs")
         .select("id, customer_id, business_id, title, address, starts_at, ends_at")
         .eq("id", id)
-        .eq("owner_id", ownerId)
+        .eq("business_id", ctx.businessId)
         .single();
       if (exErr) return badRequest("Job not found", 404);
 
@@ -509,11 +336,11 @@ serve(async (req) => {
         if (qid === null) {
           upd.quote_id = null;
         } else if (qid) {
-          const { data: quote, error: qErr } = await supabase
+          const { data: quote, error: qErr } = await ctx.supaAdmin
             .from('quotes')
             .select('id, customer_id')
             .eq('id', qid)
-            .eq('owner_id', ownerId)
+            .eq('business_id', ctx.businessId)
             .single();
           if (qErr) return badRequest('Quote not found', 404);
           if ((quote as any).customer_id !== (existing as any).customer_id) {
@@ -524,15 +351,15 @@ serve(async (req) => {
       }
 
       if (Object.keys(upd).length) {
-        const { error: updErr } = await supabase.from("jobs").update(upd).eq("id", id).eq("owner_id", ownerId);
+        const { error: updErr } = await ctx.supaAdmin.from("jobs").update(upd).eq("id", id).eq("business_id", ctx.businessId);
         if (updErr) throw updErr;
       }
 
-      const { data: j2, error: selErr } = await supabase
+      const { data: j2, error: selErr } = await ctx.supaAdmin
         .from("jobs")
         .select("id, customer_id, quote_id, address, title, starts_at, ends_at, status, total, notes, photos, created_at, updated_at")
         .eq("id", id)
-        .eq("owner_id", ownerId)
+        .eq("business_id", ctx.businessId)
         .single();
       if (selErr) throw selErr;
 
@@ -543,20 +370,19 @@ serve(async (req) => {
         try {
           const changed = (hasStartsAt ? (((body as any).startsAt ?? null) !== prevStarts) : false) || (hasEndsAt ? (((body as any).endsAt ?? null) !== prevEnds) : false);
           if (changed) {
-            const { data: biz } = await supabase
+            const { data: biz } = await ctx.supaAdmin
               .from('businesses')
               .select('name, reply_to_email')
-              .eq('id', prevBusinessId)
-              .eq('owner_id', ownerId)
+              .eq('id', ctx.businessId)
               .maybeSingle();
             const fromName = (biz as any)?.name || undefined;
             const replyTo = (biz as any)?.reply_to_email || null;
             let to: string | null = replyTo || null;
             if (!to) {
-              const { data: prof } = await supabase
+              const { data: prof } = await ctx.supaAdmin
                 .from('profiles')
                 .select('email')
-                .eq('id', ownerId)
+                .eq('id', ctx.userId)
                 .maybeSingle();
               to = (prof as any)?.email || null;
             }
@@ -574,7 +400,7 @@ serve(async (req) => {
                     <div style="margin-top:8px; color:#6b7280;">Job ID: ${j.id}</div>
                   </div>
                 </div>`;
-              await (supabase as any).functions.invoke('resend-send-email', {
+              await (ctx.supaAdmin as any).functions.invoke('resend-send-email', {
                 body: { to, subject, html, job_id: j.id, from_name: fromName, reply_to: replyTo || undefined },
               });
             }

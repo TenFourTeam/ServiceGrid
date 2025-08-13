@@ -1,216 +1,17 @@
 // Supabase Edge Function: quotes
-// - Verifies Clerk token
-// - Resolves/creates a Supabase user mapping via profiles (owner_id)
-// - Ensures default business
 // - GET: list quotes with customer info
 // - POST: create a draft quote with line items and computed totals
+// - PATCH: update quotes
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { verifyToken } from "https://esm.sh/@clerk/backend@1.3.2";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.54.0";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "*",
-};
-
-function json(data: unknown, init: ResponseInit = {}) {
-  return new Response(JSON.stringify(data), {
-    headers: { "Content-Type": "application/json", ...corsHeaders },
-    ...init,
-  });
-}
+import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
 
 function badRequest(message: string, status = 400) {
   return json({ error: message }, { status });
 }
 
-function createAdminClient() {
-  const url = Deno.env.get("SUPABASE_URL");
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!url || !serviceKey) throw new Error("Missing Supabase env vars");
-  return createClient(url, serviceKey);
-}
-
-async function getClerkPayload(req: Request) {
-  const authHeader = req.headers.get("authorization") || req.headers.get("Authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return { error: "Missing Bearer token" } as const;
-  }
-  const token = authHeader.replace(/^Bearer\s+/i, "");
-  const secretKey = Deno.env.get("CLERK_SECRET_KEY");
-  if (!secretKey) return { error: "Missing CLERK_SECRET_KEY" } as const;
-  try {
-    const payload = await verifyToken(token, { secretKey });
-    return { payload } as const;
-  } catch (e) {
-    return { error: `Invalid token: ${e}` } as const;
-  }
-}
-
-async function fetchClerkEmail(userId: string): Promise<string | null> {
-  const secretKey = Deno.env.get("CLERK_SECRET_KEY");
-  if (!secretKey) return null;
-  try {
-    const r = await fetch(`https://api.clerk.com/v1/users/${userId}`, {
-      headers: { Authorization: `Bearer ${secretKey}` },
-    });
-    if (!r.ok) return null;
-    const u: any = await r.json();
-    const primaryId = u?.primary_email_address_id;
-    const emails = Array.isArray(u?.email_addresses) ? u.email_addresses : [];
-    const primary = emails.find((e: any) => e.id === primaryId) || emails[0];
-    const email = primary?.email_address || u?.email || u?.primary_email_address?.email_address || null;
-    return email?.toLowerCase?.() || null;
-  } catch {
-    return null;
-  }
-}
-
-async function findAuthUserIdByEmail(
-  supabase: ReturnType<typeof createClient>,
-  email: string,
-): Promise<string | null> {
-  const target = email.toLowerCase();
-  let page = 1;
-  const perPage = 200;
-  while (page <= 10) {
-    const { data, error } = await (supabase as any).auth.admin.listUsers({ page, perPage });
-    if (error) throw error;
-    const users = (data as any)?.users || [];
-    const match = users.find((u: any) =>
-      (u.email && u.email.toLowerCase() === target) ||
-      (Array.isArray(u?.email_addresses) && u.email_addresses.some((e: any) => (e.email_address || e.email)?.toLowerCase?.() === target))
-    );
-    if (match) return match.id as string;
-    if (!users.length || users.length < perPage) break;
-    page++;
-  }
-  return null;
-}
-
-async function resolveOwnerId(supabase: ReturnType<typeof createClient>, payload: any): Promise<string> {
-  const clerkSub = payload.sub as string;
-  const claimEmail = (payload.email || payload["email"] || payload["primary_email"] || "") as string;
-  let email: string | null = claimEmail?.toLowerCase?.() || null;
-
-  // 1) Lookup by clerk_user_id
-  let { data: profByClerk, error: profByClerkErr } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("clerk_user_id", clerkSub)
-    .limit(1)
-    .maybeSingle();
-  if (profByClerkErr) throw profByClerkErr;
-  if (profByClerk?.id) return profByClerk.id as string;
-
-  // 2) Lookup by email, attach clerk_user_id
-  if (email) {
-    const { data: profByEmail, error: profByEmailErr } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("email", email)
-      .limit(1)
-      .maybeSingle();
-    if (profByEmailErr) throw profByEmailErr;
-    if (profByEmail?.id) {
-      const { error: updErr } = await supabase
-        .from("profiles")
-        .update({ clerk_user_id: clerkSub })
-        .eq("id", profByEmail.id);
-      if (updErr) throw updErr;
-      return profByEmail.id as string;
-    }
-  }
-
-  // Ensure we have an email (fetch from Clerk if missing)
-  if (!email) {
-    email = await fetchClerkEmail(clerkSub);
-  }
-  if (!email) {
-    throw new Error("Unable to determine user email from Clerk; cannot create Supabase user");
-  }
-
-  // 3) Create Supabase auth user, then insert profile
-  try {
-    const { data: created, error: createErr } = await (supabase as any).auth.admin.createUser({
-      email,
-      email_confirm: true,
-    });
-    if (createErr) throw createErr;
-    const supaUserId = created.user?.id;
-    if (!supaUserId) throw new Error("Failed to create supabase user");
-
-    const { error: insErr } = await supabase.from("profiles").insert({
-      id: supaUserId,
-      email,
-      clerk_user_id: clerkSub,
-    });
-    if (insErr) throw insErr;
-    return supaUserId;
-  } catch (err) {
-    const msg = (err as any)?.message || String(err);
-    const code = (err as any)?.code || (err as any)?.status;
-    const isEmailExists = code === "email_exists" || code === 422 || /already been registered/i.test(msg);
-    if (!isEmailExists) throw err;
-
-    // 3a) Try linking an existing profile by email
-    if (email) {
-      const { data: profByEmail2, error: profErr2 } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("email", email)
-        .limit(1)
-        .maybeSingle();
-      if (profErr2) throw profErr2;
-      if (profByEmail2?.id) {
-        const { error: updErr2 } = await supabase
-          .from("profiles")
-          .update({ clerk_user_id: clerkSub })
-          .eq("id", profByEmail2.id);
-        if (updErr2) throw updErr2;
-        return profByEmail2.id as string;
-      }
-    }
-
-    // 3b) Fallback: search auth users via Admin API and upsert profile
-    const existingUserId = await findAuthUserIdByEmail(supabase, email);
-    if (!existingUserId) {
-      throw new Error("Email exists in auth, but no matching user id could be found via Admin API");
-    }
-
-    const { error: upsertErr } = await supabase
-      .from("profiles")
-      .upsert({ id: existingUserId, email, clerk_user_id: clerkSub }, { onConflict: "id" });
-    if (upsertErr) throw upsertErr;
-
-    return existingUserId;
-  }
-}
-
-async function ensureDefaultBusiness(supabase: ReturnType<typeof createClient>, ownerId: string) {
-  const { data: existing, error: selErr } = await supabase
-    .from("businesses")
-    .select("id")
-    .eq("owner_id", ownerId)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  if (selErr) throw selErr;
-  if (existing?.id) return existing.id as string;
-
-  const { data: inserted, error: insErr } = await supabase
-    .from("businesses")
-    .insert({ name: "My Business", owner_id: ownerId, est_prefix: "QUO-" })
-    .select("id")
-    .single();
-  if (insErr) throw insErr;
-  return inserted.id as string;
-}
-
 async function nextEstimateNumber(
-  supabase: ReturnType<typeof createClient>,
+  supabase: ReturnType<typeof import("https://esm.sh/@supabase/supabase-js@2.54.0").createClient>,
   businessId: string,
 ): Promise<string> {
   // Optimistic concurrency loop
@@ -267,28 +68,15 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
-  const origin = req.headers.get("Origin") || req.headers.get("origin");
-  const allowed = (Deno.env.get("ALLOWED_ORIGINS") || "").split(",").map((s) => s.trim()).filter(Boolean);
-  if (origin && allowed.length && !allowed.includes("*") && !allowed.includes(origin)) {
-    return new Response(JSON.stringify({ error: "Origin not allowed" }), {
-      status: 403,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
 
   try {
-    const auth = await getClerkPayload(req);
-    if ("error" in auth) return badRequest(auth.error, 401);
-    const { payload } = auth;
-
-    const supabase = createAdminClient();
-    const ownerId = await resolveOwnerId(supabase, payload);
+    const ctx = await requireCtx(req);
 
     if (req.method === "GET") {
-      const { data, error } = await supabase
+      const { data, error } = await ctx.supaAdmin
         .from("quotes")
         .select("id, number, total, status, updated_at, public_token, view_count, customer_id, customers(name,email)")
-        .eq("owner_id", ownerId)
+        .eq("business_id", ctx.businessId)
         .order("updated_at", { ascending: false });
       if (error) throw error;
       const rows = (data || []).map((r: any) => ({
@@ -313,8 +101,7 @@ serve(async (req) => {
       const lineItems = Array.isArray(body.lineItems) ? body.lineItems : [];
       if (!lineItems.length) return badRequest("At least one line item is required");
 
-      const businessId = await ensureDefaultBusiness(supabase, ownerId);
-      const number = await nextEstimateNumber(supabase, businessId);
+      const number = await nextEstimateNumber(ctx.supaAdmin, ctx.businessId);
 
       // Sanitize items and compute totals
       const items = lineItems
@@ -336,8 +123,8 @@ serve(async (req) => {
       const total = subtotal + taxAmount - discount;
 
       const insertPayload: any = {
-        owner_id: ownerId,
-        business_id: businessId,
+        owner_id: ctx.userId,
+        business_id: ctx.businessId,
         customer_id: customerId,
         address: body.address ?? null,
         number,
@@ -354,7 +141,7 @@ serve(async (req) => {
         deposit_percent: body.depositPercent ?? null,
       };
 
-      const { data: q, error: insErr } = await supabase
+      const { data: q, error: insErr } = await ctx.supaAdmin
         .from("quotes")
         .insert(insertPayload)
         .select("id, number, total, status, created_at, updated_at, public_token, view_count, customer_id, tax_rate, discount, subtotal")
@@ -363,7 +150,7 @@ serve(async (req) => {
 
       const quoteId = (q as any).id as string;
       const itemsRows = items.map((i, idx) => ({
-        owner_id: ownerId,
+        owner_id: ctx.userId,
         quote_id: quoteId,
         position: idx,
         name: i.name,
@@ -373,10 +160,10 @@ serve(async (req) => {
         line_total: i.unit_price * i.qty,
       }));
 
-      const { error: itemsErr } = await supabase.from("quote_line_items").insert(itemsRows);
+      const { error: itemsErr } = await ctx.supaAdmin.from("quote_line_items").insert(itemsRows);
       if (itemsErr) throw itemsErr;
 
-      console.log("[quotes][POST] created", { ownerId, quoteId, items: items.length, total });
+      console.log("[quotes][POST] created", { ownerId: ctx.userId, quoteId, items: items.length, total });
 
       return json({
         ok: true,
@@ -407,12 +194,12 @@ serve(async (req) => {
 
       const body = (await req.json().catch(() => ({}))) as Partial<CreateQuotePayload>;
 
-      // Ensure quote exists and belongs to owner
-      const { data: existing, error: exErr } = await supabase
+      // Ensure quote exists and belongs to business
+      const { data: existing, error: exErr } = await ctx.supaAdmin
         .from("quotes")
         .select("id, owner_id, customer_id")
         .eq("id", id)
-        .eq("owner_id", ownerId)
+        .eq("business_id", ctx.businessId)
         .single();
       if (exErr) return badRequest("Quote not found", 404);
 
@@ -459,16 +246,16 @@ serve(async (req) => {
       if (body.depositPercent !== undefined) upd.deposit_percent = body.depositPercent;
 
       if (Object.keys(upd).length) {
-        const { error: updErr } = await supabase.from("quotes").update(upd).eq("id", id).eq("owner_id", ownerId);
+        const { error: updErr } = await ctx.supaAdmin.from("quotes").update(upd).eq("id", id).eq("business_id", ctx.businessId);
         if (updErr) throw updErr;
       }
 
       if (items.length) {
         // Replace line items
-        const { error: delErr } = await supabase.from("quote_line_items").delete().eq("quote_id", id).eq("owner_id", ownerId);
+        const { error: delErr } = await ctx.supaAdmin.from("quote_line_items").delete().eq("quote_id", id).eq("owner_id", ctx.userId);
         if (delErr) throw delErr;
         const itemsRows = items.map((i, idx) => ({
-          owner_id: ownerId,
+          owner_id: ctx.userId,
           quote_id: id,
           position: idx,
           name: i.name,
@@ -477,33 +264,33 @@ serve(async (req) => {
           unit_price: i.unit_price,
           line_total: i.unit_price * i.qty,
         }));
-        const { error: insErr } = await supabase.from("quote_line_items").insert(itemsRows);
-        if (insErr) throw insErr;
+        const { error: itemsErr } = await ctx.supaAdmin.from("quote_line_items").insert(itemsRows);
+        if (itemsErr) throw itemsErr;
       }
 
-      const { data: q2, error: selErr } = await supabase
+      const { data: q2, error: selErr } = await ctx.supaAdmin
         .from("quotes")
         .select("id, number, total, status, created_at, updated_at, public_token, view_count, customer_id, tax_rate, discount, subtotal")
         .eq("id", id)
-        .eq("owner_id", ownerId)
+        .eq("business_id", ctx.businessId)
         .single();
       if (selErr) throw selErr;
 
-      console.log("[quotes][PATCH] updated", { ownerId, id, items: items.length, total: q2.total });
+      console.log("[quotes][PATCH] updated", { ownerId: ctx.userId, id, items: items.length, total: (q2 as any).total });
 
       return json({ ok: true, quote: {
-        id: q2.id,
-        number: q2.number,
-        total: q2.total,
-        status: q2.status,
-        createdAt: q2.created_at,
-        updatedAt: q2.updated_at,
-        publicToken: q2.public_token,
-        viewCount: q2.view_count ?? 0,
-        customerId: q2.customer_id,
-        taxRate: q2.tax_rate,
-        discount: q2.discount,
-        subtotal: q2.subtotal,
+        id: (q2 as any).id,
+        number: (q2 as any).number,
+        total: (q2 as any).total,
+        status: (q2 as any).status,
+        createdAt: (q2 as any).created_at,
+        updatedAt: (q2 as any).updated_at,
+        publicToken: (q2 as any).public_token,
+        viewCount: (q2 as any).view_count ?? 0,
+        customerId: (q2 as any).customer_id,
+        taxRate: (q2 as any).tax_rate,
+        discount: (q2 as any).discount,
+        subtotal: (q2 as any).subtotal,
       }});
     }
 
