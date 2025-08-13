@@ -1,6 +1,9 @@
 import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useOnboardingStateEnhanced } from '@/hooks/useOnboardingStateEnhanced';
+import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
+import { useSupabaseJobs } from '@/hooks/useSupabaseJobs';
+import { useSupabaseQuotes } from '@/hooks/useSupabaseQuotes';
 import { onboardingSteps } from './onboardingSteps';
 import { OnboardingOverlay } from './OnboardingOverlay';
 import { AttentionRing } from './AttentionRing';
@@ -19,35 +22,23 @@ export function GuidedTour() {
     isComplete
   } = useOnboardingStateEnhanced();
 
+  // Check if required data is loaded before showing tour
+  const customers = useSupabaseCustomers();
+  const jobs = useSupabaseJobs();
+  const quotes = useSupabaseQuotes();
+  
+  const dataReady = customers.isSuccess && jobs.isSuccess && quotes.isSuccess;
   const currentStepConfig = nextStep ? onboardingSteps[nextStep] : null;
   const { target } = useSpotlight(currentStepConfig?.selector);
 
-  // Auto-navigate to step route if needed
-  useEffect(() => {
-    if (!currentStepConfig || isComplete) return;
-    
-    const isOnCorrectRoute = location.pathname === currentStepConfig.route;
-    if (!isOnCorrectRoute) {
-      navigate(currentStepConfig.route);
-    }
-  }, [currentStepConfig, location.pathname, navigate, isComplete]);
+  // 🔒 REMOVED: Auto-navigation caused infinite loops
+  // Users will navigate manually via "Take me there" button
 
-  // Check if step is already complete
-  useEffect(() => {
-    if (!currentStepConfig || isComplete) return;
+  // 🔒 DISABLED: Guard execution temporarily disabled to prevent async thrashing
+  // Will be re-enabled when guards use real data instead of mock functions
 
-    const checkCompletion = async () => {
-      const isComplete = await currentStepConfig.guard();
-      if (isComplete) {
-        markStepComplete(currentStepConfig.id);
-      }
-    };
-
-    checkCompletion();
-  }, [currentStepConfig, markStepComplete, isComplete]);
-
-  // Don't show tour if complete or paused
-  if (!currentStepConfig || isComplete || progress.isPaused) {
+  // Don't show tour if complete, paused, or data not ready
+  if (!currentStepConfig || isComplete || progress.isPaused || !dataReady) {
     return null;
   }
 
@@ -66,6 +57,10 @@ export function GuidedTour() {
 
   const handleClose = () => {
     pauseTour();
+  };
+
+  const handleNavigate = () => {
+    navigate(currentStepConfig.route);
   };
 
   // Show attention ring if element exists but no overlay
@@ -89,6 +84,9 @@ export function GuidedTour() {
           onNext={handleAdvance}
           onSkip={currentStepConfig.canSkip ? handleSkip : undefined}
           onClose={handleClose}
+          onNavigate={handleNavigate}
+          currentRoute={location.pathname}
+          targetRoute={currentStepConfig.route}
           canSkip={currentStepConfig.canSkip}
         />
       </OnboardingOverlay>
