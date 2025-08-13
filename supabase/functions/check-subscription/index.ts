@@ -17,6 +17,7 @@ function createAdminClient() {
 
 async function fetchClerkUserCreationDate(clerkUserId: string, secretKey: string) {
   try {
+    console.log(`[TRIAL-FIX] Fetching creation date for Clerk user: ${clerkUserId}`);
     // Use Clerk's management API to get user details
     const response = await fetch(`https://api.clerk.dev/v1/users/${clerkUserId}`, {
       headers: {
@@ -26,14 +27,31 @@ async function fetchClerkUserCreationDate(clerkUserId: string, secretKey: string
     });
     
     if (!response.ok) {
-      console.warn(`Failed to fetch user from Clerk API: ${response.status}`);
+      console.warn(`[TRIAL-FIX] Failed to fetch user from Clerk API: ${response.status}`);
       return new Date().toISOString(); // Fallback to current date
     }
     
     const userData = await response.json();
-    return new Date(userData.created_at * 1000).toISOString();
+    console.log(`[TRIAL-FIX] Raw created_at from Clerk:`, userData.created_at, typeof userData.created_at);
+    
+    // Handle different timestamp formats from Clerk
+    let createdDate;
+    if (typeof userData.created_at === 'number') {
+      // If it's already in milliseconds (13 digits) or seconds (10 digits)
+      const timestamp = userData.created_at.toString().length === 10 ? userData.created_at * 1000 : userData.created_at;
+      createdDate = new Date(timestamp);
+    } else if (typeof userData.created_at === 'string') {
+      // If it's an ISO string
+      createdDate = new Date(userData.created_at);
+    } else {
+      throw new Error('Unexpected created_at format');
+    }
+    
+    const isoString = createdDate.toISOString();
+    console.log(`[TRIAL-FIX] Converted to ISO string:`, isoString);
+    return isoString;
   } catch (error) {
-    console.warn(`Error fetching user creation date from Clerk:`, error);
+    console.warn(`[TRIAL-FIX] Error fetching user creation date from Clerk:`, error);
     return new Date().toISOString(); // Fallback to current date
   }
 }

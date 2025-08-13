@@ -1,4 +1,3 @@
-
 import { AppEvent, AppState, Business, Customer, Quote, Invoice, Job, LineItem, Money } from '@/types';
 import { loadState, saveState } from './storage';
 import React, { createContext, useContext, useEffect, useMemo, useReducer } from 'react';
@@ -32,6 +31,11 @@ const initialState: AppState = loadState<AppState>() ?? {
   invoices: [],
   payments: [],
   events: [],
+  // NEW: UI state for persistent preferences
+  ui: {
+    setupWidgetDismissed: false,
+    setupWidgetDismissedAt: null,
+  },
 };
 
 // Actions
@@ -44,7 +48,8 @@ type Action =
   | { type: 'DELETE_JOB'; id: string }
   | { type: 'UPSERT_INVOICE'; payload: Invoice }
   | { type: 'ADD_EVENT'; payload: AppEvent }
-  | { type: 'SET_BUSINESS'; payload: Business };
+  | { type: 'SET_BUSINESS'; payload: Business }
+  | { type: 'DISMISS_SETUP_WIDGET'; permanently?: boolean };
 
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
@@ -52,6 +57,15 @@ function reducer(state: AppState, action: Action): AppState {
       return action.payload;
     case 'SET_BUSINESS':
       return { ...state, business: action.payload };
+    case 'DISMISS_SETUP_WIDGET':
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          setupWidgetDismissed: true,
+          setupWidgetDismissedAt: action.permanently ? nowISO() : null,
+        },
+      };
     case 'UPSERT_CUSTOMER': {
       const exists = state.customers.some((c) => c.id === action.payload.id);
       const customers = exists
@@ -122,6 +136,10 @@ export interface Store extends AppState {
   // NEW: quote engagement helpers
   recordQuoteOpen(id: string): void;
   requestQuoteEdit(id: string): void;
+  
+  // NEW: UI state management
+  dismissSetupWidget(permanently?: boolean): void;
+  shouldShowSetupWidget(): boolean;
 }
 
 const StoreContext = createContext<Store | null>(null);
@@ -367,6 +385,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const updated: Quote = { ...est, status: 'Edits Requested', updatedAt: nowISO() };
       dispatch({ type: 'UPSERT_QUOTE', payload: updated });
     },
+
+    // NEW: UI state management
+    dismissSetupWidget(permanently = false) {
+      dispatch({ type: 'DISMISS_SETUP_WIDGET', permanently });
+    },
+
+    shouldShowSetupWidget() {
+      // Don't show if permanently dismissed
+      if (state.ui?.setupWidgetDismissedAt) return false;
+      
+      // Allow temporary dismissal but reset on new session
+      return !state.ui?.setupWidgetDismissed;
+    },
   }), [state]);
 
   return <StoreContext.Provider value={api}>{children}</StoreContext.Provider>;
@@ -377,4 +408,3 @@ export function useStore() {
   if (!ctx) throw new Error('Store not available');
   return ctx;
 }
-

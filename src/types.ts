@@ -147,5 +147,9 @@ export interface AppState {
   invoices: Invoice[];
   payments: Payment[];
   events: AppEvent[];
+  ui?: {
+    setupWidgetDismissed?: boolean;
+    setupWidgetDismissedAt?: string | null;
+  };
 }
 
