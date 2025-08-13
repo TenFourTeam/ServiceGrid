@@ -49,8 +49,8 @@ export default function Landing() {
     };
   }, []);
 
-  // Show loading while checking auth state for Clerk users
-  if (hasClerk && !isLoaded) {
+  // Show loading while checking auth state for Clerk users or during initial load
+  if (!hasClerk || (hasClerk && !isLoaded)) {
     return <LoadingScreen full />;
   }
 

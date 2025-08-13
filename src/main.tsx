@@ -8,6 +8,7 @@ import './index.css';
 function Boot() {
   const [key, setKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetch('https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/clerk-publishable-key')
@@ -20,15 +21,27 @@ function Boot() {
         return res.json();
       })
       .then((data) => setKey(data.publishableKey || null))
-      .catch((e) => setError(e.message || 'Failed to load Clerk key'));
+      .catch((e) => setError(e.message || 'Failed to load Clerk key'))
+      .finally(() => setIsLoading(false));
   }, []);
 
-  if (!key && !error) return <div />;
+  if (isLoading) return (
+    <div className="min-h-screen grid place-items-center">
+      <div className="flex items-center gap-3 text-muted-foreground">
+        <div
+          className="h-5 w-5 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-primary"
+          role="status"
+          aria-label="Loading"
+        />
+        <span className="text-sm">Loading…</span>
+      </div>
+    </div>
+  );
   if (error) return <div style={{ padding: 24 }}>Auth configuration error: {error}</div>;
 
   return (
     <ClerkProvider publishableKey={key!}>
-      <ClerkRuntimeProvider hasClerk={true}>
+      <ClerkRuntimeProvider hasClerk={!!key}>
         <App />
       </ClerkRuntimeProvider>
     </ClerkProvider>
