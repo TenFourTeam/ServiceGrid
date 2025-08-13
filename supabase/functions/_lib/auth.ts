@@ -59,10 +59,12 @@ export async function requireCtx(req: Request): Promise<AuthContext> {
   const url = new URL(req.url);
   const candidateBusinessId = req.headers.get("X-Business-Id") || url.searchParams.get("businessId") || null;
 
-  const businessId = await resolveBusinessId(supaAdmin, userId, candidateBusinessId);
+  // Resolve the actual profile UUID for this Clerk user
+  const profileId = await resolveOwnerId(supaAdmin, userId);
+  const businessId = await resolveBusinessId(supaAdmin, profileId, candidateBusinessId);
 
   return {
-    userId,
+    userId: profileId, // Return the resolved UUID, not the Clerk user ID
     email: email?.toLowerCase() || undefined,
     businessId,
     supaAdmin
