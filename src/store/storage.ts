@@ -71,7 +71,9 @@ export function loadState<T>(): T | null {
       if (isLikelyAppState(migrated)) {
         const result = AppStateSchema.safeParse(migrated);
         if (!result.success) {
-          console.error('State validation failed', result.error);
+          console.warn('State validation failed, clearing corrupted localStorage:', result.error);
+          // Clear corrupted localStorage instead of returning null
+          localStorage.removeItem(STORAGE_KEY);
           return null;
         }
         return result.data as T;
@@ -81,7 +83,9 @@ export function loadState<T>(): T | null {
       if (isLikelyAppState(parsed)) {
         const result = AppStateSchema.safeParse(parsed);
         if (!result.success) {
-          console.error('State validation failed', result.error);
+          console.warn('State validation failed, clearing corrupted localStorage:', result.error);
+          // Clear corrupted localStorage instead of returning null
+          localStorage.removeItem(STORAGE_KEY);
           return null;
         }
         return result.data as T;
@@ -89,7 +93,9 @@ export function loadState<T>(): T | null {
       return parsed as T;
     }
   } catch (e) {
-    console.error('Failed to load state', e);
+    console.warn('Failed to load state, clearing localStorage:', e);
+    // Clear corrupted localStorage on any parsing errors
+    localStorage.removeItem(STORAGE_KEY);
     return null;
   }
 }
