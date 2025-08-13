@@ -121,7 +121,7 @@ export default function AppSidebar() {
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="w-full flex items-center gap-2 rounded-md border px-2 py-2 bg-background hover:bg-muted transition opacity-0 hover:opacity-100 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-12"
+                className="w-full flex items-center gap-2 rounded-md border px-2 py-2 hover:bg-muted transition group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-8"
                 aria-label="User menu"
               >
                 <UserIcon className="h-5 w-5 text-primary flex-shrink-0" />
