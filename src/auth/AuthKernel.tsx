@@ -74,8 +74,8 @@ export function AuthKernel({ children }: { children: React.ReactNode }) {
       if (!token) throw new Error('AUTH_NO_JWT');
 
       // Use direct fetch for bootstrap since ApiClient isn't ready yet
-      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/get-business`, {
+      console.log("[AuthKernel] Starting bootstrap with token...");
+      const response = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/get-business`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -83,11 +83,15 @@ export function AuthKernel({ children }: { children: React.ReactNode }) {
         },
       });
       
+      console.log("[AuthKernel] Bootstrap response status:", response.status);
       if (!response.ok) {
-        throw new Error(`Bootstrap failed: ${response.status}`);
+        const errorText = await response.text();
+        console.error("[AuthKernel] Bootstrap failed with response:", errorText);
+        throw new Error(`Bootstrap failed: ${response.status} - ${errorText}`);
       }
       
       const result = await response.json();
+      console.log("[AuthKernel] Bootstrap result:", result);
 
       emit('auth:bootstrap_ok');
       return {
