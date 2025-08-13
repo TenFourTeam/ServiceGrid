@@ -24,6 +24,7 @@ export function ServiceGridLogo({ className = "" }: { className?: string }) {
         fontSize="18"
         fontWeight="700"
         letterSpacing="-0.01em"
+        className="text-foreground"
         fill="currentColor"
       >
         {content.brand.name}

@@ -237,7 +237,7 @@ export default function LegalPage() {
             </article>
             <article>
               <h3 className="font-medium">3. Processor Obligations</h3>
-              <p className="mt-1 text-sm text-muted-foreground">Detailing TenFour’s responsibilities.</p>
+              <p className="mt-1 text-sm text-muted-foreground">Detailing ServiceGrid’s responsibilities.</p>
               <ul className="list-disc pl-6 mt-1 text-sm text-muted-foreground space-y-1">
                 <li>Process data only per your instructions.</li>
                 <li>Implement encryption and security measures.</li>
