@@ -61,8 +61,8 @@ const App = () => (
       <AutoSignOut />
       <ClerkBootstrap />
       <StoreProvider>
-        <OnboardingProvider>
-          <BrowserRouter>
+        <BrowserRouter>
+          <OnboardingProvider>
             <ErrorBoundary>
               <Suspense fallback={<LoadingScreen /> }>
                  <PrefetchRoutes />
@@ -86,8 +86,8 @@ const App = () => (
                  </Routes>
               </Suspense>
             </ErrorBoundary>
-          </BrowserRouter>
-        </OnboardingProvider>
+          </OnboardingProvider>
+        </BrowserRouter>
       </StoreProvider>
     </TooltipProvider>
   </QueryClientProvider>
