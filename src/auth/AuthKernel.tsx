@@ -48,7 +48,8 @@ export function AuthKernel({ children }: { children: React.ReactNode }) {
       
       tokenRefreshTimeoutRef.current = setTimeout(async () => {
         try {
-          const newToken = await getToken({ template: 'supabase' });
+          const { getApiToken } = await import('@/utils/clerkTokenSafe');
+          const newToken = await getApiToken({ refresh: true });
           if (newToken) {
             setSnapshot(prev => ({ ...prev, token: newToken }));
             emit('auth:token_refreshed', { ageSec: (Date.now() - now) / 1000 });
@@ -67,8 +68,10 @@ export function AuthKernel({ children }: { children: React.ReactNode }) {
   // Bootstrap process - await tenant/role data
   const runBootstrap = useCallback(async (): Promise<AuthBootstrapResult | null> => {
     try {
-      const token = await getToken({ template: 'supabase' });
-      if (!token) throw new Error('No token available');
+      // Import the safe token helper
+      const { getApiToken } = await import('@/utils/clerkTokenSafe');
+      const token = await getApiToken({ refresh: true });
+      if (!token) throw new Error('AUTH_NO_JWT');
 
       // Use direct fetch for bootstrap since ApiClient isn't ready yet
       const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -93,9 +96,16 @@ export function AuthKernel({ children }: { children: React.ReactNode }) {
         businessId: result.business?.id || 'default',
         businessName: result.business?.name || 'ServiceGrid'
       };
-    } catch (error) {
-      console.warn('[AuthKernel] Bootstrap failed:', error);
-      emit('auth:bootstrap_fail', { error });
+        } catch (error: any) {
+      console.error('[AuthKernel] Bootstrap failed:', error);
+      
+      // Handle specific error types
+      if (error.message === 'AUTH_NO_JWT') {
+        emit('auth:error', { code: 'AUTH_NO_JWT', error: 'No authentication token available' });
+        setSnapshot(prev => ({ ...prev, phase: 'signed_out' }));
+      } else {
+        emit('auth:error', { code: 'bootstrap_failed', error });
+      }
       return null;
     }
   }, [getToken, emit]);
@@ -134,25 +144,41 @@ export function AuthKernel({ children }: { children: React.ReactNode }) {
 
   // Force refresh auth state
   const refreshAuth = useCallback(async () => {
-    if (!isSignedIn) return;
-    
-    const bootstrap = await runBootstrap();
-    if (bootstrap) {
-      const token = await getToken({ template: 'supabase' });
-      setSnapshot(prev => ({
-        ...prev,
-        phase: 'authenticated',
-        tenantId: bootstrap.tenantId,
-        roles: bootstrap.roles,
-        claimsVersion: prev.claimsVersion + 1,
-        token,
-      }));
+    try {
+      if (!isSignedIn) return;
       
-      if (token) {
-        scheduleTokenRefresh(token);
+      const bootstrap = await runBootstrap();
+      if (bootstrap) {
+        const { getApiToken } = await import('@/utils/clerkTokenSafe');
+        const token = await getApiToken({ refresh: true });
+        if (!token) throw new Error('AUTH_NO_JWT');
+
+        setSnapshot(prev => ({
+          ...prev,
+          phase: 'authenticated',
+          tenantId: bootstrap.tenantId,
+          roles: bootstrap.roles,
+          claimsVersion: prev.claimsVersion + 1,
+          token,
+        }));
+        
+        if (token) {
+          scheduleTokenRefresh(token);
+        }
       }
+    } catch (error: any) {
+      console.error('[AuthKernel] Auth refresh failed:', error);
+      
+      // Handle specific error types  
+      if (error.message === 'AUTH_NO_JWT') {
+        emit('auth:error', { code: 'AUTH_NO_JWT', error: 'No authentication token available' });
+        setSnapshot(prev => ({ ...prev, phase: 'signed_out' }));
+      } else {
+        emit('auth:error', { code: 'refresh_failed', error });
+      }
+      throw error;
     }
-  }, [isSignedIn, runBootstrap, getToken, scheduleTokenRefresh]);
+  }, [isSignedIn, runBootstrap, scheduleTokenRefresh, emit]);
 
   // Main auth state management
   useEffect(() => {
@@ -180,7 +206,8 @@ export function AuthKernel({ children }: { children: React.ReactNode }) {
       const initializeAuth = async () => {
         const bootstrap = await runBootstrap();
         if (bootstrap) {
-          const token = await getToken({ template: 'supabase' });
+          const { getApiToken } = await import('@/utils/clerkTokenSafe');
+          const token = await getApiToken({ refresh: true });
           
           setSnapshot(prev => ({
             ...prev,
