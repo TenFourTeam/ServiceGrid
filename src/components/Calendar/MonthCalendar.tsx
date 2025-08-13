@@ -1,10 +1,9 @@
 import { useMemo, useState } from "react";
 import { addDays, endOfMonth, endOfWeek, format, isSameDay, isSameMonth, parseISO, startOfMonth, startOfWeek } from "date-fns";
-import { useSupabaseJobsRange } from "@/hooks/useSupabaseJobsRange";
-import type { DbJobRow } from "@/hooks/useSupabaseJobs";
-import { useSupabaseCustomers } from "@/hooks/useSupabaseCustomers";
+import { useStore } from "@/store/useAppStore";
 import { formatMoney } from "@/utils/format";
 import JobShowModal from "@/components/Jobs/JobShowModal";
+import type { Job } from "@/types";
 
 function useMonthGrid(date: Date) {
   const start = startOfWeek(startOfMonth(date), { weekStartsOn: 1 });
@@ -16,17 +15,23 @@ function useMonthGrid(date: Date) {
 
 export default function MonthCalendar({ date, onDateChange }: { date: Date; onDateChange: (d: Date) => void }) {
   const { start, end, days } = useMonthGrid(date);
-  const { data } = useSupabaseJobsRange({ start, end });
-  const jobs: DbJobRow[] = data?.rows ?? [];
+  const { jobs: allJobs, customers } = useStore();
+  
+  const jobs = useMemo(() => {
+    return allJobs.filter(j => {
+      if (!j.startsAt) return false;
+      const jobStart = new Date(j.startsAt);
+      return jobStart >= start && jobStart <= end;
+    });
+  }, [allJobs, start, end]);
 
-  const [activeJob, setActiveJob] = useState<DbJobRow | null>(null);
+  const [activeJob, setActiveJob] = useState<Job | null>(null);
   const [open, setOpen] = useState(false);
-  const { data: customersData } = useSupabaseCustomers();
-  const customersMap = useMemo(() => new Map((customersData?.rows ?? []).map(c => [c.id, c.name])), [customersData]);
+  const customersMap = useMemo(() => new Map(customers.map(c => [c.id, c.name])), [customers]);
   const jobsByDay = useMemo(() => {
-    const map = new Map<string, DbJobRow[]>();
+    const map = new Map<string, Job[]>();
     for (const job of jobs) {
-      const s = parseISO(job.startsAt);
+      const s = new Date(job.startsAt);
       const key = s.toISOString().slice(0, 10);
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(job);
@@ -44,7 +49,7 @@ export default function MonthCalendar({ date, onDateChange }: { date: Date; onDa
       <div className="grid grid-cols-7 auto-rows-[minmax(112px,1fr)]">
         {days.map((d) => {
           const key = d.toISOString().slice(0, 10);
-          const dayJobs = (jobsByDay.get(key) || []).slice().sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+          const dayJobs = (jobsByDay.get(key) || []).slice().sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
           const visible = dayJobs.slice(0, 3);
           const overflow = dayJobs.length - visible.length;
           const isToday = isSameDay(d, new Date());
@@ -71,14 +76,14 @@ export default function MonthCalendar({ date, onDateChange }: { date: Date; onDa
                         type="button"
                         onClick={(e) => { e.stopPropagation(); setActiveJob(j); setOpen(true); }}
                         className={`w-full truncate rounded px-2 py-1 text-xs border bg-background/60 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary ${j.status === 'Completed' ? 'border-success bg-success/5' : j.status === 'In Progress' ? 'border-primary' : 'border-primary/50'}`}
-                        aria-label={`Open job ${(j as any).title || 'Job'} at ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
+                        aria-label={`Open job ${j.title || 'Job'} at ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
                       >
                         <span className={`mr-2 inline-block h-2 w-2 rounded-full align-middle ${j.status === 'Completed' ? 'bg-success' : 'bg-primary'}`} aria-hidden="true" />
                         <span className="font-medium">
                           {t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                         </span>
                         <span className="mx-1 opacity-70">•</span>
-                        <span className="truncate">{(j as any).title || 'Job'}</span>
+                        <span className="truncate">{j.title || 'Job'}</span>
                         {customersMap.get(j.customerId) && (
                           <span className="opacity-70"> — {customersMap.get(j.customerId)}</span>
                         )}

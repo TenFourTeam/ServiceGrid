@@ -8,8 +8,7 @@ import CreateQuoteModal from '@/components/Quotes/CreateQuoteModal';
 import SendQuoteModal from '@/components/Quotes/SendQuoteModal';
 import { Input } from '@/components/ui/input';
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
-import { useSupabaseQuotes } from '@/hooks/useSupabaseQuotes';
-import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
+import { useDashboardData } from '@/hooks/useDashboardData';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useStore } from '@/store/useAppStore';
@@ -60,8 +59,7 @@ function calculateQuoteTotals(lineItems: LineItem[], taxRate: number, discount: 
 export default function QuotesPage() {
   const { isSignedIn, getToken } = useClerkAuth();
   const store = useStore();
-  const { data: dbQuotes } = useSupabaseQuotes({ enabled: !!isSignedIn });
-  const { data: dbCustomers } = useSupabaseCustomers({ enabled: !!isSignedIn });
+  const { data: dashboardData } = useDashboardData();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
@@ -83,43 +81,9 @@ export default function QuotesPage() {
       return key;
     });
   }
-  const customers = useMemo(() => {
-    if (isSignedIn && dbCustomers?.rows) {
-      return dbCustomers.rows.map(row => ({
-        id: row.id,
-        businessId: '',
-        name: row.name,
-        email: row.email || undefined,
-        phone: undefined,
-        address: row.address || undefined,
-      }));
-    }
-    return store.customers;
-  }, [isSignedIn, dbCustomers, store.customers]);
-
-  const quotes = useMemo(() => {
-    if (isSignedIn && dbQuotes?.rows) {
-      return dbQuotes.rows.map(row => ({
-        id: row.id,
-        number: row.number,
-        businessId: '',
-        customerId: row.customerId,
-        address: '',
-        lineItems: [],
-        taxRate: 0,
-        discount: 0,
-        subtotal: row.total,
-        total: row.total,
-        status: row.status,
-        files: [],
-        createdAt: row.updatedAt,
-        updatedAt: row.updatedAt,
-        publicToken: row.publicToken,
-        viewCount: row.viewCount,
-      }));
-    }
-    return store.quotes;
-  }, [isSignedIn, dbQuotes, store.quotes]);
+  // Use data from store, which is populated by dashboard data
+  const customers = store.customers;
+  const quotes = store.quotes;
 
   const sortedQuotes = useMemo(() => {
     const arr = [...quotes];

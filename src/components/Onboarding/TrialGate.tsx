@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { Crown, Lock, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
+import { useDashboardData } from '@/hooks/useDashboardData';
 import { useOnboarding } from './OnboardingProvider';
 
 interface TrialGateProps {
@@ -13,14 +13,21 @@ interface TrialGateProps {
 }
 
 export function TrialGate({ children, feature, description, fallbackContent }: TrialGateProps) {
-  const { data: subscription } = useSubscriptionStatus();
+  const { data: dashboardData } = useDashboardData();
+  const subscription = dashboardData?.subscription;
   const { openSubscription } = useOnboarding();
 
   if (!subscription || subscription.subscribed) {
     return <>{children}</>;
   }
 
-  if (subscription.isTrialExpired) {
+  // Calculate trial status
+  const endDate = subscription.endDate ? new Date(subscription.endDate) : null;
+  const now = new Date();
+  const isTrialExpired = endDate ? now > endDate : false;
+  const trialDaysLeft = endDate && !isTrialExpired ? Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+
+  if (isTrialExpired) {
     return (
       <Card className="border-red-200 bg-red-50/50">
         <CardHeader className="text-center">
@@ -60,7 +67,7 @@ export function TrialGate({ children, feature, description, fallbackContent }: T
           <Shield className="h-4 w-4 text-amber-600" />
           <span className="text-sm font-medium text-amber-900">Premium Feature</span>
           <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">
-            {subscription.trialDaysLeft} days left
+            {trialDaysLeft} days left
           </span>
         </div>
         <p className="text-sm text-amber-700 mb-3">

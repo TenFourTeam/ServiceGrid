@@ -9,7 +9,7 @@ import { formatDateTime, formatMoney } from '@/utils/format';
 import { useNavigate } from 'react-router-dom';
 import { Job } from '@/types';
 import { toast } from '@/components/ui/use-toast';
-import { useSupabaseJobs } from '@/hooks/useSupabaseJobs';
+import { useDashboardData } from '@/hooks/useDashboardData';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { edgeFetchJson } from '@/utils/edgeApi';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -122,32 +122,14 @@ function WorkOrderRow({ job, onRescheduled, onComplete, onInvoice, onViewInvoice
 export default function WorkOrdersPage() {
   const { customers, updateJobStatus, upsertJob } = useStore();
   const { isSignedIn, getToken } = useClerkAuth();
-  const { data: dbJobs, isLoading, error, refetch } = useSupabaseJobs({ enabled: !!isSignedIn, refetchInterval: 15000, refetchOnWindowFocus: true, refetchOnReconnect: true });
+  const { data: dashboardData, isLoading, error } = useDashboardData();
   const { filter, setFilter, q, setQ, sort, setSort, jobs, counts, hasInvoice } = useFilteredJobs();
   const navigate = useNavigate();
   const lastSyncKeyRef = useRef<string | null>(null);
   const [activeJob, setActiveJob] = useState<Job | null>(null);
 
-  useEffect(() => {
-    if (!isSignedIn || !dbJobs?.rows) return;
-    const key = dbJobs.rows.map((r) => `${r.id}:${r.updatedAt ?? ''}`).join('|');
-    if (lastSyncKeyRef.current === key) return;
-    lastSyncKeyRef.current = key;
-    dbJobs.rows.forEach((row) => {
-      upsertJob({
-        id: row.id,
-        customerId: row.customerId,
-        quoteId: row.quoteId || undefined,
-        address: row.address || undefined,
-        startsAt: row.startsAt,
-        endsAt: row.endsAt,
-        status: row.status,
-        total: row.total || undefined,
-        title: (row as any).title || undefined,
-        createdAt: row.createdAt,
-      });
-    });
-  }, [isSignedIn, dbJobs]);
+  // Jobs data is now loaded from dashboard data in AppLayout
+  // No need for separate data fetching and syncing here
 
   return (
     <AppLayout title="Work Orders">
@@ -210,7 +192,7 @@ export default function WorkOrdersPage() {
                     customerName={customerName}
                     when={when}
                     uninvoiced={uninvoiced}
-                    onRescheduled={async ()=> { await refetch(); }}
+                    onRescheduled={() => { /* Job data will refresh automatically */ }}
                     onComplete={async ()=> {
                     try {
                       const data = await edgeFetchJson(`jobs?id=${j.id}`, getToken, {
@@ -219,7 +201,7 @@ export default function WorkOrdersPage() {
                       });
                       updateJobStatus(j.id, 'Completed');
                       toast({ title: 'Marked complete' });
-                      await refetch();
+                      // Job data will refresh automatically
                     } catch (e: any) {
                       toast({ title: 'Failed to mark complete', description: e?.message || String(e) });
                     }
@@ -231,7 +213,7 @@ export default function WorkOrdersPage() {
                         body: { jobId: j.id },
                       });
                       toast({ title: 'Invoice created' });
-                      await refetch();
+                      // Job data will refresh automatically
                       navigate('/invoices');
                       } catch (e: any) {
                         toast({ title: 'Failed to create invoice', description: e?.message || String(e) });

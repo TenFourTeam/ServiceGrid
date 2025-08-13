@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useOnboardingState } from '@/hooks/useOnboardingState';
 import { useStore } from '@/store/useAppStore';
-import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
+import { useDashboardData } from '@/hooks/useDashboardData';
 import { useLocation } from 'react-router-dom';
 
 interface FloatingSetupWidgetProps {
@@ -28,7 +28,8 @@ export function FloatingSetupWidget({
   const [isExpanded, setIsExpanded] = useState(false);
   const store = useStore();
   const onboardingState = useOnboardingState();
-  const { data: subscription } = useSubscriptionStatus();
+  const { data: dashboardData } = useDashboardData();
+  const subscription = dashboardData?.subscription;
   const location = useLocation();
 
   // Hide widget on landing page
@@ -42,8 +43,14 @@ export function FloatingSetupWidget({
     return null;
   }
 
+  // Calculate trial status
+  const endDate = subscription?.endDate ? new Date(subscription.endDate) : null;
+  const now = new Date();
+  const isTrialExpired = endDate ? now > endDate : false;
+  const trialDaysLeft = endDate && !isTrialExpired ? Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+  
   // Show widget if trial is expired and user hasn't subscribed (override dismissal)
-  const shouldForceShow = subscription?.isTrialExpired && !subscription.subscribed;
+  const shouldForceShow = isTrialExpired && !subscription?.subscribed;
 
   const handleDismiss = (permanently = false) => {
     store.dismissSetupWidget(permanently);
@@ -207,12 +214,12 @@ export function FloatingSetupWidget({
                   </div>
                   
                   {/* Trial warning for active trial */}
-                  {subscription && !subscription.subscribed && !subscription.isTrialExpired && (
+                  {subscription && !subscription.subscribed && !isTrialExpired && (
                     <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                       <div className="flex items-center gap-2 text-sm">
                         <Crown className="h-4 w-4 text-amber-600" />
                         <span className="text-amber-900 font-medium">
-                          {subscription.trialDaysLeft} trial days left
+                          {trialDaysLeft} trial days left
                         </span>
                       </div>
                       <Button

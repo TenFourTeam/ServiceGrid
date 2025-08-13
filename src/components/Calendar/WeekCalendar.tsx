@@ -5,7 +5,7 @@ import { clamp, formatDateTime, minutesSinceStartOfDay } from '@/utils/format';
 import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerClose } from '@/components/ui/drawer';
 import { Textarea } from '@/components/ui/textarea';
-import { useSupabaseJobsRange } from '@/hooks/useSupabaseJobsRange';
+// Jobs data now comes from store via dashboard data
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { edgeFetchJson } from '@/utils/edgeApi';
 import { toast } from 'sonner';
@@ -74,28 +74,9 @@ export function WeekCalendar({
   }, [date]);
 
   const { isSignedIn, getToken } = useClerkAuth();
-  const { data: jobsRange } = useSupabaseJobsRange({ start: weekStart, end: weekEnd }, { enabled: !!isSignedIn });
-
-  useEffect(() => {
-    if (jobsRange?.rows) {
-      jobsRange.rows.forEach((row) => {
-        upsertJob({
-          id: row.id,
-          customerId: row.customerId,
-          quoteId: row.quoteId ?? undefined,
-          address: row.address ?? undefined,
-          startsAt: row.startsAt,
-          endsAt: row.endsAt,
-          status: row.status,
-          total: row.total ?? undefined,
-          notes: row.notes ?? undefined,
-          title: (row as any).title ?? undefined,
-          createdAt: row.createdAt,
-        });
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jobsRange]);
+  
+  // Jobs data is now loaded via dashboard data in AppLayout
+  // No need for separate range fetching
 
   useEffect(() => {
     if (!isSignedIn) return;

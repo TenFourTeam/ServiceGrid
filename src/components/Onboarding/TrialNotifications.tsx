@@ -2,18 +2,23 @@ import { useEffect } from 'react';
 import { Clock, Crown, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
+import { useDashboardData } from '@/hooks/useDashboardData';
 import { useOnboarding } from './OnboardingProvider';
 
 export function TrialNotifications() {
-  const { data: subscription } = useSubscriptionStatus();
+  const { data: dashboardData } = useDashboardData();
+  const subscription = dashboardData?.subscription;
   const { openSubscription } = useOnboarding();
   const { toast } = useToast();
 
   useEffect(() => {
     if (!subscription || subscription.subscribed) return;
 
-    const { trialDaysLeft, isTrialExpired } = subscription;
+    // Calculate trial status
+    const endDate = subscription.endDate ? new Date(subscription.endDate) : null;
+    const now = new Date();
+    const isTrialExpired = endDate ? now > endDate : false;
+    const trialDaysLeft = endDate && !isTrialExpired ? Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : 0;
 
     // Show notifications at key milestones
     if (isTrialExpired) {

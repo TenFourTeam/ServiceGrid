@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { edgeFetchJson, edgeFetch } from '@/utils/edgeApi';
-import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
+import { useDashboardData } from '@/hooks/useDashboardData';
 import { CustomerCombobox } from '@/components/Quotes/CustomerCombobox';
 import { InlineCustomerForm } from '@/components/Onboarding/InlineCustomerForm';
 import type { Customer } from '@/types';
@@ -23,8 +23,8 @@ export function NewJobSheet() {
   const store = useStore();
   const { toast } = useToast();
   const { getToken } = useClerkAuth();
-  const { data: custData } = useSupabaseCustomers();
-  const customersList = useMemo(() => (custData?.rows && custData.rows.length > 0 ? custData.rows : store.customers), [custData, store.customers]);
+  // Use customers from store, which is populated by dashboard data
+  const customersList = store.customers;
   const comboboxCustomers = useMemo(() => customersList.map((c: any) => ({
     id: c.id,
     businessId: store.business.id,
