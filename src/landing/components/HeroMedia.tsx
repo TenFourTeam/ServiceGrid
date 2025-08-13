@@ -1,6 +1,7 @@
 import React from "react";
 import { cn } from "@/utils/cn";
 import { CalendarDays, Receipt, CheckCircle2 } from "lucide-react";
+import { Button } from "@/components/Button";
 
 // Mini previews that echo the actual app UI for credibility
 function MiniMonthPreview() {
@@ -18,7 +19,7 @@ function MiniMonthPreview() {
           <div key={i} className="aspect-square rounded-md border bg-background relative">
             {i % 9 === 0 ? (
               <div className="absolute bottom-1 left-1 flex gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-brand-600" />
+                <span className="h-1.5 w-1.5 rounded-full bg-brand-650" />
                 <span className="h-1.5 w-1.5 rounded-full bg-brand-400" />
               </div>
             ) : null}
@@ -43,7 +44,7 @@ function MiniInvoicePreview() {
           </div>
           <div className="rounded-md border bg-background p-3">
             <p className="text-xs text-muted-foreground">Status</p>
-            <p className="text-sm font-medium text-brand-700">Pending</p>
+            <p className="text-sm font-medium text-brand-650">Pending</p>
           </div>
         </div>
         <div className="rounded-md border bg-background p-3">
@@ -54,9 +55,7 @@ function MiniInvoicePreview() {
             </span>
           </div>
         </div>
-        <div className="mt-2 h-10 w-28 rounded-md bg-brand-600 text-white grid place-items-center">
-          <span className="text-xs">Pay now</span>
-        </div>
+        <Button size="sm" className="mt-2">Pay now</Button>
       </div>
     </div>
   );
@@ -136,45 +135,53 @@ export function HeroMedia({ className }: { className?: string }) {
       {/* Calendar card */}
       <div
         className={cn(
-          "absolute left-10 top-6 md:left-14 md:top-8 w-[52%] md:w-[48%] lg:w-[44%] rotate-[-0.5deg] will-change-transform transition-transform duration-300 hover:scale-[1.01] z-10",
-          framed && "rounded-lg border bg-card shadow-elev-2 hover:shadow-elev-2/90"
+          "absolute left-10 top-6 md:left-14 md:top-8 w-[52%] md:w-[48%] lg:w-[44%] rotate-[-0.5deg] will-change-transform transition-transform duration-300 hover:scale-[1.01] z-10"
         )}
         aria-label="Mini month calendar preview"
       >
-        <MiniMonthPreview />
+        <div className={cn("group relative rounded-xl ring-0 hover:ring-1 hover:ring-brand-500/30 transition-shadow duration-300", framed && "rounded-lg border bg-card shadow-elev-2 hover:shadow-elev-2/90")}> 
+          <div className="pointer-events-none absolute inset-x-2 top-1 h-0.5 rounded bg-gradient-to-r from-brand-400/40 via-brand-300/30 to-brand-400/40 opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden />
+          <MiniMonthPreview />
+        </div>
       </div>
 
       {/* Invoice card */}
       <div
         className={cn(
-          "absolute right-6 top-16 md:right-8 md:top-20 w-[46%] md:w-[42%] lg:w-[38%] rotate-1 will-change-transform transition-transform duration-300 hover:scale-[1.01] z-40",
-          framed && "rounded-lg border bg-card shadow-elev-2"
+          "absolute right-6 top-16 md:right-8 md:top-20 w-[46%] md:w-[42%] lg:w-[38%] rotate-1 will-change-transform transition-transform duration-300 hover:scale-[1.01] z-40"
         )}
         aria-label="Mini invoice preview"
       >
-        <MiniInvoicePreview />
+        <div className={cn("group relative rounded-xl ring-0 hover:ring-1 hover:ring-brand-500/30 transition-shadow duration-300", framed && "rounded-lg border bg-card shadow-elev-2")}> 
+          <div className="pointer-events-none absolute inset-x-2 top-1 h-0.5 rounded bg-gradient-to-r from-brand-400/40 via-brand-300/30 to-brand-400/40 opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden />
+          <MiniInvoicePreview />
+        </div>
       </div>
 
       {/* Quote card */}
       <div
         className={cn(
-          "absolute left-16 bottom-8 md:left-24 md:bottom-12 w-[34%] md:w-[30%] lg:w-[28%] -rotate-2 will-change-transform transition-transform duration-300 hover:scale-[1.01] z-20",
-          framed && "rounded-lg border bg-card shadow-elev-1"
+          "absolute left-16 bottom-8 md:left-24 md:bottom-12 w-[34%] md:w-[30%] lg:w-[28%] -rotate-2 will-change-transform transition-transform duration-300 hover:scale-[1.01] z-20"
         )}
         aria-label="Mini quote preview"
       >
-        <MiniQuotePreview />
+        <div className={cn("group relative rounded-xl ring-0 hover:ring-1 hover:ring-brand-500/30 transition-shadow duration-300", framed && "rounded-lg border bg-card shadow-elev-1")}> 
+          <div className="pointer-events-none absolute inset-x-2 top-1 h-0.5 rounded bg-gradient-to-r from-brand-400/40 via-brand-300/30 to-brand-400/40 opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden />
+          <MiniQuotePreview />
+        </div>
       </div>
 
       {/* Work order card (replaces badge) */}
       <div
   className={cn(
-    "absolute right-12 bottom-0 md:right-20 md:bottom-1 lg:right-28 lg:bottom-3 w-[40%] md:w-[36%] lg:w-[32%] rotate-[1deg] will-change-transform transition-transform duration-300 hover:scale-[1.01] z-30",
-    framed && "rounded-lg border bg-card shadow-elev-1"
+    "absolute right-12 bottom-0 md:right-20 md:bottom-1 lg:right-28 lg:bottom-3 w-[40%] md:w-[36%] lg:w-[32%] rotate-[1deg] will-change-transform transition-transform duration-300 hover:scale-[1.01] z-30"
   )}
         aria-label="Mini work order preview"
       >
-        <MiniWorkOrderPreview />
+        <div className={cn("group relative rounded-xl ring-0 hover:ring-1 hover:ring-brand-500/30 transition-shadow duration-300", framed && "rounded-lg border bg-card shadow-elev-1")}> 
+          <div className="pointer-events-none absolute inset-x-2 top-1 h-0.5 rounded bg-gradient-to-r from-brand-400/40 via-brand-300/30 to-brand-400/40 opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden />
+          <MiniWorkOrderPreview />
+        </div>
       </div>
     </div>
   );
