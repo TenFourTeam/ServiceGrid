@@ -51,8 +51,9 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   };
 
   const openImportCustomers = () => {
-    // TODO: Implement CSV import functionality
-    navigate('/customers');
+    setIntentPickerOpen(false);
+    // This will be handled by the CSV import modal in the customers page
+    navigate('/customers?import=1');
   };
 
   const openBankLink = () => {

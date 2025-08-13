@@ -3,6 +3,7 @@ import { useSupabaseCustomers } from './useSupabaseCustomers';
 import { useSupabaseJobs } from './useSupabaseJobs';  
 import { useSupabaseQuotes } from './useSupabaseQuotes';
 import { useStripeConnectStatus } from './useStripeConnectStatus';
+import { useSubscriptionStatus } from './useSubscriptionStatus';
 
 export interface OnboardingProgress {
   hasCustomers: boolean;
@@ -21,13 +22,14 @@ export function useOnboardingState(): OnboardingProgress {
   const { data: jobsData } = useSupabaseJobs();
   const { data: quotesData } = useSupabaseQuotes();
   const { data: stripeStatus } = useStripeConnectStatus();
+  const { data: subscriptionData } = useSubscriptionStatus();
 
   return useMemo(() => {
     const hasCustomers = (customersData?.rows?.length ?? 0) > 0;
     const hasJobs = (jobsData?.rows?.length ?? 0) > 0;
     const hasQuotes = (quotesData?.rows?.length ?? 0) > 0;
     const bankLinked = stripeStatus?.chargesEnabled ?? false;
-    const subscribed = true; // TODO: Connect to actual subscription check
+    const subscribed = subscriptionData?.subscribed ?? false;
 
     const completedSteps = [
       hasCustomers,
@@ -66,5 +68,5 @@ export function useOnboardingState(): OnboardingProgress {
       isComplete,
       showIntentPicker
     };
-  }, [customersData, jobsData, quotesData, stripeStatus]);
+  }, [customersData, jobsData, quotesData, stripeStatus, subscriptionData]);
 }

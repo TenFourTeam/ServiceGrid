@@ -4,16 +4,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { edgeFetchJson } from "@/utils/edgeApi";
+import { CSVImportModal } from '@/components/Onboarding/CSVImportModal';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function CustomersPage() {
   const { isSignedIn, getToken } = useClerkAuth();
   const queryClient = useQueryClient();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const { data, isLoading, error } = useSupabaseCustomers();
   const rows = data?.rows ?? [];
@@ -22,6 +26,7 @@ export default function CustomersPage() {
   const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState({ name: '', email: '', phone: '', address: '' });
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [csvImportOpen, setCsvImportOpen] = useState(false);
 
   function openNew() {
     setEditingId(null);
@@ -34,6 +39,15 @@ export default function CustomersPage() {
     setDraft({ name: c.name || '', email: c.email || '', phone: (c as any).phone || '', address: c.address || '' });
     setOpen(true);
   }
+
+  // Check for import URL parameter
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('import') === '1') {
+      setCsvImportOpen(true);
+      navigate('/customers', { replace: true });
+    }
+  }, [location.search, navigate]);
 
   async function save() {
     if (!isSignedIn) {
@@ -76,7 +90,10 @@ export default function CustomersPage() {
   return (
     <AppLayout title="Customers">
       <section className="space-y-4">
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={() => setCsvImportOpen(true)}>
+            Import CSV
+          </Button>
           <Button onClick={() => openNew()}>New Customer</Button>
         </div>
 
@@ -109,10 +126,10 @@ export default function CustomersPage() {
                           <div className="text-sm text-muted-foreground">
                             Add them one by one or import your existing list.
                           </div>
-                          <div className="flex gap-2 justify-center">
-                            <Button onClick={() => openNew()}>Add Customer</Button>
-                            <Button variant="outline">Import CSV</Button>
-                          </div>
+                           <div className="flex gap-2 justify-center">
+                             <Button onClick={() => openNew()}>Add Customer</Button>
+                             <Button variant="outline" onClick={() => setCsvImportOpen(true)}>Import CSV</Button>
+                           </div>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -180,6 +197,14 @@ export default function CustomersPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <CSVImportModal
+        open={csvImportOpen}
+        onOpenChange={setCsvImportOpen}
+        onImportComplete={(count) => {
+          // Customers list will auto-refresh due to query invalidation
+        }}
+      />
     </AppLayout>
   );
 }
