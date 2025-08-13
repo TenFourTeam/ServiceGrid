@@ -22,15 +22,7 @@ export default function Landing() {
   const { isLoaded, isSignedIn } = useAuth();
   const navigate = useNavigate();
 
-  // Redirect signed-in users to calendar (with delay to prevent race conditions during logout)
-  useEffect(() => {
-    if (hasClerk && isLoaded && isSignedIn) {
-      const timer = setTimeout(() => {
-        navigate('/calendar', { replace: true });
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [hasClerk, isLoaded, isSignedIn, navigate]);
+  // No auto-redirect - let authenticated users view the landing page
 
   // Defer scroll orchestrator to avoid blocking first paint
   useEffect(() => {
