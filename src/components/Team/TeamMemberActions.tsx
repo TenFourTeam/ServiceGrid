@@ -155,7 +155,7 @@ export function TeamMemberActions({ member, businessId, canManage, isLastOwner }
             <div>
               <label className="text-sm font-medium">Current Role</label>
               <div className="mt-1">
-                <Badge variant={member.role === 'owner' ? 'default' : 'secondary'}>
+                <Badge variant="secondary">
                   {member.role}
                 </Badge>
               </div>
@@ -163,7 +163,7 @@ export function TeamMemberActions({ member, businessId, canManage, isLastOwner }
             
             <div className="space-y-2">
               <label className="text-sm font-medium">New Role</label>
-              <Select value={newRole} onValueChange={setNewRole}>
+              <Select value={newRole} onValueChange={(value) => setNewRole(value as 'worker' | 'owner')}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
