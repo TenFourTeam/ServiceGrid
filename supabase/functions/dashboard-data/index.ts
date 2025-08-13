@@ -73,7 +73,7 @@ serve(async (req) => {
     const profileId = profile.id;
 
     // Batch all data queries
-    const [businessResult, dashboardResult, stripeResult, subscriptionResult] = await Promise.all([
+    const [businessResult, dashboardResult, quotesResult, stripeResult, subscriptionResult] = await Promise.all([
       // Get business data
       supabase
         .from("businesses")
@@ -85,6 +85,16 @@ serve(async (req) => {
 
       // Get counts and data using the custom function
       supabase.rpc('get_dashboard_counts', { owner_id: profileId }),
+
+      // Get quotes data
+      supabase
+        .from("quotes")
+        .select(`
+          id, number, total, status, updated_at, view_count, public_token,
+          customer_id, customers(name, email)
+        `)
+        .eq("owner_id", profileId)
+        .order("updated_at", { ascending: false }),
 
       // Get Stripe status
       fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/connect-account-status`, {
@@ -132,6 +142,7 @@ serve(async (req) => {
       },
       customers: dashboardResult.data?.customer_data || [],
       invoices: dashboardResult.data?.invoice_data || [],
+      quotes: quotesResult.data || [],
       stripeStatus: stripeResult,
       subscription: {
         subscribed: subscriptionResult.data?.subscribed || false,

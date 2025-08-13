@@ -121,11 +121,11 @@ export default function AppSidebar() {
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="w-full flex items-center gap-2 rounded-md border px-2 py-2 bg-background hover:bg-muted transition group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:hover:opacity-100"
+                className="w-full flex items-center gap-2 rounded-md border px-2 py-2 bg-background hover:bg-muted transition group-data-[collapsible=icon]:justify-center"
                 aria-label="User menu"
               >
-                <UserIcon className="h-5 w-5 text-primary" />
-                <span className="truncate group-data-[collapsible=icon]:hidden">{(user?.unsafeMetadata as any)?.displayName || user?.fullName || "Account"}</span>
+                <UserIcon className="h-5 w-5 text-primary flex-shrink-0" />
+                <span className="truncate group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:hidden transition-all">{(user?.unsafeMetadata as any)?.displayName || user?.fullName || "Account"}</span>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent side="top" align="start" sideOffset={8} alignOffset={-4} className="w-56">

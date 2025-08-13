@@ -35,15 +35,21 @@ export function useSubscriptionStatus(opts?: { enabled?: boolean }) {
           subscribed: data.subscribed
         });
         
-        const diffTime = today.getTime() - userCreatedAt.getTime();
-        const daysSinceSignup = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        // Use start of day for both dates to avoid timezone issues
+        const todayStartOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const userCreatedStartOfDay = new Date(userCreatedAt.getFullYear(), userCreatedAt.getMonth(), userCreatedAt.getDate());
+        
+        const diffTime = todayStartOfDay.getTime() - userCreatedStartOfDay.getTime();
+        const daysSinceSignup = Math.floor(diffTime / (1000 * 60 * 60 * 24));
         const trialDaysLeft = Math.max(0, TRIAL_DURATION_DAYS - daysSinceSignup);
         const isTrialExpired = trialDaysLeft === 0 && !data.subscribed;
         
         console.log('Trial calculation result:', {
           daysSinceSignup,
           trialDaysLeft,
-          isTrialExpired
+          isTrialExpired,
+          todayStartOfDay: todayStartOfDay.toISOString(),
+          userCreatedStartOfDay: userCreatedStartOfDay.toISOString()
         });
 
         return {

@@ -48,6 +48,20 @@ export interface DashboardData {
     payoutsEnabled: boolean;
     detailsSubmitted: boolean;
   };
+  quotes: Array<{
+    id: string;
+    number: string;
+    total: number;
+    status: string;
+    updated_at: string;
+    view_count: number;
+    public_token: string;
+    customer_id: string;
+    customers?: {
+      name: string;
+      email?: string;
+    };
+  }>;
   subscription: {
     subscribed: boolean;
     tier?: string;

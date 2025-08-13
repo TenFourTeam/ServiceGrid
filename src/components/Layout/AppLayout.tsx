@@ -45,6 +45,66 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
     }
   }, [dashboardData?.business, store]);
 
+  // Update store with customers, quotes, and invoices data
+  useEffect(() => {
+    if (dashboardData?.customers) {
+      dashboardData.customers.forEach(customer => {
+        store.upsertCustomer({
+          id: customer.id,
+          name: customer.name,
+          email: customer.email || '',
+          phone: customer.phone || '',
+          address: customer.address || '',
+          notes: ''
+        });
+      });
+    }
+
+    if (dashboardData?.quotes) {
+      dashboardData.quotes.forEach(quote => {
+        store.upsertQuote({
+          id: quote.id,
+          number: quote.number,
+          customerId: quote.customer_id,
+          total: quote.total,
+          status: quote.status as any,
+          updatedAt: quote.updated_at,
+          viewCount: quote.view_count,
+          publicToken: quote.public_token,
+          // Add default values for required fields
+          address: '',
+          lineItems: [],
+          taxRate: 0,
+          discount: 0,
+          subtotal: quote.total,
+          createdAt: quote.updated_at
+        });
+      });
+    }
+
+    if (dashboardData?.invoices) {
+      dashboardData.invoices.forEach(invoice => {
+        store.upsertInvoice({
+          id: invoice.id,
+          number: invoice.number,
+          businessId: '',
+          customerId: invoice.customerId,
+          jobId: invoice.jobId,
+          lineItems: [],
+          taxRate: invoice.taxRate,
+          discount: invoice.discount,
+          subtotal: invoice.subtotal,
+          total: invoice.total,
+          status: invoice.status as any,
+          dueAt: invoice.dueAt,
+          createdAt: invoice.createdAt,
+          updatedAt: invoice.updatedAt,
+          publicToken: invoice.publicToken
+        });
+      });
+    }
+  }, [dashboardData?.customers, dashboardData?.quotes, dashboardData?.invoices, store]);
+
   // Show skeleton while loading critical data
   if (isLoading) {
     return <AppLayoutSkeleton />;
