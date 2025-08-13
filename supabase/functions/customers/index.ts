@@ -2,8 +2,8 @@
 // - Verifies Clerk token
 // - Resolves/creates a Supabase user mapping via profiles
 // - Ensures default business
-// - GET: list customers for owner
-// - POST: create customer for owner
+// - GET: list customers for business members
+// - POST: create customer for business members
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { verifyToken } from "https://esm.sh/@clerk/backend@1.3.2";
@@ -243,11 +243,38 @@ serve(async (req) => {
     const supabase = createAdminClient();
     const ownerId = await resolveOwnerId(supabase, payload);
 
+    // Get user's business context - find first business they are a member of
+    const { data: businessMember, error: memberErr } = await supabase
+      .from("business_members")
+      .select("business_id, role")
+      .eq("user_id", ownerId)
+      .order("joined_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (memberErr) throw memberErr;
+
+    let businessId: string;
+    if (businessMember) {
+      businessId = businessMember.business_id;
+    } else {
+      // Create default business and membership for new users
+      businessId = await ensureDefaultBusiness(supabase, ownerId);
+      
+      // Create business membership for the owner
+      await supabase.from("business_members").insert({
+        business_id: businessId,
+        user_id: ownerId,
+        role: "owner",
+        joined_at: new Date().toISOString()
+      });
+    }
+
     if (req.method === "GET") {
       const { data, error } = await supabase
         .from("customers")
         .select("id,name,email,phone,address")
-        .eq("owner_id", ownerId)
+        .eq("business_id", businessId)
         .order("updated_at", { ascending: false });
       if (error) throw error;
       return json({ rows: data || [] });
@@ -267,11 +294,11 @@ serve(async (req) => {
       const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
       if (!emailRegex.test(email)) return badRequest("Invalid email format");
 
-      // Check for duplicate name + email combination
+      // Check for duplicate name + email combination within the business
       const { data: existingCustomer } = await supabase
         .from("customers")
         .select("id")
-        .eq("owner_id", ownerId)
+        .eq("business_id", businessId)
         .eq("name", name)
         .eq("email", email)
         .single();
@@ -280,14 +307,23 @@ serve(async (req) => {
         return badRequest("A customer with this name and email already exists");
       }
 
-      const businessId = await ensureDefaultBusiness(supabase, ownerId);
-
       const { data, error } = await supabase
         .from("customers")
         .insert({ name, email, phone, address, owner_id: ownerId, business_id: businessId })
         .select("id, name, email, phone, address")
         .single();
       if (error) throw error;
+
+      // Log audit action
+      await supabase.rpc('log_audit_action', {
+        p_business_id: businessId,
+        p_user_id: ownerId,
+        p_action: 'create',
+        p_resource_type: 'customer',
+        p_resource_id: data.id,
+        p_details: { name, email }
+      });
+
       return json({ 
         id: data.id, 
         name: data.name, 
@@ -324,7 +360,7 @@ serve(async (req) => {
         const { data: existingCustomer } = await supabase
           .from("customers")
           .select("id")
-          .eq("owner_id", ownerId)
+          .eq("business_id", businessId)
           .eq("name", update.name)
           .eq("email", update.email)
           .neq("id", id)
@@ -348,12 +384,23 @@ serve(async (req) => {
         .from("customers")
         .update(update)
         .eq("id", id)
-        .eq("owner_id", ownerId)
+        .eq("business_id", businessId)
         .select("id")
         .limit(1)
         .maybeSingle();
       if (error) throw error;
       if (!data) return badRequest("Customer not found", 404);
+
+      // Log audit action
+      await supabase.rpc('log_audit_action', {
+        p_business_id: businessId,
+        p_user_id: ownerId,
+        p_action: 'update',
+        p_resource_type: 'customer',
+        p_resource_id: data.id,
+        p_details: update
+      });
+
       return json({ ok: true, id: data.id });
     }
 

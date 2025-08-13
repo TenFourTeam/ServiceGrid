@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import ConnectBanner from '@/components/Stripe/ConnectBanner';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { BusinessMembersList } from '@/components/Business/BusinessMembersList';
+import { AuditLogsList } from '@/components/Business/AuditLogsList';
 import { useBusinessRole } from '@/hooks/useBusinessRole';
 export default function SettingsPage() {
   const store = useStore();
@@ -312,6 +313,15 @@ export default function SettingsPage() {
             />
           </CardContent>
         </Card>
+
+        {roleData?.canManage && (
+          <Card className="md:col-span-2">
+            <CardHeader><CardTitle>Activity Log</CardTitle></CardHeader>
+            <CardContent>
+              <AuditLogsList businessId={store.business.id} />
+            </CardContent>
+          </Card>
+        )}
 
         <Card className="md:col-span-2">
           <CardHeader><CardTitle>Payouts</CardTitle></CardHeader>
