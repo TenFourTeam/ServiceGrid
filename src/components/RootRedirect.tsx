@@ -14,7 +14,14 @@ export default function RootRedirect() {
     if (!hasClerk || !isLoaded) return;
 
     if (isSignedIn) {
-      // Immediately redirect authenticated users to calendar
+      // Check if user just logged out - if so, stay on landing
+      const justLoggedOut = sessionStorage.getItem('just-logged-out');
+      if (justLoggedOut) {
+        sessionStorage.removeItem('just-logged-out');
+        return;
+      }
+      
+      // Otherwise redirect authenticated users to calendar
       navigate('/calendar', { replace: true });
     }
   }, [hasClerk, isLoaded, isSignedIn, navigate]);
