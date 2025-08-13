@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { useOnboardingState } from '@/hooks/useOnboardingState';
 import { useStore } from '@/store/useAppStore';
 import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
+import { useLocation } from 'react-router-dom';
 
 interface FloatingSetupWidgetProps {
   onSetupProfile: () => void;
@@ -28,6 +29,12 @@ export function FloatingSetupWidget({
   const store = useStore();
   const onboardingState = useOnboardingState();
   const { data: subscription } = useSubscriptionStatus();
+  const location = useLocation();
+
+  // Hide widget on landing page
+  if (location.pathname === '/') {
+    return null;
+  }
 
   // Hide widget if onboarding is complete OR if dismissed AND user is subscribed
   if (onboardingState.isComplete || 

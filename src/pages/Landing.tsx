@@ -1,5 +1,8 @@
 import { useEffect } from "react";
-
+import { useAuth } from "@clerk/clerk-react";
+import { useNavigate } from "react-router-dom";
+import { useHasClerk } from "@/components/Auth/ClerkRuntime";
+import LoadingScreen from "@/components/LoadingScreen";
 
 import "@/landing/animations.css";
 import { Hero } from "@/landing/components/Hero";
@@ -15,6 +18,17 @@ import { Industries } from "@/landing/components/Industries";
 
 
 export default function Landing() {
+  const hasClerk = useHasClerk();
+  const { isLoaded, isSignedIn } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect signed-in users to calendar
+  useEffect(() => {
+    if (hasClerk && isLoaded && isSignedIn) {
+      navigate('/calendar', { replace: true });
+    }
+  }, [hasClerk, isLoaded, isSignedIn, navigate]);
+
   // Defer scroll orchestrator to avoid blocking first paint
   useEffect(() => {
     let dispose: undefined | (() => void);
@@ -34,6 +48,11 @@ export default function Landing() {
       dispose?.();
     };
   }, []);
+
+  // Show loading while checking auth state for Clerk users
+  if (hasClerk && !isLoaded) {
+    return <LoadingScreen full />;
+  }
 
   return (
     <main className="min-h-screen bg-background text-foreground">

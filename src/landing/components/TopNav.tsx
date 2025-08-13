@@ -14,21 +14,14 @@ export function TopNav() {
         </a>
         <div className="flex items-center gap-2">
           {hasClerk ? (
-            <>
-              <SignedIn>
-                <Button variant="primary" size="sm" className="hover-scale attention-ring [--ring:var(--brand-600)]" onClick={() => { location.href = "/calendar"; }}>
-                  Go to dashboard
-                </Button>
-              </SignedIn>
-              <SignedOut>
-                <SignInButton mode="modal" forceRedirectUrl="/calendar">
-                  <Button variant="ghost" size="sm" className="hover-scale">Sign in</Button>
-                </SignInButton>
-                <SignUpButton mode="modal" forceRedirectUrl="/calendar">
-                  <Button variant="primary" size="sm" className="hover-scale attention-ring [--ring:var(--brand-600)]">Try for free</Button>
-                </SignUpButton>
-              </SignedOut>
-            </>
+            <SignedOut>
+              <SignInButton mode="modal" forceRedirectUrl="/calendar">
+                <Button variant="ghost" size="sm" className="hover-scale">Sign in</Button>
+              </SignInButton>
+              <SignUpButton mode="modal" forceRedirectUrl="/calendar">
+                <Button variant="primary" size="sm" className="hover-scale attention-ring [--ring:var(--brand-600)]">Try for free</Button>
+              </SignUpButton>
+            </SignedOut>
           ) : (
             <>
               <Button variant="ghost" size="sm" className="hover-scale" onClick={() => { location.href = "/clerk-auth"; }}>

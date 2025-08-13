@@ -6,6 +6,7 @@ import { useOnboardingState } from '@/hooks/useOnboardingState';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useNavigate } from 'react-router-dom';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
+import { useStore } from '@/store/useAppStore';
 
 interface OnboardingContextType {
   showIntentPicker: () => void;
@@ -22,10 +23,11 @@ const OnboardingContext = createContext<OnboardingContextType | null>(null);
 
 export function OnboardingProvider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
-  const { isSignedIn } = useClerkAuth();
+  const { isSignedIn, isLoaded } = useClerkAuth();
   const { showIntentPicker: shouldShowIntentPicker } = useOnboardingState({ enabled: isSignedIn });
   const [intentPickerOpen, setIntentPickerOpen] = useState(false);
   const { track } = useAnalytics();
+  const store = useStore();
 
   // Auto-show intent picker for new users, but only if signed in
   React.useEffect(() => {
@@ -37,6 +39,13 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       return () => clearTimeout(timer);
     }
   }, [isSignedIn, shouldShowIntentPicker]);
+
+  // Reset dismissals on fresh login
+  React.useEffect(() => {
+    if (isLoaded && isSignedIn) {
+      store.resetDismissals();
+    }
+  }, [isLoaded, isSignedIn, store]);
 
   const openSetupProfile = () => {
     track('onboarding_step_completed', { step: 'setup_profile_initiated' });
