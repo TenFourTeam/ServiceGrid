@@ -33,6 +33,18 @@ export function InlineCustomerForm({ onCustomerCreated, trigger }: InlineCustome
       return;
     }
 
+    if (!draft.email.trim()) {
+      toast.error('Customer email is required');
+      return;
+    }
+
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(draft.email.trim())) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
     setSaving(true);
     try {
       const result = await edgeFetchJson('customers', getToken, {
@@ -104,7 +116,7 @@ export function InlineCustomerForm({ onCustomerCreated, trigger }: InlineCustome
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="customer-email">Email</Label>
+              <Label htmlFor="customer-email">Email *</Label>
               <Input
                 id="customer-email"
                 type="email"
@@ -112,6 +124,7 @@ export function InlineCustomerForm({ onCustomerCreated, trigger }: InlineCustome
                 onChange={(e) => setDraft(prev => ({ ...prev, email: e.target.value }))}
                 placeholder="customer@example.com"
                 disabled={saving}
+                required
               />
             </div>
 
@@ -148,7 +161,7 @@ export function InlineCustomerForm({ onCustomerCreated, trigger }: InlineCustome
               </Button>
               <Button
                 onClick={handleSave}
-                disabled={saving || !draft.name.trim()}
+                disabled={saving || !draft.name.trim() || !draft.email.trim()}
               >
                 {saving ? 'Creating...' : 'Create Customer'}
               </Button>
