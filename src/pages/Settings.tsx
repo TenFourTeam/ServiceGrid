@@ -13,6 +13,8 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import ConnectBanner from '@/components/Stripe/ConnectBanner';
 import { useDashboardData } from '@/hooks/useDashboardData';
+import { BusinessMembersList } from '@/components/Business/BusinessMembersList';
+import { useBusinessRole } from '@/hooks/useBusinessRole';
 export default function SettingsPage() {
   const store = useStore();
   const {
@@ -31,6 +33,7 @@ export default function SettingsPage() {
   const statusError = null;
   const { user, isLoaded: userLoaded } = useUser();
   const [userName, setUserName] = useState('');
+  const { data: roleData } = useBusinessRole(store.business.id);
   async function uploadLogoDark() {
     if (!isSignedIn) {
       toast.error('You must be signed in');
@@ -297,6 +300,16 @@ export default function SettingsPage() {
               <Button size="sm" onClick={() => startCheckout('yearly')}>Start Yearly ($504)</Button>
               <Button size="sm" variant="secondary" onClick={openPortal}>Manage Subscription</Button>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="md:col-span-2">
+          <CardHeader><CardTitle>Team Members</CardTitle></CardHeader>
+          <CardContent>
+            <BusinessMembersList 
+              businessId={store.business.id} 
+              canManage={roleData?.canManage || false}
+            />
           </CardContent>
         </Card>
 
