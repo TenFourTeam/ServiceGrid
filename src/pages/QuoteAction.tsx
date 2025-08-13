@@ -29,7 +29,7 @@ export default function QuoteActionPage() {
   useEffect(() => {
     // SEO basics
     const pageTitle = type === 'approve' ? 'Quote Approved' : type === 'edit' ? 'Edit Request Recorded' : 'Quote Action';
-    document.title = `${pageTitle} • TenFour Lawn`;
+    document.title = `${pageTitle} • ServiceGrid`;
     const existing = document.querySelector('link[rel="canonical"]');
     const href = window.location.href;
     if (existing) (existing as HTMLLinkElement).href = href; else {

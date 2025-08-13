@@ -17,7 +17,7 @@ function computeTotals(lineItems: LineItem[], taxRate: number, discount: Money) 
 
 const defaultBusiness = (): Business => ({
   id: 'biz-1',
-  name: 'TenFour Lawn',
+  name: 'ServiceGrid',
   phone: '',
   replyToEmail: '',
   taxRateDefault: 0.08,

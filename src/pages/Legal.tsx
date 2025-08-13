@@ -46,7 +46,7 @@ export default function LegalPage() {
             <CardContent className="space-y-4">
               <a href="#tos" className="flex items-center gap-2 underline-offset-4 hover:underline">
                 <FileText className="h-4 w-4" />
-                <span>TenFour Terms of Service</span>
+                <span>ServiceGrid Terms of Service</span>
               </a>
               <Separator />
               <a href="#cookies" className="flex items-center gap-2 underline-offset-4 hover:underline">
@@ -68,9 +68,9 @@ export default function LegalPage() {
         </section>
 
         <section id="tos" aria-labelledby="tos-heading" className="mb-10">
-          <h2 id="tos-heading" className="text-xl font-medium">TenFour Terms of Service</h2>
+          <h2 id="tos-heading" className="text-xl font-medium">ServiceGrid Terms of Service</h2>
           <p className="mt-1 text-xs text-muted-foreground">Last Updated: August 11, 2025</p>
-          <p className="mt-2 text-sm text-muted-foreground">Establishing rules governing use of TenFour.</p>
+          <p className="mt-2 text-sm text-muted-foreground">Establishing rules governing use of ServiceGrid.</p>
           <div className="mt-4 space-y-4">
             <article>
               <h3 className="font-medium">1. Acceptance</h3>
@@ -109,7 +109,7 @@ export default function LegalPage() {
               <h3 className="font-medium">5. Limitation of Liability</h3>
               <p className="mt-1 text-sm text-muted-foreground">Clarifying our responsibility.</p>
               <ul className="list-disc pl-6 mt-1 text-sm text-muted-foreground space-y-1">
-                <li>TenFour not liable for indirect damages (e.g., lost profits).</li>
+                <li>ServiceGrid not liable for indirect damages (e.g., lost profits).</li>
                 <li>Maximum liability limited to fees paid in last 12 months.</li>
               </ul>
             </article>
@@ -221,9 +221,9 @@ export default function LegalPage() {
               <h3 className="font-medium">1. Definitions</h3>
               <p className="mt-1 text-sm text-muted-foreground">Establishing key terms.</p>
               <ul className="list-disc pl-6 mt-1 text-sm text-muted-foreground space-y-1">
-                <li>Personal Data: Name, email, bank details processed via TenFour.</li>
+                <li>Personal Data: Name, email, bank details processed via ServiceGrid.</li>
                 <li>Controller: You, determining data use.</li>
-                <li>Processor: TenFour, processing on your behalf.</li>
+                <li>Processor: ServiceGrid, processing on your behalf.</li>
               </ul>
             </article>
             <article>
@@ -231,7 +231,7 @@ export default function LegalPage() {
               <p className="mt-1 text-sm text-muted-foreground">Outlining data activities.</p>
               <ul className="list-disc pl-6 mt-1 text-sm text-muted-foreground space-y-1">
                 <li>Purpose: Enable scheduling, invoicing, and lead services.</li>
-                <li>Duration: While you use TenFour or as required by law.</li>
+                <li>Duration: While you use ServiceGrid or as required by law.</li>
                 <li>Types: Personal and payment data.</li>
               </ul>
             </article>

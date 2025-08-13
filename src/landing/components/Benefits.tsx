@@ -14,7 +14,7 @@ export function Benefits() {
   return (
     <Section id="benefits" ariaLabel="Benefits">
       <div className="mx-auto max-w-3xl text-center" data-reveal>
-        <Heading as="h2" intent="section" id="benefits-title">Why teams switch to TenFour</Heading>
+        <Heading as="h2" intent="section" id="benefits-title">Why teams switch to ServiceGrid</Heading>
         <p className="mt-3 text-muted-foreground">Fewer clicks, fewer calls, faster cashflow.</p>
       </div>
 

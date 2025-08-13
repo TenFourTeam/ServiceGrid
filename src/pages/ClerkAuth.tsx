@@ -24,9 +24,9 @@ function ClerkAuthInner({ redirectTarget }: { redirectTarget: string }) {
   const autoOpenRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
-    document.title = "Sign In • TenFour Lawn";
+    document.title = "Sign In • ServiceGrid";
     const meta = document.querySelector('meta[name="description"]');
-    if (meta) meta.setAttribute("content", "Sign in or create an account with Clerk for TenFour Lawn");
+    if (meta) meta.setAttribute("content", "Sign in or create an account with Clerk for ServiceGrid");
   }, []);
 
   useEffect(() => {

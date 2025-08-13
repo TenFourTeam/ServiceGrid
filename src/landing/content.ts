@@ -1,6 +1,6 @@
 export const content = {
   brand: {
-    name: "TenFour",
+    name: "ServiceGrid",
     logoSrc: "/images/Tenfour_Logo-removebg-preview.png"
   },
   hero: {
@@ -8,7 +8,7 @@ export const content = {
       eyebrow: "For growing field service teams",
       title: "Schedule, quote, and invoice without the back-and-forth",
       subtitle:
-        "The TenFour Project keeps your day moving: drag-and-drop scheduling, one-click quotes, and instant payments in a single lightweight app.",
+        "ServiceGrid keeps your day moving: drag-and-drop scheduling, one-click quotes, and instant payments in a single lightweight app.",
       primaryCta: { label: "Try for free", href: "#" },
       secondaryCta: { label: "", href: "#" },
     },

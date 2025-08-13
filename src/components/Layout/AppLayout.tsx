@@ -16,7 +16,7 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
   const { getToken, isSignedIn } = useClerkAuth();
 
   useEffect(() => {
-    document.title = title ? `${title} • TenFour Lawn` : 'TenFour Lawn';
+    document.title = title ? `${title} • ServiceGrid` : 'ServiceGrid';
   }, [title]);
 
   useEffect(() => {
