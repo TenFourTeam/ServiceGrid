@@ -1,7 +1,7 @@
 
 import { useQuery } from "@tanstack/react-query";
-import { useAuth as useClerkAuth } from "@clerk/clerk-react";
-import { edgeFetchJson } from "@/utils/edgeApi";
+import { useAuthSnapshot } from "@/auth";
+import { useApiClient } from "@/auth";
 import { z } from "zod";
 
 export interface DbInvoiceRow {
@@ -25,15 +25,18 @@ const InvoicesResponseSchema = z.object({
 });
 
 export function useSupabaseInvoices(opts?: { enabled?: boolean }) {
-  const { isSignedIn, getToken } = useClerkAuth();
-  const enabled = !!isSignedIn && (opts?.enabled ?? true);
+  const { snapshot } = useAuthSnapshot();
+  const apiClient = useApiClient();
+  const enabled = snapshot.phase === 'authenticated' && (opts?.enabled ?? true);
 
   return useQuery<{ rows: DbInvoiceRow[] } | null, Error>({
     queryKey: ["supabase", "invoices"],
     enabled,
     queryFn: async () => {
       console.info("[useSupabaseInvoices] fetching...");
-      const data = await edgeFetchJson("invoices", getToken);
+      const response = await apiClient.get("/invoices");
+      if (response.error) throw new Error(response.error);
+      const data = response.data;
       if (!data) {
         console.info("[useSupabaseInvoices] no data (null) – likely signed out");
         return { rows: [] };

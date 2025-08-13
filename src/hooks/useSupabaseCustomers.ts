@@ -1,7 +1,7 @@
 
 import { useQuery } from "@tanstack/react-query";
-import { useAuth as useClerkAuth } from "@clerk/clerk-react";
-import { edgeFetchJson } from "@/utils/edgeApi";
+import { useAuthSnapshot } from "@/auth";
+import { useApiClient } from "@/auth";
 import { z } from "zod";
 
 export interface DbCustomerRow {
@@ -17,15 +17,18 @@ const CustomersResponseSchema = z.object({
 });
 
 export function useSupabaseCustomers(opts?: { enabled?: boolean }) {
-  const { isSignedIn, getToken } = useClerkAuth();
-  const enabled = !!isSignedIn && (opts?.enabled ?? true);
+  const { snapshot } = useAuthSnapshot();
+  const apiClient = useApiClient();
+  const enabled = snapshot.phase === 'authenticated' && (opts?.enabled ?? true);
 
   return useQuery<{ rows: DbCustomerRow[] } | null, Error>({
     queryKey: ["supabase", "customers"],
     enabled,
     queryFn: async () => {
       console.info("[useSupabaseCustomers] fetching...");
-      const data = await edgeFetchJson("customers", getToken);
+      const response = await apiClient.get("/customers");
+      if (response.error) throw new Error(response.error);
+      const data = response.data;
       if (!data) {
         console.info("[useSupabaseCustomers] no data (null) – likely signed out");
         return { rows: [] };

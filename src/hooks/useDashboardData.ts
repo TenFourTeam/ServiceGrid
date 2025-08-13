@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { edgeFetchJson } from '@/utils/edgeApi';
-import { useAuth as useClerkAuth } from '@clerk/clerk-react';
+import { useApiClient } from '@/auth';
+import { useAuthSnapshot } from '@/auth';
 
 export interface DashboardData {
   business: {
@@ -70,15 +70,17 @@ export interface DashboardData {
 }
 
 export function useDashboardData() {
-  const { getToken, isSignedIn } = useClerkAuth();
+  const { snapshot } = useAuthSnapshot();
+  const apiClient = useApiClient();
 
   return useQuery({
     queryKey: ['dashboard-data'],
     queryFn: async (): Promise<DashboardData> => {
-      const data = await edgeFetchJson("dashboard-data", getToken);
-      return data;
+      const response = await apiClient.get("/dashboard-data");
+      if (response.error) throw new Error(response.error);
+      return response.data;
     },
-    enabled: isSignedIn,
+    enabled: snapshot.phase === 'authenticated',
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
     refetchOnWindowFocus: false,

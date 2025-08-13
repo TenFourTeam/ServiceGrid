@@ -1,7 +1,7 @@
 
 import { useQuery } from "@tanstack/react-query";
-import { useAuth as useClerkAuth } from "@clerk/clerk-react";
-import { edgeFetchJson } from "@/utils/edgeApi";
+import { useAuthSnapshot } from "@/auth";
+import { useApiClient } from "@/auth";
 import { z } from "zod";
 
 export interface DbJobRow {
@@ -25,8 +25,9 @@ const JobsResponseSchema = z.object({
 });
 
 export function useSupabaseJobs(opts?: { enabled?: boolean; refetchInterval?: number | false; refetchOnWindowFocus?: boolean; refetchOnReconnect?: boolean }) {
-  const { isSignedIn, getToken } = useClerkAuth();
-  const enabled = !!isSignedIn && (opts?.enabled ?? true);
+  const { snapshot } = useAuthSnapshot();
+  const apiClient = useApiClient();
+  const enabled = snapshot.phase === 'authenticated' && (opts?.enabled ?? true);
 
   return useQuery<{ rows: DbJobRow[] } | null, Error>({
     queryKey: ["supabase", "jobs"],
@@ -37,7 +38,9 @@ export function useSupabaseJobs(opts?: { enabled?: boolean; refetchInterval?: nu
     refetchIntervalInBackground: false,
     queryFn: async () => {
       console.info("[useSupabaseJobs] fetching...");
-      const data = await edgeFetchJson("jobs", getToken);
+      const response = await apiClient.get("/jobs");
+      if (response.error) throw new Error(response.error);
+      const data = response.data;
 
       if (!data) {
         console.info("[useSupabaseJobs] no data (null) – likely signed out");

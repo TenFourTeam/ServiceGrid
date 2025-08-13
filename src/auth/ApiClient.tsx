@@ -28,12 +28,17 @@ class ApiClient {
     this.emit = emit;
   }
 
-  async request<T = any>(url: string, options: ApiClientOptions = {}, tried = false): Promise<ApiResponse<T>> {
+  async request<T = any>(path: string, options: ApiClientOptions = {}, tried = false): Promise<ApiResponse<T>> {
     const { method = 'GET', body, headers = {}, timeout = 30000 } = options;
 
     try {
       // Get auth headers
       const authHeaders = await this.getAuthHeader();
+
+      // Build full URL for Supabase edge function
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+      const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+      const url = `${SUPABASE_URL}/functions/v1/${cleanPath}`;
 
       // Prepare request
       const controller = new AbortController();
@@ -60,7 +65,7 @@ class ApiClient {
       if (response.status === 401 && !tried) {
         const retryAction = await this.onAuthError(response.status, false);
         if (retryAction === 'retry') {
-          return this.request<T>(url, options, true);
+          return this.request<T>(path, options, true);
         }
       }
 
@@ -105,20 +110,20 @@ class ApiClient {
   }
 
   // Convenience methods
-  async get<T = any>(url: string, options?: Omit<ApiClientOptions, 'method'>): Promise<ApiResponse<T>> {
-    return this.request<T>(url, { ...options, method: 'GET' });
+  async get<T = any>(path: string, options?: Omit<ApiClientOptions, 'method'>): Promise<ApiResponse<T>> {
+    return this.request<T>(path, { ...options, method: 'GET' });
   }
 
-  async post<T = any>(url: string, body?: any, options?: Omit<ApiClientOptions, 'method' | 'body'>): Promise<ApiResponse<T>> {
-    return this.request<T>(url, { ...options, method: 'POST', body });
+  async post<T = any>(path: string, body?: any, options?: Omit<ApiClientOptions, 'method' | 'body'>): Promise<ApiResponse<T>> {
+    return this.request<T>(path, { ...options, method: 'POST', body });
   }
 
-  async put<T = any>(url: string, body?: any, options?: Omit<ApiClientOptions, 'method' | 'body'>): Promise<ApiResponse<T>> {
-    return this.request<T>(url, { ...options, method: 'PUT', body });
+  async put<T = any>(path: string, body?: any, options?: Omit<ApiClientOptions, 'method' | 'body'>): Promise<ApiResponse<T>> {
+    return this.request<T>(path, { ...options, method: 'PUT', body });
   }
 
-  async delete<T = any>(url: string, options?: Omit<ApiClientOptions, 'method'>): Promise<ApiResponse<T>> {
-    return this.request<T>(url, { ...options, method: 'DELETE' });
+  async delete<T = any>(path: string, options?: Omit<ApiClientOptions, 'method'>): Promise<ApiResponse<T>> {
+    return this.request<T>(path, { ...options, method: 'DELETE' });
   }
 }
 

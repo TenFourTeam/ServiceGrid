@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { useAuth as useClerkAuth } from "@clerk/clerk-react";
-import { edgeFetchJson } from "@/utils/edgeApi";
+import { useAuthSnapshot } from "@/auth";
+import { useApiClient } from "@/auth";
 
 export interface BusinessRoleData {
   role: 'owner' | 'worker' | null;
@@ -8,8 +8,9 @@ export interface BusinessRoleData {
 }
 
 export function useBusinessRole(businessId?: string) {
-  const { isSignedIn, getToken } = useClerkAuth();
-  const enabled = !!isSignedIn && !!businessId;
+  const { snapshot } = useAuthSnapshot();
+  const apiClient = useApiClient();
+  const enabled = snapshot.phase === 'authenticated' && !!businessId;
 
   return useQuery<BusinessRoleData, Error>({
     queryKey: ["business-role", businessId],
@@ -17,7 +18,9 @@ export function useBusinessRole(businessId?: string) {
     queryFn: async () => {
       if (!businessId) return { role: null, canManage: false };
       
-      const data = await edgeFetchJson(`business-role?business_id=${businessId}`, getToken);
+      const response = await apiClient.get(`/business-role?business_id=${businessId}`);
+      if (response.error) throw new Error(response.error);
+      const data = response.data;
       return {
         role: data?.role || null,
         canManage: data?.role === 'owner',

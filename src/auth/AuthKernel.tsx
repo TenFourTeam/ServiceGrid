@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from "react";
 import { useAuth as useClerkAuth, useUser } from "@clerk/clerk-react";
 import { AuthSnapshot, AuthPhase, AuthContextValue, AuthBootstrapResult, TenantRole } from "./types";
-import { edgeFetchJson } from "@/utils/edgeApi";
+// Bootstrap will use ApiClient after initial setup
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -70,9 +70,21 @@ export function AuthKernel({ children }: { children: React.ReactNode }) {
       const token = await getToken({ template: 'supabase' });
       if (!token) throw new Error('No token available');
 
-      const result = await edgeFetchJson("clerk-bootstrap", () => Promise.resolve(token), { 
-        method: "POST" 
+      // Use direct fetch for bootstrap since ApiClient isn't ready yet
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/get-business`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
       });
+      
+      if (!response.ok) {
+        throw new Error(`Bootstrap failed: ${response.status}`);
+      }
+      
+      const result = await response.json();
 
       emit('auth:bootstrap_ok');
       return {
