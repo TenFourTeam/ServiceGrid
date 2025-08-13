@@ -44,31 +44,29 @@ export function useOnboardingState(opts?: { enabled?: boolean }): OnboardingProg
 
     const completedSteps = [
       hasNameAndBusiness,
-      hasCustomers,
-      hasJobs || hasQuotes, // Either job OR quote counts as activation
       bankLinked,
-      subscribed
+      hasCustomers,
+      hasQuotes,
+      hasJobs
     ].filter(Boolean).length;
 
     const completionPercentage = (completedSteps / 5) * 100;
     const isComplete = completedSteps === 5;
     
     // Show intent picker if user has no customers AND no jobs AND no quotes
-    const showIntentPicker = hasNameAndBusiness && !hasCustomers && !hasJobs && !hasQuotes;
+    const showIntentPicker = hasNameAndBusiness && bankLinked && !hasCustomers && !hasJobs && !hasQuotes;
 
     let nextAction: string | null = null;
     if (!hasNameAndBusiness) {
       nextAction = 'Set up your profile';
-    } else if (!hasCustomers && !hasJobs && !hasQuotes) {
-      nextAction = 'Choose your first action';
-    } else if (!hasCustomers) {
-      nextAction = 'Add your first customer';
-    } else if (!hasJobs && !hasQuotes) {
-      nextAction = 'Create a job or quote';
     } else if (!bankLinked) {
       nextAction = 'Link your bank account';
-    } else if (!subscribed) {
-      nextAction = 'Start your subscription';
+    } else if (!hasCustomers) {
+      nextAction = 'Add your first customer';
+    } else if (!hasQuotes) {
+      nextAction = 'Create a quote';
+    } else if (!hasJobs) {
+      nextAction = 'Schedule a job';
     }
 
     return {

@@ -68,6 +68,13 @@ export function FloatingSetupWidget({
       action: onSetupProfile,
     },
     {
+      id: 'bank',
+      label: 'Link your bank',
+      icon: CreditCard,
+      completed: onboardingState.bankLinked,
+      action: onLinkBank,
+    },
+    {
       id: 'customers',
       label: 'Add customers',
       icon: Users,

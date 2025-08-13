@@ -47,20 +47,6 @@ export function SetupChecklist({
       action: onSetupProfile
     },
     {
-      id: 'customer',
-      label: 'Create first Customer',
-      completed: hasCustomers,
-      icon: Users,
-      action: onAddCustomer
-    },
-    {
-      id: 'work',
-      label: 'Create first Job or Quote',
-      completed: hasJobs || hasQuotes,
-      icon: Calendar,
-      action: hasJobs ? onCreateQuote : onCreateJob
-    },
-    {
       id: 'bank',
       label: 'Link bank account',
       completed: bankLinked,
@@ -68,12 +54,25 @@ export function SetupChecklist({
       action: onLinkBank
     },
     {
-      id: 'subscription',
-      label: 'Start subscription',
-      completed: subscribed,
-      icon: Crown,
-      action: onStartSubscription,
-      trialDays: 7 // TODO: Calculate actual trial days remaining
+      id: 'customer',
+      label: 'Add customers',
+      completed: hasCustomers,
+      icon: Users,
+      action: onAddCustomer
+    },
+    {
+      id: 'quotes',
+      label: 'Create quotes',
+      completed: hasQuotes,
+      icon: Calendar,
+      action: onCreateQuote
+    },
+    {
+      id: 'jobs',
+      label: 'Schedule jobs',
+      completed: hasJobs,
+      icon: Calendar,
+      action: onCreateJob
     }
   ];
 
@@ -136,11 +135,6 @@ export function SetupChecklist({
                   )}>
                     {step.label}
                   </p>
-                  {step.id === 'subscription' && step.trialDays && !step.completed && (
-                    <p className="text-xs text-muted-foreground">
-                      {step.trialDays} days left in trial
-                    </p>
-                  )}
                 </div>
 
                 {!step.completed && (
