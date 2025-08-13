@@ -5,6 +5,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "*",
+  "Vary": "Origin",
 };
 
 type ReqBody = {
@@ -13,12 +15,22 @@ type ReqBody = {
 };
 
 serve(async (req) => {
-  // CORS preflight
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
   }
 
-  const origin = req.headers.get("origin") || "https://ijudkzqfriazabiosnvb.supabase.co";
+  const origin = req.headers.get("Origin") || req.headers.get("origin") || null;
+  const allowed = (Deno.env.get("ALLOWED_ORIGINS") || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (origin && allowed.length && !allowed.includes("*") && !allowed.includes(origin)) {
+    return new Response(JSON.stringify({ error: "Origin not allowed" }), {
+      status: 403,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  const baseUrl = origin ?? (allowed[0] || "https://ijudkzqfriazabiosnvb.supabase.co");
 
   try {
     const { invoice_id, token }: ReqBody = await req.json();
@@ -118,8 +130,8 @@ serve(async (req) => {
           quantity: 1,
         },
       ],
-      success_url: `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/payment-canceled`,
+      success_url: `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/payment-canceled`,
       payment_intent_data: paymentIntentData,
     });
 

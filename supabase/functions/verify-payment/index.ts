@@ -5,11 +5,25 @@ import { Resend } from "npm:resend@4.0.0";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "*",
+  "Vary": "Origin",
 };
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
+  }
+
+  const origin = req.headers.get("Origin") || req.headers.get("origin") || null;
+  const allowed = (Deno.env.get("ALLOWED_ORIGINS") || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (origin && allowed.length && !allowed.includes("*") && !allowed.includes(origin)) {
+    return new Response(JSON.stringify({ error: "Origin not allowed" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 403,
+    });
   }
 
   try {
