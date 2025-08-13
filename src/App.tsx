@@ -9,6 +9,7 @@ import { StoreProvider } from "./store/useAppStore";
 import { OnboardingProvider } from "@/components/Onboarding/OnboardingProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import LoadingScreen from "@/components/LoadingScreen";
+import { GlobalLoadingIndicator } from "@/components/ui/global-loading";
 
 import ProtectedRoute from "@/components/Auth/ProtectedRoute";
 import AutoSignOut from "@/components/Auth/AutoSignOut";
@@ -29,7 +30,19 @@ const PaymentSuccessPage = lazy(() => import("./pages/PaymentSuccess"));
 const PaymentCanceledPage = lazy(() => import("./pages/PaymentCanceled"));
 const InvoicePayPage = lazy(() => import("./pages/InvoicePay"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes  
+      refetchOnWindowFocus: false,
+      retry: (failureCount, error) => {
+        if (failureCount >= 3) return false;
+        return !error?.message?.includes('401');
+      }
+    }
+  }
+});
 
 function PrefetchRoutes() {
   useEffect(() => {
@@ -60,6 +73,7 @@ const App = () => (
       <Sonner />
       <AutoSignOut />
       <ClerkBootstrap />
+      <GlobalLoadingIndicator />
       <StoreProvider>
         <BrowserRouter>
           <OnboardingProvider>

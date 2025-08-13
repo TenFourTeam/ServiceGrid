@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState } from 'react';
 import { IntentPickerModal } from './IntentPickerModal';
 import { FloatingSetupWidget } from './FloatingSetupWidget';
 import { TrialNotifications } from './TrialNotifications';
-import { useOnboardingState } from '@/hooks/useOnboardingState';
+import { useOnboardingState } from '@/hooks/useOnboardingStateOptimized';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useNavigate } from 'react-router-dom';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';

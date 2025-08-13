@@ -698,6 +698,14 @@ export type Database = {
           updated_at: string
         }
       }
+      get_dashboard_counts: {
+        Args: { owner_id: string }
+        Returns: {
+          customers: number
+          jobs: number
+          quotes: number
+        }[]
+      }
       next_est_number: {
         Args: { p_business_id: string }
         Returns: string

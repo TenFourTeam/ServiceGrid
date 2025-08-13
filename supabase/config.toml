@@ -67,3 +67,6 @@ verify_jwt = false
 
 [functions.clerk-bootstrap]
 verify_jwt = false
+
+[functions.dashboard-data]
+verify_jwt = false

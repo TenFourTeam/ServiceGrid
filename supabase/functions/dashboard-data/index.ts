@@ -83,8 +83,8 @@ serve(async (req) => {
         .limit(1)
         .maybeSingle(),
 
-      // Get counts in a single query using aggregation
-      supabase.rpc('get_dashboard_counts', { owner_id: profileId }).single(),
+      // Get counts using the custom function
+      supabase.rpc('get_dashboard_counts', { owner_id: profileId }),
 
       // Get Stripe status
       fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/connect-account-status`, {
@@ -125,7 +125,11 @@ serve(async (req) => {
         inv_prefix: business.inv_prefix,
         inv_seq: Number(business.inv_seq) || 1,
       },
-      counts: countsResult.data || { customers: 0, jobs: 0, quotes: 0 },
+      counts: {
+        customers: Number(countsResult.data?.customers || 0),
+        jobs: Number(countsResult.data?.jobs || 0),
+        quotes: Number(countsResult.data?.quotes || 0)
+      },
       stripeStatus: stripeResult,
       subscription: {
         subscribed: subscriptionResult.data?.subscribed || false,
