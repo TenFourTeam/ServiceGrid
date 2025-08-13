@@ -116,12 +116,12 @@ export default function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
-        <div className="p-2">
+        <div className="p-2 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="w-full flex items-center gap-2 rounded-md border px-2 py-2 hover:bg-muted transition group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-8"
+                className="w-full flex items-center gap-2 rounded-md hover:border px-2 py-2 hover:bg-muted transition group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-8"
                 aria-label="User menu"
               >
                 <UserIcon className="h-5 w-5 text-primary flex-shrink-0" />
