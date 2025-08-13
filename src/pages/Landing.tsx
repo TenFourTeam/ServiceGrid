@@ -22,10 +22,13 @@ export default function Landing() {
   const { isLoaded, isSignedIn } = useAuth();
   const navigate = useNavigate();
 
-  // Redirect signed-in users to calendar
+  // Redirect signed-in users to calendar (with delay to prevent race conditions during logout)
   useEffect(() => {
     if (hasClerk && isLoaded && isSignedIn) {
-      navigate('/calendar', { replace: true });
+      const timer = setTimeout(() => {
+        navigate('/calendar', { replace: true });
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [hasClerk, isLoaded, isSignedIn, navigate]);
 
