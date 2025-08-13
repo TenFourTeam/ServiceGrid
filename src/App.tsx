@@ -8,8 +8,10 @@ import { OnboardingProvider } from "@/components/Onboarding/OnboardingProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import LoadingScreen from "@/components/LoadingScreen";
 import { GlobalLoadingIndicator } from "@/components/ui/global-loading";
+import { ClerkLoaded, ClerkLoading } from "@clerk/clerk-react";
 
-import ProtectedRoute from "@/components/Auth/ProtectedRoute";
+import RequireAuth from "@/components/Auth/RequireAuth";
+import PublicOnly from "@/components/Auth/PublicOnly";
 import AutoSignOut from "@/components/Auth/AutoSignOut";
 import ClerkBootstrap from "@/components/Auth/ClerkBootstrap";
 const CalendarPage = lazy(() => import("./pages/Calendar"));
@@ -20,7 +22,7 @@ const CustomersPage = lazy(() => import("./pages/Customers"));
 const SettingsPage = lazy(() => import("./pages/Settings"));
 const LegalPage = lazy(() => import("./pages/Legal"));
 const NotFound = lazy(() => import("./pages/NotFound"));
-import RootRedirect from "./components/RootRedirect";
+const LandingPage = lazy(() => import("./pages/Landing"));
 
 const ClerkAuthPage = lazy(() => import("./pages/ClerkAuth"));
 const QuoteActionPage = lazy(() => import("./pages/QuoteAction"));
@@ -72,32 +74,46 @@ const App = () => (
       <ClerkBootstrap />
       <GlobalLoadingIndicator />
       <StoreProvider>
-        <BrowserRouter>
-          <OnboardingProvider>
-            <ErrorBoundary>
-              <Suspense fallback={<LoadingScreen /> }>
-                 <PrefetchRoutes />
-                 <Routes>
-                   <Route path="/clerk-auth" element={<ClerkAuthPage />} />
-                   <Route path="/quote-action" element={<QuoteActionPage />} />
-                   
-                    <Route path="/" element={<RootRedirect />} />
-                   <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
-                   <Route path="/work-orders" element={<ProtectedRoute><WorkOrdersPage /></ProtectedRoute>} />
-                   <Route path="/quotes" element={<ProtectedRoute><QuotesPage /></ProtectedRoute>} />
-                    <Route path="/invoices" element={<ProtectedRoute><InvoicesPage /></ProtectedRoute>} />
-                    <Route path="/customers" element={<ProtectedRoute><CustomersPage /></ProtectedRoute>} />
-                    <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-                    <Route path="/legal" element={<ProtectedRoute><LegalPage /></ProtectedRoute>} />
+        <ClerkLoaded>
+          <BrowserRouter>
+            <OnboardingProvider>
+              <ErrorBoundary>
+                <Suspense fallback={<LoadingScreen />}>
+                  <PrefetchRoutes />
+                  <Routes>
+                    {/* Public routes */}
+                    <Route element={<PublicOnly />}>
+                      <Route path="/" element={<LandingPage />} />
+                    </Route>
+                    
+                    {/* Protected routes */}
+                    <Route element={<RequireAuth />}>
+                      <Route path="/calendar" element={<CalendarPage />} />
+                      <Route path="/work-orders" element={<WorkOrdersPage />} />
+                      <Route path="/quotes" element={<QuotesPage />} />
+                      <Route path="/invoices" element={<InvoicesPage />} />
+                      <Route path="/customers" element={<CustomersPage />} />
+                      <Route path="/settings" element={<SettingsPage />} />
+                      <Route path="/legal" element={<LegalPage />} />
+                    </Route>
+
+                    {/* Public pages that don't require auth checks */}
+                    <Route path="/clerk-auth" element={<ClerkAuthPage />} />
+                    <Route path="/quote-action" element={<QuoteActionPage />} />
                     <Route path="/payment-success" element={<PaymentSuccessPage />} />
                     <Route path="/payment-canceled" element={<PaymentCanceledPage />} />
                     <Route path="/invoice-pay" element={<InvoicePayPage />} />
-                   <Route path="*" element={<NotFound />} />
-                 </Routes>
-              </Suspense>
-            </ErrorBoundary>
-          </OnboardingProvider>
-        </BrowserRouter>
+                    
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Suspense>
+              </ErrorBoundary>
+            </OnboardingProvider>
+          </BrowserRouter>
+        </ClerkLoaded>
+        <ClerkLoading>
+          <LoadingScreen full />
+        </ClerkLoading>
       </StoreProvider>
     </TooltipProvider>
   </QueryClientProvider>
