@@ -72,13 +72,6 @@ export function FloatingSetupWidget({
       completed: onboardingState.hasQuotes,
       action: onCreateQuote,
     },
-    {
-      id: 'subscription',
-      label: 'Start subscription',
-      icon: Crown,
-      completed: onboardingState.subscribed,
-      action: onStartSubscription,
-    },
   ].map((step, index) => ({
     ...step,
     stepNumber: index + 1,

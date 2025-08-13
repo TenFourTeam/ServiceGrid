@@ -49,7 +49,8 @@ type Action =
   | { type: 'UPSERT_INVOICE'; payload: Invoice }
   | { type: 'ADD_EVENT'; payload: AppEvent }
   | { type: 'SET_BUSINESS'; payload: Business }
-  | { type: 'DISMISS_SETUP_WIDGET'; permanently?: boolean };
+  | { type: 'DISMISS_SETUP_WIDGET'; permanently?: boolean }
+  | { type: 'RESET_DISMISSALS' };
 
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
@@ -64,6 +65,15 @@ function reducer(state: AppState, action: Action): AppState {
           ...state.ui,
           setupWidgetDismissed: true,
           setupWidgetDismissedAt: action.permanently ? nowISO() : null,
+        },
+      };
+    case 'RESET_DISMISSALS':
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          setupWidgetDismissed: false,
+          setupWidgetDismissedAt: null,
         },
       };
     case 'UPSERT_CUSTOMER': {
@@ -140,6 +150,7 @@ export interface Store extends AppState {
   // NEW: UI state management
   dismissSetupWidget(permanently?: boolean): void;
   shouldShowSetupWidget(): boolean;
+  resetDismissals(): void;
 }
 
 const StoreContext = createContext<Store | null>(null);
@@ -397,6 +408,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       
       // Allow temporary dismissal but reset on new session
       return !state.ui?.setupWidgetDismissed;
+    },
+
+    resetDismissals() {
+      dispatch({ type: 'RESET_DISMISSALS' });
     },
   }), [state]);
 
