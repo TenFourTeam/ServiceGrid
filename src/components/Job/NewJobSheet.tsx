@@ -127,7 +127,7 @@ export function NewJobSheet() {
         endsAt: end.toISOString(),
         notes: notes || undefined,
         total: totalCents,
-        status: 'Scheduled',
+        status: 'Unscheduled',
         photos: photoUrls as any,
       } as any);
 

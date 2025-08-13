@@ -267,6 +267,19 @@ serve(async (req) => {
       const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
       if (!emailRegex.test(email)) return badRequest("Invalid email format");
 
+      // Check for duplicate name + email combination
+      const { data: existingCustomer } = await supabase
+        .from("customers")
+        .select("id")
+        .eq("owner_id", ownerId)
+        .eq("name", name)
+        .eq("email", email)
+        .single();
+      
+      if (existingCustomer) {
+        return badRequest("A customer with this name and email already exists");
+      }
+
       const businessId = await ensureDefaultBusiness(supabase, ownerId);
 
       const { data, error } = await supabase
@@ -304,6 +317,22 @@ serve(async (req) => {
         if (!emailRegex.test(email)) return badRequest("Invalid email format");
         
         update.email = email;
+      }
+
+      // Check for duplicate name + email combination (excluding current customer)
+      if (update.name && update.email) {
+        const { data: existingCustomer } = await supabase
+          .from("customers")
+          .select("id")
+          .eq("owner_id", ownerId)
+          .eq("name", update.name)
+          .eq("email", update.email)
+          .neq("id", id)
+          .single();
+        
+        if (existingCustomer) {
+          return badRequest("A customer with this name and email already exists");
+        }
       }
       if (Object.prototype.hasOwnProperty.call(body, 'phone')) {
         const phone = (body.phone ?? null) ? String(body.phone).trim() : null;
