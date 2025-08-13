@@ -339,28 +339,13 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
 
             <div className="space-y-2">
               <Label htmlFor="customer">Customer *</Label>
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <CustomerCombobox
-                    customers={customers}
-                    value={draft.customerId}
-                    onChange={(id) => setDraft((prev) => ({ ...prev, customerId: id }))}
-                    placeholder="Select customer…"
-                    disabled={saving}
-                  />
-                </div>
-                <InlineCustomerForm 
-                  onCustomerCreated={(customerId, customerName) => {
-                    setDraft((prev) => ({ ...prev, customerId }));
-                    queryClient.invalidateQueries({ queryKey: ["supabase", "customers"] });
-                  }}
-                  trigger={
-                    <Button type="button" variant="outline" disabled={saving}>
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  }
-                />
-              </div>
+              <CustomerCombobox
+                customers={customers}
+                value={draft.customerId}
+                onChange={(id) => setDraft((prev) => ({ ...prev, customerId: id }))}
+                placeholder="Select customer…"
+                disabled={saving}
+              />
             </div>
 
             <div className="space-y-2">

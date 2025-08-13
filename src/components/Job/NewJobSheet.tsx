@@ -180,29 +180,16 @@ export function NewJobSheet() {
           {/* Customer */}
           <div className="space-y-2">
             <Label htmlFor="customer">Customer</Label>
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <CustomerCombobox
-                  customers={comboboxCustomers}
-                  value={customerId || ""}
-                  onChange={(id) => {
-                    setCustomerId(id);
-                    const c = (customersList as any[]).find((x: any) => x.id === id);
-                    if (!address && c?.address) setAddress(c.address);
-                  }}
-                  placeholder="Select customer…"
-                />
-              </div>
-              <InlineCustomerForm
-                onCustomerCreated={(id, name) => {
-                  setCustomerId(id);
-                  // Refresh customer data
-                  setTimeout(() => {
-                    window.location.reload();
-                  }, 100);
-                }}
-              />
-            </div>
+            <CustomerCombobox
+              customers={comboboxCustomers}
+              value={customerId || ""}
+              onChange={(id) => {
+                setCustomerId(id);
+                const c = (customersList as any[]).find((x: any) => x.id === id);
+                if (!address && c?.address) setAddress(c.address);
+              }}
+              placeholder="Select customer…"
+            />
           </div>
 
           {/* Address */}

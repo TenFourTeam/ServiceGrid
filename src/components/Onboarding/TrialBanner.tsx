@@ -25,9 +25,6 @@ export function TrialBanner() {
     return (
       <div className="bg-gradient-to-r from-red-50 to-red-100 border border-red-200 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex-shrink-0">
-            <Clock className="h-5 w-5 text-red-600" />
-          </div>
           <div>
             <p className="text-sm font-medium text-red-900">
               Your free trial has expired
@@ -62,9 +59,6 @@ export function TrialBanner() {
   return (
     <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 px-4 py-3 flex items-center justify-between">
       <div className="flex items-center gap-3">
-        <div className="flex-shrink-0">
-          <Crown className="h-5 w-5 text-amber-600" />
-        </div>
         <div className="flex items-center gap-2">
           <p className="text-sm font-medium text-amber-900">
             Free Trial
