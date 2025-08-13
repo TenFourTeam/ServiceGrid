@@ -29,6 +29,7 @@ const QuoteActionPage = lazy(() => import("./pages/QuoteAction"));
 const PaymentSuccessPage = lazy(() => import("./pages/PaymentSuccess"));
 const PaymentCanceledPage = lazy(() => import("./pages/PaymentCanceled"));
 const InvoicePayPage = lazy(() => import("./pages/InvoicePay"));
+const InviteAcceptPage = lazy(() => import("./pages/InviteAccept"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -60,6 +61,7 @@ function PrefetchRoutes() {
       import("./pages/PaymentSuccess"),
       import("./pages/PaymentCanceled"),
       import("./pages/InvoicePay"),
+      import("./pages/InviteAccept"),
     ]);
   }, []);
   return null;
@@ -103,6 +105,7 @@ const App = () => (
                     <Route path="/payment-success" element={<PaymentSuccessPage />} />
                     <Route path="/payment-canceled" element={<PaymentCanceledPage />} />
                     <Route path="/invoice-pay" element={<InvoicePayPage />} />
+                    <Route path="/invite" element={<InviteAcceptPage />} />
                     
                     <Route path="*" element={<NotFound />} />
                   </Routes>

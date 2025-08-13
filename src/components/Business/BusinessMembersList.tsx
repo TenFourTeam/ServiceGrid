@@ -4,8 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useBusinessMembers, useInviteWorker, useRemoveMember } from "@/hooks/useBusinessMembers";
-import { UserPlus, Trash2, Mail } from "lucide-react";
+import { usePendingInvites, useRevokeInvite, useResendInvite } from "@/hooks/useInvites";
+import { UserPlus, Trash2, Mail, Clock, Send, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface BusinessMembersListProps {
@@ -19,8 +21,11 @@ export function BusinessMembersList({ businessId, canManage }: BusinessMembersLi
   const { toast } = useToast();
 
   const { data: membersData, isLoading } = useBusinessMembers(businessId);
+  const { data: invitesData, isLoading: loadingInvites } = usePendingInvites(businessId);
   const inviteWorker = useInviteWorker();
   const removeMember = useRemoveMember();
+  const revokeInvite = useRevokeInvite();
+  const resendInvite = useResendInvite();
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,19 +69,56 @@ export function BusinessMembersList({ businessId, canManage }: BusinessMembersLi
     }
   };
 
+  const handleRevokeInvite = async (inviteId: string, email: string) => {
+    if (!confirm(`Are you sure you want to revoke the invitation for ${email}?`)) {
+      return;
+    }
+
+    try {
+      await revokeInvite.mutateAsync({ inviteId });
+      toast({
+        title: "Invitation revoked",
+        description: `Invitation for ${email} has been revoked`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to revoke invitation",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleResendInvite = async (inviteId: string, email: string) => {
+    try {
+      await resendInvite.mutateAsync({ inviteId });
+      toast({
+        title: "Invitation resent",
+        description: `Invitation for ${email} has been resent`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to resend invitation",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return <div className="text-muted-foreground">Loading team members...</div>;
   }
 
   const members = membersData?.members || [];
+  const invites = invitesData?.invites || [];
 
   return (
     <Card className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-lg font-semibold">Team Members</h3>
+          <h3 className="text-lg font-semibold">Team Management</h3>
           <p className="text-sm text-muted-foreground">
-            Manage who has access to your business
+            Manage team members and pending invitations
           </p>
         </div>
         {canManage && (
@@ -118,56 +160,128 @@ export function BusinessMembersList({ businessId, canManage }: BusinessMembersLi
         </form>
       )}
 
-      <div className="space-y-3">
-        {members.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <UserPlus className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p>No team members yet</p>
-            {canManage && (
-              <p className="text-sm">Invite workers to collaborate on your business</p>
-            )}
-          </div>
-        ) : (
-          members.map((member) => (
-            <div
-              key={member.id}
-              className="flex items-center justify-between p-3 border rounded-lg"
-            >
-              <div className="flex items-center gap-3">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{member.email}</span>
-                    <Badge variant={member.role === 'owner' ? 'default' : 'secondary'}>
-                      {member.role}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    {member.joined_at ? (
-                      <span>Joined {new Date(member.joined_at).toLocaleDateString()}</span>
-                    ) : (
-                      <>
-                        <Mail className="h-3 w-3" />
-                        <span>Invited {new Date(member.invited_at).toLocaleDateString()}</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-              {canManage && member.role !== 'owner' && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleRemove(member.id, member.email)}
-                  disabled={removeMember.isPending}
-                  className="text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+      <Tabs defaultValue="members" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="members">
+            Members ({members.length})
+          </TabsTrigger>
+          <TabsTrigger value="invites">
+            Pending Invites ({invites.length})
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="members" className="space-y-4 mt-4">
+          {members.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <UserPlus className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p>No team members yet</p>
+              {canManage && (
+                <p className="text-sm">Invite workers to collaborate on your business</p>
               )}
             </div>
-          ))
-        )}
-      </div>
+          ) : (
+            members.map((member) => (
+              <div
+                key={member.id}
+                className="flex items-center justify-between p-3 border rounded-lg"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{member.email}</span>
+                      <Badge variant={member.role === 'owner' ? 'default' : 'secondary'}>
+                        {member.role}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      {member.joined_at ? (
+                        <span>Joined {new Date(member.joined_at).toLocaleDateString()}</span>
+                      ) : (
+                        <>
+                          <Mail className="h-3 w-3" />
+                          <span>Invited {new Date(member.invited_at).toLocaleDateString()}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {canManage && member.role !== 'owner' && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemove(member.id, member.email)}
+                    disabled={removeMember.isPending}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            ))
+          )}
+        </TabsContent>
+
+        <TabsContent value="invites" className="space-y-4 mt-4">
+          {loadingInvites ? (
+            <div className="text-center py-8">Loading invites...</div>
+          ) : invites.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Mail className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p>No pending invitations</p>
+              {canManage && (
+                <p className="text-sm">Invite workers to see pending invitations here</p>
+              )}
+            </div>
+          ) : (
+            invites.map((invite) => (
+              <div
+                key={invite.id}
+                className="flex items-center justify-between p-3 border rounded-lg"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{invite.email}</span>
+                      <Badge variant="outline" className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        Pending
+                      </Badge>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Sent {new Date(invite.created_at).toLocaleDateString()} • 
+                      Expires {new Date(invite.expires_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                </div>
+                {canManage && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleResendInvite(invite.id, invite.email)}
+                      disabled={resendInvite.isPending}
+                      className="flex items-center gap-2"
+                    >
+                      <Send className="h-4 w-4" />
+                      Resend
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRevokeInvite(invite.id, invite.email)}
+                      disabled={revokeInvite.isPending}
+                      className="flex items-center gap-2 text-destructive hover:text-destructive"
+                    >
+                      <X className="h-4 w-4" />
+                      Revoke
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </TabsContent>
+      </Tabs>
     </Card>
   );
 }

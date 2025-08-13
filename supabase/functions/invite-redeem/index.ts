@@ -1,0 +1,160 @@
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.44.0";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+function json(data: any, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...corsHeaders },
+  });
+}
+
+serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  if (req.method !== 'POST') {
+    return json({ error: 'Method not allowed' }, 405);
+  }
+
+  try {
+    const { token } = await req.json();
+
+    if (!token) {
+      return json({ error: 'Token is required' }, 400);
+    }
+
+    // Create admin client
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { persistSession: false } }
+    );
+
+    // Hash the token to find the invite
+    const encoder = new TextEncoder();
+    const data = encoder.encode(token);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const tokenHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+    console.log('Looking up invite with token hash');
+
+    // Find the invite
+    const { data: invite, error: inviteError } = await supabase
+      .from('invites')
+      .select('*')
+      .eq('token_hash', tokenHash)
+      .is('redeemed_at', null)
+      .is('revoked_at', null)
+      .gt('expires_at', new Date().toISOString())
+      .single();
+
+    if (inviteError || !invite) {
+      console.log('Invite not found or invalid:', inviteError);
+      return json({ error: 'Invalid or expired invite' }, 400);
+    }
+
+    // Get authenticated user from request
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return json({ error: 'Authentication required' }, 401);
+    }
+
+    // Create client with user token
+    const userClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        auth: { persistSession: false },
+        global: {
+          headers: { Authorization: authHeader },
+        },
+      }
+    );
+
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    if (userError || !user) {
+      return json({ error: 'Invalid authentication' }, 401);
+    }
+
+    console.log('Redeeming invite for user:', user.id);
+
+    // Check if user is already a member of this business
+    const { data: existingMember } = await supabase
+      .from('business_members')
+      .select('*')
+      .eq('business_id', invite.business_id)
+      .eq('user_id', user.id)
+      .single();
+
+    if (existingMember) {
+      // Mark invite as redeemed even though user was already a member
+      await supabase
+        .from('invites')
+        .update({
+          redeemed_at: new Date().toISOString(),
+          redeemed_by: user.id,
+        })
+        .eq('id', invite.id);
+
+      return json({ message: 'You are already a member of this business' });
+    }
+
+    // Add user to business members
+    const { error: memberError } = await supabase
+      .from('business_members')
+      .insert({
+        business_id: invite.business_id,
+        user_id: user.id,
+        role: invite.role,
+        invited_by: invite.invited_by,
+        joined_at: new Date().toISOString(),
+      });
+
+    if (memberError) {
+      console.error('Failed to add business member:', memberError);
+      return json({ error: 'Failed to join business' }, 500);
+    }
+
+    // Mark invite as redeemed
+    const { error: redeemError } = await supabase
+      .from('invites')
+      .update({
+        redeemed_at: new Date().toISOString(),
+        redeemed_by: user.id,
+      })
+      .eq('id', invite.id);
+
+    if (redeemError) {
+      console.error('Failed to mark invite as redeemed:', redeemError);
+    }
+
+    // Log audit action
+    await supabase.rpc('log_audit_action', {
+      p_business_id: invite.business_id,
+      p_user_id: user.id,
+      p_action: 'invite_redeemed',
+      p_resource_type: 'business_member',
+      p_resource_id: user.id,
+      p_details: { email: invite.email, role: invite.role }
+    });
+
+    console.log('Invite redeemed successfully');
+
+    return json({
+      message: 'Successfully joined the business',
+      business_id: invite.business_id,
+      role: invite.role,
+    });
+
+  } catch (error) {
+    console.error('Error redeeming invite:', error);
+    return json({ error: 'Internal server error' }, 500);
+  }
+});

@@ -210,6 +210,51 @@ export type Database = {
           },
         ]
       }
+      invites: {
+        Row: {
+          business_id: string
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          redeemed_at: string | null
+          redeemed_by: string | null
+          revoked_at: string | null
+          role: Database["public"]["Enums"]["business_role"]
+          token_hash: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by: string
+          redeemed_at?: string | null
+          redeemed_by?: string | null
+          revoked_at?: string | null
+          role?: Database["public"]["Enums"]["business_role"]
+          token_hash: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          redeemed_at?: string | null
+          redeemed_by?: string | null
+          revoked_at?: string | null
+          role?: Database["public"]["Enums"]["business_role"]
+          token_hash?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       invoice_line_items: {
         Row: {
           created_at: string
