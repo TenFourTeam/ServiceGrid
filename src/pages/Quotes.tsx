@@ -151,7 +151,7 @@ export default function QuotesPage() {
     <AppLayout title="Quotes">
       <section className="space-y-4">
         <div className="flex justify-end">
-          <Button onClick={() => { setOpen(true); }}>
+          <Button onClick={() => { setOpen(true); }} data-onb="new-quote-button">
             Create Quote
           </Button>
         </div>

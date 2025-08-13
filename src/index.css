@@ -137,13 +137,19 @@ All colors MUST be HSL.
     --shadow-1: 0 8px 20px -8px hsl(var(--ring) / 0.18);
     --shadow-2: 0 16px 40px -16px hsl(var(--ring) / 0.22);
 
-    /* Motion */
-    --dur-150: 150ms;
-    --dur-200: 200ms;
-    --dur-300: 300ms;
-    --dur-500: 500ms;
-    --dur-800: 800ms;
-    --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* Motion */
+  --dur-150: 150ms;
+  --dur-200: 200ms;
+  --dur-300: 300ms;
+  --dur-500: 500ms;
+  --dur-800: 800ms;
+  --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* Onboarding spotlight variables */
+  --spotlight-x: 0px;
+  --spotlight-y: 0px;
+  --spotlight-w: 0px;
+  --spotlight-h: 0px;
   }
 
   .dark {
@@ -223,6 +229,18 @@ All colors MUST be HSL.
 
   .new-job-highlight {
     animation: new-job-highlight 1.5s ease-out 2;
+  }
+
+  /* Spotlight overlay with CSS mask */
+  .spotlight-overlay {
+    -webkit-mask: 
+      radial-gradient(ellipse var(--spotlight-w) var(--spotlight-h) at var(--spotlight-x) var(--spotlight-y), transparent 50%, black 52%),
+      linear-gradient(black, black);
+    mask: 
+      radial-gradient(ellipse var(--spotlight-w) var(--spotlight-h) at var(--spotlight-x) var(--spotlight-y), transparent 50%, black 52%),
+      linear-gradient(black, black);
+    -webkit-mask-composite: subtract;
+    mask-composite: subtract;
   }
 }
 

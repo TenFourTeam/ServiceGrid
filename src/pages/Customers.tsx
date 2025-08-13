@@ -116,7 +116,7 @@ export default function CustomersPage() {
           <Button variant="outline" onClick={() => setCsvImportOpen(true)}>
             Import CSV
           </Button>
-          <Button onClick={() => openNew()}>New Customer</Button>
+          <Button onClick={() => openNew()} data-onb="add-customer-button">New Customer</Button>
         </div>
 
         <Card>
@@ -149,7 +149,7 @@ export default function CustomersPage() {
                             Add them one by one or import your existing list.
                           </div>
                            <div className="flex gap-2 justify-center">
-                             <Button onClick={() => openNew()}>Add Customer</Button>
+                             <Button onClick={() => openNew()} data-onb="add-customer-button">Add Customer</Button>
                              <Button variant="outline" onClick={() => setCsvImportOpen(true)}>Import CSV</Button>
                            </div>
                         </div>

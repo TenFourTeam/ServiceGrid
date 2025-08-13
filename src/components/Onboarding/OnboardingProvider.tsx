@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 import { IntentPickerModal } from './IntentPickerModal';
 import { FloatingSetupWidget } from './FloatingSetupWidget';
 import { TrialNotifications } from './TrialNotifications';
+import { GuidedTour } from './GuidedTour';
 import { useOnboardingState } from '@/hooks/useOnboardingStateOptimized';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useNavigate } from 'react-router-dom';
@@ -105,6 +106,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     <OnboardingContext.Provider value={contextValue}>
       {children}
       <TrialNotifications />
+      <GuidedTour />
       <IntentPickerModal
         open={intentPickerOpen}
         onOpenChange={setIntentPickerOpen}

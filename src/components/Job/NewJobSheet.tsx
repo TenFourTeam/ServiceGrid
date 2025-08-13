@@ -164,7 +164,7 @@ export function NewJobSheet() {
   return (
     <Sheet open={open} onOpenChange={(o) => { setOpen(o); if (!o) resetState(); }}>
       <SheetTrigger asChild>
-        <Button data-testid="new-job-trigger">New Job</Button>
+        <Button data-testid="new-job-trigger" data-onb="new-job-button">New Job</Button>
       </SheetTrigger>
       <SheetContent side="right" className="sm:max-w-md flex h-full flex-col">
         <SheetHeader>
