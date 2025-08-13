@@ -5,16 +5,6 @@ import { ClerkRuntimeProvider } from './components/Auth/ClerkRuntime';
 import App from './App';
 import './index.css';
 
-function AppWithAuth({ publishableKey }: { publishableKey: string }) {
-  return (
-    <ClerkProvider publishableKey={publishableKey}>
-      <ClerkRuntimeProvider hasClerk={true}>
-        <App />
-      </ClerkRuntimeProvider>
-    </ClerkProvider>
-  );
-}
-
 function Boot() {
   const [key, setKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +48,13 @@ function Boot() {
     return <div style={{ padding: 24 }}>Missing authentication configuration</div>;
   }
 
-  return <AppWithAuth publishableKey={key} />;
+  return (
+    <ClerkProvider publishableKey={key}>
+      <ClerkRuntimeProvider hasClerk={true}>
+        <App />
+      </ClerkRuntimeProvider>
+    </ClerkProvider>
+  );
 }
 
 const root = document.getElementById('root')!;
