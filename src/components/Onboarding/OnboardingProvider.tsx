@@ -3,6 +3,7 @@ import { IntentPickerModal } from './IntentPickerModal';
 import { useOnboardingState } from '@/hooks/useOnboardingState';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useNavigate } from 'react-router-dom';
+import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 
 interface OnboardingContextType {
   showIntentPicker: () => void;
@@ -18,20 +19,21 @@ const OnboardingContext = createContext<OnboardingContextType | null>(null);
 
 export function OnboardingProvider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
-  const { showIntentPicker: shouldShowIntentPicker } = useOnboardingState();
+  const { isSignedIn } = useClerkAuth();
+  const { showIntentPicker: shouldShowIntentPicker } = useOnboardingState({ enabled: isSignedIn });
   const [intentPickerOpen, setIntentPickerOpen] = useState(false);
   const { track } = useAnalytics();
 
-  // Auto-show intent picker for new users
+  // Auto-show intent picker for new users, but only if signed in
   React.useEffect(() => {
-    if (shouldShowIntentPicker) {
+    if (isSignedIn && shouldShowIntentPicker) {
       // Small delay to avoid showing on initial page load
       const timer = setTimeout(() => {
         setIntentPickerOpen(true);
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [shouldShowIntentPicker]);
+  }, [isSignedIn, shouldShowIntentPicker]);
 
   const openNewJobSheet = () => {
     track('onboarding_step_completed', { step: 'new_job_initiated' });

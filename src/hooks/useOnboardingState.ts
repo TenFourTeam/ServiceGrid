@@ -17,12 +17,13 @@ export interface OnboardingProgress {
   showIntentPicker: boolean;
 }
 
-export function useOnboardingState(): OnboardingProgress {
-  const { data: customersData } = useSupabaseCustomers();
-  const { data: jobsData } = useSupabaseJobs();
-  const { data: quotesData } = useSupabaseQuotes();
-  const { data: stripeStatus } = useStripeConnectStatus();
-  const { data: subscriptionData } = useSubscriptionStatus();
+export function useOnboardingState(opts?: { enabled?: boolean }): OnboardingProgress {
+  const enabled = opts?.enabled ?? true;
+  const { data: customersData } = useSupabaseCustomers({ enabled });
+  const { data: jobsData } = useSupabaseJobs({ enabled });
+  const { data: quotesData } = useSupabaseQuotes({ enabled });
+  const { data: stripeStatus } = useStripeConnectStatus({ enabled });
+  const { data: subscriptionData } = useSubscriptionStatus({ enabled });
 
   return useMemo(() => {
     const hasCustomers = (customersData?.rows?.length ?? 0) > 0;
