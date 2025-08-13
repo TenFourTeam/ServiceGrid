@@ -1,9 +1,8 @@
-
 import React, { Suspense, lazy, useEffect } from "react";
 import { ConsolidatedToaster } from "@/components/ui/toast-consolidated";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { StoreProvider } from "./store/useAppStore";
 import { OnboardingProvider } from "@/components/Onboarding/OnboardingProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -21,7 +20,6 @@ const CustomersPage = lazy(() => import("./pages/Customers"));
 const SettingsPage = lazy(() => import("./pages/Settings"));
 const LegalPage = lazy(() => import("./pages/Legal"));
 const NotFound = lazy(() => import("./pages/NotFound"));
-import LandingPage from "./pages/Landing";
 import RootRedirect from "./components/RootRedirect";
 
 const ClerkAuthPage = lazy(() => import("./pages/ClerkAuth"));
@@ -84,11 +82,9 @@ const App = () => (
                    <Route path="/quote-action" element={<QuoteActionPage />} />
                    
                     <Route path="/" element={<RootRedirect />} />
-                    <Route path="/landing" element={<LandingPage />} />
                    <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
                    <Route path="/work-orders" element={<ProtectedRoute><WorkOrdersPage /></ProtectedRoute>} />
                    <Route path="/quotes" element={<ProtectedRoute><QuotesPage /></ProtectedRoute>} />
-                   <Route path="/estimates" element={<Navigate to="/quotes" replace />} />
                     <Route path="/invoices" element={<ProtectedRoute><InvoicesPage /></ProtectedRoute>} />
                     <Route path="/customers" element={<ProtectedRoute><CustomersPage /></ProtectedRoute>} />
                     <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />

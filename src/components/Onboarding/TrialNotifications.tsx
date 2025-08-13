@@ -4,14 +4,19 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useOnboarding } from './OnboardingProvider';
+import { useLocation } from 'react-router-dom';
 
 export function TrialNotifications() {
   const { data: dashboardData } = useDashboardData();
   const subscription = dashboardData?.subscription;
   const { openSubscription } = useOnboarding();
   const { toast } = useToast();
+  const location = useLocation();
 
   useEffect(() => {
+    // Don't show notifications on landing page
+    if (location.pathname === '/') return;
+    
     if (!subscription || subscription.subscribed) return;
 
     // Calculate trial status
