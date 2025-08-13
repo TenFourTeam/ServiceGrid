@@ -25,7 +25,7 @@ export interface OnboardingStepConfig {
   selector?: string;
   title: string;
   hint: string;
-  guard: () => Promise<boolean>;
+  guard: (context: any) => boolean; // Changed from async Promise<boolean> to sync boolean
   onAdvance?: () => void;
   canSkip?: boolean;
   mobileUI?: 'sheet' | 'tooltip';

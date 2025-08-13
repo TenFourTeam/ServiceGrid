@@ -1,9 +1,6 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useOnboardingState } from '@/hooks/useOnboardingState';
-import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
-import { useSupabaseJobs } from '@/hooks/useSupabaseJobs';
-import { useSupabaseQuotes } from '@/hooks/useSupabaseQuotes';
 import { onboardingSteps } from './onboardingSteps';
 import { OnboardingOverlay } from './OnboardingOverlay';
 import { AttentionRing } from './AttentionRing';
@@ -25,15 +22,14 @@ export function GuidedTour() {
   const currentStepConfig = nextStep ? onboardingSteps[nextStep] : null;
   const { target } = useSpotlight(currentStepConfig?.selector);
 
-  // 🔒 REMOVED: Auto-navigation caused infinite loops
-  // Users will navigate manually via "Take me there" button
-
-  // 🔒 DISABLED: Guard execution temporarily disabled to prevent async thrashing
-  // Will be re-enabled when guards use real data instead of mock functions
-
   // Don't show tour if complete, paused, or data not ready
   if (!currentStepConfig || isComplete || phase === 'paused' || !dataReady) {
     return null;
+  }
+
+  // Log warning if selector is specified but element not found
+  if (currentStepConfig.selector && !target?.visible) {
+    console.warn(`[GuidedTour] Element not found for selector: ${currentStepConfig.selector}`);
   }
 
   const handleAdvance = () => {

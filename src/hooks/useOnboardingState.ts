@@ -1,15 +1,11 @@
-import { useMemo, useState, useCallback, useEffect } from 'react';
-import { useSupabaseCustomers } from './useSupabaseCustomers';
-import { useSupabaseJobs } from './useSupabaseJobs';  
-import { useSupabaseQuotes } from './useSupabaseQuotes';
-import { useStripeConnectStatus } from './useStripeConnectStatus';
-import { useSubscriptionStatus } from './useSubscriptionStatus';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { useAuth as useClerkAuth, useUser } from '@clerk/clerk-react';
 import { useStore } from '@/store/useAppStore';
-import { OnboardingStep, OnboardingIntent } from '@/types/onboarding';
+import { useDashboardData } from './useDashboardData';
 import { useDebouncedValue } from './useDebouncedValue';
-
-export type OnboardingPhase = 'idle' | 'ready' | 'spotlight' | 'awaitingAction' | 'completed' | 'paused';
+import { useOnboardingContext, OnboardingContext } from '@/components/Onboarding/useOnboardingContext';
+import { computeNextStep, NextStepResult } from '@/components/Onboarding/computeNextStep';
+import { OnboardingStep, OnboardingIntent, OnboardingProgress as TypedOnboardingProgress } from '@/types/onboarding';
 
 export interface OnboardingProgress {
   hasNameAndBusiness: boolean;
@@ -22,55 +18,49 @@ export interface OnboardingProgress {
   nextAction: string | null;
   isComplete: boolean;
   showIntentPicker: boolean;
+  
   // Enhanced fields
-  phase: OnboardingPhase;
+  enabled: boolean;
+  phase: 'idle' | 'ready' | 'spotlight' | 'awaitingAction' | 'completed' | 'paused';
   version: number;
+  completedSteps: Record<OnboardingStep, boolean>;
+  intent?: OnboardingIntent;
   dataReady: boolean;
-  nextStep?: OnboardingStep;
-  completedSteps: Record<OnboardingStep, boolean>;
-  intent?: OnboardingIntent;
-  dismissedHints: string[];
-  lastSeenAt: string;
-  isPaused: boolean;
+  nextStep: OnboardingStep | null;
 }
 
-interface StoredProgress {
-  completedSteps: Record<OnboardingStep, boolean>;
-  intent?: OnboardingIntent;
-  dismissedHints: string[];
-  lastSeenAt: string;
-  isPaused: boolean;
-  version: number;
-}
-
+// Storage constants
 const STORAGE_KEY = 'onboarding_progress';
-const CURRENT_VERSION = 2;
+const CURRENT_VERSION = 3; // Increment to force clean slate
 
-function getStoredProgress(): StoredProgress {
+// Storage utilities
+function getStoredProgress(): TypedOnboardingProgress | null {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return getDefaultProgress();
+    if (!stored) return null;
     
     const parsed = JSON.parse(stored);
     if (parsed.version !== CURRENT_VERSION) {
-      console.info('[Onboarding] Version mismatch, resetting progress');
-      return getDefaultProgress();
+      // Clear old version data
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
     }
     
     return parsed;
   } catch {
-    console.warn('[Onboarding] Failed to parse stored progress, resetting');
-    return getDefaultProgress();
+    localStorage.removeItem(STORAGE_KEY);
+    return null;
   }
 }
 
-function getDefaultProgress(): StoredProgress {
+function getDefaultProgress(): TypedOnboardingProgress {
   return {
+    currentStep: undefined,
     completedSteps: {} as Record<OnboardingStep, boolean>,
+    intent: undefined,
     dismissedHints: [],
     lastSeenAt: new Date().toISOString(),
-    isPaused: false,
-    version: CURRENT_VERSION
+    isPaused: false
   };
 }
 
@@ -83,21 +73,21 @@ export function useOnboardingState(opts?: { enabled?: boolean }): OnboardingProg
   resetProgress: () => void;
 } {
   const enabled = opts?.enabled ?? true;
-  const { data: customersData, isSuccess: customersSuccess } = useSupabaseCustomers({ enabled });
-  const { data: jobsData, isSuccess: jobsSuccess } = useSupabaseJobs({ enabled });
-  const { data: quotesData, isSuccess: quotesSuccess } = useSupabaseQuotes({ enabled });
-  const { data: stripeStatus, isSuccess: stripeSuccess } = useStripeConnectStatus({ enabled });
-  const { data: subscriptionData, isSuccess: subscriptionSuccess } = useSubscriptionStatus({ enabled });
-  const { user } = useUser();
-  const { business } = useStore();
-
-  const [storedProgress, setStoredProgress] = useState<StoredProgress>(getStoredProgress);
-
-  // Save to localStorage whenever stored progress changes
+  const context = useOnboardingContext();
+  const debouncedContext = useDebouncedValue(context, 300);
+  
+  // Local state management
+  const [storedProgress, setStoredProgress] = useState<TypedOnboardingProgress>(() => 
+    getStoredProgress() || getDefaultProgress()
+  );
+  
+  // Persist to localStorage whenever storedProgress changes
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(storedProgress));
+    const toStore = { ...storedProgress, version: CURRENT_VERSION };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore));
   }, [storedProgress]);
 
+  // Control functions
   const markStepComplete = useCallback((step: OnboardingStep) => {
     setStoredProgress(prev => ({
       ...prev,
@@ -105,7 +95,7 @@ export function useOnboardingState(opts?: { enabled?: boolean }): OnboardingProg
       lastSeenAt: new Date().toISOString()
     }));
   }, []);
-
+  
   const setIntent = useCallback((intent: OnboardingIntent) => {
     setStoredProgress(prev => ({
       ...prev,
@@ -113,69 +103,85 @@ export function useOnboardingState(opts?: { enabled?: boolean }): OnboardingProg
       lastSeenAt: new Date().toISOString()
     }));
   }, []);
-
+  
   const dismissHint = useCallback((hintId: string) => {
     setStoredProgress(prev => ({
       ...prev,
-      dismissedHints: [...prev.dismissedHints, hintId]
+      dismissedHints: [...prev.dismissedHints, hintId],
+      lastSeenAt: new Date().toISOString()
     }));
   }, []);
-
+  
   const pauseTour = useCallback(() => {
     setStoredProgress(prev => ({
       ...prev,
-      isPaused: true
+      isPaused: true,
+      lastSeenAt: new Date().toISOString()
     }));
   }, []);
-
+  
   const resumeTour = useCallback(() => {
     setStoredProgress(prev => ({
       ...prev,
-      isPaused: false
+      isPaused: false,
+      lastSeenAt: new Date().toISOString()
     }));
   }, []);
-
+  
   const resetProgress = useCallback(() => {
     setStoredProgress(getDefaultProgress());
   }, []);
 
-  const basicState = useMemo(() => {
-    // Check if user has set up their name and business name
-    const hasUserName = !!(user?.firstName || user?.fullName);
-    const hasBusinessName = business?.name && business.name !== 'My Business';
-    const hasNameAndBusiness = hasUserName && hasBusinessName;
+  // Compute next step using pure function
+  const nextStepResult: NextStepResult = useMemo(() => {
+    if (!enabled || storedProgress.isPaused) {
+      return {
+        nextStep: null,
+        phase: 'paused',
+        showIntentPicker: false
+      };
+    }
+    
+    return computeNextStep({
+      context: debouncedContext,
+      completedSteps: storedProgress.completedSteps,
+      intent: storedProgress.intent
+    });
+  }, [enabled, debouncedContext, storedProgress.completedSteps, storedProgress.intent, storedProgress.isPaused]);
 
-    const hasCustomers = (customersData?.rows?.length ?? 0) > 0;
-    const hasJobs = (jobsData?.rows?.length ?? 0) > 0;
-    const hasQuotes = (quotesData?.rows?.length ?? 0) > 0;
-    const bankLinked = stripeStatus?.chargesEnabled ?? false;
-    const subscribed = subscriptionData?.subscribed ?? false;
+  // Legacy compatibility layer
+  const legacyState = useMemo(() => {
+    const hasNameAndBusiness = debouncedContext.hasNameAndBusiness;
+    const hasCustomers = debouncedContext.customersCount > 0;
+    const hasJobs = debouncedContext.jobsCount > 0;
+    const hasQuotes = debouncedContext.quotesCount > 0;
+    const bankLinked = debouncedContext.bankLinked;
+    const subscribed = debouncedContext.subscribed;
 
     const completedSteps = [
       hasNameAndBusiness,
-      bankLinked,
       hasCustomers,
-      hasQuotes,
-      hasJobs
+      hasJobs || hasQuotes,
+      bankLinked,
+      subscribed
     ].filter(Boolean).length;
 
     const completionPercentage = (completedSteps / 5) * 100;
     const isComplete = completedSteps === 5;
-    
-    // Show intent picker if user has no customers AND no jobs AND no quotes
-    const showIntentPicker = hasNameAndBusiness && bankLinked && !hasCustomers && !hasJobs && !hasQuotes;
 
     let nextAction: string | null = null;
     if (!hasNameAndBusiness) {
       nextAction = 'Set up your profile';
-    } else if (!bankLinked) {
-      nextAction = 'Link your bank account';
+    } else if (!hasCustomers && !hasJobs && !hasQuotes) {
+      nextAction = 'Choose your first action';
     } else if (!hasCustomers) {
       nextAction = 'Add your first customer';
-    } else if (!hasQuotes) {
-      nextAction = 'Create a quote';
-    } else if (!hasJobs) {
-      nextAction = 'Schedule a job';
+    } else if (!hasJobs && !hasQuotes) {
+      nextAction = 'Create a job or quote';
+    } else if (!bankLinked) {
+      nextAction = 'Link your bank account';
+    } else if (!subscribed) {
+      nextAction = 'Start your subscription';
     }
 
     return {
@@ -187,71 +193,24 @@ export function useOnboardingState(opts?: { enabled?: boolean }): OnboardingProg
       subscribed,
       completionPercentage,
       nextAction,
-      isComplete,
-      showIntentPicker
+      isComplete
     };
-  }, [customersData, jobsData, quotesData, stripeStatus, subscriptionData, user, business]);
-
-  // Determine data readiness
-  const dataReady = enabled && customersSuccess && jobsSuccess && quotesSuccess && stripeSuccess && subscriptionSuccess;
-
-  // Calculate next step with debouncing
-  const nextStep = useMemo((): OnboardingStep | undefined => {
-    if (storedProgress.isPaused || !dataReady) return undefined;
-
-    // If we have an intent but haven't started, show intent picker
-    if (!storedProgress.intent && !basicState.hasNameAndBusiness) {
-      return 'welcome_intent';
-    }
-
-    // Follow intent-based progression
-    if (storedProgress.intent === 'job' && !basicState.hasJobs) {
-      return 'create_job';
-    }
-    
-    if (storedProgress.intent === 'quote' && !basicState.hasQuotes) {
-      return 'create_quote';
-    }
-
-    if (!basicState.hasCustomers) {
-      return 'create_customer';
-    }
-
-    if (!basicState.bankLinked) {
-      return 'link_bank';
-    }
-
-    if (!basicState.subscribed) {
-      return 'start_subscription';
-    }
-
-    return undefined; // Onboarding complete
-  }, [storedProgress, basicState, dataReady]);
-
-  const debouncedNextStep = useDebouncedValue(nextStep, 300);
-
-  // Determine phase
-  const phase: OnboardingPhase = useMemo(() => {
-    if (storedProgress.isPaused) return 'paused';
-    if (basicState.isComplete) return 'completed';
-    if (!dataReady) return 'idle';
-    if (debouncedNextStep) return 'ready';
-    return 'idle';
-  }, [storedProgress.isPaused, basicState.isComplete, dataReady, debouncedNextStep]);
+  }, [debouncedContext]);
 
   return {
-    ...basicState,
+    ...legacyState,
+    showIntentPicker: nextStepResult.showIntentPicker,
+    
     // Enhanced fields
-    phase,
-    version: CURRENT_VERSION,
-    dataReady,
-    nextStep: debouncedNextStep,
+    enabled,
+    phase: nextStepResult.phase,
+    version: debouncedContext.version,
     completedSteps: storedProgress.completedSteps,
     intent: storedProgress.intent,
-    dismissedHints: storedProgress.dismissedHints,
-    lastSeenAt: storedProgress.lastSeenAt,
-    isPaused: storedProgress.isPaused,
-    // Actions
+    dataReady: debouncedContext.dataReady,
+    nextStep: nextStepResult.nextStep,
+    
+    // Control functions
     markStepComplete,
     setIntent,
     dismissHint,
