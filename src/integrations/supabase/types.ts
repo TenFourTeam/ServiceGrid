@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      business_members: {
+        Row: {
+          business_id: string
+          created_at: string
+          id: string
+          invited_at: string
+          invited_by: string | null
+          joined_at: string | null
+          role: Database["public"]["Enums"]["business_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          id?: string
+          invited_at?: string
+          invited_by?: string | null
+          joined_at?: string | null
+          role?: Database["public"]["Enums"]["business_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          id?: string
+          invited_at?: string
+          invited_by?: string | null
+          joined_at?: string | null
+          role?: Database["public"]["Enums"]["business_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_members_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       businesses: {
         Row: {
           application_fee_bps: number
@@ -674,6 +718,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_manage_business: {
+        Args: { p_business_id: string }
+        Returns: boolean
+      }
       ensure_default_business: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -708,6 +756,10 @@ export type Database = {
           invoice_data: Json
         }[]
       }
+      is_business_member: {
+        Args: { p_business_id: string }
+        Returns: boolean
+      }
       next_est_number: {
         Args: { p_business_id: string }
         Returns: string
@@ -716,8 +768,13 @@ export type Database = {
         Args: { p_business_id: string }
         Returns: string
       }
+      user_business_role: {
+        Args: { p_business_id: string }
+        Returns: Database["public"]["Enums"]["business_role"]
+      }
     }
     Enums: {
+      business_role: "owner" | "worker"
       invoice_status: "Draft" | "Sent" | "Paid" | "Overdue"
       job_status: "Scheduled" | "In Progress" | "Completed"
       payment_status: "Succeeded" | "Failed"
@@ -862,6 +919,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      business_role: ["owner", "worker"],
       invoice_status: ["Draft", "Sent", "Paid", "Overdue"],
       job_status: ["Scheduled", "In Progress", "Completed"],
       payment_status: ["Succeeded", "Failed"],
