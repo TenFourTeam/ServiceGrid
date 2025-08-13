@@ -1,7 +1,7 @@
 export const content = {
   brand: {
     name: "ServiceGrid",
-    logoSrc: "/images/Tenfour_Logo-removebg-preview.png"
+    logoSrc: "/placeholder.svg"
   },
   hero: {
     A: {
