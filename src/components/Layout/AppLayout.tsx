@@ -9,6 +9,7 @@ import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/Layout/AppSidebar';
 import { useStore } from '@/store/useAppStore';
 import { edgeFetchJson } from '@/utils/edgeApi';
+import { PageFade } from '@/components/Motion/PageFade';
 export default function AppLayout({ children, title }: { children: ReactNode; title?: string }) {
   const store = useStore();
   
@@ -65,7 +66,9 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
               
             </div>
           </header>
-          {children}
+          <PageFade key={String(title)}>
+            {children}
+          </PageFade>
         </SidebarInset>
       </div>
     </SidebarProvider>
