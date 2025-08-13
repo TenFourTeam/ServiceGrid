@@ -303,10 +303,20 @@ export default function SettingsPage() {
         <Card className="md:col-span-2">
           <CardHeader><CardTitle>Payouts</CardTitle></CardHeader>
           <CardContent>
-            <ConnectBanner loading={!!statusLoading} error={statusError ? statusError.message : null} chargesEnabled={connectStatus?.chargesEnabled} payoutsEnabled={connectStatus?.payoutsEnabled} detailsSubmitted={connectStatus?.detailsSubmitted} bankLast4={connectStatus?.bank?.last4 ?? null} scheduleText={connectStatus?.schedule ? `${connectStatus.schedule.interval}${connectStatus.schedule.delay_days ? `, +${connectStatus.schedule.delay_days} days` : ""}` : null} onConnect={handleStripeConnect} onRefresh={() => refetchStatus()} onDisconnect={async () => {
+            <ConnectBanner 
+              loading={!!statusLoading} 
+              error={statusError ? statusError.message : null} 
+              chargesEnabled={connectStatus?.chargesEnabled} 
+              payoutsEnabled={connectStatus?.payoutsEnabled} 
+              detailsSubmitted={connectStatus?.detailsSubmitted} 
+              bankLast4={null} 
+              scheduleText={null} 
+              onConnect={handleStripeConnect} 
+              onRefresh={() => window.location.reload()} 
+              onDisconnect={async () => {
               try {
                 await edgeFetchJson('connect-disconnect', getToken, { method: 'POST' });
-                await refetchStatus();
+                window.location.reload();
                 toast.success('Disconnected from Stripe');
               } catch (e: any) {
                 toast.error(e?.message || 'Failed to disconnect');

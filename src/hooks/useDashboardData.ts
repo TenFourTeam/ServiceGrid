@@ -21,6 +21,28 @@ export interface DashboardData {
     jobs: number;
     quotes: number;
   };
+  customers: Array<{
+    id: string;
+    name: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+  }>;
+  invoices: Array<{
+    id: string;
+    number: string;
+    customerId: string;
+    jobId?: string;
+    taxRate: number;
+    discount: number;
+    subtotal: number;
+    total: number;
+    status: string;
+    dueAt?: string;
+    createdAt: string;
+    updatedAt: string;
+    publicToken: string;
+  }>;
   stripeStatus: {
     chargesEnabled: boolean;
     payoutsEnabled: boolean;

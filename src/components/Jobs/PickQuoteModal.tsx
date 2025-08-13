@@ -20,8 +20,9 @@ const [query, setQuery] = useState("");
 const [busy, setBusy] = useState(false);
 const [selectedId, setSelectedId] = useState<string | null>(null);
   const quotes = useMemo(() => {
-    const allQuotes = dashboardData?.quotes ?? [];
-    let rows = data?.rows ?? [];
+    // For now, return empty array since quotes aren't in dashboard data yet
+    const allQuotes: any[] = [];
+    let rows = allQuotes;
     if (customerId) rows = rows.filter((r) => r.customerId === customerId);
     if (!query.trim()) return rows;
     const q = query.toLowerCase();
@@ -30,7 +31,7 @@ const [selectedId, setSelectedId] = useState<string | null>(null);
       (r.customerName || "").toLowerCase().includes(q) ||
       (r.customerEmail || "").toLowerCase().includes(q)
     ));
-  }, [data, query, customerId]);
+  }, [dashboardData, query, customerId]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

@@ -73,7 +73,7 @@ serve(async (req) => {
     const profileId = profile.id;
 
     // Batch all data queries
-    const [businessResult, countsResult, stripeResult, subscriptionResult] = await Promise.all([
+    const [businessResult, dashboardResult, stripeResult, subscriptionResult] = await Promise.all([
       // Get business data
       supabase
         .from("businesses")
@@ -83,7 +83,7 @@ serve(async (req) => {
         .limit(1)
         .maybeSingle(),
 
-      // Get counts using the custom function
+      // Get counts and data using the custom function
       supabase.rpc('get_dashboard_counts', { owner_id: profileId }),
 
       // Get Stripe status
@@ -126,10 +126,12 @@ serve(async (req) => {
         inv_seq: Number(business.inv_seq) || 1,
       },
       counts: {
-        customers: Number(countsResult.data?.customers || 0),
-        jobs: Number(countsResult.data?.jobs || 0),
-        quotes: Number(countsResult.data?.quotes || 0)
+        customers: Number(dashboardResult.data?.customers || 0),
+        jobs: Number(dashboardResult.data?.jobs || 0),
+        quotes: Number(dashboardResult.data?.quotes || 0)
       },
+      customers: dashboardResult.data?.customer_data || [],
+      invoices: dashboardResult.data?.invoice_data || [],
       stripeStatus: stripeResult,
       subscription: {
         subscribed: subscriptionResult.data?.subscribed || false,

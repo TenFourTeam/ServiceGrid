@@ -70,7 +70,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
-      <Sonner />
+      <Sonner position="bottom-right" offset="16px" style={{ zIndex: 40 }} />
       <AutoSignOut />
       <ClerkBootstrap />
       <GlobalLoadingIndicator />

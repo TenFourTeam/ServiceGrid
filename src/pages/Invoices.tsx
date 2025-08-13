@@ -64,7 +64,7 @@ export default function InvoicesPage() {
         discount: row.discount,
         subtotal: row.subtotal,
         total: row.total,
-        status: row.status,
+        status: row.status as any,
         dueAt: row.dueAt || undefined,
         createdAt: row.createdAt || new Date().toISOString(),
         updatedAt: row.updatedAt || new Date().toISOString(),

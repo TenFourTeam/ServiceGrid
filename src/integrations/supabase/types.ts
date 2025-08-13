@@ -704,6 +704,8 @@ export type Database = {
           customers: number
           jobs: number
           quotes: number
+          customer_data: Json
+          invoice_data: Json
         }[]
       }
       next_est_number: {
