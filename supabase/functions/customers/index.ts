@@ -266,10 +266,16 @@ serve(async (req) => {
       const { data, error } = await supabase
         .from("customers")
         .insert({ name, email, phone, address, owner_id: ownerId, business_id: businessId })
-        .select("id")
+        .select("id, name, email, phone, address")
         .single();
       if (error) throw error;
-      return json({ ok: true, id: data?.id }, { status: 201 });
+      return json({ 
+        id: data.id, 
+        name: data.name, 
+        email: data.email, 
+        phone: data.phone, 
+        address: data.address 
+      }, { status: 201 });
     }
 
     if (req.method === "PATCH") {

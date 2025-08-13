@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { edgeFetchJson } from "@/utils/edgeApi";
+import { toast } from "sonner";
 
 interface CustomerComboboxProps {
   customers: Customer[];
@@ -49,14 +50,21 @@ export function CustomerCombobox({ customers, value, onChange, placeholder = "Se
       
       console.log('[CustomerCombobox] Customer creation response:', data);
       
-      const newId = data?.customer?.id || data?.id || data?.customer_id;
-      const newName = data?.customer?.name || name.trim();
+      const newId = data?.id;
+      const newName = data?.name || name.trim();
+      const newEmail = data?.email || email.trim() || null;
+      
       if (newId) {
         setLastCreated({ id: newId, name: newName });
         onChange(newId);
         setOpen(false);
         setCreateOpen(false);
         setName(""); setEmail(""); setAddress("");
+        
+        // Show single success toast
+        toast.success("Customer created", {
+          description: `"${newName}" has been added to your customers.`
+        });
         
         // Invalidate both queries to refresh data
         queryClient.invalidateQueries({ queryKey: ["supabase", "customers"] });

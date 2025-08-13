@@ -82,10 +82,11 @@ export default function CustomersPage() {
         },
       });
 
-      toast.success(isEdit ? 'Customer updated' : 'Customer created');
-      
-      // Show next action for new customers
-      if (!isEdit) {
+      // Show appropriate toast
+      if (isEdit) {
+        toast.success('Customer updated');
+      } else {
+        // Show next action toast for new customers
         showNextActionToast('customer-added', draft.name, () => {
           onboarding.openCreateQuote();
         });
