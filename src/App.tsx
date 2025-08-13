@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { StoreProvider } from "./store/useAppStore";
+import { OnboardingProvider } from "@/components/Onboarding/OnboardingProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import LoadingScreen from "@/components/LoadingScreen";
 
@@ -60,7 +61,7 @@ const App = () => (
       <AutoSignOut />
       <ClerkBootstrap />
       <StoreProvider>
-        
+        <OnboardingProvider>
           <BrowserRouter>
             <ErrorBoundary>
               <Suspense fallback={<LoadingScreen /> }>
@@ -86,7 +87,7 @@ const App = () => (
               </Suspense>
             </ErrorBoundary>
           </BrowserRouter>
-        
+        </OnboardingProvider>
       </StoreProvider>
     </TooltipProvider>
   </QueryClientProvider>

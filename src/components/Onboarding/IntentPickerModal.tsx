@@ -1,0 +1,118 @@
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Calendar, FileText, Users, Upload } from 'lucide-react';
+import { useState } from 'react';
+
+interface IntentPickerModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onScheduleJob: () => void;
+  onCreateQuote: () => void;
+  onAddCustomer: () => void;
+  onImportCustomers: () => void;
+}
+
+export function IntentPickerModal({
+  open,
+  onOpenChange,
+  onScheduleJob,
+  onCreateQuote,
+  onAddCustomer,
+  onImportCustomers
+}: IntentPickerModalProps) {
+  const [dismissed, setDismissed] = useState(false);
+
+  const handleAction = (action: () => void) => {
+    action();
+    onOpenChange(false);
+  };
+
+  const handleSkip = () => {
+    setDismissed(true);
+    onOpenChange(false);
+  };
+
+  // Don't show if user has dismissed it this session
+  if (dismissed) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-center text-xl">
+            What do you want to do first?
+          </DialogTitle>
+        </DialogHeader>
+        
+        <div className="space-y-3">
+          <Button
+            variant="outline" 
+            className="w-full h-auto p-4 flex items-center gap-3 justify-start text-left"
+            onClick={() => handleAction(onScheduleJob)}
+          >
+            <Calendar className="h-5 w-5 text-primary" />
+            <div>
+              <div className="font-medium">Schedule a Job</div>
+              <div className="text-sm text-muted-foreground">
+                Book work on your calendar (recommended)
+              </div>
+            </div>
+          </Button>
+
+          <Button
+            variant="outline"
+            className="w-full h-auto p-4 flex items-center gap-3 justify-start text-left"
+            onClick={() => handleAction(onCreateQuote)}
+          >
+            <FileText className="h-5 w-5 text-primary" />
+            <div>
+              <div className="font-medium">Send a Quote</div>
+              <div className="text-sm text-muted-foreground">
+                Create and send professional estimates
+              </div>
+            </div>
+          </Button>
+
+          <Button
+            variant="outline"
+            className="w-full h-auto p-4 flex items-center gap-3 justify-start text-left"
+            onClick={() => handleAction(onAddCustomer)}
+          >
+            <Users className="h-5 w-5 text-primary" />
+            <div>
+              <div className="font-medium">Add a Customer</div>
+              <div className="text-sm text-muted-foreground">
+                Start building your customer list
+              </div>
+            </div>
+          </Button>
+
+          <Button
+            variant="outline"
+            className="w-full h-auto p-4 flex items-center gap-3 justify-start text-left"
+            onClick={() => handleAction(onImportCustomers)}
+          >
+            <Upload className="h-5 w-5 text-primary" />
+            <div>
+              <div className="font-medium">Import Customers (CSV)</div>
+              <div className="text-sm text-muted-foreground">
+                Upload your existing customer list
+              </div>
+            </div>
+          </Button>
+        </div>
+
+        <div className="flex justify-center pt-2">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={handleSkip}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            Skip for now
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

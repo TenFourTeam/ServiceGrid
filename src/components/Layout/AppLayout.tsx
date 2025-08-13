@@ -3,6 +3,8 @@ import { ReactNode, useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { NewJobSheet } from '@/components/Job/NewJobSheet';
+import { SetupChecklist } from '@/components/Onboarding/SetupChecklist';
+import { useOnboarding } from '@/components/Onboarding/OnboardingProvider';
 
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
@@ -12,7 +14,7 @@ import { edgeFetchJson } from '@/utils/edgeApi';
 import { PageFade } from '@/components/Motion/PageFade';
 export default function AppLayout({ children, title }: { children: ReactNode; title?: string }) {
   const store = useStore();
-  
+  const onboarding = useOnboarding();
   
   const { getToken, isSignedIn } = useClerkAuth();
 
@@ -66,9 +68,23 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
               
             </div>
           </header>
-          <PageFade key={String(title)}>
-            {children}
-          </PageFade>
+          <div className="flex gap-6 flex-1 min-h-0">
+            <div className="flex-1">
+              <PageFade key={String(title)}>
+                {children}
+              </PageFade>
+            </div>
+            {/* Setup Checklist in right rail */}
+            <aside className="hidden lg:block">
+              <SetupChecklist
+                onAddCustomer={onboarding.openAddCustomer}
+                onCreateJob={onboarding.openNewJobSheet}
+                onCreateQuote={onboarding.openCreateQuote}
+                onLinkBank={onboarding.openBankLink}
+                onStartSubscription={onboarding.openSubscription}
+              />
+            </aside>
+          </div>
         </SidebarInset>
       </div>
     </SidebarProvider>

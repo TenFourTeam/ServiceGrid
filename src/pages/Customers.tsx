@@ -102,8 +102,18 @@ export default function CustomersPage() {
                 <TableBody>
                   {rows.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-muted-foreground">
-                        No customers yet.
+                      <TableCell colSpan={4} className="text-center py-12">
+                        <div className="space-y-3">
+                          <div className="text-4xl">👥</div>
+                          <div className="text-lg font-medium">Add customers to get started</div>
+                          <div className="text-sm text-muted-foreground">
+                            Add them one by one or import your existing list.
+                          </div>
+                          <div className="flex gap-2 justify-center">
+                            <Button onClick={() => openNew()}>Add Customer</Button>
+                            <Button variant="outline">Import CSV</Button>
+                          </div>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ) : (

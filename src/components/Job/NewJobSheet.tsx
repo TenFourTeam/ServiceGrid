@@ -15,6 +15,7 @@ import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { edgeFetchJson, edgeFetch } from '@/utils/edgeApi';
 import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
 import { CustomerCombobox } from '@/components/Quotes/CustomerCombobox';
+import { InlineCustomerForm } from '@/components/Onboarding/InlineCustomerForm';
 import type { Customer } from '@/types';
 
 export function NewJobSheet() {
@@ -163,7 +164,7 @@ export function NewJobSheet() {
   return (
     <Sheet open={open} onOpenChange={(o) => { setOpen(o); if (!o) resetState(); }}>
       <SheetTrigger asChild>
-        <Button>New Job</Button>
+        <Button data-testid="new-job-trigger">New Job</Button>
       </SheetTrigger>
       <SheetContent side="right" className="sm:max-w-md flex h-full flex-col">
         <SheetHeader>
@@ -179,16 +180,29 @@ export function NewJobSheet() {
           {/* Customer */}
           <div className="space-y-2">
             <Label htmlFor="customer">Customer</Label>
-            <CustomerCombobox
-              customers={comboboxCustomers}
-              value={customerId || ""}
-              onChange={(id) => {
-                setCustomerId(id);
-                const c = (customersList as any[]).find((x: any) => x.id === id);
-                if (!address && c?.address) setAddress(c.address);
-              }}
-              placeholder="Select customer…"
-            />
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <CustomerCombobox
+                  customers={comboboxCustomers}
+                  value={customerId || ""}
+                  onChange={(id) => {
+                    setCustomerId(id);
+                    const c = (customersList as any[]).find((x: any) => x.id === id);
+                    if (!address && c?.address) setAddress(c.address);
+                  }}
+                  placeholder="Select customer…"
+                />
+              </div>
+              <InlineCustomerForm
+                onCustomerCreated={(id, name) => {
+                  setCustomerId(id);
+                  // Refresh customer data
+                  setTimeout(() => {
+                    window.location.reload();
+                  }, 100);
+                }}
+              />
+            </div>
           </div>
 
           {/* Address */}
