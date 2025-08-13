@@ -3,25 +3,17 @@ import { Button } from "@/components/Button";
 import { SignInButton, SignUpButton } from "@clerk/clerk-react";
 import { useHasClerk } from "@/components/Auth/ClerkRuntime";
 import { content } from "../content";
-
+import { ServiceGridMark } from "./ServiceGridMark";
 export function TopNav() {
   
   const hasClerk = useHasClerk();
   return (
     <header role="banner" className="sticky top-0 z-50 bg-background/60 dark:bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex items-center justify-between py-3">
-        <div className="flex items-center gap-2">
-          <img
-            src={content.brand.logoSrc}
-            alt={`${content.brand.name} logo`}
-            className="block h-[60px] md:h-[76px] w-auto object-contain"
-            width="112"
-            height="24"
-            loading="eager"
-            decoding="async"
-            fetchPriority="high"
-          />
-        </div>
+        <a href="/" aria-label={`${content.brand.name} home`} className="flex items-center gap-2 font-semibold text-foreground">
+          <ServiceGridMark className="h-8 w-8 md:h-10 md:w-10 text-brand-600" />
+          <span className="tracking-tight">{content.brand.name}</span>
+        </a>
         <div className="flex items-center gap-2">
           {hasClerk ? (
             <>
