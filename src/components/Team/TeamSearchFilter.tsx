@@ -5,6 +5,19 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, Filter, X } from "lucide-react";
 
+// Sentinel constants to avoid empty string values in Radix Select
+const ALL_ROLES = "all-roles" as const;
+const ALL_STATUS = "all-status" as const;
+
+type Role = "owner" | "worker";
+type Status = "active" | "pending" | "inactive";
+
+const normalizeRole = (value: string): Role | null =>
+  value === ALL_ROLES ? null : (value as Role);
+
+const normalizeStatus = (value: string): Status | null =>
+  value === ALL_STATUS ? null : (value as Status);
+
 interface TeamSearchFilterProps {
   onSearch: (query: string) => void;
   onFilterRole: (role: string | null) => void;
@@ -58,23 +71,29 @@ export function TeamSearchFilter({
           <span className="text-sm text-muted-foreground">Filter by:</span>
         </div>
 
-        <Select value={activeFilters.role || ""} onValueChange={(value) => onFilterRole(value || null)}>
+        <Select 
+          value={activeFilters.role ?? ALL_ROLES} 
+          onValueChange={(value) => onFilterRole(normalizeRole(value))}
+        >
           <SelectTrigger className="w-[120px]">
             <SelectValue placeholder="Role" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Roles</SelectItem>
+            <SelectItem value={ALL_ROLES}>All Roles</SelectItem>
             <SelectItem value="owner">Owner</SelectItem>
             <SelectItem value="worker">Worker</SelectItem>
           </SelectContent>
         </Select>
 
-        <Select value={activeFilters.status || ""} onValueChange={(value) => onFilterStatus(value || null)}>
+        <Select 
+          value={activeFilters.status ?? ALL_STATUS} 
+          onValueChange={(value) => onFilterStatus(normalizeStatus(value))}
+        >
           <SelectTrigger className="w-[120px]">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Status</SelectItem>
+            <SelectItem value={ALL_STATUS}>All Status</SelectItem>
             <SelectItem value="active">Active</SelectItem>
             <SelectItem value="pending">Pending</SelectItem>
             <SelectItem value="inactive">Inactive</SelectItem>
