@@ -80,10 +80,10 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <ConsolidatedToaster />
-      <GlobalLoadingIndicator />
       <StoreProvider>
         <ClerkLoaded>
           <AuthKernel>
+            <GlobalLoadingIndicator />
             <QueryClientIntegration />
             <AuthErrorBoundary>
               <BrowserRouter>
