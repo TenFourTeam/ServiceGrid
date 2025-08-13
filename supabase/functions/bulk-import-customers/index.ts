@@ -57,7 +57,7 @@ async function resolveOwnerIdFromClerk(req: Request) {
 
 interface CustomerImport {
   name: string;
-  email?: string;
+  email: string;  // Now required
   phone?: string;
   address?: string;
 }
@@ -104,9 +104,13 @@ serve(async (req) => {
         })
     );
 
+    const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+    
     const uniqueCustomers = customers.filter((customer, index) => {
       if (!customer.name?.trim()) return false;
-      if (customer.email && existingEmails.includes(customer.email)) return false;
+      if (!customer.email?.trim()) return false;
+      if (!emailRegex.test(customer.email.trim())) return false;
+      if (existingEmails.includes(customer.email)) return false;
       return true;
     });
 
@@ -123,7 +127,7 @@ serve(async (req) => {
     // Prepare customers for bulk insert
     const customersToInsert = uniqueCustomers.map(customer => ({
       name: customer.name.trim(),
-      email: customer.email?.trim() || null,
+      email: customer.email.trim(), // Required field
       phone: customer.phone?.trim() || null,
       address: customer.address?.trim() || null,
       business_id: business.id,

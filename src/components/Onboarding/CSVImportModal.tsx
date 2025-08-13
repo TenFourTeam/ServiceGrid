@@ -89,12 +89,19 @@ export function CSVImportModal({ open, onOpenChange, onImportComplete }: CSVImpo
   const handleMapping = useCallback(() => {
     if (!csvData.length) return;
 
+    const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+    
     const mapped: ParsedRow[] = csvData.slice(1).map(row => ({
       name: columnMapping.name !== undefined ? (row[columnMapping.name] || '') : '',
       email: columnMapping.email !== undefined ? (row[columnMapping.email] || '') : '',
       phone: columnMapping.phone !== undefined ? (row[columnMapping.phone] || '') : '',
       address: columnMapping.address !== undefined ? (row[columnMapping.address] || '') : '',
-    })).filter(row => row.name.trim()); // Only include rows with names
+    })).filter(row => {
+      // Require both name and valid email
+      const hasName = row.name.trim();
+      const hasValidEmail = row.email.trim() && emailRegex.test(row.email.trim());
+      return hasName && hasValidEmail;
+    });
 
     setPreviewData(mapped);
     setStep('preview');
@@ -165,15 +172,16 @@ export function CSVImportModal({ open, onOpenChange, onImportComplete }: CSVImpo
             <div className="bg-muted/50 p-4 rounded-lg">
               <div className="flex items-start gap-2">
                 <FileText className="h-5 w-5 text-blue-500 mt-0.5" />
-                <div className="text-sm">
-                  <p className="font-medium mb-1">CSV Format Requirements:</p>
-                  <ul className="text-muted-foreground space-y-1">
-                    <li>• First row should contain column headers</li>
-                    <li>• Required: Name column</li>
-                    <li>• Optional: Email, Phone, Address columns</li>
-                    <li>• Use commas to separate values</li>
-                  </ul>
-                </div>
+                 <div className="text-sm">
+                   <p className="font-medium mb-1">CSV Format Requirements:</p>
+                   <ul className="text-muted-foreground space-y-1">
+                     <li>• First row should contain column headers</li>
+                     <li>• Required: Name and Email columns</li>
+                     <li>• Optional: Phone, Address columns</li>
+                     <li>• Use commas to separate values</li>
+                     <li>• All emails must be valid format</li>
+                   </ul>
+                 </div>
               </div>
             </div>
           </div>
@@ -203,22 +211,21 @@ export function CSVImportModal({ open, onOpenChange, onImportComplete }: CSVImpo
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label>Email Column</Label>
-                <Select onValueChange={(value) => setColumnMapping(prev => ({ ...prev, email: parseInt(value) }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select column (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="-1">None</SelectItem>
-                    {csvData[0]?.map((header, index) => (
-                      <SelectItem key={index} value={index.toString()}>
-                        Column {index + 1}: {header}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+               <div className="space-y-2">
+                 <Label>Email Column *</Label>
+                 <Select onValueChange={(value) => setColumnMapping(prev => ({ ...prev, email: parseInt(value) }))}>
+                   <SelectTrigger>
+                     <SelectValue placeholder="Select column" />
+                   </SelectTrigger>
+                   <SelectContent>
+                     {csvData[0]?.map((header, index) => (
+                       <SelectItem key={index} value={index.toString()}>
+                         Column {index + 1}: {header}
+                       </SelectItem>
+                     ))}
+                   </SelectContent>
+                 </Select>
+               </div>
 
               <div className="space-y-2">
                 <Label>Phone Column</Label>
@@ -259,12 +266,12 @@ export function CSVImportModal({ open, onOpenChange, onImportComplete }: CSVImpo
               <Button variant="outline" onClick={() => setStep('upload')}>
                 Back
               </Button>
-              <Button 
-                onClick={handleMapping}
-                disabled={columnMapping.name === undefined}
-              >
-                Preview Import
-              </Button>
+               <Button 
+                 onClick={handleMapping}
+                 disabled={columnMapping.name === undefined || columnMapping.email === undefined}
+               >
+                 Preview Import
+               </Button>
             </div>
           </div>
         )}

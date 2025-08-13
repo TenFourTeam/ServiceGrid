@@ -259,7 +259,13 @@ serve(async (req) => {
       const email = (body.email ?? null) ? String(body.email).trim().toLowerCase() : null;
       const phone = (body.phone ?? null) ? String(body.phone).trim() : null;
       const address = (body.address ?? null) ? String(body.address).trim() : null;
+      
       if (!name) return badRequest("Name is required");
+      if (!email) return badRequest("Email is required");
+      
+      // Validate email format
+      const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+      if (!emailRegex.test(email)) return badRequest("Invalid email format");
 
       const businessId = await ensureDefaultBusiness(supabase, ownerId);
 
@@ -291,6 +297,12 @@ serve(async (req) => {
       }
       if (Object.prototype.hasOwnProperty.call(body, 'email')) {
         const email = (body.email ?? null) ? String(body.email).trim().toLowerCase() : null;
+        if (!email) return badRequest("Email is required");
+        
+        // Validate email format
+        const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+        if (!emailRegex.test(email)) return badRequest("Invalid email format");
+        
         update.email = email;
       }
       if (Object.prototype.hasOwnProperty.call(body, 'phone')) {
