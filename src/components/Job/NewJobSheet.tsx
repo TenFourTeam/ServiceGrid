@@ -14,15 +14,24 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { edgeFetchJson, edgeFetch } from '@/utils/edgeApi';
 import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
+import { CustomerCombobox } from '@/components/Quotes/CustomerCombobox';
+import type { Customer } from '@/types';
 
 export function NewJobSheet() {
   const navigate = useNavigate();
-  const { customers, upsertCustomer, upsertJob } = useStore();
+  const store = useStore();
   const { toast } = useToast();
   const { getToken } = useClerkAuth();
   const { data: custData } = useSupabaseCustomers();
-  const customersList = useMemo(() => (custData?.rows && custData.rows.length > 0 ? custData.rows : customers), [custData, customers]);
-
+  const customersList = useMemo(() => (custData?.rows && custData.rows.length > 0 ? custData.rows : store.customers), [custData, store.customers]);
+  const comboboxCustomers = useMemo(() => customersList.map((c: any) => ({
+    id: c.id,
+    businessId: store.business.id,
+    name: c.name,
+    email: c.email ?? undefined,
+    phone: c.phone ?? undefined,
+    address: c.address ?? undefined,
+  } as Customer)), [customersList, store.business.id]);
   const [open, setOpen] = useState(false);
   const [addingCustomer, setAddingCustomer] = useState(false);
 
@@ -54,7 +63,7 @@ export function NewJobSheet() {
 
   // Default to first customer when list becomes available
   useEffect(() => {
-    if (!customerId && customersList.length > 0) {
+    if (false && !customerId && customersList.length > 0) {
       setCustomerId(customersList[0].id);
     }
   }, [customerId, customersList]);
@@ -108,7 +117,7 @@ export function NewJobSheet() {
       const created = (data as any)?.row || (data as any)?.job || data;
 
       // 3) Upsert locally for instant UI
-      const local = upsertJob({
+      const local = store.upsertJob({
         id: created?.id,
         customerId,
         address: address || selectedCustomer?.address,
@@ -132,18 +141,7 @@ export function NewJobSheet() {
     }
   }
 
-  function onQuickAddCustomer() {
-    if (!newCustName.trim()) {
-      toast({ title: 'Name required', description: 'Enter a customer name to continue.' });
-      return;
-    }
-    const c = upsertCustomer({ name: newCustName.trim(), address: newCustAddress || undefined });
-    setCustomerId(c.id);
-    if (c.address) setAddress(c.address);
-    setAddingCustomer(false);
-    setNewCustName('');
-    setNewCustAddress('');
-  }
+  function onQuickAddCustomer() {}
 
   function resetState() {
     setCustomerId(undefined);
@@ -181,32 +179,16 @@ export function NewJobSheet() {
           {/* Customer */}
           <div className="space-y-2">
             <Label htmlFor="customer">Customer</Label>
-            {customersList.length > 0 && !addingCustomer ? (
-              <Select value={customerId} onValueChange={setCustomerId}>
-                <SelectTrigger id="customer">
-                  <SelectValue placeholder="Select customer" />
-                </SelectTrigger>
-                <SelectContent className='z-50 bg-background'>
-                  {customersList.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : null}
-            {customersList.length === 0 || addingCustomer ? (
-              <div className="space-y-2">
-                <Input placeholder="Customer name" value={newCustName} onChange={(e) => setNewCustName(e.target.value)} />
-                <Input placeholder="Address (optional)" value={newCustAddress} onChange={(e) => setNewCustAddress(e.target.value)} />
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={onQuickAddCustomer}>Create customer</Button>
-                  {customersList.length > 0 && (
-                    <Button size="sm" variant="secondary" onClick={() => setAddingCustomer(false)}>Cancel</Button>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <Button variant="ghost" size="sm" className="justify-start" onClick={() => setAddingCustomer(true)}>+ Quick add customer</Button>
-            )}
+            <CustomerCombobox
+              customers={comboboxCustomers}
+              value={customerId || ""}
+              onChange={(id) => {
+                setCustomerId(id);
+                const c = (customersList as any[]).find((x: any) => x.id === id);
+                if (!address && c?.address) setAddress(c.address);
+              }}
+              placeholder="Select customer…"
+            />
           </div>
 
           {/* Address */}
