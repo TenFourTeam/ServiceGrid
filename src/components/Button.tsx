@@ -8,7 +8,7 @@ const buttonStyles = cva(
     variants: {
       variant: {
         primary:
-          "bg-brand-600 text-white hover:bg-brand-700",
+          "bg-brand-700 text-white hover:bg-brand-800",
         secondary:
           "border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground",
         ghost: "hover:bg-accent hover:text-accent-foreground",

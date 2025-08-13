@@ -13,3 +13,26 @@ export function usePreloadImage(url?: string) {
     }
   }, [url]);
 }
+
+// Preload multiple images at once on mount
+export function usePreloadImages(urls?: string[]) {
+  useEffect(() => {
+    if (!urls || urls.length === 0) return;
+    const images = urls
+      .filter(Boolean)
+      .map((u) => {
+        const el = new Image();
+        (el as any).fetchPriority = 'high';
+        el.decoding = 'async';
+        el.src = u as string;
+        if ('decode' in el) {
+          (el as any).decode?.().catch(() => void 0);
+        }
+        return el;
+      });
+    return () => {
+      // Allow GC to reclaim if needed
+      images.splice(0, images.length);
+    };
+  }, [urls?.join('|')]);
+}

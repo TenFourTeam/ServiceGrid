@@ -11,7 +11,7 @@ export function TopNav() {
     <header role="banner" className="sticky top-0 z-50 bg-background/60 dark:bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex items-center justify-between py-3">
         <a href="/" aria-label={`${content.brand.name} home`} className="flex items-center gap-2 font-semibold text-foreground">
-          <ServiceGridLogo className="h-8 w-auto md:h-10 text-brand-600" />
+          <ServiceGridLogo className="h-8 w-auto md:h-10 text-brand-700" />
         </a>
         <div className="flex items-center gap-2">
           {hasClerk ? (

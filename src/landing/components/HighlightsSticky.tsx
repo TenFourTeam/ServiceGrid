@@ -4,7 +4,7 @@ import { Section } from "@/components/Section";
 import { Heading } from "@/components/Heading";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Dialog, DialogTrigger, DialogContent, DialogTitle } from "@/components/ui/dialog";
-
+import { usePreloadImage, usePreloadImages } from "@/hooks/usePreloadImage";
 type HighlightStep = (typeof content.highlights.steps)[number] & { imageSrc?: string; alt?: string };
 
 function VisualCard({ title, imageSrc, alt, kind }: { title: string; imageSrc?: string; alt?: string; kind?: 'schedule' | 'quote' | 'work' | 'invoice' }) {
@@ -131,7 +131,8 @@ export function HighlightsSticky() {
   };
   const [activeKey, setActiveKey] = useState<string>(computeDefaultKey());
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
-
+  const imageUrls = (steps.map((s) => s.imageSrc).filter(Boolean) as string[]);
+  usePreloadImages(imageUrls);
   useEffect(() => {
     const onHashChange = () => {
       const k = (location.hash || "").replace("#", "");
@@ -164,8 +165,8 @@ export function HighlightsSticky() {
     : undefined;
   const visualSrc = currentStep?.imageSrc;
   const visualAlt = currentStep?.alt ?? currentStep?.title ?? "Highlight visual";
+  usePreloadImage(visualSrc);
   return (
-
     <Section ariaLabel={content.highlights.heading}>
       <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-start">
         {/* Sticky narrative */}
