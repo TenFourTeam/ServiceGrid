@@ -22,7 +22,23 @@ export default function Landing() {
   const { isLoaded, isSignedIn } = useAuth();
   const navigate = useNavigate();
 
-  // No auto-redirect - let authenticated users view the landing page
+  // Redirect authenticated users to calendar, unless they just logged out
+  useEffect(() => {
+    if (hasClerk && isLoaded && isSignedIn) {
+      // Check if user just logged out - if so, let them see the landing page
+      const justLoggedOut = sessionStorage.getItem('just-logged-out');
+      if (justLoggedOut) {
+        sessionStorage.removeItem('just-logged-out');
+        return;
+      }
+      
+      // Otherwise redirect authenticated users to calendar
+      const timer = setTimeout(() => {
+        navigate('/calendar', { replace: true });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [hasClerk, isLoaded, isSignedIn, navigate]);
 
   // Defer scroll orchestrator to avoid blocking first paint
   useEffect(() => {

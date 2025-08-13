@@ -140,7 +140,10 @@ export default function AppSidebar() {
                 <FileText className="mr-2 h-4 w-4" /> Terms & Services
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => signOut({ redirectUrl: '/' })}>
+              <DropdownMenuItem onClick={() => {
+                sessionStorage.setItem('just-logged-out', 'true');
+                signOut({ redirectUrl: '/' });
+              }}>
                 <LogOut className="mr-2 h-4 w-4" /> Sign out
               </DropdownMenuItem>
             </DropdownMenuContent>
