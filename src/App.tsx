@@ -11,7 +11,7 @@ import LoadingScreen from "@/components/LoadingScreen";
 
 import ProtectedRoute from "@/components/Auth/ProtectedRoute";
 import AutoSignOut from "@/components/Auth/AutoSignOut";
-
+import ClerkBootstrap from "@/components/Auth/ClerkBootstrap";
 const CalendarPage = lazy(() => import("./pages/Calendar"));
 const WorkOrdersPage = lazy(() => import("./pages/WorkOrders"));
 const QuotesPage = lazy(() => import("./pages/Quotes"));
@@ -58,6 +58,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <AutoSignOut />
+      <ClerkBootstrap />
       <StoreProvider>
         
           <BrowserRouter>

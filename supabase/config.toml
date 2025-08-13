@@ -64,3 +64,6 @@ verify_jwt = false
 
 [functions.connect-disconnect]
 verify_jwt = false
+
+[functions.clerk-bootstrap]
+verify_jwt = false

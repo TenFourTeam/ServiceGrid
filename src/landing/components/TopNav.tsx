@@ -1,6 +1,5 @@
-
 import { Button } from "@/components/Button";
-import { SignInButton, SignUpButton } from "@clerk/clerk-react";
+import { SignInButton, SignUpButton, SignedIn, SignedOut } from "@clerk/clerk-react";
 import { useHasClerk } from "@/components/Auth/ClerkRuntime";
 import { content } from "../content";
 import { ServiceGridLogo } from "./ServiceGridLogo";
@@ -16,12 +15,19 @@ export function TopNav() {
         <div className="flex items-center gap-2">
           {hasClerk ? (
             <>
-              <SignInButton mode="modal" forceRedirectUrl="/calendar">
-                <Button variant="ghost" size="sm" className="hover-scale">Sign in</Button>
-              </SignInButton>
-              <SignUpButton mode="modal" forceRedirectUrl="/calendar">
-                <Button variant="primary" size="sm" className="hover-scale attention-ring [--ring:var(--brand-600)]">Try for free</Button>
-              </SignUpButton>
+              <SignedIn>
+                <Button variant="primary" size="sm" className="hover-scale attention-ring [--ring:var(--brand-600)]" onClick={() => { location.href = "/calendar"; }}>
+                  Go to dashboard
+                </Button>
+              </SignedIn>
+              <SignedOut>
+                <SignInButton mode="modal" forceRedirectUrl="/calendar">
+                  <Button variant="ghost" size="sm" className="hover-scale">Sign in</Button>
+                </SignInButton>
+                <SignUpButton mode="modal" forceRedirectUrl="/calendar">
+                  <Button variant="primary" size="sm" className="hover-scale attention-ring [--ring:var(--brand-600)]">Try for free</Button>
+                </SignUpButton>
+              </SignedOut>
             </>
           ) : (
             <>
