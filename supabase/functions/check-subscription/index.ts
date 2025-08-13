@@ -24,6 +24,7 @@ async function resolveOwnerIdFromClerk(req: Request) {
   const payload = await verifyToken(token, { secretKey });
   const clerkSub = (payload as any).sub as string;
   const email = (payload as any)?.email as string | undefined;
+  const userCreatedAt = new Date((payload as any).iat * 1000).toISOString(); // Convert Unix timestamp
   const supabase = createAdminClient();
 
   // Try mapping by clerk_user_id first
@@ -34,7 +35,7 @@ async function resolveOwnerIdFromClerk(req: Request) {
     .limit(1)
     .maybeSingle();
   if (profErr) throw profErr;
-  if (profByClerk?.id) return { ownerId: profByClerk.id as string, email };
+  if (profByClerk?.id) return { ownerId: profByClerk.id as string, email, userCreatedAt };
 
   if (email) {
     const { data: profByEmail, error: profByEmailErr } = await supabase
@@ -44,7 +45,7 @@ async function resolveOwnerIdFromClerk(req: Request) {
       .limit(1)
       .maybeSingle();
     if (profByEmailErr) throw profByEmailErr;
-    if (profByEmail?.id) return { ownerId: profByEmail.id as string, email };
+    if (profByEmail?.id) return { ownerId: profByEmail.id as string, email, userCreatedAt };
   }
 
   throw new Error("Unable to resolve user profile");
@@ -56,7 +57,7 @@ serve(async (req) => {
   }
 
   try {
-    const { ownerId, email } = await resolveOwnerIdFromClerk(req);
+    const { ownerId, email, userCreatedAt } = await resolveOwnerIdFromClerk(req);
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("Missing STRIPE_SECRET_KEY");
@@ -93,7 +94,7 @@ serve(async (req) => {
       updated_at: new Date().toISOString(),
     }, { onConflict: "email" });
 
-    return new Response(JSON.stringify({ subscribed, subscription_tier, subscription_end }), {
+    return new Response(JSON.stringify({ subscribed, subscription_tier, subscription_end, userCreatedAt }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });

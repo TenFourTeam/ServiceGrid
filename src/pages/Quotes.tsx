@@ -18,7 +18,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { Trash2, Plus, Send, Download, Receipt, Wrench } from 'lucide-react';
+import { Trash2, Plus, Send, Download, Receipt, Wrench, Users, Calendar } from 'lucide-react';
+import { AdvancedEmptyState } from '@/components/Onboarding/AdvancedEmptyState';
+import { useOnboarding } from '@/components/Onboarding/OnboardingProvider';
 
 import { toast } from 'sonner';
 import { formatMoney as formatCurrency } from '@/utils/format';
@@ -63,6 +65,7 @@ export default function QuotesPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
+  const onboarding = useOnboarding();
 
   const [open, setOpen] = useState(false);
   const [sendQuoteItem, setSendQuoteItem] = useState<Quote | null>(null);
@@ -199,8 +202,33 @@ export default function QuotesPage() {
               <TableBody>
                 {quotes.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground">
-                      No quotes yet. Create your first quote!
+                    <TableCell colSpan={5} className="p-0">
+                      <AdvancedEmptyState
+                        icon={<Receipt className="h-8 w-8 text-blue-600" />}
+                        title="Ready to create your first quote?"
+                        description="Send professional quotes to customers and convert them to jobs when approved. Get paid faster with integrated payment processing."
+                        actions={[
+                          {
+                            label: 'Create Your First Quote',
+                            onClick: () => setOpen(true),
+                            icon: <Receipt className="h-4 w-4" />,
+                            badge: 'Start here',
+                            description: 'Professional quotes in minutes'
+                          }
+                        ]}
+                        secondaryActions={[
+                          {
+                            label: 'Add Customer First',
+                            onClick: onboarding.openAddCustomer,
+                            icon: <Users className="h-3 w-3" />
+                          },
+                          {
+                            label: 'Schedule a Job',
+                            onClick: onboarding.openNewJobSheet,
+                            icon: <Calendar className="h-3 w-3" />
+                          }
+                        ]}
+                      />
                     </TableCell>
                   </TableRow>
                 ) : (

@@ -23,12 +23,11 @@ export function useSubscriptionStatus(opts?: { enabled?: boolean }) {
       try {
         const data = await edgeFetchJson("check-subscription", getToken);
         
-        // Calculate trial days from user creation (simplified - using current logic)
+        // Calculate trial days from actual user creation date
         const today = new Date();
-        const trialStart = new Date(); // In real app, this would be user's signup date
-        trialStart.setDate(today.getDate() - 3); // Simulate 3 days since signup
+        const userCreatedAt = new Date(data.userCreatedAt || Date.now()); // Backend should provide this
         
-        const diffTime = today.getTime() - trialStart.getTime();
+        const diffTime = today.getTime() - userCreatedAt.getTime();
         const daysSinceSignup = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         const trialDaysLeft = Math.max(0, TRIAL_DURATION_DAYS - daysSinceSignup);
         const isTrialExpired = trialDaysLeft === 0 && !data.subscribed;
