@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useOnboardingStateEnhanced } from '@/hooks/useOnboardingStateEnhanced';
+import { useOnboardingState } from '@/hooks/useOnboardingState';
 import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
 import { useSupabaseJobs } from '@/hooks/useSupabaseJobs';
 import { useSupabaseQuotes } from '@/hooks/useSupabaseQuotes';
@@ -14,20 +14,14 @@ export function GuidedTour() {
   const location = useLocation();
   const navigate = useNavigate();
   const {
-    progress,
     nextStep,
     markStepComplete,
-    setCurrentStep,
     pauseTour,
-    isComplete
-  } = useOnboardingStateEnhanced();
+    isComplete,
+    dataReady,
+    phase
+  } = useOnboardingState({ enabled: true });
 
-  // Check if required data is loaded before showing tour
-  const customers = useSupabaseCustomers();
-  const jobs = useSupabaseJobs();
-  const quotes = useSupabaseQuotes();
-  
-  const dataReady = customers.isSuccess && jobs.isSuccess && quotes.isSuccess;
   const currentStepConfig = nextStep ? onboardingSteps[nextStep] : null;
   const { target } = useSpotlight(currentStepConfig?.selector);
 
@@ -38,7 +32,7 @@ export function GuidedTour() {
   // Will be re-enabled when guards use real data instead of mock functions
 
   // Don't show tour if complete, paused, or data not ready
-  if (!currentStepConfig || isComplete || progress.isPaused || !dataReady) {
+  if (!currentStepConfig || isComplete || phase === 'paused' || !dataReady) {
     return null;
   }
 
@@ -64,7 +58,7 @@ export function GuidedTour() {
   };
 
   // Show attention ring if element exists but no overlay
-  if (currentStepConfig.selector && target?.visible && !progress.currentStep) {
+  if (currentStepConfig.selector && target?.visible && phase === 'ready') {
     return (
       <AttentionRing 
         targetSelector={currentStepConfig.selector}
