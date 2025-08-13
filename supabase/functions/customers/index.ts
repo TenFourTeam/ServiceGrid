@@ -1,73 +1,11 @@
 // Supabase Edge Function: customers
-// - Verifies Clerk token
-// - Resolves/creates a Supabase user mapping via profiles
-// - Ensures default business
-// - GET: list customers for business members
-// - POST: create customer for business members
+// Uses shared auth helper for consistent business context resolution
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { verifyToken } from "https://esm.sh/@clerk/backend@1.3.2";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.54.0";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "*",
-};
-
-function json(data: unknown, init: ResponseInit = {}) {
-  return new Response(JSON.stringify(data), {
-    headers: { "Content-Type": "application/json", ...corsHeaders },
-    ...init,
-  });
-}
+import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
 
 function badRequest(message: string, status = 400) {
   return json({ error: message }, { status });
-}
-
-async function getClerkPayload(req: Request) {
-  const authHeader = req.headers.get("authorization") || req.headers.get("Authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return { error: "Missing Bearer token" } as const;
-  }
-  const token = authHeader.replace(/^Bearer\s+/i, "");
-  const secretKey = Deno.env.get("CLERK_SECRET_KEY");
-  if (!secretKey) return { error: "Missing CLERK_SECRET_KEY" } as const;
-  try {
-    const payload = await verifyToken(token, { secretKey });
-    return { payload } as const;
-  } catch (e) {
-    return { error: `Invalid token: ${e}` } as const;
-  }
-}
-
-function createAdminClient() {
-  const url = Deno.env.get("SUPABASE_URL");
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!url || !serviceKey) throw new Error("Missing Supabase env vars");
-  return createClient(url, serviceKey);
-}
-
-async function fetchClerkEmail(userId: string): Promise<string | null> {
-  const secretKey = Deno.env.get("CLERK_SECRET_KEY");
-  if (!secretKey) return null;
-  try {
-    const r = await fetch(`https://api.clerk.com/v1/users/${userId}`, {
-      headers: {
-        Authorization: `Bearer ${secretKey}`,
-      },
-    });
-    if (!r.ok) return null;
-    const u: any = await r.json();
-    const primaryId = u?.primary_email_address_id;
-    const emails = Array.isArray(u?.email_addresses) ? u.email_addresses : [];
-    const primary = emails.find((e: any) => e.id === primaryId) || emails[0];
-    const email = primary?.email_address || u?.email || u?.primary_email_address?.email_address || null;
-    return email?.toLowerCase?.() || null;
-  } catch {
-    return null;
-  }
 }
 
 function serializeError(e: unknown) {
@@ -81,197 +19,17 @@ function serializeError(e: unknown) {
   }
 }
 
-async function findAuthUserIdByEmail(
-  supabase: ReturnType<typeof createClient>,
-  email: string
-): Promise<string | null> {
-  const target = email.toLowerCase();
-  let page = 1;
-  const perPage = 200;
-  while (page <= 10) {
-    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage });
-    if (error) throw error;
-    const users = (data as any)?.users || [];
-    const match = users.find((u: any) =>
-      (u.email && u.email.toLowerCase() === target) ||
-      (Array.isArray(u?.email_addresses) && u.email_addresses.some((e: any) => (e.email_address || e.email)?.toLowerCase?.() === target))
-    );
-    if (match) return match.id as string;
-    if (!users.length || users.length < perPage) break;
-    page++;
-  }
-  return null;
-}
-
-async function resolveOwnerId(supabase: ReturnType<typeof createClient>, payload: any): Promise<string> {
-  const clerkSub = payload.sub as string;
-  const claimEmail = (payload.email || payload["email"] || payload["primary_email"] || "") as string;
-  let email: string | null = claimEmail?.toLowerCase?.() || null;
-
-  // 1) Lookup by clerk_user_id
-  let { data: profByClerk, error: profByClerkErr } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("clerk_user_id", clerkSub)
-    .limit(1)
-    .maybeSingle();
-  if (profByClerkErr) throw profByClerkErr;
-  if (profByClerk?.id) return profByClerk.id as string;
-
-  // 2) Lookup by email, attach clerk_user_id
-  if (email) {
-    const { data: profByEmail, error: profByEmailErr } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("email", email)
-      .limit(1)
-      .maybeSingle();
-    if (profByEmailErr) throw profByEmailErr;
-    if (profByEmail?.id) {
-      const { error: updErr } = await supabase
-        .from("profiles")
-        .update({ clerk_user_id: clerkSub })
-        .eq("id", profByEmail.id);
-      if (updErr) throw updErr;
-      return profByEmail.id as string;
-    }
-  }
-
-  // Ensure we have an email (fetch from Clerk if missing)
-  if (!email) {
-    email = await fetchClerkEmail(clerkSub);
-  }
-  if (!email) {
-    throw new Error("Unable to determine user email from Clerk; cannot create Supabase user");
-  }
-
-  // 3) Create Supabase auth user (required for profiles.id FK), then insert profile
-  try {
-    const { data: created, error: createErr } = await supabase.auth.admin.createUser({
-      email,
-      email_confirm: true,
-    });
-    if (createErr) throw createErr;
-    const supaUserId = created.user?.id;
-    if (!supaUserId) throw new Error("Failed to create supabase user");
-
-    const { error: insErr } = await supabase.from("profiles").insert({
-      id: supaUserId,
-      email,
-      clerk_user_id: clerkSub,
-    });
-    if (insErr) throw insErr;
-    return supaUserId;
-  } catch (err) {
-    const msg = (err as any)?.message || String(err);
-    const code = (err as any)?.code || (err as any)?.status;
-    const isEmailExists = code === "email_exists" || code === 422 || /already been registered/i.test(msg);
-    if (!isEmailExists) throw err;
-
-    // 3a) Try linking an existing profile by email
-    if (email) {
-      const { data: profByEmail2, error: profErr2 } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("email", email)
-        .limit(1)
-        .maybeSingle();
-      if (profErr2) throw profErr2;
-      if (profByEmail2?.id) {
-        const { error: updErr2 } = await supabase
-          .from("profiles")
-          .update({ clerk_user_id: clerkSub })
-          .eq("id", profByEmail2.id);
-        if (updErr2) throw updErr2;
-        return profByEmail2.id as string;
-      }
-    }
-
-    // 3b) Fallback: search auth users via Admin API and upsert profile
-    const existingUserId = await findAuthUserIdByEmail(supabase, email);
-    if (!existingUserId) {
-      throw new Error("Email exists in auth, but no matching user id could be found via Admin API");
-    }
-
-    const { error: upsertErr } = await supabase
-      .from("profiles")
-      .upsert({ id: existingUserId, email, clerk_user_id: clerkSub }, { onConflict: "id" });
-    if (upsertErr) throw upsertErr;
-
-    return existingUserId;
-  }
-}
-
-async function ensureDefaultBusiness(supabase: ReturnType<typeof createClient>, ownerId: string) {
-  const { data: existing, error: selErr } = await supabase
-    .from("businesses")
-    .select("id")
-    .eq("owner_id", ownerId)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  if (selErr) throw selErr;
-  if (existing?.id) return existing.id as string;
-
-  const { data: inserted, error: insErr } = await supabase
-    .from("businesses")
-    .insert({ name: "My Business", owner_id: ownerId })
-    .select("id")
-    .single();
-  if (insErr) throw insErr;
-  return inserted.id as string;
-}
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
-  const origin = req.headers.get("Origin") || req.headers.get("origin");
-  const allowed = (Deno.env.get("ALLOWED_ORIGINS") || "").split(",").map((s) => s.trim()).filter(Boolean);
-  if (origin && allowed.length && !allowed.includes("*") && !allowed.includes(origin)) {
-    return new Response(JSON.stringify({ error: "Origin not allowed" }), {
-      status: 403,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
 
   try {
-    const auth = await getClerkPayload(req);
-    if ("error" in auth) return badRequest(auth.error, 401);
-    const { payload } = auth;
-
-    const supabase = createAdminClient();
-    const ownerId = await resolveOwnerId(supabase, payload);
-
-    // Get user's business context - find first business they are a member of
-    const { data: businessMember, error: memberErr } = await supabase
-      .from("business_members")
-      .select("business_id, role")
-      .eq("user_id", ownerId)
-      .order("joined_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
-
-    if (memberErr) throw memberErr;
-
-    let businessId: string;
-    if (businessMember) {
-      businessId = businessMember.business_id;
-    } else {
-      // Create default business and membership for new users
-      businessId = await ensureDefaultBusiness(supabase, ownerId);
-      
-      // Create business membership for the owner
-      await supabase.from("business_members").insert({
-        business_id: businessId,
-        user_id: ownerId,
-        role: "owner",
-        joined_at: new Date().toISOString()
-      });
-    }
+    const ctx = await requireCtx(req);
+    const { userId, businessId, supaAdmin } = ctx;
 
     if (req.method === "GET") {
-      const { data, error } = await supabase
+      const { data, error } = await supaAdmin
         .from("customers")
         .select("id,name,email,phone,address")
         .eq("business_id", businessId)
@@ -295,7 +53,7 @@ serve(async (req) => {
       if (!emailRegex.test(email)) return badRequest("Invalid email format");
 
       // Check for duplicate name + email combination within the business
-      const { data: existingCustomer } = await supabase
+      const { data: existingCustomer } = await supaAdmin
         .from("customers")
         .select("id")
         .eq("business_id", businessId)
@@ -307,17 +65,17 @@ serve(async (req) => {
         return badRequest("A customer with this name and email already exists");
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await supaAdmin
         .from("customers")
-        .insert({ name, email, phone, address, owner_id: ownerId, business_id: businessId })
+        .insert({ name, email, phone, address, owner_id: userId, business_id: businessId })
         .select("id, name, email, phone, address")
         .single();
       if (error) throw error;
 
       // Log audit action
-      await supabase.rpc('log_audit_action', {
+      await supaAdmin.rpc('log_audit_action', {
         p_business_id: businessId,
-        p_user_id: ownerId,
+        p_user_id: userId,
         p_action: 'create',
         p_resource_type: 'customer',
         p_resource_id: data.id,
@@ -357,7 +115,7 @@ serve(async (req) => {
 
       // Check for duplicate name + email combination (excluding current customer)
       if (update.name && update.email) {
-        const { data: existingCustomer } = await supabase
+        const { data: existingCustomer } = await supaAdmin
           .from("customers")
           .select("id")
           .eq("business_id", businessId)
@@ -380,7 +138,7 @@ serve(async (req) => {
       }
       if (Object.keys(update).length === 0) return badRequest("No fields to update");
 
-      const { data, error } = await supabase
+      const { data, error } = await supaAdmin
         .from("customers")
         .update(update)
         .eq("id", id)
@@ -392,9 +150,9 @@ serve(async (req) => {
       if (!data) return badRequest("Customer not found", 404);
 
       // Log audit action
-      await supabase.rpc('log_audit_action', {
+      await supaAdmin.rpc('log_audit_action', {
         p_business_id: businessId,
-        p_user_id: ownerId,
+        p_user_id: userId,
         p_action: 'update',
         p_resource_type: 'customer',
         p_resource_id: data.id,

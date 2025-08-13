@@ -48,8 +48,8 @@ export function AuthKernel({ children }: { children: React.ReactNode }) {
       
       tokenRefreshTimeoutRef.current = setTimeout(async () => {
         try {
-          const { getApiToken } = await import('@/utils/clerkTokenSafe');
-          const newToken = await getApiToken({ refresh: true });
+        const { getApiToken } = await import('@/auth/token');
+        const newToken = await getApiToken({ refresh: true });
           if (newToken) {
             setSnapshot(prev => ({ ...prev, token: newToken }));
             emit('auth:token_refreshed', { ageSec: (Date.now() - now) / 1000 });
@@ -68,10 +68,9 @@ export function AuthKernel({ children }: { children: React.ReactNode }) {
   // Bootstrap process - await tenant/role data
   const runBootstrap = useCallback(async (): Promise<AuthBootstrapResult | null> => {
     try {
-      // Import the safe token helper
-      const { getApiToken } = await import('@/utils/clerkTokenSafe');
-      const token = await getApiToken({ refresh: true });
-      if (!token) throw new Error('AUTH_NO_JWT');
+      // Import the simplified token helper
+      const { getApiTokenStrict } = await import('@/auth/token');
+      const token = await getApiTokenStrict({ refresh: true });
 
       // Use direct fetch for bootstrap since ApiClient isn't ready yet
       console.log("[AuthKernel] Starting bootstrap with token...");
@@ -153,7 +152,7 @@ export function AuthKernel({ children }: { children: React.ReactNode }) {
       
       const bootstrap = await runBootstrap();
       if (bootstrap) {
-        const { getApiToken } = await import('@/utils/clerkTokenSafe');
+        const { getApiToken } = await import('@/auth/token');
         const token = await getApiToken({ refresh: true });
         if (!token) throw new Error('AUTH_NO_JWT');
 
@@ -210,7 +209,7 @@ export function AuthKernel({ children }: { children: React.ReactNode }) {
       const initializeAuth = async () => {
         const bootstrap = await runBootstrap();
         if (bootstrap) {
-          const { getApiToken } = await import('@/utils/clerkTokenSafe');
+          const { getApiToken } = await import('@/auth/token');
           const token = await getApiToken({ refresh: true });
           
           setSnapshot(prev => ({

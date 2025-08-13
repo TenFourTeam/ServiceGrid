@@ -36,7 +36,7 @@ class ApiClient {
       const authHeaders = await this.getAuthHeader();
 
       // Build full URL for Supabase edge function
-      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+      const SUPABASE_URL = "https://ijudkzqfriazabiosnvb.supabase.co";
       const cleanPath = path.startsWith('/') ? path.slice(1) : path;
       const url = `${SUPABASE_URL}/functions/v1/${cleanPath}`;
 
@@ -133,7 +133,14 @@ export function useApiClient() {
 
   const getAuthHeader = async (): Promise<Record<string, string>> => {
     if (snapshot.token) {
-      return { Authorization: `Bearer ${snapshot.token}` };
+      return { 
+        Authorization: `Bearer ${snapshot.token}`,
+        // Include business context if available
+        ...(snapshot.tenantId && snapshot.tenantId !== 'default' 
+          ? { 'X-Business-Id': snapshot.tenantId } 
+          : {}
+        )
+      };
     }
     return {};
   };
@@ -141,9 +148,12 @@ export function useApiClient() {
   const onAuthError = async (status: number, once: boolean): Promise<'retry' | 'fail'> => {
     if (!once && status === 401) {
       try {
+        console.log('[ApiClient] 401 error, attempting to refresh auth...');
         await refreshAuth();
+        console.log('[ApiClient] Auth refresh successful, retrying request');
         return 'retry';
       } catch (error) {
+        console.error('[ApiClient] Auth refresh failed:', error);
         emit('auth:error', { code: 'refresh_failed', error });
         return 'fail';
       }
