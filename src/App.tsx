@@ -10,6 +10,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import LoadingScreen from "@/components/LoadingScreen";
 
 import ProtectedRoute from "@/components/Auth/ProtectedRoute";
+import AutoSignOut from "@/components/Auth/AutoSignOut";
 
 const CalendarPage = lazy(() => import("./pages/Calendar"));
 const WorkOrdersPage = lazy(() => import("./pages/WorkOrders"));
@@ -56,6 +57,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <AutoSignOut />
       <StoreProvider>
         
           <BrowserRouter>
