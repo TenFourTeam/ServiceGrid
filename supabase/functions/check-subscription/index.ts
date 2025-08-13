@@ -15,6 +15,29 @@ function createAdminClient() {
   return createClient(url, serviceKey, { auth: { persistSession: false } });
 }
 
+async function fetchClerkUserCreationDate(clerkUserId: string, secretKey: string) {
+  try {
+    // Use Clerk's management API to get user details
+    const response = await fetch(`https://api.clerk.dev/v1/users/${clerkUserId}`, {
+      headers: {
+        'Authorization': `Bearer ${secretKey}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      console.warn(`Failed to fetch user from Clerk API: ${response.status}`);
+      return new Date().toISOString(); // Fallback to current date
+    }
+    
+    const userData = await response.json();
+    return new Date(userData.created_at * 1000).toISOString();
+  } catch (error) {
+    console.warn(`Error fetching user creation date from Clerk:`, error);
+    return new Date().toISOString(); // Fallback to current date
+  }
+}
+
 async function resolveOwnerIdFromClerk(req: Request) {
   const authHeader = req.headers.get("authorization") || req.headers.get("Authorization");
   if (!authHeader || !authHeader.startsWith("Bearer ")) throw new Error("Missing Authorization header");
@@ -24,7 +47,8 @@ async function resolveOwnerIdFromClerk(req: Request) {
   const payload = await verifyToken(token, { secretKey });
   const clerkSub = (payload as any).sub as string;
   const email = (payload as any)?.email as string | undefined;
-  const userCreatedAt = new Date((payload as any).iat * 1000).toISOString(); // Convert Unix timestamp
+  // Get actual user creation date from Clerk API
+  const userCreatedAt = await fetchClerkUserCreationDate(clerkSub, secretKey);
   const supabase = createAdminClient();
 
   // Try mapping by clerk_user_id first

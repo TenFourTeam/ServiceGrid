@@ -12,12 +12,15 @@ import { toast } from 'sonner';
 import { edgeFetchJson } from "@/utils/edgeApi";
 import { CSVImportModal } from '@/components/Onboarding/CSVImportModal';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { showNextActionToast } from '@/components/Onboarding/NextActionToast';
+import { useOnboarding } from '@/components/Onboarding/OnboardingProvider';
 
 export default function CustomersPage() {
   const { isSignedIn, getToken } = useClerkAuth();
   const queryClient = useQueryClient();
   const location = useLocation();
   const navigate = useNavigate();
+  const onboarding = useOnboarding();
 
   const { data, isLoading, error } = useSupabaseCustomers();
   const rows = data?.rows ?? [];
@@ -40,11 +43,14 @@ export default function CustomersPage() {
     setOpen(true);
   }
 
-  // Check for import URL parameter
+  // Check for URL parameters
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get('import') === '1') {
       setCsvImportOpen(true);
+      navigate('/customers', { replace: true });
+    } else if (params.get('new') === '1') {
+      openNew();
       navigate('/customers', { replace: true });
     }
   }, [location.search, navigate]);
@@ -75,6 +81,14 @@ export default function CustomersPage() {
       });
 
       toast.success(isEdit ? 'Customer updated' : 'Customer created');
+      
+      // Show next action for new customers
+      if (!isEdit) {
+        showNextActionToast('customer-added', draft.name, () => {
+          onboarding.openCreateQuote();
+        });
+      }
+      
       setOpen(false);
       setEditingId(null);
       setDraft({ name: '', email: '', phone: '', address: '' });

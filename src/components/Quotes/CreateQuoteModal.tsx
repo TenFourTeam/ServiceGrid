@@ -18,7 +18,7 @@ import { LineItemsEditor } from "@/components/Quotes/LineItemsEditor";
 import { useNavigate } from "react-router-dom";
 import { edgeFetchJson } from "@/utils/edgeApi";
 import { InlineCustomerForm } from "@/components/Onboarding/InlineCustomerForm";
-import { showNextActionPrompt } from "@/components/Onboarding/NextActionPrompt";
+import { showNextActionToast } from "@/components/Onboarding/NextActionToast";
 
 export interface CreateQuoteModalProps {
   open: boolean;
@@ -234,7 +234,7 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
       
       // Show next action prompt for quote-to-send conversion
       const customerName = customers.find(c => c.id === draft.customerId)?.name || 'customer';
-      showNextActionPrompt('quote-created', saved.number || 'Quote', () => {
+      showNextActionToast('quote-created', saved.number || 'Quote', () => {
         onRequestSend?.(saved);
       });
       

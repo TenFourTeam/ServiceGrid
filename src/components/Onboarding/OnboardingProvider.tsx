@@ -35,9 +35,8 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
 
   const openNewJobSheet = () => {
     track('onboarding_step_completed', { step: 'new_job_initiated' });
-    // Trigger the NewJobSheet component that's already in AppLayout
-    const newJobButton = document.querySelector('[data-testid="new-job-trigger"]') as HTMLButtonElement;
-    newJobButton?.click();
+    // Navigate to calendar which will show the empty state with job creation
+    navigate('/');
   };
 
   const openCreateQuote = () => {
@@ -47,12 +46,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
 
   const openAddCustomer = () => {
     track('onboarding_step_completed', { step: 'add_customer_initiated' });
-    navigate('/customers');
-    // Small delay to allow navigation, then trigger new customer modal
-    setTimeout(() => {
-      const addCustomerButton = document.querySelector('button:has-text("New Customer")') as HTMLButtonElement;
-      addCustomerButton?.click();
-    }, 100);
+    navigate('/customers?new=1');
   };
 
   const openImportCustomers = () => {
