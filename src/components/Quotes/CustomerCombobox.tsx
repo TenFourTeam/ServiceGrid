@@ -36,10 +36,19 @@ export function CustomerCombobox({ customers, value, onChange, placeholder = "Se
     if (!name.trim()) return;
     setCreating(true);
     try {
+      console.log('[CustomerCombobox] Creating customer with data:', { 
+        name: name.trim(), 
+        email: email.trim() || null, 
+        address: address.trim() || null 
+      });
+      
       const data = await edgeFetchJson("customers", getToken, {
         method: "POST",
         body: { name: name.trim(), email: email.trim() || null, address: address.trim() || null },
       });
+      
+      console.log('[CustomerCombobox] Customer creation response:', data);
+      
       const newId = data?.customer?.id || data?.id || data?.customer_id;
       const newName = data?.customer?.name || name.trim();
       if (newId) {
@@ -48,10 +57,13 @@ export function CustomerCombobox({ customers, value, onChange, placeholder = "Se
         setOpen(false);
         setCreateOpen(false);
         setName(""); setEmail(""); setAddress("");
+        
+        // Invalidate both queries to refresh data
         queryClient.invalidateQueries({ queryKey: ["supabase", "customers"] });
+        queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
       }
     } catch (e) {
-      console.error(e);
+      console.error('[CustomerCombobox] Failed to create customer:', e);
     } finally {
       setCreating(false);
     }

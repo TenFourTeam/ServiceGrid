@@ -37,9 +37,8 @@ export function FloatingSetupWidget({
     return null;
   }
 
-  // Hide widget if onboarding is complete OR if dismissed AND user is subscribed
-  if (onboardingState.isComplete || 
-      (!store.shouldShowSetupWidget() && subscription?.subscribed)) {
+  // Hide widget if onboarding is complete OR if permanently dismissed
+  if (onboardingState.isComplete || !store.shouldShowSetupWidget()) {
     return null;
   }
 
@@ -52,12 +51,12 @@ export function FloatingSetupWidget({
   // Show widget if trial is expired and user hasn't subscribed (override dismissal)
   const shouldForceShow = isTrialExpired && !subscription?.subscribed;
 
-  const handleDismiss = (permanently = false) => {
-    if (permanently) {
-      store.dismissSetupWidget(true);
-    } else {
-      setIsExpanded(false);
-    }
+  const handleDismiss = () => {
+    store.dismissSetupWidget(true);
+  };
+
+  const handleCollapse = () => {
+    setIsExpanded(false);
   };
 
   const steps = [
@@ -144,7 +143,7 @@ export function FloatingSetupWidget({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleDismiss(true)}
+                      onClick={handleDismiss}
                       className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
                       title="Hide widget"
                     >
@@ -154,7 +153,7 @@ export function FloatingSetupWidget({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setIsExpanded(false)}
+                    onClick={handleCollapse}
                     className="h-8 w-8 p-0"
                   >
                     <ChevronDown className="h-4 w-4" />
