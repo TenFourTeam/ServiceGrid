@@ -9,13 +9,19 @@ export default function ClerkBootstrap() {
   const ranRef = useRef(false);
 
   useEffect(() => {
-    if (!isSignedIn) return;
+    console.log("[ClerkBootstrap] Auth state changed:", { isSignedIn });
+    if (!isSignedIn) {
+      ranRef.current = false; // Reset on sign out
+      return;
+    }
     if (ranRef.current) return;
     ranRef.current = true;
+    console.log("[ClerkBootstrap] Starting bootstrap process...");
     (async () => {
       try {
-        await edgeFetchJson("clerk-bootstrap", getToken, { method: "POST" });
-        // Intentionally silent; this should be transparent to the user
+        console.log("[ClerkBootstrap] Calling clerk-bootstrap edge function...");
+        const result = await edgeFetchJson("clerk-bootstrap", getToken, { method: "POST" });
+        console.log("[ClerkBootstrap] Bootstrap completed successfully:", result);
       } catch (e) {
         // Non-fatal; log and continue
         console.warn("[ClerkBootstrap] bootstrap failed", e);
