@@ -4,15 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useOnboarding } from '@/components/Onboarding/OnboardingProvider';
-import { useSidebar } from '@/components/ui/sidebar';
 
 export function TrialBanner() {
   const [dismissed, setDismissed] = useState(false);
   const { data: dashboardData } = useDashboardData();
   const subscription = dashboardData?.subscription;
   const { openSubscription } = useOnboarding();
-  const { state } = useSidebar();
-  const sidebarCollapsed = state === "collapsed";
 
   if (!subscription || subscription.subscribed || dismissed) {
     return null;

@@ -21,11 +21,11 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen w-full flex flex-col">
-        <TrialBanner />
-        <div className="flex flex-1">
-          <AppSidebar />
-          <SidebarInset className="flex-1 p-4 md:p-6 flex flex-col min-h-0">
+      <div className="min-h-screen w-full flex">
+        <AppSidebar />
+        <SidebarInset className="flex-1 flex flex-col min-h-0">
+          <TrialBanner />
+          <div className="p-4 md:p-6 flex flex-col flex-1 min-h-0">
           <header className="flex items-center justify-between mb-4 md:mb-6">
             <div className="flex items-center gap-2">
               <h1 className="text-xl md:text-2xl font-bold">{title ?? 'Dashboard'}</h1>
@@ -42,8 +42,8 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
               {children}
             </PageFade>
           </div>
+          </div>
         </SidebarInset>
-        </div>
       </div>
     </SidebarProvider>
   );
