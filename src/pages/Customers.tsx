@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useState, useEffect } from 'react';
-import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
+import { useDashboardData } from '@/hooks/useDashboardData';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -22,8 +22,10 @@ export default function CustomersPage() {
   const navigate = useNavigate();
   const onboarding = useOnboarding();
 
-  const { data, isLoading, error } = useSupabaseCustomers();
-  const rows = data?.rows ?? [];
+  const { data: dashboardData, isLoading, error } = useDashboardData();
+  
+  // Extract customer data from dashboard data
+  const rows = dashboardData?.customers ?? [];
 
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);

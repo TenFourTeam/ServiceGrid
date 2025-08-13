@@ -7,21 +7,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { formatDate, formatMoney } from '@/utils/format';
 import { useEffect, useMemo, useState } from 'react';
-import { useSupabaseInvoices } from '@/hooks/useSupabaseInvoices';
+import { useDashboardData } from '@/hooks/useDashboardData';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import InvoiceEditor from '@/pages/Invoices/InvoiceEditor';
 import SendInvoiceModal from '@/components/Invoices/SendInvoiceModal';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Send } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
 import { supabase } from '@/integrations/supabase/client';
 
 
 export default function InvoicesPage() {
   const store = useStore();
   const { isSignedIn } = useClerkAuth();
-  const { data: dbInvoices } = useSupabaseInvoices({ enabled: !!isSignedIn });
+  const { data: dashboardData } = useDashboardData();
   
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<'All' | 'Draft' | 'Sent' | 'Paid' | 'Overdue'>('All');
@@ -30,13 +29,12 @@ export default function InvoicesPage() {
   const [sortKey, setSortKey] = useState<'number' | 'customer' | 'amount' | 'due' | 'status'>('number');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const qc = useQueryClient();
-  const { data: dbCustomers } = useSupabaseCustomers({ enabled: !!isSignedIn });
   
-
+  // Use customer data from dashboard
   const customers = useMemo(() => {
-    if (isSignedIn && dbCustomers?.rows) return dbCustomers.rows;
+    if (dashboardData?.customers) return dashboardData.customers;
     return store.customers.map(c => ({ id: c.id, name: c.name, email: c.email ?? null, address: c.address ?? null, phone: (c as any).phone ?? null }));
-  }, [isSignedIn, dbCustomers, store.customers]);
+  }, [dashboardData?.customers, store.customers]);
 
   useEffect(() => {
     if (!isSignedIn) return;
@@ -53,8 +51,8 @@ export default function InvoicesPage() {
   }, [qc, isSignedIn]);
 
   useEffect(() => {
-    if (!isSignedIn || !dbInvoices?.rows) return;
-    dbInvoices.rows.forEach((row) => {
+    if (!dashboardData?.invoices) return;
+    dashboardData.invoices.forEach((row) => {
       store.upsertInvoice({
         id: row.id,
         number: row.number,
@@ -73,7 +71,7 @@ export default function InvoicesPage() {
         publicToken: row.publicToken || '',
       });
     });
-  }, [isSignedIn, dbInvoices]);
+  }, [dashboardData?.invoices]);
 
   const filteredInvoices = useMemo(() => {
     let list = store.invoices.slice();

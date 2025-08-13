@@ -12,7 +12,7 @@ import { edgeFetchJson, edgeFetch } from '@/utils/edgeApi';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import ConnectBanner from '@/components/Stripe/ConnectBanner';
-import { useStripeConnectStatus } from '@/hooks/useStripeConnectStatus';
+import { useDashboardData } from '@/hooks/useDashboardData';
 export default function SettingsPage() {
   const store = useStore();
   const {
@@ -25,14 +25,10 @@ export default function SettingsPage() {
   const [uploadingLight, setUploadingLight] = useState(false);
   const [sub, setSub] = useState<any>(null);
   const [subLoading, setSubLoading] = useState(false);
-  const {
-    data: connectStatus,
-    isLoading: statusLoading,
-    error: statusError,
-    refetch: refetchStatus
-  } = useStripeConnectStatus({
-    enabled: !!isSignedIn
-  });
+  const { data: dashboardData } = useDashboardData();
+  const connectStatus = dashboardData?.stripeStatus;
+  const statusLoading = !dashboardData;
+  const statusError = null;
   const { user, isLoaded: userLoaded } = useUser();
   const [userName, setUserName] = useState('');
   async function uploadLogoDark() {

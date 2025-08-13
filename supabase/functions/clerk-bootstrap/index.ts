@@ -143,12 +143,16 @@ serve(async (req) => {
       }
     }
 
-    // 3) Send welcome email once
+    // 3) Send welcome email only on profile creation (first signup)
     let sentWelcome = false;
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "team@tenfourproject.com";
-    if (resendApiKey && profileId && email) {
+    
+    // Only send welcome email if we actually created a new profile (first signup)
+    if (resendApiKey && profileId && email && createdProfile) {
       const subject = "Welcome to ServiceGrid";
+      
+      // Double-check we haven't sent this before with unique constraint
       const { data: already } = await supabase
         .from("mail_sends")
         .select("id")

@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useSupabaseQuotes } from "@/hooks/useSupabaseQuotes";
+import { useDashboardData } from "@/hooks/useDashboardData";
 import { Loader2 } from "lucide-react";
 
 interface PickQuoteModalProps {
@@ -15,11 +15,12 @@ interface PickQuoteModalProps {
 }
 
 export default function PickQuoteModal({ open, onOpenChange, onSelect, customerId }: PickQuoteModalProps) {
-  const { data } = useSupabaseQuotes({ enabled: open });
+  const { data: dashboardData } = useDashboardData();
 const [query, setQuery] = useState("");
 const [busy, setBusy] = useState(false);
 const [selectedId, setSelectedId] = useState<string | null>(null);
   const quotes = useMemo(() => {
+    const allQuotes = dashboardData?.quotes ?? [];
     let rows = data?.rows ?? [];
     if (customerId) rows = rows.filter((r) => r.customerId === customerId);
     if (!query.trim()) return rows;
