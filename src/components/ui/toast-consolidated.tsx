@@ -23,6 +23,8 @@ export function ConsolidatedToaster() {
       style={{
         zIndex: 50, // Above floating widgets (z-40)
       }}
+      expand={true}
+      visibleToasts={3}
     />
   );
 }

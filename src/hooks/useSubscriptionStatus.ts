@@ -23,14 +23,28 @@ export function useSubscriptionStatus(opts?: { enabled?: boolean }) {
       try {
         const data = await edgeFetchJson("check-subscription", getToken);
         
-        // Calculate trial days from actual user creation date
+        // Calculate trial days from actual user creation date with debugging
         const today = new Date();
-        const userCreatedAt = new Date(data.userCreatedAt || Date.now()); // Backend should provide this
+        const userCreatedAt = new Date(data.userCreatedAt || Date.now());
+        
+        // Debug logging for trial calculation
+        console.log('Trial calculation debug:', {
+          today: today.toISOString(),
+          userCreatedAt: userCreatedAt.toISOString(),
+          rawUserCreatedAt: data.userCreatedAt,
+          subscribed: data.subscribed
+        });
         
         const diffTime = today.getTime() - userCreatedAt.getTime();
         const daysSinceSignup = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         const trialDaysLeft = Math.max(0, TRIAL_DURATION_DAYS - daysSinceSignup);
         const isTrialExpired = trialDaysLeft === 0 && !data.subscribed;
+        
+        console.log('Trial calculation result:', {
+          daysSinceSignup,
+          trialDaysLeft,
+          isTrialExpired
+        });
 
         return {
           subscribed: data.subscribed || false,

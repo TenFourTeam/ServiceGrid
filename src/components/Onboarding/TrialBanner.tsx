@@ -4,12 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useOnboarding } from '@/components/Onboarding/OnboardingProvider';
+import { useSidebar } from '@/components/ui/sidebar';
 
 export function TrialBanner() {
   const [dismissed, setDismissed] = useState(false);
   const { data: dashboardData } = useDashboardData();
   const subscription = dashboardData?.subscription;
   const { openSubscription } = useOnboarding();
+  const { state } = useSidebar();
+  const sidebarCollapsed = state === "collapsed";
 
   if (!subscription || subscription.subscribed || dismissed) {
     return null;
@@ -23,7 +26,7 @@ export function TrialBanner() {
 
   if (isTrialExpired) {
     return (
-      <div className="bg-gradient-to-r from-red-50 to-red-100 border border-red-200 px-4 py-3 ml-14 flex items-center justify-between">
+      <div className={`bg-gradient-to-r from-red-50 to-red-100 border border-red-200 px-4 py-3 flex items-center justify-between transition-[margin] duration-200 ${sidebarCollapsed ? 'ml-14' : 'ml-64'}`}>
         <div className="flex items-center gap-3">
           <div className="flex-shrink-0">
             <Clock className="h-5 w-5 text-red-600" />
@@ -60,7 +63,7 @@ export function TrialBanner() {
   }
 
   return (
-    <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 px-4 py-3 ml-14 flex items-center justify-between">
+    <div className={`bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 px-4 py-3 flex items-center justify-between transition-[margin] duration-200 ${sidebarCollapsed ? 'ml-14' : 'ml-64'}`}>
       <div className="flex items-center gap-3">
         <div className="flex-shrink-0">
           <Crown className="h-5 w-5 text-amber-600" />

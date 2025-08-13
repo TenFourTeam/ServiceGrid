@@ -53,8 +53,11 @@ export function FloatingSetupWidget({
   const shouldForceShow = isTrialExpired && !subscription?.subscribed;
 
   const handleDismiss = (permanently = false) => {
-    store.dismissSetupWidget(permanently);
-    setIsExpanded(false);
+    if (permanently) {
+      store.dismissSetupWidget(true);
+    } else {
+      setIsExpanded(false);
+    }
   };
 
   const steps = [
@@ -73,18 +76,18 @@ export function FloatingSetupWidget({
       action: onAddCustomer,
     },
     {
-      id: 'jobs',
-      label: 'Schedule jobs',
-      icon: Calendar,
-      completed: onboardingState.hasJobs,
-      action: onCreateJob,
-    },
-    {
       id: 'quotes',
       label: 'Create quotes',
       icon: FileText,
       completed: onboardingState.hasQuotes,
       action: onCreateQuote,
+    },
+    {
+      id: 'jobs',
+      label: 'Schedule jobs',
+      icon: Calendar,
+      completed: onboardingState.hasJobs,
+      action: onCreateJob,
     },
   ].map((step, index) => ({
     ...step,
@@ -92,7 +95,12 @@ export function FloatingSetupWidget({
   }));
 
   return (
-    <div className="fixed bottom-4 left-4 z-40 w-80 max-w-[calc(100vw-2rem)]">
+    <div 
+      className="fixed bottom-4 right-4 z-40 w-80 max-w-[calc(100vw-2rem)] transition-transform duration-200 ease-out"
+      data-widget="floating-setup"
+      style={{
+        transform: 'translateY(var(--toast-offset, 0px))'
+      }}>
       <Card className="bg-background border shadow-lg animate-pulse-subtle">
         {!isExpanded ? (
           // Collapsed state
@@ -138,7 +146,7 @@ export function FloatingSetupWidget({
                       size="sm"
                       onClick={() => handleDismiss(true)}
                       className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                      title="Don't show again"
+                      title="Hide widget"
                     >
                       <X className="h-4 w-4" />
                     </Button>
