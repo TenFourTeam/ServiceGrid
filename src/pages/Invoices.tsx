@@ -7,7 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { formatDate, formatMoney } from '@/utils/format';
 import { useEffect, useMemo, useState } from 'react';
-import { useDashboardData } from '@/hooks/useDashboardData';
+import { useSupabaseInvoices } from '@/hooks/useSupabaseInvoices';
+import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import InvoiceEditor from '@/pages/Invoices/InvoiceEditor';
 import SendInvoiceModal from '@/components/Invoices/SendInvoiceModal';
@@ -20,7 +21,8 @@ import { supabase } from '@/integrations/supabase/client';
 export default function InvoicesPage() {
   const store = useStore();
   const { isSignedIn } = useClerkAuth();
-  const { data: dashboardData } = useDashboardData();
+  const { data: invoicesData } = useSupabaseInvoices();
+  const { data: customersData } = useSupabaseCustomers();
   
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<'All' | 'Draft' | 'Sent' | 'Paid' | 'Overdue'>('All');
@@ -30,11 +32,8 @@ export default function InvoicesPage() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const qc = useQueryClient();
   
-  // Use customer data from dashboard
-  const customers = useMemo(() => {
-    if (dashboardData?.customers) return dashboardData.customers;
-    return store.customers.map(c => ({ id: c.id, name: c.name, email: c.email ?? null, address: c.address ?? null, phone: (c as any).phone ?? null }));
-  }, [dashboardData?.customers, store.customers]);
+  // Use customer data directly from hook
+  const customers = customersData?.rows || [];
 
   useEffect(() => {
     if (!isSignedIn) return;
@@ -50,38 +49,37 @@ export default function InvoicesPage() {
     return () => { supabase.removeChannel(channel); };
   }, [qc, isSignedIn]);
 
-  useEffect(() => {
-    if (!dashboardData?.invoices) return;
-    dashboardData.invoices.forEach((row) => {
-      store.upsertInvoice({
-        id: row.id,
-        number: row.number,
-        businessId: '',
-        customerId: row.customerId,
-        jobId: row.jobId || undefined,
-        lineItems: [],
-        taxRate: row.taxRate,
-        discount: row.discount,
-        subtotal: row.subtotal,
-        total: row.total,
-        status: row.status as any,
-        dueAt: row.dueAt || undefined,
-        createdAt: row.createdAt || new Date().toISOString(),
-        updatedAt: row.updatedAt || new Date().toISOString(),
-        publicToken: row.publicToken || '',
-      });
-    });
-  }, [dashboardData?.invoices]);
+  // Use invoices directly from the hook instead of store
+  const invoices = useMemo(() => {
+    if (!invoicesData?.rows) return [];
+    return invoicesData.rows.map(row => ({
+      id: row.id,
+      number: row.number,
+      businessId: '',
+      customerId: row.customerId,
+      jobId: row.jobId || undefined,
+      lineItems: [] as any[],
+      taxRate: row.taxRate,
+      discount: row.discount,
+      subtotal: row.subtotal,
+      total: row.total,
+      status: row.status as any,
+      dueAt: row.dueAt || undefined,
+      createdAt: row.createdAt || new Date().toISOString(),
+      updatedAt: row.updatedAt || new Date().toISOString(),
+      publicToken: row.publicToken || '',
+    }));
+  }, [invoicesData?.rows]);
 
   const filteredInvoices = useMemo(() => {
-    let list = store.invoices.slice();
+    let list = invoices.slice();
     if (status !== 'All') list = list.filter(i => i.status === status);
     const query = q.trim().toLowerCase();
     if (query) {
       list = list.filter(i => i.number.toLowerCase().includes(query) || ((customers.find(c=>c.id===i.customerId)?.name?.toLowerCase().includes(query)) ?? false));
     }
     return list;
-  }, [store.invoices, status, q, customers]);
+  }, [invoices, status, q, customers]);
 
   const sortedInvoices = useMemo(() => {
     const list = filteredInvoices.slice();
@@ -227,19 +225,19 @@ export default function InvoicesPage() {
       <InvoiceEditor
         open={!!activeId}
         onOpenChange={(o)=>{ if(!o) setActiveId(null); }}
-        invoice={store.invoices.find(inv=>inv.id===activeId) || null}
+        invoice={invoices.find(inv=>inv.id===activeId) || null}
       />
       <SendInvoiceModal
         open={!!sendId}
         onOpenChange={(o)=>{ if(!o) setSendId(null); }}
-        invoice={store.invoices.find(inv=>inv.id===sendId) || null}
+        invoice={invoices.find(inv=>inv.id===sendId) || null}
         toEmail={( () => {
-          const inv = store.invoices.find(i=>i.id===sendId);
+          const inv = invoices.find(i=>i.id===sendId);
           const cust = inv ? customers.find(c=>c.id===inv.customerId) : undefined;
           return cust?.email || '';
         })()}
         customerName={( () => {
-          const inv = store.invoices.find(i=>i.id===sendId);
+          const inv = invoices.find(i=>i.id===sendId);
           const cust = inv ? customers.find(c=>c.id===inv.customerId) : undefined;
           return cust?.name || undefined;
         })()}

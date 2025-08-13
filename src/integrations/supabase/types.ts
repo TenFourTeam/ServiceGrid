@@ -85,7 +85,7 @@ export type Database = {
           address: string | null
           business_id: string
           created_at: string
-          email: string | null
+          email: string
           id: string
           name: string
           notes: string | null
@@ -97,7 +97,7 @@ export type Database = {
           address?: string | null
           business_id: string
           created_at?: string
-          email?: string | null
+          email: string
           id?: string
           name: string
           notes?: string | null
@@ -109,7 +109,7 @@ export type Database = {
           address?: string | null
           business_id?: string
           created_at?: string
-          email?: string | null
+          email?: string
           id?: string
           name?: string
           notes?: string | null
@@ -636,7 +636,7 @@ export type Database = {
       subscribers: {
         Row: {
           created_at: string
-          email: string
+          email: string | null
           id: string
           stripe_customer_id: string | null
           subscribed: boolean
@@ -647,7 +647,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          email: string
+          email?: string | null
           id?: string
           stripe_customer_id?: string | null
           subscribed?: boolean
@@ -658,7 +658,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          email?: string
+          email?: string | null
           id?: string
           stripe_customer_id?: string | null
           subscribed?: boolean

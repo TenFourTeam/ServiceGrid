@@ -8,7 +8,8 @@ import CreateQuoteModal from '@/components/Quotes/CreateQuoteModal';
 import SendQuoteModal from '@/components/Quotes/SendQuoteModal';
 import { Input } from '@/components/ui/input';
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
-import { useDashboardData } from '@/hooks/useDashboardData';
+import { useSupabaseQuotes } from '@/hooks/useSupabaseQuotes';
+import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useStore } from '@/store/useAppStore';
@@ -59,7 +60,8 @@ function calculateQuoteTotals(lineItems: LineItem[], taxRate: number, discount: 
 export default function QuotesPage() {
   const { isSignedIn, getToken } = useClerkAuth();
   const store = useStore();
-  const { data: dashboardData } = useDashboardData();
+  const { data: quotesData } = useSupabaseQuotes();
+  const { data: customersData } = useSupabaseCustomers();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
@@ -81,9 +83,31 @@ export default function QuotesPage() {
       return key;
     });
   }
-  // Use data from store, which is populated by dashboard data
-  const customers = store.customers;
-  const quotes = store.quotes;
+  // Use data directly from hooks
+  const customers = customersData?.rows || [];
+  const quotesRows = quotesData?.rows || [];
+  
+  // Transform quotes to match expected format
+  const quotes = useMemo(() => {
+    return quotesRows.map(row => ({
+      id: row.id,
+      number: row.number,
+      customerId: row.customerId,
+      total: row.total,
+      status: row.status,
+      updatedAt: row.updatedAt,
+      viewCount: row.viewCount,
+      publicToken: row.publicToken,
+      // Add required fields with defaults
+      businessId: '',
+      lineItems: [] as any[],
+      taxRate: 0,
+      discount: 0,
+      subtotal: row.total,
+      address: '',
+      createdAt: row.updatedAt
+    }));
+  }, [quotesRows]);
 
   const sortedQuotes = useMemo(() => {
     const arr = [...quotes];
@@ -95,7 +119,7 @@ export default function QuotesPage() {
     };
     arr.sort((a, b) => (sortDir === 'asc' ? baseCompare(a, b) : -baseCompare(a, b)));
     return arr;
-  }, [quotes, sortKey, sortDir, customers]);
+  }, [quotes, sortKey, sortDir]);
 
   function getCustomerName(customerId: string): string {
     const customer = customers.find(c => c.id === customerId);

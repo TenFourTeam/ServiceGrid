@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useState, useEffect } from 'react';
-import { useDashboardData } from '@/hooks/useDashboardData';
+import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -22,10 +22,10 @@ export default function CustomersPage() {
   const navigate = useNavigate();
   const onboarding = useOnboarding();
 
-  const { data: dashboardData, isLoading, error } = useDashboardData();
+  const { data: customersData, isLoading, error } = useSupabaseCustomers();
   
-  // Extract customer data from dashboard data
-  const rows = dashboardData?.customers ?? [];
+  // Extract customer data directly from hook
+  const rows = customersData?.rows ?? [];
 
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -66,6 +66,10 @@ export default function CustomersPage() {
       toast.error('Please enter a customer name.');
       return;
     }
+    if (!draft.email.trim()) {
+      toast.error('Please enter a customer email.');
+      return;
+    }
 
     setSaving(true);
     try {
@@ -76,7 +80,7 @@ export default function CustomersPage() {
         body: {
           ...(isEdit ? { id: editingId } : {}),
           name: draft.name.trim(),
-          email: draft.email.trim() || null,
+          email: draft.email.trim(),
           phone: draft.phone.trim() || null,
           address: draft.address.trim() || null,
         },
@@ -96,6 +100,7 @@ export default function CustomersPage() {
       setEditingId(null);
       setDraft({ name: '', email: '', phone: '', address: '' });
       await queryClient.invalidateQueries({ queryKey: ['supabase', 'customers'] });
+      await queryClient.invalidateQueries({ queryKey: ['dashboard-data'] });
     } catch (e: any) {
       console.error('[CustomersPage] save customer failed:', e);
       toast.error(e?.message || 'Failed to save customer');
@@ -187,10 +192,11 @@ export default function CustomersPage() {
               onChange={(e) => setDraft({ ...draft, name: e.target.value })}
             />
             <Input
-              placeholder="Email"
+              placeholder="Email *"
               type="email"
               value={draft.email}
               onChange={(e) => setDraft({ ...draft, email: e.target.value })}
+              required
             />
             <Input
               placeholder="Address"
@@ -207,7 +213,7 @@ export default function CustomersPage() {
               <Button variant="secondary" onClick={() => setOpen(false)} disabled={saving}>
                 Cancel
               </Button>
-              <Button onClick={save} disabled={saving || !draft.name.trim()}>
+              <Button onClick={save} disabled={saving || !draft.name.trim() || !draft.email.trim()}>
                 {saving ? 'Saving…' : 'Save'}
               </Button>
             </div>
