@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { useStore } from "@/store/useAppStore";
+import { useBusiness } from "@/queries/unified";
 import type { Customer, LineItem, Quote } from "@/types";
 import { formatMoney as formatCurrency, parseCurrencyInput, formatCurrencyInputNoSymbol, parsePercentInput, sanitizeMoneyTyping } from "@/utils/format";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
@@ -55,7 +55,7 @@ function calculateQuoteTotals(lineItems: LineItem[], taxRate: number, discount: 
 }
 
 export default function CreateQuoteModal({ open, onOpenChange, customers, defaultTaxRate = 0.1, onRequestSend }: CreateQuoteModalProps) {
-  const store = useStore();
+  const { data: business } = useBusiness();
   const { getToken } = useClerkAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -89,7 +89,7 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
         customerId: "",
         address: "",
         lineItems: [],
-        taxRate: store.business.taxRateDefault ?? defaultTaxRate,
+        taxRate: business?.taxRateDefault ?? defaultTaxRate,
         discount: 0,
         notesInternal: "",
         terms: "",
@@ -102,7 +102,7 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
       setDiscountInput("");
       setDepositPercentInput("");
     }
-  }, [open, store.business.taxRateDefault, defaultTaxRate]);
+  }, [open, business?.taxRateDefault, defaultTaxRate]);
 
   // Keep discount input display in sync with canonical value when not focused
   useEffect(() => {
@@ -200,7 +200,7 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
       const saved: Quote = {
         id: q.id,
         number: q.number,
-        businessId: store.business.id,
+        businessId: business?.id || '',
         customerId: draft.customerId,
         address: draft.address,
         lineItems: draft.lineItems,

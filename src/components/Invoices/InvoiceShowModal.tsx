@@ -1,11 +1,12 @@
 import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { formatDate, formatMoney } from '@/utils/format';
-import { useStore } from '@/store/useAppStore';
+import { useCustomers } from '@/queries/unified';
 import type { Invoice } from '@/types';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { edgeFetchJson } from '@/utils/edgeApi';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface InvoiceShowModalProps {
   open: boolean;
@@ -14,7 +15,8 @@ interface InvoiceShowModalProps {
 }
 
 export default function InvoiceShowModal({ open, onOpenChange, invoice }: InvoiceShowModalProps) {
-  const { customers, sendInvoice } = useStore();
+  const { data: customers = [] } = useCustomers();
+  const queryClient = useQueryClient();
   const customerName = invoice ? (customers.find(c => c.id === invoice.customerId)?.name || 'Unknown') : '';
 
   const { getToken } = useClerkAuth();
@@ -76,7 +78,18 @@ export default function InvoiceShowModal({ open, onOpenChange, invoice }: Invoic
           {invoice && (
             <div className="flex items-center gap-2">
               {invoice.status === 'Draft' && (
-                <Button size="sm" onClick={() => sendInvoice(invoice.id)}>Mark Sent</Button>
+                <Button size="sm" onClick={async () => {
+                  try {
+                    await edgeFetchJson('invoices', getToken, {
+                      method: 'PATCH',
+                      body: { id: invoice.id, status: 'Sent' }
+                    });
+                    queryClient.invalidateQueries({ queryKey: ['supabase', 'invoices'] });
+                    toast.success('Invoice marked as sent');
+                  } catch (e: any) {
+                    toast.error(e?.message || 'Failed to mark invoice as sent');
+                  }
+                }}>Mark Sent</Button>
               )}
               {(invoice.status === 'Sent' || invoice.status === 'Overdue') && (
                 <>

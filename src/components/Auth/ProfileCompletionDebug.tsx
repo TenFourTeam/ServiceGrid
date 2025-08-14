@@ -1,7 +1,7 @@
 import { useUser } from '@clerk/clerk-react';
 import { useBusiness } from '@/queries/unified';
 import { useProfile } from '@/queries/useProfile';
-import { useOnboardingState } from '@/onboarding/useOnboardingState';
+import { useOnboardingState } from '@/onboarding/streamlined';
 
 /**
  * Debug component to show profile completion status
@@ -14,8 +14,6 @@ export function ProfileCompletionDebug() {
   
   // Check both store and onboarding values
   const storeCustomized = business?.nameCustomized ?? false;
-  const onbCustomized = onboarding.ctx.business.nameCustomized;
-  const equal = storeCustomized === onbCustomized;
 
   if (!user) return null;
 
@@ -29,18 +27,19 @@ export function ProfileCompletionDebug() {
         <div>DB Profile Phone: {profile?.phoneE164 || 'None'}</div>
         <div>DB Name Source: {(profile as any)?.name_source || 'None'}</div>
         <div>Local Business: {business?.name || 'None'}</div>
-        <div>Business Name Customized (store): {storeCustomized ? 'Yes' : 'No'}</div>
-        <div>Business Name Customized (onboarding): {onbCustomized ? 'Yes' : 'No'}</div>
-        <div>Equal? {equal ? '✅' : '❌'}</div>
-        <div>Current Step: {onboarding.currentStepId || 'Complete'}</div>
-        <div>Progress: {onboarding.progressPct}%</div>
-        <div>Profile Complete: {onboarding.completionByStep.profile ? '✅' : '❌'}</div>
-        <div>Next Action: {onboarding.nextAction}</div>
+        <div>Business Name Customized: {storeCustomized ? 'Yes' : 'No'}</div>
+        <div>Progress: {onboarding.completionPercentage}%</div>
+        <div>Profile Complete: {onboarding.profileComplete ? '✅' : '❌'}</div>
+        <div>Has Customers: {onboarding.hasCustomers ? '✅' : '❌'}</div>
+        <div>Has Content: {onboarding.hasContent ? '✅' : '❌'}</div>
+        <div>Bank Linked: {onboarding.bankLinked ? '✅' : '❌'}</div>
+        <div>Subscribed: {onboarding.subscribed ? '✅' : '❌'}</div>
+        <div>Next Action: {onboarding.nextAction || 'Complete!'}</div>
       </div>
 
       <div className="mt-2 pt-2 border-t">
         <div className="text-green-600">
-          ✅ = {onboarding.progressPct >= 60 ? 'Should show green check' : 'Not complete yet'}
+          ✅ = {onboarding.completionPercentage >= 60 ? 'Should show green check' : 'Not complete yet'}
         </div>
       </div>
     </div>

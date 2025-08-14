@@ -3,14 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useEffect, useMemo, useState } from "react";
-import { useStore } from "@/store/useAppStore";
-import type { Invoice } from "@/types";
-import { buildInvoiceEmail } from "@/utils/emailTemplates";
-import { toast } from "sonner";
-import { escapeHtml } from "@/utils/sanitize";
-import { useQueryClient } from "@tanstack/react-query";
-import { useAuth as useClerkAuth } from "@clerk/clerk-react";
-import { edgeFetchJson } from "@/utils/edgeApi";
+import { useBusiness, useCustomers } from '@/queries/unified';
+import { useAuth as useClerkAuth } from '@clerk/clerk-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { edgeFetchJson } from '@/utils/edgeApi';
+import { buildInvoiceEmail } from '@/utils/emailTemplates';
+import { escapeHtml } from '@/utils/sanitize';
+import { toast } from 'sonner';
+import type { Invoice } from '@/types';
 
 export interface SendInvoiceModalProps {
   open: boolean;
@@ -21,7 +21,8 @@ export interface SendInvoiceModalProps {
 }
 
 export default function SendInvoiceModal({ open, onOpenChange, invoice, toEmail, customerName }: SendInvoiceModalProps) {
-  const store = useStore();
+  const { data: business } = useBusiness();
+  const { data: customers = [] } = useCustomers();
   const queryClient = useQueryClient();
   const { getToken } = useClerkAuth();
   const [to, setTo] = useState("");
@@ -31,12 +32,12 @@ export default function SendInvoiceModal({ open, onOpenChange, invoice, toEmail,
 
   const { html, defaultSubject } = useMemo(() => {
     if (!invoice) return { html: "", defaultSubject: "" };
-    const logo = store.business.lightLogoUrl || store.business.logoUrl;
+    const logo = business?.lightLogoUrl || business?.logoUrl;
     const token = (invoice as any).publicToken as string | undefined;
     const payUrl = token ? `${window.location.origin}/invoice-pay?i=${invoice.id}&t=${token}` : undefined;
-    const built = buildInvoiceEmail({ businessName: store.business.name, businessLogoUrl: logo, customerName, invoice, payUrl });
+    const built = buildInvoiceEmail({ businessName: business?.name || '', businessLogoUrl: logo, customerName, invoice, payUrl });
     return { html: built.html, defaultSubject: built.subject };
-  }, [invoice, store.business.name, store.business.logoUrl, store.business.lightLogoUrl, customerName]);
+  }, [invoice, business?.name, business?.logoUrl, business?.lightLogoUrl, customerName]);
 
 const previewHtml = useMemo(() => {
   if (!message?.trim()) return html;
@@ -51,14 +52,14 @@ const previewHtml = useMemo(() => {
       const defaultTo = (() => {
         if (toEmail && toEmail.trim()) return toEmail;
         if (!invoice) return "";
-        const cust = store.customers.find(c => c.id === invoice.customerId);
+        const cust = customers.find(c => c.id === invoice.customerId);
         return cust?.email || "";
       })();
       setTo(defaultTo);
-      setSubject(invoice ? `${store.business.name} • Invoice ${invoice.number}` : "");
+      setSubject(invoice ? `${business?.name || ''} • Invoice ${invoice.number}` : "");
       setMessage("");
     }
-  }, [open, invoice, toEmail, store.business.name, store.customers]);
+  }, [open, invoice, toEmail, business?.name, customers]);
 
   async function send() {
     if (!invoice) return;
@@ -78,7 +79,7 @@ const previewHtml = useMemo(() => {
       console.info('[SendInvoiceModal] sending invoice email', { invoiceId: invoice.id, to });
       await edgeFetchJson("resend-send-email", getToken, {
         method: "POST",
-        body: { to, subject: subject || defaultSubject, html: finalHtml, invoice_id: invoice.id, reply_to: store.business.replyToEmail || undefined },
+        body: { to, subject: subject || defaultSubject, html: finalHtml, invoice_id: invoice.id },
       });
       console.info('[SendInvoiceModal] sent', { invoiceId: invoice.id });
       // Optimistically mark as Sent
@@ -94,7 +95,6 @@ const previewHtml = useMemo(() => {
           };
         }
       );
-      store.sendInvoice(invoice.id);
       await queryClient.invalidateQueries({ queryKey: ["supabase", "invoices"] });
       toast.success("Invoice sent successfully");
       onOpenChange(false);

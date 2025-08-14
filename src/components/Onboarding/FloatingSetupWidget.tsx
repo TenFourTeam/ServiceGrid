@@ -3,8 +3,7 @@ import { CheckCircle2, ChevronDown, ChevronUp, User, Users, Calendar, FileText, 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { useOnboardingState } from '@/onboarding/useOnboardingState';
-import { useStore } from '@/store/useAppStore';
+import { useOnboardingState } from '@/onboarding/streamlined';
 import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 import { useLocation } from 'react-router-dom';
 
@@ -26,7 +25,9 @@ export function FloatingSetupWidget({
   onStartSubscription,
 }: FloatingSetupWidgetProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const store = useStore();
+  const [isDismissed, setIsDismissed] = useState(() => 
+    localStorage.getItem('setup-widget-dismissed') === 'true'
+  );
   const onboardingState = useOnboardingState();
   const { data: subscription } = useSubscriptionStatus();
   const location = useLocation();
@@ -36,10 +37,10 @@ export function FloatingSetupWidget({
     return null;
   }
 
-  const { steps, stepOrder, statuses, currentStepId, progressPct, allComplete } = onboardingState;
+  const { isComplete, completionPercentage } = onboardingState;
   
   // Hide widget if onboarding is complete OR if permanently dismissed
-  if (allComplete || !store.shouldShowSetupWidget()) {
+  if (isComplete || isDismissed) {
     return null;
   }
 
@@ -53,29 +54,22 @@ export function FloatingSetupWidget({
   const shouldForceShow = isTrialExpired && !subscription?.subscribed;
 
   const handleDismiss = () => {
-    store.dismissSetupWidget(true);
+    localStorage.setItem('setup-widget-dismissed', 'true');
+    setIsDismissed(true);
   };
 
   const handleCollapse = () => {
     setIsExpanded(false);
   };
 
+  const progressPct = completionPercentage;
   
-  const stepActions = {
-    profile: onSetupProfile,
-    customers: onAddCustomer,
-    content: onCreateJob, // Default to job creation for floating widget
-    bank: onLinkBank,
-    subscription: onStartSubscription
-  };
-
-  const stepIcons = {
-    profile: User,
-    customers: Users,
-    content: Calendar,
-    bank: CreditCard,
-    subscription: Crown
-  };
+  const nextAction = onboardingState.nextAction;
+  const isProfileIncomplete = !onboardingState.profileComplete;
+  const needsCustomers = !onboardingState.hasCustomers;
+  const needsContent = !onboardingState.hasContent;
+  const needsBank = !onboardingState.bankLinked;
+  const needsSubscription = !onboardingState.subscribed;
 
   return (
     <div 
@@ -103,7 +97,7 @@ export function FloatingSetupWidget({
                   <p className="text-xs text-muted-foreground">
                     {shouldForceShow 
                       ? 'Trial expired - upgrade to continue' 
-                      : `${progressPct}% complete`
+                      : `${Math.round(progressPct)}% complete`
                     }
                   </p>
                 </div>
@@ -165,65 +159,46 @@ export function FloatingSetupWidget({
                 <>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Progress</span>
-                    <span className="font-medium">{progressPct}%</span>
+                    <span className="font-medium">{Math.round(progressPct)}%</span>
                   </div>
                   <Progress value={progressPct} className="h-2" />
 
-                  {/* Steps */}
-                  <div className="space-y-2">
-                    {stepOrder.map((id) => {
-                      const step = steps[id];
-                      const status = statuses[id];
-                      const isClickable = status === 'active' || status === 'complete';
-                      const Icon = stepIcons[id];
-                      
-                      return (
-                        <div 
-                          key={id} 
-                          className={`flex items-center gap-3 p-2 rounded-lg border transition-all ${
-                            status === 'active' ? 'ring-2 ring-primary/40 bg-primary/5 border-primary/30' : 
-                            status === 'complete' ? 'bg-green-50 border-green-200' :
-                            status === 'pending' ? 'border-muted' :
-                            'border-muted/50 opacity-60'
-                          }`}
-                        >
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                            status === 'complete' ? 'bg-green-500 text-white' :
-                            status === 'active' ? 'bg-primary text-primary-foreground' :
-                            status === 'pending' ? 'bg-muted text-muted-foreground' :
-                            'bg-muted/50 text-muted-foreground'
-                          }`}>
-                            {status === 'complete' ? (
-                              <CheckCircle2 className="h-4 w-4" />
-                            ) : status === 'active' ? (
-                              <Icon className="h-4 w-4 animate-pulse" />
-                            ) : (
-                              <Icon className="h-4 w-4" />
-                            )}
-                          </div>
-                          <div className="flex-1">
-                            <p className={`text-sm font-medium ${
-                              status === 'complete' ? 'text-green-700' :
-                              status === 'active' ? 'text-foreground' :
-                              'text-muted-foreground'
-                            }`}>
-                              {step.title}
-                            </p>
-                          </div>
-                          {status === 'active' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => stepActions[id]?.()}
-                              className="h-7 px-2 text-xs border-primary text-primary"
-                            >
-                              Start
-                            </Button>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                  {/* Next Action */}
+                  {nextAction && (
+                    <div className="p-3 bg-primary/5 border border-primary/30 rounded-lg">
+                      <div className="flex items-center gap-2 text-sm">
+                        <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                        <span className="text-primary font-medium">Next: {nextAction}</span>
+                      </div>
+                      <div className="flex gap-2 mt-2">
+                        {isProfileIncomplete && (
+                          <Button size="sm" variant="outline" onClick={onSetupProfile} className="border-primary text-primary">
+                            Complete Profile
+                          </Button>
+                        )}
+                        {!isProfileIncomplete && needsCustomers && (
+                          <Button size="sm" variant="outline" onClick={onAddCustomer} className="border-primary text-primary">
+                            Add Customer
+                          </Button>
+                        )}
+                        {!isProfileIncomplete && !needsCustomers && needsContent && (
+                          <Button size="sm" variant="outline" onClick={onCreateJob} className="border-primary text-primary">
+                            Create Job
+                          </Button>
+                        )}
+                        {!isProfileIncomplete && !needsCustomers && !needsContent && needsBank && (
+                          <Button size="sm" variant="outline" onClick={onLinkBank} className="border-primary text-primary">
+                            Link Bank
+                          </Button>
+                        )}
+                        {!isProfileIncomplete && !needsCustomers && !needsContent && !needsBank && needsSubscription && (
+                          <Button size="sm" variant="outline" onClick={onStartSubscription} className="border-primary text-primary">
+                            Subscribe
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )}
                   
                   {/* Trial warning for active trial */}
                   {subscription && !subscription.subscribed && !isTrialExpired && (

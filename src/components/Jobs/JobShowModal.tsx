@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useStore } from "@/store/useAppStore";
+import { useCustomers } from "@/queries/unified";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,6 +11,8 @@ import ReschedulePopover from "@/components/WorkOrders/ReschedulePopover";
 import type { Job } from "@/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle as ModalTitle } from "@/components/ui/dialog";
 import PickQuoteModal from "@/components/Jobs/PickQuoteModal";
+import { useQueryClient } from "@tanstack/react-query";
+
 interface JobShowModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -18,7 +20,8 @@ interface JobShowModalProps {
 }
 
 export default function JobShowModal({ open, onOpenChange, job }: JobShowModalProps) {
-  const { customers, updateJobStatus, upsertJob, deleteJob } = useStore();
+  const { data: customers = [] } = useCustomers();
+  const queryClient = useQueryClient();
   const [localNotes, setLocalNotes] = useState(job.notes ?? "");
   const notesTimer = useRef<number | null>(null);
   const { getToken } = useClerkAuth();
@@ -72,19 +75,17 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
     const prevStatus = current;
     setIsAdvancing(true);
     setOptimisticStatus(nextStatus);
-    // Optimistically update global store so other views reflect immediately
-    updateJobStatus(job.id, nextStatus);
 
     try {
       const data = await edgeFetchJson(`jobs?id=${job.id}`, getToken, {
         method: 'PATCH',
         body: { status: nextStatus },
       });
+      queryClient.invalidateQueries({ queryKey: ['supabase', 'jobs'] });
       toast.success(`Status updated to ${nextStatus}`);
     } catch (e: any) {
       // Revert on failure
       setOptimisticStatus(prevStatus);
-      updateJobStatus(job.id, prevStatus);
       toast.error(e?.message || 'Failed to advance status');
     } finally {
       setIsAdvancing(false);
@@ -131,8 +132,6 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
               onChange={(e)=>{
                 const val = e.target.value;
                 setLocalNotes(val);
-                const updated = { ...job, notes: val } as Job;
-                upsertJob(updated);
                 if (notesTimer.current) window.clearTimeout(notesTimer.current);
                 notesTimer.current = window.setTimeout(async ()=>{
                     try {
@@ -140,6 +139,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                         method: 'PATCH',
                         body: { notes: val },
                       });
+                      queryClient.invalidateQueries({ queryKey: ['supabase', 'jobs'] });
                     } catch {}
                 }, 600) as unknown as number;
               }}
@@ -179,7 +179,16 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
               <Button variant="outline" onClick={handleCreateInvoice}>Create Invoice</Button>
             </div>
             <div>
-              <Button variant="destructive" onClick={() => { deleteJob(job.id); onOpenChange(false); }}>Delete</Button>
+              <Button variant="destructive" onClick={async () => {
+                try {
+                  await edgeFetchJson(`jobs?id=${job.id}`, getToken, { method: 'DELETE' });
+                  queryClient.invalidateQueries({ queryKey: ['supabase', 'jobs'] });
+                  toast.success('Job deleted');
+                  onOpenChange(false);
+                } catch (e: any) {
+                  toast.error(e?.message || 'Failed to delete job');
+                }
+              }}>Delete</Button>
             </div>
           </div>
         </DrawerFooter>
@@ -228,7 +237,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                 method: 'PATCH',
                 body: { quoteId },
               });
-              upsertJob({ ...(job as any), quoteId } as any);
+              queryClient.invalidateQueries({ queryKey: ['supabase', 'jobs'] });
               toast.success('Quote linked to job');
               setPickerOpen(false);
             } catch (e: any) {
