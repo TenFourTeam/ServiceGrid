@@ -116,6 +116,7 @@ export type Database = {
           light_logo_url: string | null
           logo_url: string | null
           name: string
+          name_customized: boolean
           owner_id: string
           phone: string | null
           reply_to_email: string | null
@@ -136,7 +137,8 @@ export type Database = {
           inv_seq?: number
           light_logo_url?: string | null
           logo_url?: string | null
-          name: string
+          name?: string
+          name_customized?: boolean
           owner_id: string
           phone?: string | null
           reply_to_email?: string | null
@@ -158,6 +160,7 @@ export type Database = {
           light_logo_url?: string | null
           logo_url?: string | null
           name?: string
+          name_customized?: boolean
           owner_id?: string
           phone?: string | null
           reply_to_email?: string | null
@@ -843,6 +846,7 @@ export type Database = {
           light_logo_url: string | null
           logo_url: string | null
           name: string
+          name_customized: boolean
           owner_id: string
           phone: string | null
           reply_to_email: string | null
