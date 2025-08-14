@@ -19,6 +19,7 @@ import { AuditLogsList } from '@/components/Business/AuditLogsList';
 import { useBusinessRole } from '@/hooks/useBusinessRole';
 import { useProfileOperations } from '@/hooks/useProfileOperations';
 import { ProfileCompletionDebug } from '@/components/Auth/ProfileCompletionDebug';
+import ManualBootstrap from '@/components/Auth/ManualBootstrap';
 import { useToast } from '@/hooks/use-toast';
 import { useFocusPulse } from '@/hooks/useFocusPulse';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -314,6 +315,18 @@ export default function SettingsPage() {
   }, [isSignedIn]);
   return <AppLayout title="Settings">
       <ProfileCompletionDebug />
+      
+      <div className="mb-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Manual Profile Setup</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ManualBootstrap />
+          </CardContent>
+        </Card>
+      </div>
+      
       <div className="grid md:grid-cols-2 gap-6">
         <Card 
           ref={profileRef}
