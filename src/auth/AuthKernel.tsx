@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from "react";
 import { useAuth as useClerkAuth, useUser } from "@clerk/clerk-react";
 import { AuthSnapshot, AuthPhase, AuthContextValue, AuthBootstrapResult, TenantRole } from "./types";
+import ClerkBootstrap from "@/components/Auth/ClerkBootstrap";
 // Bootstrap will use ApiClient after initial setup
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -72,8 +73,27 @@ export function AuthKernel({ children }: { children: React.ReactNode }) {
       const { getApiTokenStrict } = await import('@/auth/token');
       const token = await getApiTokenStrict({ refresh: true });
 
-      // Use direct fetch for bootstrap since ApiClient isn't ready yet
-      console.log("[AuthKernel] Starting bootstrap with token...");
+      // First ensure profile exists via clerk-bootstrap
+      console.log("[AuthKernel] Running clerk bootstrap first...");
+      const bootstrapResponse = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/clerk-bootstrap`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+      
+      if (!bootstrapResponse.ok) {
+        const errorText = await bootstrapResponse.text();
+        console.error("[AuthKernel] Clerk bootstrap failed:", errorText);
+        throw new Error(`Clerk bootstrap failed: ${bootstrapResponse.status} - ${errorText}`);
+      }
+      
+      const bootstrapResult = await bootstrapResponse.json();
+      console.log("[AuthKernel] Clerk bootstrap result:", bootstrapResult);
+
+      // Now get business data
+      console.log("[AuthKernel] Getting business data...");
       const response = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/get-business`, {
         method: "GET",
         headers: {
@@ -293,6 +313,7 @@ export function AuthKernel({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={contextValue}>
+      <ClerkBootstrap />
       {children}
     </AuthContext.Provider>
   );
