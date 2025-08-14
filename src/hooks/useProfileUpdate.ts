@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { edgeRequest, ApiError } from '@/utils/edgeApi';
 import { fn } from '@/utils/functionUrl';
 import { useToast } from '@/hooks/use-toast';
-import { useBizStore } from '@/store/business';
+import { useStore } from '@/store/useAppStore';
 
 export type ProfileUpdatePayload = {
   fullName: string;
@@ -22,7 +22,7 @@ export type ProfileUpdateResponse = {
 export function useProfileUpdate() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { setBusinessOptimistic } = useBizStore();
+  const { setBusiness } = useStore();
 
   return useMutation({
     mutationFn: async (input: ProfileUpdatePayload) => {
@@ -51,9 +51,9 @@ export function useProfileUpdate() {
       console.log('Profile update successful:', data, 'nameCustomized:', data.data.nameCustomized);
       
       // Immediately update the business store (optimistic update with normalized shape)
-      setBusinessOptimistic({ 
-        name: data.data.businessName, 
-        nameCustomized: data.data.nameCustomized 
+      setBusiness({
+        name: data.data.businessName,
+        name_customized: data.data.nameCustomized
       });
       
       // Align with unified onboarding query keys

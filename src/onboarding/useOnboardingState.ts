@@ -7,7 +7,6 @@ import { useQuotesCount } from '@/hooks/useQuotesCount';
 import { useStripeConnectStatus } from '@/hooks/useStripeConnectStatus';
 import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 import { useProfile } from '@/queries/useProfile';
-import { useBusinessNameCustomized } from '@/store/business';
 import { steps, stepOrder, type OnbCtx, type StepId } from './steps';
 
 function clamp(n: number, min = 0, max = 100) { 
@@ -25,9 +24,6 @@ export function useOnboardingState() {
   const { data: stripeStatus } = useStripeConnectStatus();
   const { data: subscription } = useSubscriptionStatus();
   const { data: profile } = useProfile();
-  
-  // Subscribe to the store for nameCustomized - no stale memoization
-  const nameCustomized = useBusinessNameCustomized();
 
   const ctx: OnbCtx = useMemo(() => ({
     profile: { 
@@ -36,7 +32,7 @@ export function useOnboardingState() {
     },
     business: { 
       name: business?.name ?? null,
-      nameCustomized // Use the store selector directly
+      nameCustomized: business?.name_customized ?? false
     },
     counts: { 
       customers: customersCount ?? 0, 
@@ -47,7 +43,7 @@ export function useOnboardingState() {
       bankLinked: !!stripeStatus?.chargesEnabled, 
       subscribed: !!subscription?.subscribed 
     }
-  }), [profile, business, customersCount, jobsCount, quotesCount, stripeStatus, subscription, nameCustomized]);
+  }), [profile, business, customersCount, jobsCount, quotesCount, stripeStatus, subscription]);
 
   const completionByStep: Record<StepId, boolean> = useMemo(() => {
     const res = {} as Record<StepId, boolean>;

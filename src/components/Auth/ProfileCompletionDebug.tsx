@@ -2,7 +2,6 @@ import { useUser } from '@clerk/clerk-react';
 import { useStore } from '@/store/useAppStore';
 import { useProfile } from '@/queries/useProfile';
 import { useOnboardingState } from '@/onboarding/useOnboardingState';
-import { useBusinessNameCustomized } from '@/store/business';
 
 /**
  * Debug component to show profile completion status
@@ -13,8 +12,8 @@ export function ProfileCompletionDebug() {
   const { data: profile } = useProfile();
   const onboarding = useOnboardingState();
   
-  // Subscribe to the unified store selector
-  const storeCustomized = useBusinessNameCustomized();
+  // Check both store and onboarding values
+  const storeCustomized = business?.name_customized ?? false;
   const onbCustomized = onboarding.ctx.business.nameCustomized;
   const equal = storeCustomized === onbCustomized;
 
