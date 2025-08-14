@@ -242,16 +242,7 @@ export default function SettingsPage() {
     console.info('[Settings] saving profile', input);
 
     try {
-      // Update Clerk user first
-      if (user) {
-        console.info('[Settings] updating Clerk user');
-        await user.update({
-          firstName: userName.split(' ')[0],
-          lastName: userName.split(' ').slice(1).join(' ') || '',
-        });
-      }
-
-      // Then update profile and business in database
+      // Update profile and business in database
       console.info('[Settings] calling profileUpdate.mutateAsync');
       const result = await profileUpdate.mutateAsync(input);
 
