@@ -6,7 +6,7 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
-import { useProfileUpdate } from '@/hooks/useProfileUpdate';
+import { useProfileOperations } from '@/hooks/useProfileOperations';
 import { fn } from '@/utils/functionUrl';
 import * as edgeApiModule from '@/utils/edgeApi';
 
@@ -18,13 +18,13 @@ vi.mock('@/hooks/use-toast', () => ({
 
 // Test component that uses the hook
 function TestProfileForm() {
-  const profileUpdate = useProfileUpdate();
+  const { updateProfile, isUpdating } = useProfileOperations();
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const formData = new FormData(e.target as HTMLFormElement);
     
-    await profileUpdate.mutateAsync({
+    await updateProfile.mutateAsync({
       fullName: formData.get('fullName') as string,
       businessName: formData.get('businessName') as string,
       phoneRaw: formData.get('phoneRaw') as string,
@@ -36,8 +36,8 @@ function TestProfileForm() {
       <input name="fullName" placeholder="Full Name" />
       <input name="businessName" placeholder="Business Name" />
       <input name="phoneRaw" placeholder="Phone" />
-      <button type="submit" disabled={profileUpdate.isPending}>
-        {profileUpdate.isPending ? 'Saving...' : 'Save Profile'}
+      <button type="submit" disabled={isUpdating}>
+        {isUpdating ? 'Saving...' : 'Save Profile'}
       </button>
     </form>
   );

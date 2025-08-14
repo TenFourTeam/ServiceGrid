@@ -25,8 +25,8 @@ export function ProfileCompletionDebug() {
       
       <div className="space-y-1">
         <div>Clerk User: {user.firstName || user.fullName || 'No name'}</div>
-        <div>DB Profile Name: {profile?.full_name || 'None'}</div>
-        <div>DB Profile Phone: {profile?.phone_e164 || 'None'}</div>
+        <div>DB Profile Name: {profile?.fullName || 'None'}</div>
+        <div>DB Profile Phone: {profile?.phoneE164 || 'None'}</div>
         <div>DB Name Source: {(profile as any)?.name_source || 'None'}</div>
         <div>Local Business: {business?.name || 'None'}</div>
         <div>Business Name Customized (store): {storeCustomized ? 'Yes' : 'No'}</div>

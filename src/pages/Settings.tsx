@@ -16,7 +16,7 @@ import { useStripeConnectStatus } from '@/hooks/useStripeConnectStatus';
 import { BusinessMembersList } from '@/components/Business/BusinessMembersList';
 import { AuditLogsList } from '@/components/Business/AuditLogsList';
 import { useBusinessRole } from '@/hooks/useBusinessRole';
-import { useProfileUpdate } from '@/hooks/useProfileUpdate';
+import { useProfileOperations } from '@/hooks/useProfileOperations';
 import { ProfileCompletionDebug } from '@/components/Auth/ProfileCompletionDebug';
 import { useToast } from '@/hooks/use-toast';
 import { useFocusPulse } from '@/hooks/useFocusPulse';
@@ -45,7 +45,7 @@ export default function SettingsPage() {
   const [businessName, setBusinessName] = useState('');
   const [businessPhone, setBusinessPhone] = useState('');
   const { data: roleData } = useBusinessRole(store.business.id);
-  const profileUpdate = useProfileUpdate();
+  const { updateProfile, isUpdating } = useProfileOperations();
   const { toast } = useToast();
   const { ref: profileRef, pulse: profilePulse, focus: focusProfile } = useFocusPulse<HTMLDivElement>();
   async function uploadLogoDark() {
@@ -243,7 +243,7 @@ export default function SettingsPage() {
     console.info('[Settings] calling profileUpdate.mutateAsync');
     
     try {
-      await profileUpdate.mutateAsync(input);
+      await updateProfile.mutateAsync(input);
       
       // Non-blocking sync to Clerk after DB success
       if (user && userName.trim()) {
@@ -372,7 +372,7 @@ export default function SettingsPage() {
                       placeholder="Your business name"
                       required
                     />
-                    {profileUpdate.isPending && (
+                    {isUpdating && (
                       <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
                         Saving...
                       </div>
@@ -405,10 +405,10 @@ export default function SettingsPage() {
               <div className="pt-4">
                 <Button 
                   type="submit"
-                  disabled={profileUpdate.isPending || !userName.trim() || !businessName.trim() || !businessPhone.trim()}
+                  disabled={isUpdating || !userName.trim() || !businessName.trim() || !businessPhone.trim()}
                   className="w-full"
                 >
-                  {profileUpdate.isPending ? 'Saving...' : 'Save Profile'}
+                  {isUpdating ? 'Saving...' : 'Save Profile'}
                 </Button>
               </div>
             </form>

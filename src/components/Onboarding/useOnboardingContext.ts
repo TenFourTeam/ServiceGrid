@@ -75,9 +75,9 @@ export function useOnboardingContext(): OnboardingContext {
     const finalCustomersCount = customersCount ?? 0;
 
     // Check user and business setup from DATABASE (not Clerk)
-    const hasUserName = !!(profile?.full_name);
+    const hasUserName = !!(profile?.fullName);
     const hasBusinessName = business?.name_customized === true; // Use intent flag instead of string comparison
-    const hasPhoneNumber = !!(profile?.phone_e164);
+    const hasPhoneNumber = !!(profile?.phoneE164);
     const hasNameAndBusiness = hasUserName && hasBusinessName && hasPhoneNumber;
 
     // Check status flags

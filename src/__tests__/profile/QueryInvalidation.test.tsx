@@ -5,7 +5,7 @@ import { waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
-import { useProfileUpdate } from '@/hooks/useProfileUpdate';
+import { useProfileOperations } from '@/hooks/useProfileOperations';
 
 // Mock toast
 const mockToast = vi.fn();
@@ -73,10 +73,10 @@ describe('Query Invalidation', () => {
 
   describe('Exact Query Key Alignment', () => {
     it('invalidates all agreed-upon query keys on success', async () => {
-      const { result } = renderHookWithProviders(() => useProfileUpdate());
+      const { result } = renderHookWithProviders(() => useProfileOperations());
       
       // Trigger mutation
-      result.current.mutate({
+      result.current.updateProfile.mutate({
         fullName: 'Alex Rivera',
         businessName: 'Tenfour Co',
         phoneRaw: '5551234567'
@@ -84,7 +84,7 @@ describe('Query Invalidation', () => {
       
       // Wait for mutation to complete
       await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
+        expect(result.current.updateProfile.isSuccess).toBe(true);
       });
       
       // Assert exact query keys are invalidated
@@ -98,16 +98,16 @@ describe('Query Invalidation', () => {
     });
 
     it('does not use legacy/wrong query keys', async () => {
-      const { result } = renderHookWithProviders(() => useProfileUpdate());
+      const { result } = renderHookWithProviders(() => useProfileOperations());
       
-      result.current.mutate({
+      result.current.updateProfile.mutate({
         fullName: 'Alex Rivera',
         businessName: 'Tenfour Co', 
         phoneRaw: '5551234567'
       });
       
       await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
+        expect(result.current.updateProfile.isSuccess).toBe(true);
       });
       
       // Assert these wrong keys are NOT used
@@ -120,16 +120,16 @@ describe('Query Invalidation', () => {
 
   describe('Custom Event Dispatch', () => {
     it('dispatches business-updated event on success', async () => {
-      const { result } = renderHookWithProviders(() => useProfileUpdate());
+      const { result } = renderHookWithProviders(() => useProfileOperations());
       
-      result.current.mutate({
+      result.current.updateProfile.mutate({
         fullName: 'Alex Rivera',
         businessName: 'Tenfour Co',
         phoneRaw: '5551234567'
       });
       
       await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
+        expect(result.current.updateProfile.isSuccess).toBe(true);
       });
       
       // Assert custom event is dispatched
@@ -154,16 +154,16 @@ describe('Query Invalidation', () => {
         })
       );
       
-      const { result } = renderHookWithProviders(() => useProfileUpdate());
+      const { result } = renderHookWithProviders(() => useProfileOperations());
       
-      result.current.mutate({
+      result.current.updateProfile.mutate({
         fullName: 'Alex Rivera',
         businessName: 'Tenfour Co',
         phoneRaw: '5551234567'
       });
       
       await waitFor(() => {
-        expect(result.current.isError).toBe(true);
+        expect(result.current.updateProfile.isError).toBe(true);
       });
       
       // Assert no queries were invalidated on error
@@ -183,16 +183,16 @@ describe('Query Invalidation', () => {
 
   describe('Toast Notifications', () => {
     it('shows success toast with correct message', async () => {
-      const { result } = renderHookWithProviders(() => useProfileUpdate());
+      const { result } = renderHookWithProviders(() => useProfileOperations());
       
-      result.current.mutate({
+      result.current.updateProfile.mutate({
         fullName: 'Alex Rivera',
         businessName: 'Tenfour Co',
         phoneRaw: '5551234567'
       });
       
       await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
+        expect(result.current.updateProfile.isSuccess).toBe(true);
       });
       
       expect(mockToast).toHaveBeenCalledWith({
@@ -213,16 +213,16 @@ describe('Query Invalidation', () => {
         })
       );
       
-      const { result } = renderHookWithProviders(() => useProfileUpdate());
+      const { result } = renderHookWithProviders(() => useProfileOperations());
       
-      result.current.mutate({
+      result.current.updateProfile.mutate({
         fullName: 'Alex Rivera',
         businessName: 'Tenfour Co',
         phoneRaw: 'invalid-phone'
       });
       
       await waitFor(() => {
-        expect(result.current.isError).toBe(true);
+        expect(result.current.updateProfile.isError).toBe(true);
       });
       
       // Should show the exact server error message, not generic fallback
@@ -240,16 +240,16 @@ describe('Query Invalidation', () => {
         })
       );
       
-      const { result } = renderHookWithProviders(() => useProfileUpdate());
+      const { result } = renderHookWithProviders(() => useProfileOperations());
       
-      result.current.mutate({
+      result.current.updateProfile.mutate({
         fullName: 'Alex Rivera',
         businessName: 'Tenfour Co',
         phoneRaw: '5551234567'
       });
       
       await waitFor(() => {
-        expect(result.current.isError).toBe(true);
+        expect(result.current.updateProfile.isError).toBe(true);
       });
       
       expect(mockToast).toHaveBeenCalledWith({

@@ -27,8 +27,8 @@ export function useOnboardingState() {
 
   const ctx: OnbCtx = useMemo(() => ({
     profile: { 
-      fullName: profile?.full_name ?? null, 
-      phoneE164: profile?.phone_e164 ?? null 
+      fullName: profile?.fullName ?? null, 
+      phoneE164: profile?.phoneE164 ?? null 
     },
     business: { 
       name: business?.name ?? null,
