@@ -566,21 +566,27 @@ export type Database = {
           clerk_user_id: string | null
           created_at: string
           email: string
+          full_name: string | null
           id: string
+          phone_e164: string | null
           updated_at: string
         }
         Insert: {
           clerk_user_id?: string | null
           created_at?: string
           email: string
+          full_name?: string | null
           id: string
+          phone_e164?: string | null
           updated_at?: string
         }
         Update: {
           clerk_user_id?: string | null
           created_at?: string
           email?: string
+          full_name?: string | null
           id?: string
+          phone_e164?: string | null
           updated_at?: string
         }
         Relationships: []

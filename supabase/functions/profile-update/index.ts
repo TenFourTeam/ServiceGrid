@@ -64,11 +64,12 @@ serve(async (req) => {
 
     const phoneE164 = normalizeToE164(body.phoneRaw);
 
-    // Update user profile (name)
+    // Update user profile (name and phone)
     const { error: profileError } = await ctx.supaAdmin
       .from('profiles')
       .update({ 
-        email: ctx.email // We don't have full_name column, but keep email updated
+        full_name: body.fullName,
+        phone_e164: phoneE164
       })
       .eq('id', ctx.userId);
 

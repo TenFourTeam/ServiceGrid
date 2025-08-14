@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import BusinessLogo from '@/components/BusinessLogo';
 import { useState, useEffect } from 'react';
 import { useAuth as useClerkAuth, useUser } from '@clerk/clerk-react';
-import { edgeFetchJson, edgeFetch } from '@/utils/edgeApi';
+import { edgeFetch } from '@/utils/edgeApi';
 import { toast as sonnerToast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import ConnectBanner from '@/components/Stripe/ConnectBanner';
@@ -16,7 +16,6 @@ import { useDashboardData } from '@/hooks/useDashboardData';
 import { BusinessMembersList } from '@/components/Business/BusinessMembersList';
 import { AuditLogsList } from '@/components/Business/AuditLogsList';
 import { useBusinessRole } from '@/hooks/useBusinessRole';
-
 import { useProfileUpdate } from '@/hooks/useProfileUpdate';
 import { useToast } from '@/hooks/use-toast';
 import { useFocusPulse } from '@/hooks/useFocusPulse';
@@ -115,7 +114,7 @@ export default function SettingsPage() {
   async function refreshSubscription() {
     try {
       setSubLoading(true);
-      const data = await edgeFetchJson('check-subscription', getToken, {
+      const data = await edgeFetch('check-subscription', getToken, {
         method: 'POST'
       });
       setSub(data || null);
@@ -127,11 +126,10 @@ export default function SettingsPage() {
   }
   async function startCheckout(plan: 'monthly' | 'yearly') {
     try {
-      const data = await edgeFetchJson('create-checkout', getToken, {
+      const data = await edgeFetch('create-checkout', getToken, {
         method: 'POST',
-        body: {
-          plan
-        }
+        body: JSON.stringify({ plan }),
+        headers: { 'Content-Type': 'application/json' }
       });
       const url = (data as any)?.url as string | undefined;
       if (!url) throw new Error('No checkout URL');
@@ -142,7 +140,7 @@ export default function SettingsPage() {
   }
   async function openPortal() {
     try {
-      const data = await edgeFetchJson('customer-portal', getToken, {
+      const data = await edgeFetch('customer-portal', getToken, {
         method: 'POST'
       });
       const url = (data as any)?.url as string | undefined;
@@ -154,7 +152,7 @@ export default function SettingsPage() {
   }
   async function handleStripeConnect() {
     try {
-      const data = await edgeFetchJson('connect-onboarding-link', getToken, {
+      const data = await edgeFetch('connect-onboarding-link', getToken, {
         method: 'POST'
       });
       const url = (data as any)?.url as string | undefined;
@@ -281,7 +279,7 @@ export default function SettingsPage() {
     if (!isSignedIn) return;
     (async () => {
       try {
-        const data = await edgeFetchJson('get-business', getToken);
+        const data = await edgeFetch('get-business', getToken);
         const b = (data as any)?.business;
         if (b?.id) {
           store.setBusiness({
@@ -471,7 +469,7 @@ export default function SettingsPage() {
               onRefresh={() => window.location.reload()} 
               onDisconnect={async () => {
               try {
-                await edgeFetchJson('connect-disconnect', getToken, { method: 'POST' });
+                await edgeFetch('connect-disconnect', getToken, { method: 'POST' });
                 window.location.reload();
                 sonnerToast.success('Disconnected from Stripe');
               } catch (e: any) {
