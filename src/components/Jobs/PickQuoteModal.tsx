@@ -20,9 +20,20 @@ const [query, setQuery] = useState("");
 const [busy, setBusy] = useState(false);
 const [selectedId, setSelectedId] = useState<string | null>(null);
   const quotes = useMemo(() => {
-    // For now, return empty array since quotes aren't in dashboard data yet
-    const allQuotes: any[] = [];
-    let rows = allQuotes;
+    const allQuotes = dashboardData?.quotes || [];
+    
+    // Map quotes to include customer info
+    const quotesWithCustomer = allQuotes.map((q: any) => ({
+      id: q.id,
+      number: q.number,
+      total: q.total,
+      status: q.status,
+      customerId: q.customer_id || q.customerId,
+      customerName: q.customers?.name || q.customerName,
+      customerEmail: q.customers?.email || q.customerEmail,
+    }));
+    
+    let rows = quotesWithCustomer;
     if (customerId) rows = rows.filter((r) => r.customerId === customerId);
     if (!query.trim()) return rows;
     const q = query.toLowerCase();
