@@ -74,7 +74,7 @@ serve(async (req) => {
     // 1) Upsert profile by clerk_user_id
     let { data: profile } = await supabase
       .from('profiles')
-      .select('id, default_business_id')
+      .select('id, default_business_id, full_name')
       .eq('clerk_user_id', clerkUserId)
       .maybeSingle();
 
@@ -84,7 +84,7 @@ serve(async (req) => {
       const { data: newProfile, error: profileError } = await supabase
         .from('profiles')
         .insert({ clerk_user_id: clerkUserId, email: email || '' })
-        .select('id, default_business_id')
+        .select('id, default_business_id, full_name')
         .single();
 
       if (profileError) {
@@ -107,24 +107,20 @@ serve(async (req) => {
 
     const businessId = defaultBiz.id;
 
-    // 3) Sync name from Clerk to DB (only if not user-controlled)
+    // 3) One-time name sync from Clerk to DB (only if profile has no name)
     const clerkFirstName = (payload as any).first_name || (payload as any).firstName || '';
     const clerkLastName = (payload as any).last_name || (payload as any).lastName || '';
     const clerkFullName = [clerkFirstName, clerkLastName].filter(Boolean).join(' ').trim() || 
                          (payload as any).full_name || (payload as any).fullName || '';
 
-    if (clerkFullName) {
-      console.log(`📝 [clerk-bootstrap] Syncing name from Clerk: "${clerkFullName}"`);
+    if (clerkFullName && !profile.full_name) {
+      console.log(`📝 [clerk-bootstrap] Initial name sync from Clerk: "${clerkFullName}"`);
       
       const { error: nameError } = await supabase
         .from('profiles')
-        .update({
-          full_name: clerkFullName,
-          name_source: 'clerk',
-          name_last_synced_at: new Date().toISOString()
-        })
+        .update({ full_name: clerkFullName })
         .eq('id', profile.id)
-        .or('name_source.is.null,name_source.neq.user'); // Only update if not user-controlled
+        .is('full_name', null); // Only update if no name exists
 
       if (nameError) {
         console.warn('⚠️ [clerk-bootstrap] Name sync failed (non-blocking):', nameError);

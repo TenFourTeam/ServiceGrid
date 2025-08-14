@@ -23,7 +23,7 @@ export function ProfileCompletionDebug() {
         <div>Clerk User: {user.firstName || user.fullName || 'No name'}</div>
         <div>DB Profile Name: {profile?.fullName || 'None'}</div>
         <div>DB Profile Phone: {profile?.phoneE164 || 'None'}</div>
-        <div>DB Name Source: {(profile as any)?.name_source || 'None'}</div>
+        <div>DB Profile Phone: {profile?.phoneE164 || 'None'}</div>
         <div>Business Name: "{business?.name || 'None'}"</div>
         <div>Business Name Valid: {business?.name?.trim() ? 'Yes' : 'No'}</div>
         <div>Progress: {onboarding.completionPercentage}%</div>

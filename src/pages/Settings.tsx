@@ -228,14 +228,14 @@ export default function SettingsPage() {
       return;
     }
 
-    // Only include business name in update if user has actually modified it
+    // Always include current values to ensure persistence
     const input: { fullName: string; phoneRaw: string; businessName?: string } = { 
       fullName: userName.trim(), 
       phoneRaw: businessPhone.trim() 
     };
     
-    // Only include businessName if user has actually changed it
-    if (businessNameModified && businessName.trim()) {
+    // Always include business name to ensure it persists
+    if (businessName.trim()) {
       input.businessName = businessName.trim();
     }
     

@@ -81,14 +81,12 @@ serve(async (req) => {
 
     const phoneE164 = normalizeToE164(input.phoneRaw || '');
 
-    // Update user profile (name and phone) - mark as user-controlled
+    // Update user profile (name and phone)
     const { error: profileError } = await ctx.supaAdmin
       .from('profiles')
       .update({ 
         full_name: input.fullName,
-        phone_e164: phoneE164,
-        name_source: 'user',
-        name_last_synced_at: new Date().toISOString()
+        phone_e164: phoneE164
       })
       .eq('id', ctx.userId);
 
@@ -112,7 +110,7 @@ serve(async (req) => {
       .from('businesses')
       .update(updateData)
       .eq('id', ctx.businessId)
-      .select('id,name,phone,name_customized')
+      .select('id,name,phone')
       .maybeSingle();
 
     if (businessError) {
@@ -137,19 +135,17 @@ serve(async (req) => {
           resource_id: business.id,
           details: { 
             field: 'name',
-            new_value: business.name,
-            name_customized: business.name_customized
+            new_value: business.name
           }
         });
     }
 
-    console.log(`🎉 [profile-update] Update successful - Business: ${business.name} (customized: ${business.name_customized})`);
+    console.log(`🎉 [profile-update] Update successful - Business: ${business.name}`);
 
     return json({ 
       data: {
         fullName: input.fullName,
         businessName: business.name,
-        nameCustomized: business.name_customized,
         phoneE164: business.phone,
       }
     }, 200);
