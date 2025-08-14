@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import BusinessLogo from '@/components/BusinessLogo';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth as useClerkAuth, useUser } from '@clerk/clerk-react';
 import { edgeFetch } from '@/utils/edgeApi';
 import { toast as sonnerToast } from 'sonner';
@@ -176,24 +176,26 @@ export default function SettingsPage() {
     }
   }, [profile, isHydrated]);
 
-  // Handle focus from onboarding navigation
+  // Handle focus from onboarding navigation - run once per navigation
+  const ranFocusRef = useRef(false);
+  
   useEffect(() => {
     const state = location.state as any;
-    if (state?.focus) {
-      const timer = setTimeout(() => {
-        if (state.focus === 'profile') {
-          focusProfile();
-        } else if (state.focus === 'bank') {
-          focusBank();
-        } else if (state.focus === 'subscription') {
-          focusSubscription();
-        }
-        // Clear state to prevent re-triggering
-        navigate('.', { replace: true, state: null });
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [location.state, focusProfile, focusBank, focusSubscription, navigate]);
+    if (ranFocusRef.current) return;
+    if (!state?.focus) return;
+
+    ranFocusRef.current = true;
+
+    // Use the robust focus method
+    if (state.focus === 'profile') focusProfile();
+    if (state.focus === 'bank') focusBank();
+    if (state.focus === 'subscription') focusSubscription();
+
+    // Clear nav state after scheduling (not before)
+    navigate('.', { replace: true, state: null });
+    
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key]); // depend on navigation, not changing callbacks
 
   useEffect(() => {
     if (!userLoaded || !user) return;
@@ -316,7 +318,7 @@ export default function SettingsPage() {
         <Card 
           ref={profileRef}
           className={cn(
-            "transition-all duration-300",
+            "transition-all duration-300 scroll-mt-20 focus-section",
             profilePulse && "ring-2 ring-primary/60 shadow-lg scale-[1.02]"
           )}
         >
@@ -457,7 +459,7 @@ export default function SettingsPage() {
         <Card 
           ref={bankRef}
           className={cn(
-            "transition-all duration-300",
+            "transition-all duration-300 scroll-mt-20 focus-section",
             bankPulse && "ring-2 ring-primary/60 shadow-lg scale-[1.02]"
           )}
         >
@@ -497,7 +499,7 @@ export default function SettingsPage() {
         <Card 
           ref={subscriptionRef}
           className={cn(
-            "transition-all duration-300",
+            "transition-all duration-300 scroll-mt-20 focus-section",
             subscriptionPulse && "ring-2 ring-primary/60 shadow-lg scale-[1.02]"
           )}
         >
