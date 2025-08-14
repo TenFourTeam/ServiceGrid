@@ -56,7 +56,7 @@ export function useOnboardingState(): OnboardingState {
     const profileComplete = !!(
       profile?.fullName?.trim() &&
       profile?.phoneE164 &&
-      business?.nameCustomized === true
+      business?.name?.trim()
     );
 
     const hasContent = (jobsCount ?? 0) > 0 || (quotesCount ?? 0) > 0;
