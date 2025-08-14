@@ -1,6 +1,7 @@
 import { useUser } from '@clerk/clerk-react';
 import { useStore } from '@/store/useAppStore';
 import { useDashboardData } from '@/hooks/useDashboardData';
+import { useProfile } from '@/queries/useProfile';
 import { useOnboardingState } from '@/onboarding/useOnboardingState';
 
 /**
@@ -10,6 +11,7 @@ export function ProfileCompletionDebug() {
   const { user } = useUser();
   const { business } = useStore();
   const { data: dashboardData } = useDashboardData();
+  const { data: profile } = useProfile();
   const onboarding = useOnboardingState();
 
   if (!user) return null;
@@ -19,13 +21,15 @@ export function ProfileCompletionDebug() {
       <h3 className="font-semibold mb-2">Profile Completion Debug</h3>
       
       <div className="space-y-1">
-        <div>User: {user.firstName || user.fullName || 'No name'}</div>
+        <div>Clerk User: {user.firstName || user.fullName || 'No name'}</div>
+        <div>DB Profile Name: {profile?.full_name || 'None'}</div>
+        <div>DB Profile Phone: {profile?.phone_e164 || 'None'}</div>
         <div>Local Business: {business?.name || 'None'}</div>
-        <div>Local Phone: {business?.phone || 'None'}</div>
         <div>Dashboard Business: {dashboardData?.business?.name || 'None'}</div>
         <div>Dashboard Phone: {dashboardData?.business?.phone || 'None'}</div>
+        <div>Current Step: {onboarding.currentStepId || 'Complete'}</div>
         <div>Progress: {onboarding.progressPct}%</div>
-        <div>Has Name & Business: {onboarding.hasNameAndBusiness ? '✅' : '❌'}</div>
+        <div>Profile Complete: {onboarding.completionByStep.profile ? '✅' : '❌'}</div>
         <div>Next Action: {onboarding.nextAction}</div>
       </div>
 

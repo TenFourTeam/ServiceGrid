@@ -15,19 +15,30 @@ export function useProfileUpdate() {
 
   return useMutation({
     mutationFn: async (input: ProfileUpdatePayload) => {
-      console.info('[useProfileUpdate] mutating', { url: fn('profile-update'), hasName: !!input.fullName, hasBusiness: !!input.businessName, hasPhone: !!input.phoneRaw });
-      return await edgeRequest(fn('profile-update'), {
+      console.info('[useProfileUpdate] mutation started', { 
+        url: fn('profile-update'), 
+        payload: input,
+        hasName: !!input.fullName, 
+        hasBusiness: !!input.businessName, 
+        hasPhone: !!input.phoneRaw 
+      });
+      
+      const result = await edgeRequest(fn('profile-update'), {
         method: 'POST',
         body: JSON.stringify(input),
       });
+      
+      console.info('[useProfileUpdate] mutation completed successfully', result);
+      return result;
     },
     onSuccess: (data) => {
       console.log('Profile update successful:', data);
       
-      // Re-fetch server truth that drives onboarding progress
-      queryClient.invalidateQueries({ queryKey: ['dashboard-data'] });
-      queryClient.invalidateQueries({ queryKey: ['business'] });
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      // Align with unified onboarding query keys
+      queryClient.invalidateQueries({ queryKey: ['profile.current'] });
+      queryClient.invalidateQueries({ queryKey: ['business.current'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard.summary'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-data'] }); // legacy compatibility
       
       // Force dashboard data refresh to update onboarding state
       window.dispatchEvent(new CustomEvent('business-updated'));

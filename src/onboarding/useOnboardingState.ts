@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useUser } from '@clerk/clerk-react';
 import { useStore } from '@/store/useAppStore';
 import { useDashboardData } from '@/hooks/useDashboardData';
+import { useProfile } from '@/queries/useProfile';
 import { steps, stepOrder, type OnbCtx, type StepId } from './steps';
 
 function clamp(n: number, min = 0, max = 100) { 
@@ -14,11 +15,12 @@ export function useOnboardingState() {
   const { user } = useUser();
   const { business } = useStore();
   const { data: dashboardData } = useDashboardData();
+  const { data: profile } = useProfile();
 
   const ctx: OnbCtx = useMemo(() => ({
     profile: { 
-      fullName: user?.fullName ?? user?.firstName ?? null, 
-      phoneE164: dashboardData?.business?.phone ?? null 
+      fullName: profile?.full_name ?? null, 
+      phoneE164: profile?.phone_e164 ?? null 
     },
     business: { 
       name: dashboardData?.business?.name ?? business?.name ?? null 
@@ -32,7 +34,7 @@ export function useOnboardingState() {
       bankLinked: !!dashboardData?.stripeStatus?.chargesEnabled, 
       subscribed: !!dashboardData?.subscription?.subscribed 
     }
-  }), [user, business, dashboardData]);
+  }), [profile, business, dashboardData]);
 
   const completionByStep: Record<StepId, boolean> = useMemo(() => {
     const res = {} as Record<StepId, boolean>;
