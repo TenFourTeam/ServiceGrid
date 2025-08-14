@@ -16,16 +16,13 @@ export interface ApiResponse<T = any> {
 class ApiClient {
   private getAuthHeader: () => Promise<Record<string, string>>;
   private onAuthError: (status: number, once: boolean) => Promise<'retry' | 'fail'>;
-  private emit: (event: string, data?: any) => void;
 
   constructor(
     getAuthHeader: () => Promise<Record<string, string>>,
-    onAuthError: (status: number, once: boolean) => Promise<'retry' | 'fail'>,
-    emit: (event: string, data?: any) => void
+    onAuthError: (status: number, once: boolean) => Promise<'retry' | 'fail'>
   ) {
     this.getAuthHeader = getAuthHeader;
     this.onAuthError = onAuthError;
-    this.emit = emit;
   }
 
   async request<T = any>(path: string, options: ApiClientOptions = {}, tried = false): Promise<ApiResponse<T>> {
@@ -72,7 +69,6 @@ class ApiClient {
       // Handle other auth errors
       if (response.status === 401 && tried) {
         await this.onAuthError(response.status, true);
-        this.emit('auth:signed_out');
       }
 
       // Parse response
@@ -96,11 +92,6 @@ class ApiClient {
           status: 408,
         };
       }
-
-      this.emit('auth:error', { 
-        code: 'network_error', 
-        error: error.message 
-      });
 
       return {
         error: error.message || 'Network error',
@@ -129,7 +120,7 @@ class ApiClient {
 
 // Hook to get configured API client
 export function useApiClient() {
-  const { snapshot, refreshAuth, emit } = useAuthSnapshot();
+  const { snapshot, refreshAuth } = useAuthSnapshot();
 
   const getAuthHeader = async (): Promise<Record<string, string>> => {
     if (snapshot.token) {
@@ -154,12 +145,11 @@ export function useApiClient() {
         return 'retry';
       } catch (error) {
         console.error('[ApiClient] Auth refresh failed:', error);
-        emit('auth:error', { code: 'refresh_failed', error });
         return 'fail';
       }
     }
     return 'fail';
   };
 
-  return new ApiClient(getAuthHeader, onAuthError, emit);
+  return new ApiClient(getAuthHeader, onAuthError);
 }

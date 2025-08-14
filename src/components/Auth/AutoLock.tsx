@@ -3,7 +3,7 @@ import { useAuthSnapshot } from "@/auth";
 
 // Auto-lock system with cross-tab sync and activity tracking
 export default function AutoLock() {
-  const { snapshot, lockAuth } = useAuthSnapshot();
+  const { snapshot, signOut } = useAuthSnapshot();
   const idleTimeoutRef = useRef<NodeJS.Timeout>();
   const activityTimeoutRef = useRef<NodeJS.Timeout>();
   const lastActivityRef = useRef(Date.now());
@@ -30,7 +30,7 @@ export default function AutoLock() {
       
       // Set new idle timeout
       idleTimeoutRef.current = setTimeout(() => {
-        lockAuth();
+        signOut();
       }, IDLE_TIMEOUT);
       
       // Set activity check timer
@@ -40,7 +40,7 @@ export default function AutoLock() {
     const checkActivity = () => {
       const timeSinceActivity = Date.now() - lastActivityRef.current;
       if (timeSinceActivity >= IDLE_TIMEOUT) {
-        lockAuth();
+        signOut();
       } else {
         // Schedule next check
         activityTimeoutRef.current = setTimeout(checkActivity, ACTIVITY_CHECK_INTERVAL);
@@ -80,7 +80,7 @@ export default function AutoLock() {
       channelRef.current?.removeEventListener('message', handleChannelMessage);
       channelRef.current?.close();
     };
-  }, [snapshot.phase, lockAuth]);
+  }, [snapshot.phase, signOut]);
 
   return null;
 }

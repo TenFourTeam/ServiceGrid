@@ -27,7 +27,6 @@ export function useAuthCompat() {
     // Additional snapshot data not available in Clerk
     tenantId: snapshot.tenantId,
     roles: snapshot.roles,
-    isLocked: snapshot.phase === 'locked',
     
     // For compatibility with existing code
     sessionId: clerkAuth.sessionId,

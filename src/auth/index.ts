@@ -1,5 +1,5 @@
 // Re-export all auth components and hooks for easy importing
-export { AuthKernel, useAuthSnapshot, useAuthEvent } from './AuthKernel';
+export { AuthKernel, useAuthSnapshot } from './AuthKernel';
 export { AuthBoundary } from './AuthBoundary';
 export { useApiClient } from './ApiClient';
 export { default as AuthErrorBoundary } from './AuthErrorBoundary';
@@ -31,6 +31,5 @@ export function useAuth() {
     // Additional snapshot data
     tenantId: snapshot.tenantId,
     roles: snapshot.roles,
-    isLocked: snapshot.phase === 'locked',
   };
 }

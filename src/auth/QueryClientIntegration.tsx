@@ -1,6 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useAuthSnapshot, useAuthEvent } from "./AuthKernel";
+import { useAuthSnapshot } from "./AuthKernel";
 
 /**
  * Integrates QueryClient with auth state changes
@@ -11,19 +11,22 @@ import { useAuthSnapshot, useAuthEvent } from "./AuthKernel";
 export function QueryClientIntegration() {
   const queryClient = useQueryClient();
   const { snapshot } = useAuthSnapshot();
+  const previousPhaseRef = useRef(snapshot.phase);
 
-  // Clear cache on sign out
-  useAuthEvent('auth:signed_out', () => {
-    queryClient.clear();
-  });
+  // Clear cache on sign out and handle phase changes
+  useEffect(() => {
+    const previousPhase = previousPhaseRef.current;
+    previousPhaseRef.current = snapshot.phase;
 
-  // Refetch visible queries when auth state changes (token refresh, tenant switch)
-  useAuthEvent('auth:phase_changed', ({ from, to }) => {
-    if (from !== 'authenticated' && to === 'authenticated') {
-      // Just became authenticated - refetch all visible queries
+    if (snapshot.phase === 'signed_out') {
+      queryClient.clear();
+    }
+
+    // Refetch visible queries when becoming authenticated
+    if (previousPhase !== 'authenticated' && snapshot.phase === 'authenticated') {
       queryClient.refetchQueries({ type: 'active' });
     }
-  });
+  }, [snapshot.phase, queryClient]);
 
   // Invalidate all queries when claims version changes (tenant switch, role change)
   useEffect(() => {
