@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { edgeRequest, ApiError } from '@/utils/edgeApi';
 import { fn } from '@/utils/functionUrl';
 import { useToast } from '@/hooks/use-toast';
+import { useStore } from '@/store/useAppStore';
 
 export type ProfileUpdatePayload = {
   fullName: string;
@@ -21,6 +22,7 @@ export type ProfileUpdateResponse = {
 export function useProfileUpdate() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { setBusiness } = useStore();
 
   return useMutation({
     mutationFn: async (input: ProfileUpdatePayload) => {
@@ -48,27 +50,16 @@ export function useProfileUpdate() {
     onSuccess: (data: ProfileUpdateResponse) => {
       console.log('Profile update successful:', data, 'nameCustomized:', data.data.nameCustomized);
       
-      // Immediately update the business store with name_customized status
-      const currentBusiness = JSON.parse(localStorage.getItem('app-state') || '{}')?.business;
-      if (currentBusiness) {
-        const updatedBusiness = {
-          ...currentBusiness,
-          name: data.data.businessName,
-          name_customized: data.data.nameCustomized
-        };
-        
-        // Update localStorage directly for immediate effect
-        const currentState = JSON.parse(localStorage.getItem('app-state') || '{}');
-        localStorage.setItem('app-state', JSON.stringify({
-          ...currentState,
-          business: updatedBusiness
-        }));
-        
-        // Trigger a custom event to notify components of the immediate update
-        window.dispatchEvent(new CustomEvent('profile-updated', { 
-          detail: { nameCustomized: data.data.nameCustomized } 
-        }));
-      }
+      // Immediately update the business store (optimistic update)
+      setBusiness({
+        name: data.data.businessName,
+        name_customized: data.data.nameCustomized
+      });
+      
+      // Trigger a custom event to notify components of the immediate update
+      window.dispatchEvent(new CustomEvent('profile-updated', { 
+        detail: { nameCustomized: data.data.nameCustomized } 
+      }));
       
       // Align with unified onboarding query keys
       queryClient.invalidateQueries({ queryKey: ['profile.current'] });
