@@ -11,11 +11,16 @@ export function useFocusPulse<T extends HTMLElement>() {
     // Respect user's motion preferences
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     
-    // Scroll into view
+    // Scroll into view with better positioning
     el.scrollIntoView({ 
       behavior: prefersReducedMotion ? 'auto' : 'smooth', 
-      block: 'center' 
+      block: 'start' 
     });
+    
+    // Add additional offset to ensure the element is well-positioned
+    setTimeout(() => {
+      window.scrollBy(0, -80);
+    }, prefersReducedMotion ? 0 : 300);
     
     // Trigger pulse animation
     setPulse(true);
