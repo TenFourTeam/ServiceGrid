@@ -5,6 +5,7 @@ import { requireCtx } from "../_lib/auth.ts";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 const json = (data: any, status = 200) => new Response(JSON.stringify(data), {
@@ -16,7 +17,7 @@ const ProfileUpdateSchema = z.object({
   fullName: z.string().trim().min(2, 'Enter your full name'),
   businessName: z.string().trim().min(2, 'Enter your business name')
     .refine(v => v.toLowerCase() !== 'my business', 'Please choose a real business name'),
-  phoneRaw: z.string().trim().min(7, 'Enter a valid phone number')
+  phoneRaw: z.string().trim().min(7, 'Enter a valid phone number').optional().or(z.literal(''))
 });
 
 function normalizeToE164(phone: string): string {
@@ -47,48 +48,23 @@ serve(async (req) => {
   }
 
   try {
-    console.log(JSON.stringify({ 
-      evt: 'profile.update.request', 
-      method: req.method,
-      url: req.url,
-      hasAuth: !!req.headers.get('authorization')
-    }));
-
     if (req.method !== 'POST') {
-      console.error(`Method ${req.method} not allowed for profile-update`);
       return json({ error: { code: "method_not_allowed", message: "Only POST method is allowed" }}, 405);
     }
 
-    console.log(JSON.stringify({ evt: 'profile.update.start', method: req.method }));
+    console.log('📝 [profile-update] Starting profile update');
 
     // Verify authentication and get context
-    let ctx;
-    try {
-      ctx = await requireCtx(req);
-      console.log(JSON.stringify({ 
-        evt: 'profile.update.auth_success', 
-        userUuid: ctx.userId, 
-        businessId: ctx.businessId,
-        clerkUserId: ctx.clerkUserId 
-      }));
-    } catch (authError) {
-      console.error(JSON.stringify({ 
-        evt: 'profile.update.auth_failed', 
-        error: authError,
-        authHeader: req.headers.get('authorization')?.substring(0, 20) + '...'
-      }));
-      throw authError;
-    }
+    const ctx = await requireCtx(req);
+    console.log(`✅ [profile-update] Auth context resolved - User: ${ctx.userId}, Business: ${ctx.businessId}`);
     
+    // Parse and validate request body
     const rawBody = await req.text();
-    console.log(JSON.stringify({ evt: 'profile.update.raw_body', bodyLength: rawBody.length }));
-    
     let parsedBody;
     try {
       parsedBody = JSON.parse(rawBody);
-      console.log(JSON.stringify({ evt: 'profile.update.parsed_body', parsedBody }));
     } catch (parseError) {
-      console.error(JSON.stringify({ evt: 'profile.update.parse_error', error: parseError, rawBody }));
+      console.error('❌ [profile-update] Invalid JSON:', parseError);
       return json({ error: { code: "invalid_json", message: "Invalid JSON in request body" }}, 400);
     }
     
@@ -96,18 +72,15 @@ serve(async (req) => {
     try {
       input = ProfileUpdateSchema.parse(parsedBody);
     } catch (validationError) {
-      console.error(JSON.stringify({ evt: 'profile.update.validation_error', error: validationError }));
-      return json({ error: { code: "validation_failed", message: "Invalid input data", details: validationError }}, 400);
+      console.error('❌ [profile-update] Validation failed:', validationError);
+      const firstError = validationError.issues?.[0];
+      const message = firstError ? firstError.message : 'Invalid input data';
+      return json({ error: { code: "validation_failed", message, details: validationError }}, 400);
     }
 
-    console.log(JSON.stringify({ 
-      evt: 'profile.update.validated', 
-      businessId: ctx.businessId, 
-      userUuid: ctx.userId,
-      input: input
-    }));
+    console.log(`🔄 [profile-update] Updating profile and business for user: ${ctx.userId}`);
 
-    const phoneE164 = normalizeToE164(input.phoneRaw);
+    const phoneE164 = normalizeToE164(input.phoneRaw || '');
 
     // Update user profile (name and phone)
     const { error: profileError } = await ctx.supaAdmin
@@ -119,8 +92,8 @@ serve(async (req) => {
       .eq('id', ctx.userId);
 
     if (profileError) {
-      console.error('Profile update failed:', profileError);
-      return json({ error: { code: "profile_update_failed", message: profileError.message }}, 400);
+      console.error('❌ [profile-update] Profile update failed:', profileError);
+      return json({ error: { code: "profile_update_failed", message: profileError.message }}, 500);
     }
 
     // Update business (name and phone)
@@ -133,18 +106,19 @@ serve(async (req) => {
       })
       .eq('id', ctx.businessId)
       .select('id,name,phone')
-      .single();
+      .maybeSingle();
 
     if (businessError) {
-      console.error('Business update failed:', businessError);
-      return json({ error: { code: "business_update_failed", message: businessError.message }}, 400);
+      console.error('❌ [profile-update] Business update failed:', businessError);
+      return json({ error: { code: "business_update_failed", message: businessError.message }}, 500);
     }
 
-    console.log(JSON.stringify({ 
-      evt: 'profile.update.success', 
-      businessId: ctx.businessId,
-      businessName: business.name
-    }));
+    if (!business) {
+      console.error('❌ [profile-update] Business not found or access denied');
+      return json({ error: { code: "forbidden", message: "Business not found or access denied" }}, 403);
+    }
+
+    console.log(`🎉 [profile-update] Update successful - Business: ${business.name}`);
 
     return json({ 
       data: {
@@ -152,19 +126,20 @@ serve(async (req) => {
         businessName: business.name,
         phoneE164: business.phone,
       }
-    });
+    }, 200);
 
-  } catch (e: any) {
-    console.error('Profile update error:', e);
+  } catch (error: any) {
+    console.error('💥 [profile-update] Unexpected error:', error);
     
-    // Handle Zod validation errors
-    if (e?.issues?.[0]) {
-      const msg = e.issues[0].message;
-      return json({ error: { code: "validation_error", message: msg }}, 400);
+    // Handle different types of auth errors with proper status codes
+    if (error?.message?.includes('not found') || error?.message?.includes('not owned by current user')) {
+      return json({ error: { code: 'forbidden', message: 'Access denied' }}, 403);
     }
     
-    const msg = e?.message || "Invalid input";
-    const status = e?.status ?? 500;
-    return json({ error: { code: "server_error", message: msg }}, status);
+    if (error?.message?.includes('Invalid') || error?.message?.includes('Unauthorized')) {
+      return json({ error: { code: 'auth_error', message: 'Invalid authentication' }}, 401);
+    }
+
+    return json({ error: { code: "server_error", message: error?.message || "Profile update failed" }}, 500);
   }
 });
