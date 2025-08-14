@@ -22,8 +22,8 @@ export function useBusiness() {
     queryKey: queryKeys.business.current(),
     queryFn: async () => {
       console.info('[useBusiness] fetching business from database');
-      const data = await edgeRequest(fn('get-business'));
-      return toBusinessUI(data) as BusinessUI;
+      const response = await edgeRequest(fn('get-business'));
+      return toBusinessUI(response.business) as BusinessUI;
     },
     staleTime: 30_000,
     retry: 2,
