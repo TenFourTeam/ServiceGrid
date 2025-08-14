@@ -21,6 +21,7 @@ import { useBusinessUpdate } from '@/hooks/useBusinessUpdate';
 import { useFocusPulse } from '@/hooks/useFocusPulse';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { formatPhoneInput, formatNameSuggestion } from '@/utils/validation';
+import { ProfileCompletionDebug } from '@/components/Auth/ProfileCompletionDebug';
 import { cn } from '@/utils/cn';
 export default function SettingsPage() {
   const store = useStore();
@@ -212,15 +213,27 @@ export default function SettingsPage() {
 
   // Handle business name changes with formatting suggestion
   const handleBusinessNameChange = (value: string) => {
+    console.log('Business name changed to:', value, 'isSignedIn:', isSignedIn);
     setBusinessName(value);
-    updateBusiness({ name: value });
+    if (isSignedIn && value.trim()) {
+      console.log('Calling updateBusiness with name:', value);
+      updateBusiness({ name: value });
+    } else {
+      console.log('Not calling updateBusiness - not signed in or empty value');
+    }
   };
 
   // Handle phone changes with real-time formatting
   const handlePhoneChange = (value: string) => {
     const formatted = formatPhoneInput(value);
+    console.log('Phone changed to:', formatted, 'isSignedIn:', isSignedIn);
     setBusinessPhone(formatted);
-    updateBusiness({ phone: formatted });
+    if (isSignedIn && formatted.trim()) {
+      console.log('Calling updateBusiness with phone:', formatted);
+      updateBusiness({ phone: formatted });
+    } else {
+      console.log('Not calling updateBusiness - not signed in or empty value');
+    }
   };
 
   // Get formatting suggestions
@@ -462,5 +475,6 @@ export default function SettingsPage() {
         </Card>
 
       </div>
+      <ProfileCompletionDebug />
     </AppLayout>;
 }

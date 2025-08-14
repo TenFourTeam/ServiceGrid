@@ -40,10 +40,25 @@ export function useOnboardingState(opts?: { enabled?: boolean }): OnboardingProg
     }
 
     // Check if user has set up their name, business name, and phone
+    // Use dashboard data for consistency since that comes from the database
     const hasUserName = !!(user?.firstName || user?.fullName);
-    const hasBusinessName = business?.name && business.name !== 'My Business';
-    const hasValidPhone = business?.phone && business.phone.replace(/\D/g, '').length >= 10;
+    const dashboardBusinessName = dashboardData.business?.name;
+    const dashboardPhone = dashboardData.business?.phone;
+    
+    const hasBusinessName = dashboardBusinessName && dashboardBusinessName !== 'My Business';
+    const hasValidPhone = dashboardPhone && dashboardPhone.replace(/\D/g, '').length >= 10;
     const hasNameAndBusiness = hasUserName && hasBusinessName && hasValidPhone;
+    
+    console.log('Onboarding check:', {
+      hasUserName,
+      hasBusinessName,
+      hasValidPhone,
+      hasNameAndBusiness,
+      dashboardBusinessName,
+      dashboardPhone,
+      localBusinessName: business?.name,
+      localPhone: business?.phone
+    });
 
     const hasCustomers = (dashboardData.counts?.customers ?? 0) > 0;
     const hasJobs = (dashboardData.counts?.jobs ?? 0) > 0;

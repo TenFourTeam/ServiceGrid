@@ -22,6 +22,9 @@ export function useBusinessUpdate() {
   const debouncedPendingData = useDebouncedValue(pendingData, 1000);
 
   const updateBusiness = useCallback(async (data: Partial<BusinessUpdateData>) => {
+    console.log('updateBusiness called with:', data);
+    console.log('Current business state:', store.business);
+    
     // Store pending changes locally immediately
     setPendingData(prev => ({ ...prev, ...data }));
     
@@ -30,16 +33,21 @@ export function useBusinessUpdate() {
       ...store.business,
       ...data
     });
-  }, [store]);
+    
+    console.log('Updated local store, pending data:', { ...pendingData, ...data });
+  }, [store, pendingData]);
 
   // Effect to handle debounced save
   useEffect(() => {
     if (!debouncedPendingData) return;
 
     const saveBusiness = async () => {
+      console.log('Starting business save with data:', debouncedPendingData);
       setIsUpdating(true);
       try {
+        console.log('Making API call to /update-business');
         const response = await apiClient.put('/update-business', debouncedPendingData);
+        console.log('API response:', response);
         
         if (response.error) {
           throw new Error(response.error);
