@@ -5,7 +5,7 @@ import { AuthBoundary, RequireAuth, PublicOnly } from "@/auth/AuthBoundary";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import LoadingScreen from "@/components/LoadingScreen";
 import { OnboardingErrorBoundary } from "@/components/ErrorBoundaries/FeatureErrorBoundary";
-// import ClerkBootstrap from "@/components/Auth/ClerkBootstrap"; // Temporarily disabled to prevent automatic profile creation
+import ClerkBootstrap from "@/components/Auth/ClerkBootstrap";
 const CalendarPage = lazy(() => import("./pages/Calendar"));
 const WorkOrdersPage = lazy(() => import("./pages/WorkOrders"));
 const QuotesPage = lazy(() => import("./pages/Quotes"));
@@ -50,7 +50,7 @@ function PrefetchRoutes() {
 
 const App = () => (
   <AppProviders>
-    {/* <ClerkBootstrap /> */} {/* Temporarily disabled - use ManualBootstrap component instead */}
+    <ClerkBootstrap />
     <ErrorBoundary>
       <Suspense fallback={<LoadingScreen />}>
         <PrefetchRoutes />
