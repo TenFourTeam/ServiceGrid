@@ -27,12 +27,13 @@ export function BusinessSync() {
         },
       };
       
-      // Only update if business data has changed
-      if (store.business.id !== authBusiness.id || store.business.name !== authBusiness.name) {
+      // Only update if business ID has changed (switching businesses)
+      // Don't overwrite local changes to name, phone, etc.
+      if (store.business.id !== authBusiness.id) {
         store.setBusiness(authBusiness);
       }
     }
-  }, [snapshot.phase, snapshot.business, store.business.id, store.business.name, store]);
+  }, [snapshot.phase, snapshot.business, store.business.id, store]);
 
   return null; // This is a side-effect only component
 }

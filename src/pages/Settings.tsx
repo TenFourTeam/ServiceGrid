@@ -17,6 +17,7 @@ import { BusinessMembersList } from '@/components/Business/BusinessMembersList';
 import { AuditLogsList } from '@/components/Business/AuditLogsList';
 import { useBusinessRole } from '@/hooks/useBusinessRole';
 import { DataFlowTest } from '@/components/Debug/DataFlowTest';
+import { useBusinessUpdate } from '@/hooks/useBusinessUpdate';
 export default function SettingsPage() {
   const store = useStore();
   const {
@@ -36,6 +37,7 @@ export default function SettingsPage() {
   const { user, isLoaded: userLoaded } = useUser();
   const [userName, setUserName] = useState('');
   const { data: roleData } = useBusinessRole(store.business.id);
+  const { updateBusiness, isUpdating, hasPendingChanges } = useBusinessUpdate();
   async function uploadLogoDark() {
     if (!isSignedIn) {
       toast.error('You must be signed in');
@@ -226,15 +228,24 @@ export default function SettingsPage() {
             </div>
             <div>
               <Label>Business Name</Label>
-              <Input value={store.business.name} onChange={e => store.setBusiness({
-              name: e.target.value
-            })} />
+              <div className="relative">
+                <Input 
+                  value={store.business.name} 
+                  onChange={e => updateBusiness({ name: e.target.value })} 
+                />
+                {(isUpdating || hasPendingChanges) && (
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                    {isUpdating ? 'Saving...' : 'Unsaved'}
+                  </div>
+                )}
+              </div>
             </div>
             <div>
               <Label>Phone</Label>
-              <Input value={store.business.phone} onChange={e => store.setBusiness({
-              phone: e.target.value
-            })} />
+              <Input 
+                value={store.business.phone} 
+                onChange={e => updateBusiness({ phone: e.target.value })} 
+              />
             </div>
           </CardContent>
         </Card>
