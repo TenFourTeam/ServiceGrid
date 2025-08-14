@@ -51,11 +51,37 @@ serve(async (req) => {
     }
 
     const clerkUserId = payload.sub as string;
-    const email = (payload as any).email as string | undefined;
+    
+    // Debug: Log the full payload to understand Google OAuth token structure
+    console.log('🔍 [clerk-bootstrap] Full Clerk token payload keys:', Object.keys(payload as any));
+    console.log('🔍 [clerk-bootstrap] Token payload sample:', JSON.stringify(payload, null, 2));
+    
+    // Extract email with multiple fallback strategies for different OAuth providers
+    let email = '';
+    const payloadAny = payload as any;
+    
+    // Try different possible email locations in the token
+    if (payloadAny.email) {
+      email = payloadAny.email;
+    } else if (payloadAny.email_addresses && Array.isArray(payloadAny.email_addresses) && payloadAny.email_addresses.length > 0) {
+      // Clerk sometimes stores emails in an array
+      email = payloadAny.email_addresses[0].email_address || payloadAny.email_addresses[0];
+    } else if (payloadAny.primary_email_address) {
+      email = payloadAny.primary_email_address;
+    } else if (payloadAny.emailAddresses && Array.isArray(payloadAny.emailAddresses) && payloadAny.emailAddresses.length > 0) {
+      email = payloadAny.emailAddresses[0].emailAddress || payloadAny.emailAddresses[0];
+    }
+    
+    console.log(`📧 [clerk-bootstrap] Extracted email: "${email}"`);
 
     if (!clerkUserId) {
       console.error('❌ [clerk-bootstrap] Invalid Clerk token - no user ID');
       return json({ error: { code: "auth_error", message: "Invalid Clerk token" }}, 401);
+    }
+    
+    if (!email) {
+      console.error('❌ [clerk-bootstrap] Could not extract email from Clerk token');
+      return json({ error: { code: "auth_error", message: "Could not extract email from authentication token" }}, 401);
     }
 
     console.log(`✅ [clerk-bootstrap] Verified Clerk user: ${clerkUserId}`);
@@ -161,10 +187,40 @@ serve(async (req) => {
     }
 
     // 3) One-time name sync from Clerk to DB (only if profile has no name)
-    const clerkFirstName = (payload as any).first_name || (payload as any).firstName || '';
-    const clerkLastName = (payload as any).last_name || (payload as any).lastName || '';
-    const clerkFullName = [clerkFirstName, clerkLastName].filter(Boolean).join(' ').trim() || 
-                         (payload as any).full_name || (payload as any).fullName || '';
+    // Extract name with multiple fallback strategies for different OAuth providers
+    let clerkFirstName = '';
+    let clerkLastName = '';
+    let clerkFullName = '';
+    
+    // Try different possible name locations in the token
+    if (payloadAny.first_name) {
+      clerkFirstName = payloadAny.first_name;
+    } else if (payloadAny.firstName) {
+      clerkFirstName = payloadAny.firstName;
+    } else if (payloadAny.given_name) {
+      clerkFirstName = payloadAny.given_name;
+    }
+    
+    if (payloadAny.last_name) {
+      clerkLastName = payloadAny.last_name;
+    } else if (payloadAny.lastName) {
+      clerkLastName = payloadAny.lastName;
+    } else if (payloadAny.family_name) {
+      clerkLastName = payloadAny.family_name;
+    }
+    
+    // Construct full name from parts or use direct full name
+    if (clerkFirstName || clerkLastName) {
+      clerkFullName = [clerkFirstName, clerkLastName].filter(Boolean).join(' ').trim();
+    } else if (payloadAny.full_name) {
+      clerkFullName = payloadAny.full_name;
+    } else if (payloadAny.fullName) {
+      clerkFullName = payloadAny.fullName;
+    } else if (payloadAny.name) {
+      clerkFullName = payloadAny.name;
+    }
+    
+    console.log(`👤 [clerk-bootstrap] Extracted name: "${clerkFullName}" (first: "${clerkFirstName}", last: "${clerkLastName}")`);
 
     if (clerkFullName && !profile.full_name) {
       console.log(`📝 [clerk-bootstrap] Initial name sync from Clerk: "${clerkFullName}"`);
