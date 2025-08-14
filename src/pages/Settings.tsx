@@ -9,7 +9,7 @@ import BusinessLogo from '@/components/BusinessLogo';
 import { useState, useEffect } from 'react';
 import { useAuth as useClerkAuth, useUser } from '@clerk/clerk-react';
 import { edgeFetchJson, edgeFetch } from '@/utils/edgeApi';
-import { toast } from 'sonner';
+import { toast as sonnerToast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import ConnectBanner from '@/components/Stripe/ConnectBanner';
 import { useDashboardData } from '@/hooks/useDashboardData';
@@ -17,7 +17,8 @@ import { BusinessMembersList } from '@/components/Business/BusinessMembersList';
 import { AuditLogsList } from '@/components/Business/AuditLogsList';
 import { useBusinessRole } from '@/hooks/useBusinessRole';
 import { DataFlowTest } from '@/components/Debug/DataFlowTest';
-import { useBusinessUpdate } from '@/hooks/useBusinessUpdate';
+import { useProfileUpdate } from '@/hooks/useProfileUpdate';
+import { useToast } from '@/hooks/use-toast';
 import { useFocusPulse } from '@/hooks/useFocusPulse';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { formatPhoneInput, formatNameSuggestion } from '@/utils/validation';
@@ -46,15 +47,16 @@ export default function SettingsPage() {
   const [businessName, setBusinessName] = useState('');
   const [businessPhone, setBusinessPhone] = useState('');
   const { data: roleData } = useBusinessRole(store.business.id);
-  const { updateBusiness, isUpdating, hasPendingChanges } = useBusinessUpdate();
+  const profileUpdate = useProfileUpdate();
+  const { toast } = useToast();
   const { ref: profileRef, pulse: profilePulse, focus: focusProfile } = useFocusPulse<HTMLDivElement>();
   async function uploadLogoDark() {
     if (!isSignedIn) {
-      toast.error('You must be signed in');
+      sonnerToast.error('You must be signed in');
       return;
     }
     if (!darkFile) {
-      toast.error('Please choose an image file');
+      sonnerToast.error('Please choose an image file');
       return;
     }
     try {
@@ -70,22 +72,22 @@ export default function SettingsPage() {
         store.setBusiness({
           logoUrl: url
         });
-        toast.success('Dark icon updated');
+        sonnerToast.success('Dark icon updated');
       }
     } catch (e: any) {
       console.error(e);
-      toast.error(e?.message || 'Failed to upload dark icon');
+      sonnerToast.error(e?.message || 'Failed to upload dark icon');
     } finally {
       setUploadingDark(false);
     }
   }
   async function uploadLogoLight() {
     if (!isSignedIn) {
-      toast.error('You must be signed in');
+      sonnerToast.error('You must be signed in');
       return;
     }
     if (!lightFile) {
-      toast.error('Please choose an image file');
+      sonnerToast.error('Please choose an image file');
       return;
     }
     try {
@@ -101,11 +103,11 @@ export default function SettingsPage() {
         store.setBusiness({
           lightLogoUrl: url
         });
-        toast.success('Light icon updated');
+        sonnerToast.success('Light icon updated');
       }
     } catch (e: any) {
       console.error(e);
-      toast.error(e?.message || 'Failed to upload light icon');
+      sonnerToast.error(e?.message || 'Failed to upload light icon');
     } finally {
       setUploadingLight(false);
     }
@@ -118,7 +120,7 @@ export default function SettingsPage() {
       });
       setSub(data || null);
     } catch (e: any) {
-      toast.error(e?.message || 'Failed to refresh subscription');
+      sonnerToast.error(e?.message || 'Failed to refresh subscription');
     } finally {
       setSubLoading(false);
     }
@@ -135,7 +137,7 @@ export default function SettingsPage() {
       if (!url) throw new Error('No checkout URL');
       window.open(url, '_blank');
     } catch (e: any) {
-      toast.error(e?.message || 'Failed to start checkout');
+      sonnerToast.error(e?.message || 'Failed to start checkout');
     }
   }
   async function openPortal() {
@@ -147,7 +149,7 @@ export default function SettingsPage() {
       if (!url) throw new Error('No portal URL');
       window.open(url, '_blank');
     } catch (e: any) {
-      toast.error(e?.message || 'Failed to open portal');
+      sonnerToast.error(e?.message || 'Failed to open portal');
     }
   }
   async function handleStripeConnect() {
@@ -158,7 +160,7 @@ export default function SettingsPage() {
       const url = (data as any)?.url as string | undefined;
       if (url) window.open(url, '_blank');
     } catch (e: any) {
-      toast.error(e?.message || 'Failed to start Stripe onboarding');
+      sonnerToast.error(e?.message || 'Failed to start Stripe onboarding');
     }
   }
   useEffect(() => {
@@ -204,36 +206,80 @@ export default function SettingsPage() {
           const existingMeta = (user.unsafeMetadata as any) || {};
           await user.update({ unsafeMetadata: { ...existingMeta, displayName: name } });
         } catch (err2: any) {
-          toast.error(err2?.message || err?.message || 'Failed to update name');
+          sonnerToast.error(err2?.message || err?.message || 'Failed to update name');
         }
       }
     }, 600);
     return () => clearTimeout(handle);
   }, [userName, userLoaded, user]);
 
+  const handleProfileSave = async () => {
+    if (!userName.trim() || !businessName.trim() || !businessPhone.trim()) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (userName.trim().length < 2) {
+      toast({
+        title: "Invalid name",
+        description: "Please enter your full name",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (businessName.trim().length < 2 || businessName.toLowerCase() === 'my business') {
+      toast({
+        title: "Invalid business name",
+        description: "Please choose a real business name",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (businessPhone.trim().length < 7) {
+      toast({
+        title: "Invalid phone",
+        description: "Please enter a valid phone number",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Update Clerk user first
+      if (user) {
+        await user.update({
+          firstName: userName.split(' ')[0],
+          lastName: userName.split(' ').slice(1).join(' ') || '',
+        });
+      }
+
+      // Then update profile and business in database
+      await profileUpdate.mutateAsync({
+        fullName: userName.trim(),
+        businessName: businessName.trim(),
+        phoneRaw: businessPhone.trim(),
+      });
+
+    } catch (error) {
+      console.error('Profile save error:', error);
+    }
+  };
+
   // Handle business name changes with formatting suggestion
   const handleBusinessNameChange = (value: string) => {
-    console.log('Business name changed to:', value, 'isSignedIn:', isSignedIn);
     setBusinessName(value);
-    if (isSignedIn && value.trim()) {
-      console.log('Calling updateBusiness with name:', value);
-      updateBusiness({ name: value });
-    } else {
-      console.log('Not calling updateBusiness - not signed in or empty value');
-    }
   };
 
   // Handle phone changes with real-time formatting
   const handlePhoneChange = (value: string) => {
     const formatted = formatPhoneInput(value);
-    console.log('Phone changed to:', formatted, 'isSignedIn:', isSignedIn);
     setBusinessPhone(formatted);
-    if (isSignedIn && formatted.trim()) {
-      console.log('Calling updateBusiness with phone:', formatted);
-      updateBusiness({ phone: formatted });
-    } else {
-      console.log('Not calling updateBusiness - not signed in or empty value');
-    }
   };
 
   // Get formatting suggestions
@@ -326,9 +372,9 @@ export default function SettingsPage() {
                     onChange={e => handleBusinessNameChange(e.target.value)} 
                     placeholder="Your business name"
                   />
-                  {(isUpdating || hasPendingChanges) && (
+                  {profileUpdate.isPending && (
                     <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                      {isUpdating ? 'Saving...' : 'Unsaved'}
+                      Saving...
                     </div>
                   )}
                 </div>
@@ -352,6 +398,16 @@ export default function SettingsPage() {
                 placeholder="(555) 123-4567"
                 type="tel"
               />
+            </div>
+            
+            <div className="pt-4">
+              <Button 
+                onClick={handleProfileSave}
+                disabled={profileUpdate.isPending || !userName.trim() || !businessName.trim() || !businessPhone.trim()}
+                className="w-full"
+              >
+                {profileUpdate.isPending ? 'Saving...' : 'Save Profile'}
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -458,9 +514,9 @@ export default function SettingsPage() {
               try {
                 await edgeFetchJson('connect-disconnect', getToken, { method: 'POST' });
                 window.location.reload();
-                toast.success('Disconnected from Stripe');
+                sonnerToast.success('Disconnected from Stripe');
               } catch (e: any) {
-                toast.error(e?.message || 'Failed to disconnect');
+                sonnerToast.error(e?.message || 'Failed to disconnect');
               }
             }} />
           </CardContent>

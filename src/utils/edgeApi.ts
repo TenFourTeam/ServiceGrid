@@ -6,6 +6,20 @@ import { getClerkTokenStrict } from "@/utils/clerkToken";
 
 export const SUPABASE_URL = "https://ijudkzqfriazabiosnvb.supabase.co";
 
+export class ApiError extends Error {
+  status: number;
+  code?: string;
+  details?: any;
+  
+  constructor(status: number, message: string, code?: string, details?: any) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.code = code;
+    this.details = details;
+  }
+}
+
 export type EdgeRequestOptions = {
   method?: string;
   body?: any;
@@ -84,4 +98,35 @@ export async function edgeFetch(
     return res.json();
   }
   return null;
+}
+
+// Improved edge request with proper error handling
+export async function edgeRequest(path: string, getToken: () => Promise<string | null>, init: EdgeRequestOptions = {}) {
+  const token = await getClerkTokenStrict(getToken);
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+    ...(init.headers || {}),
+  };
+  
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/${path}`, {
+    method: init.method || "GET",
+    headers,
+    body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
+  });
+  
+  const body = await (async () => { 
+    try { 
+      return await res.json(); 
+    } catch { 
+      return null; 
+    } 
+  })();
+
+  if (!res.ok) {
+    const msg = body?.error?.message || res.statusText || `HTTP ${res.status}`;
+    throw new ApiError(res.status, msg, body?.error?.code, body?.error?.details);
+  }
+  
+  return body?.data ?? body;
 }
