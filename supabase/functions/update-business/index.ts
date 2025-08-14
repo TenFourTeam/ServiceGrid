@@ -22,12 +22,25 @@ Deno.serve(async (req) => {
       return json({ error: 'Business name is required' }, { status: 400 });
     }
 
+    // Normalize phone to E.164 format if provided
+    let normalizedPhone = phone || null;
+    if (phone && phone.trim()) {
+      const digits = phone.replace(/\D/g, '');
+      if (digits.length === 10) {
+        normalizedPhone = `+1${digits}`;
+      } else if (digits.length === 11 && digits.startsWith('1')) {
+        normalizedPhone = `+${digits}`;
+      } else if (phone.startsWith('+')) {
+        normalizedPhone = phone;
+      }
+    }
+
     // Update the business
     const { data: business, error } = await ctx.supaAdmin
       .from('businesses')
       .update({
         name: name.trim(),
-        phone: phone || null,
+        phone: normalizedPhone,
         reply_to_email: replyToEmail || null,
         tax_rate_default: taxRateDefault || 0.0,
         updated_at: new Date().toISOString()

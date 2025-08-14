@@ -19,6 +19,34 @@ export function formatPhoneNumber(phone: string): string {
 }
 
 /**
+ * Formats phone for display while user types
+ */
+export function formatPhoneInput(value: string): string {
+  const digits = value.replace(/\D/g, '');
+  
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+}
+
+/**
+ * Normalizes phone to E.164 format for storage
+ */
+export function normalizePhoneToE164(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  
+  if (digits.length === 10) {
+    return `+1${digits}`;
+  }
+  
+  if (digits.length === 11 && digits.startsWith('1')) {
+    return `+${digits}`;
+  }
+  
+  return phone.startsWith('+') ? phone : (digits.length === 10 ? `+1${digits}` : phone);
+}
+
+/**
  * Validates and formats a phone number input
  */
 export function validatePhoneNumber(phone: string): { isValid: boolean; formatted: string } {
@@ -93,4 +121,32 @@ export function sanitizePhoneInput(value: string): string {
 export function sanitizeAddressInput(value: string): string {
   // Allow letters, numbers, spaces, and common punctuation
   return value.replace(/[^a-zA-Z0-9\s\.\,\-\#]/g, '');
+}
+
+/**
+ * Formats name suggestions with proper capitalization
+ */
+export function formatNameSuggestion(name: string): string {
+  if (!name) return '';
+  
+  return name
+    .trim()
+    .split(/\s+/)
+    .map(word => {
+      // Handle hyphenated names
+      if (word.includes('-')) {
+        return word.split('-')
+          .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+          .join('-');
+      }
+      // Handle apostrophes (O'Connor, D'Angelo)
+      if (word.includes("'")) {
+        return word.split("'")
+          .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+          .join("'");
+      }
+      // Regular capitalization
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(' ');
 }

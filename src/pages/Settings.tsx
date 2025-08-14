@@ -18,8 +18,14 @@ import { AuditLogsList } from '@/components/Business/AuditLogsList';
 import { useBusinessRole } from '@/hooks/useBusinessRole';
 import { DataFlowTest } from '@/components/Debug/DataFlowTest';
 import { useBusinessUpdate } from '@/hooks/useBusinessUpdate';
+import { useFocusPulse } from '@/hooks/useFocusPulse';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { formatPhoneInput, formatNameSuggestion } from '@/utils/validation';
+import { cn } from '@/utils/cn';
 export default function SettingsPage() {
   const store = useStore();
+  const location = useLocation();
+  const navigate = useNavigate();
   const {
     getToken,
     isSignedIn
@@ -36,8 +42,11 @@ export default function SettingsPage() {
   const statusError = null;
   const { user, isLoaded: userLoaded } = useUser();
   const [userName, setUserName] = useState('');
+  const [businessName, setBusinessName] = useState('');
+  const [businessPhone, setBusinessPhone] = useState('');
   const { data: roleData } = useBusinessRole(store.business.id);
   const { updateBusiness, isUpdating, hasPendingChanges } = useBusinessUpdate();
+  const { ref: profileRef, pulse: profilePulse, focus: focusProfile } = useFocusPulse<HTMLDivElement>();
   async function uploadLogoDark() {
     if (!isSignedIn) {
       toast.error('You must be signed in');
@@ -158,6 +167,25 @@ export default function SettingsPage() {
     }
   }, [userLoaded, user]);
 
+  // Handle business data hydration
+  useEffect(() => {
+    setBusinessName(store.business.name);
+    setBusinessPhone(store.business.phone);
+  }, [store.business.name, store.business.phone]);
+
+  // Handle focus from onboarding navigation
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?.focus === 'profile') {
+      const timer = setTimeout(() => {
+        focusProfile();
+        // Clear state to prevent re-triggering
+        navigate('.', { replace: true, state: null });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [location.state, focusProfile, navigate]);
+
   useEffect(() => {
     if (!userLoaded || !user) return;
     const name = userName.trim();
@@ -181,6 +209,25 @@ export default function SettingsPage() {
     }, 600);
     return () => clearTimeout(handle);
   }, [userName, userLoaded, user]);
+
+  // Handle business name changes with formatting suggestion
+  const handleBusinessNameChange = (value: string) => {
+    setBusinessName(value);
+    updateBusiness({ name: value });
+  };
+
+  // Handle phone changes with real-time formatting
+  const handlePhoneChange = (value: string) => {
+    const formatted = formatPhoneInput(value);
+    setBusinessPhone(formatted);
+    updateBusiness({ phone: formatted });
+  };
+
+  // Get formatting suggestions
+  const userNameSuggestion = formatNameSuggestion(userName);
+  const businessNameSuggestion = formatNameSuggestion(businessName);
+  const shouldShowUserNameSuggestion = userName && userNameSuggestion !== userName;
+  const shouldShowBusinessNameSuggestion = businessName && businessNameSuggestion !== businessName;
   useEffect(() => {
     // Hydrate business from server to ensure persistence across devices
     if (!isSignedIn) return;
@@ -219,32 +266,78 @@ export default function SettingsPage() {
   }, [isSignedIn]);
   return <AppLayout title="Settings">
       <div className="grid md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader><CardTitle>Business Profile</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
+        <Card 
+          ref={profileRef}
+          className={cn(
+            "transition-all duration-300",
+            profilePulse && "ring-2 ring-primary/60 shadow-lg scale-[1.02]"
+          )}
+        >
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              Business Profile
+              {profilePulse && (
+                <span className="text-xs text-muted-foreground animate-fade-in">
+                  Complete your profile here
+                </span>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div>
               <Label>Name</Label>
-              <Input value={userName} onChange={e => setUserName(e.target.value)} placeholder="Your name" />
-            </div>
-            <div>
-              <Label>Business Name</Label>
-              <div className="relative">
+              <div className="space-y-2">
                 <Input 
-                  value={store.business.name} 
-                  onChange={e => updateBusiness({ name: e.target.value })} 
+                  value={userName} 
+                  onChange={e => setUserName(e.target.value)} 
+                  placeholder="Your full name" 
                 />
-                {(isUpdating || hasPendingChanges) && (
-                  <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                    {isUpdating ? 'Saving...' : 'Unsaved'}
-                  </div>
+                {shouldShowUserNameSuggestion && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={() => setUserName(userNameSuggestion)}
+                  >
+                    ✨ Use "{userNameSuggestion}"
+                  </Button>
                 )}
               </div>
             </div>
             <div>
-              <Label>Phone</Label>
+              <Label>Business Name</Label>
+              <div className="space-y-2">
+                <div className="relative">
+                  <Input 
+                    value={businessName} 
+                    onChange={e => handleBusinessNameChange(e.target.value)} 
+                    placeholder="Your business name"
+                  />
+                  {(isUpdating || hasPendingChanges) && (
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                      {isUpdating ? 'Saving...' : 'Unsaved'}
+                    </div>
+                  )}
+                </div>
+                {shouldShowBusinessNameSuggestion && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={() => handleBusinessNameChange(businessNameSuggestion)}
+                  >
+                    ✨ Use "{businessNameSuggestion}"
+                  </Button>
+                )}
+              </div>
+            </div>
+            <div>
+              <Label>Phone Number</Label>
               <Input 
-                value={store.business.phone} 
-                onChange={e => updateBusiness({ phone: e.target.value })} 
+                value={businessPhone}
+                onChange={e => handlePhoneChange(e.target.value)}
+                placeholder="(555) 123-4567"
+                type="tel"
               />
             </div>
           </CardContent>

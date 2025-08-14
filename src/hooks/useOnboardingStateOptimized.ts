@@ -39,10 +39,11 @@ export function useOnboardingState(opts?: { enabled?: boolean }): OnboardingProg
       };
     }
 
-    // Check if user has set up their name and business name
+    // Check if user has set up their name, business name, and phone
     const hasUserName = !!(user?.firstName || user?.fullName);
     const hasBusinessName = business?.name && business.name !== 'My Business';
-    const hasNameAndBusiness = hasUserName && hasBusinessName;
+    const hasValidPhone = business?.phone && business.phone.replace(/\D/g, '').length >= 10;
+    const hasNameAndBusiness = hasUserName && hasBusinessName && hasValidPhone;
 
     const hasCustomers = (dashboardData.counts?.customers ?? 0) > 0;
     const hasJobs = (dashboardData.counts?.jobs ?? 0) > 0;
@@ -65,8 +66,10 @@ export function useOnboardingState(opts?: { enabled?: boolean }): OnboardingProg
     const showIntentPicker = hasNameAndBusiness && !hasCustomers && !hasJobs && !hasQuotes;
 
     let nextAction: string | null = null;
-    if (!hasNameAndBusiness) {
-      nextAction = 'Set up your profile';
+    if (!hasUserName || !hasBusinessName) {
+      nextAction = 'Complete your profile details';
+    } else if (!hasValidPhone) {
+      nextAction = 'Add your phone number';
     } else if (!hasCustomers && !hasJobs && !hasQuotes) {
       nextAction = 'Choose your first action';
     } else if (!hasCustomers) {
