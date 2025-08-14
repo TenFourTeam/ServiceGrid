@@ -67,7 +67,7 @@ serve(async (req) => {
       ctx = await requireCtx(req);
       console.log(JSON.stringify({ 
         evt: 'profile.update.auth_success', 
-        userUuid: ctx.userUuid, 
+        userUuid: ctx.userId, 
         businessId: ctx.businessId,
         clerkUserId: ctx.clerkUserId 
       }));
@@ -103,7 +103,7 @@ serve(async (req) => {
     console.log(JSON.stringify({ 
       evt: 'profile.update.validated', 
       businessId: ctx.businessId, 
-      userUuid: ctx.userUuid,
+      userUuid: ctx.userId,
       input: input
     }));
 
@@ -116,7 +116,7 @@ serve(async (req) => {
         full_name: input.fullName,
         phone_e164: phoneE164
       })
-      .eq('id', ctx.userUuid);
+      .eq('id', ctx.userId);
 
     if (profileError) {
       console.error('Profile update failed:', profileError);

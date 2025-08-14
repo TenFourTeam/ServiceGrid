@@ -21,14 +21,14 @@ serve(async (req) => {
     
     console.log(JSON.stringify({
       evt: 'profile.get',
-      userUuid: ctx.userUuid,
+      userUuid: ctx.userId,
       businessId: ctx.businessId
     }));
 
     const { data: profile, error: profileError } = await ctx.supaAdmin
       .from('profiles')
       .select('id, full_name, phone_e164')
-      .eq('id', ctx.userUuid)
+      .eq('id', ctx.userId)
       .single();
 
     if (profileError) {
