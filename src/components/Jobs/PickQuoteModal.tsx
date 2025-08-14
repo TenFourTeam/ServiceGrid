@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useDashboardData } from "@/hooks/useDashboardData";
+import { useSupabaseQuotes } from '@/hooks/useSupabaseQuotes';
 import { Loader2 } from "lucide-react";
 
 interface PickQuoteModalProps {
@@ -15,12 +15,13 @@ interface PickQuoteModalProps {
 }
 
 export default function PickQuoteModal({ open, onOpenChange, onSelect, customerId }: PickQuoteModalProps) {
-  const { data: dashboardData } = useDashboardData();
-const [query, setQuery] = useState("");
-const [busy, setBusy] = useState(false);
-const [selectedId, setSelectedId] = useState<string | null>(null);
+  const { data: quotesData } = useSupabaseQuotes();
+  const [query, setQuery] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  
   const quotes = useMemo(() => {
-    const allQuotes = dashboardData?.quotes || [];
+    const allQuotes = quotesData?.rows || [];
     
     // Map quotes to include customer info
     const quotesWithCustomer = allQuotes.map((q: any) => ({
@@ -42,7 +43,7 @@ const [selectedId, setSelectedId] = useState<string | null>(null);
       (r.customerName || "").toLowerCase().includes(q) ||
       (r.customerEmail || "").toLowerCase().includes(q)
     ));
-  }, [dashboardData, query, customerId]);
+  }, [quotesData, query, customerId]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
