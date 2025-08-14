@@ -56,7 +56,7 @@ export function useOnboardingState(): OnboardingState {
     const profileComplete = !!(
       profile?.fullName?.trim() &&
       profile?.phoneE164 &&
-      business?.name?.trim()
+      profile?.businessName?.trim()
     );
 
     const hasContent = (jobsCount ?? 0) > 0 || (quotesCount ?? 0) > 0;
@@ -93,9 +93,9 @@ export function useOnboardingState(): OnboardingState {
       showIntentPicker,
     };
   }, [
-    business?.name,
     profile?.fullName,
     profile?.phoneE164,
+    profile?.businessName,
     customersCount,
     jobsCount,
     quotesCount,
