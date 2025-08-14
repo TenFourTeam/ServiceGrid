@@ -1,7 +1,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useAuthSnapshot } from "@/auth";
-import { useApiClient } from "@/auth";
+import { edgeRequest } from "@/utils/edgeApi";
+import { fn } from "@/utils/functionUrl";
 import { qk } from "@/queries/keys";
 import { z } from "zod";
 
@@ -19,7 +20,6 @@ const CustomersResponseSchema = z.object({
 
 export function useSupabaseCustomers(opts?: { enabled?: boolean }) {
   const { snapshot } = useAuthSnapshot();
-  const apiClient = useApiClient();
   const enabled = snapshot.phase === 'authenticated' && (opts?.enabled ?? true);
 
   return useQuery<{ rows: DbCustomerRow[] } | null, Error>({
@@ -27,9 +27,10 @@ export function useSupabaseCustomers(opts?: { enabled?: boolean }) {
     enabled: enabled && !!snapshot.businessId,
     queryFn: async () => {
       console.info("[useSupabaseCustomers] fetching...");
-      const response = await apiClient.get("/customers");
-      if (response.error) throw new Error(response.error);
-      const data = response.data;
+      const data = await edgeRequest(fn('customers'), {
+        method: 'GET',
+      });
+      
       if (!data) {
         console.info("[useSupabaseCustomers] no data (null) – likely signed out");
         return { rows: [] };

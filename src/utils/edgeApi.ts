@@ -2,7 +2,7 @@
 // - Single source of truth for SUPABASE_URL
 // - Authenticated and public JSON helpers
 
-import { getClerkTokenStrict } from "@/utils/clerkToken";
+import { getApiTokenStrict } from "@/auth/token";
 
 export const SUPABASE_URL = "https://ijudkzqfriazabiosnvb.supabase.co";
 
@@ -32,7 +32,7 @@ export async function edgeFetchJson(
   getToken: () => Promise<string | null>,
   opts: EdgeRequestOptions = {}
 ) {
-  const token = await getClerkTokenStrict(getToken);
+  const token = await getApiTokenStrict();
   const res = await fetch(`${SUPABASE_URL}/functions/v1/${path}`, {
     method: opts.method || "GET",
     headers: {
@@ -80,7 +80,7 @@ export async function edgeFetch(
   getToken: () => Promise<string | null>,
   opts: EdgeRequestOptions = {}
 ) {
-  const token = await getClerkTokenStrict(getToken);
+  const token = await getApiTokenStrict();
   const res = await fetch(`${SUPABASE_URL}/functions/v1/${path}`, {
     method: opts.method || "GET",
     headers: {

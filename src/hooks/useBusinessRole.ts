@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuthSnapshot } from "@/auth";
-import { useApiClient } from "@/auth";
+import { edgeRequest } from "@/utils/edgeApi";
+import { fn } from "@/utils/functionUrl";
 
 export interface BusinessRoleData {
   role: 'owner' | 'worker' | null;
@@ -9,7 +10,6 @@ export interface BusinessRoleData {
 
 export function useBusinessRole(businessId?: string) {
   const { snapshot } = useAuthSnapshot();
-  const apiClient = useApiClient();
   const enabled = snapshot.phase === 'authenticated' && !!businessId;
 
   return useQuery<BusinessRoleData, Error>({
@@ -18,9 +18,10 @@ export function useBusinessRole(businessId?: string) {
     queryFn: async () => {
       if (!businessId) return { role: null, canManage: false };
       
-      const response = await apiClient.get(`/business-role?business_id=${businessId}`);
-      if (response.error) throw new Error(response.error);
-      const data = response.data;
+      const data = await edgeRequest(`${fn('business-role')}?business_id=${businessId}`, {
+        method: 'GET',
+      });
+      
       return {
         role: data?.role || null,
         canManage: data?.role === 'owner',

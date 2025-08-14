@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuthSnapshot } from "@/auth";
-import { useApiClient } from "@/auth";
+import { edgeRequest } from "@/utils/edgeApi";
+import { fn } from "@/utils/functionUrl";
 import { qk } from "@/queries/keys";
 
 /**
@@ -9,7 +10,6 @@ import { qk } from "@/queries/keys";
  */
 export function useQuotesCount(opts?: { enabled?: boolean }) {
   const { snapshot } = useAuthSnapshot();
-  const apiClient = useApiClient();
   const enabled = snapshot.phase === 'authenticated' && (opts?.enabled ?? true);
 
   return useQuery({
@@ -17,10 +17,11 @@ export function useQuotesCount(opts?: { enabled?: boolean }) {
     enabled: enabled && !!snapshot.businessId,
     queryFn: async (): Promise<number> => {
       console.info("[useQuotesCount] fetching count...");
-      const response = await apiClient.get("/quotes?count=true");
-      if (response.error) throw new Error(response.error);
+      const data = await edgeRequest(`${fn('quotes')}?count=true`, {
+        method: 'GET',
+      });
       
-      const count = response.data?.count ?? 0;
+      const count = data?.count ?? 0;
       console.info("[useQuotesCount] count:", count);
       return count;
     },

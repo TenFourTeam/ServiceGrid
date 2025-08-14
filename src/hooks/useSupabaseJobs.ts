@@ -1,7 +1,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useAuthSnapshot } from "@/auth";
-import { useApiClient } from "@/auth";
+import { edgeRequest } from "@/utils/edgeApi";
+import { fn } from "@/utils/functionUrl";
 import { qk } from "@/queries/keys";
 import { z } from "zod";
 
@@ -27,7 +28,6 @@ const JobsResponseSchema = z.object({
 
 export function useSupabaseJobs(opts?: { enabled?: boolean; refetchInterval?: number | false; refetchOnWindowFocus?: boolean; refetchOnReconnect?: boolean }) {
   const { snapshot } = useAuthSnapshot();
-  const apiClient = useApiClient();
   const enabled = snapshot.phase === 'authenticated' && (opts?.enabled ?? true);
 
   return useQuery<{ rows: DbJobRow[] } | null, Error>({
@@ -39,9 +39,9 @@ export function useSupabaseJobs(opts?: { enabled?: boolean; refetchInterval?: nu
     refetchIntervalInBackground: false,
     queryFn: async () => {
       console.info("[useSupabaseJobs] fetching...");
-      const response = await apiClient.get("/jobs");
-      if (response.error) throw new Error(response.error);
-      const data = response.data;
+      const data = await edgeRequest(fn('jobs'), {
+        method: 'GET',
+      });
 
       if (!data) {
         console.info("[useSupabaseJobs] no data (null) – likely signed out");

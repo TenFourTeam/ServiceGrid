@@ -1,7 +1,6 @@
 // Re-export all auth components and hooks for easy importing
 export { AuthKernel, useAuthSnapshot } from './AuthKernel';
 export { AuthBoundary } from './AuthBoundary';
-export { useApiClient } from './ApiClient';
 export { default as AuthErrorBoundary } from './AuthErrorBoundary';
 export * from './types';
 

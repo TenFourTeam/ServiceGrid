@@ -3,7 +3,7 @@
  * All hooks return camelCase data, transforming at the query boundary
  */
 import { useQuery } from '@tanstack/react-query';
-import { useAuthSnapshot, useApiClient } from '@/auth';
+import { useAuthSnapshot } from '@/auth';
 import { edgeRequest } from '@/utils/edgeApi';
 import { fn } from '@/utils/functionUrl';
 import { queryKeys } from './keys';
@@ -40,7 +40,6 @@ export function useProfile() {
 // Count queries for performance
 export function useCustomersCount() {
   const { snapshot } = useAuthSnapshot();
-  const apiClient = useApiClient();
   const enabled = snapshot.phase === 'authenticated' && !!snapshot.businessId;
 
   return useQuery({
@@ -48,9 +47,8 @@ export function useCustomersCount() {
     enabled,
     queryFn: async (): Promise<number> => {
       console.info("[useCustomersCount] fetching count...");
-      const response = await apiClient.get("/customers?count=true");
-      if (response.error) throw new Error(response.error);
-      return response.data?.count ?? 0;
+      const data = await edgeRequest(`${fn('customers')}?count=true`);
+      return data?.count ?? 0;
     },
     staleTime: 30_000,
   });
@@ -58,7 +56,6 @@ export function useCustomersCount() {
 
 export function useJobsCount() {
   const { snapshot } = useAuthSnapshot();
-  const apiClient = useApiClient();
   const enabled = snapshot.phase === 'authenticated' && !!snapshot.businessId;
 
   return useQuery({
@@ -66,9 +63,8 @@ export function useJobsCount() {
     enabled,
     queryFn: async (): Promise<number> => {
       console.info("[useJobsCount] fetching count...");
-      const response = await apiClient.get("/jobs?count=true");
-      if (response.error) throw new Error(response.error);
-      return response.data?.count ?? 0;
+      const data = await edgeRequest(`${fn('jobs')}?count=true`);
+      return data?.count ?? 0;
     },
     staleTime: 30_000,
   });
@@ -76,7 +72,6 @@ export function useJobsCount() {
 
 export function useQuotesCount() {
   const { snapshot } = useAuthSnapshot();
-  const apiClient = useApiClient();
   const enabled = snapshot.phase === 'authenticated' && !!snapshot.businessId;
 
   return useQuery({
@@ -84,9 +79,8 @@ export function useQuotesCount() {
     enabled,
     queryFn: async (): Promise<number> => {
       console.info("[useQuotesCount] fetching count...");
-      const response = await apiClient.get("/quotes?count=true");
-      if (response.error) throw new Error(response.error);
-      return response.data?.count ?? 0;
+      const data = await edgeRequest(`${fn('quotes')}?count=true`);
+      return data?.count ?? 0;
     },
     staleTime: 30_000,
   });
@@ -94,7 +88,6 @@ export function useQuotesCount() {
 
 export function useInvoicesCount() {
   const { snapshot } = useAuthSnapshot();
-  const apiClient = useApiClient();
   const enabled = snapshot.phase === 'authenticated' && !!snapshot.businessId;
 
   return useQuery({
@@ -102,9 +95,8 @@ export function useInvoicesCount() {
     enabled,
     queryFn: async (): Promise<number> => {
       console.info("[useInvoicesCount] fetching count...");
-      const response = await apiClient.get("/invoices?count=true");
-      if (response.error) throw new Error(response.error);
-      return response.data?.count ?? 0;
+      const data = await edgeRequest(`${fn('invoices')}?count=true`);
+      return data?.count ?? 0;
     },
     staleTime: 30_000,
   });
@@ -113,16 +105,14 @@ export function useInvoicesCount() {
 // Billing queries
 export function useStripeConnectStatus() {
   const { snapshot } = useAuthSnapshot();
-  const apiClient = useApiClient();
   const enabled = snapshot.phase === 'authenticated' && !!snapshot.businessId;
 
   return useQuery({
     queryKey: queryKeys.billing.stripeStatus(snapshot.businessId || ''),
     enabled,
     queryFn: async () => {
-      const response = await apiClient.get("/connect-account-status");
-      if (response.error) throw new Error(response.error);
-      return response.data;
+      const data = await edgeRequest(fn('connect-account-status'));
+      return data;
     },
     staleTime: 60_000, // 1 minute for billing data
   });
@@ -130,16 +120,14 @@ export function useStripeConnectStatus() {
 
 export function useSubscriptionStatus() {
   const { snapshot } = useAuthSnapshot();
-  const apiClient = useApiClient();
   const enabled = snapshot.phase === 'authenticated';
 
   return useQuery({
     queryKey: queryKeys.billing.subscription(snapshot.businessId || ''),
     enabled,
     queryFn: async () => {
-      const response = await apiClient.get("/check-subscription");
-      if (response.error) throw new Error(response.error);
-      return response.data;
+      const data = await edgeRequest(fn('check-subscription'));
+      return data;
     },
     staleTime: 60_000, // 1 minute for billing data
   });
@@ -148,7 +136,6 @@ export function useSubscriptionStatus() {
 // Full data queries (for pages that need complete data)
 export function useCustomers() {
   const { snapshot } = useAuthSnapshot();
-  const apiClient = useApiClient();
   const enabled = snapshot.phase === 'authenticated' && !!snapshot.businessId;
 
   return useQuery({
@@ -156,9 +143,8 @@ export function useCustomers() {
     enabled,
     queryFn: async () => {
       console.info("[useCustomers] fetching customers data...");
-      const response = await apiClient.get("/customers");
-      if (response.error) throw new Error(response.error);
-      return response.data?.rows || [];
+      const data = await edgeRequest(fn('customers'));
+      return data?.rows || [];
     },
     staleTime: 30_000,
   });
@@ -166,7 +152,6 @@ export function useCustomers() {
 
 export function useJobs() {
   const { snapshot } = useAuthSnapshot();
-  const apiClient = useApiClient();
   const enabled = snapshot.phase === 'authenticated' && !!snapshot.businessId;
 
   return useQuery({
@@ -174,9 +159,8 @@ export function useJobs() {
     enabled,
     queryFn: async () => {
       console.info("[useJobs] fetching jobs data...");
-      const response = await apiClient.get("/jobs");
-      if (response.error) throw new Error(response.error);
-      return response.data?.rows || [];
+      const data = await edgeRequest(fn('jobs'));
+      return data?.rows || [];
     },
     staleTime: 30_000,
   });
@@ -184,7 +168,6 @@ export function useJobs() {
 
 export function useQuotes() {
   const { snapshot } = useAuthSnapshot();
-  const apiClient = useApiClient();
   const enabled = snapshot.phase === 'authenticated' && !!snapshot.businessId;
 
   return useQuery({
@@ -192,9 +175,8 @@ export function useQuotes() {
     enabled,
     queryFn: async () => {
       console.info("[useQuotes] fetching quotes data...");
-      const response = await apiClient.get("/quotes");
-      if (response.error) throw new Error(response.error);
-      return response.data?.rows || [];
+      const data = await edgeRequest(fn('quotes'));
+      return data?.rows || [];
     },
     staleTime: 30_000,
   });
@@ -202,7 +184,6 @@ export function useQuotes() {
 
 export function useInvoices() {
   const { snapshot } = useAuthSnapshot();
-  const apiClient = useApiClient();
   const enabled = snapshot.phase === 'authenticated' && !!snapshot.businessId;
 
   return useQuery({
@@ -210,9 +191,8 @@ export function useInvoices() {
     enabled,
     queryFn: async () => {
       console.info("[useInvoices] fetching invoices data...");
-      const response = await apiClient.get("/invoices");
-      if (response.error) throw new Error(response.error);
-      return response.data?.rows || [];
+      const data = await edgeRequest(fn('invoices'));
+      return data?.rows || [];
     },
     staleTime: 30_000,
   });

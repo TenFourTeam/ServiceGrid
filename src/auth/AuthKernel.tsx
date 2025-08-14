@@ -21,28 +21,15 @@ export function AuthKernel({ children }: { children: React.ReactNode }) {
   // Bootstrap process - await tenant/role data
   const runBootstrap = useCallback(async (): Promise<AuthBootstrapResult | null> => {
     try {
-      // Import the simplified token helper
-      const { getApiTokenStrict } = await import('@/auth/token');
-      const token = await getApiTokenStrict({ refresh: true });
-
-      // Use direct fetch for business since ApiClient isn't ready yet
-      console.log("[AuthKernel] Starting get-business with token...");
-      const response = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/get-business`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
+      // Use edgeRequest for unified token handling
+      const { edgeRequest } = await import('@/utils/edgeApi');
+      const { fn } = await import('@/utils/functionUrl');
+      
+      console.log("[AuthKernel] Starting get-business...");
+      const result = await edgeRequest(fn('get-business'), {
+        method: 'GET',
       });
       
-      console.log("[AuthKernel] Bootstrap response status:", response.status);
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("[AuthKernel] Bootstrap failed with response:", errorText);
-        throw new Error(`Bootstrap failed: ${response.status} - ${errorText}`);
-      }
-      
-      const result = await response.json();
       console.log("[AuthKernel] Bootstrap result:", result);
 
       return {
@@ -79,17 +66,12 @@ export function AuthKernel({ children }: { children: React.ReactNode }) {
       
       const bootstrap = await runBootstrap();
       if (bootstrap) {
-        const { getApiToken } = await import('@/auth/token');
-        const token = await getApiToken({ refresh: true });
-        if (!token) throw new Error('AUTH_NO_JWT');
-
         setSnapshot(prev => ({
           ...prev,
           phase: 'authenticated',
           tenantId: bootstrap.tenantId,
           roles: bootstrap.roles,
           claimsVersion: prev.claimsVersion + 1,
-          token,
           // Update business context
           businessId: bootstrap.businessId,
           businessName: bootstrap.businessName,
@@ -130,9 +112,6 @@ export function AuthKernel({ children }: { children: React.ReactNode }) {
       const initializeAuth = async () => {
         const bootstrap = await runBootstrap();
         if (bootstrap) {
-          const { getApiToken } = await import('@/auth/token');
-          const token = await getApiToken({ refresh: true });
-          
           setSnapshot(prev => ({
             ...prev,
             phase: 'authenticated',
@@ -141,7 +120,6 @@ export function AuthKernel({ children }: { children: React.ReactNode }) {
             tenantId: bootstrap.tenantId,
             roles: bootstrap.roles,
             claimsVersion: 1,
-            token,
             // Add business context
             businessId: bootstrap.businessId,
             businessName: bootstrap.businessName,

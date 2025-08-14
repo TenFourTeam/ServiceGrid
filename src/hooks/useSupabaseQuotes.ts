@@ -1,7 +1,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useAuthSnapshot } from "@/auth";
-import { useApiClient } from "@/auth";
+import { edgeRequest } from "@/utils/edgeApi";
+import { fn } from "@/utils/functionUrl";
 import { qk } from "@/queries/keys";
 import type { Tables } from "@/integrations/supabase/types";
 import { z } from "zod";
@@ -25,7 +26,6 @@ const QuotesResponseSchema = z.object({
 
 export function useSupabaseQuotes(opts?: { enabled?: boolean }) {
   const { snapshot } = useAuthSnapshot();
-  const apiClient = useApiClient();
   const enabled = snapshot.phase === 'authenticated' && (opts?.enabled ?? true);
 
   return useQuery<{ rows: DbQuoteRow[] } | null, Error>({
@@ -33,9 +33,10 @@ export function useSupabaseQuotes(opts?: { enabled?: boolean }) {
     enabled: enabled && !!snapshot.businessId,
     queryFn: async () => {
       console.info("[useSupabaseQuotes] fetching...");
-      const response = await apiClient.get("/quotes");
-      if (response.error) throw new Error(response.error);
-      const data = response.data;
+      const data = await edgeRequest(fn('quotes'), {
+        method: 'GET',
+      });
+      
       if (!data) {
         console.info("[useSupabaseQuotes] no data (null) – likely signed out");
         return { rows: [] };
