@@ -16,6 +16,7 @@ export function BusinessSync() {
       const authBusiness: Business = {
         id: snapshot.business.id,
         name: snapshot.business.name,
+        name_customized: snapshot.business.name_customized,
         phone: snapshot.business.phone || '',
         replyToEmail: snapshot.business.replyToEmail || '',
         taxRateDefault: snapshot.business.taxRateDefault || 0.08,

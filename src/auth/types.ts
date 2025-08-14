@@ -18,6 +18,7 @@ export interface AuthSnapshot {
   business?: {
     id: string;
     name: string;
+    name_customized?: boolean;
     phone?: string;
     replyToEmail?: string;
     taxRateDefault?: number;

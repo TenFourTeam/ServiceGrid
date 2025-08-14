@@ -231,15 +231,7 @@ export default function SettingsPage() {
       return;
     }
 
-    // Block "My Business" saves with helpful message
-    if (businessName.trim().toLowerCase() === 'my business') {
-      toast({
-        title: "Choose a real business name",
-        description: "Please use your actual business name instead of 'My Business'",
-        variant: "destructive",
-      });
-      return;
-    }
+    // Allow "My Business" - the trigger will handle the name_customized flag appropriately
 
     const input = { 
       fullName: userName.trim(), 
