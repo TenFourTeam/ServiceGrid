@@ -1,12 +1,16 @@
 import { serve } from "https://deno.land/std/http/server.ts";
 import { z } from "https://esm.sh/zod@3";
-import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
+import { requireCtx } from "../_lib/auth.ts";
 
-const cors = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-business-id",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const json = (data: any, status = 200) => new Response(JSON.stringify(data), {
+  status,
+  headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+});
 
 const ProfileUpdateSchema = z.object({
   fullName: z.string().trim().min(2, 'Enter your full name'),
@@ -38,51 +42,48 @@ function normalizeToE164(phone: string): string {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: cors });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
     if (req.method !== 'POST') {
-      return json({ error: { code: "method_not_allowed", message: "Method not allowed" }}, { status: 405 });
+      return json({ error: { code: "method_not_allowed", message: "Method not allowed" }}, 405);
     }
 
     console.log(JSON.stringify({ evt: 'profile.update.start' }));
 
     const ctx = await requireCtx(req);
-    const body = ProfileUpdateSchema.parse(await req.json());
+    const input = ProfileUpdateSchema.parse(await req.json());
 
     console.log(JSON.stringify({ 
       evt: 'profile.update.validated', 
       businessId: ctx.businessId, 
-      userUuid: ctx.userId,
-      hasName: !!body.fullName,
-      hasBusinessName: !!body.businessName,
-      hasPhone: !!body.phoneRaw
+      userUuid: ctx.userUuid,
+      input: input
     }));
 
-    const phoneE164 = normalizeToE164(body.phoneRaw);
+    const phoneE164 = normalizeToE164(input.phoneRaw);
 
     // Update user profile (name and phone)
     const { error: profileError } = await ctx.supaAdmin
       .from('profiles')
       .update({ 
-        full_name: body.fullName,
+        full_name: input.fullName,
         phone_e164: phoneE164
       })
-      .eq('id', ctx.userId);
+      .eq('id', ctx.userUuid);
 
     if (profileError) {
       console.error('Profile update failed:', profileError);
-      return json({ error: { code: "profile_update_failed", message: profileError.message }}, { status: 400 });
+      return json({ error: { code: "profile_update_failed", message: profileError.message }}, 400);
     }
 
     // Update business (name and phone)
     const { data: business, error: businessError } = await ctx.supaAdmin
       .from('businesses')
       .update({ 
-        name: body.businessName,
+        name: input.businessName,
         phone: phoneE164,
         updated_at: new Date().toISOString()
       })
@@ -92,15 +93,7 @@ serve(async (req) => {
 
     if (businessError) {
       console.error('Business update failed:', businessError);
-      return json({ error: { code: "business_update_failed", message: businessError.message }}, { status: 400 });
-    }
-
-    // Update Clerk user name
-    try {
-      // This would require Clerk backend API, for now we'll skip this part
-      // and rely on the frontend to update Clerk user name separately
-    } catch (e) {
-      console.warn('Could not update Clerk user name:', e);
+      return json({ error: { code: "business_update_failed", message: businessError.message }}, 400);
     }
 
     console.log(JSON.stringify({ 
@@ -109,16 +102,12 @@ serve(async (req) => {
       businessName: business.name
     }));
 
-    // Return normalized truth (what the UI should rehydrate)
-    return new Response(JSON.stringify({ 
+    return json({ 
       data: {
-        fullName: body.fullName,
+        fullName: input.fullName,
         businessName: business.name,
         phoneE164: business.phone,
       }
-    }), { 
-      status: 200, 
-      headers: { "Content-Type": "application/json", ...cors }
     });
 
   } catch (e: any) {
@@ -127,14 +116,11 @@ serve(async (req) => {
     // Handle Zod validation errors
     if (e?.issues?.[0]) {
       const msg = e.issues[0].message;
-      return json({ error: { code: "validation_error", message: msg }}, { status: 400 });
+      return json({ error: { code: "validation_error", message: msg }}, 400);
     }
     
     const msg = e?.message || "Invalid input";
     const status = e?.status ?? 500;
-    return new Response(JSON.stringify({ error: { code: "server_error", message: msg }}), { 
-      status, 
-      headers: { "Content-Type": "application/json", ...cors }
-    });
+    return json({ error: { code: "server_error", message: msg }}, status);
   }
 });

@@ -1,5 +1,15 @@
 import { serve } from "https://deno.land/std/http/server.ts";
-import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
+import { requireCtx } from "../_lib/auth.ts";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+const json = (data: any, status = 200) => new Response(JSON.stringify(data), {
+  status,
+  headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+});
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {

@@ -125,10 +125,10 @@ export async function edgeRequest(url: string, init: RequestInit = {}): Promise<
   if (!res.ok) {
     const msg = body?.error?.message || res.statusText || `HTTP ${res.status}`;
     const code = body?.error?.code;
-    console.error('[edgeRequest] failed', { status: res.status, code, msg });
+    console.error('[edgeRequest] failed', { status: res.status, code, msg, body });
     throw new ApiError(res.status, msg, code, body?.error?.details);
   }
   
-  console.info('[edgeRequest] success');
+  console.info('[edgeRequest] success', { hasData: !!body });
   return body?.data ?? body;
 }
