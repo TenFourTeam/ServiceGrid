@@ -51,6 +51,11 @@ serve(async (req) => {
   } catch (error: any) {
     console.error('💥 [profile-get] Unexpected error:', error);
     
+    // Handle Response objects from requireCtx
+    if (error instanceof Response) {
+      return error;
+    }
+    
     // Handle different types of auth errors with proper status codes
     if (error?.message?.includes('not found') || error?.message?.includes('not owned by current user')) {
       return json({ error: { code: 'forbidden', message: 'Access denied' }}, 403);
@@ -60,6 +65,12 @@ serve(async (req) => {
       return json({ error: { code: 'auth_error', message: 'Invalid authentication' }}, 401);
     }
 
-    return json({ error: { code: 'auth_error', message: error?.message || 'Authentication failed' }}, 401);
+    return json({ 
+      error: { 
+        code: 'server_error', 
+        message: error?.message || 'Profile fetch failed',
+        action: "retry"
+      }
+    }, 500);
   }
 });

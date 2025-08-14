@@ -32,19 +32,29 @@ serve(async (req) => {
     const token = authHeader.replace(/^Bearer\s+/, '');
     
     if (!token) {
+      console.error('❌ [clerk-bootstrap] Missing bearer token');
       return json({ error: { code: "auth_error", message: "Missing bearer token" }}, 401);
     }
 
     const secretKey = Deno.env.get("CLERK_SECRET_KEY");
     if (!secretKey) {
+      console.error('❌ [clerk-bootstrap] Missing CLERK_SECRET_KEY');
       return json({ error: { code: "config_error", message: "Missing CLERK_SECRET_KEY" }}, 500);
     }
 
-    const payload = await verifyToken(token, { secretKey });
+    let payload;
+    try {
+      payload = await verifyToken(token, { secretKey });
+    } catch (error: any) {
+      console.error('❌ [clerk-bootstrap] Token verification failed:', error);
+      return json({ error: { code: "auth_error", message: "Invalid Clerk token", details: error.message }}, 401);
+    }
+
     const clerkUserId = payload.sub as string;
     const email = (payload as any).email as string | undefined;
 
     if (!clerkUserId) {
+      console.error('❌ [clerk-bootstrap] Invalid Clerk token - no user ID');
       return json({ error: { code: "auth_error", message: "Invalid Clerk token" }}, 401);
     }
 
@@ -147,15 +157,45 @@ serve(async (req) => {
     console.log(`🎉 [clerk-bootstrap] Bootstrap complete - User: ${profile.id}, Business: ${businessId}`);
 
     return json({
+      success: true,
       data: {
         userUuid: profile.id,
-        businessId: businessId
+        businessId: businessId,
+        message: "Bootstrap successful"
       }
     }, 200);
 
   } catch (error: any) {
     console.error('💥 [clerk-bootstrap] Unexpected error:', error);
+    
+    // Provide more specific error messages based on error type
+    if (error?.code === '23503') {
+      return json({ 
+        error: { 
+          code: "database_constraint_error", 
+          message: "Database constraint violation. Please try signing in again.",
+          details: error.message 
+        }
+      }, 400);
+    }
+    
+    if (error?.message?.includes('not authenticated') || error?.message?.includes('Invalid')) {
+      return json({ 
+        error: { 
+          code: "auth_error", 
+          message: "Authentication failed. Please sign in again.",
+          details: error.message 
+        }
+      }, 401);
+    }
+    
     const message = error?.message || "Bootstrap failed";
-    return json({ error: { code: "auth_error", message }}, 401);
+    return json({ 
+      error: { 
+        code: "bootstrap_error", 
+        message: "Bootstrap failed. Please try signing in again.",
+        details: message 
+      }
+    }, 500);
   }
 });

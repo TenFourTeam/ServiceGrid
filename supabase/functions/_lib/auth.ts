@@ -17,7 +17,13 @@ export async function requireCtx(req: Request): Promise<AuthContext> {
   // Extract and verify Clerk token
   const authHeader = req.headers.get("authorization") || req.headers.get("Authorization");
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    throw new Response(JSON.stringify({ error: "Missing Bearer token" }), { 
+    console.error('❌ [auth] Missing or invalid authorization header');
+    throw new Response(JSON.stringify({ 
+      error: { 
+        code: "auth_missing", 
+        message: "Missing authentication token" 
+      }
+    }), { 
       status: 401,
       headers: { "Content-Type": "application/json" }
     });
@@ -26,7 +32,13 @@ export async function requireCtx(req: Request): Promise<AuthContext> {
   const token = authHeader.replace(/^Bearer\s+/i, "");
   const secretKey = Deno.env.get("CLERK_SECRET_KEY");
   if (!secretKey) {
-    throw new Response(JSON.stringify({ error: "Server configuration error" }), { 
+    console.error('❌ [auth] Missing CLERK_SECRET_KEY');
+    throw new Response(JSON.stringify({ 
+      error: { 
+        code: "config_error", 
+        message: "Server configuration error" 
+      }
+    }), { 
       status: 500,
       headers: { "Content-Type": "application/json" }
     });
@@ -36,7 +48,14 @@ export async function requireCtx(req: Request): Promise<AuthContext> {
   try {
     payload = await verifyToken(token, { secretKey });
   } catch (e) {
-    throw new Response(JSON.stringify({ error: `Invalid token: ${e}` }), { 
+    console.error('❌ [auth] Token verification failed:', e);
+    throw new Response(JSON.stringify({ 
+      error: { 
+        code: "auth_invalid", 
+        message: "Authentication failed",
+        details: `${e}`
+      }
+    }), { 
       status: 401,
       headers: { "Content-Type": "application/json" }
     });
@@ -147,7 +166,14 @@ async function resolveUserUuid(supabase: ReturnType<typeof createClient>, clerkU
   if (profile?.id) return profile.id as UserUuid;
 
   // Profile doesn't exist - this should be handled by bootstrap
-  throw new Response(JSON.stringify({ error: "User profile not found. Please sign in again." }), { 
+  console.error(`❌ [auth] Profile not found for Clerk user: ${clerkUserId}. Bootstrap required.`);
+  throw new Response(JSON.stringify({ 
+    error: { 
+      code: "profile_not_found",
+      message: "User profile not found. Please refresh the page to complete setup.",
+      action: "refresh_page"
+    }
+  }), { 
     status: 404,
     headers: { "Content-Type": "application/json" }
   });
