@@ -45,6 +45,7 @@ export default function SettingsPage() {
   const [userName, setUserName] = useState('');
   const [businessName, setBusinessName] = useState('');
   const [businessPhone, setBusinessPhone] = useState('');
+  const [isHydrated, setIsHydrated] = useState(false);
   const { data: roleData } = useBusinessRole(business?.id || '');
   const { updateProfile, isUpdating } = useProfileOperations();
   const { toast } = useToast();
@@ -162,13 +163,14 @@ export default function SettingsPage() {
     }
   }, [userLoaded, user]);
 
-  // Handle business data hydration
+  // Handle business data hydration - only once to prevent clearing during updates
   useEffect(() => {
-    if (business) {
+    if (business && !isHydrated) {
       setBusinessName(business.name || '');
       setBusinessPhone(business.phone || '');
+      setIsHydrated(true);
     }
-  }, [business]);
+  }, [business, isHydrated]);
 
   // Handle focus from onboarding navigation
   useEffect(() => {

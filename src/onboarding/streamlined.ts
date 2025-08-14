@@ -37,8 +37,8 @@ export function useOnboardingState(): OnboardingState {
   const businessId = snapshot.businessId || '';
   
   // Direct query consumption - no context layer
-  const { data: business, isLoading: businessLoading } = useBusiness();
-  const { data: profile, isLoading: profileLoading } = useProfile();
+  const { data: business, isLoading: businessLoading, isFetching: businessFetching } = useBusiness();
+  const { data: profile, isLoading: profileLoading, isFetching: profileFetching } = useProfile();
   const { data: customersCount, isLoading: customersLoading } = useCustomersCount();
   const { data: jobsCount, isLoading: jobsLoading } = useJobsCount();
   const { data: quotesCount, isLoading: quotesLoading } = useQuotesCount();
@@ -49,7 +49,10 @@ export function useOnboardingState(): OnboardingState {
     const loading = businessLoading || profileLoading || customersLoading || 
                    jobsLoading || quotesLoading || stripeLoading || subscriptionLoading;
 
-    // Simple, readable guard logic
+    // Don't show incomplete during active fetching to prevent flickering
+    const isRefetching = businessFetching || profileFetching;
+
+    // Simple, readable guard logic - preserve completion during updates
     const profileComplete = !!(
       profile?.fullName?.trim() &&
       profile?.phoneE164 &&
