@@ -1,6 +1,4 @@
 import { useEffect } from "react";
-import { useHasClerk } from "@/components/Auth/ClerkRuntime";
-import LoadingScreen from "@/components/LoadingScreen";
 
 import "@/landing/animations.css";
 import { Hero } from "@/landing/components/Hero";
@@ -16,8 +14,6 @@ import { Industries } from "@/landing/components/Industries";
 
 
 export default function Landing() {
-  const hasClerk = useHasClerk();
-
   // Defer scroll orchestrator to avoid blocking first paint
   useEffect(() => {
     let dispose: undefined | (() => void);
@@ -37,11 +33,6 @@ export default function Landing() {
       dispose?.();
     };
   }, []);
-
-  // Show loading while Clerk is not loaded (optional check)
-  if (!hasClerk) {
-    return <LoadingScreen full />;
-  }
 
   return (
     <main className="min-h-screen bg-background text-foreground">

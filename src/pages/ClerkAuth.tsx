@@ -3,17 +3,11 @@ import { SignedOut, SignInButton, useAuth as useClerkAuth } from "@clerk/clerk-r
 import { useLocation, useNavigate } from "react-router-dom";
 import LoadingScreen from "@/components/LoadingScreen";
 import { Button } from "@/components/ui/button";
-import { useHasClerk } from "@/components/Auth/ClerkRuntime";
 
 export default function ClerkAuthPage() {
-  const hasClerk = useHasClerk();
   const location = useLocation();
   const from: any = (location.state as any)?.from;
   const redirectTarget = from?.pathname ? `${from.pathname}${from.search ?? ""}${from.hash ?? ""}` : "/";
-
-  if (!hasClerk) {
-    return <LoadingScreen />;
-  }
 
   return <ClerkAuthInner redirectTarget={redirectTarget} />;
 }

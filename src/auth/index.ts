@@ -3,7 +3,6 @@ export { AuthKernel, useAuthSnapshot } from './AuthKernel';
 export { AuthBoundary } from './AuthBoundary';
 export { useApiClient } from './ApiClient';
 export { default as AuthErrorBoundary } from './AuthErrorBoundary';
-export { default as LockScreen } from './LockScreen';
 export * from './types';
 
 // Compatibility hook for existing components that use Clerk directly
