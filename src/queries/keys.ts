@@ -3,7 +3,7 @@
  * All query keys should be created through this module
  */
 
-export const queryKeys = {
+const queryKeys = {
   // Profile queries
   profile: {
     current: () => ['profile', 'current'] as const,
@@ -47,7 +47,7 @@ export const queryKeys = {
 /**
  * Helper to invalidate related queries after mutations
  */
-export const invalidationHelpers = {
+const invalidationHelpers = {
   profile: (queryClient: any) => {
     queryClient.invalidateQueries({ queryKey: queryKeys.profile.current() });
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary() });
@@ -73,7 +73,7 @@ export const invalidationHelpers = {
  * Backward compatibility export
  * @deprecated Use queryKeys instead
  */
-export const qk = {
+const qk = {
   profile: (userId: string) => ['profile', userId],
   business: (businessId: string) => ['business', businessId],
   customersList: (businessId: string) => ['customers', 'list', businessId],
@@ -87,3 +87,6 @@ export const qk = {
   stripeStatus: (businessId: string) => ['stripe', 'status', businessId],
   subscription: (userId: string) => ['subscription', userId]
 };
+
+// Export everything
+export { queryKeys, invalidationHelpers, qk };

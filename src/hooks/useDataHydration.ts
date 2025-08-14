@@ -18,16 +18,18 @@ export function useDataHydration() {
   const { data: jobsData } = useSupabaseJobs();
   const { data: invoicesData } = useSupabaseInvoices();
 
-  // Add logging to verify business scoping
-  console.log('[DataHydration] Business context:', {
-    authBusinessId: snapshot.businessId,
-    storeBusinessId: store.business.id,
-    phase: snapshot.phase,
-    customerCount: customersData?.rows?.length || 0,
-    quoteCount: quotesData?.rows?.length || 0,
-    jobCount: jobsData?.rows?.length || 0,
-    invoiceCount: invoicesData?.rows?.length || 0,
-  });
+  // Add logging to verify business scoping (only when context changes)
+  useEffect(() => {
+    console.info('[DataHydration] Business context:', {
+      authBusinessId: snapshot.businessId,
+      storeBusinessId: store.business.id,
+      phase: snapshot.phase,
+      customerCount: customersData?.rows?.length || 0,
+      quoteCount: quotesData?.rows?.length || 0,
+      jobCount: jobsData?.rows?.length || 0,
+      invoiceCount: invoicesData?.rows?.length || 0,
+    });
+  }, [snapshot.businessId, snapshot.phase, customersData?.rows?.length, quotesData?.rows?.length, jobsData?.rows?.length, invoicesData?.rows?.length]);
 
   // Hydrate customers from server
   useEffect(() => {
@@ -50,7 +52,7 @@ export function useDataHydration() {
         }
       });
     }
-  }, [customersData, snapshot.phase, snapshot.businessId, store]);
+  }, [customersData, snapshot.phase, snapshot.businessId, store.business.id, store.upsertCustomer]);
 
   // Hydrate quotes from server 
   useEffect(() => {
@@ -77,7 +79,7 @@ export function useDataHydration() {
         }
       });
     }
-  }, [quotesData, snapshot.phase, snapshot.businessId, store]);
+  }, [quotesData, snapshot.phase, snapshot.businessId, store.business.id, store.upsertQuote]);
 
   // Hydrate jobs from server
   useEffect(() => {
@@ -104,7 +106,7 @@ export function useDataHydration() {
         }
       });
     }
-  }, [jobsData, snapshot.phase, snapshot.businessId, store]);
+  }, [jobsData, snapshot.phase, snapshot.businessId, store.business.id, store.upsertJob]);
 
   // Hydrate invoices from server
   useEffect(() => {
@@ -132,5 +134,5 @@ export function useDataHydration() {
         }
       });
     }
-  }, [invoicesData, snapshot.phase, snapshot.businessId, store]);
+  }, [invoicesData, snapshot.phase, snapshot.businessId, store.business.id, store.upsertInvoice]);
 }
