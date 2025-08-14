@@ -3,7 +3,7 @@ import { CheckCircle2, ChevronDown, ChevronUp, User, Users, Calendar, FileText, 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { useOnboardingState } from '@/hooks/useOnboardingState';
+import { useOnboardingState } from '@/hooks/useOnboardingStateOptimized';
 import { useStore } from '@/store/useAppStore';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useLocation } from 'react-router-dom';

@@ -54,7 +54,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
 
   const openSetupProfile = () => {
     track('onboarding_step_completed', { step: 'setup_profile_initiated' });
-    navigate('/settings');
+    navigate('/settings', { state: { focus: 'profile' } });
   };
 
   const openNewJobSheet = () => {
