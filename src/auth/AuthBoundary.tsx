@@ -50,7 +50,7 @@ export function RequireAuth() {
   );
 }
 
-export function PublicOnly({ redirectTo }: { redirectTo?: string }) {
+export function PublicOnly({ redirectTo }: { redirectTo?: string } = {}) {
   return (
     <AuthBoundary publicOnly redirectTo={redirectTo}>
       <Outlet />

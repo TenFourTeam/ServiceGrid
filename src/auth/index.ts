@@ -7,5 +7,5 @@ export * from './types';
 // Re-export Clerk's useAuth as the primary auth hook
 export { useAuth } from '@clerk/clerk-react';
 
-// Export new business auth hook
+// Export new business auth hook  
 export { useBusinessAuth } from '@/hooks/useBusinessAuth';
