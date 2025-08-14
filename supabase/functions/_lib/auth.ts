@@ -2,8 +2,12 @@
 import { verifyToken } from "https://esm.sh/@clerk/backend@1.7.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.54.0";
 
+type ClerkUserId = string; // e.g., 'user_abc123'
+type UserUuid = string;    // postgres uuid
+
 export type AuthContext = {
-  userId: string;
+  clerkUserId: ClerkUserId;
+  userId: UserUuid; // Keep for backwards compatibility
   email?: string;
   businessId: string;
   supaAdmin: ReturnType<typeof createClient>;
@@ -38,7 +42,7 @@ export async function requireCtx(req: Request): Promise<AuthContext> {
     });
   }
 
-  const userId = payload.sub as string;
+  const clerkUserId = payload.sub as ClerkUserId;
   const email = (payload.email || payload["primary_email"] || "") as string;
 
   // Create admin Supabase client
@@ -59,12 +63,15 @@ export async function requireCtx(req: Request): Promise<AuthContext> {
   const url = new URL(req.url);
   const candidateBusinessId = req.headers.get("X-Business-Id") || url.searchParams.get("businessId") || null;
 
-  // Resolve the actual profile UUID for this Clerk user
-  const profileId = await resolveOwnerId(supaAdmin, userId);
-  const businessId = await resolveBusinessId(supaAdmin, profileId, candidateBusinessId);
+  // 1) Resolve internal UUID via profiles (Clerk -> UUID)
+  const userUuid = await resolveUserUuid(supaAdmin, clerkUserId);
+
+  // 2) Resolve business using UUID (do NOT call the Clerk->UUID mapper again)
+  const businessId = await resolveBusinessId(supaAdmin, userUuid, candidateBusinessId);
 
   return {
-    userId: profileId, // Return the resolved UUID, not the Clerk user ID
+    clerkUserId,
+    userId: userUuid, // Return the resolved UUID, not the Clerk user ID
     email: email?.toLowerCase() || undefined,
     businessId,
     supaAdmin
@@ -73,19 +80,16 @@ export async function requireCtx(req: Request): Promise<AuthContext> {
 
 async function resolveBusinessId(
   supabase: ReturnType<typeof createClient>, 
-  userId: string, 
+  userUuid: UserUuid, 
   candidate?: string | null
 ): Promise<string> {
-  // First, ensure we have a profile for this user
-  const ownerId = await resolveOwnerId(supabase, userId);
-
   if (candidate) {
     // Verify user is a member of the specified business
     const { data } = await supabase
       .from("business_members")
       .select("business_id")
       .eq("business_id", candidate)
-      .eq("user_id", ownerId)
+      .eq("user_id", userUuid)
       .single();
     
     if (!data) {
@@ -101,7 +105,7 @@ async function resolveBusinessId(
   const { data: membership } = await supabase
     .from("business_members")
     .select("business_id")
-    .eq("user_id", ownerId)
+    .eq("user_id", userUuid)
     .order("joined_at", { ascending: true })
     .limit(1)
     .maybeSingle();
@@ -113,7 +117,7 @@ async function resolveBusinessId(
   // No memberships found - create default business
   const { data: business, error: businessError } = await supabase
     .from("businesses")
-    .insert({ name: "My Business", owner_id: ownerId })
+    .insert({ name: "My Business", owner_id: userUuid })
     .select("id")
     .single();
 
@@ -122,7 +126,7 @@ async function resolveBusinessId(
   // Create owner membership
   await supabase.from("business_members").insert({
     business_id: business.id,
-    user_id: ownerId,
+    user_id: userUuid,
     role: "owner",
     joined_at: new Date().toISOString()
   });
@@ -130,7 +134,7 @@ async function resolveBusinessId(
   return business.id;
 }
 
-async function resolveOwnerId(supabase: ReturnType<typeof createClient>, clerkUserId: string): Promise<string> {
+async function resolveUserUuid(supabase: ReturnType<typeof createClient>, clerkUserId: ClerkUserId): Promise<UserUuid> {
   // Look up by clerk_user_id first
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
@@ -140,7 +144,7 @@ async function resolveOwnerId(supabase: ReturnType<typeof createClient>, clerkUs
     .maybeSingle();
 
   if (profileError) throw profileError;
-  if (profile?.id) return profile.id;
+  if (profile?.id) return profile.id as UserUuid;
 
   // Profile doesn't exist - this should be handled by bootstrap
   throw new Response(JSON.stringify({ error: "User profile not found. Please sign in again." }), { 
