@@ -7,7 +7,8 @@ export type OnbCtx = {
     phoneE164?: string | null; 
   };
   business: { 
-    name?: string | null; 
+    name?: string | null;
+    nameCustomized?: boolean;
   };
   counts: { 
     customers: number; 
@@ -39,7 +40,7 @@ export const steps: Record<StepId, StepConfig> = {
     focus: 'profile',
     guard: (ctx) => {
       const okName = !!ctx.profile.fullName?.trim();
-      const okBiz = !!ctx.business.name && ctx.business.name.toLowerCase() !== 'my business';
+      const okBiz = !!ctx.business.name && ctx.business.nameCustomized;
       const okPhone = !!ctx.profile.phoneE164; // server-normalized
       return okName && okBiz && okPhone;
     }

@@ -31,7 +31,8 @@ export function useOnboardingState() {
       phoneE164: profile?.phone_e164 ?? null 
     },
     business: { 
-      name: business?.name ?? null 
+      name: business?.name ?? null,
+      nameCustomized: business?.name_customized ?? false
     },
     counts: { 
       customers: customersCount ?? 0, 

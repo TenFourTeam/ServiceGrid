@@ -25,6 +25,7 @@ export function ProfileCompletionDebug() {
         <div>DB Name Source: {(profile as any)?.name_source || 'None'}</div>
         <div>Local Business: {business?.name || 'None'}</div>
         <div>Business Name Customized: {business?.name_customized ? 'Yes' : 'No'}</div>
+        <div>OnbCtx Business Customized: {onboarding.ctx.business.nameCustomized ? 'Yes' : 'No'}</div>
         <div>Current Step: {onboarding.currentStepId || 'Complete'}</div>
         <div>Progress: {onboarding.progressPct}%</div>
         <div>Profile Complete: {onboarding.completionByStep.profile ? '✅' : '❌'}</div>
