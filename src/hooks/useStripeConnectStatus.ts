@@ -1,6 +1,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
+import { useAuthSnapshot } from "@/auth";
+import { qk } from "@/queries/keys";
 
 export interface ConnectStatus {
   stripeAccountId: string | null;
@@ -16,11 +18,12 @@ const SUPABASE_URL = "https://ijudkzqfriazabiosnvb.supabase.co";
 
 export function useStripeConnectStatus(opts?: { enabled?: boolean }) {
   const { isSignedIn, getToken } = useClerkAuth();
+  const { snapshot } = useAuthSnapshot();
   const enabled = !!isSignedIn && (opts?.enabled ?? true);
 
   return useQuery<ConnectStatus | null, Error>({
-    queryKey: ["stripe", "connect-status"],
-    enabled,
+    queryKey: qk.stripeStatus(snapshot.businessId || ''),
+    enabled: enabled && !!snapshot.businessId,
     queryFn: async () => {
       const token = await getToken();
       if (!token) return null;

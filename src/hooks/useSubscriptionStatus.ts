@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
+import { useAuthSnapshot } from "@/auth";
 import { edgeFetchJson } from "@/utils/edgeApi";
+import { qk } from "@/queries/keys";
 
 export interface SubscriptionStatus {
   subscribed: boolean;
@@ -14,11 +16,12 @@ const TRIAL_DURATION_DAYS = 7;
 
 export function useSubscriptionStatus(opts?: { enabled?: boolean }) {
   const { isSignedIn, getToken } = useClerkAuth();
+  const { snapshot } = useAuthSnapshot();
   const enabled = !!isSignedIn && (opts?.enabled ?? true);
 
   return useQuery<SubscriptionStatus | null, Error>({
-    queryKey: ["subscription", "status"],
-    enabled,
+    queryKey: qk.subscription(snapshot.userId || ''),
+    enabled: enabled && !!snapshot.userId,
     queryFn: async () => {
       try {
         const data = await edgeFetchJson("check-subscription", getToken);

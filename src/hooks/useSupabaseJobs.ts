@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuthSnapshot } from "@/auth";
 import { useApiClient } from "@/auth";
+import { qk } from "@/queries/keys";
 import { z } from "zod";
 
 export interface DbJobRow {
@@ -30,8 +31,8 @@ export function useSupabaseJobs(opts?: { enabled?: boolean; refetchInterval?: nu
   const enabled = snapshot.phase === 'authenticated' && (opts?.enabled ?? true);
 
   return useQuery<{ rows: DbJobRow[] } | null, Error>({
-    queryKey: ["supabase", "jobs"],
-    enabled,
+    queryKey: qk.jobsList(snapshot.businessId || ''),
+    enabled: enabled && !!snapshot.businessId,
     refetchInterval: opts?.refetchInterval ?? false,
     refetchOnWindowFocus: opts?.refetchOnWindowFocus ?? true,
     refetchOnReconnect: opts?.refetchOnReconnect ?? true,

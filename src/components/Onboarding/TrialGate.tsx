@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { Crown, Lock, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useDashboardData } from '@/hooks/useDashboardData';
+import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 import { useOnboarding } from './OnboardingProvider';
 
 interface TrialGateProps {
@@ -13,8 +13,7 @@ interface TrialGateProps {
 }
 
 export function TrialGate({ children, feature, description, fallbackContent }: TrialGateProps) {
-  const { data: dashboardData } = useDashboardData();
-  const subscription = dashboardData?.subscription;
+  const { data: subscription } = useSubscriptionStatus();
   const { openSubscription } = useOnboarding();
 
   if (!subscription || subscription.subscribed) {
@@ -22,7 +21,7 @@ export function TrialGate({ children, feature, description, fallbackContent }: T
   }
 
   // Calculate trial status
-  const endDate = subscription.endDate ? new Date(subscription.endDate) : null;
+  const endDate = subscription.subscription_end ? new Date(subscription.subscription_end) : null;
   const now = new Date();
   const isTrialExpired = endDate ? now > endDate : false;
   const trialDaysLeft = endDate && !isTrialExpired ? Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : 0;

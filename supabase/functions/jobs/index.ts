@@ -33,6 +33,23 @@ serve(async (req) => {
     if (req.method === "GET") {
       const start = url.searchParams.get("start");
       const end = url.searchParams.get("end");
+      const countOnly = url.searchParams.get("count") === "true";
+
+      if (countOnly) {
+        let q = ctx.supaAdmin
+          .from("jobs")
+          .select("id", { count: 'exact', head: true })
+          .eq("business_id", ctx.businessId);
+
+        // Optional range filtering for count too
+        if (start && end) {
+          q = q.lt("starts_at", end).gt("ends_at", start);
+        }
+
+        const { count, error } = await q;
+        if (error) throw error;
+        return json({ count: count || 0 });
+      }
 
       let q = ctx.supaAdmin
         .from("jobs")

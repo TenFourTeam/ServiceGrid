@@ -63,6 +63,24 @@ serve(async (req) => {
 
     if (req.method === "GET") {
       console.log(`[customers] Fetching customers for business: ${businessId}`);
+      
+      // Check if this is a count-only request
+      const url = new URL(req.url);
+      const countOnly = url.searchParams.get("count") === "true";
+      
+      if (countOnly) {
+        const { count, error } = await supaAdmin
+          .from("customers")
+          .select("id", { count: 'exact', head: true })
+          .eq("business_id", businessId);
+        if (error) {
+          console.error(`[customers] Database error in GET count:`, error);
+          throw error;
+        }
+        console.log(`[customers] Successfully counted ${count || 0} customers`);
+        return json({ count: count || 0 });
+      }
+      
       const { data, error } = await supaAdmin
         .from("customers")
         .select("id,name,email,phone,address")

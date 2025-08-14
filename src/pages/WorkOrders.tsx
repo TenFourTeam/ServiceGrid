@@ -9,7 +9,7 @@ import { formatDateTime, formatMoney } from '@/utils/format';
 import { useNavigate } from 'react-router-dom';
 import { Job } from '@/types';
 import { toast } from '@/components/ui/use-toast';
-import { useDashboardData } from '@/hooks/useDashboardData';
+import { useSupabaseJobs } from '@/hooks/useSupabaseJobs';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { edgeFetchJson } from '@/utils/edgeApi';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -122,7 +122,7 @@ function WorkOrderRow({ job, onRescheduled, onComplete, onInvoice, onViewInvoice
 export default function WorkOrdersPage() {
   const { customers, updateJobStatus, upsertJob } = useStore();
   const { isSignedIn, getToken } = useClerkAuth();
-  const { data: dashboardData, isLoading, error } = useDashboardData();
+  const { data: jobsData, isLoading, error } = useSupabaseJobs();
   const { filter, setFilter, q, setQ, sort, setSort, jobs, counts, hasInvoice } = useFilteredJobs();
   const navigate = useNavigate();
   const lastSyncKeyRef = useRef<string | null>(null);

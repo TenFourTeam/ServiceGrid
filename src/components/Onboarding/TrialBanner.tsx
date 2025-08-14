@@ -2,13 +2,12 @@ import { useState } from 'react';
 import { X, Crown, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useDashboardData } from '@/hooks/useDashboardData';
+import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 import { useOnboarding } from '@/components/Onboarding/OnboardingProvider';
 
 export function TrialBanner() {
   const [dismissed, setDismissed] = useState(false);
-  const { data: dashboardData } = useDashboardData();
-  const subscription = dashboardData?.subscription;
+  const { data: subscription } = useSubscriptionStatus();
   const { openSubscription } = useOnboarding();
 
   if (!subscription || subscription.subscribed || dismissed) {
@@ -16,7 +15,7 @@ export function TrialBanner() {
   }
 
   // Calculate trial status from dashboard data
-  const endDate = subscription.endDate ? new Date(subscription.endDate) : null;
+  const endDate = subscription.subscription_end ? new Date(subscription.subscription_end) : null;
   const now = new Date();
   const isTrialExpired = endDate ? now > endDate : false;
   const trialDaysLeft = endDate && !isTrialExpired ? Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : 0;

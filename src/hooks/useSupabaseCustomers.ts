@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuthSnapshot } from "@/auth";
 import { useApiClient } from "@/auth";
+import { qk } from "@/queries/keys";
 import { z } from "zod";
 
 export interface DbCustomerRow {
@@ -22,8 +23,8 @@ export function useSupabaseCustomers(opts?: { enabled?: boolean }) {
   const enabled = snapshot.phase === 'authenticated' && (opts?.enabled ?? true);
 
   return useQuery<{ rows: DbCustomerRow[] } | null, Error>({
-    queryKey: ["supabase", "customers"],
-    enabled,
+    queryKey: qk.customersList(snapshot.businessId || ''),
+    enabled: enabled && !!snapshot.businessId,
     queryFn: async () => {
       console.info("[useSupabaseCustomers] fetching...");
       const response = await apiClient.get("/customers");

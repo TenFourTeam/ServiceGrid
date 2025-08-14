@@ -1,6 +1,5 @@
 import { useUser } from '@clerk/clerk-react';
 import { useStore } from '@/store/useAppStore';
-import { useDashboardData } from '@/hooks/useDashboardData';
 import { useProfile } from '@/queries/useProfile';
 import { useOnboardingState } from '@/onboarding/useOnboardingState';
 
@@ -10,7 +9,6 @@ import { useOnboardingState } from '@/onboarding/useOnboardingState';
 export function ProfileCompletionDebug() {
   const { user } = useUser();
   const { business } = useStore();
-  const { data: dashboardData } = useDashboardData();
   const { data: profile } = useProfile();
   const onboarding = useOnboardingState();
 
@@ -25,8 +23,7 @@ export function ProfileCompletionDebug() {
         <div>DB Profile Name: {profile?.full_name || 'None'}</div>
         <div>DB Profile Phone: {profile?.phone_e164 || 'None'}</div>
         <div>Local Business: {business?.name || 'None'}</div>
-        <div>Dashboard Business: {dashboardData?.business?.name || 'None'}</div>
-        <div>Dashboard Phone: {dashboardData?.business?.phone || 'None'}</div>
+        <div>Business Name Customized: {business?.name_customized ? 'Yes' : 'No'}</div>
         <div>Current Step: {onboarding.currentStepId || 'Complete'}</div>
         <div>Progress: {onboarding.progressPct}%</div>
         <div>Profile Complete: {onboarding.completionByStep.profile ? '✅' : '❌'}</div>

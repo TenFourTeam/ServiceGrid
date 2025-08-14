@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { edgeFetchJson, edgeFetch } from '@/utils/edgeApi';
-import { useDashboardData } from '@/hooks/useDashboardData';
+import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
 import { CustomerCombobox } from '@/components/Quotes/CustomerCombobox';
 import { InlineCustomerForm } from '@/components/Onboarding/InlineCustomerForm';
 import type { Customer } from '@/types';

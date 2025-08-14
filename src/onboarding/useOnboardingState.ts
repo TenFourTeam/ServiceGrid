@@ -1,7 +1,11 @@
 import { useMemo } from 'react';
 import { useUser } from '@clerk/clerk-react';
 import { useStore } from '@/store/useAppStore';
-import { useDashboardData } from '@/hooks/useDashboardData';
+import { useCustomersCount } from '@/hooks/useCustomersCount';
+import { useJobsCount } from '@/hooks/useJobsCount';
+import { useQuotesCount } from '@/hooks/useQuotesCount';
+import { useStripeConnectStatus } from '@/hooks/useStripeConnectStatus';
+import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 import { useProfile } from '@/queries/useProfile';
 import { steps, stepOrder, type OnbCtx, type StepId } from './steps';
 
@@ -14,7 +18,11 @@ export type StepStatus = 'complete' | 'active' | 'pending' | 'locked';
 export function useOnboardingState() {
   const { user } = useUser();
   const { business } = useStore();
-  const { data: dashboardData } = useDashboardData();
+  const { data: customersCount } = useCustomersCount();
+  const { data: jobsCount } = useJobsCount();
+  const { data: quotesCount } = useQuotesCount();
+  const { data: stripeStatus } = useStripeConnectStatus();
+  const { data: subscription } = useSubscriptionStatus();
   const { data: profile } = useProfile();
 
   const ctx: OnbCtx = useMemo(() => ({
@@ -23,18 +31,18 @@ export function useOnboardingState() {
       phoneE164: profile?.phone_e164 ?? null 
     },
     business: { 
-      name: dashboardData?.business?.name ?? business?.name ?? null 
+      name: business?.name ?? null 
     },
     counts: { 
-      customers: dashboardData?.counts?.customers ?? 0, 
-      jobs: dashboardData?.counts?.jobs ?? 0, 
-      quotes: dashboardData?.counts?.quotes ?? 0 
+      customers: customersCount ?? 0, 
+      jobs: jobsCount ?? 0, 
+      quotes: quotesCount ?? 0 
     },
     billing: { 
-      bankLinked: !!dashboardData?.stripeStatus?.chargesEnabled, 
-      subscribed: !!dashboardData?.subscription?.subscribed 
+      bankLinked: !!stripeStatus?.chargesEnabled, 
+      subscribed: !!subscription?.subscribed 
     }
-  }), [profile, business, dashboardData]);
+  }), [profile, business, customersCount, jobsCount, quotesCount, stripeStatus, subscription]);
 
   const completionByStep: Record<StepId, boolean> = useMemo(() => {
     const res = {} as Record<StepId, boolean>;

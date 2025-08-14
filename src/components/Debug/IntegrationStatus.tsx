@@ -1,6 +1,6 @@
 import { useAuthSnapshot } from '@/auth';
 import { useStore } from '@/store/useAppStore';
-import { useDashboardData } from '@/hooks/useDashboardData';
+import { useCustomersCount } from '@/hooks/useCustomersCount';
 import { CheckCircle, XCircle, Clock } from 'lucide-react';
 
 /**
@@ -10,7 +10,7 @@ import { CheckCircle, XCircle, Clock } from 'lucide-react';
 export function IntegrationStatus() {
   const { snapshot } = useAuthSnapshot();
   const store = useStore();
-  const { data: dashboardData, isLoading } = useDashboardData();
+  const { data: customersCount, isLoading } = useCustomersCount();
 
   const checks = [
     {
@@ -29,9 +29,9 @@ export function IntegrationStatus() {
       details: `${snapshot.business?.name} ↔ ${store.business.name}`,
     },
     {
-      name: 'Dashboard Data',
-      status: isLoading ? 'loading' : dashboardData ? 'success' : 'error',
-      details: isLoading ? 'Loading...' : dashboardData ? 'Connected' : 'No data',
+      name: 'Query System',
+      status: isLoading ? 'loading' : customersCount !== undefined ? 'success' : 'error',
+      details: isLoading ? 'Loading...' : customersCount !== undefined ? `${customersCount} customers` : 'No data',
     },
     {
       name: 'API Client',

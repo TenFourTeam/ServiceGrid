@@ -12,7 +12,7 @@ import { edgeFetch } from '@/utils/edgeApi';
 import { toast as sonnerToast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import ConnectBanner from '@/components/Stripe/ConnectBanner';
-import { useDashboardData } from '@/hooks/useDashboardData';
+import { useStripeConnectStatus } from '@/hooks/useStripeConnectStatus';
 import { BusinessMembersList } from '@/components/Business/BusinessMembersList';
 import { AuditLogsList } from '@/components/Business/AuditLogsList';
 import { useBusinessRole } from '@/hooks/useBusinessRole';
@@ -38,9 +38,7 @@ export default function SettingsPage() {
   const [uploadingLight, setUploadingLight] = useState(false);
   const [sub, setSub] = useState<any>(null);
   const [subLoading, setSubLoading] = useState(false);
-  const { data: dashboardData } = useDashboardData();
-  const connectStatus = dashboardData?.stripeStatus;
-  const statusLoading = !dashboardData;
+  const { data: connectStatus, isLoading: statusLoading } = useStripeConnectStatus();
   const statusError = null;
   const { user, isLoaded: userLoaded } = useUser();
   const [userName, setUserName] = useState('');
@@ -447,8 +445,8 @@ export default function SettingsPage() {
           <CardHeader><CardTitle>Payouts</CardTitle></CardHeader>
           <CardContent>
             <ConnectBanner 
-              loading={!!statusLoading} 
-              error={statusError ? statusError.message : null} 
+              loading={statusLoading} 
+              error={null} 
               chargesEnabled={connectStatus?.chargesEnabled} 
               payoutsEnabled={connectStatus?.payoutsEnabled} 
               detailsSubmitted={connectStatus?.detailsSubmitted} 

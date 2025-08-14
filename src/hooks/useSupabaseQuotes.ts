@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuthSnapshot } from "@/auth";
 import { useApiClient } from "@/auth";
+import { qk } from "@/queries/keys";
 import type { Tables } from "@/integrations/supabase/types";
 import { z } from "zod";
 
@@ -28,8 +29,8 @@ export function useSupabaseQuotes(opts?: { enabled?: boolean }) {
   const enabled = snapshot.phase === 'authenticated' && (opts?.enabled ?? true);
 
   return useQuery<{ rows: DbQuoteRow[] } | null, Error>({
-    queryKey: ["supabase", "quotes"],
-    enabled,
+    queryKey: qk.quotesList(snapshot.businessId || ''),
+    enabled: enabled && !!snapshot.businessId,
     queryFn: async () => {
       console.info("[useSupabaseQuotes] fetching...");
       const response = await apiClient.get("/quotes");

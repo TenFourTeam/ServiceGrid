@@ -73,6 +73,18 @@ serve(async (req) => {
     const ctx = await requireCtx(req);
 
     if (req.method === "GET") {
+      const url = new URL(req.url);
+      const countOnly = url.searchParams.get("count") === "true";
+      
+      if (countOnly) {
+        const { count, error } = await ctx.supaAdmin
+          .from("quotes")
+          .select("id", { count: 'exact', head: true })
+          .eq("business_id", ctx.businessId);
+        if (error) throw error;
+        return json({ count: count || 0 });
+      }
+      
       const { data, error } = await ctx.supaAdmin
         .from("quotes")
         .select("id, number, total, status, updated_at, public_token, view_count, customer_id, customers(name,email)")

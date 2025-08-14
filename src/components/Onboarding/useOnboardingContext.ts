@@ -1,10 +1,13 @@
 import { useMemo } from 'react';
 import { useUser } from '@clerk/clerk-react';
 import { useStore } from '@/store/useAppStore';
-import { useDashboardData } from '@/hooks/useDashboardData';
-import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
+import { useCustomersCount } from '@/hooks/useCustomersCount';
+import { useJobsCount } from '@/hooks/useJobsCount';
+import { useQuotesCount } from '@/hooks/useQuotesCount';
 import { useSupabaseJobs } from '@/hooks/useSupabaseJobs';
 import { useSupabaseQuotes } from '@/hooks/useSupabaseQuotes';
+import { useStripeConnectStatus } from '@/hooks/useStripeConnectStatus';
+import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 import { useProfile } from '@/queries/useProfile';
 
 export interface OnboardingContext {
@@ -30,17 +33,26 @@ export interface OnboardingContext {
 }
 
 export function useOnboardingContext(): OnboardingContext {
-  const { data: dashboardData } = useDashboardData();
-  const { data: customersData } = useSupabaseCustomers();
+  const { data: customersCount } = useCustomersCount();
+  const { data: jobsCount } = useJobsCount();
+  const { data: quotesCount } = useQuotesCount();
   const { data: jobsData } = useSupabaseJobs();
   const { data: quotesData } = useSupabaseQuotes();
+  const { data: stripeStatus } = useStripeConnectStatus();
+  const { data: subscription } = useSubscriptionStatus();
   const { data: profile } = useProfile();
   const { user } = useUser();
   const { business } = useStore();
 
   return useMemo(() => {
     // Check if all required data is loaded
-    const dataReady = !!(dashboardData && customersData && jobsData && quotesData);
+    const dataReady = !!(
+      customersCount !== undefined && 
+      jobsCount !== undefined && 
+      quotesCount !== undefined &&
+      profile !== undefined &&
+      business !== undefined
+    );
     
     if (!dataReady) {
       return {
@@ -58,9 +70,9 @@ export function useOnboardingContext(): OnboardingContext {
     }
 
     // Extract counts
-    const jobsCount = jobsData?.rows?.length ?? 0;
-    const quotesCount = quotesData?.rows?.length ?? 0;
-    const customersCount = customersData?.rows?.length ?? 0;
+    const finalJobsCount = jobsCount ?? 0;
+    const finalQuotesCount = quotesCount ?? 0;
+    const finalCustomersCount = customersCount ?? 0;
 
     // Check user and business setup from DATABASE (not Clerk)
     const hasUserName = !!(profile?.full_name);
@@ -69,8 +81,8 @@ export function useOnboardingContext(): OnboardingContext {
     const hasNameAndBusiness = hasUserName && hasBusinessName && hasPhoneNumber;
 
     // Check status flags
-    const bankLinked = dashboardData.stripeStatus?.chargesEnabled ?? false;
-    const subscribed = dashboardData.subscription?.subscribed ?? false;
+    const bankLinked = stripeStatus?.chargesEnabled ?? false;
+    const subscribed = subscription?.subscribed ?? false;
 
     // Advanced flags for context-dependent steps
     const hasSentQuotes = quotesData?.rows?.some(quote => quote.status === 'Sent' || quote.status === 'Approved') ?? false;
@@ -78,18 +90,18 @@ export function useOnboardingContext(): OnboardingContext {
 
     // Create version number from data for stable dependencies
     const version = JSON.stringify({
-      jobsCount,
-      quotesCount,
-      customersCount,
+      jobsCount: finalJobsCount,
+      quotesCount: finalQuotesCount,
+      customersCount: finalCustomersCount,
       bankLinked,
       subscribed,
       hasNameAndBusiness
     }).length; // Simple hash alternative
 
     return {
-      jobsCount,
-      quotesCount,
-      customersCount,
+      jobsCount: finalJobsCount,
+      quotesCount: finalQuotesCount,
+      customersCount: finalCustomersCount,
       bankLinked,
       subscribed,
       hasNameAndBusiness,
@@ -98,5 +110,5 @@ export function useOnboardingContext(): OnboardingContext {
       dataReady: true,
       version
     };
-  }, [dashboardData, customersData, jobsData, quotesData, profile, user, business]);
+  }, [customersCount, jobsCount, quotesCount, jobsData, quotesData, stripeStatus, subscription, profile, user, business]);
 }

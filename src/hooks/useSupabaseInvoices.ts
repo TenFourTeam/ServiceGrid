@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuthSnapshot } from "@/auth";
 import { useApiClient } from "@/auth";
+import { qk } from "@/queries/keys";
 import { z } from "zod";
 
 export interface DbInvoiceRow {
@@ -30,8 +31,8 @@ export function useSupabaseInvoices(opts?: { enabled?: boolean }) {
   const enabled = snapshot.phase === 'authenticated' && (opts?.enabled ?? true);
 
   return useQuery<{ rows: DbInvoiceRow[] } | null, Error>({
-    queryKey: ["supabase", "invoices"],
-    enabled,
+    queryKey: qk.invoicesList(snapshot.businessId || ''),
+    enabled: enabled && !!snapshot.businessId,
     queryFn: async () => {
       console.info("[useSupabaseInvoices] fetching...");
       const response = await apiClient.get("/invoices");

@@ -2,13 +2,12 @@ import { useEffect } from 'react';
 import { Clock, Crown, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { useDashboardData } from '@/hooks/useDashboardData';
+import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 import { useOnboarding } from './OnboardingProvider';
 import { useLocation } from 'react-router-dom';
 
 export function TrialNotifications() {
-  const { data: dashboardData } = useDashboardData();
-  const subscription = dashboardData?.subscription;
+  const { data: subscription } = useSubscriptionStatus();
   const { openSubscription } = useOnboarding();
   const { toast } = useToast();
   const location = useLocation();
@@ -20,7 +19,7 @@ export function TrialNotifications() {
     if (!subscription || subscription.subscribed) return;
 
     // Calculate trial status
-    const endDate = subscription.endDate ? new Date(subscription.endDate) : null;
+    const endDate = subscription.subscription_end ? new Date(subscription.subscription_end) : null;
     const now = new Date();
     const isTrialExpired = endDate ? now > endDate : false;
     const trialDaysLeft = endDate && !isTrialExpired ? Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : 0;

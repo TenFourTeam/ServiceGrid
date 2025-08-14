@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useOnboardingState } from '@/onboarding/useOnboardingState';
 import { useStore } from '@/store/useAppStore';
-import { useDashboardData } from '@/hooks/useDashboardData';
+import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 import { useLocation } from 'react-router-dom';
 
 interface FloatingSetupWidgetProps {
@@ -28,8 +28,7 @@ export function FloatingSetupWidget({
   const [isExpanded, setIsExpanded] = useState(false);
   const store = useStore();
   const onboardingState = useOnboardingState();
-  const { data: dashboardData } = useDashboardData();
-  const subscription = dashboardData?.subscription;
+  const { data: subscription } = useSubscriptionStatus();
   const location = useLocation();
 
   // Hide widget on landing page
@@ -45,7 +44,7 @@ export function FloatingSetupWidget({
   }
 
   // Calculate trial status
-  const endDate = subscription?.endDate ? new Date(subscription.endDate) : null;
+  const endDate = subscription?.subscription_end ? new Date(subscription.subscription_end) : null;
   const now = new Date();
   const isTrialExpired = endDate ? now > endDate : false;
   const trialDaysLeft = endDate && !isTrialExpired ? Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : 0;
