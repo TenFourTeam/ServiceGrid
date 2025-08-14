@@ -52,7 +52,7 @@ export function useLegacyStoreFallback() {
     },
     
     // Legacy data structure (empty for compatibility)
-    business: { id: '', name: '', nameCustomized: false },
+    business: { id: '', name: '' },
     customers: [],
     jobs: [],
     quotes: [],

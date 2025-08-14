@@ -5,7 +5,7 @@ import { useOnboardingState } from '@/onboarding/streamlined';
 
 // Mock the unified queries
 vi.mock('@/queries/unified', () => ({
-  useBusiness: () => ({ data: { nameCustomized: true }, isLoading: false }),
+  useBusiness: () => ({ data: { name: 'Test Business' }, isLoading: false }),
   useProfile: () => ({ data: { fullName: 'Test User', phoneE164: '+1234567890' }, isLoading: false }),
   useCustomersCount: () => ({ data: 0, isLoading: false }),
   useJobsCount: () => ({ data: 0, isLoading: false }),

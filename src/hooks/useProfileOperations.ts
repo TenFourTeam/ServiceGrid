@@ -14,7 +14,6 @@ export type ProfileUpdateResponse = {
   data: {
     fullName: string;
     businessName?: string;
-    nameCustomized?: boolean;
     phoneE164: string;
   };
 };
@@ -66,8 +65,7 @@ export function useProfileOperations() {
           if (!old) return old;
           return {
             ...old,
-            name: variables.businessName,
-            nameCustomized: variables.businessName.toLowerCase() !== 'my business'
+            name: variables.businessName
           };
         });
       }
@@ -117,8 +115,7 @@ export function useProfileOperations() {
           if (!old) return old;
           return {
             ...old,
-            name: data.data.businessName,
-            nameCustomized: data.data.nameCustomized
+            name: data.data.businessName
           };
         });
       }

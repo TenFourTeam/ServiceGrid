@@ -439,7 +439,7 @@ export function useStore() {
     console.warn('DEPRECATED: useStore() called but store provider was removed. Use React Query hooks instead.');
     // Return a minimal fallback to prevent crashes during transition
     return {
-      business: { id: '', name: 'Loading...', nameCustomized: false },
+      business: { id: '', name: 'Loading...' },
       customers: [],
       jobs: [],
       quotes: [],

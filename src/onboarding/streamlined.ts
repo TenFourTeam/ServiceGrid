@@ -93,7 +93,7 @@ export function useOnboardingState(): OnboardingState {
       showIntentPicker,
     };
   }, [
-    business?.nameCustomized,
+    business?.name,
     profile?.fullName,
     profile?.phoneE164,
     customersCount,

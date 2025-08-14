@@ -12,8 +12,6 @@ export function ProfileCompletionDebug() {
   const { data: profile } = useProfile();
   const onboarding = useOnboardingState();
   
-  // Check both store and onboarding values
-  const storeCustomized = business?.nameCustomized ?? false;
 
   if (!user) return null;
 
@@ -28,7 +26,6 @@ export function ProfileCompletionDebug() {
         <div>DB Name Source: {(profile as any)?.name_source || 'None'}</div>
         <div>Business Name: "{business?.name || 'None'}"</div>
         <div>Business Name Valid: {business?.name?.trim() ? 'Yes' : 'No'}</div>
-        <div>Business Name Customized: {storeCustomized ? 'Yes' : 'No'}</div>
         <div>Progress: {onboarding.completionPercentage}%</div>
         <div>Profile Complete: {onboarding.profileComplete ? '✅' : '❌'}</div>
         <div>Has Customers: {onboarding.hasCustomers ? '✅' : '❌'}</div>

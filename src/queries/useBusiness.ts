@@ -7,7 +7,6 @@ import { toBusinessUI } from './transform';
 export type BusinessUI = {
   id: string;
   name: string;
-  nameCustomized: boolean;
   phone?: string;
   replyToEmail?: string;
   taxRateDefault?: number;
@@ -29,13 +28,4 @@ export function useBusiness() {
     staleTime: 30_000,
     retry: 2,
   });
-}
-
-/**
- * Business name customization status selector
- * Single source of truth for nameCustomized
- */
-export function useBusinessNameCustomized(): boolean {
-  const { data: business } = useBusiness();
-  return business?.nameCustomized ?? false;
 }
