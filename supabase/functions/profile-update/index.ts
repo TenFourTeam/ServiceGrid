@@ -81,76 +81,53 @@ serve(async (req) => {
 
     const phoneE164 = normalizeToE164(input.phoneRaw || '');
 
-    // Update user profile (name and phone)
-    const { error: profileError } = await ctx.supaAdmin
+    // Update profiles table with business name logic
+    const businessNameCustomized = input.businessName ? 
+      input.businessName.trim().toLowerCase() !== 'my business' : false;
+
+    const { data: profileData, error: profileError } = await ctx.supaAdmin
       .from('profiles')
-      .update({ 
+      .update({
         full_name: input.fullName,
-        phone_e164: phoneE164
+        phone_e164: phoneE164,
+        business_name: input.businessName || 'My Business',
+        business_name_customized: businessNameCustomized,
       })
-      .eq('id', ctx.userId);
+      .eq('id', ctx.userId)
+      .select('id, full_name, phone_e164, business_name, business_name_customized, updated_at')
+      .single();
 
     if (profileError) {
       console.error('❌ [profile-update] Profile update failed:', profileError);
       return json({ error: { code: "profile_update_failed", message: profileError.message }}, 500);
     }
 
-    // Update business (name and phone) - trigger will handle name_customized flag
-    const updateData: any = { 
-      phone: phoneE164,
-      updated_at: new Date().toISOString()
-    };
-    
-    // Only update business name if explicitly provided
-    if (input.businessName !== undefined) {
-      updateData.name = input.businessName || 'My Business';
-    }
-    
-    const { data: business, error: businessError } = await ctx.supaAdmin
-      .from('businesses')
-      .update(updateData)
-      .eq('id', ctx.businessId)
-      .select('id, name, phone, name_customized, updated_at')
-      .maybeSingle();
+    // Still update business phone if provided
+    if (phoneE164) {
+      const { error: businessError } = await ctx.supaAdmin
+        .from('businesses')
+        .update({
+          phone: phoneE164,
+        })
+        .eq('id', ctx.businessId);
 
-    if (businessError) {
-      console.error('❌ [profile-update] Business update failed:', businessError);
-      return json({ error: { code: "business_update_failed", message: businessError.message }}, 500);
-    }
-
-    if (!business) {
-      console.error('❌ [profile-update] Business not found or access denied');
-      return json({ error: { code: "forbidden", message: "Business not found or access denied" }}, 403);
-    }
-
-    // Log audit trail for business name changes
-    if (input.businessName !== undefined && input.businessName && input.businessName.toLowerCase() !== 'my business') {
-      await ctx.supaAdmin
-        .from('audit_logs')
-        .insert({
-          business_id: ctx.businessId,
-          user_id: ctx.userId,
-          action: 'update',
-          resource_type: 'business',
-          resource_id: business.id,
-          details: { 
-            field: 'name',
-            new_value: business.name
-          }
-        });
-    }
-
-    console.log(`🎉 [profile-update] Update successful - Business: ${business.name}`);
-
-    return json({ 
-      data: {
-        fullName: input.fullName,
-        businessName: business.name,
-        phoneE164: business.phone,
-        nameCustomized: business.name_customized,
-        updatedAt: business.updated_at
+      if (businessError) {
+        console.error('[profile-update] Business phone update failed:', businessError);
+        // Don't fail the whole operation for business phone update
       }
-    }, 200);
+    }
+
+    console.log(`🎉 [profile-update] Update successful - Business: ${profileData.business_name}`);
+
+    return json({
+      data: {
+        fullName: profileData.full_name,
+        businessName: profileData.business_name,
+        phoneE164: profileData.phone_e164,
+        businessNameCustomized: profileData.business_name_customized,
+        updatedAt: profileData.updated_at,
+      }
+    });
 
   } catch (error: any) {
     console.error('💥 [profile-update] Unexpected error:', error);

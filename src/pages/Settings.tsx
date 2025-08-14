@@ -1,5 +1,6 @@
 import AppLayout from '@/components/Layout/AppLayout';
 import { useBusiness } from '@/queries/unified';
+import { useProfile } from '@/queries/useProfile';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,6 +28,7 @@ import { cn } from '@/utils/cn';
 
 export default function SettingsPage() {
   const { data: business } = useBusiness();
+  const { data: profile } = useProfile();
   const location = useLocation();
   const navigate = useNavigate();
   const {
@@ -46,7 +48,6 @@ export default function SettingsPage() {
   const [businessName, setBusinessName] = useState('');
   const [businessPhone, setBusinessPhone] = useState('');
   const [isHydrated, setIsHydrated] = useState(false);
-  const [businessNameModified, setBusinessNameModified] = useState(false);
   const { data: roleData } = useBusinessRole(business?.id || '');
   const { updateProfile, isUpdating } = useProfileOperations();
   const { toast } = useToast();
@@ -164,14 +165,14 @@ export default function SettingsPage() {
     }
   }, [userLoaded, user]);
 
-  // Handle business data hydration - only once to prevent clearing during updates
+  // Handle profile data hydration - only once to prevent clearing during updates
   useEffect(() => {
-    if (business && !isHydrated) {
-      setBusinessName(business.name || '');
-      setBusinessPhone(business.phone || '');
+    if (profile && !isHydrated) {
+      setBusinessName(profile.businessName || '');
+      setBusinessPhone(profile.phoneE164 || '');
       setIsHydrated(true);
     }
-  }, [business, isHydrated]);
+  }, [profile, isHydrated]);
 
   // Handle focus from onboarding navigation
   useEffect(() => {
@@ -266,7 +267,6 @@ export default function SettingsPage() {
   // Handle business name changes with formatting suggestion
   const handleBusinessNameChange = (value: string) => {
     setBusinessName(value);
-    setBusinessNameModified(true);
   };
 
   // Handle phone changes with real-time formatting
