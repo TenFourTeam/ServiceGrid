@@ -56,16 +56,31 @@ export function useBusinessUpdate() {
           });
         }
 
+        // Force dashboard data refresh to update onboarding state
+        window.dispatchEvent(new CustomEvent('business-updated'));
+
         toast({
-          title: "Settings saved",
-          description: "Your business settings have been updated successfully.",
+          title: "Profile updated",
+          description: "Your profile changes have been saved.",
         });
 
       } catch (error) {
         console.error('Failed to update business:', error);
+        
+        // Revert optimistic updates on failure
+        const currentBusiness = store.business;
+        Object.keys(debouncedPendingData).forEach(key => {
+          if (key in currentBusiness) {
+            // Revert to previous value or empty string
+            (store.business as any)[key] = (currentBusiness as any)[key];
+          }
+        });
+        
+        setPendingData(null);
+
         toast({
           title: "Save failed",
-          description: "Failed to save your changes. Please try again.",
+          description: "Failed to save your changes. Please check your connection and try again.",
           variant: "destructive",
         });
       } finally {

@@ -1,6 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApiClient } from '@/auth';
 import { useAuthSnapshot } from '@/auth';
+import { useEffect } from 'react';
 
 export interface DashboardData {
   business: {
@@ -72,6 +73,17 @@ export interface DashboardData {
 export function useDashboardData() {
   const { snapshot } = useAuthSnapshot();
   const apiClient = useApiClient();
+  const queryClient = useQueryClient();
+
+  // Listen for business updates to refresh data
+  useEffect(() => {
+    const handleBusinessUpdate = () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboard-data'] });
+    };
+
+    window.addEventListener('business-updated', handleBusinessUpdate);
+    return () => window.removeEventListener('business-updated', handleBusinessUpdate);
+  }, [queryClient]);
 
   return useQuery({
     queryKey: ['dashboard-data'],
