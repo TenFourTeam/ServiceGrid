@@ -46,6 +46,7 @@ export default function SettingsPage() {
   const [businessName, setBusinessName] = useState('');
   const [businessPhone, setBusinessPhone] = useState('');
   const [isHydrated, setIsHydrated] = useState(false);
+  const [businessNameModified, setBusinessNameModified] = useState(false);
   const { data: roleData } = useBusinessRole(business?.id || '');
   const { updateProfile, isUpdating } = useProfileOperations();
   const { toast } = useToast();
@@ -214,27 +215,29 @@ export default function SettingsPage() {
     
     console.info('[Settings] handleProfileSave called');
     
-    if (!userName.trim() || !businessName.trim() || !businessPhone.trim()) {
-      console.warn('[Settings] validation failed - missing fields:', {
+    if (!userName.trim() || !businessPhone.trim()) {
+      console.warn('[Settings] validation failed - missing required fields:', {
         hasName: !!userName.trim(),
-        hasBusiness: !!businessName.trim(),
         hasPhone: !!businessPhone.trim()
       });
       toast({
         title: "Missing information",
-        description: "Please fill in all required fields",
+        description: "Please fill in your name and phone number",
         variant: "destructive",
       });
       return;
     }
 
-    // Allow "My Business" - the trigger will handle the name_customized flag appropriately
-
-    const input = { 
+    // Only include business name in update if user has actually modified it
+    const input: { fullName: string; phoneRaw: string; businessName?: string } = { 
       fullName: userName.trim(), 
-      businessName: businessName.trim(), 
       phoneRaw: businessPhone.trim() 
     };
+    
+    // Only include businessName if user has actually changed it
+    if (businessNameModified && businessName.trim()) {
+      input.businessName = businessName.trim();
+    }
     
     console.info('[Settings] saving profile', input);
 
@@ -267,6 +270,7 @@ export default function SettingsPage() {
   // Handle business name changes with formatting suggestion
   const handleBusinessNameChange = (value: string) => {
     setBusinessName(value);
+    setBusinessNameModified(true);
   };
 
   // Handle phone changes with real-time formatting
@@ -350,12 +354,11 @@ export default function SettingsPage() {
                 <Label>Business Name</Label>
                 <div className="space-y-2">
                   <div className="relative">
-                    <Input 
-                      value={businessName} 
-                      onChange={e => handleBusinessNameChange(e.target.value)} 
-                      placeholder="Your business name"
-                      required
-                    />
+                     <Input 
+                       value={businessName} 
+                       onChange={e => handleBusinessNameChange(e.target.value)} 
+                       placeholder="Your business name"
+                     />
                     {isUpdating && (
                       <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
                         Saving...
@@ -387,11 +390,11 @@ export default function SettingsPage() {
               </div>
               
               <div className="pt-4">
-                <Button 
-                  type="submit"
-                  disabled={isUpdating || !userName.trim() || !businessName.trim() || !businessPhone.trim()}
-                  className="w-full"
-                >
+                 <Button 
+                   type="submit"
+                   disabled={isUpdating || !userName.trim() || !businessPhone.trim()}
+                   className="w-full"
+                 >
                   {isUpdating ? 'Saving...' : 'Save Profile'}
                 </Button>
               </div>

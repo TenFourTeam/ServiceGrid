@@ -6,15 +6,15 @@ import { queryKeys, invalidationHelpers } from '@/queries/keys';
 
 export type ProfileUpdatePayload = {
   fullName: string;
-  businessName: string;
+  businessName?: string;
   phoneRaw: string;
 };
 
 export type ProfileUpdateResponse = {
   data: {
     fullName: string;
-    businessName: string;
-    nameCustomized: boolean;
+    businessName?: string;
+    nameCustomized?: boolean;
     phoneE164: string;
   };
 };
@@ -60,15 +60,17 @@ export function useProfileOperations() {
       const previousBusiness = queryClient.getQueryData(queryKeys.business.current());
       const previousProfile = queryClient.getQueryData(queryKeys.profile.current());
 
-      // Optimistically update business
-      queryClient.setQueryData(queryKeys.business.current(), (old: any) => {
-        if (!old) return old;
-        return {
-          ...old,
-          name: variables.businessName,
-          nameCustomized: variables.businessName.toLowerCase() !== 'my business'
-        };
-      });
+      // Optimistically update business only if businessName provided
+      if (variables.businessName) {
+        queryClient.setQueryData(queryKeys.business.current(), (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            name: variables.businessName,
+            nameCustomized: variables.businessName.toLowerCase() !== 'my business'
+          };
+        });
+      }
 
       // Optimistically update profile
       queryClient.setQueryData(queryKeys.profile.current(), (old: any) => {
@@ -110,14 +112,16 @@ export function useProfileOperations() {
       console.log('Profile update successful:', data);
       
       // Update with server response to ensure consistency
-      queryClient.setQueryData(queryKeys.business.current(), (old: any) => {
-        if (!old) return old;
-        return {
-          ...old,
-          name: data.data.businessName,
-          nameCustomized: data.data.nameCustomized
-        };
-      });
+      if (data.data.businessName !== undefined) {
+        queryClient.setQueryData(queryKeys.business.current(), (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            name: data.data.businessName,
+            nameCustomized: data.data.nameCustomized
+          };
+        });
+      }
 
       queryClient.setQueryData(queryKeys.profile.current(), (old: any) => {
         if (!old) return old;

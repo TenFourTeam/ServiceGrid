@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface ProfileUpdatePayload {
   fullName: string;
-  businessName: string;
+  businessName?: string;
   phoneRaw: string;
 }
 

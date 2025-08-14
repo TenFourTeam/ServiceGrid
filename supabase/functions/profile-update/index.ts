@@ -15,7 +15,7 @@ const json = (data: any, status = 200) => new Response(JSON.stringify(data), {
 
 const ProfileUpdateSchema = z.object({
   fullName: z.string().trim().min(2, 'Enter your full name'),
-  businessName: z.string().trim().max(120), // Allow empty - trigger will default to "My Business"
+  businessName: z.string().trim().max(120).optional(), // Optional - only update if provided
   phoneRaw: z.string().trim().min(7, 'Enter a valid phone number').optional().or(z.literal(''))
 });
 
@@ -98,13 +98,19 @@ serve(async (req) => {
     }
 
     // Update business (name and phone) - trigger will handle name_customized flag
+    const updateData: any = { 
+      phone: phoneE164,
+      updated_at: new Date().toISOString()
+    };
+    
+    // Only update business name if explicitly provided
+    if (input.businessName !== undefined) {
+      updateData.name = input.businessName || 'My Business';
+    }
+    
     const { data: business, error: businessError } = await ctx.supaAdmin
       .from('businesses')
-      .update({ 
-        name: input.businessName || 'My Business', // Fallback, but trigger will handle this
-        phone: phoneE164,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', ctx.businessId)
       .select('id,name,phone,name_customized')
       .maybeSingle();
@@ -120,7 +126,7 @@ serve(async (req) => {
     }
 
     // Log audit trail for business name changes
-    if (input.businessName && input.businessName.toLowerCase() !== 'my business') {
+    if (input.businessName !== undefined && input.businessName && input.businessName.toLowerCase() !== 'my business') {
       await ctx.supaAdmin
         .from('audit_logs')
         .insert({
