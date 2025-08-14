@@ -52,6 +52,8 @@ export default function SettingsPage() {
   const { updateProfile, isUpdating } = useProfileOperations();
   const { toast } = useToast();
   const { ref: profileRef, pulse: profilePulse, focus: focusProfile } = useFocusPulse<HTMLDivElement>();
+  const { ref: bankRef, pulse: bankPulse, focus: focusBank } = useFocusPulse<HTMLDivElement>();
+  const { ref: subscriptionRef, pulse: subscriptionPulse, focus: focusSubscription } = useFocusPulse<HTMLDivElement>();
   async function uploadLogoDark() {
     if (!isSignedIn) {
       sonnerToast.error('You must be signed in');
@@ -177,15 +179,21 @@ export default function SettingsPage() {
   // Handle focus from onboarding navigation
   useEffect(() => {
     const state = location.state as any;
-    if (state?.focus === 'profile') {
+    if (state?.focus) {
       const timer = setTimeout(() => {
-        focusProfile();
+        if (state.focus === 'profile') {
+          focusProfile();
+        } else if (state.focus === 'bank') {
+          focusBank();
+        } else if (state.focus === 'subscription') {
+          focusSubscription();
+        }
         // Clear state to prevent re-triggering
         navigate('.', { replace: true, state: null });
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [location.state, focusProfile, navigate]);
+  }, [location.state, focusProfile, focusBank, focusSubscription, navigate]);
 
   useEffect(() => {
     if (!userLoaded || !user) return;
@@ -446,10 +454,25 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader><CardTitle>Payouts</CardTitle></CardHeader>
+        <Card 
+          ref={bankRef}
+          className={cn(
+            "transition-all duration-300",
+            bankPulse && "ring-2 ring-primary/60 shadow-lg scale-[1.02]"
+          )}
+        >
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              Payouts
+              {bankPulse && (
+                <span className="text-xs text-muted-foreground animate-fade-in">
+                  Link your bank account here
+                </span>
+              )}
+            </CardTitle>
+          </CardHeader>
           <CardContent>
-            <ConnectBanner 
+            <ConnectBanner
               loading={statusLoading} 
               error={null} 
               chargesEnabled={connectStatus?.chargesEnabled} 
@@ -471,8 +494,23 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader><CardTitle>Subscription</CardTitle></CardHeader>
+        <Card 
+          ref={subscriptionRef}
+          className={cn(
+            "transition-all duration-300",
+            subscriptionPulse && "ring-2 ring-primary/60 shadow-lg scale-[1.02]"
+          )}
+        >
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              Subscription
+              {subscriptionPulse && (
+                <span className="text-xs text-muted-foreground animate-fade-in">
+                  Activate your subscription here
+                </span>
+              )}
+            </CardTitle>
+          </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>

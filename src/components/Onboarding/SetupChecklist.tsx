@@ -5,25 +5,14 @@ import { Check, ChevronRight, X, Users, Calendar, CreditCard, Crown, User, Spark
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useOnboardingState } from '@/onboarding/streamlined';
+import { steps } from '@/onboarding/steps';
 import { cn } from '@/lib/utils';
 
 interface SetupChecklistProps {
-  onSetupProfile: () => void;
-  onAddCustomer: () => void;
-  onCreateJob: () => void;
-  onCreateQuote: () => void;
-  onLinkBank: () => void;
-  onStartSubscription: () => void;
+  // No props needed - we'll handle navigation internally
 }
 
-export function SetupChecklist({
-  onSetupProfile,
-  onAddCustomer,
-  onCreateJob,
-  onCreateQuote,
-  onLinkBank,
-  onStartSubscription
-}: SetupChecklistProps) {
+export function SetupChecklist({}: SetupChecklistProps) {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const onboarding = useOnboardingState();
@@ -31,41 +20,41 @@ export function SetupChecklist({
   // Don't show if everything is complete
   if (onboarding.isComplete) return null;
 
-  // Define steps based on streamlined onboarding
-  const steps = [
+  // Map onboarding state to step completion and actions
+  const stepConfigs = [
     { 
       id: 'profile', 
       title: 'Complete Profile', 
       complete: onboarding.profileComplete,
-      action: onSetupProfile,
+      action: () => navigate('/settings', { state: { focus: 'profile' } }),
       icon: User 
     },
     { 
       id: 'customers', 
       title: 'Add Customers', 
       complete: onboarding.hasCustomers,
-      action: onAddCustomer,
+      action: () => navigate('/customers', { state: { focus: 'add-customer' } }),
       icon: Users 
     },
     { 
       id: 'content', 
       title: 'Create Content', 
       complete: onboarding.hasContent,
-      action: onCreateJob,
+      action: () => navigate('/calendar', { state: { focus: 'new-job' } }),
       icon: Calendar 
     },
     { 
       id: 'bank', 
       title: 'Link Bank Account', 
       complete: onboarding.bankLinked,
-      action: onLinkBank,
+      action: () => navigate('/settings', { state: { focus: 'bank' } }),
       icon: CreditCard 
     },
     { 
       id: 'subscription', 
       title: 'Activate Subscription', 
       complete: onboarding.subscribed,
-      action: onStartSubscription,
+      action: () => navigate('/settings', { state: { focus: 'subscription' } }),
       icon: Crown 
     },
   ];
@@ -100,8 +89,8 @@ export function SetupChecklist({
 
       {!collapsed && (
         <CardContent className="pt-0 space-y-3">
-          {steps.map((step, index) => {
-            const isActive = !step.complete && (index === 0 || steps[index - 1].complete);
+          {stepConfigs.map((step, index) => {
+            const isActive = !step.complete && (index === 0 || stepConfigs[index - 1].complete);
             const isPending = !step.complete && !isActive;
             const Icon = step.icon;
             

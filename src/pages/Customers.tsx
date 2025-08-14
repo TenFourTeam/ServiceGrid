@@ -14,6 +14,8 @@ import { CSVImportModal } from '@/components/Onboarding/CSVImportModal';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { showNextActionToast } from '@/components/Onboarding/NextActionToast';
 import { useOnboardingActions } from '@/onboarding/hooks';
+import { useFocusPulse } from '@/hooks/useFocusPulse';
+import { cn } from '@/lib/utils';
 
 export default function CustomersPage() {
   const { isSignedIn, getToken } = useClerkAuth();
@@ -32,6 +34,7 @@ export default function CustomersPage() {
   const [draft, setDraft] = useState({ name: '', email: '', phone: '', address: '' });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
+  const { ref: addCustomerRef, pulse: addCustomerPulse, focus: focusAddCustomer } = useFocusPulse<HTMLButtonElement>();
 
   function openNew() {
     setEditingId(null);
@@ -45,17 +48,25 @@ export default function CustomersPage() {
     setOpen(true);
   }
 
-  // Check for URL parameters
+  // Check for URL parameters and handle focus
   useEffect(() => {
     const params = new URLSearchParams(location.search);
+    const state = location.state as any;
+    
     if (params.get('import') === '1') {
       setCsvImportOpen(true);
       navigate('/customers', { replace: true });
     } else if (params.get('new') === '1') {
       openNew();
       navigate('/customers', { replace: true });
+    } else if (state?.focus === 'add-customer') {
+      const timer = setTimeout(() => {
+        focusAddCustomer();
+        navigate('.', { replace: true, state: null });
+      }, 100);
+      return () => clearTimeout(timer);
     }
-  }, [location.search, navigate]);
+  }, [location.search, location.state, navigate, focusAddCustomer]);
 
   async function save() {
     if (!isSignedIn) {
@@ -116,7 +127,22 @@ export default function CustomersPage() {
           <Button variant="outline" onClick={() => setCsvImportOpen(true)}>
             Import CSV
           </Button>
-          <Button onClick={() => openNew()} data-onb="add-customer-button">New Customer</Button>
+          <Button 
+            ref={rows.length > 0 ? addCustomerRef : null}
+            onClick={() => openNew()} 
+            data-onb="add-customer-button"
+            className={cn(
+              "transition-all duration-300",
+              rows.length > 0 && addCustomerPulse && "ring-2 ring-primary/60 shadow-lg scale-[1.02] relative"
+            )}
+          >
+            New Customer
+            {rows.length > 0 && addCustomerPulse && (
+              <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-xs text-muted-foreground animate-fade-in whitespace-nowrap">
+                Add your customer here
+              </span>
+            )}
+          </Button>
         </div>
 
         <Card>
@@ -148,10 +174,25 @@ export default function CustomersPage() {
                           <div className="text-sm text-muted-foreground">
                             Add them one by one or import your existing list.
                           </div>
-                           <div className="flex gap-2 justify-center">
-                             <Button onClick={() => openNew()} data-onb="add-customer-button">Add Customer</Button>
-                             <Button variant="outline" onClick={() => setCsvImportOpen(true)}>Import CSV</Button>
-                           </div>
+                            <div className="flex gap-2 justify-center">
+                              <Button 
+                                ref={rows.length === 0 ? addCustomerRef : null}
+                                onClick={() => openNew()} 
+                                data-onb="add-customer-button"
+                                className={cn(
+                                  "transition-all duration-300",
+                                  addCustomerPulse && "ring-2 ring-primary/60 shadow-lg scale-[1.02] relative"
+                                )}
+                              >
+                                Add Customer
+                                {addCustomerPulse && (
+                                  <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-xs text-muted-foreground animate-fade-in whitespace-nowrap">
+                                    Add your first customer here
+                                  </span>
+                                )}
+                              </Button>
+                              <Button variant="outline" onClick={() => setCsvImportOpen(true)}>Import CSV</Button>
+                            </div>
                         </div>
                       </TableCell>
                     </TableRow>
