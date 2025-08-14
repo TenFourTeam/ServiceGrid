@@ -102,30 +102,12 @@ async function resolveBusinessId(
   userUuid: UserUuid, 
   candidate?: string | null
 ): Promise<string> {
-  if (candidate) {
-    // Verify user is a member of the specified business
-    const { data } = await supabase
-      .from("business_members")
-      .select("business_id")
-      .eq("business_id", candidate)
-      .eq("user_id", userUuid)
-      .single();
-    
-    if (!data) {
-      throw new Response(JSON.stringify({ error: "Forbidden: not a member of specified business" }), { 
-        status: 403,
-        headers: { "Content-Type": "application/json" }
-      });
-    }
-    return candidate;
-  }
-
-  // Get user's first business membership
+  // Single business per user model - get user's only business via owner membership
   const { data: membership } = await supabase
     .from("business_members")
     .select("business_id")
     .eq("user_id", userUuid)
-    .order("joined_at", { ascending: true })
+    .eq("role", "owner")
     .limit(1)
     .maybeSingle();
 
@@ -133,24 +115,22 @@ async function resolveBusinessId(
     return membership.business_id;
   }
 
-  // No memberships found - create default business
-  const { data: business, error: businessError } = await supabase
-    .from("businesses")
-    .insert({ name: "My Business", owner_id: userUuid })
-    .select("id")
-    .single();
+  // No business exists - use the database function for atomic creation
+  const { data: defaultBiz, error: ensureErr } = await supabase.rpc('ensure_default_business');
+  if (ensureErr) {
+    console.error('❌ [auth] Failed to ensure default business:', ensureErr);
+    throw new Response(JSON.stringify({ 
+      error: { 
+        code: "business_creation_failed", 
+        message: "Failed to create default business" 
+      }
+    }), { 
+      status: 500,
+      headers: { "Content-Type": "application/json" }
+    });
+  }
 
-  if (businessError) throw businessError;
-
-  // Create owner membership
-  await supabase.from("business_members").insert({
-    business_id: business.id,
-    user_id: userUuid,
-    role: "owner",
-    joined_at: new Date().toISOString()
-  });
-
-  return business.id;
+  return defaultBiz.id;
 }
 
 async function resolveUserUuid(supabase: ReturnType<typeof createClient>, clerkUserId: ClerkUserId): Promise<UserUuid> {

@@ -82,50 +82,32 @@ serve(async (req) => {
     const ownerId = await resolveOwnerIdFromClerk(req);
     const supabase = createAdminClient();
 
-    // Find existing business (oldest) or create a new one
+    // Find existing business via membership (single business per user model)
     let { data: biz, error: selErr } = await supabase
       .from("businesses")
       .select("id, name, phone, reply_to_email, logo_url, light_logo_url, tax_rate_default, inv_prefix, inv_seq, est_prefix, est_seq, created_at")
-      .eq("owner_id", ownerId)
-      .order("created_at", { ascending: true })
+      .eq("id", "any(select business_id from business_members where user_id = $1 and role = 'owner')")
       .limit(1)
       .maybeSingle();
     if (selErr) throw selErr;
 
     if (!biz?.id) {
-      const { data: ins, error: insErr } = await supabase
-        .from("businesses")
-        .insert({ name: "My Business", owner_id: ownerId })
-        .select("id, name, phone, reply_to_email, logo_url, light_logo_url, tax_rate_default, inv_prefix, inv_seq, est_prefix, est_seq, created_at")
-        .single();
-      if (insErr) throw insErr;
-      biz = ins;
-      
-      // Auto-create owner membership for new business
-      await supabase
-        .from("business_members")
-        .insert({ 
-          business_id: biz.id, 
-          user_id: ownerId, 
-          role: 'owner',
-          joined_at: new Date().toISOString()
-        });
+      // Use ensure_default_business function for atomic business + membership creation
+      const { data: defaultBiz, error: ensureErr } = await supabase.rpc('ensure_default_business');
+      if (ensureErr) throw ensureErr;
+      biz = defaultBiz;
     }
 
-    // Determine user's role in the business
-    let role = 'owner'; // Default if they own the business
-    if (biz.owner_id !== ownerId) {
-      // Check business_members table for role
-      const { data: memberData } = await supabase
-        .from("business_members")
-        .select("role")
-        .eq("business_id", biz.id)
-        .eq("user_id", ownerId)
-        .limit(1)
-        .maybeSingle();
-      
-      role = memberData?.role || 'worker';
-    }
+    // Get user's role from business_members table
+    const { data: memberData } = await supabase
+      .from("business_members")
+      .select("role")
+      .eq("business_id", biz.id)
+      .eq("user_id", ownerId)
+      .limit(1)
+      .maybeSingle();
+    
+    const role = memberData?.role || 'worker';
 
     return json({ 
       business: biz,

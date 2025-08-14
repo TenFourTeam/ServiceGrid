@@ -3,20 +3,16 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 
 /**
- * Hook for business context management and switching
+ * Hook for business context management (single business per user model)
  */
 export function useBusinessContext() {
   const { snapshot, refreshAuth } = useAuthSnapshot();
   const queryClient = useQueryClient();
 
-  const switchBusiness = useCallback(async (businessId: string) => {
-    // For future multi-business support
-    // This would trigger a business context switch in the auth system
-    
-    // Clear all cached queries when switching business
+  // Simplified for single business model - no switching needed
+  const refreshBusiness = useCallback(async () => {
+    // Clear all cached queries and refresh auth
     queryClient.clear();
-    
-    // Refresh auth with new business context
     await refreshAuth();
   }, [queryClient, refreshAuth]);
 
@@ -30,7 +26,7 @@ export function useBusinessContext() {
 
   return {
     currentBusiness: getCurrentBusiness(),
-    switchBusiness,
+    refreshBusiness,
     isAuthenticated: snapshot.phase === 'authenticated',
   };
 }
