@@ -1,7 +1,7 @@
 project_id = "ijudkzqfriazabiosnvb"
 
 [functions.profile-update]
-verify_jwt = true
+verify_jwt = false
 
 [functions.clerk-publishable-key]
 verify_jwt = false

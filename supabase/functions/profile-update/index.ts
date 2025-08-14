@@ -15,8 +15,7 @@ const json = (data: any, status = 200) => new Response(JSON.stringify(data), {
 
 const ProfileUpdateSchema = z.object({
   fullName: z.string().trim().min(2, 'Enter your full name'),
-  businessName: z.string().trim().min(2, 'Enter your business name')
-    .refine(v => v.toLowerCase() !== 'my business', 'Please choose a real business name'),
+  businessName: z.string().trim().min(2, 'Enter your business name'),
   phoneRaw: z.string().trim().min(7, 'Enter a valid phone number').optional().or(z.literal(''))
 });
 
@@ -78,7 +77,7 @@ serve(async (req) => {
       return json({ error: { code: "validation_failed", message, details: validationError }}, 400);
     }
 
-    console.log(`🔄 [profile-update] Updating profile and business for user: ${ctx.userId}`);
+    console.log(`🔄 [profile-update] evt=profile.update userUuid=${ctx.userId} businessId=${ctx.businessId}`);
 
     const phoneE164 = normalizeToE164(input.phoneRaw || '');
 

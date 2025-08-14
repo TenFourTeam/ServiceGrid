@@ -231,6 +231,16 @@ export default function SettingsPage() {
       return;
     }
 
+    // Block "My Business" saves with helpful message
+    if (businessName.trim().toLowerCase() === 'my business') {
+      toast({
+        title: "Choose a real business name",
+        description: "Please use your actual business name instead of 'My Business'",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const input = { 
       fullName: userName.trim(), 
       businessName: businessName.trim(), 
@@ -251,12 +261,12 @@ export default function SettingsPage() {
 
       // Then update profile and business in database
       console.info('[Settings] calling profileUpdate.mutateAsync');
-      await profileUpdate.mutateAsync(input);
+      const result = await profileUpdate.mutateAsync(input);
 
       console.info('[Settings] profile save completed successfully');
       toast({
         title: "Profile saved",
-        description: "Your changes are live.",
+        description: `Your changes are live. Phone: ${result.phoneE164 || businessPhone}`,
       });
 
     } catch (error: any) {

@@ -5,6 +5,7 @@ import { useDashboardData } from '@/hooks/useDashboardData';
 import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
 import { useSupabaseJobs } from '@/hooks/useSupabaseJobs';
 import { useSupabaseQuotes } from '@/hooks/useSupabaseQuotes';
+import { useProfile } from '@/queries/useProfile';
 
 export interface OnboardingContext {
   // Data counts
@@ -33,6 +34,7 @@ export function useOnboardingContext(): OnboardingContext {
   const { data: customersData } = useSupabaseCustomers();
   const { data: jobsData } = useSupabaseJobs();
   const { data: quotesData } = useSupabaseQuotes();
+  const { data: profile } = useProfile();
   const { user } = useUser();
   const { business } = useStore();
 
@@ -60,10 +62,11 @@ export function useOnboardingContext(): OnboardingContext {
     const quotesCount = quotesData?.rows?.length ?? 0;
     const customersCount = customersData?.rows?.length ?? 0;
 
-    // Check user and business setup
-    const hasUserName = !!(user?.firstName || user?.fullName);
-    const hasBusinessName = business?.name && business.name !== 'My Business';
-    const hasNameAndBusiness = hasUserName && hasBusinessName;
+    // Check user and business setup from DATABASE (not Clerk)
+    const hasUserName = !!(profile?.full_name);
+    const hasBusinessName = business?.name && business.name.toLowerCase() !== 'my business';
+    const hasPhoneNumber = !!(profile?.phone_e164);
+    const hasNameAndBusiness = hasUserName && hasBusinessName && hasPhoneNumber;
 
     // Check status flags
     const bankLinked = dashboardData.stripeStatus?.chargesEnabled ?? false;
@@ -95,5 +98,5 @@ export function useOnboardingContext(): OnboardingContext {
       dataReady: true,
       version
     };
-  }, [dashboardData, customersData, jobsData, quotesData, user, business]);
+  }, [dashboardData, customersData, jobsData, quotesData, profile, user, business]);
 }

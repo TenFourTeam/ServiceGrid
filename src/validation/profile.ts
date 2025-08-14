@@ -5,8 +5,7 @@ import { z } from 'zod';
  */
 export const ProfileSchema = z.object({
   fullName: z.string().trim().min(2, 'Enter your full name'),
-  businessName: z.string().trim().min(2, 'Enter your business name')
-    .refine(v => v.toLowerCase() !== 'my business', 'Please choose a real business name'),
+  businessName: z.string().trim().min(2, 'Enter your business name'),
   phoneRaw: z.string().trim().min(7, 'Enter a valid phone number').optional().or(z.literal(''))
 });
 
