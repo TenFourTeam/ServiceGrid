@@ -8,14 +8,45 @@ function badRequest(message: string, status = 400) {
   return json({ error: message }, { status });
 }
 
-function serializeError(e: unknown) {
+function serializeError(e: unknown, context?: string) {
+  console.error(`[customers] Error in ${context || 'unknown context'}:`, e);
+  
   if (e instanceof Error) {
-    return { message: e.message, name: e.name };
+    return { 
+      message: e.message, 
+      name: e.name,
+      stack: e.stack,
+      context: context || 'unknown'
+    };
   }
+  
+  // Handle Supabase errors which often have specific structure
+  if (typeof e === 'object' && e !== null) {
+    const errorObj = e as any;
+    if (errorObj.message) {
+      return {
+        message: errorObj.message,
+        code: errorObj.code || 'unknown_code',
+        details: errorObj.details || 'No additional details',
+        hint: errorObj.hint || null,
+        context: context || 'unknown'
+      };
+    }
+  }
+  
   try {
-    return JSON.parse(JSON.stringify(e));
+    const serialized = JSON.parse(JSON.stringify(e));
+    return { 
+      message: String(e), 
+      serialized,
+      context: context || 'unknown'
+    };
   } catch {
-    return { message: String(e) };
+    return { 
+      message: String(e),
+      context: context || 'unknown',
+      note: 'Could not serialize error object'
+    };
   }
 }
 
@@ -25,16 +56,23 @@ serve(async (req) => {
   }
 
   try {
+    console.log(`[customers] ${req.method} request received`);
     const ctx = await requireCtx(req);
     const { userId, businessId, supaAdmin } = ctx;
+    console.log(`[customers] Context resolved: userId=${userId}, businessId=${businessId}`);
 
     if (req.method === "GET") {
+      console.log(`[customers] Fetching customers for business: ${businessId}`);
       const { data, error } = await supaAdmin
         .from("customers")
         .select("id,name,email,phone,address")
         .eq("business_id", businessId)
         .order("updated_at", { ascending: false });
-      if (error) throw error;
+      if (error) {
+        console.error(`[customers] Database error in GET:`, error);
+        throw error;
+      }
+      console.log(`[customers] Successfully fetched ${(data || []).length} customers`);
       return json({ rows: data || [] });
     }
 
@@ -164,7 +202,7 @@ serve(async (req) => {
 
     return badRequest("Method not allowed", 405);
   } catch (e) {
-    console.error("[customers]", e);
-    return json({ error: serializeError(e) }, { status: 500 });
+    const method = req.method || 'UNKNOWN';
+    return json({ error: serializeError(e, `${method} request`) }, { status: 500 });
   }
 });
