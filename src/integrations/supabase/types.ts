@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "13.0.4"
@@ -93,6 +93,13 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -565,6 +572,7 @@ export type Database = {
         Row: {
           clerk_user_id: string | null
           created_at: string
+          default_business_id: string | null
           email: string
           full_name: string | null
           id: string
@@ -574,6 +582,7 @@ export type Database = {
         Insert: {
           clerk_user_id?: string | null
           created_at?: string
+          default_business_id?: string | null
           email: string
           full_name?: string | null
           id: string
@@ -583,13 +592,22 @@ export type Database = {
         Update: {
           clerk_user_id?: string | null
           created_at?: string
+          default_business_id?: string | null
           email?: string
           full_name?: string | null
           id?: string
           phone_e164?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_default_business_id_fkey"
+            columns: ["default_business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       quote_events: {
         Row: {
@@ -839,11 +857,11 @@ export type Database = {
       get_dashboard_counts: {
         Args: { owner_id: string }
         Returns: {
+          customer_data: Json
           customers: number
+          invoice_data: Json
           jobs: number
           quotes: number
-          customer_data: Json
-          invoice_data: Json
         }[]
       }
       is_business_member: {
@@ -852,14 +870,14 @@ export type Database = {
       }
       log_audit_action: {
         Args: {
-          p_business_id: string
-          p_user_id: string
           p_action: string
-          p_resource_type: string
-          p_resource_id?: string
+          p_business_id: string
           p_details?: Json
           p_ip_address?: string
+          p_resource_id?: string
+          p_resource_type: string
           p_user_agent?: string
+          p_user_id: string
         }
         Returns: string
       }
