@@ -15,7 +15,7 @@ vi.mock('@/queries/unified', () => ({
 }));
 
 vi.mock('@/auth', () => ({
-  useAuthSnapshot: () => ({ snapshot: { businessId: 'test-business-id' } }),
+  useBusinessAuth: () => ({ snapshot: { businessId: 'test-business-id' } }),
 }));
 
 function renderHookWithProviders<T>(hook: () => T) {

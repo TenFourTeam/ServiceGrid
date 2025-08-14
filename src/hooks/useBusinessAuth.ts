@@ -19,7 +19,7 @@ export function useBusinessAuth() {
 
   const business = businessQuery.data;
   
-  // Provide AuthSnapshot-compatible interface
+  // Provide authentication and business context
   const snapshot = {
     phase: getPhase(),
     userId: clerkAuth.userId || undefined,

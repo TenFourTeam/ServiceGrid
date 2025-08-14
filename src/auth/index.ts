@@ -2,7 +2,6 @@
 export { AuthBoundary, RequireAuth, PublicOnly } from './AuthBoundary';
 export { default as AuthErrorBoundary } from './AuthErrorBoundary';
 export { QueryClientClerkIntegration } from './QueryClientClerkIntegration';
-export * from './types';
 
 // Re-export Clerk's useAuth as the primary auth hook
 export { useAuth } from '@clerk/clerk-react';
