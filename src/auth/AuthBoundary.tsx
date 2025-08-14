@@ -1,8 +1,7 @@
 import React from "react";
 import { Navigate, useLocation, Outlet } from "react-router-dom";
-import { useAuthSnapshot } from "./AuthKernel";
+import { useAuth } from "@clerk/clerk-react";
 import LoadingScreen from "@/components/LoadingScreen";
-import LockScreen from "./LockScreen";
 
 interface AuthBoundaryProps {
   children: React.ReactNode;
@@ -17,26 +16,21 @@ export function AuthBoundary({
   publicOnly = false,
   redirectTo 
 }: AuthBoundaryProps) {
-  const { snapshot } = useAuthSnapshot();
+  const { isLoaded, isSignedIn } = useAuth();
   const location = useLocation();
 
-  // Show loading screen while auth is initializing
-  if (snapshot.phase === 'loading') {
+  // Show loading screen while Clerk is initializing
+  if (!isLoaded) {
     return <LoadingScreen full />;
   }
 
-  // Show lock screen when locked
-  if (snapshot.phase === 'locked') {
-    return <LockScreen />;
-  }
-
   // Handle public-only routes (redirect authenticated users)
-  if (publicOnly && snapshot.phase === 'authenticated') {
+  if (publicOnly && isSignedIn) {
     return <Navigate to={redirectTo || "/calendar"} replace />;
   }
 
   // Handle protected routes (redirect unauthenticated users)
-  if (requireAuth && snapshot.phase !== 'authenticated') {
+  if (requireAuth && !isSignedIn) {
     return <Navigate 
       to="/clerk-auth" 
       replace 

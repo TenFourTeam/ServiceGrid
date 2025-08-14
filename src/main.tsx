@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ClerkProvider } from '@clerk/clerk-react';
-import { ClerkRuntimeProvider } from './components/Auth/ClerkRuntime';
 import App from './App';
 import './index.css';
 
@@ -50,9 +49,7 @@ function Boot() {
 
   return (
     <ClerkProvider publishableKey={key}>
-      <ClerkRuntimeProvider hasClerk={true}>
-        <App />
-      </ClerkRuntimeProvider>
+      <App />
     </ClerkProvider>
   );
 }
