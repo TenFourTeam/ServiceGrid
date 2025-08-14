@@ -11,12 +11,25 @@ import AppSidebar from '@/components/Layout/AppSidebar';
 import { useAuthSnapshot } from '@/auth';
 import { PageFade } from '@/components/Motion/PageFade';
 import { TrialBanner } from '@/components/Onboarding/TrialBanner';
+import { FloatingSetupWidget } from '@/components/Onboarding/FloatingSetupWidget';
+import { IntentPickerModal } from '@/components/Onboarding/IntentPickerModal';
+import { useOnboardingState } from '@/onboarding/streamlined';
+import { useOnboardingActions } from '@/onboarding/hooks';
+import { useUI } from '@/store/ui';
 import { UserPlus } from 'lucide-react';
 export default function AppLayout({ children, title }: { children: ReactNode; title?: string }) {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const { snapshot } = useAuthSnapshot();
   const businessId = snapshot.businessId;
   const { data: businessRole } = useBusinessRole(businessId);
+  
+  // Onboarding system
+  const onboardingState = useOnboardingState();
+  const onboardingActions = useOnboardingActions();
+  const { modals, setModal } = useUI();
+  
+  // Show intent picker modal for new users
+  const showIntentPicker = onboardingState.showIntentPicker && !modals.intentPicker;
 
   useEffect(() => {
     document.title = title ? `${title} • ServiceGrid` : 'ServiceGrid';
@@ -58,6 +71,25 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
           </div>
         </SidebarInset>
       </div>
+
+      {/* Onboarding Components */}
+      <IntentPickerModal
+        open={showIntentPicker}
+        onOpenChange={(open) => setModal('intentPicker', open)}
+        onScheduleJob={onboardingActions.openNewJobSheet}
+        onCreateQuote={onboardingActions.openCreateQuote}
+        onAddCustomer={onboardingActions.openAddCustomer}
+        onImportCustomers={onboardingActions.openImportCustomers}
+      />
+      
+      <FloatingSetupWidget
+        onSetupProfile={onboardingActions.openSetupProfile}
+        onAddCustomer={onboardingActions.openAddCustomer}
+        onCreateJob={onboardingActions.openNewJobSheet}
+        onCreateQuote={onboardingActions.openCreateQuote}
+        onLinkBank={onboardingActions.openBankLink}
+        onStartSubscription={onboardingActions.openSubscription}
+      />
 
       {/* Global Invite Modal */}
       {businessRole?.role === 'owner' && (
