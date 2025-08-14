@@ -858,16 +858,6 @@ export type Database = {
           updated_at: string
         }
       }
-      get_dashboard_counts: {
-        Args: { owner_id: string }
-        Returns: {
-          customer_data: Json
-          customers: number
-          invoice_data: Json
-          jobs: number
-          quotes: number
-        }[]
-      }
       is_business_member: {
         Args: { p_business_id: string }
         Returns: boolean
