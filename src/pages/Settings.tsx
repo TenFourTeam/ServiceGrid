@@ -292,6 +292,7 @@ export default function SettingsPage() {
           store.setBusiness({
             id: b.id,
             name: b.name ?? store.business.name,
+            name_customized: b.name_customized ?? false,
             phone: b.phone ?? '',
             replyToEmail: b.reply_to_email ?? '',
             logoUrl: b.logo_url ?? '',
