@@ -48,13 +48,22 @@ serve(async (req) => {
 
   try {
     if (req.method !== 'POST') {
+      console.error(`Method ${req.method} not allowed`);
       return json({ error: { code: "method_not_allowed", message: "Method not allowed" }}, 405);
     }
 
-    console.log(JSON.stringify({ evt: 'profile.update.start' }));
+    console.log(JSON.stringify({ evt: 'profile.update.start', method: req.method }));
 
     const ctx = await requireCtx(req);
-    const input = ProfileUpdateSchema.parse(await req.json());
+    console.log(JSON.stringify({ evt: 'profile.update.auth_success', userUuid: ctx.userUuid, businessId: ctx.businessId }));
+    
+    const rawBody = await req.text();
+    console.log(JSON.stringify({ evt: 'profile.update.raw_body', body: rawBody }));
+    
+    const parsedBody = JSON.parse(rawBody);
+    console.log(JSON.stringify({ evt: 'profile.update.parsed_body', parsedBody }));
+    
+    const input = ProfileUpdateSchema.parse(parsedBody);
 
     console.log(JSON.stringify({ 
       evt: 'profile.update.validated', 

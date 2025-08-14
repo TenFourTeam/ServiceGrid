@@ -215,7 +215,14 @@ export default function SettingsPage() {
   const handleProfileSave = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.info('[Settings] handleProfileSave called');
+    
     if (!userName.trim() || !businessName.trim() || !businessPhone.trim()) {
+      console.warn('[Settings] validation failed - missing fields:', {
+        hasName: !!userName.trim(),
+        hasBusiness: !!businessName.trim(),
+        hasPhone: !!businessPhone.trim()
+      });
       toast({
         title: "Missing information",
         description: "Please fill in all required fields",
@@ -235,6 +242,7 @@ export default function SettingsPage() {
     try {
       // Update Clerk user first
       if (user) {
+        console.info('[Settings] updating Clerk user');
         await user.update({
           firstName: userName.split(' ')[0],
           lastName: userName.split(' ').slice(1).join(' ') || '',
@@ -242,8 +250,10 @@ export default function SettingsPage() {
       }
 
       // Then update profile and business in database
+      console.info('[Settings] calling profileUpdate.mutateAsync');
       await profileUpdate.mutateAsync(input);
 
+      console.info('[Settings] profile save completed successfully');
       toast({
         title: "Profile saved",
         description: "Your changes are live.",

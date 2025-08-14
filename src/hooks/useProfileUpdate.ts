@@ -23,13 +23,18 @@ export function useProfileUpdate() {
         hasPhone: !!input.phoneRaw 
       });
       
-      const result = await edgeRequest(fn('profile-update'), {
-        method: 'POST',
-        body: JSON.stringify(input),
-      });
-      
-      console.info('[useProfileUpdate] mutation completed successfully', result);
-      return result;
+      try {
+        const result = await edgeRequest(fn('profile-update'), {
+          method: 'POST',
+          body: JSON.stringify(input),
+        });
+        
+        console.info('[useProfileUpdate] mutation completed successfully', result);
+        return result;
+      } catch (error) {
+        console.error('[useProfileUpdate] mutation failed:', error);
+        throw error;
+      }
     },
     onSuccess: (data) => {
       console.log('Profile update successful:', data);
