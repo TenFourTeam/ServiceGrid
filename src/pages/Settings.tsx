@@ -260,10 +260,27 @@ export default function SettingsPage() {
       });
 
     } catch (error: any) {
-      console.error('[Settings] profile save failed:', error);
+      console.error('[Settings] profile save failed:', {
+        error,
+        message: error?.message,
+        status: error?.status,
+        code: error?.code,
+        details: error?.details
+      });
+      
+      let errorMessage = "Failed to save your changes. Please try again.";
+      
+      if (error?.status === 401 || error?.status === 403) {
+        errorMessage = "Authentication failed. Please refresh the page and try again.";
+      } else if (error?.code === 'auth_failed') {
+        errorMessage = "Unable to authenticate. Please sign out and sign back in.";
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Save failed",
-        description: error?.message || "Failed to save your changes. Please check your connection and try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     }

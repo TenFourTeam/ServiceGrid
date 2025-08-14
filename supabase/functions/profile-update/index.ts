@@ -47,23 +47,58 @@ serve(async (req) => {
   }
 
   try {
+    console.log(JSON.stringify({ 
+      evt: 'profile.update.request', 
+      method: req.method,
+      url: req.url,
+      hasAuth: !!req.headers.get('authorization')
+    }));
+
     if (req.method !== 'POST') {
-      console.error(`Method ${req.method} not allowed`);
-      return json({ error: { code: "method_not_allowed", message: "Method not allowed" }}, 405);
+      console.error(`Method ${req.method} not allowed for profile-update`);
+      return json({ error: { code: "method_not_allowed", message: "Only POST method is allowed" }}, 405);
     }
 
     console.log(JSON.stringify({ evt: 'profile.update.start', method: req.method }));
 
-    const ctx = await requireCtx(req);
-    console.log(JSON.stringify({ evt: 'profile.update.auth_success', userUuid: ctx.userUuid, businessId: ctx.businessId }));
+    // Verify authentication and get context
+    let ctx;
+    try {
+      ctx = await requireCtx(req);
+      console.log(JSON.stringify({ 
+        evt: 'profile.update.auth_success', 
+        userUuid: ctx.userUuid, 
+        businessId: ctx.businessId,
+        clerkUserId: ctx.clerkUserId 
+      }));
+    } catch (authError) {
+      console.error(JSON.stringify({ 
+        evt: 'profile.update.auth_failed', 
+        error: authError,
+        authHeader: req.headers.get('authorization')?.substring(0, 20) + '...'
+      }));
+      throw authError;
+    }
     
     const rawBody = await req.text();
-    console.log(JSON.stringify({ evt: 'profile.update.raw_body', body: rawBody }));
+    console.log(JSON.stringify({ evt: 'profile.update.raw_body', bodyLength: rawBody.length }));
     
-    const parsedBody = JSON.parse(rawBody);
-    console.log(JSON.stringify({ evt: 'profile.update.parsed_body', parsedBody }));
+    let parsedBody;
+    try {
+      parsedBody = JSON.parse(rawBody);
+      console.log(JSON.stringify({ evt: 'profile.update.parsed_body', parsedBody }));
+    } catch (parseError) {
+      console.error(JSON.stringify({ evt: 'profile.update.parse_error', error: parseError, rawBody }));
+      return json({ error: { code: "invalid_json", message: "Invalid JSON in request body" }}, 400);
+    }
     
-    const input = ProfileUpdateSchema.parse(parsedBody);
+    let input;
+    try {
+      input = ProfileUpdateSchema.parse(parsedBody);
+    } catch (validationError) {
+      console.error(JSON.stringify({ evt: 'profile.update.validation_error', error: validationError }));
+      return json({ error: { code: "validation_failed", message: "Invalid input data", details: validationError }}, 400);
+    }
 
     console.log(JSON.stringify({ 
       evt: 'profile.update.validated', 
