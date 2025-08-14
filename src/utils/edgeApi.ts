@@ -100,20 +100,19 @@ export async function edgeFetch(
   return null;
 }
 
-// Improved edge request with proper error handling
-export async function edgeRequest(path: string, getToken: () => Promise<string | null>, init: EdgeRequestOptions = {}) {
-  const token = await getClerkTokenStrict(getToken);
+// Simplified edge request with bulletproof error handling
+export async function edgeRequest(url: string, init: RequestInit = {}): Promise<any> {
+  console.info('[edgeRequest] calling', { url, hasBody: !!init.body });
+  
+  const token = await window.Clerk?.session?.getToken({ refresh: true });
+  
   const headers = {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
     ...(init.headers || {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
   
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/${path}`, {
-    method: init.method || "GET",
-    headers,
-    body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
-  });
+  const res = await fetch(url, { ...init, headers });
   
   const body = await (async () => { 
     try { 
@@ -125,8 +124,11 @@ export async function edgeRequest(path: string, getToken: () => Promise<string |
 
   if (!res.ok) {
     const msg = body?.error?.message || res.statusText || `HTTP ${res.status}`;
-    throw new ApiError(res.status, msg, body?.error?.code, body?.error?.details);
+    const code = body?.error?.code;
+    console.error('[edgeRequest] failed', { status: res.status, code, msg });
+    throw new ApiError(res.status, msg, code, body?.error?.details);
   }
   
+  console.info('[edgeRequest] success');
   return body?.data ?? body;
 }

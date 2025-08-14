@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '@clerk/clerk-react';
 import { edgeRequest, ApiError } from '@/utils/edgeApi';
+import { fn } from '@/utils/functionUrl';
 import { useToast } from '@/hooks/use-toast';
 
 export type ProfileUpdatePayload = {
@@ -10,15 +10,15 @@ export type ProfileUpdatePayload = {
 };
 
 export function useProfileUpdate() {
-  const { getToken } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (input: ProfileUpdatePayload) => {
-      return await edgeRequest('profile-update', getToken, {
+      console.info('[useProfileUpdate] mutating', { hasName: !!input.fullName, hasBusiness: !!input.businessName, hasPhone: !!input.phoneRaw });
+      return await edgeRequest(fn('profile-update'), {
         method: 'POST',
-        body: input,
+        body: JSON.stringify(input),
       });
     },
     onSuccess: (data) => {

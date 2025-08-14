@@ -2,6 +2,12 @@ import { serve } from "https://deno.land/std/http/server.ts";
 import { z } from "https://esm.sh/zod@3";
 import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
 
+const cors = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-business-id",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
 const ProfileUpdateSchema = z.object({
   fullName: z.string().trim().min(2, 'Enter your full name'),
   businessName: z.string().trim().min(2, 'Enter your business name')
@@ -34,7 +40,7 @@ function normalizeToE164(phone: string): string {
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: cors });
   }
 
   try {
@@ -103,13 +109,16 @@ serve(async (req) => {
     }));
 
     // Return normalized truth (what the UI should rehydrate)
-    return json({ 
+    return new Response(JSON.stringify({ 
       data: {
         fullName: body.fullName,
         businessName: business.name,
         phoneE164: business.phone,
       }
-    }, { status: 200 });
+    }), { 
+      status: 200, 
+      headers: { "Content-Type": "application/json", ...cors }
+    });
 
   } catch (e: any) {
     console.error('Profile update error:', e);
@@ -122,6 +131,9 @@ serve(async (req) => {
     
     const msg = e?.message || "Invalid input";
     const status = e?.status ?? 500;
-    return json({ error: { code: "server_error", message: msg }}, { status });
+    return new Response(JSON.stringify({ error: { code: "server_error", message: msg }}), { 
+      status, 
+      headers: { "Content-Type": "application/json", ...cors }
+    });
   }
 });

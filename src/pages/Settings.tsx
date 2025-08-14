@@ -16,7 +16,7 @@ import { useDashboardData } from '@/hooks/useDashboardData';
 import { BusinessMembersList } from '@/components/Business/BusinessMembersList';
 import { AuditLogsList } from '@/components/Business/AuditLogsList';
 import { useBusinessRole } from '@/hooks/useBusinessRole';
-import { DataFlowTest } from '@/components/Debug/DataFlowTest';
+
 import { useProfileUpdate } from '@/hooks/useProfileUpdate';
 import { useToast } from '@/hooks/use-toast';
 import { useFocusPulse } from '@/hooks/useFocusPulse';
@@ -213,7 +213,9 @@ export default function SettingsPage() {
     return () => clearTimeout(handle);
   }, [userName, userLoaded, user]);
 
-  const handleProfileSave = async () => {
+  const handleProfileSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
     if (!userName.trim() || !businessName.trim() || !businessPhone.trim()) {
       toast({
         title: "Missing information",
@@ -223,32 +225,13 @@ export default function SettingsPage() {
       return;
     }
 
-    if (userName.trim().length < 2) {
-      toast({
-        title: "Invalid name",
-        description: "Please enter your full name",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (businessName.trim().length < 2 || businessName.toLowerCase() === 'my business') {
-      toast({
-        title: "Invalid business name",
-        description: "Please choose a real business name",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (businessPhone.trim().length < 7) {
-      toast({
-        title: "Invalid phone",
-        description: "Please enter a valid phone number",
-        variant: "destructive",
-      });
-      return;
-    }
+    const input = { 
+      fullName: userName.trim(), 
+      businessName: businessName.trim(), 
+      phoneRaw: businessPhone.trim() 
+    };
+    
+    console.info('[Settings] saving profile', input);
 
     try {
       // Update Clerk user first
@@ -260,14 +243,20 @@ export default function SettingsPage() {
       }
 
       // Then update profile and business in database
-      await profileUpdate.mutateAsync({
-        fullName: userName.trim(),
-        businessName: businessName.trim(),
-        phoneRaw: businessPhone.trim(),
+      await profileUpdate.mutateAsync(input);
+
+      toast({
+        title: "Profile saved",
+        description: "Your changes are live.",
       });
 
-    } catch (error) {
-      console.error('Profile save error:', error);
+    } catch (error: any) {
+      console.error('[Settings] profile save failed:', error);
+      toast({
+        title: "Save failed",
+        description: error?.message || "Failed to save your changes. Please check your connection and try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -342,73 +331,80 @@ export default function SettingsPage() {
               )}
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label>Name</Label>
-              <div className="space-y-2">
-                <Input 
-                  value={userName} 
-                  onChange={e => setUserName(e.target.value)} 
-                  placeholder="Your full name" 
-                />
-                {shouldShowUserNameSuggestion && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-6 text-xs text-muted-foreground hover:text-foreground"
-                    onClick={() => setUserName(userNameSuggestion)}
-                  >
-                    ✨ Use "{userNameSuggestion}"
-                  </Button>
-                )}
-              </div>
-            </div>
-            <div>
-              <Label>Business Name</Label>
-              <div className="space-y-2">
-                <div className="relative">
+          <CardContent>
+            <form onSubmit={handleProfileSave} className="space-y-4">
+              <div>
+                <Label>Name</Label>
+                <div className="space-y-2">
                   <Input 
-                    value={businessName} 
-                    onChange={e => handleBusinessNameChange(e.target.value)} 
-                    placeholder="Your business name"
+                    value={userName} 
+                    onChange={e => setUserName(e.target.value)} 
+                    placeholder="Your full name" 
+                    required
                   />
-                  {profileUpdate.isPending && (
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                      Saving...
-                    </div>
+                  {shouldShowUserNameSuggestion && (
+                    <Button 
+                      type="button"
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-6 text-xs text-muted-foreground hover:text-foreground"
+                      onClick={() => setUserName(userNameSuggestion)}
+                    >
+                      ✨ Use "{userNameSuggestion}"
+                    </Button>
                   )}
                 </div>
-                {shouldShowBusinessNameSuggestion && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-6 text-xs text-muted-foreground hover:text-foreground"
-                    onClick={() => handleBusinessNameChange(businessNameSuggestion)}
-                  >
-                    ✨ Use "{businessNameSuggestion}"
-                  </Button>
-                )}
               </div>
-            </div>
-            <div>
-              <Label>Phone Number</Label>
-              <Input 
-                value={businessPhone}
-                onChange={e => handlePhoneChange(e.target.value)}
-                placeholder="(555) 123-4567"
-                type="tel"
-              />
-            </div>
-            
-            <div className="pt-4">
-              <Button 
-                onClick={handleProfileSave}
-                disabled={profileUpdate.isPending || !userName.trim() || !businessName.trim() || !businessPhone.trim()}
-                className="w-full"
-              >
-                {profileUpdate.isPending ? 'Saving...' : 'Save Profile'}
-              </Button>
-            </div>
+              <div>
+                <Label>Business Name</Label>
+                <div className="space-y-2">
+                  <div className="relative">
+                    <Input 
+                      value={businessName} 
+                      onChange={e => handleBusinessNameChange(e.target.value)} 
+                      placeholder="Your business name"
+                      required
+                    />
+                    {profileUpdate.isPending && (
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                        Saving...
+                      </div>
+                    )}
+                  </div>
+                  {shouldShowBusinessNameSuggestion && (
+                    <Button 
+                      type="button"
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-6 text-xs text-muted-foreground hover:text-foreground"
+                      onClick={() => handleBusinessNameChange(businessNameSuggestion)}
+                    >
+                      ✨ Use "{businessNameSuggestion}"
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <div>
+                <Label>Phone Number</Label>
+                <Input 
+                  value={businessPhone}
+                  onChange={e => handlePhoneChange(e.target.value)}
+                  placeholder="(555) 123-4567"
+                  type="tel"
+                  required
+                />
+              </div>
+              
+              <div className="pt-4">
+                <Button 
+                  type="submit"
+                  disabled={profileUpdate.isPending || !userName.trim() || !businessName.trim() || !businessPhone.trim()}
+                  className="w-full"
+                >
+                  {profileUpdate.isPending ? 'Saving...' : 'Save Profile'}
+                </Button>
+              </div>
+            </form>
           </CardContent>
         </Card>
         <Card>
@@ -461,43 +457,6 @@ export default function SettingsPage() {
         </Card>
 
         <Card className="md:col-span-2">
-          <CardHeader><CardTitle>Subscription</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-muted-foreground">Status</div>
-                <div className="text-sm">{sub?.subscribed ? `Active • ${sub?.subscription_tier || ''}` : 'Not subscribed'}</div>
-              </div>
-              
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button size="sm" onClick={() => startCheckout('monthly')}>Start Monthly ($50)</Button>
-              <Button size="sm" onClick={() => startCheckout('yearly')}>Start Yearly ($504)</Button>
-              <Button size="sm" variant="secondary" onClick={openPortal}>Manage Subscription</Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="md:col-span-2">
-          <CardHeader><CardTitle>Team Members</CardTitle></CardHeader>
-          <CardContent>
-            <BusinessMembersList 
-              businessId={store.business.id} 
-              canManage={roleData?.canManage || false}
-            />
-          </CardContent>
-        </Card>
-
-        {roleData?.canManage && (
-          <Card className="md:col-span-2">
-            <CardHeader><CardTitle>Activity Log</CardTitle></CardHeader>
-            <CardContent>
-              <AuditLogsList businessId={store.business.id} />
-            </CardContent>
-          </Card>
-        )}
-
-        <Card className="md:col-span-2">
           <CardHeader><CardTitle>Payouts</CardTitle></CardHeader>
           <CardContent>
             <ConnectBanner 
@@ -522,13 +481,42 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Debug section for development */}
         <Card className="md:col-span-2">
-          <CardHeader><CardTitle>Data Flow Test (Debug)</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Team Members</CardTitle></CardHeader>
           <CardContent>
-            <DataFlowTest />
+            <BusinessMembersList 
+              businessId={store.business.id} 
+              canManage={roleData?.canManage || false}
+            />
           </CardContent>
         </Card>
+
+        <Card className="md:col-span-2">
+          <CardHeader><CardTitle>Subscription</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm text-muted-foreground">Status</div>
+                <div className="text-sm">{sub?.subscribed ? `Active • ${sub?.subscription_tier || ''}` : 'Not subscribed'}</div>
+              </div>
+              
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" onClick={() => startCheckout('monthly')}>Start Monthly ($50)</Button>
+              <Button size="sm" onClick={() => startCheckout('yearly')}>Start Yearly ($504)</Button>
+              <Button size="sm" variant="secondary" onClick={openPortal}>Manage Subscription</Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {roleData?.canManage && (
+          <Card className="md:col-span-2">
+            <CardHeader><CardTitle>Activity Log</CardTitle></CardHeader>
+            <CardContent>
+              <AuditLogsList businessId={store.business.id} />
+            </CardContent>
+          </Card>
+        )}
 
       </div>
       <ProfileCompletionDebug />
