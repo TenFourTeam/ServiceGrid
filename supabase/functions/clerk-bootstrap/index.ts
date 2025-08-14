@@ -79,9 +79,9 @@ serve(async (req) => {
       return json({ error: { code: "auth_error", message: "Invalid Clerk token" }}, 401);
     }
     
+    // Continue without email for now - profiles can be created without it
     if (!email) {
-      console.error('❌ [clerk-bootstrap] Could not extract email from Clerk token');
-      return json({ error: { code: "auth_error", message: "Could not extract email from authentication token" }}, 401);
+      console.log('⚠️ [clerk-bootstrap] No email found in token, continuing without it');
     }
 
     console.log(`✅ [clerk-bootstrap] Verified Clerk user: ${clerkUserId}`);
@@ -107,15 +107,24 @@ serve(async (req) => {
     if (!profile) {
       console.log(`🆕 [clerk-bootstrap] Creating new profile for Clerk user: ${clerkUserId}`);
       
+      console.log('📝 [clerk-bootstrap] Inserting new profile with service role access');
+      
+      const profileData: any = { clerk_user_id: clerkUserId };
+      if (email) {
+        profileData.email = email;
+      }
+      
       const { data: newProfile, error: profileError } = await supabase
         .from('profiles')
-        .insert({ clerk_user_id: clerkUserId, email: email || '' })
+        .insert(profileData)
         .select('id, default_business_id, full_name')
         .single();
 
       if (profileError) {
         console.error('❌ [clerk-bootstrap] Profile creation failed:', profileError);
-        return json({ error: { code: "profile_insert_failed", message: profileError.message }}, 400);
+        console.error('❌ [clerk-bootstrap] Full error details:', JSON.stringify(profileError));
+        console.error('❌ [clerk-bootstrap] Profile data attempted:', JSON.stringify(profileData));
+        return json({ error: { code: "profile_insert_failed", message: profileError.message, details: profileError }}, 400);
       }
       
       profile = newProfile;
