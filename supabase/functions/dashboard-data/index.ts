@@ -1,76 +1,14 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
-import { verifyToken } from "https://esm.sh/@clerk/backend@1.3.2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "*",
-};
-
-function withCors(headers: HeadersInit = {}) {
-  return { ...corsHeaders, ...(headers as Record<string, string>) };
-}
+import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: withCors() });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const auth = req.headers.get("authorization") || req.headers.get("Authorization");
-    if (!auth || !auth.toLowerCase().startsWith("bearer ")) {
-      return new Response(JSON.stringify({ error: "Missing bearer token" }), {
-        status: 401,
-        headers: withCors({ "Content-Type": "application/json" }),
-      });
-    }
-
-    const token = auth.split(" ")[1];
-    const secretKey = Deno.env.get("CLERK_SECRET_KEY");
-    if (!secretKey) {
-      return new Response(JSON.stringify({ error: "Missing CLERK_SECRET_KEY" }), {
-        status: 500,
-        headers: withCors({ "Content-Type": "application/json" }),
-      });
-    }
-
-    // Verify Clerk token
-    const payload = await verifyToken(token, { secretKey });
-    const clerkUserId = (payload as any)?.sub as string | undefined;
-    if (!clerkUserId) {
-      return new Response(JSON.stringify({ error: "Invalid Clerk token" }), {
-        status: 401,
-        headers: withCors({ "Content-Type": "application/json" }),
-      });
-    }
-
-    // Supabase admin client
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!supabaseUrl || !serviceKey) {
-      return new Response(JSON.stringify({ error: "Missing Supabase config" }), {
-        status: 500,
-        headers: withCors({ "Content-Type": "application/json" }),
-      });
-    }
-    const supabase = createClient(supabaseUrl, serviceKey);
-
-    // Get profile mapping
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("clerk_user_id", clerkUserId)
-      .maybeSingle();
-
-    if (!profile?.id) {
-      return new Response(JSON.stringify({ error: "Profile not found" }), {
-        status: 404,
-        headers: withCors({ "Content-Type": "application/json" }),
-      });
-    }
-
-    const profileId = profile.id;
+    const ctx = await requireCtx(req);
+    const { userId: profileId, businessId, supaAdmin: supabase } = ctx;
 
     // Batch all data queries
     const [businessResult, dashboardResult, quotesResult, stripeResult, subscriptionResult] = await Promise.all([
@@ -98,7 +36,7 @@ serve(async (req) => {
 
       // Get Stripe status
       fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/connect-account-status`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: req.headers.get("authorization") || "" },
       }).then(res => res.ok ? res.json() : { chargesEnabled: false, payoutsEnabled: false, detailsSubmitted: false }),
 
       // Get subscription status
@@ -151,16 +89,10 @@ serve(async (req) => {
       }
     };
 
-    return new Response(JSON.stringify(dashboardData), {
-      status: 200,
-      headers: withCors({ "Content-Type": "application/json" }),
-    });
+    return json(dashboardData);
 
   } catch (e) {
     console.error("Dashboard data error:", e);
-    return new Response(JSON.stringify({ error: String(e?.message || e) }), {
-      status: 500,
-      headers: withCors({ "Content-Type": "application/json" }),
-    });
+    return json({ error: String(e?.message || e) }, 500);
   }
 });
