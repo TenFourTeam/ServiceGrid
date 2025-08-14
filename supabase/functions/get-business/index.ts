@@ -83,13 +83,19 @@ serve(async (req) => {
     const supabase = createAdminClient();
 
     // Find existing business via membership (single business per user model)
-    let { data: biz, error: selErr } = await supabase
-      .from("businesses")
-      .select("id, name, phone, reply_to_email, logo_url, light_logo_url, tax_rate_default, inv_prefix, inv_seq, est_prefix, est_seq, created_at")
-      .eq("id", "any(select business_id from business_members where user_id = $1 and role = 'owner')")
+    const { data: membership, error: memberErr } = await supabase
+      .from("business_members")
+      .select(`
+        business_id,
+        businesses(id, name, phone, reply_to_email, logo_url, light_logo_url, tax_rate_default, inv_prefix, inv_seq, est_prefix, est_seq, created_at)
+      `)
+      .eq("user_id", ownerId)
+      .eq("role", "owner")
       .limit(1)
       .maybeSingle();
-    if (selErr) throw selErr;
+    if (memberErr) throw memberErr;
+
+    let biz = membership?.businesses;
 
     if (!biz?.id) {
       // Use ensure_default_business function for atomic business + membership creation

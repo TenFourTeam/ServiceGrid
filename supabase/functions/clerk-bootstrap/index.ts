@@ -97,37 +97,15 @@ serve(async (req) => {
       console.log(`✅ [clerk-bootstrap] Found existing profile: ${profile.id}`);
     }
 
-    // 2) Ensure default business + membership
-    let businessId = profile.default_business_id;
-    
-    if (!businessId) {
-      console.log(`🏢 [clerk-bootstrap] Creating default business for user: ${profile.id}`);
-      
-      // Let the trigger set the default name and flag
-      const { data: business, error: businessError } = await supabase
-        .from('businesses')
-        .insert({ owner_id: profile.id }) // Omit name - trigger will set 'My Business' and name_customized=false
-        .select('id')
-        .single();
-
-      if (businessError) {
-        console.error('❌ [clerk-bootstrap] Business creation failed:', businessError);
-        return json({ error: { code: "business_insert_failed", message: businessError.message }}, 400);
-      }
-
-      businessId = business.id;
-
-      // Update profile with default_business_id
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ default_business_id: businessId })
-        .eq('id', profile.id);
-
-      if (updateError) {
-        console.error('❌ [clerk-bootstrap] Profile update failed:', updateError);
-        return json({ error: { code: "profile_update_failed", message: updateError.message }}, 400);
-      }
+    // 2) Ensure default business exists using RPC function
+    console.log("🏢 [clerk-bootstrap] Ensuring default business");
+    const { data: defaultBiz, error: bizEnsureErr } = await supabase.rpc('ensure_default_business');
+    if (bizEnsureErr) {
+      console.error('❌ [clerk-bootstrap] Business creation failed:', bizEnsureErr);
+      return json({ error: { code: "business_insert_failed", message: bizEnsureErr.message }}, 400);
     }
+
+    const businessId = defaultBiz.id;
 
     // 3) Sync name from Clerk to DB (only if not user-controlled)
     const clerkFirstName = (payload as any).first_name || (payload as any).firstName || '';
@@ -156,31 +134,8 @@ serve(async (req) => {
       }
     }
 
-    // 4) Ensure business membership
-    const { data: membership } = await supabase
-      .from('business_members')
-      .select('business_id')
-      .eq('business_id', businessId)
-      .eq('user_id', profile.id)
-      .maybeSingle();
-
-    if (!membership) {
-      console.log(`👥 [clerk-bootstrap] Creating business membership for user: ${profile.id}`);
-      
-      const { error: membershipError } = await supabase
-        .from('business_members')
-        .insert({ 
-          business_id: businessId, 
-          user_id: profile.id, 
-          role: 'owner',
-          joined_at: new Date().toISOString()
-        });
-
-      if (membershipError) {
-        console.error('❌ [clerk-bootstrap] Membership creation failed:', membershipError);
-        return json({ error: { code: "membership_insert_failed", message: membershipError.message }}, 400);
-      }
-    }
+    // 4) Business membership is handled by ensure_default_business RPC
+    console.log("👥 [clerk-bootstrap] Business membership ensured by RPC");
 
     console.log(`🎉 [clerk-bootstrap] Bootstrap complete - User: ${profile.id}, Business: ${businessId}`);
 
