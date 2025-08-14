@@ -450,7 +450,7 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="md:col-span-2">
+        <Card>
           <CardHeader><CardTitle>Payouts</CardTitle></CardHeader>
           <CardContent>
             <ConnectBanner 
@@ -475,17 +475,7 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="md:col-span-2">
-          <CardHeader><CardTitle>Team Members</CardTitle></CardHeader>
-          <CardContent>
-            <BusinessMembersList 
-              businessId={business?.id || ''} 
-              canManage={roleData?.canManage || false}
-            />
-          </CardContent>
-        </Card>
-
-        <Card className="md:col-span-2">
+        <Card>
           <CardHeader><CardTitle>Subscription</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
@@ -500,6 +490,16 @@ export default function SettingsPage() {
               <Button size="sm" onClick={() => startCheckout('yearly')}>Start Yearly ($504)</Button>
               <Button size="sm" variant="secondary" onClick={openPortal}>Manage Subscription</Button>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="md:col-span-2">
+          <CardHeader><CardTitle>Team Members</CardTitle></CardHeader>
+          <CardContent>
+            <BusinessMembersList 
+              businessId={business?.id || ''} 
+              canManage={roleData?.canManage || false}
+            />
           </CardContent>
         </Card>
 
