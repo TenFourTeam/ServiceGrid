@@ -1,7 +1,7 @@
 import { useUser } from '@clerk/clerk-react';
 import { useStore } from '@/store/useAppStore';
 import { useDashboardData } from '@/hooks/useDashboardData';
-import { useOnboardingState } from '@/hooks/useOnboardingStateOptimized';
+import { useOnboardingState } from '@/onboarding/useOnboardingState';
 
 /**
  * Debug component to show profile completion status
@@ -24,14 +24,14 @@ export function ProfileCompletionDebug() {
         <div>Local Phone: {business?.phone || 'None'}</div>
         <div>Dashboard Business: {dashboardData?.business?.name || 'None'}</div>
         <div>Dashboard Phone: {dashboardData?.business?.phone || 'None'}</div>
-        <div>Progress: {onboarding.completionPercentage}%</div>
+        <div>Progress: {onboarding.progressPct}%</div>
         <div>Has Name & Business: {onboarding.hasNameAndBusiness ? '✅' : '❌'}</div>
         <div>Next Action: {onboarding.nextAction}</div>
       </div>
 
       <div className="mt-2 pt-2 border-t">
         <div className="text-green-600">
-          ✅ = {onboarding.completionPercentage >= 60 ? 'Should show green check' : 'Not complete yet'}
+          ✅ = {onboarding.progressPct >= 60 ? 'Should show green check' : 'Not complete yet'}
         </div>
       </div>
     </div>

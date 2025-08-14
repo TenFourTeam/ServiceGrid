@@ -1,38 +1,45 @@
 import { useEffect } from 'react';
-import { useOnboardingState } from '@/hooks/useOnboardingStateOptimized';
+import { useOnboardingState } from '@/onboarding/useOnboardingState';
 import { toast } from 'sonner';
 
 /**
  * Tracks onboarding progress and shows celebration toasts when steps complete
  */
 export function OnboardingProgressTracker() {
-  const onboarding = useOnboardingState();
+  const { stepOrder, completionByStep, progressPct, steps } = useOnboardingState();
   
   useEffect(() => {
-    // Track completion of profile step
-    if (onboarding.hasNameAndBusiness) {
-      const hasShownProfileComplete = sessionStorage.getItem('profile-complete-shown');
+    // Track completion of each step and show celebration
+    for (const stepId of stepOrder) {
+      const isComplete = completionByStep[stepId];
+      const storageKey = `${stepId}-complete-shown`;
+      const hasShownComplete = sessionStorage.getItem(storageKey);
       
-      if (!hasShownProfileComplete) {
-        sessionStorage.setItem('profile-complete-shown', 'true');
+      if (isComplete && !hasShownComplete) {
+        sessionStorage.setItem(storageKey, 'true');
         
         // Small delay to ensure UI updates have processed
         setTimeout(() => {
-          toast.success('Profile completed! 🎉', {
-            description: `Great work! You're ${onboarding.completionPercentage}% complete.`,
+          toast.success(`${steps[stepId].title} completed! 🎉`, {
+            description: `Great work! You're ${progressPct}% complete.`,
             duration: 3000,
           });
         }, 500);
       }
     }
-  }, [onboarding.hasNameAndBusiness, onboarding.completionPercentage]);
+  }, [stepOrder, completionByStep, progressPct, steps]);
 
-  // Reset completion flags when onboarding resets
+  // Reset completion flags when steps become incomplete again
   useEffect(() => {
-    if (!onboarding.hasNameAndBusiness) {
-      sessionStorage.removeItem('profile-complete-shown');
+    for (const stepId of stepOrder) {
+      const isComplete = completionByStep[stepId];
+      const storageKey = `${stepId}-complete-shown`;
+      
+      if (!isComplete) {
+        sessionStorage.removeItem(storageKey);
+      }
     }
-  }, [onboarding.hasNameAndBusiness]);
+  }, [stepOrder, completionByStep]);
 
   return null; // This component only tracks progress, no UI
 }

@@ -3,7 +3,7 @@ import { CheckCircle2, ChevronDown, ChevronUp, User, Users, Calendar, FileText, 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { useOnboardingState } from '@/hooks/useOnboardingStateOptimized';
+import { useOnboardingState } from '@/onboarding/useOnboardingState';
 import { useStore } from '@/store/useAppStore';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useLocation } from 'react-router-dom';
@@ -37,8 +37,10 @@ export function FloatingSetupWidget({
     return null;
   }
 
+  const { steps, stepOrder, statuses, currentStepId, progressPct, allComplete } = onboardingState;
+  
   // Hide widget if onboarding is complete OR if permanently dismissed
-  if (onboardingState.isComplete || !store.shouldShowSetupWidget()) {
+  if (allComplete || !store.shouldShowSetupWidget()) {
     return null;
   }
 
@@ -59,46 +61,22 @@ export function FloatingSetupWidget({
     setIsExpanded(false);
   };
 
-  const steps = [
-    {
-      id: 'profile',
-      label: 'Set up your profile',
-      icon: User,
-      completed: onboardingState.hasNameAndBusiness,
-      action: onSetupProfile,
-    },
-    {
-      id: 'bank',
-      label: 'Link your bank',
-      icon: CreditCard,
-      completed: onboardingState.bankLinked,
-      action: onLinkBank,
-    },
-    {
-      id: 'customers',
-      label: 'Add customers',
-      icon: Users,
-      completed: onboardingState.hasCustomers,
-      action: onAddCustomer,
-    },
-    {
-      id: 'quotes',
-      label: 'Create quotes',
-      icon: FileText,
-      completed: onboardingState.hasQuotes,
-      action: onCreateQuote,
-    },
-    {
-      id: 'jobs',
-      label: 'Schedule jobs',
-      icon: Calendar,
-      completed: onboardingState.hasJobs,
-      action: onCreateJob,
-    },
-  ].map((step, index) => ({
-    ...step,
-    stepNumber: index + 1,
-  }));
+  
+  const stepActions = {
+    profile: onSetupProfile,
+    customers: onAddCustomer,
+    content: onCreateJob, // Default to job creation for floating widget
+    bank: onLinkBank,
+    subscription: onStartSubscription
+  };
+
+  const stepIcons = {
+    profile: User,
+    customers: Users,
+    content: Calendar,
+    bank: CreditCard,
+    subscription: Crown
+  };
 
   return (
     <div 
@@ -126,7 +104,7 @@ export function FloatingSetupWidget({
                   <p className="text-xs text-muted-foreground">
                     {shouldForceShow 
                       ? 'Trial expired - upgrade to continue' 
-                      : `${onboardingState.completionPercentage}% complete`
+                      : `${progressPct}% complete`
                     }
                   </p>
                 </div>
@@ -134,7 +112,7 @@ export function FloatingSetupWidget({
               <ChevronUp className="h-4 w-4 text-muted-foreground" />
             </div>
             {!shouldForceShow && (
-              <Progress value={onboardingState.completionPercentage} className="h-1.5 mt-2" />
+              <Progress value={progressPct} className="h-1.5 mt-2" />
             )}
           </CardHeader>
         ) : (
@@ -188,36 +166,57 @@ export function FloatingSetupWidget({
                 <>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Progress</span>
-                    <span className="font-medium">{onboardingState.completionPercentage}%</span>
+                    <span className="font-medium">{progressPct}%</span>
                   </div>
-                  <Progress value={onboardingState.completionPercentage} className="h-2" />
+                  <Progress value={progressPct} className="h-2" />
 
                   {/* Steps */}
                   <div className="space-y-2">
-                    {steps.map((step) => {
-                      const Icon = step.icon;
+                    {stepOrder.map((id) => {
+                      const step = steps[id];
+                      const status = statuses[id];
+                      const isClickable = status === 'active' || status === 'complete';
+                      const Icon = stepIcons[id];
+                      
                       return (
-                        <div key={step.id} className="flex items-center gap-3 p-2 rounded-lg border">
+                        <div 
+                          key={id} 
+                          className={`flex items-center gap-3 p-2 rounded-lg border transition-all ${
+                            status === 'active' ? 'ring-2 ring-primary/40 bg-primary/5 border-primary/30' : 
+                            status === 'complete' ? 'bg-green-50 border-green-200' :
+                            status === 'pending' ? 'border-muted' :
+                            'border-muted/50 opacity-60'
+                          }`}
+                        >
                           <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                            step.completed 
-                              ? 'bg-green-100 text-green-600' 
-                              : 'bg-gray-100 text-gray-400'
+                            status === 'complete' ? 'bg-green-500 text-white' :
+                            status === 'active' ? 'bg-primary text-primary-foreground' :
+                            status === 'pending' ? 'bg-muted text-muted-foreground' :
+                            'bg-muted/50 text-muted-foreground'
                           }`}>
-                            {step.completed ? (
+                            {status === 'complete' ? (
                               <CheckCircle2 className="h-4 w-4" />
+                            ) : status === 'active' ? (
+                              <Icon className="h-4 w-4 animate-pulse" />
                             ) : (
                               <Icon className="h-4 w-4" />
                             )}
                           </div>
                           <div className="flex-1">
-                            <p className="text-sm font-medium">{step.label}</p>
+                            <p className={`text-sm font-medium ${
+                              status === 'complete' ? 'text-green-700' :
+                              status === 'active' ? 'text-foreground' :
+                              'text-muted-foreground'
+                            }`}>
+                              {step.title}
+                            </p>
                           </div>
-                          {!step.completed && (
+                          {status === 'active' && (
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={step.action}
-                              className="h-7 px-2 text-xs"
+                              onClick={() => stepActions[id]?.()}
+                              className="h-7 px-2 text-xs border-primary text-primary"
                             >
                               Start
                             </Button>

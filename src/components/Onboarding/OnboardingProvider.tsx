@@ -4,7 +4,7 @@ import { FloatingSetupWidget } from './FloatingSetupWidget';
 import { TrialNotifications } from './TrialNotifications';
 import { GuidedTour } from './GuidedTour';
 import { OnboardingProgressTracker } from './OnboardingProgressTracker';
-import { useOnboardingState } from '@/hooks/useOnboardingStateOptimized';
+import { useOnboardingState } from '@/onboarding/useOnboardingState';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useNavigate } from 'react-router-dom';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
@@ -26,7 +26,7 @@ const OnboardingContext = createContext<OnboardingContextType | null>(null);
 export function OnboardingProvider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const { isSignedIn, isLoaded } = useClerkAuth();
-  const { showIntentPicker: shouldShowIntentPicker } = useOnboardingState({ enabled: isSignedIn });
+  const { showIntentPicker: shouldShowIntentPicker } = useOnboardingState();
   const [intentPickerOpen, setIntentPickerOpen] = useState(false);
   const { track } = useAnalytics();
   const store = useStore();

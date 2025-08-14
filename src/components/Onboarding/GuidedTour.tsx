@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useOnboardingState } from '@/hooks/useOnboardingState';
+import { useOnboardingState } from '@/onboarding/useOnboardingState';
 import { onboardingSteps } from './onboardingSteps';
 import { OnboardingOverlay } from './OnboardingOverlay';
 import { AttentionRing } from './AttentionRing';
@@ -10,20 +10,13 @@ import { useSpotlight } from '@/hooks/useSpotlight';
 export function GuidedTour() {
   const location = useLocation();
   const navigate = useNavigate();
-  const {
-    nextStep,
-    markStepComplete,
-    pauseTour,
-    isComplete,
-    dataReady,
-    phase
-  } = useOnboardingState({ enabled: true });
+  const { currentStepId, allComplete } = useOnboardingState();
 
-  const currentStepConfig = nextStep ? onboardingSteps[nextStep] : null;
+  const currentStepConfig = currentStepId ? onboardingSteps[currentStepId] : null;
   const { target } = useSpotlight(currentStepConfig?.selector);
 
-  // Don't show tour if complete, paused, or data not ready
-  if (!currentStepConfig || isComplete || phase === 'paused' || !dataReady) {
+  // Don't show tour if complete or no current step
+  if (!currentStepConfig || allComplete) {
     return null;
   }
 
@@ -36,17 +29,15 @@ export function GuidedTour() {
     if (currentStepConfig.onAdvance) {
       currentStepConfig.onAdvance();
     }
-    markStepComplete(currentStepConfig.id);
+    // Step completion is now handled by data changes
   };
 
   const handleSkip = () => {
-    if (currentStepConfig.canSkip) {
-      markStepComplete(currentStepConfig.id);
-    }
+    // Skip is handled by navigation
   };
 
   const handleClose = () => {
-    pauseTour();
+    // Close tour
   };
 
   const handleNavigate = () => {
@@ -54,7 +45,7 @@ export function GuidedTour() {
   };
 
   // Show attention ring if element exists but no overlay
-  if (currentStepConfig.selector && target?.visible && phase === 'ready') {
+  if (currentStepConfig.selector && target?.visible) {
     return (
       <AttentionRing 
         targetSelector={currentStepConfig.selector}
