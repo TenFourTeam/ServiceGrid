@@ -15,7 +15,7 @@ export function useProfileUpdate() {
 
   return useMutation({
     mutationFn: async (input: ProfileUpdatePayload) => {
-      console.info('[useProfileUpdate] mutating', { hasName: !!input.fullName, hasBusiness: !!input.businessName, hasPhone: !!input.phoneRaw });
+      console.info('[useProfileUpdate] mutating', { url: fn('profile-update'), hasName: !!input.fullName, hasBusiness: !!input.businessName, hasPhone: !!input.phoneRaw });
       return await edgeRequest(fn('profile-update'), {
         method: 'POST',
         body: JSON.stringify(input),

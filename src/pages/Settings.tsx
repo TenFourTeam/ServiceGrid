@@ -22,7 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useFocusPulse } from '@/hooks/useFocusPulse';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { formatPhoneInput, formatNameSuggestion } from '@/utils/validation';
-import { ProfileCompletionDebug } from '@/components/Auth/ProfileCompletionDebug';
+
 import { cn } from '@/utils/cn';
 export default function SettingsPage() {
   const store = useStore();
@@ -519,6 +519,5 @@ export default function SettingsPage() {
         )}
 
       </div>
-      <ProfileCompletionDebug />
     </AppLayout>;
 }
