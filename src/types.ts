@@ -10,6 +10,7 @@ export type PaymentTerms = 'due_on_receipt' | 'net_15' | 'net_30' | 'net_60';
 export interface Business {
   id: ID;
   name: string;
+  name_customized?: boolean; // Track whether user has customized business name
   logoUrl?: string;
   lightLogoUrl?: string; // NEW: light icon for emails
   phone?: string;

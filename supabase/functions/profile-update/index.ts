@@ -15,7 +15,7 @@ const json = (data: any, status = 200) => new Response(JSON.stringify(data), {
 
 const ProfileUpdateSchema = z.object({
   fullName: z.string().trim().min(2, 'Enter your full name'),
-  businessName: z.string().trim().min(2, 'Enter your business name'),
+  businessName: z.string().trim().max(120), // Allow empty - trigger will default to "My Business"
   phoneRaw: z.string().trim().min(7, 'Enter a valid phone number').optional().or(z.literal(''))
 });
 
@@ -95,16 +95,16 @@ serve(async (req) => {
       return json({ error: { code: "profile_update_failed", message: profileError.message }}, 500);
     }
 
-    // Update business (name and phone)
+    // Update business (name and phone) - trigger will handle name_customized flag
     const { data: business, error: businessError } = await ctx.supaAdmin
       .from('businesses')
       .update({ 
-        name: input.businessName,
+        name: input.businessName || 'My Business', // Fallback, but trigger will handle this
         phone: phoneE164,
         updated_at: new Date().toISOString()
       })
       .eq('id', ctx.businessId)
-      .select('id,name,phone')
+      .select('id,name,phone,name_customized')
       .maybeSingle();
 
     if (businessError) {
@@ -117,12 +117,31 @@ serve(async (req) => {
       return json({ error: { code: "forbidden", message: "Business not found or access denied" }}, 403);
     }
 
-    console.log(`🎉 [profile-update] Update successful - Business: ${business.name}`);
+    // Log audit trail for business name changes
+    if (input.businessName && input.businessName.toLowerCase() !== 'my business') {
+      await ctx.supaAdmin
+        .from('audit_logs')
+        .insert({
+          business_id: ctx.businessId,
+          user_id: ctx.userId,
+          action: 'update',
+          resource_type: 'business',
+          resource_id: business.id,
+          details: { 
+            field: 'name',
+            new_value: business.name,
+            name_customized: business.name_customized
+          }
+        });
+    }
+
+    console.log(`🎉 [profile-update] Update successful - Business: ${business.name} (customized: ${business.name_customized})`);
 
     return json({ 
       data: {
         fullName: input.fullName,
         businessName: business.name,
+        nameCustomized: business.name_customized,
         phoneE164: business.phone,
       }
     }, 200);

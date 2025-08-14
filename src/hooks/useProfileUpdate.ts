@@ -9,6 +9,15 @@ export type ProfileUpdatePayload = {
   phoneRaw: string;
 };
 
+export type ProfileUpdateResponse = {
+  data: {
+    fullName: string;
+    businessName: string;
+    nameCustomized: boolean;
+    phoneE164: string;
+  };
+};
+
 export function useProfileUpdate() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -36,8 +45,8 @@ export function useProfileUpdate() {
         throw error;
       }
     },
-    onSuccess: (data) => {
-      console.log('Profile update successful:', data);
+    onSuccess: (data: ProfileUpdateResponse) => {
+      console.log('Profile update successful:', data, 'nameCustomized:', data.data.nameCustomized);
       
       // Align with unified onboarding query keys
       queryClient.invalidateQueries({ queryKey: ['profile.current'] });

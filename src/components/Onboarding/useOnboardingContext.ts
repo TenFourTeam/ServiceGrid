@@ -64,7 +64,7 @@ export function useOnboardingContext(): OnboardingContext {
 
     // Check user and business setup from DATABASE (not Clerk)
     const hasUserName = !!(profile?.full_name);
-    const hasBusinessName = business?.name && business.name.toLowerCase() !== 'my business';
+    const hasBusinessName = business?.name_customized === true; // Use intent flag instead of string comparison
     const hasPhoneNumber = !!(profile?.phone_e164);
     const hasNameAndBusiness = hasUserName && hasBusinessName && hasPhoneNumber;
 

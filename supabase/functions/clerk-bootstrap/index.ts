@@ -103,9 +103,10 @@ serve(async (req) => {
     if (!businessId) {
       console.log(`🏢 [clerk-bootstrap] Creating default business for user: ${profile.id}`);
       
+      // Let the trigger set the default name and flag
       const { data: business, error: businessError } = await supabase
         .from('businesses')
-        .insert({ name: 'My Business', owner_id: profile.id })
+        .insert({ owner_id: profile.id }) // Omit name - trigger will set 'My Business' and name_customized=false
         .select('id')
         .single();
 
