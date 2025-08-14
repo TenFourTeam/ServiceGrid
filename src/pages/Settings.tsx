@@ -239,9 +239,30 @@ export default function SettingsPage() {
     
     console.info('[Settings] saving profile', input);
 
-    // Let useProfileUpdate hook handle success/error states and toasts
+    // Save to database first (authoritative)
     console.info('[Settings] calling profileUpdate.mutateAsync');
-    profileUpdate.mutateAsync(input);
+    
+    try {
+      await profileUpdate.mutateAsync(input);
+      
+      // Non-blocking sync to Clerk after DB success
+      if (user && userName.trim()) {
+        try {
+          const parts = userName.trim().split(' ');
+          const firstName = parts.shift() || '';
+          const lastName = parts.join(' ');
+          
+          await user.update({ firstName, lastName });
+          console.log('✅ [Settings] Clerk name sync successful');
+        } catch (clerkError) {
+          console.warn('⚠️ [Settings] Clerk name sync failed (non-blocking):', clerkError);
+          // Don't show error to user - DB is source of truth
+        }
+      }
+    } catch (error) {
+      console.error('[Settings] Profile update failed:', error);
+      // Error handling is done by the hook
+    }
   };
 
   // Handle business name changes with formatting suggestion

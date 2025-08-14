@@ -129,7 +129,34 @@ serve(async (req) => {
       }
     }
 
-    // 3) Ensure business membership
+    // 3) Sync name from Clerk to DB (only if not user-controlled)
+    const clerkFirstName = (payload as any).first_name || (payload as any).firstName || '';
+    const clerkLastName = (payload as any).last_name || (payload as any).lastName || '';
+    const clerkFullName = [clerkFirstName, clerkLastName].filter(Boolean).join(' ').trim() || 
+                         (payload as any).full_name || (payload as any).fullName || '';
+
+    if (clerkFullName) {
+      console.log(`📝 [clerk-bootstrap] Syncing name from Clerk: "${clerkFullName}"`);
+      
+      const { error: nameError } = await supabase
+        .from('profiles')
+        .update({
+          full_name: clerkFullName,
+          name_source: 'clerk',
+          name_last_synced_at: new Date().toISOString()
+        })
+        .eq('id', profile.id)
+        .or('name_source.is.null,name_source.neq.user'); // Only update if not user-controlled
+
+      if (nameError) {
+        console.warn('⚠️ [clerk-bootstrap] Name sync failed (non-blocking):', nameError);
+        // Don't fail bootstrap for name sync issues
+      } else {
+        console.log(`✅ [clerk-bootstrap] Name synced successfully`);
+      }
+    }
+
+    // 4) Ensure business membership
     const { data: membership } = await supabase
       .from('business_members')
       .select('business_id')

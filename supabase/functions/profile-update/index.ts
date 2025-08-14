@@ -81,12 +81,14 @@ serve(async (req) => {
 
     const phoneE164 = normalizeToE164(input.phoneRaw || '');
 
-    // Update user profile (name and phone)
+    // Update user profile (name and phone) - mark as user-controlled
     const { error: profileError } = await ctx.supaAdmin
       .from('profiles')
       .update({ 
         full_name: input.fullName,
-        phone_e164: phoneE164
+        phone_e164: phoneE164,
+        name_source: 'user',
+        name_last_synced_at: new Date().toISOString()
       })
       .eq('id', ctx.userId);
 
