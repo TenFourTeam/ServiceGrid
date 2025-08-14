@@ -585,7 +585,7 @@ export type Database = {
           default_business_id?: string | null
           email: string
           full_name?: string | null
-          id: string
+          id?: string
           phone_e164?: string | null
           updated_at?: string
         }
