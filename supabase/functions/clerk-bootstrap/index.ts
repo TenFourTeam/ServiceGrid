@@ -97,15 +97,68 @@ serve(async (req) => {
       console.log(`✅ [clerk-bootstrap] Found existing profile: ${profile.id}`);
     }
 
-    // 2) Ensure default business exists using RPC function
+    // 2) Ensure default business exists using direct service role operations
     console.log("🏢 [clerk-bootstrap] Ensuring default business");
-    const { data: defaultBiz, error: bizEnsureErr } = await supabase.rpc('ensure_default_business');
-    if (bizEnsureErr) {
-      console.error('❌ [clerk-bootstrap] Business creation failed:', bizEnsureErr);
-      return json({ error: { code: "business_insert_failed", message: bizEnsureErr.message }}, 400);
-    }
+    
+    // Check for existing owner membership
+    const { data: existingMembership } = await supabase
+      .from('business_members')
+      .select('business_id')
+      .eq('user_id', profile.id)
+      .eq('role', 'owner')
+      .maybeSingle();
 
-    const businessId = defaultBiz.id;
+    let businessId = existingMembership?.business_id;
+
+    if (!businessId) {
+      console.log("🆕 [clerk-bootstrap] Creating new business and membership");
+      
+      // Create new business
+      const { data: newBusiness, error: businessError } = await supabase
+        .from('businesses')
+        .insert({ 
+          name: 'My Business',
+          owner_id: profile.id 
+        })
+        .select('id')
+        .single();
+
+      if (businessError) {
+        console.error('❌ [clerk-bootstrap] Business creation failed:', businessError);
+        return json({ error: { code: "business_insert_failed", message: businessError.message }}, 400);
+      }
+
+      businessId = newBusiness.id;
+
+      // Create owner membership
+      const { error: membershipError } = await supabase
+        .from('business_members')
+        .insert({
+          user_id: profile.id,
+          business_id: businessId,
+          role: 'owner',
+          joined_at: new Date().toISOString()
+        });
+
+      if (membershipError && membershipError.code !== '23505') { // Ignore duplicate key errors
+        console.error('❌ [clerk-bootstrap] Membership creation failed:', membershipError);
+        return json({ error: { code: "membership_insert_failed", message: membershipError.message }}, 400);
+      }
+
+      // Update profile default_business_id if not set
+      if (!profile.default_business_id) {
+        const { error: profileUpdateError } = await supabase
+          .from('profiles')
+          .update({ default_business_id: businessId })
+          .eq('id', profile.id);
+
+        if (profileUpdateError) {
+          console.warn('⚠️ [clerk-bootstrap] Profile update failed (non-blocking):', profileUpdateError);
+        }
+      }
+    } else {
+      console.log(`✅ [clerk-bootstrap] Found existing business: ${businessId}`);
+    }
 
     // 3) One-time name sync from Clerk to DB (only if profile has no name)
     const clerkFirstName = (payload as any).first_name || (payload as any).firstName || '';
@@ -130,8 +183,7 @@ serve(async (req) => {
       }
     }
 
-    // 4) Business membership is handled by ensure_default_business RPC
-    console.log("👥 [clerk-bootstrap] Business membership ensured by RPC");
+    // 4) Bootstrap complete - all operations handled directly
 
     console.log(`🎉 [clerk-bootstrap] Bootstrap complete - User: ${profile.id}, Business: ${businessId}`);
 
