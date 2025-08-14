@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useAuthSnapshot } from "@/auth";
+import { useAuth } from "@/auth";
 import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
 
@@ -9,8 +9,8 @@ export interface BusinessRoleData {
 }
 
 export function useBusinessRole(businessId?: string) {
-  const { snapshot } = useAuthSnapshot();
-  const enabled = snapshot.phase === 'authenticated' && !!businessId;
+  const { isSignedIn } = useAuth();
+  const enabled = isSignedIn && !!businessId;
 
   return useQuery<BusinessRoleData, Error>({
     queryKey: ["business-role", businessId],

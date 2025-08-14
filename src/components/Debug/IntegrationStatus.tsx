@@ -1,4 +1,4 @@
-import { useAuthSnapshot } from '@/auth';
+import { useBusinessAuth } from '@/auth';
 import { useBusiness } from '@/queries/unified';
 import { useCustomersCount } from '@/hooks/useCustomersCount';
 import { CheckCircle, XCircle, Clock } from 'lucide-react';
@@ -8,7 +8,7 @@ import { CheckCircle, XCircle, Clock } from 'lucide-react';
  * Shows if all systems are properly connected and working
  */
 export function IntegrationStatus() {
-  const { snapshot } = useAuthSnapshot();
+  const { snapshot } = useBusinessAuth();
   const { data: business } = useBusiness();
   const { data: customersCount, isLoading } = useCustomersCount();
 

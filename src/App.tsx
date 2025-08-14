@@ -3,9 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import { ClerkLoaded, ClerkLoading } from "@clerk/clerk-react";
 import { AppProviders } from "@/providers/AppProviders";
 
-import { AuthBoundary, RequireAuth, PublicOnly } from "@/auth/AuthBoundary";
-import { AuthKernel } from "@/auth/AuthKernel";
-import { QueryClientIntegration } from "@/auth/QueryClientIntegration";
+import { AuthBoundary, RequireAuth, PublicOnly, QueryClientClerkIntegration } from "@/auth";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import LoadingScreen from "@/components/LoadingScreen";
 
@@ -49,14 +47,13 @@ function PrefetchRoutes() {
 }
 
 const App = () => (
-  <AppProviders>
-    <ClerkLoaded>
-      <AuthKernel>
-        <QueryClientIntegration />
-        <ErrorBoundary>
-          <Suspense fallback={<LoadingScreen />}>
-            <PrefetchRoutes />
-            <Routes>
+        <AppProviders>
+          <ClerkLoaded>
+            <QueryClientClerkIntegration />
+            <ErrorBoundary>
+              <Suspense fallback={<LoadingScreen />}>
+                <PrefetchRoutes />
+                <Routes>
               {/* Public routes */}
               <Route element={<PublicOnly redirectTo="/calendar" />}>
                 <Route path="/" element={<LandingPage />} />
@@ -82,11 +79,10 @@ const App = () => (
               <Route path="/invite" element={<InviteAcceptPage />} />
               
               <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </ErrorBoundary>
-      </AuthKernel>
-    </ClerkLoaded>
+                  </Routes>
+                </Suspense>
+              </ErrorBoundary>
+          </ClerkLoaded>
     <ClerkLoading>
       <LoadingScreen full />
     </ClerkLoading>

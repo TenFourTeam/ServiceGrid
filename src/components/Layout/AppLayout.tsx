@@ -8,7 +8,7 @@ import { EnhancedInviteModal } from '@/components/Team/EnhancedInviteModal';
 import { useBusinessRole } from '@/hooks/useBusinessRole';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/Layout/AppSidebar';
-import { useAuthSnapshot } from '@/auth';
+import { useBusinessAuth } from '@/auth';
 import { PageFade } from '@/components/Motion/PageFade';
 import { TrialBanner } from '@/components/Onboarding/TrialBanner';
 import { FloatingSetupWidget } from '@/components/Onboarding/FloatingSetupWidget';
@@ -19,7 +19,7 @@ import { useUI } from '@/store/ui';
 import { UserPlus } from 'lucide-react';
 export default function AppLayout({ children, title }: { children: ReactNode; title?: string }) {
   const [showInviteModal, setShowInviteModal] = useState(false);
-  const { snapshot } = useAuthSnapshot();
+  const { snapshot } = useBusinessAuth();
   const businessId = snapshot.businessId;
   const { data: businessRole } = useBusinessRole(businessId);
   

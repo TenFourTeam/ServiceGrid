@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useCustomers } from '@/queries/unified';
-import { useAuthSnapshot } from '@/auth';
+import { useBusinessAuth } from '@/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -12,7 +12,7 @@ import { useQueryClient } from '@tanstack/react-query';
  */
 export function BusinessScopingTest() {
   const { data: customers = [] } = useCustomers();
-  const { snapshot } = useAuthSnapshot();
+  const { snapshot } = useBusinessAuth();
   const [testName, setTestName] = useState('Test Customer');
   const [isCreating, setIsCreating] = useState(false);
   const queryClient = useQueryClient();

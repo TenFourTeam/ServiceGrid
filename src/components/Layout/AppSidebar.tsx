@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { useAuthSnapshot } from "@/auth";
+import { useBusinessAuth } from "@/auth";
 import { useBusiness } from "@/queries/unified";
 import { useBusinessRole } from "@/hooks/useBusinessRole";
 import {
@@ -47,7 +47,7 @@ const ownerOnlyItems = [
 ];
 
 export default function AppSidebar() {
-  const { snapshot } = useAuthSnapshot();
+  const { snapshot } = useBusinessAuth();
   const { data: business } = useBusiness();
   const location = useLocation();
   const navigate = useNavigate();

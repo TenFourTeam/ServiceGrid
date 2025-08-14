@@ -1,6 +1,6 @@
 
 import { useQuery } from "@tanstack/react-query";
-import { useAuthSnapshot } from "@/auth";
+import { useBusinessAuth } from "@/auth";
 import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
 import { qk } from "@/queries/keys";
@@ -25,7 +25,7 @@ const QuotesResponseSchema = z.object({
 });
 
 export function useSupabaseQuotes(opts?: { enabled?: boolean }) {
-  const { snapshot } = useAuthSnapshot();
+  const { snapshot } = useBusinessAuth();
   const enabled = snapshot.phase === 'authenticated' && (opts?.enabled ?? true);
 
   return useQuery<{ rows: DbQuoteRow[] } | null, Error>({

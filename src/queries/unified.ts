@@ -3,7 +3,7 @@
  * All hooks return camelCase data, transforming at the query boundary
  */
 import { useQuery } from '@tanstack/react-query';
-import { useAuthSnapshot } from '@/auth';
+import { useBusinessAuth } from '@/auth';
 import { edgeRequest } from '@/utils/edgeApi';
 import { fn } from '@/utils/functionUrl';
 import { queryKeys } from './keys';
@@ -39,7 +39,7 @@ export function useProfile() {
 
 // Count queries for performance
 export function useCustomersCount() {
-  const { snapshot } = useAuthSnapshot();
+  const { snapshot } = useBusinessAuth();
   const enabled = snapshot.phase === 'authenticated' && !!snapshot.businessId;
 
   return useQuery({
@@ -55,7 +55,7 @@ export function useCustomersCount() {
 }
 
 export function useJobsCount() {
-  const { snapshot } = useAuthSnapshot();
+  const { snapshot } = useBusinessAuth();
   const enabled = snapshot.phase === 'authenticated' && !!snapshot.businessId;
 
   return useQuery({
@@ -71,7 +71,7 @@ export function useJobsCount() {
 }
 
 export function useQuotesCount() {
-  const { snapshot } = useAuthSnapshot();
+  const { snapshot } = useBusinessAuth();
   const enabled = snapshot.phase === 'authenticated' && !!snapshot.businessId;
 
   return useQuery({
@@ -87,7 +87,7 @@ export function useQuotesCount() {
 }
 
 export function useInvoicesCount() {
-  const { snapshot } = useAuthSnapshot();
+  const { snapshot } = useBusinessAuth();
   const enabled = snapshot.phase === 'authenticated' && !!snapshot.businessId;
 
   return useQuery({
@@ -104,7 +104,7 @@ export function useInvoicesCount() {
 
 // Billing queries
 export function useStripeConnectStatus() {
-  const { snapshot } = useAuthSnapshot();
+  const { snapshot } = useBusinessAuth();
   const enabled = snapshot.phase === 'authenticated' && !!snapshot.businessId;
 
   return useQuery({
@@ -119,7 +119,7 @@ export function useStripeConnectStatus() {
 }
 
 export function useSubscriptionStatus() {
-  const { snapshot } = useAuthSnapshot();
+  const { snapshot } = useBusinessAuth();
   const enabled = snapshot.phase === 'authenticated';
 
   return useQuery({
@@ -135,7 +135,7 @@ export function useSubscriptionStatus() {
 
 // Full data queries (for pages that need complete data)
 export function useCustomers() {
-  const { snapshot } = useAuthSnapshot();
+  const { snapshot } = useBusinessAuth();
   const enabled = snapshot.phase === 'authenticated' && !!snapshot.businessId;
 
   return useQuery({
@@ -151,7 +151,7 @@ export function useCustomers() {
 }
 
 export function useJobs() {
-  const { snapshot } = useAuthSnapshot();
+  const { snapshot } = useBusinessAuth();
   const enabled = snapshot.phase === 'authenticated' && !!snapshot.businessId;
 
   return useQuery({
@@ -167,7 +167,7 @@ export function useJobs() {
 }
 
 export function useQuotes() {
-  const { snapshot } = useAuthSnapshot();
+  const { snapshot } = useBusinessAuth();
   const enabled = snapshot.phase === 'authenticated' && !!snapshot.businessId;
 
   return useQuery({
@@ -183,7 +183,7 @@ export function useQuotes() {
 }
 
 export function useInvoices() {
-  const { snapshot } = useAuthSnapshot();
+  const { snapshot } = useBusinessAuth();
   const enabled = snapshot.phase === 'authenticated' && !!snapshot.businessId;
 
   return useQuery({

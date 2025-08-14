@@ -1,9 +1,9 @@
 import { useEffect, useRef } from "react";
-import { useAuthSnapshot } from "@/auth";
+import { useBusinessAuth } from "@/auth";
 
 // Auto-lock system with cross-tab sync and activity tracking
 export default function AutoLock() {
-  const { snapshot, signOut } = useAuthSnapshot();
+  const { snapshot, signOut } = useBusinessAuth();
   const idleTimeoutRef = useRef<NodeJS.Timeout>();
   const activityTimeoutRef = useRef<NodeJS.Timeout>();
   const lastActivityRef = useRef(Date.now());

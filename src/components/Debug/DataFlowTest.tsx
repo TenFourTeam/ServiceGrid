@@ -1,5 +1,5 @@
 import { useCustomers } from '@/queries/unified';
-import { useAuthSnapshot } from '@/auth';
+import { useBusinessAuth } from '@/auth';
 import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
 import { useSupabaseQuotes } from '@/hooks/useSupabaseQuotes';
 import { useSupabaseJobs } from '@/hooks/useSupabaseJobs';
@@ -13,7 +13,7 @@ import { IntegrationStatus } from './IntegrationStatus';
  */
 export function DataFlowTest() {
   const { data: customers = [] } = useCustomers();
-  const { snapshot } = useAuthSnapshot();
+  const { snapshot } = useBusinessAuth();
   const { data: customersData } = useSupabaseCustomers();
   const { data: quotesData } = useSupabaseQuotes();
   const { data: jobsData } = useSupabaseJobs();
