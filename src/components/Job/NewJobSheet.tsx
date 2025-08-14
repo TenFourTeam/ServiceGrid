@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useStore } from '@/store/useAppStore';
+import { useCustomers } from '@/queries/unified';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,19 +20,19 @@ import type { Customer } from '@/types';
 
 export function NewJobSheet() {
   const navigate = useNavigate();
-  const store = useStore();
+  const { data: customers = [] } = useCustomers();
   const { toast } = useToast();
   const { getToken } = useClerkAuth();
-  // Use customers from store, which is populated by dashboard data
-  const customersList = store.customers;
+  // Use customers from React Query hook
+  const customersList = customers;
   const comboboxCustomers = useMemo(() => customersList.map((c: any) => ({
     id: c.id,
-    businessId: store.business.id,
+    businessId: c.businessId || '',
     name: c.name,
     email: c.email ?? undefined,
     phone: c.phone ?? undefined,
     address: c.address ?? undefined,
-  } as Customer)), [customersList, store.business.id]);
+  } as Customer)), [customersList]);
   const [open, setOpen] = useState(false);
   const [addingCustomer, setAddingCustomer] = useState(false);
 
@@ -117,32 +117,25 @@ export function NewJobSheet() {
       });
       const created = (data as any)?.row || (data as any)?.job || data;
 
-      // 3) Upsert locally for instant UI
-      const local = store.upsertJob({
-        id: created?.id,
-        customerId,
-        address: address || selectedCustomer?.address,
-        title: title || undefined,
-        startsAt: start.toISOString(),
-        endsAt: end.toISOString(),
-        notes: notes || undefined,
-        total: totalCents,
-        status: 'Unscheduled',
-        photos: photoUrls as any,
-      } as any);
-
-      setOpen(false);
-      toast({ title: 'Job scheduled', description: 'Your job has been created and scheduled.' });
-      navigate(`/calendar?job=${local.id || created?.id || ''}`);
+      // Job creation completed - queries will refetch automatically
+      console.log('[NewJobSheet] Job creation completed:', created);
+      
+      toast({
+        title: "Job scheduled",
+        description: `Job scheduled for ${selectedCustomer?.name || 'customer'} on ${date}.`,
+      });
+      
+      navigate('/work-orders');
+      
+      // Reset form and close
       resetState();
+      setOpen(false);
     } catch (e: any) {
       toast({ title: 'Failed to create job', description: e?.message || String(e) });
     } finally {
       setCreating(false);
     }
   }
-
-  function onQuickAddCustomer() {}
 
   function resetState() {
     setCustomerId(undefined);

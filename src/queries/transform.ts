@@ -3,9 +3,9 @@
  * Single source of truth for data shape transformations
  */
 
-export function toBusinessUI(db: { name_customized?: boolean; id?: string; name?: string; logo_url?: string; light_logo_url?: string; [k: string]: any }) {
+export function toBusinessUI(db: { name_customized?: boolean; id?: string; name?: string; logo_url?: string; light_logo_url?: string; tax_rate_default?: number; phone?: string; [k: string]: any }) {
   // Remove snake_case property and ensure UI uses only camelCase
-  const { name_customized, logo_url, light_logo_url, ...rest } = db;
+  const { name_customized, logo_url, light_logo_url, tax_rate_default, ...rest } = db;
   return {
     ...rest,
     nameCustomized: !!name_customized,
@@ -13,6 +13,8 @@ export function toBusinessUI(db: { name_customized?: boolean; id?: string; name?
     name: db.name || '',
     logoUrl: logo_url || '',
     lightLogoUrl: light_logo_url || '',
+    taxRateDefault: tax_rate_default || 0.1,
+    phone: db.phone || '',
   };
 }
 

@@ -254,30 +254,20 @@ export default function QuotesPage() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={async () => {
-  const existingJob = store.jobs.find((j) => j.quoteId === quote.id);
-  if (existingJob) {
-    toast.message('Job already exists for this quote', { description: 'Opening Work Orders...' });
-    navigate('/work-orders');
-    return;
-  }
+  // Check if job already exists via API
+  // if (existingJob) {
+  //   toast.message('Job already exists for this quote', { description: 'Opening Work Orders...' });
+  //   navigate('/work-orders');
+  //   return;
+  // }
   try {
     const data = await edgeFetchJson(`jobs`, getToken, {
       method: 'POST',
       body: { quoteId: quote.id },
     });
     const j = (data as any).job || (data as any).row || data;
-    store.upsertJob({
-      id: j.id,
-      customerId: j.customerId,
-      quoteId: j.quoteId,
-      address: j.address,
-      startsAt: j.startsAt,
-      endsAt: j.endsAt,
-      status: j.status,
-      total: j.total,
-      createdAt: j.createdAt,
-    });
-    toast.success('Converted quote to job');
+    // Job creation completed - queries will refetch automatically
+    toast.message('Quote converted to job', { description: 'Opening Work Orders...' });
     navigate('/work-orders');
   } catch (e: any) {
     toast.error('Failed to create job', { description: e?.message || String(e) });
@@ -296,57 +286,20 @@ export default function QuotesPage() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={async () => {
-  let jobId: string | undefined = store.jobs.find((j) => j.quoteId === quote.id)?.id;
+  // Check for existing job via API instead of store
   try {
-    if (!jobId) {
-      const jData = await edgeFetchJson(`jobs`, getToken, {
-        method: 'POST',
-        body: { quoteId: quote.id },
-      });
-      const j = (jData as any).job || (jData as any).row || jData;
-      store.upsertJob({
-        id: j.id,
-        customerId: j.customerId,
-        quoteId: j.quoteId,
-        address: j.address,
-        startsAt: j.startsAt,
-        endsAt: j.endsAt,
-        status: j.status,
-        total: j.total,
-        createdAt: j.createdAt,
-      });
-      jobId = j.id;
-      toast.success('Job created from quote');
-    }
-
-    if (jobId) {
-      const iData = await edgeFetchJson(`invoices`, getToken, {
-        method: 'POST',
-        body: { jobId },
-      });
-      const inv = (iData as any).invoice || iData;
-      store.upsertInvoice({
-        id: inv.id,
-        number: inv.number,
-        businessId: '',
-        customerId: inv.customerId,
-        jobId: inv.jobId,
-        lineItems: [],
-        taxRate: inv.taxRate,
-        discount: inv.discount,
-        subtotal: inv.subtotal,
-        total: inv.total,
-        status: inv.status,
-        dueAt: inv.dueAt,
-        createdAt: inv.createdAt,
-        updatedAt: inv.updatedAt,
-        publicToken: inv.publicToken,
-      });
-      toast.success('Invoice created');
-      navigate('/invoices');
-    }
-  } catch (e: any) {
-    toast.error('Failed to create invoice', { description: e?.message || String(e) });
+    // Always create a new job for now
+    const jData = await edgeFetchJson(`jobs`, getToken, {
+      method: 'POST',
+      body: { quoteId: quote.id },
+    });
+    const j = (jData as any).job || (jData as any).row || jData;
+    // Job created - queries will refetch automatically
+    const jobLink = `/work-orders`;
+    window.open(jobLink, '_blank');
+  } catch (err: any) {
+    console.error('[Invoice] Error creating job:', err);
+    toast.error(err?.message || 'Failed to create job');
   }
 }}
                               >
@@ -370,7 +323,7 @@ export default function QuotesPage() {
         open={open}
         onOpenChange={setOpen}
         customers={customers as Customer[]}
-        defaultTaxRate={store.business.taxRateDefault}
+        defaultTaxRate={business?.taxRateDefault || 0.1}
         onRequestSend={(q) => setSendQuoteItem(q)}
       />
 

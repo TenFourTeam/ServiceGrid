@@ -1,5 +1,5 @@
 import AppLayout from '@/components/Layout/AppLayout';
-import { useStore } from '@/store/useAppStore';
+import { useBusiness } from '@/queries/unified';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,7 +24,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { formatPhoneInput, formatNameSuggestion } from '@/utils/validation';
 
 import { cn } from '@/utils/cn';
-import { useBusiness } from '@/queries/unified';
+
 export default function SettingsPage() {
   const { data: business } = useBusiness();
   const location = useLocation();
@@ -45,7 +45,7 @@ export default function SettingsPage() {
   const [userName, setUserName] = useState('');
   const [businessName, setBusinessName] = useState('');
   const [businessPhone, setBusinessPhone] = useState('');
-  const { data: roleData } = useBusinessRole(store.business.id);
+  const { data: roleData } = useBusinessRole(business?.id || '');
   const { updateProfile, isUpdating } = useProfileOperations();
   const { toast } = useToast();
   const { ref: profileRef, pulse: profilePulse, focus: focusProfile } = useFocusPulse<HTMLDivElement>();
@@ -68,9 +68,6 @@ export default function SettingsPage() {
       });
       const url = (data as any)?.url as string;
       if (url) {
-        store.setBusiness({
-          logoUrl: url
-        });
         sonnerToast.success('Dark icon updated');
       }
     } catch (e: any) {
@@ -99,9 +96,6 @@ export default function SettingsPage() {
       });
       const url = (data as any)?.url as string;
       if (url) {
-        store.setBusiness({
-          lightLogoUrl: url
-        });
         sonnerToast.success('Light icon updated');
       }
     } catch (e: any) {
@@ -170,9 +164,11 @@ export default function SettingsPage() {
 
   // Handle business data hydration
   useEffect(() => {
-    setBusinessName(store.business.name);
-    setBusinessPhone(store.business.phone);
-  }, [store.business.name, store.business.phone]);
+    if (business) {
+      setBusinessName(business.name || '');
+      setBusinessPhone(business.phone || '');
+    }
+  }, [business]);
 
   // Handle focus from onboarding navigation
   useEffect(() => {
@@ -290,22 +286,7 @@ export default function SettingsPage() {
         const data = await edgeFetch('get-business', getToken);
         const b = (data as any)?.business;
         if (b?.id) {
-          store.setBusiness({
-            id: b.id,
-            name: b.name ?? store.business.name,
-            name_customized: b.name_customized ?? false,
-            phone: b.phone ?? '',
-            replyToEmail: b.reply_to_email ?? '',
-            logoUrl: b.logo_url ?? '',
-            lightLogoUrl: b.light_logo_url ?? '',
-            taxRateDefault: Number(b.tax_rate_default ?? store.business.taxRateDefault) || 0,
-            numbering: {
-              estPrefix: b.est_prefix ?? store.business.numbering.estPrefix,
-              estSeq: Number(b.est_seq ?? store.business.numbering.estSeq) || store.business.numbering.estSeq,
-              invPrefix: b.inv_prefix ?? store.business.numbering.invPrefix,
-              invSeq: Number(b.inv_seq ?? store.business.numbering.invSeq) || store.business.numbering.invSeq
-            }
-          });
+          // Business data will be handled by React Query
         }
         // Auto-refresh subscription on mount and after checkout redirect
         const params = new URLSearchParams(window.location.search);
@@ -422,7 +403,7 @@ export default function SettingsPage() {
               <Label>Dark Icon</Label>
               <div className="flex items-center gap-4">
                 <div className="shrink-0 w-14 h-14 rounded-lg bg-background p-2 border border-border shadow-sm -ml-1 flex items-center justify-center overflow-hidden">
-                  <BusinessLogo size={40} src={store.business.logoUrl} alt="Dark icon preview" />
+                  <BusinessLogo size={40} src={business?.logoUrl} alt="Dark icon preview" />
                 </div>
                 <div className="flex-1 grid gap-2 sm:grid-cols-[1fr_auto]">
                   <Input type="file" accept="image/png,image/svg+xml,image/webp,image/jpeg" onChange={e => setDarkFile(e.target.files?.[0] || null)} />
@@ -444,7 +425,7 @@ export default function SettingsPage() {
               <Label>Light Icon</Label>
             <div className="flex items-center gap-4">
               <div className="shrink-0 w-14 h-14 rounded-lg bg-primary p-2 shadow-sm -ml-1 flex items-center justify-center overflow-hidden">
-                <BusinessLogo size={40} src={store.business.lightLogoUrl} alt="Light icon preview" />
+                <BusinessLogo size={40} src={business?.lightLogoUrl} alt="Light icon preview" />
               </div>
               <div className="flex-1 grid gap-2 sm:grid-cols-[1fr_auto]">
                 <Input type="file" accept="image/png,image/svg+xml,image/webp,image/jpeg" onChange={e => setLightFile(e.target.files?.[0] || null)} />
@@ -493,7 +474,7 @@ export default function SettingsPage() {
           <CardHeader><CardTitle>Team Members</CardTitle></CardHeader>
           <CardContent>
             <BusinessMembersList 
-              businessId={store.business.id} 
+              businessId={business?.id || ''} 
               canManage={roleData?.canManage || false}
             />
           </CardContent>
@@ -521,7 +502,7 @@ export default function SettingsPage() {
           <Card className="md:col-span-2">
             <CardHeader><CardTitle>Activity Log</CardTitle></CardHeader>
             <CardContent>
-              <AuditLogsList businessId={store.business.id} />
+              <AuditLogsList businessId={business?.id || ''} />
             </CardContent>
           </Card>
         )}
