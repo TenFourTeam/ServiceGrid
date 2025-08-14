@@ -1,6 +1,6 @@
 
 import AppLayout from '@/components/Layout/AppLayout';
-import { useStore } from '@/store/useAppStore';
+import { useCustomers } from '@/queries/unified';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -19,7 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 
 export default function InvoicesPage() {
-  const store = useStore();
+  const { data: customersUnified = [] } = useCustomers();
   const { isSignedIn } = useClerkAuth();
   const { data: invoicesData } = useSupabaseInvoices();
   const { data: customersData } = useSupabaseCustomers();

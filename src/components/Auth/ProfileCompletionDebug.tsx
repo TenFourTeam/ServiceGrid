@@ -1,5 +1,5 @@
 import { useUser } from '@clerk/clerk-react';
-import { useStore } from '@/store/useAppStore';
+import { useBusiness } from '@/queries/unified';
 import { useProfile } from '@/queries/useProfile';
 import { useOnboardingState } from '@/onboarding/useOnboardingState';
 
@@ -8,12 +8,12 @@ import { useOnboardingState } from '@/onboarding/useOnboardingState';
  */
 export function ProfileCompletionDebug() {
   const { user } = useUser();
-  const { business } = useStore();
+  const { data: business } = useBusiness();
   const { data: profile } = useProfile();
   const onboarding = useOnboardingState();
   
   // Check both store and onboarding values
-  const storeCustomized = business?.name_customized ?? false;
+  const storeCustomized = business?.nameCustomized ?? false;
   const onbCustomized = onboarding.ctx.business.nameCustomized;
   const equal = storeCustomized === onbCustomized;
 

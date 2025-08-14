@@ -144,3 +144,76 @@ export function useSubscriptionStatus() {
     staleTime: 60_000, // 1 minute for billing data
   });
 }
+
+// Full data queries (for pages that need complete data)
+export function useCustomers() {
+  const { snapshot } = useAuthSnapshot();
+  const apiClient = useApiClient();
+  const enabled = snapshot.phase === 'authenticated' && !!snapshot.businessId;
+
+  return useQuery({
+    queryKey: queryKeys.counts.customers(snapshot.businessId || '').concat(['full']),
+    enabled,
+    queryFn: async () => {
+      console.info("[useCustomers] fetching customers data...");
+      const response = await apiClient.get("/customers");
+      if (response.error) throw new Error(response.error);
+      return response.data?.rows || [];
+    },
+    staleTime: 30_000,
+  });
+}
+
+export function useJobs() {
+  const { snapshot } = useAuthSnapshot();
+  const apiClient = useApiClient();
+  const enabled = snapshot.phase === 'authenticated' && !!snapshot.businessId;
+
+  return useQuery({
+    queryKey: queryKeys.counts.jobs(snapshot.businessId || '').concat(['full']),
+    enabled,
+    queryFn: async () => {
+      console.info("[useJobs] fetching jobs data...");
+      const response = await apiClient.get("/jobs");
+      if (response.error) throw new Error(response.error);
+      return response.data?.rows || [];
+    },
+    staleTime: 30_000,
+  });
+}
+
+export function useQuotes() {
+  const { snapshot } = useAuthSnapshot();
+  const apiClient = useApiClient();
+  const enabled = snapshot.phase === 'authenticated' && !!snapshot.businessId;
+
+  return useQuery({
+    queryKey: queryKeys.counts.quotes(snapshot.businessId || '').concat(['full']),
+    enabled,
+    queryFn: async () => {
+      console.info("[useQuotes] fetching quotes data...");
+      const response = await apiClient.get("/quotes");
+      if (response.error) throw new Error(response.error);
+      return response.data?.rows || [];
+    },
+    staleTime: 30_000,
+  });
+}
+
+export function useInvoices() {
+  const { snapshot } = useAuthSnapshot();
+  const apiClient = useApiClient();
+  const enabled = snapshot.phase === 'authenticated' && !!snapshot.businessId;
+
+  return useQuery({
+    queryKey: queryKeys.counts.invoices(snapshot.businessId || '').concat(['full']),
+    enabled,
+    queryFn: async () => {
+      console.info("[useInvoices] fetching invoices data...");
+      const response = await apiClient.get("/invoices");
+      if (response.error) throw new Error(response.error);
+      return response.data?.rows || [];
+    },
+    staleTime: 30_000,
+  });
+}

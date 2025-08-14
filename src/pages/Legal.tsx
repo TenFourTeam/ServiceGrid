@@ -3,10 +3,10 @@ import AppLayout from '@/components/Layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { FileText, Shield, Cookie, BadgeDollarSign } from 'lucide-react';
-import { useStore } from '@/store/useAppStore';
+import { useBusiness } from '@/queries/unified';
 
 export default function LegalPage() {
-  const { business } = useStore();
+  const { data: business } = useBusiness();
 
   useEffect(() => {
     const title = `${business.name ? business.name + ' — ' : ''}Terms & Services`;

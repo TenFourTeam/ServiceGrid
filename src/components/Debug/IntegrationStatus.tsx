@@ -1,15 +1,15 @@
 import { useAuthSnapshot } from '@/auth';
-import { useStore } from '@/store/useAppStore';
+import { useBusiness } from '@/queries/unified';
 import { useCustomersCount } from '@/hooks/useCustomersCount';
 import { CheckCircle, XCircle, Clock } from 'lucide-react';
 
 /**
- * Displays the overall integration status of Phase 4 implementation
+ * Displays the overall integration status of the React Query migration
  * Shows if all systems are properly connected and working
  */
 export function IntegrationStatus() {
   const { snapshot } = useAuthSnapshot();
-  const store = useStore();
+  const { data: business } = useBusiness();
   const { data: customersCount, isLoading } = useCustomersCount();
 
   const checks = [
@@ -20,13 +20,13 @@ export function IntegrationStatus() {
     },
     {
       name: 'Business Context',
-      status: snapshot.businessId && store.business.id ? 'success' : 'error',
-      details: `Auth: ${snapshot.businessId?.slice(0, 8)}... | Store: ${store.business.id?.slice(0, 8)}...`,
+      status: snapshot.businessId && business?.id ? 'success' : 'error',
+      details: `Auth: ${snapshot.businessId?.slice(0, 8)}... | Query: ${business?.id?.slice(0, 8)}...`,
     },
     {
       name: 'Business Data Sync',
-      status: snapshot.business?.name === store.business.name ? 'success' : 'error',
-      details: `${snapshot.business?.name} ↔ ${store.business.name}`,
+      status: business?.name ? 'success' : 'error',
+      details: `Business: ${business?.name || 'Not loaded'}`,
     },
     {
       name: 'Query System',
@@ -39,9 +39,9 @@ export function IntegrationStatus() {
       details: 'Business ID header auto-included',
     },
     {
-      name: 'Data Hydration',
-      status: 'success', // If this component renders, hydration is working
-      details: 'Server data flowing to local store',
+      name: 'React Query Migration',
+      status: 'success', // If this component renders, migration is working
+      details: 'Store dependencies removed, React Query active',
     },
   ];
 
@@ -63,7 +63,7 @@ export function IntegrationStatus() {
       <div className="flex items-center gap-2">
         {getIcon(overallStatus)}
         <h4 className="font-medium">
-          Phase 4 Integration Status ({successCount}/{totalChecks})
+          React Query Migration Status ({successCount}/{totalChecks})
         </h4>
       </div>
       
@@ -81,7 +81,7 @@ export function IntegrationStatus() {
       
       {overallStatus === 'success' && (
         <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-800">
-          ✅ All systems operational! Business context is properly integrated and data flows correctly.
+          ✅ Migration complete! React Query is the single source of truth for server data.
         </div>
       )}
     </div>

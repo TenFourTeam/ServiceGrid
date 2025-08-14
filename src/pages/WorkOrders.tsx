@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect, useRef } from 'react';
 import AppLayout from '@/components/Layout/AppLayout';
-import { useStore } from '@/store/useAppStore';
+import { useJobs, useCustomers, useInvoices } from '@/queries/unified';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -19,7 +19,9 @@ import JobShowModal from '@/components/Jobs/JobShowModal';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 function useFilteredJobs() {
-  const { jobs, customers, invoices } = useStore();
+  const { data: jobs = [] } = useJobs();
+  const { data: customers = [] } = useCustomers();
+  const { data: invoices = [] } = useInvoices();
   const [filter, setFilter] = useState<'unscheduled' | 'today' | 'upcoming' | 'completed'>('unscheduled');
   const [q, setQ] = useState('');
   const [sort, setSort] = useState<'when' | 'customer' | 'amount'>('when');
@@ -120,7 +122,7 @@ function WorkOrderRow({ job, onRescheduled, onComplete, onInvoice, onViewInvoice
 }
 
 export default function WorkOrdersPage() {
-  const { customers, updateJobStatus, upsertJob } = useStore();
+  const { data: customers = [] } = useCustomers();
   const { isSignedIn, getToken } = useClerkAuth();
   const { data: jobsData, isLoading, error } = useSupabaseJobs();
   const { filter, setFilter, q, setQ, sort, setSort, jobs, counts, hasInvoice } = useFilteredJobs();
@@ -199,7 +201,7 @@ export default function WorkOrdersPage() {
                         method: 'PATCH',
                         body: { status: 'Completed' },
                       });
-                      updateJobStatus(j.id, 'Completed');
+                      // Job status updated via API, queries will refetch
                       toast({ title: 'Marked complete' });
                       // Job data will refresh automatically
                     } catch (e: any) {

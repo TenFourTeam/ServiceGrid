@@ -12,7 +12,7 @@ import { useSupabaseQuotes } from '@/hooks/useSupabaseQuotes';
 import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useStore } from '@/store/useAppStore';
+import { useBusiness } from '@/queries/unified';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -59,7 +59,7 @@ function calculateQuoteTotals(lineItems: LineItem[], taxRate: number, discount: 
 
 export default function QuotesPage() {
   const { isSignedIn, getToken } = useClerkAuth();
-  const store = useStore();
+  const { data: business } = useBusiness();
   const { data: quotesData } = useSupabaseQuotes();
   const { data: customersData } = useSupabaseCustomers();
   const queryClient = useQueryClient();

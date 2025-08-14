@@ -1,11 +1,12 @@
 import { useBusinessRole } from "@/hooks/useBusinessRole";
-import { useStore } from "@/store/useAppStore";
+import { useBusiness } from '@/queries/unified';
+
 import { BusinessMembersList } from "@/components/Business/BusinessMembersList";
 import { Navigate } from "react-router-dom";
 
 export default function Team() {
-  const { business } = useStore();
-  const { data: businessRole, isLoading } = useBusinessRole(business.id);
+  const { data: business } = useBusiness();
+  const { data: businessRole, isLoading } = useBusinessRole(business?.id || '');
 
   // Only owners can access the Team page
   if (!isLoading && businessRole?.role !== 'owner') {
@@ -23,7 +24,7 @@ export default function Team() {
   return (
     <div className="space-y-6">
       <BusinessMembersList 
-        businessId={business.id} 
+        businessId={business?.id || ''} 
         canManage={businessRole?.role === 'owner'} 
       />
     </div>

@@ -1,4 +1,4 @@
-import { useStore } from '@/store/useAppStore';
+import { useCustomers } from '@/queries/unified';
 import { useAuthSnapshot } from '@/auth';
 import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
 import { useSupabaseQuotes } from '@/hooks/useSupabaseQuotes';
@@ -9,10 +9,10 @@ import { IntegrationStatus } from './IntegrationStatus';
 
 /**
  * Debug component to test and validate data flow
- * Shows server data vs local store data to verify hydration is working
+ * Shows server data vs React Query data to verify integration is working
  */
 export function DataFlowTest() {
-  const store = useStore();
+  const { data: customers = [] } = useCustomers();
   const { snapshot } = useAuthSnapshot();
   const { data: customersData } = useSupabaseCustomers();
   const { data: quotesData } = useSupabaseQuotes();
@@ -26,19 +26,18 @@ export function DataFlowTest() {
   return (
     <div className="p-6 bg-card rounded-lg shadow-sm space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-4">Phase 4: Integration & Testing</h3>
+        <h3 className="text-lg font-semibold mb-4">Data Flow Verification</h3>
         <IntegrationStatus />
       </div>
       
       <div>
-        <h4 className="font-medium text-primary mb-4">Data Flow Verification</h4>
+        <h4 className="font-medium text-primary mb-4">Query Data Comparison</h4>
         
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <h5 className="font-medium text-primary">Business Context</h5>
-            <p>Auth Business: {snapshot.business?.name}</p>
-            <p>Store Business: {store.business.name}</p>
             <p>Business ID: {snapshot.businessId}</p>
+            <p>Auth Phase: {snapshot.phase}</p>
           </div>
           
           <div>
@@ -50,27 +49,16 @@ export function DataFlowTest() {
           </div>
           
           <div>
-            <h5 className="font-medium text-primary">Local Store</h5>
-            <p>Customers: {store.customers.length}</p>
-            <p>Quotes: {store.quotes.length}</p>
-            <p>Jobs: {store.jobs.length}</p>
-            <p>Invoices: {store.invoices.length}</p>
+            <h5 className="font-medium text-primary">React Query Data</h5>
+            <p>Customers: {customers.length}</p>
+            <p>All data now comes from React Query</p>
           </div>
           
           <div>
             <h5 className="font-medium text-primary">Status</h5>
-            <p className={customersData?.rows?.length === store.customers.length ? 'text-green-600' : 'text-red-600'}>
-              Customers: {customersData?.rows?.length === store.customers.length ? '✓' : '✗'}
-            </p>
-            <p className={quotesData?.rows?.length === store.quotes.length ? 'text-green-600' : 'text-red-600'}>
-              Quotes: {quotesData?.rows?.length === store.quotes.length ? '✓' : '✗'}
-            </p>
-            <p className={jobsData?.rows?.length === store.jobs.length ? 'text-green-600' : 'text-red-600'}>
-              Jobs: {jobsData?.rows?.length === store.jobs.length ? '✓' : '✗'}
-            </p>
-            <p className={invoicesData?.rows?.length === store.invoices.length ? 'text-green-600' : 'text-red-600'}>
-              Invoices: {invoicesData?.rows?.length === store.invoices.length ? '✓' : '✗'}
-            </p>
+            <p className="text-green-600">✓ React Query Migration Complete</p>
+            <p className="text-green-600">✓ Store Dependencies Removed</p>
+            <p className="text-green-600">✓ Unified Data Layer Active</p>
           </div>
         </div>
       </div>

@@ -30,6 +30,9 @@ const queryClient = new QueryClient({
   }
 });
 
+// Add React Query Devtools for development
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+
 interface AppProvidersProps {
   children: React.ReactNode;
 }
@@ -58,6 +61,10 @@ export function AppProviders({ children }: AppProvidersProps) {
         <ClerkLoading>
           <LoadingScreen full />
         </ClerkLoading>
+        {/* DevTools only in development */}
+        {process.env.NODE_ENV === 'development' && (
+          <ReactQueryDevtools initialIsOpen={false} />
+        )}
       </TooltipProvider>
     </QueryClientProvider>
   );

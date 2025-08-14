@@ -24,8 +24,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { formatPhoneInput, formatNameSuggestion } from '@/utils/validation';
 
 import { cn } from '@/utils/cn';
+import { useBusiness } from '@/queries/unified';
 export default function SettingsPage() {
-  const store = useStore();
+  const { data: business } = useBusiness();
   const location = useLocation();
   const navigate = useNavigate();
   const {
