@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { addDays, endOfMonth, endOfWeek, format, isSameDay, isSameMonth, parseISO, startOfMonth, startOfWeek } from "date-fns";
-import { useStore } from "@/store/useAppStore";
+import { useSupabaseJobs } from "@/hooks/useSupabaseJobs";
+import { useSupabaseCustomers } from "@/hooks/useSupabaseCustomers";
 import { formatMoney } from "@/utils/format";
 import JobShowModal from "@/components/Jobs/JobShowModal";
 import type { Job } from "@/types";
@@ -15,7 +16,10 @@ function useMonthGrid(date: Date) {
 
 export default function MonthCalendar({ date, onDateChange }: { date: Date; onDateChange: (d: Date) => void }) {
   const { start, end, days } = useMonthGrid(date);
-  const { jobs: allJobs, customers } = useStore();
+  const { data: jobsData } = useSupabaseJobs();
+  const { data: customersData } = useSupabaseCustomers();
+  const allJobs = jobsData?.rows || [];
+  const customers = customersData?.rows || [];
   
   const jobs = useMemo(() => {
     return allJobs.filter(j => {
@@ -34,7 +38,7 @@ export default function MonthCalendar({ date, onDateChange }: { date: Date; onDa
       const s = new Date(job.startsAt);
       const key = s.toISOString().slice(0, 10);
       if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(job);
+      map.get(key)!.push(job as Job);
     }
     return map;
   }, [jobs]);
@@ -74,7 +78,7 @@ export default function MonthCalendar({ date, onDateChange }: { date: Date; onDa
                     <li key={j.id} className="truncate">
                       <button
                         type="button"
-                        onClick={(e) => { e.stopPropagation(); setActiveJob(j); setOpen(true); }}
+                        onClick={(e) => { e.stopPropagation(); setActiveJob(j as Job); setOpen(true); }}
                         className={`w-full truncate rounded px-2 py-1 text-xs border bg-background/60 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary ${j.status === 'Completed' ? 'border-success bg-success/5' : j.status === 'In Progress' ? 'border-primary' : 'border-primary/50'}`}
                         aria-label={`Open job ${j.title || 'Job'} at ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
                       >

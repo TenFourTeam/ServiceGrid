@@ -1,6 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Job } from '@/types';
-import { useStore } from '@/store/useAppStore';
+import { useSupabaseJobs } from '@/hooks/useSupabaseJobs';
+import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
+
+// TODO: Create proper mutation hooks
+const upsertJob = (job: any) => {
+  console.log('upsertJob called with:', job);
+  // Placeholder - mutations will be implemented later
+};
+
+const deleteJob = (id: string) => {
+  console.log('deleteJob called with:', id);
+  // Placeholder - mutations will be implemented later
+};
 import { clamp, formatDateTime, minutesSinceStartOfDay } from '@/utils/format';
 import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerClose } from '@/components/ui/drawer';
@@ -24,13 +36,10 @@ export function WeekCalendar({
   selectedJobId?: string;
   date?: Date;
 }) {
-  const {
-    jobs,
-    customers,
-    updateJobStatus,
-    upsertJob,
-    deleteJob
-  } = useStore();
+  const { data: jobsData } = useSupabaseJobs();
+  const { data: customersData } = useSupabaseCustomers();
+  const jobs = jobsData?.rows || [];
+  const customers = customersData?.rows || [];
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pendingSlot, setPendingSlot] = useState<{ start: Date; end: Date } | null>(null);
   const notesTimer = useRef<number | null>(null);
@@ -116,11 +125,11 @@ export function WeekCalendar({
     jobs.forEach(j => {
       const d = new Date(j.startsAt);
       const key = dayKey(d);
-      if (map[key]) map[key].push(j);
+      if (map[key]) map[key].push(j as Job);
     });
     return map;
   }, [jobs, weekStart]);
-  const [activeJob, setActiveJob] = useState<Job | null>(() => selectedJobId ? jobs.find(j => j.id === selectedJobId) ?? null : null);
+  const [activeJob, setActiveJob] = useState<Job | null>(() => selectedJobId ? jobs.find(j => j.id === selectedJobId) as Job ?? null : null);
   const [now, setNow] = useState<Date>(new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 60_000);

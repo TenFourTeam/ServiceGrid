@@ -8,14 +8,15 @@ import { EnhancedInviteModal } from '@/components/Team/EnhancedInviteModal';
 import { useBusinessRole } from '@/hooks/useBusinessRole';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/Layout/AppSidebar';
-import { useStore } from '@/store/useAppStore';
+import { useAuthSnapshot } from '@/auth';
 import { PageFade } from '@/components/Motion/PageFade';
 import { TrialBanner } from '@/components/Onboarding/TrialBanner';
 import { UserPlus } from 'lucide-react';
 export default function AppLayout({ children, title }: { children: ReactNode; title?: string }) {
   const [showInviteModal, setShowInviteModal] = useState(false);
-  const { business } = useStore();
-  const { data: businessRole } = useBusinessRole(business.id);
+  const { snapshot } = useAuthSnapshot();
+  const businessId = snapshot.businessId;
+  const { data: businessRole } = useBusinessRole(businessId);
 
   useEffect(() => {
     document.title = title ? `${title} • ServiceGrid` : 'ServiceGrid';
@@ -63,7 +64,7 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
         <EnhancedInviteModal
           open={showInviteModal}
           onOpenChange={setShowInviteModal}
-          businessId={business.id}
+          businessId={businessId || ''}
         />
       )}
     </SidebarProvider>

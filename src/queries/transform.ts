@@ -3,14 +3,16 @@
  * Single source of truth for data shape transformations
  */
 
-export function toBusinessUI(db: { name_customized?: boolean; id?: string; name?: string; [k: string]: any }) {
+export function toBusinessUI(db: { name_customized?: boolean; id?: string; name?: string; logo_url?: string; light_logo_url?: string; [k: string]: any }) {
   // Remove snake_case property and ensure UI uses only camelCase
-  const { name_customized, ...rest } = db;
+  const { name_customized, logo_url, light_logo_url, ...rest } = db;
   return {
     ...rest,
     nameCustomized: !!name_customized,
     id: db.id || '',
     name: db.name || '',
+    logoUrl: logo_url || '',
+    lightLogoUrl: light_logo_url || '',
   };
 }
 

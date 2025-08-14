@@ -1,3 +1,6 @@
+// DEPRECATED: This store has been replaced by React Query for server state
+// Only keeping the export to prevent runtime errors during transition
+
 import { AppEvent, AppState, Business, Customer, Quote, Invoice, Job, LineItem, Money } from '@/types';
 import { loadState, saveState } from './storage';
 import React, { createContext, useContext, useEffect, useMemo, useReducer } from 'react';
@@ -432,6 +435,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
 export function useStore() {
   const ctx = useContext(StoreContext);
-  if (!ctx) throw new Error('Store not available');
+  if (!ctx) {
+    console.warn('DEPRECATED: useStore() called but store provider was removed. Use React Query hooks instead.');
+    // Return a minimal fallback to prevent crashes during transition
+    return {
+      business: { id: '', name: 'Loading...', nameCustomized: false },
+      customers: [],
+      jobs: [],
+      quotes: [],
+      invoices: [],
+      upsertJob: () => console.warn('upsertJob called on deprecated store'),
+      deleteJob: () => console.warn('deleteJob called on deprecated store'),
+      updateJobStatus: () => console.warn('updateJobStatus called on deprecated store'),
+    } as any;
+  }
   return ctx;
 }

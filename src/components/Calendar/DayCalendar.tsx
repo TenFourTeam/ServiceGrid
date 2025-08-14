@@ -1,12 +1,16 @@
 import { useMemo, useState } from "react";
 import { endOfDay, startOfDay } from "date-fns";
-import { useStore } from "@/store/useAppStore";
+import { useSupabaseJobs } from "@/hooks/useSupabaseJobs";
+import { useSupabaseCustomers } from "@/hooks/useSupabaseCustomers";
 import { formatMoney } from "@/utils/format";
 import JobShowModal from "@/components/Jobs/JobShowModal";
 import type { Job } from "@/types";
 
 export default function DayCalendar({ date }: { date: Date }) {
-  const { jobs: allJobs, customers } = useStore();
+  const { data: jobsData } = useSupabaseJobs();
+  const { data: customersData } = useSupabaseCustomers();
+  const allJobs = jobsData?.rows || [];
+  const customers = customersData?.rows || [];
   const dayStart = startOfDay(date);
   const dayEnd = endOfDay(date);
   
@@ -37,7 +41,7 @@ export default function DayCalendar({ date }: { date: Date }) {
           const liClasses = `rounded px-3 py-2 bg-background/60 border ${status === 'Completed' ? 'border-success bg-success/5' : status === 'In Progress' ? 'border-primary' : 'border-primary/50'}`;
           const dotClass = status === 'Completed' ? 'bg-success' : 'bg-primary';
           return (
-            <li key={j.id} className={`${liClasses} cursor-pointer hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary`} onClick={() => { setActiveJob(j); setOpen(true); }}>
+            <li key={j.id} className={`${liClasses} cursor-pointer hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary`} onClick={() => { setActiveJob(j as Job); setOpen(true); }}>
               <div className="flex items-center gap-2 text-sm font-medium">
                 <span className={`inline-block h-2 w-2 rounded-full ${dotClass}`} aria-hidden="true" />
                 <span>{s.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
