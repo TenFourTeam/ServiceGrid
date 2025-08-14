@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CreditCard, Shield, CheckCircle, ArrowRight } from 'lucide-react';
-import { useOnboarding } from '@/components/Onboarding/OnboardingProvider';
+import { useOnboardingActions } from '@/onboarding/hooks';
 
 interface BankLinkPromptProps {
   open: boolean;
@@ -20,7 +20,7 @@ export function BankLinkPrompt({
   customerName = '',
   amount = 0
 }: BankLinkPromptProps) {
-  const { openBankLink } = useOnboarding();
+  const { openBankLink } = useOnboardingActions();
   const [isLinking, setIsLinking] = useState(false);
 
   const config = {

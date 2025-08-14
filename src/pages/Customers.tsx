@@ -13,14 +13,14 @@ import { edgeFetchJson } from "@/utils/edgeApi";
 import { CSVImportModal } from '@/components/Onboarding/CSVImportModal';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { showNextActionToast } from '@/components/Onboarding/NextActionToast';
-import { useOnboarding } from '@/components/Onboarding/OnboardingProvider';
+import { useOnboardingActions } from '@/onboarding/hooks';
 
 export default function CustomersPage() {
   const { isSignedIn, getToken } = useClerkAuth();
   const queryClient = useQueryClient();
   const location = useLocation();
   const navigate = useNavigate();
-  const onboarding = useOnboarding();
+  const onboardingActions = useOnboardingActions();
 
   const { data: customersData, isLoading, error } = useSupabaseCustomers();
   
@@ -92,7 +92,7 @@ export default function CustomersPage() {
       } else {
         // Show next action toast for new customers
         showNextActionToast('customer-added', draft.name, () => {
-          onboarding.openCreateQuote();
+          onboardingActions.openCreateQuote();
         });
       }
       

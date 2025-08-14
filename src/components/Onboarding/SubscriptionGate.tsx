@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Crown, Lock, CheckCircle } from 'lucide-react';
-import { useOnboarding } from '@/components/Onboarding/OnboardingProvider';
+import { useOnboardingActions } from '@/onboarding/hooks';
 
 interface SubscriptionGateProps {
   open: boolean;
@@ -26,7 +26,7 @@ export function SubscriptionGate({
     'Priority support'
   ]
 }: SubscriptionGateProps) {
-  const { openSubscription } = useOnboarding();
+  const { openSubscription } = useOnboardingActions();
 
   const handleUpgrade = () => {
     onOpenChange(false);

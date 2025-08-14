@@ -3,12 +3,12 @@ import { Clock, Crown, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
-import { useOnboarding } from './OnboardingProvider';
+import { useOnboardingActions } from '@/onboarding/hooks';
 import { useLocation } from 'react-router-dom';
 
 export function TrialNotifications() {
   const { data: subscription } = useSubscriptionStatus();
-  const { openSubscription } = useOnboarding();
+  const { openSubscription } = useOnboardingActions();
   const { toast } = useToast();
   const location = useLocation();
 

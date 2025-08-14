@@ -3,7 +3,7 @@ import { Crown, Lock, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
-import { useOnboarding } from './OnboardingProvider';
+import { useOnboardingActions } from '@/onboarding/hooks';
 
 interface TrialGateProps {
   children: ReactNode;
@@ -14,7 +14,7 @@ interface TrialGateProps {
 
 export function TrialGate({ children, feature, description, fallbackContent }: TrialGateProps) {
   const { data: subscription } = useSubscriptionStatus();
-  const { openSubscription } = useOnboarding();
+  const { openSubscription } = useOnboardingActions();
 
   if (!subscription || subscription.subscribed) {
     return <>{children}</>;

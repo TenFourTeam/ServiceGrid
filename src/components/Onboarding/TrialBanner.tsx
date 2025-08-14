@@ -3,12 +3,12 @@ import { X, Crown, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
-import { useOnboarding } from '@/components/Onboarding/OnboardingProvider';
+import { useOnboardingActions } from '@/onboarding/hooks';
 
 export function TrialBanner() {
   const [dismissed, setDismissed] = useState(false);
   const { data: subscription } = useSubscriptionStatus();
-  const { openSubscription } = useOnboarding();
+  const { openSubscription } = useOnboardingActions();
 
   if (!subscription || subscription.subscribed || dismissed) {
     return null;

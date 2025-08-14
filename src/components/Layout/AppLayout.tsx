@@ -5,25 +5,17 @@ import { Button } from '@/components/ui/button';
 import { NewJobSheet } from '@/components/Job/NewJobSheet';
 import { EnhancedInviteModal } from '@/components/Team/EnhancedInviteModal';
 
-import { useOnboarding } from '@/components/Onboarding/OnboardingProvider';
 import { useBusinessRole } from '@/hooks/useBusinessRole';
-
-import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/Layout/AppSidebar';
 import { useStore } from '@/store/useAppStore';
 import { PageFade } from '@/components/Motion/PageFade';
 import { TrialBanner } from '@/components/Onboarding/TrialBanner';
 import { UserPlus } from 'lucide-react';
-import { useDataHydration } from '@/hooks/useDataHydration';
 export default function AppLayout({ children, title }: { children: ReactNode; title?: string }) {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const { business } = useStore();
   const { data: businessRole } = useBusinessRole(business.id);
-  const onboarding = useOnboarding();
-  
-  // Enable data hydration from server APIs to local state
-  useDataHydration();
 
   useEffect(() => {
     document.title = title ? `${title} • ServiceGrid` : 'ServiceGrid';

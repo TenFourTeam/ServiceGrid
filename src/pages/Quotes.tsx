@@ -20,7 +20,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Trash2, Plus, Send, Download, Receipt, Wrench, Users, Calendar } from 'lucide-react';
 import { AdvancedEmptyState } from '@/components/Onboarding/AdvancedEmptyState';
-import { useOnboarding } from '@/components/Onboarding/OnboardingProvider';
+import { useOnboardingActions } from '@/onboarding/hooks';
 
 import { toast } from 'sonner';
 import { formatMoney as formatCurrency } from '@/utils/format';
@@ -65,7 +65,7 @@ export default function QuotesPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
-  const onboarding = useOnboarding();
+  const onboarding = useOnboardingActions();
 
   const [open, setOpen] = useState(false);
   const [sendQuoteItem, setSendQuoteItem] = useState<Quote | null>(null);
