@@ -15,6 +15,8 @@ export type ProfileUpdateResponse = {
     fullName: string;
     businessName?: string;
     phoneE164: string;
+    nameCustomized?: boolean;
+    updatedAt?: string;
   };
 };
 
@@ -59,13 +61,15 @@ export function useProfileOperations() {
       const previousBusiness = queryClient.getQueryData(queryKeys.business.current());
       const previousProfile = queryClient.getQueryData(queryKeys.profile.current());
 
-      // Optimistically update business only if businessName provided
-      if (variables.businessName) {
+      // Optimistically update business with nameCustomized logic
+      if (variables.businessName !== undefined) {
         queryClient.setQueryData(queryKeys.business.current(), (old: any) => {
           if (!old) return old;
+          const newName = variables.businessName || 'My Business';
           return {
             ...old,
-            name: variables.businessName
+            name: newName,
+            nameCustomized: newName.trim().toLowerCase() !== 'my business'
           };
         });
       }
@@ -80,16 +84,21 @@ export function useProfileOperations() {
         };
       });
 
-      return { previousBusiness, previousProfile };
+      return { 
+        previousBusiness, 
+        previousProfile,
+        businessKey: queryKeys.business.current(),
+        profileKey: queryKeys.profile.current()
+      };
     },
     
     onError: (error: ApiError, variables, context) => {
       // Revert optimistic updates
-      if (context?.previousBusiness) {
-        queryClient.setQueryData(queryKeys.business.current(), context.previousBusiness);
+      if (context?.previousBusiness && context?.businessKey) {
+        queryClient.setQueryData(context.businessKey, context.previousBusiness);
       }
-      if (context?.previousProfile) {
-        queryClient.setQueryData(queryKeys.profile.current(), context.previousProfile);
+      if (context?.previousProfile && context?.profileKey) {
+        queryClient.setQueryData(context.profileKey, context.previousProfile);
       }
       
       console.error('Profile update failed:', { 
@@ -106,32 +115,33 @@ export function useProfileOperations() {
       });
     },
     
-    onSuccess: (data: ProfileUpdateResponse) => {
+    onSuccess: (data: ProfileUpdateResponse, variables, context) => {
       console.log('Profile update successful:', data);
       
-      // Update with server response to ensure consistency
-      if (data.data.businessName !== undefined) {
-        queryClient.setQueryData(queryKeys.business.current(), (old: any) => {
+      // Authoritative cache write with server response
+      if (data.data.businessName !== undefined && context?.businessKey) {
+        queryClient.setQueryData(context.businessKey, (old: any) => {
           if (!old) return old;
           return {
             ...old,
-            name: data.data.businessName
+            name: data.data.businessName,
+            nameCustomized: data.data.nameCustomized ?? (data.data.businessName?.trim().toLowerCase() !== 'my business'),
+            updatedAt: data.data.updatedAt || old.updatedAt
           };
         });
       }
 
-      queryClient.setQueryData(queryKeys.profile.current(), (old: any) => {
-        if (!old) return old;
-        return {
-          ...old,
-          fullName: data.data.fullName,
-          phoneE164: data.data.phoneE164
-        };
-      });
+      if (context?.profileKey) {
+        queryClient.setQueryData(context.profileKey, (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            fullName: data.data.fullName,
+            phoneE164: data.data.phoneE164
+          };
+        });
+      }
 
-      // Invalidate related queries to trigger refetch
-      invalidationHelpers.all(queryClient);
-      
       // Force dashboard data refresh to update onboarding state
       window.dispatchEvent(new CustomEvent('business-updated'));
 
@@ -141,9 +151,14 @@ export function useProfileOperations() {
       });
     },
     
-    onSettled: () => {
-      // Always refetch to ensure server state is correct
-      invalidationHelpers.all(queryClient);
+    onSettled: (data, error, variables, context) => {
+      // Single targeted invalidation to reconcile across tabs/background
+      if (context?.businessKey) {
+        queryClient.invalidateQueries({ queryKey: context.businessKey, exact: true });
+      }
+      if (context?.profileKey) {
+        queryClient.invalidateQueries({ queryKey: context.profileKey, exact: true });
+      }
     }
   });
 

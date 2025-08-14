@@ -229,15 +229,11 @@ export default function SettingsPage() {
     }
 
     // Always include current values to ensure persistence
-    const input: { fullName: string; phoneRaw: string; businessName?: string } = { 
+    const input: { fullName: string; phoneRaw: string; businessName: string } = { 
       fullName: userName.trim(), 
-      phoneRaw: businessPhone.trim() 
+      phoneRaw: businessPhone.trim(),
+      businessName: businessName.trim() || 'My Business' // Always send business name
     };
-    
-    // Always include business name to ensure it persists
-    if (businessName.trim()) {
-      input.businessName = businessName.trim();
-    }
     
     console.info('[Settings] saving profile', input);
 

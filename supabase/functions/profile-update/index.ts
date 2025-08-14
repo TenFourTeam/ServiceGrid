@@ -110,7 +110,7 @@ serve(async (req) => {
       .from('businesses')
       .update(updateData)
       .eq('id', ctx.businessId)
-      .select('id,name,phone')
+      .select('id, name, phone, name_customized, updated_at')
       .maybeSingle();
 
     if (businessError) {
@@ -147,6 +147,8 @@ serve(async (req) => {
         fullName: input.fullName,
         businessName: business.name,
         phoneE164: business.phone,
+        nameCustomized: business.name_customized,
+        updatedAt: business.updated_at
       }
     }, 200);
 
