@@ -79,10 +79,14 @@ serve(async (req) => {
   }
 
   try {
+    console.log("[get-business] Starting business resolution");
     const ownerId = await resolveOwnerIdFromClerk(req);
+    console.log(`[get-business] Resolved owner ID: ${ownerId}`);
+    
     const supabase = createAdminClient();
 
     // Find existing business via membership (single business per user model)
+    console.log("[get-business] Querying for existing business membership");
     const { data: membership, error: memberErr } = await supabase
       .from("business_members")
       .select(`
@@ -93,19 +97,32 @@ serve(async (req) => {
       .eq("role", "owner")
       .limit(1)
       .maybeSingle();
-    if (memberErr) throw memberErr;
+    
+    if (memberErr) {
+      console.error("[get-business] Membership query error:", memberErr);
+      throw memberErr;
+    }
 
+    console.log(`[get-business] Membership query result:`, membership ? "found" : "not found");
     let biz = membership?.businesses;
 
     if (!biz?.id) {
+      console.log("[get-business] No existing business found, creating default business");
       // Use ensure_default_business function for atomic business + membership creation
       const { data: defaultBiz, error: ensureErr } = await supabase.rpc('ensure_default_business');
-      if (ensureErr) throw ensureErr;
+      if (ensureErr) {
+        console.error("[get-business] ensure_default_business error:", ensureErr);
+        throw ensureErr;
+      }
+      console.log(`[get-business] Created default business: ${defaultBiz?.id}`);
       biz = defaultBiz;
+    } else {
+      console.log(`[get-business] Using existing business: ${biz.id}`);
     }
 
     // Get user's role from business_members table
-    const { data: memberData } = await supabase
+    console.log("[get-business] Fetching user role");
+    const { data: memberData, error: roleErr } = await supabase
       .from("business_members")
       .select("role")
       .eq("business_id", biz.id)
@@ -113,14 +130,22 @@ serve(async (req) => {
       .limit(1)
       .maybeSingle();
     
+    if (roleErr) {
+      console.error("[get-business] Role query error:", roleErr);
+    }
+    
     const role = memberData?.role || 'worker';
+    console.log(`[get-business] User role: ${role}`);
 
-    return json({ 
+    const response = { 
       business: biz,
       role: role,
       tenantId: biz.id,
       roles: [role]
-    });
+    };
+    
+    console.log("[get-business] Success - returning business data");
+    return json(response);
   } catch (e: any) {
     console.error("[get-business] error:", e);
     const msg = e?.message || String(e);
