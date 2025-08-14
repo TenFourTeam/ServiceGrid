@@ -241,42 +241,9 @@ export default function SettingsPage() {
     
     console.info('[Settings] saving profile', input);
 
-    try {
-      // Update profile and business in database
-      console.info('[Settings] calling profileUpdate.mutateAsync');
-      const result = await profileUpdate.mutateAsync(input);
-
-      console.info('[Settings] profile save completed successfully');
-      toast({
-        title: "Profile saved",
-        description: `Your changes are live. Phone: ${result.phoneE164 || businessPhone}`,
-      });
-
-    } catch (error: any) {
-      console.error('[Settings] profile save failed:', {
-        error,
-        message: error?.message,
-        status: error?.status,
-        code: error?.code,
-        details: error?.details
-      });
-      
-      let errorMessage = "Failed to save your changes. Please try again.";
-      
-      if (error?.status === 401 || error?.status === 403) {
-        errorMessage = "Authentication failed. Please refresh the page and try again.";
-      } else if (error?.code === 'auth_failed') {
-        errorMessage = "Unable to authenticate. Please sign out and sign back in.";
-      } else if (error?.message) {
-        errorMessage = error.message;
-      }
-      
-      toast({
-        title: "Save failed",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    }
+    // Let useProfileUpdate hook handle success/error states and toasts
+    console.info('[Settings] calling profileUpdate.mutateAsync');
+    profileUpdate.mutateAsync(input);
   };
 
   // Handle business name changes with formatting suggestion
