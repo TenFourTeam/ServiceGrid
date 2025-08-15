@@ -207,9 +207,32 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
             <div className="text-sm text-muted-foreground">Quote</div>
             <div className="flex items-center gap-2">
               {linkedQuote ? (
-                <span className="font-medium">{linkedQuote.number}</span>
+                <>
+                  <span className="font-medium">{linkedQuote.number}</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      onOpenChange(false);
+                      navigate(`/quotes?highlight=${linkedQuote.id}`);
+                    }}
+                    className="h-6 px-2 text-xs"
+                  >
+                    View
+                  </Button>
+                </>
               ) : (
-                <span>—</span>
+                <>
+                  <span>—</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPickerOpen(true)}
+                    className="h-6 px-2 text-xs"
+                  >
+                    Link
+                  </Button>
+                </>
               )}
             </div>
             </div>
@@ -309,35 +332,11 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                 }} />
                 <Button 
                   variant="outline" 
-                  onClick={handleCompleteJob}
-                  disabled={job.status === 'Completed' || isCompletingJob}
-                  size="sm"
-                >
-                  {isCompletingJob ? 'Completing...' : job.status === 'Completed' ? 'Completed' : 'Complete'}
-                </Button>
-                <Button 
-                  variant="outline" 
                   onClick={handleNavigate}
                   size="sm"
                 >
                   Navigate
                 </Button>
-              </div>
-              <div className="flex items-center gap-2">
-                {!(job as any).quoteId ? (
-                  <Button variant="outline" onClick={() => setPickerOpen(true)} size="sm">Link Quote</Button>
-                ) : (
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      onOpenChange(false);
-                      navigate(`/quotes?highlight=${(job as any).quoteId}`);
-                    }}
-                    size="sm"
-                  >
-                    View Quote
-                  </Button>
-                )}
                 <Button 
                   variant="outline" 
                   onClick={handleCreateInvoice}
@@ -345,6 +344,16 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                   size="sm"
                 >
                   {isCreatingInvoice ? 'Creating...' : 'Invoice'}
+                </Button>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={handleCompleteJob}
+                  disabled={job.status === 'Completed' || isCompletingJob}
+                  size="sm"
+                >
+                  {isCompletingJob ? 'Completing...' : job.status === 'Completed' ? 'Completed' : 'Complete'}
                 </Button>
                 <Button variant="destructive" size="sm" onClick={async () => {
                   try {
