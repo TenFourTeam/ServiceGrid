@@ -7,7 +7,7 @@ import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { 
   // useBusiness integrated into useBusinessContext 
   useProfile, 
-  useCustomersData, 
+  useCustomersData,
   useJobsData, 
   useQuotesData,
   useStripeConnectStatus,

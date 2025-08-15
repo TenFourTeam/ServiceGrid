@@ -142,7 +142,6 @@ export interface AppEvent {
 
 export interface AppState {
   business: Business;
-  customers: Customer[];
   quotes: Quote[];
   jobs: Job[];
   invoices: Invoice[];
