@@ -31,7 +31,7 @@ export function useSupabaseInvoices(opts?: { enabled?: boolean }) {
   const enabled = isAuthenticated && (opts?.enabled ?? true);
 
   return useQuery<{ rows: DbInvoiceRow[] } | null, Error>({
-    queryKey: queryKeys.counts.invoices(businessId || '').concat(['full']),
+    queryKey: queryKeys.data.invoices(businessId || ''),
     enabled: enabled && !!businessId,
     queryFn: async () => {
       console.info("[useSupabaseInvoices] fetching...");

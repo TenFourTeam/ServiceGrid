@@ -24,7 +24,15 @@ const queryKeys = {
     invites: (businessId: string) => ['pending-invites', businessId] as const,
   },
   
-  // Data count queries  
+  // Unified data queries - simplified architecture
+  data: {
+    customers: (businessId: string) => ['data', 'customers', businessId] as const,
+    jobs: (businessId: string) => ['data', 'jobs', businessId] as const,
+    quotes: (businessId: string) => ['data', 'quotes', businessId] as const,
+    invoices: (businessId: string) => ['data', 'invoices', businessId] as const,
+  },
+  
+  // Count-only queries for performance
   counts: {
     customers: (businessId: string) => ['counts', 'customers', businessId] as const,
     jobs: (businessId: string) => ['counts', 'jobs', businessId] as const,
@@ -47,8 +55,7 @@ const queryKeys = {
 } as const;
 
 /**
- * Enhanced invalidation helpers for all data types
- * Smart invalidation that handles both count and full data queries
+ * Enhanced invalidation helpers with smart cross-entity invalidation
  */
 const invalidationHelpers = {
   profile: (queryClient: any) => {
@@ -63,29 +70,35 @@ const invalidationHelpers = {
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.onboarding() });
   },
   
-  // Smart invalidation for data entities - handles both count and full queries
+  // Smart invalidation for data entities - handles both count and full data
   customers: (queryClient: any, businessId: string) => {
     queryClient.invalidateQueries({ queryKey: queryKeys.counts.customers(businessId) });
-    queryClient.invalidateQueries({ queryKey: queryKeys.counts.customers(businessId).concat(['full']) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.data.customers(businessId) });
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary() });
   },
   
   jobs: (queryClient: any, businessId: string) => {
     queryClient.invalidateQueries({ queryKey: queryKeys.counts.jobs(businessId) });
-    queryClient.invalidateQueries({ queryKey: queryKeys.counts.jobs(businessId).concat(['full']) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.data.jobs(businessId) });
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary() });
+    // Cross-entity: jobs affect calendar view
+    queryClient.invalidateQueries({ queryKey: ['calendar'] });
   },
   
   quotes: (queryClient: any, businessId: string) => {
     queryClient.invalidateQueries({ queryKey: queryKeys.counts.quotes(businessId) });
-    queryClient.invalidateQueries({ queryKey: queryKeys.counts.quotes(businessId).concat(['full']) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.data.quotes(businessId) });
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary() });
+    // Cross-entity: quotes can affect jobs
+    queryClient.invalidateQueries({ queryKey: queryKeys.data.jobs(businessId) });
   },
   
   invoices: (queryClient: any, businessId: string) => {
     queryClient.invalidateQueries({ queryKey: queryKeys.counts.invoices(businessId) });
-    queryClient.invalidateQueries({ queryKey: queryKeys.counts.invoices(businessId).concat(['full']) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.data.invoices(businessId) });
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary() });
+    // Cross-entity: invoices can affect jobs
+    queryClient.invalidateQueries({ queryKey: queryKeys.data.jobs(businessId) });
   },
   
   team: (queryClient: any, businessId: string) => {

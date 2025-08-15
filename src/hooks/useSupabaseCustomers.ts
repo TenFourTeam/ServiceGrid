@@ -23,7 +23,7 @@ export function useSupabaseCustomers(opts?: { enabled?: boolean }) {
   const enabled = isAuthenticated && (opts?.enabled ?? true);
 
   return useQuery<{ rows: DbCustomerRow[] } | null, Error>({
-    queryKey: queryKeys.counts.customers(businessId || '').concat(['full']),
+    queryKey: queryKeys.data.customers(businessId || ''),
     enabled: enabled && !!businessId,
     queryFn: async () => {
       console.info("[useSupabaseCustomers] fetching...");

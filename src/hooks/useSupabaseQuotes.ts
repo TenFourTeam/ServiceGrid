@@ -29,7 +29,7 @@ export function useSupabaseQuotes(opts?: { enabled?: boolean }) {
   const enabled = isAuthenticated && (opts?.enabled ?? true);
 
   return useQuery<{ rows: DbQuoteRow[] } | null, Error>({
-    queryKey: queryKeys.counts.quotes(businessId || '').concat(['full']),
+    queryKey: queryKeys.data.quotes(businessId || ''),
     enabled: enabled && !!businessId,
     queryFn: async () => {
       console.info("[useSupabaseQuotes] fetching...");

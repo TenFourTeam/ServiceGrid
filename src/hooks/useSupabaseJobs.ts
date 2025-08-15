@@ -31,7 +31,7 @@ export function useSupabaseJobs(opts?: { enabled?: boolean; refetchInterval?: nu
   const enabled = isAuthenticated && (opts?.enabled ?? true);
 
   return useQuery<{ rows: DbJobRow[] } | null, Error>({
-    queryKey: queryKeys.counts.jobs(businessId || '').concat(['full']),
+    queryKey: queryKeys.data.jobs(businessId || ''),
     enabled: enabled && !!businessId,
     refetchInterval: opts?.refetchInterval ?? false,
     refetchOnWindowFocus: opts?.refetchOnWindowFocus ?? true,

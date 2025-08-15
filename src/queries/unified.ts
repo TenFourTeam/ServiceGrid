@@ -1,23 +1,23 @@
 /**
  * Unified query exports - single import point for all queries
- * All actual implementations are in their individual hook files
+ * New unified data hooks provide both count and full data with smart fetching
  */
-import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
-import { useSupabaseJobs } from '@/hooks/useSupabaseJobs';
-import { useSupabaseQuotes } from '@/hooks/useSupabaseQuotes';
-import { useSupabaseInvoices } from '@/hooks/useSupabaseInvoices';
 
 // Business and profile queries
-// Note: useBusiness is now internal to useBusinessContext for consolidation
 export { useProfile } from '@/queries/useProfile';
 
-// Count queries
+// Legacy count-only queries (deprecated - use unified data hooks instead)
 export { useCustomersCount } from '@/hooks/useCustomersCount';
 export { useJobsCount } from '@/hooks/useJobsCount';
 export { useQuotesCount } from '@/hooks/useQuotesCount';
 export { useInvoicesCount } from '@/hooks/useInvoicesCount';
 
-// Full data queries - simplified without wrapper pattern
+// Legacy full data queries (backward compatible data unwrapping)
+import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
+import { useSupabaseJobs } from '@/hooks/useSupabaseJobs';
+import { useSupabaseQuotes } from '@/hooks/useSupabaseQuotes';
+import { useSupabaseInvoices } from '@/hooks/useSupabaseInvoices';
+
 export function useCustomers() {
   const result = useSupabaseCustomers();
   return { 
@@ -49,6 +49,12 @@ export function useInvoices() {
     data: result.data?.rows || [] 
   };
 }
+
+// NEW: Unified data hooks (recommended)
+export { useCustomersData } from '@/hooks/useCustomersData';
+export { useJobsData } from '@/hooks/useJobsData';
+export { useQuotesData } from '@/hooks/useQuotesData';
+export { useInvoicesData } from '@/hooks/useInvoicesData';
 
 // Billing queries
 export { useStripeConnectStatus } from '@/hooks/useStripeConnectStatus';
