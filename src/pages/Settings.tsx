@@ -16,7 +16,7 @@ import ConnectBanner from '@/components/Stripe/ConnectBanner';
 import { useStripeConnectStatus } from '@/hooks/useStripeConnectStatus';
 import { BusinessMembersList } from '@/components/Business/BusinessMembersList';
 import { AuditLogsList } from '@/components/Business/AuditLogsList';
-import { useBusinessRole } from '@/hooks/useBusinessRole';
+import { useBusinessContext } from '@/auth';
 import { useProfileOperations } from '@/hooks/useProfileOperations';
 import { ProfileCompletionDebug } from '@/components/Auth/ProfileCompletionDebug';
 
@@ -49,7 +49,7 @@ export default function SettingsPage() {
   const [businessName, setBusinessName] = useState('');
   const [businessPhone, setBusinessPhone] = useState('');
   const [isHydrated, setIsHydrated] = useState(false);
-  const { data: roleData } = useBusinessRole(business?.id || '');
+  const { role, canManage } = useBusinessContext();
   const { updateProfile, isUpdating } = useProfileOperations();
   const { toast } = useToast();
   const { ref: profileRef, pulse: profilePulse, focus: focusProfile } = useFocusPulse<HTMLDivElement>();
@@ -535,12 +535,12 @@ export default function SettingsPage() {
           <CardContent>
             <BusinessMembersList 
               businessId={business?.id || ''} 
-              canManage={roleData?.canManage || false}
+              canManage={canManage}
             />
           </CardContent>
         </Card>
 
-        {roleData?.canManage && (
+        {canManage && (
           <Card className="md:col-span-2">
             <CardHeader><CardTitle>Activity Log</CardTitle></CardHeader>
             <CardContent>

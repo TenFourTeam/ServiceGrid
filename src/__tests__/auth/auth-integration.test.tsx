@@ -4,17 +4,17 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { AuthBoundary } from '@/auth/AuthBoundary';
 import { QueryClientClerkIntegration } from '@/auth/QueryClientClerkIntegration';
-import { useBusinessAuth } from '@/hooks/useBusinessAuth';
+import { useBusinessContext } from '@/auth';
 
 // Mock components for testing
 function ProtectedPage() {
-  const { snapshot } = useBusinessAuth();
+  const { userId, businessId, isAuthenticated } = useBusinessContext();
   return (
     <div>
       <div data-testid="protected-content">Protected Page</div>
-      <div data-testid="user-id">{snapshot.userId}</div>
-      <div data-testid="business-id">{snapshot.businessId}</div>
-      <div data-testid="auth-phase">{snapshot.phase}</div>
+      <div data-testid="user-id">{userId}</div>
+      <div data-testid="business-id">{businessId}</div>
+      <div data-testid="auth-phase">{isAuthenticated ? 'authenticated' : 'unauthenticated'}</div>
     </div>
   );
 }
