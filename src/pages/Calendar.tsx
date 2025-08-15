@@ -3,7 +3,6 @@ import CalendarShell from '@/components/Calendar/CalendarShell';
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useFocusPulse } from '@/hooks/useFocusPulse';
-import { AttentionRing } from '@/components/Onboarding/AttentionRing';
 
 export default function CalendarPage() {
   const [params] = useSearchParams();
@@ -30,15 +29,6 @@ export default function CalendarPage() {
         <CalendarShell selectedJobId={job} />
       </section>
       
-      {/* Focus ring for new job button */}
-      {newJobPulse && (
-        <AttentionRing 
-          targetSelector="[data-onb='new-job-button']"
-          pulse={newJobPulse}
-          color="primary"
-          size="md"
-        />
-      )}
     </AppLayout>
   );
 }
