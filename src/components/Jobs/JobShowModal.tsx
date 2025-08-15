@@ -37,6 +37,8 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
   const [pickerOpen, setPickerOpen] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [photosToUpload, setPhotosToUpload] = useState<File[]>([]);
+  const [isCompletingJob, setIsCompletingJob] = useState(false);
+  const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
   
   useEffect(() => {
     setLocalNotes(job.notes ?? "");
@@ -61,14 +63,54 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
 
   async function handleCreateInvoice() {
     if (!(job as any).quoteId) { setPickerOpen(true); toast.info('Link a quote to this job before creating an invoice.'); return; }
+    
+    setIsCreatingInvoice(true);
+    toast.info('Creating invoice...');
+    
     try {
       const data = await edgeRequest(fn('invoices'), {
         method: 'POST',
         body: JSON.stringify({ jobId: job.id }),
       });
       toast.success('Invoice created');
+      navigate('/invoices');
     } catch (e: any) {
       toast.error(e?.message || 'Failed to create invoice');
+    } finally {
+      setIsCreatingInvoice(false);
+    }
+  }
+
+  async function handleCompleteJob() {
+    setIsCompletingJob(true);
+    toast.info('Marking job as complete...');
+    
+    try {
+      await edgeRequest(fn(`jobs?id=${job.id}`), {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'Completed' }),
+      });
+      
+      if (businessId) {
+        invalidationHelpers.jobs(queryClient, businessId);
+      }
+      
+      toast.success('Job marked as complete');
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to mark job as complete');
+    } finally {
+      setIsCompletingJob(false);
+    }
+  }
+
+  function handleNavigate() {
+    const customer = customers.find(c => c.id === job.customerId);
+    const address = job.address || customer?.address;
+    
+    if (address) {
+      window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`, '_blank');
+    } else {
+      toast.error('No address available for navigation');
     }
   }
 
@@ -268,39 +310,63 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
           </div>
         </div>
         <DrawerFooter>
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              {job.status === 'Scheduled' && (
+          <div className="flex flex-col gap-3">
+            {/* Primary Actions */}
+            <div className="grid grid-cols-2 gap-2">
+              <Button 
+                variant="default" 
+                onClick={handleCompleteJob}
+                disabled={job.status === 'Completed' || isCompletingJob}
+              >
+                {isCompletingJob ? 'Completing...' : job.status === 'Completed' ? 'Completed' : 'Complete Job'}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={handleNavigate}
+              >
+                Navigate
+              </Button>
+            </div>
+            
+            {/* Secondary Actions */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
                 <ReschedulePopover job={job as Job} onDone={()=>{ /* no-op, realtime/subsequent fetch updates UI */ }} />
-              )}
-              {!(job as any).quoteId ? (
-                <Button variant="outline" onClick={() => setPickerOpen(true)}>Link Quote</Button>
-              ) : (
+                {!(job as any).quoteId ? (
+                  <Button variant="outline" onClick={() => setPickerOpen(true)}>Link Quote</Button>
+                ) : (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      onOpenChange(false);
+                      navigate(`/quotes?highlight=${(job as any).quoteId}`);
+                    }}
+                  >
+                    View Quote
+                  </Button>
+                )}
                 <Button 
                   variant="outline" 
-                  onClick={() => {
-                    onOpenChange(false);
-                    navigate(`/quotes?highlight=${(job as any).quoteId}`);
-                  }}
+                  onClick={handleCreateInvoice}
+                  disabled={isCreatingInvoice}
                 >
-                  View Quote
+                  {isCreatingInvoice ? 'Creating...' : 'Create Invoice'}
                 </Button>
-              )}
-              <Button variant="outline" onClick={handleCreateInvoice}>Create Invoice</Button>
-            </div>
-            <div>
-              <Button variant="destructive" onClick={async () => {
-                try {
-                  await edgeRequest(fn(`jobs?id=${job.id}`), { method: 'DELETE' });
-                  if (businessId) {
-                    invalidationHelpers.jobs(queryClient, businessId);
+              </div>
+              <div>
+                <Button variant="destructive" onClick={async () => {
+                  try {
+                    await edgeRequest(fn(`jobs?id=${job.id}`), { method: 'DELETE' });
+                    if (businessId) {
+                      invalidationHelpers.jobs(queryClient, businessId);
+                    }
+                    toast.success('Job deleted');
+                    onOpenChange(false);
+                  } catch (e: any) {
+                    toast.error(e?.message || 'Failed to delete job');
                   }
-                  toast.success('Job deleted');
-                  onOpenChange(false);
-                } catch (e: any) {
-                  toast.error(e?.message || 'Failed to delete job');
-                }
-              }}>Delete</Button>
+                }}>Delete</Button>
+              </div>
             </div>
           </div>
         </DrawerFooter>

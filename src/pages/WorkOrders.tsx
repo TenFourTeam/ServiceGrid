@@ -78,44 +78,30 @@ function StatusChip({ status }: { status: Job['status'] }) {
   return <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${styles}`}>{status}</span>;
 }
 
-function WorkOrderRow({ job, onRescheduled, onComplete, onInvoice, onViewInvoice, onNavigate, uninvoiced, customerName, when, onOpen }: {
+function WorkOrderRow({ job, uninvoiced, customerName, when, onOpen }: {
   job: Job;
-  onRescheduled: () => void | Promise<void>;
-  onComplete: () => void;
-  onInvoice: () => void;
-  onViewInvoice?: () => void;
-  onNavigate: () => void;
   uninvoiced: boolean;
   customerName: string;
   when: string;
   onOpen: () => void;
 }) {
   return (
-    <div onClick={onOpen} className="p-3 border rounded-md bg-card shadow-sm cursor-pointer hover:bg-accent/30 transition-colors">
+    <div onClick={onOpen} className="p-4 border rounded-md bg-card shadow-sm cursor-pointer hover:bg-accent/30 transition-colors">
       <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 mb-1">
             <div className="font-medium truncate">{job.title || 'Job'}</div>
             <div className="text-sm text-muted-foreground">{formatMoney(job.total || 0)}</div>
             {uninvoiced && job.status==='Completed' && <Badge variant="secondary">Uninvoiced</Badge>}
           </div>
-          <div className="text-xs text-muted-foreground truncate">Customer: {customerName}</div>
-          {job.address && <div className="text-xs text-muted-foreground truncate">{job.address}</div>}
+          <div className="text-sm text-muted-foreground truncate">Customer: {customerName}</div>
+          {job.address && <div className="text-sm text-muted-foreground truncate">{job.address}</div>}
+          <div className="text-sm text-muted-foreground mt-1">{when}</div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="text-xs text-muted-foreground text-right">
-            <div>{when}</div>
-            <div className="mt-1"><StatusChip status={job.status} /></div>
-          </div>
+        <div className="flex flex-col items-end gap-2">
+          <StatusChip status={job.status} />
+          <div className="text-xs text-muted-foreground">Click to view details</div>
         </div>
-      </div>
-      <div className="mt-3 grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
-        <div onClick={(e)=>e.stopPropagation()}>
-          <ReschedulePopover job={job} onDone={onRescheduled} />
-        </div>
-        <Button size="sm" onClick={(e)=>{ e.stopPropagation(); onComplete(); }} disabled={job.status === 'Completed'}>Complete</Button>
-        {job.status==='Completed' && uninvoiced && <Button size="sm" onClick={(e)=>{ e.stopPropagation(); onInvoice(); }}>Invoice</Button>}
-        <Button size="sm" variant="outline" onClick={(e)=>{ e.stopPropagation(); onNavigate(); }}>Navigate</Button>
       </div>
     </div>
   );
@@ -178,37 +164,6 @@ export default function WorkOrdersPage() {
                     customerName={customerName}
                     when={when}
                     uninvoiced={uninvoiced}
-                    onRescheduled={() => { /* Job data will refresh automatically */ }}
-                    onComplete={async ()=> {
-                    try {
-                      const data = await edgeRequest(fn(`jobs?id=${j.id}`), {
-                        method: 'PATCH',
-                        body: JSON.stringify({ status: 'Completed' }),
-                      });
-                      // Job status updated via API, queries will refetch
-                      toast({ title: 'Marked complete' });
-                      // Job data will refresh automatically
-                    } catch (e: any) {
-                      toast({ title: 'Failed to mark complete', description: e?.message || String(e) });
-                    }
-                    }}
-                    onInvoice={async ()=> {
-                      try {
-                      const data = await edgeRequest(fn('invoices'), {
-                        method: 'POST',
-                        body: JSON.stringify({ jobId: j.id }),
-                      });
-                      toast({ title: 'Invoice created' });
-                      // Job data will refresh automatically
-                      navigate('/invoices');
-                      } catch (e: any) {
-                        toast({ title: 'Failed to create invoice', description: e?.message || String(e) });
-                      }
-                    }}
-                    onNavigate={()=> {
-                      const addr = j.address || customers.find(c=>c.id===j.customerId)?.address;
-                      if (addr) window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`, '_blank');
-                    }}
                     onOpen={() => setActiveJob(j as Job)}
                   />
                 );
