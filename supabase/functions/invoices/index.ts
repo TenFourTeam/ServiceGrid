@@ -88,34 +88,23 @@ serve(async (req) => {
 
     if (req.method === "POST") {
       const body = (await req.json().catch(() => ({}))) as Partial<{
-        jobId: string;
+        quoteId: string;
         dueAt?: string | null;
       }>;
-      const jobId = (body.jobId || "").toString();
-      if (!jobId) return badRequest("jobId is required");
+      const quoteId = (body.quoteId || "").toString();
+      if (!quoteId) return badRequest("quoteId is required");
 
-      // Load job and validate ownership
-      const { data: job, error: jErr } = await ctx.supaAdmin
-        .from("jobs")
-        .select("id, owner_id, business_id, customer_id, quote_id")
-        .eq("id", jobId)
-        .eq("business_id", ctx.businessId)
-        .single();
-      if (jErr) return badRequest("Job not found", 404);
-
-      const customerId = (job as any).customer_id as string | null;
-      if (!customerId) return badRequest("Job has no linked customer; cannot create invoice");
-      const quoteId = (job as any).quote_id as string | null;
-
-      // Load items from quote
-      if (!quoteId) return badRequest("Job has no linked quote; cannot create invoice");
+      // Load quote and validate ownership
       const { data: quote, error: qErr } = await ctx.supaAdmin
         .from("quotes")
-        .select("tax_rate")
+        .select("id, owner_id, business_id, customer_id, tax_rate")
         .eq("id", quoteId)
         .eq("business_id", ctx.businessId)
         .single();
-      if (qErr) throw qErr;
+      if (qErr) return badRequest("Quote not found", 404);
+
+      const customerId = (quote as any).customer_id as string | null;
+      if (!customerId) return badRequest("Quote has no linked customer; cannot create invoice");
       const taxRate = Number((quote as any).tax_rate ?? 0) || 0;
 
       const { data: items, error: itemsErr } = await ctx.supaAdmin
@@ -138,7 +127,7 @@ serve(async (req) => {
         owner_id: ctx.userId,
         business_id: ctx.businessId,
         customer_id: customerId,
-        job_id: jobId,
+        job_id: null,
         number,
         subtotal,
         tax_rate: taxRate,
@@ -170,7 +159,7 @@ serve(async (req) => {
       if (liErr) throw liErr;
 
       const r = inv as any;
-      console.log("[invoices][POST] created", { ownerId: ctx.userId, invoiceId: r.id, jobId });
+      console.log("[invoices][POST] created", { ownerId: ctx.userId, invoiceId: r.id, quoteId });
       return json({ ok: true, invoice: {
         id: r.id,
         number: r.number,
