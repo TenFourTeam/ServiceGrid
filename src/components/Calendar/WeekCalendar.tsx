@@ -17,7 +17,7 @@ import PickQuoteModal from '@/components/Jobs/PickQuoteModal';
 import { supabase } from '@/integrations/supabase/client';
 import JobShowModal from '@/components/Jobs/JobShowModal';
 
-import { getJobStatusColors, canDragJob, canResizeJob, validateJobTiming } from '@/utils/jobStatus';
+import { getJobStatusColors, canDragJob, canResizeJob, validateJobTiming, checkJobTimeConflict } from '@/utils/jobStatus';
 const START_ANCHOR_HOUR = 5; // visual start at 5:00
 const TOTAL_MIN = 24 * 60;
 function dayKey(d: Date) {
@@ -42,6 +42,7 @@ export function WeekCalendar({
   // Visual feedback state only
   const [isDragging, setIsDragging] = useState<string | null>(null);
   const [isResizing, setIsResizing] = useState<string | null>(null);
+  const [conflictingJobId, setConflictingJobId] = useState<string | null>(null);
   const [weekStart, setWeekStart] = useState(() => {
     const initial = (() => {
       if (selectedJobId) {
@@ -263,6 +264,16 @@ function onDragStart(e: React.PointerEvent, job: Job) {
       const end = new Date(d.getTime() + dur);
       latest = { startsAt: d.toISOString(), endsAt: end.toISOString() };
       
+      // Check for conflicts
+      const jobsForConflictCheck = (jobs || []).map(j => ({
+        id: j.id,
+        start_time: j.startsAt,
+        end_time: j.endsAt,
+        title: j.title
+      }));
+      const conflictCheck = checkJobTimeConflict(job.id, d, end, jobsForConflictCheck);
+      setConflictingJobId(conflictCheck.hasConflict ? job.id : null);
+      
       // Directly update cache for real-time feedback
       const queryKey = queryKeys.data.jobs(businessId || '');
       queryClient.setQueryData(queryKey, (old: any) => {
@@ -282,9 +293,43 @@ function onDragStart(e: React.PointerEvent, job: Job) {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       setIsDragging(null);
+      setConflictingJobId(null);
       
       if (!movedEnough) {
         setActiveJob(job);
+        return;
+      }
+      
+      // Final conflict check before saving
+      const jobsForConflictCheck = (jobs || []).map(j => ({
+        id: j.id,
+        start_time: j.startsAt,
+        end_time: j.endsAt,
+        title: j.title
+      }));
+      const finalConflictCheck = checkJobTimeConflict(
+        job.id, 
+        new Date(latest.startsAt), 
+        new Date(latest.endsAt), 
+        jobsForConflictCheck
+      );
+
+      if (finalConflictCheck.hasConflict) {
+        toast.error(`Cannot schedule job - conflicts with: ${finalConflictCheck.conflicts.map(c => c.title).join(', ')}`);
+        
+        // Revert the job position
+        const queryKey = queryKeys.data.jobs(businessId || '');
+        queryClient.setQueryData(queryKey, (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            jobs: old.jobs.map((j: Job) => 
+              j.id === job.id 
+                ? { ...j, startsAt: job.startsAt, endsAt: job.endsAt }
+                : j
+            )
+          };
+        });
         return;
       }
       
@@ -494,7 +539,9 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                         statusColors.border
                       } ${
                         canDrag ? 'cursor-pointer hover:opacity-80 hover:z-20' : 'cursor-default opacity-90'
-                      } ${isBeingDragged ? 'opacity-70 scale-[1.05]' : ''} ${isBeingResized ? 'opacity-70' : ''}`}
+                      } ${isBeingDragged ? 'opacity-70 scale-[1.05]' : ''} ${isBeingResized ? 'opacity-70' : ''} ${
+                        conflictingJobId === j.id ? 'ring-2 ring-red-500 bg-red-600' : ''
+                      }`}
                       style={{
                         top: `${top}%`,
                         height: `${Math.max(height, 4)}%`,
@@ -507,9 +554,13 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                         {startsAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} — {customer?.name || 'Unknown'}
                       </div>
                       <div className="text-xs leading-tight mt-0.5 truncate ml-2.5">{j.title}</div>
-                      <div className="text-xs leading-tight mt-0.5 truncate ml-2.5 opacity-70 flex items-center gap-2">
-                        {j.address}
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-current/20 opacity-100">
+                      {j.address && (
+                        <div className="text-xs leading-tight mt-0.5 truncate ml-2.5 opacity-70">
+                          {j.address}
+                        </div>
+                      )}
+                      <div className="text-xs leading-tight mt-0.5 truncate ml-2.5">
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-current/20">
                           {j.status === 'Scheduled' ? 'Scheduled' : j.status === 'In Progress' ? 'In Progress' : 'Completed'}
                         </span>
                       </div>

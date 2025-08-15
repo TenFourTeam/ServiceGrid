@@ -82,3 +82,33 @@ export function validateJobTiming(status: JobStatus, startTime: Date, endTime: D
   
   return { isValid: true };
 }
+
+export function hasTimeOverlap(start1: Date, end1: Date, start2: Date, end2: Date): boolean {
+  return start1 < end2 && start2 < end1;
+}
+
+export function checkJobTimeConflict(
+  jobId: string, 
+  startTime: Date, 
+  endTime: Date, 
+  existingJobs: Array<{ id: string; start_time: string; end_time: string; title: string }>
+): { hasConflict: boolean; conflicts: Array<{ id: string; title: string; start: Date; end: Date }> } {
+  const conflicts = existingJobs
+    .filter(job => job.id !== jobId) // Exclude the job being moved
+    .filter(job => {
+      const jobStart = new Date(job.start_time);
+      const jobEnd = new Date(job.end_time);
+      return hasTimeOverlap(startTime, endTime, jobStart, jobEnd);
+    })
+    .map(job => ({
+      id: job.id,
+      title: job.title,
+      start: new Date(job.start_time),
+      end: new Date(job.end_time)
+    }));
+
+  return {
+    hasConflict: conflicts.length > 0,
+    conflicts
+  };
+}
