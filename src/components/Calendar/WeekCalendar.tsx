@@ -1,17 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Job } from '@/types';
 import { useJobsData, useCustomersData } from '@/queries/unified';
-
-// TODO: Create proper mutation hooks
-const upsertJob = (job: any) => {
-  console.log('upsertJob called with:', job);
-  // Placeholder - mutations will be implemented later
-};
-
-const deleteJob = (id: string) => {
-  console.log('deleteJob called with:', id);
-  // Placeholder - mutations will be implemented later
-};
+import { useJobMutations } from '@/mutations';
 import { clamp, formatDateTime, minutesSinceStartOfDay } from '@/utils/format';
 import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerClose } from '@/components/ui/drawer';
@@ -36,8 +26,9 @@ export function WeekCalendar({
   selectedJobId?: string;
   date?: Date;
 }) {
-  const { data: jobs } = useJobsData();
+  const { data: jobs, refetch: refetchJobs } = useJobsData();
   const { data: customers } = useCustomersData();
+  const { createJob, updateJob, deleteJob } = useJobMutations();
   
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pendingSlot, setPendingSlot] = useState<{ start: Date; end: Date } | null>(null);
@@ -90,33 +81,13 @@ export function WeekCalendar({
     if (!isSignedIn) return;
     const channel = supabase
       .channel('jobs-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'jobs' }, (payload: any) => {
-        try {
-          if (payload.eventType === 'DELETE') {
-            const id = (payload as any).old?.id as string | undefined;
-            if (id) deleteJob(id);
-            return;
-          }
-          const row: any = (payload as any).new;
-          if (!row) return;
-          upsertJob({
-            id: row.id,
-            customerId: row.customer_id || row.customerId,
-            quoteId: row.quote_id ?? row.quoteId ?? undefined,
-            address: row.address ?? undefined,
-            startsAt: row.starts_at || row.startsAt,
-            endsAt: row.ends_at || row.endsAt,
-            status: row.status,
-            total: row.total ?? undefined,
-            notes: row.notes ?? undefined,
-            title: row.title ?? (row as any).title ?? undefined,
-            createdAt: row.created_at || row.createdAt,
-          });
-        } catch {}
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'jobs' }, () => {
+        // Refetch jobs data when any change occurs
+        refetchJobs();
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [isSignedIn, upsertJob, deleteJob]);
+  }, [isSignedIn, refetchJobs]);
 
   const dayJobs = useMemo(() => {
     const map: Record<string, Job[]> = {};
@@ -176,38 +147,22 @@ const minuteOfDayFromAnchorOffset = (offset: number) => {
         toast.error("No time slot selected");
         return;
       }
-      const data = await edgeRequest(fn('jobs'), {
-        method: 'POST',
-        body: JSON.stringify({
-          quoteId,
-          startsAt: pendingSlot.start.toISOString(),
-          endsAt: pendingSlot.end.toISOString(),
-        }),
+      
+      const newJob = await createJob.mutateAsync({
+        customerId: '', // This will be set by the quote relationship
+        quoteId,
+        startsAt: pendingSlot.start.toISOString(),
+        endsAt: pendingSlot.end.toISOString(),
       });
-      const row: any = (data as any)?.row ?? (data as any)?.job ?? data;
-      const created = {
-        id: row.id,
-        customerId: row.customerId || row.customer_id,
-        quoteId: row.quoteId ?? row.quote_id ?? null,
-        address: row.address ?? null,
-        startsAt: row.startsAt || row.starts_at,
-        endsAt: row.endsAt || row.ends_at,
-        status: row.status,
-        total: row.total ?? null,
-        notes: row.notes ?? null,
-        title: row.title ?? (row as any).title ?? undefined,
-        createdAt: row.createdAt || row.created_at,
-      } as Job;
-      upsertJob(created);
-      setActiveJob(created);
-      setHighlightJobId(created.id);
+      
+      setActiveJob(newJob as Job);
+      setHighlightJobId(newJob.id);
       setTimeout(() => setHighlightJobId(null), 3000);
       setPickerOpen(false);
       setPendingSlot(null);
-      toast.success('Work order created');
     } catch (e: any) {
       console.error(e);
-      toast.error(e?.message || 'Failed to create job');
+      // Error handling is already in the mutation
     }
   }
 
@@ -287,7 +242,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
       d.setMinutes(minuteOfDay);
       const end = new Date(d.getTime() + dur);
       latest = { startsAt: d.toISOString(), endsAt: end.toISOString() };
-      upsertJob({ ...job, startsAt: latest.startsAt, endsAt: latest.endsAt });
+      // Optimistic update - the real update happens in onUp
     };
 
     const onUp = async () => {
@@ -298,15 +253,15 @@ function onDragStart(e: React.PointerEvent, job: Job) {
         return;
       }
       try {
-        await edgeRequest(fn(`jobs?id=${job.id}`), {
-          method: 'PATCH',
-          body: JSON.stringify({ startsAt: latest.startsAt, endsAt: latest.endsAt }),
+        await updateJob.mutateAsync({
+          id: job.id,
+          customerId: job.customerId,
+          startsAt: latest.startsAt,
+          endsAt: latest.endsAt,
         });
-        toast.success('Rescheduled');
       } catch (err: any) {
         console.error(err);
-        upsertJob(original);
-        toast.error(err?.message || 'Failed to reschedule');
+        // Error handling is already in the mutation
       }
     };
     window.addEventListener('pointermove', onMove);
@@ -343,23 +298,21 @@ function onDragStart(e: React.PointerEvent, job: Job) {
 
       const minEnd = new Date(new Date(job.startsAt).getTime() + 15*60*1000);
       latestEnd = newEnd < minEnd ? minEnd.toISOString() : newEnd.toISOString();
-
-      upsertJob({ ...job, endsAt: latestEnd });
+      // Optimistic update - the real update happens in onUp
     };
 
     const onUp = async () => {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       try {
-        await edgeRequest(fn(`jobs?id=${job.id}`), {
-          method: 'PATCH',
-          body: JSON.stringify({ endsAt: latestEnd }),
+        await updateJob.mutateAsync({
+          id: job.id,
+          customerId: job.customerId,
+          endsAt: latestEnd,
         });
-        toast.success('Updated');
       } catch (err: any) {
         console.error(err);
-        upsertJob(original);
-        toast.error(err?.message || 'Failed to update');
+        // Error handling is already in the mutation
       }
     };
 
