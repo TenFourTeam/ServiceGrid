@@ -145,11 +145,6 @@ All colors MUST be HSL.
   --dur-800: 800ms;
   --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
 
-  /* Onboarding spotlight variables */
-  --spotlight-x: 0px;
-  --spotlight-y: 0px;
-  --spotlight-w: 0px;
-  --spotlight-h: 0px;
   }
 
   .dark {

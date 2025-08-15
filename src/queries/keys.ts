@@ -46,10 +46,9 @@ const queryKeys = {
     subscription: (userId: string) => ['billing', 'subscription', userId] as const,
   },
   
-  // Dashboard and onboarding
+  // Dashboard queries
   dashboard: {
     summary: () => ['dashboard', 'summary'] as const,
-    onboarding: () => ['dashboard', 'onboarding'] as const,
   },
   
 } as const;
@@ -61,13 +60,11 @@ const invalidationHelpers = {
   profile: (queryClient: any) => {
     queryClient.invalidateQueries({ queryKey: queryKeys.profile.current() });
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary() });
-    queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.onboarding() });
   },
   
   business: (queryClient: any) => {
     queryClient.invalidateQueries({ queryKey: queryKeys.business.current() });
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary() });
-    queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.onboarding() });
   },
   
   // Smart invalidation for data entities - handles both count and full data

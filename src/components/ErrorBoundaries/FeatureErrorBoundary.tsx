@@ -80,11 +80,7 @@ export class FeatureErrorBoundary extends React.Component<Props, State> {
   }
 }
 
-// Convenience wrappers for common features
-export const OnboardingErrorBoundary = ({ children }: { children: React.ReactNode }) => (
-  <FeatureErrorBoundary feature="onboarding">{children}</FeatureErrorBoundary>
-);
-
+// Convenience wrapper for profile feature
 export const ProfileErrorBoundary = ({ children }: { children: React.ReactNode }) => (
   <FeatureErrorBoundary feature="profile">{children}</FeatureErrorBoundary>
 );
