@@ -9,12 +9,20 @@ import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 interface QuoteData {
   customerId: string;
+  address?: string;
+  lineItems?: any[];
   status?: 'Draft' | 'Sent' | 'Approved' | 'Declined';
   notes?: string;
+  notesInternal?: string;
+  terms?: string;
   total?: number;
   subtotal?: number;
   taxRate?: number;
   discount?: number;
+  paymentTerms?: string;
+  frequency?: string;
+  depositRequired?: boolean;
+  depositPercent?: number;
 }
 
 export function useQuoteMutations() {

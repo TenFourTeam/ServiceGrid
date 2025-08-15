@@ -16,8 +16,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { Trash2, Plus, Send, Download, Receipt, Wrench, Users, Calendar } from 'lucide-react';
+import { Receipt, Users } from 'lucide-react';
+import { QuoteActions } from '@/components/Quotes/QuoteActions';
 
 import { useOnboardingActions } from '@/onboarding/hooks';
 
@@ -83,25 +83,27 @@ export default function QuotesPage() {
       return key;
     });
   }
-  // Transform unified data to match expected format  
+// Transform quotes data to include required fields
   const transformedQuotes = useMemo(() => {
     return quotes.map(row => ({
-      id: row.id,
-      number: row.number,
-      customerId: row.customerId,
-      total: row.total,
+      ...row,
       status: row.status as QuoteStatus,
-      updatedAt: row.updatedAt,
-      viewCount: row.viewCount,
-      publicToken: row.publicToken,
-      // Add required fields with defaults
+      // Add required Quote interface fields
       businessId: '',
       lineItems: [] as any[],
       taxRate: 0,
       discount: 0,
       subtotal: row.total,
       address: '',
-      createdAt: row.updatedAt
+      createdAt: row.updatedAt,
+      files: [],
+      notesInternal: '',
+      terms: '',
+      paymentTerms: 'due_on_receipt' as const,
+      frequency: 'one-off' as const,
+      depositRequired: false,
+      depositPercent: 0,
+      sentAt: undefined,
     }));
   }, [quotes]);
 
@@ -220,84 +222,10 @@ export default function QuotesPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex gap-2">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="inline-flex">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setSendQuoteItem(quote)}
-                                  disabled={quote.status === 'Sent' || quote.status === 'Approved'}
-                                >
-                                  <Send className="h-4 w-4" />
-                                </Button>
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent>Send Quote</TooltipContent>
-                          </Tooltip>
-
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={async () => {
-  // Check if job already exists via API
-  // if (existingJob) {
-  //   toast.message('Job already exists for this quote', { description: 'Opening Work Orders...' });
-  //   navigate('/work-orders');
-  //   return;
-  // }
-  try {
-    const data = await edgeRequest(fn('jobs'), {
-      method: 'POST',
-      body: JSON.stringify({ quoteId: quote.id }),
-    });
-    const j = (data as any).job || (data as any).row || data;
-    // Job creation completed - queries will refetch automatically
-    toast.message('Quote converted to job', { description: 'Opening Work Orders...' });
-    navigate('/work-orders');
-  } catch (e: any) {
-    toast.error('Failed to create job', { description: e?.message || String(e) });
-  }
-}}
-                              >
-                                <Wrench className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Convert to Work Order</TooltipContent>
-                          </Tooltip>
-
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={async () => {
-  // Check for existing job via API instead of store
-  try {
-    // Always create a new job for now
-    const jData = await edgeRequest(fn('jobs'), {
-      method: 'POST',
-      body: JSON.stringify({ quoteId: quote.id }),
-    });
-    const j = (jData as any).job || (jData as any).row || jData;
-    // Job created - queries will refetch automatically
-    const jobLink = `/work-orders`;
-    window.open(jobLink, '_blank');
-  } catch (err: any) {
-    console.error('[Invoice] Error creating job:', err);
-    toast.error(err?.message || 'Failed to create job');
-  }
-}}
-                              >
-                                <Receipt className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Create Invoice</TooltipContent>
-                          </Tooltip>
-                        </div>
+                        <QuoteActions 
+                          quote={quote} 
+                          onSendQuote={setSendQuoteItem}
+                        />
                       </TableCell>
                     </TableRow>
                   ))
