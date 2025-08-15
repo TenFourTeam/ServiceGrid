@@ -1,15 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 import { CustomerCombobox } from '@/components/Quotes/CustomerCombobox';
 import { LineItemsEditor } from '@/components/Quotes/LineItemsEditor';
 import { useQuoteCalculations } from '@/hooks/useQuoteCalculations';
 import { formatCurrencyInputNoSymbol, parseCurrencyInput, sanitizeMoneyTyping } from '@/utils/format';
-import type { Customer, LineItem } from '@/types';
+import type { Customer, LineItem, Quote } from '@/types';
 
 interface QuoteFormData {
   customerId: string;
@@ -31,9 +32,11 @@ interface QuoteFormProps {
   onSubmit: (data: QuoteFormData) => void;
   onCancel: () => void;
   disabled?: boolean;
+  initialData?: Quote;
+  mode?: 'create' | 'view' | 'edit';
 }
 
-export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disabled }: QuoteFormProps) {
+export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disabled, initialData, mode = 'create' }: QuoteFormProps) {
   const [data, setData] = useState<QuoteFormData>({
     customerId: '',
     address: '',
@@ -48,12 +51,33 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
     depositPercent: 0,
   });
 
+  // Populate form with initial data when provided
+  useEffect(() => {
+    if (initialData) {
+      setData({
+        customerId: initialData.customerId || '',
+        address: initialData.address || '',
+        lineItems: initialData.lineItems || [],
+        taxRate: initialData.taxRate || defaultTaxRate,
+        discount: initialData.discount || 0,
+        notesInternal: initialData.notesInternal || '',
+        terms: initialData.terms || '',
+        paymentTerms: initialData.paymentTerms || 'due_on_receipt',
+        frequency: initialData.frequency || 'one-off',
+        depositRequired: initialData.depositRequired || false,
+        depositPercent: initialData.depositPercent || 0,
+      });
+      setDiscountInput(formatCurrencyInputNoSymbol(initialData.discount || 0));
+    }
+  }, [initialData, defaultTaxRate]);
+
   const [discountInput, setDiscountInput] = useState('');
   const lineItemIdCounter = useState(() => ({ current: 1 }))[0];
 
   const totals = useQuoteCalculations(data.lineItems, data.taxRate, data.discount);
 
   const isValid = data.customerId && data.lineItems.some(li => li.name.trim() && li.lineTotal > 0);
+  const isReadOnly = mode === 'view';
 
   const addLineItem = () => {
     const newItem: LineItem = {
@@ -107,7 +131,7 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
               value={data.customerId}
               onChange={(id) => setData(prev => ({ ...prev, customerId: id }))}
               placeholder="Select customer…"
-              disabled={disabled}
+              disabled={disabled || isReadOnly}
             />
           </div>
 
@@ -118,7 +142,8 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
               value={data.address}
               onChange={(e) => setData(prev => ({ ...prev, address: e.target.value }))}
               placeholder="Enter service address"
-              disabled={disabled}
+              disabled={disabled || isReadOnly}
+              readOnly={isReadOnly}
             />
           </div>
 
@@ -127,7 +152,7 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
             onAdd={addLineItem}
             onUpdate={updateLineItem}
             onRemove={removeLineItem}
-            disabled={disabled}
+            disabled={disabled || isReadOnly}
           />
         </div>
 
@@ -142,7 +167,8 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
                 step="0.1"
                 value={data.taxRate * 100}
                 onChange={(e) => setData(prev => ({ ...prev, taxRate: (parseFloat(e.target.value) || 0) / 100 }))}
-                disabled={disabled}
+                disabled={disabled || isReadOnly}
+                readOnly={isReadOnly}
               />
             </div>
 
@@ -164,7 +190,8 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
                     setData(prev => ({ ...prev, discount: Math.min(cents, maxDiscount) }));
                   }}
                   onBlur={() => setDiscountInput(formatCurrencyInputNoSymbol(data.discount))}
-                  disabled={disabled}
+                  disabled={disabled || isReadOnly}
+                  readOnly={isReadOnly}
                 />
               </div>
             </div>
@@ -177,6 +204,7 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
                 <Select
                   value={data.paymentTerms}
                   onValueChange={(value) => setData(prev => ({ ...prev, paymentTerms: value as any }))}
+                  disabled={isReadOnly}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -195,6 +223,7 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
                 <Select
                   value={data.frequency}
                   onValueChange={(value) => setData(prev => ({ ...prev, frequency: value as any }))}
+                  disabled={isReadOnly}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -216,6 +245,7 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
                   id="deposit-required"
                   checked={data.depositRequired}
                   onCheckedChange={(checked) => setData(prev => ({ ...prev, depositRequired: !!checked }))}
+                  disabled={isReadOnly}
                 />
                 <Label htmlFor="deposit-required">Deposit Required</Label>
               </div>
@@ -227,7 +257,8 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
                   placeholder="Deposit percentage"
                   value={data.depositPercent}
                   onChange={(e) => setData(prev => ({ ...prev, depositPercent: parseInt(e.target.value) || 0 }))}
-                  disabled={disabled}
+                  disabled={disabled || isReadOnly}
+                  readOnly={isReadOnly}
                 />
               )}
             </div>
@@ -258,14 +289,42 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
         </div>
       </div>
 
-      <div className="flex justify-end gap-2">
-        <Button variant="outline" onClick={onCancel} disabled={disabled}>
-          Cancel
-        </Button>
-        <Button onClick={handleSubmit} disabled={!isValid || disabled}>
-          Create Quote
-        </Button>
+      {/* Add text fields for terms and notes */}
+      <div className="grid md:grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <Label htmlFor="terms">Terms & Conditions</Label>
+          <Textarea
+            id="terms"
+            value={data.terms}
+            onChange={(e) => setData(prev => ({ ...prev, terms: e.target.value }))}
+            placeholder="Enter terms and conditions"
+            disabled={disabled || isReadOnly}
+            readOnly={isReadOnly}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="notes">Internal Notes</Label>
+          <Textarea
+            id="notes"
+            value={data.notesInternal}
+            onChange={(e) => setData(prev => ({ ...prev, notesInternal: e.target.value }))}
+            placeholder="Enter internal notes"
+            disabled={disabled || isReadOnly}
+            readOnly={isReadOnly}
+          />
+        </div>
       </div>
+
+      {!isReadOnly && (
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={onCancel} disabled={disabled}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} disabled={!isValid || disabled}>
+            {mode === 'edit' ? 'Update Quote' : 'Create Quote'}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

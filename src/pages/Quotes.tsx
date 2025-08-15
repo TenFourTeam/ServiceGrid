@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import CreateQuoteModal from '@/components/Quotes/CreateQuoteModal';
 import SendQuoteModal from '@/components/Quotes/SendQuoteModal';
 import { Input } from '@/components/ui/input';
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
@@ -50,9 +49,10 @@ export default function QuotesPage() {
   const location = useLocation();
   const onboarding = useOnboardingActions();
 
-  const [open, setOpen] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
   const [sendQuoteItem, setSendQuoteItem] = useState<Quote | null>(null);
   const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(null);
+  const [detailsModalMode, setDetailsModalMode] = useState<'create' | 'view' | 'edit'>('view');
 
   const handleSendQuote = async (quoteListItem: QuoteListItem) => {
     // Convert QuoteListItem to full Quote by fetching from API
@@ -114,12 +114,14 @@ export default function QuotesPage() {
     const highlightParam = params.get('highlight');
     
     if (newParam && (newParam === '1' || newParam.toLowerCase() === 'true')) {
-      setOpen(true);
+      setCreateModalOpen(true);
+      setDetailsModalMode('create');
       navigate('/quotes', { replace: true });
     }
     
     if (highlightParam) {
       setSelectedQuoteId(highlightParam);
+      setDetailsModalMode('view');
       // Clean up URL without the highlight parameter
       const newParams = new URLSearchParams(location.search);
       newParams.delete('highlight');
@@ -136,7 +138,11 @@ export default function QuotesPage() {
           <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <CardTitle>All Quotes</CardTitle>
-            <Button onClick={() => { setOpen(true); }} data-onb="new-quote-button">
+            <Button onClick={() => {
+              setCreateModalOpen(true);
+              setDetailsModalMode('create');
+              setSelectedQuoteId(null);
+            }} data-onb="new-quote-button">
               Create Quote
             </Button>
           </CardHeader>
@@ -180,7 +186,11 @@ export default function QuotesPage() {
                           <p className="text-muted-foreground">Send professional quotes to customers and convert them to jobs when approved. Get paid faster with integrated payment processing.</p>
                         </div>
                         <div className="flex flex-col sm:flex-row gap-2">
-                          <Button onClick={() => setOpen(true)} className="gap-2">
+                          <Button onClick={() => {
+                            setCreateModalOpen(true);
+                            setDetailsModalMode('create');
+                            setSelectedQuoteId(null);
+                          }} className="gap-2">
                             <Receipt className="h-4 w-4" />
                             Create Your First Quote
                           </Button>
@@ -194,11 +204,14 @@ export default function QuotesPage() {
                   </TableRow>
                 ) : (
                   sortedQuotes.map((quote) => (
-                    <TableRow 
-                      key={quote.id} 
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => setSelectedQuoteId(quote.id)}
-                    >
+                  <TableRow 
+                    key={quote.id} 
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => {
+                      setSelectedQuoteId(quote.id);
+                      setDetailsModalMode('view');
+                    }}
+                  >
                       <TableCell className="font-medium">{quote.number}</TableCell>
                       <TableCell>{getCustomerName(quote.customerId)}</TableCell>
                       <TableCell>{formatCurrency(quote.total)}</TableCell>
@@ -222,14 +235,6 @@ export default function QuotesPage() {
         </Card>
       </section>
 
-      <CreateQuoteModal
-        open={open}
-        onOpenChange={setOpen}
-        customers={customers as Customer[]}
-        defaultTaxRate={businessTaxRateDefault || 0.1}
-        onRequestSend={(q) => setSendQuoteItem(q)}
-      />
-
       <SendQuoteModal
         open={!!sendQuoteItem}
         onOpenChange={(v) => { if (!v) setSendQuoteItem(null); }}
@@ -239,10 +244,17 @@ export default function QuotesPage() {
       />
 
       <QuoteDetailsModal
-        open={!!selectedQuoteId}
-        onOpenChange={(open) => { if (!open) setSelectedQuoteId(null); }}
+        open={createModalOpen || !!selectedQuoteId}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCreateModalOpen(false);
+            setSelectedQuoteId(null);
+          }
+        }}
         quoteId={selectedQuoteId}
         onSendQuote={setSendQuoteItem}
+        mode={detailsModalMode}
+        defaultTaxRate={businessTaxRateDefault || 0.1}
       />
       </QuoteErrorBoundary>
     </AppLayout>

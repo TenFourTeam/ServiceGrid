@@ -2,17 +2,18 @@ import { useEffect, useMemo, useState } from 'react';
 import { Drawer, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Separator } from '@/components/ui/separator';
 import { formatMoney, formatDate } from '@/utils/format';
 import { edgeRequest } from '@/utils/edgeApi';
 import { fn } from '@/utils/functionUrl';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useCustomersData } from '@/queries/unified';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/queries/keys';
 import LoadingScreen from '@/components/LoadingScreen';
-import type { Quote, QuoteListItem, QuoteStatus } from '@/types';
+import { QuoteForm } from '@/components/Quotes/QuoteForm';
+import type { Quote, QuoteListItem, QuoteStatus, Customer } from '@/types';
 
 const statusColors: Record<QuoteStatus, string> = {
   'Draft': 'bg-gray-100 text-gray-800',
@@ -27,14 +28,20 @@ interface QuoteDetailsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   quoteId: string | null;
-  onSendQuote: (quote: Quote) => void;
+  onSendQuote?: (quote: Quote) => void;
+  mode?: 'create' | 'view' | 'edit';
+  defaultTaxRate?: number;
 }
 
-export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote }: QuoteDetailsModalProps) {
+export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mode = 'view', defaultTaxRate = 0.1 }: QuoteDetailsModalProps) {
   const { data: customers = [] } = useCustomersData();
+  const { businessId } = useBusinessContext();
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(false);
+  const [currentMode, setCurrentMode] = useState<'create' | 'view' | 'edit'>(mode);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const customerName = useMemo(() => {
     if (!quote) return '';
@@ -49,7 +56,19 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote }: 
   }, [customers, quote]);
 
   useEffect(() => {
-    if (!open || !quoteId) {
+    setCurrentMode(mode);
+    
+    if (!open) {
+      setQuote(null);
+      return;
+    }
+
+    if (mode === 'create') {
+      setQuote(null);
+      return;
+    }
+
+    if (!quoteId) {
       setQuote(null);
       return;
     }
@@ -71,7 +90,110 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote }: 
     };
 
     fetchQuote();
-  }, [open, quoteId, onOpenChange]);
+  }, [open, quoteId, onOpenChange, mode]);
+
+  const handleSubmit = async (formData: any) => {
+    setIsSubmitting(true);
+    try {
+      if (currentMode === 'create') {
+        const result = await edgeRequest(fn('quotes'), {
+          method: 'POST',
+          body: JSON.stringify({
+            customerId: formData.customerId,
+            address: formData.address,
+            lineItems: formData.lineItems.map((li: any) => ({
+              name: li.name,
+              qty: li.qty,
+              unit: li.unit || null,
+              unitPrice: li.unitPrice,
+              lineTotal: li.lineTotal,
+            })),
+            taxRate: formData.taxRate,
+            discount: formData.discount,
+            notesInternal: formData.notesInternal || null,
+            terms: formData.terms || null,
+            paymentTerms: formData.paymentTerms,
+            frequency: formData.frequency,
+            depositRequired: formData.depositRequired,
+            depositPercent: formData.depositPercent,
+          }),
+        });
+
+        // Invalidate quotes data
+        if (businessId) {
+          queryClient.invalidateQueries({ queryKey: queryKeys.data.quotes(businessId) });
+        }
+
+        const newQuote: Quote = {
+          id: result.quote.id,
+          number: result.quote.number,
+          businessId: businessId || '',
+          customerId: formData.customerId,
+          address: formData.address,
+          lineItems: formData.lineItems,
+          taxRate: result.quote.taxRate,
+          discount: result.quote.discount,
+          subtotal: result.quote.subtotal,
+          total: result.quote.total,
+          status: result.quote.status,
+          files: [],
+          notesInternal: formData.notesInternal,
+          terms: formData.terms,
+          paymentTerms: formData.paymentTerms,
+          frequency: formData.frequency,
+          depositRequired: formData.depositRequired,
+          depositPercent: formData.depositPercent,
+          sentAt: undefined,
+          viewCount: result.quote.viewCount || 0,
+          createdAt: result.quote.createdAt || new Date().toISOString(),
+          updatedAt: result.quote.updatedAt || new Date().toISOString(),
+          publicToken: result.quote.publicToken,
+        };
+
+        onOpenChange(false);
+        onSendQuote?.(newQuote);
+        toast.success('Quote created successfully');
+      } else if (currentMode === 'edit' && quote) {
+        const result = await edgeRequest(fn('quotes'), {
+          method: 'PUT',
+          body: JSON.stringify({
+            id: quote.id,
+            customerId: formData.customerId,
+            address: formData.address,
+            lineItems: formData.lineItems.map((li: any) => ({
+              name: li.name,
+              qty: li.qty,
+              unit: li.unit || null,
+              unitPrice: li.unitPrice,
+              lineTotal: li.lineTotal,
+            })),
+            taxRate: formData.taxRate,
+            discount: formData.discount,
+            notesInternal: formData.notesInternal || null,
+            terms: formData.terms || null,
+            paymentTerms: formData.paymentTerms,
+            frequency: formData.frequency,
+            depositRequired: formData.depositRequired,
+            depositPercent: formData.depositPercent,
+          }),
+        });
+
+        // Refresh quote data
+        if (businessId) {
+          queryClient.invalidateQueries({ queryKey: queryKeys.data.quotes(businessId) });
+        }
+
+        setQuote(result.quote);
+        setCurrentMode('view');
+        toast.success('Quote updated successfully');
+      }
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || `Failed to ${currentMode === 'create' ? 'create' : 'update'} quote`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleConvertToJob = async () => {
     if (!quote) return;
@@ -134,6 +256,12 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote }: 
     }
   };
 
+  const getModalTitle = () => {
+    if (currentMode === 'create') return 'Create Quote';
+    if (currentMode === 'edit') return `Edit Quote ${quote?.number || ''}`;
+    return `Quote ${quote?.number || ''}`;
+  };
+
   if (loading) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
@@ -151,8 +279,8 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote }: 
       <DrawerContent className="max-h-[90vh]">
         <DrawerHeader>
           <DrawerTitle className="flex items-center justify-between">
-            <span>Quote {quote?.number || ''}</span>
-            {quote && (
+            <span>{getModalTitle()}</span>
+            {quote && currentMode === 'view' && (
               <Badge className={statusColors[quote.status]}>
                 {quote.status}
               </Badge>
@@ -160,10 +288,25 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote }: 
           </DrawerTitle>
         </DrawerHeader>
 
-        {quote && (
-          <div className="px-4 pb-4 overflow-y-auto">
-            {/* Quote Details */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="px-4 pb-4 overflow-y-auto">
+          <QuoteForm
+            customers={customers}
+            defaultTaxRate={defaultTaxRate}
+            onSubmit={handleSubmit}
+            onCancel={() => {
+              if (currentMode === 'edit') {
+                setCurrentMode('view');
+              } else {
+                onOpenChange(false);
+              }
+            }}
+            disabled={isSubmitting}
+            initialData={quote || undefined}
+            mode={currentMode}
+          />
+
+          {currentMode === 'view' && quote && (
+            <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
                 <div className="text-sm text-muted-foreground">Customer</div>
                 <div className="font-medium">{customerName}</div>
@@ -186,93 +329,24 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote }: 
                 </div>
               )}
             </div>
-
-            <Separator className="mb-6" />
-
-            {/* Line Items */}
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>Line Items</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Item</TableHead>
-                      <TableHead>Qty</TableHead>
-                      <TableHead>Unit Price</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {quote.lineItems?.map((item, index) => (
-                      <TableRow key={index}>
-                        <TableCell className="font-medium">{item.name}</TableCell>
-                        <TableCell>{item.qty} {item.unit || ''}</TableCell>
-                        <TableCell>{formatMoney(item.unitPrice)}</TableCell>
-                        <TableCell className="text-right">{formatMoney(item.lineTotal)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-
-                <Separator className="my-4" />
-
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span>{formatMoney(quote.subtotal)}</span>
-                  </div>
-                  {quote.taxRate > 0 && (
-                    <div className="flex justify-between">
-                      <span>Tax ({(quote.taxRate * 100).toFixed(1)}%)</span>
-                      <span>{formatMoney(Math.round(quote.subtotal * quote.taxRate))}</span>
-                    </div>
-                  )}
-                  {quote.discount > 0 && (
-                    <div className="flex justify-between">
-                      <span>Discount</span>
-                      <span>-{formatMoney(quote.discount)}</span>
-                    </div>
-                  )}
-                  <Separator />
-                  <div className="flex justify-between font-semibold text-lg">
-                    <span>Total</span>
-                    <span>{formatMoney(quote.total)}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Terms and Notes */}
-            {(quote.terms || quote.notesInternal) && (
-              <Card>
-                <CardContent className="pt-6">
-                  {quote.terms && (
-                    <div className="mb-4">
-                      <div className="text-sm font-medium text-muted-foreground mb-2">Terms</div>
-                      <div className="text-sm">{quote.terms}</div>
-                    </div>
-                  )}
-                  {quote.notesInternal && (
-                    <div>
-                      <div className="text-sm font-medium text-muted-foreground mb-2">Internal Notes</div>
-                      <div className="text-sm">{quote.notesInternal}</div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        )}
+          )}
+        </div>
 
         <DrawerFooter>
           <div className="flex gap-2 justify-end">
-            {quote && (
+            {currentMode === 'view' && quote && (
               <>
+                {quote.status === 'Draft' && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setCurrentMode('edit')}
+                  >
+                    Edit Quote
+                  </Button>
+                )}
                 <Button 
                   variant="outline" 
-                  onClick={() => onSendQuote(quote)}
+                  onClick={() => onSendQuote?.(quote)}
                 >
                   Send Quote
                 </Button>
