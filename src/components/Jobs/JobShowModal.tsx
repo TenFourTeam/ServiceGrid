@@ -42,13 +42,15 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
   const [photosToUpload, setPhotosToUpload] = useState<File[]>([]);
   const [isCompletingJob, setIsCompletingJob] = useState(false);
   const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
+  const [linkedQuoteId, setLinkedQuoteId] = useState<string | null>(null);
   
   useEffect(() => {
     setLocalNotes(job.notes ?? "");
   }, [job.id]);
 
   const customerName = useMemo(() => customers.find(c => c.id === job.customerId)?.name || "Customer", [customers, job.customerId]);
-  const linkedQuote = useMemo(() => (job as any).quoteId ? quotes.find(q => q.id === (job as any).quoteId) : null, [quotes, (job as any).quoteId]);
+  const currentQuoteId = linkedQuoteId || (job as any).quoteId;
+  const linkedQuote = useMemo(() => currentQuoteId ? quotes.find(q => q.id === currentQuoteId) : null, [quotes, currentQuoteId]);
   const existingInvoice = useMemo(() => invoices.find(inv => inv.jobId === job.id), [invoices, job.id]);
   const photos: string[] = Array.isArray((job as any).photos) ? ((job as any).photos as string[]) : [];
 
@@ -71,7 +73,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
       return;
     }
     
-    if (!(job as any).quoteId) { 
+    if (!currentQuoteId) { 
       setPickerOpen(true); 
       return; 
     }
@@ -81,7 +83,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
     try {
       await edgeRequestWithToast(fn('invoices'), {
         method: 'POST',
-        body: JSON.stringify({ quoteId: (job as any).quoteId })
+        body: JSON.stringify({ quoteId: currentQuoteId })
       }, {
         success: 'Invoice created successfully',
         loading: 'Creating invoice...'
@@ -358,7 +360,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                 <Button 
                   variant="outline" 
                   onClick={handleCreateInvoice}
-                  disabled={isCreatingInvoice || (!(job as any).quoteId && !existingInvoice)}
+                  disabled={isCreatingInvoice || (!currentQuoteId && !existingInvoice)}
                   size="sm"
                 >
                   {isCreatingInvoice ? 'Creating...' : existingInvoice ? 'View Invoice' : 'Create Invoice'}
@@ -440,6 +442,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
               if (businessId) {
                 invalidationHelpers.jobs(queryClient, businessId);
               }
+              setLinkedQuoteId(quoteId);
               toast.success('Quote linked to job');
               setPickerOpen(false);
             } catch (e: any) {
