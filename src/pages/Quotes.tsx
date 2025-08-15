@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Receipt, Users } from 'lucide-react';
 import { QuoteActions } from '@/components/Quotes/QuoteActions';
+import { QuoteDetailsModal } from '@/components/Quotes/QuoteDetailsModal';
 import QuoteErrorBoundary from '@/components/ErrorBoundaries/QuoteErrorBoundary';
 
 import { useOnboardingActions } from '@/onboarding/hooks';
@@ -51,6 +52,7 @@ export default function QuotesPage() {
 
   const [open, setOpen] = useState(false);
   const [sendQuoteItem, setSendQuoteItem] = useState<Quote | null>(null);
+  const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(null);
 
   const handleSendQuote = async (quoteListItem: QuoteListItem) => {
     // Convert QuoteListItem to full Quote by fetching from API
@@ -109,9 +111,20 @@ export default function QuotesPage() {
   useEffect(() => {
     const params = new URLSearchParams(location.search || '');
     const newParam = params.get('new');
+    const highlightParam = params.get('highlight');
+    
     if (newParam && (newParam === '1' || newParam.toLowerCase() === 'true')) {
       setOpen(true);
       navigate('/quotes', { replace: true });
+    }
+    
+    if (highlightParam) {
+      setSelectedQuoteId(highlightParam);
+      // Clean up URL without the highlight parameter
+      const newParams = new URLSearchParams(location.search);
+      newParams.delete('highlight');
+      const newSearch = newParams.toString();
+      navigate(`/quotes${newSearch ? `?${newSearch}` : ''}`, { replace: true });
     }
   }, [location.search, navigate]);
 
@@ -181,7 +194,11 @@ export default function QuotesPage() {
                   </TableRow>
                 ) : (
                   sortedQuotes.map((quote) => (
-                    <TableRow key={quote.id}>
+                    <TableRow 
+                      key={quote.id} 
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => setSelectedQuoteId(quote.id)}
+                    >
                       <TableCell className="font-medium">{quote.number}</TableCell>
                       <TableCell>{getCustomerName(quote.customerId)}</TableCell>
                       <TableCell>{formatCurrency(quote.total)}</TableCell>
@@ -190,7 +207,7 @@ export default function QuotesPage() {
                           {quote.status}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <QuoteActions 
                           quote={quote} 
                           onSendQuote={handleSendQuote}
@@ -219,6 +236,13 @@ export default function QuotesPage() {
         quote={sendQuoteItem}
         toEmail={sendQuoteItem ? getCustomerEmail(sendQuoteItem.customerId) : undefined}
         customerName={sendQuoteItem ? getCustomerName(sendQuoteItem.customerId) : undefined}
+      />
+
+      <QuoteDetailsModal
+        open={!!selectedQuoteId}
+        onOpenChange={(open) => { if (!open) setSelectedQuoteId(null); }}
+        quoteId={selectedQuoteId}
+        onSendQuote={setSendQuoteItem}
       />
       </QuoteErrorBoundary>
     </AppLayout>
