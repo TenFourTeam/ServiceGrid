@@ -19,7 +19,8 @@ import { useProfileOperations } from '@/hooks/useProfileOperations';
 
 
 import { useToast } from '@/hooks/use-toast';
-import { formatPhoneInput, formatNameSuggestion } from '@/utils/validation';
+import { formatPhoneInput } from '@/utils/validation';
+import { formatNameSuggestion } from '@/validation/profile';
 
 export default function SettingsPage() {
   const { business } = useBusinessContext();

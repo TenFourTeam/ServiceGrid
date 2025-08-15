@@ -122,31 +122,3 @@ export function sanitizeAddressInput(value: string): string {
   // Allow letters, numbers, spaces, and common punctuation
   return value.replace(/[^a-zA-Z0-9\s\.\,\-\#]/g, '');
 }
-
-/**
- * Formats name suggestions with proper capitalization
- */
-export function formatNameSuggestion(name: string): string {
-  if (!name) return '';
-  
-  return name
-    .trim()
-    .split(/\s+/)
-    .map(word => {
-      // Handle hyphenated names
-      if (word.includes('-')) {
-        return word.split('-')
-          .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
-          .join('-');
-      }
-      // Handle apostrophes (O'Connor, D'Angelo)
-      if (word.includes("'")) {
-        return word.split("'")
-          .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
-          .join("'");
-      }
-      // Regular capitalization
-      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-    })
-    .join(' ');
-}
