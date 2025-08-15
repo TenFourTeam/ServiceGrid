@@ -4,6 +4,7 @@ import { ClerkLoaded, ClerkLoading } from "@clerk/clerk-react";
 import { AppProviders } from "@/providers/AppProviders";
 
 import { AuthBoundary, RequireAuth, PublicOnly, QueryClientClerkIntegration } from "@/auth";
+import { RequireRole } from "@/components/Auth/RequireRole";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import LoadingScreen from "@/components/LoadingScreen";
 
@@ -16,6 +17,7 @@ const SettingsPage = lazy(() => import("./pages/Settings"));
 const LegalPage = lazy(() => import("./pages/Legal"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const LandingPage = lazy(() => import("./pages/Landing"));
+const TeamPage = lazy(() => import("./pages/Team"));
 
 const ClerkAuthPage = lazy(() => import("./pages/ClerkAuth"));
 const QuoteActionPage = lazy(() => import("./pages/QuoteAction"));
@@ -34,6 +36,7 @@ function PrefetchRoutes() {
       import("./pages/Customers"),
       import("./pages/Settings"),
       import("./pages/Legal"),
+      import("./pages/Team"),
       import("./pages/NotFound"),
       import("./pages/ClerkAuth"),
       import("./pages/QuoteAction"),
@@ -68,6 +71,13 @@ const App = () => (
                 <Route path="/customers" element={<CustomersPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/legal" element={<LegalPage />} />
+                
+                {/* Owner-only routes */}
+                <Route path="/team" element={
+                  <RequireRole role="owner">
+                    <TeamPage />
+                  </RequireRole>
+                } />
               </Route>
 
               {/* Public pages that don't require auth checks */}
