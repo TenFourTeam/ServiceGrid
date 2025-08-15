@@ -58,10 +58,15 @@ export async function edgeRequest(url: string, init: RequestInit = {}): Promise<
   }
 
   const headers = {
-    "Content-Type": "application/json",
     Authorization: `Bearer ${token}`,
     ...(init.headers || {}),
-  };
+  } as Record<string, string>;
+
+  // Only set Content-Type for non-FormData requests
+  // FormData requires browser to set multipart boundary automatically
+  if (!(init.body instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
 
   console.info('[edgeRequest] Making request with token prefix:', token.substring(0, 20) + '...');
   
