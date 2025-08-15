@@ -7,7 +7,7 @@ import { EnhancedInviteModal } from '@/components/Team/EnhancedInviteModal';
 
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/Layout/AppSidebar';
-import { useBusinessContext } from '@/auth';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { PageFade } from '@/components/Motion/PageFade';
 import { TrialBanner } from '@/components/Onboarding/TrialBanner';
 import { FloatingSetupWidget } from '@/components/Onboarding/FloatingSetupWidget';

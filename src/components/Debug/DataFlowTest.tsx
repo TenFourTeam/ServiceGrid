@@ -1,5 +1,5 @@
 import { useCustomers } from '@/queries/unified';
-import { useBusinessContext } from '@/auth';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
 import { useSupabaseQuotes } from '@/hooks/useSupabaseQuotes';
 import { useSupabaseJobs } from '@/hooks/useSupabaseJobs';

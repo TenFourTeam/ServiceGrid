@@ -2,7 +2,7 @@
  * Standardized mutation pattern with proper error handling and rollback
  */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useBusinessContext } from '@/auth';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { edgeRequest } from '@/utils/edgeApi';
 import { fn } from '@/utils/functionUrl';
 import { queryKeys, invalidationHelpers } from '@/queries/keys';

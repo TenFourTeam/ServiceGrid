@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { useBusinessContext } from "@/auth";
+import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useBusiness } from "@/queries/unified";
 import {
   Sidebar,

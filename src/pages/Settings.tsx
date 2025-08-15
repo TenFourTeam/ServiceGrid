@@ -16,7 +16,7 @@ import ConnectBanner from '@/components/Stripe/ConnectBanner';
 import { useStripeConnectStatus } from '@/hooks/useStripeConnectStatus';
 import { BusinessMembersList } from '@/components/Business/BusinessMembersList';
 import { AuditLogsList } from '@/components/Business/AuditLogsList';
-import { useBusinessContext } from '@/auth';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useProfileOperations } from '@/hooks/useProfileOperations';
 import { ProfileCompletionDebug } from '@/components/Auth/ProfileCompletionDebug';
 

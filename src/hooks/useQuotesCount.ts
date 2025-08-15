@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useBusinessContext } from "@/auth";
+import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
 import { queryKeys } from "@/queries/keys";

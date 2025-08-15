@@ -3,7 +3,7 @@
  * No context duplication, no stale memoization
  */
 import { useMemo } from 'react';
-import { useBusinessContext } from '@/auth';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { 
   useBusiness, 
   useProfile, 

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
-import { useBusinessContext } from "@/auth";
+import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { edgeFetchJson } from "@/utils/edgeApi";
 import { queryKeys } from "@/queries/keys";
 

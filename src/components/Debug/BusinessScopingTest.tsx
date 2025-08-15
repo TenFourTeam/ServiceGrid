@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useCustomers } from '@/queries/unified';
-import { useBusinessContext } from '@/auth';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';

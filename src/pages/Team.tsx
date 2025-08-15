@@ -1,5 +1,5 @@
 import { useBusiness } from '@/queries/unified';
-import { useBusinessContext } from '@/auth';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 import { BusinessMembersList } from "@/components/Business/BusinessMembersList";
 import { Navigate } from "react-router-dom";

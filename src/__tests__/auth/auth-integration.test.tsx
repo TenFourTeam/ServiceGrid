@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { AuthBoundary } from '@/auth/AuthBoundary';
 import { QueryClientClerkIntegration } from '@/auth/QueryClientClerkIntegration';
-import { useBusinessContext } from '@/auth';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 // Mock components for testing
 function ProtectedPage() {

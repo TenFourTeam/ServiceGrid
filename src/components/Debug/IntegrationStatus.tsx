@@ -1,4 +1,4 @@
-import { useBusinessContext } from '@/auth';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useBusiness } from '@/queries/unified';
 import { useCustomersCount } from '@/hooks/useCustomersCount';
 import { CheckCircle, XCircle, Clock } from 'lucide-react';
