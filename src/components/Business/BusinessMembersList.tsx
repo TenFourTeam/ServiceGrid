@@ -10,13 +10,13 @@ import { TeamSearchFilter } from "@/components/Team/TeamSearchFilter";
 import { TeamMemberActions } from "@/components/Team/TeamMemberActions";
 import { UserPlus, Mail, Clock, Send, X, Users, AlertCircle, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { RequireRole } from "@/components/Auth/RequireRole";
 
 interface BusinessMembersListProps {
   businessId: string;
-  canManage: boolean;
 }
 
-export function BusinessMembersList({ businessId, canManage }: BusinessMembersListProps) {
+export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [filters, setFilters] = useState({
     search: "",
@@ -146,7 +146,7 @@ export function BusinessMembersList({ businessId, canManage }: BusinessMembersLi
             Manage team members and pending invitations • {members.length} member{members.length !== 1 ? 's' : ''}
           </p>
         </div>
-        {canManage && (
+        <RequireRole role="owner" fallback={null}>
           <Button
             onClick={() => setShowInviteModal(true)}
             className="gap-2"
@@ -154,7 +154,7 @@ export function BusinessMembersList({ businessId, canManage }: BusinessMembersLi
             <UserPlus className="h-4 w-4" />
             Invite Worker
           </Button>
-        )}
+        </RequireRole>
       </div>
 
       {/* Search and Filters */}
@@ -168,24 +168,26 @@ export function BusinessMembersList({ businessId, canManage }: BusinessMembersLi
       </div>
 
       {/* Seat limit warning */}
-      {canManage && members.length >= 5 && (
-        <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 text-orange-600" />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-orange-800">
-                Approaching seat limit
-              </p>
-              <p className="text-xs text-orange-700">
-                You have {members.length}/5 seats used. Consider upgrading for more team members.
-              </p>
+      <RequireRole role="owner" fallback={null}>
+        {members.length >= 5 && (
+          <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-orange-600" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-orange-800">
+                  Approaching seat limit
+                </p>
+                <p className="text-xs text-orange-700">
+                  You have {members.length}/5 seats used. Consider upgrading for more team members.
+                </p>
+              </div>
+              <Button variant="outline" size="sm" className="border-orange-300 text-orange-700 hover:bg-orange-100">
+                Upgrade Plan
+              </Button>
             </div>
-            <Button variant="outline" size="sm" className="border-orange-300 text-orange-700 hover:bg-orange-100">
-              Upgrade Plan
-            </Button>
           </div>
-        </div>
-      )}
+        )}
+      </RequireRole>
 
       <Tabs defaultValue="members" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
@@ -211,9 +213,9 @@ export function BusinessMembersList({ businessId, canManage }: BusinessMembersLi
               ) : (
                 <>
                   <p className="text-lg font-medium mb-2">No team members yet</p>
-                  {canManage && (
+                  <RequireRole role="owner" fallback={null}>
                     <p className="text-sm">Invite workers to collaborate on your business</p>
-                  )}
+                  </RequireRole>
                 </>
               )}
             </div>
@@ -260,7 +262,6 @@ export function BusinessMembersList({ businessId, canManage }: BusinessMembersLi
                   <TeamMemberActions
                     member={member}
                     businessId={businessId}
-                    canManage={canManage}
                     isLastOwner={member.role === 'owner' && ownerCount === 1}
                   />
                 </div>
@@ -285,9 +286,9 @@ export function BusinessMembersList({ businessId, canManage }: BusinessMembersLi
               ) : (
                 <>
                   <p className="text-lg font-medium mb-2">No pending invitations</p>
-                  {canManage && (
+                  <RequireRole role="owner" fallback={null}>
                     <p className="text-sm">Invite workers to see pending invitations here</p>
-                  )}
+                  </RequireRole>
                 </>
               )}
             </div>
@@ -325,7 +326,7 @@ export function BusinessMembersList({ businessId, canManage }: BusinessMembersLi
                       </div>
                     </div>
                     
-                    {canManage && (
+                    <RequireRole role="owner" fallback={null}>
                       <div className="flex items-center gap-2">
                         {!isExpired && (
                           <Button
@@ -350,7 +351,7 @@ export function BusinessMembersList({ businessId, canManage }: BusinessMembersLi
                           {isExpired ? "Remove" : "Revoke"}
                         </Button>
                       </div>
-                    )}
+                    </RequireRole>
                   </div>
                 );
               })}

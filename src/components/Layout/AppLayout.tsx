@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ReactNode, useEffect, useState } from 'react';
+import { RequireRole } from '@/components/Auth/RequireRole';
 
 import { Button } from '@/components/ui/button';
 import { NewJobSheet } from '@/components/Job/NewJobSheet';
@@ -48,7 +49,7 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
               {/* New Job Sheet trigger */}
               <NewJobSheet />
               {/* Global Invite Worker action (owner only) */}
-              {role === 'owner' && (
+              <RequireRole role="owner" fallback={null}>
                 <Button 
                   variant="outline" 
                   onClick={() => setShowInviteModal(true)}
@@ -57,7 +58,7 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
                   <UserPlus className="h-4 w-4" />
                   Invite Worker
                 </Button>
-              )}
+              </RequireRole>
             </div>
           </header>
           <div className="flex-1">
@@ -89,13 +90,13 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
       />
 
       {/* Global Invite Modal */}
-      {role === 'owner' && (
+      <RequireRole role="owner" fallback={null}>
         <EnhancedInviteModal
           open={showInviteModal}
           onOpenChange={setShowInviteModal}
           businessId={businessId || ''}
         />
-      )}
+      </RequireRole>
     </SidebarProvider>
   );
 }

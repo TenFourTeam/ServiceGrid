@@ -24,6 +24,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useFocusPulse } from '@/hooks/useFocusPulse';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { formatPhoneInput, formatNameSuggestion } from '@/utils/validation';
+import { RequireRole } from '@/components/Auth/RequireRole';
 
 import { cn } from '@/utils/cn';
 
@@ -535,19 +536,18 @@ export default function SettingsPage() {
           <CardContent>
             <BusinessMembersList 
               businessId={business?.id || ''} 
-              canManage={canManage}
             />
           </CardContent>
         </Card>
 
-        {canManage && (
+        <RequireRole role="owner" fallback={null}>
           <Card className="md:col-span-2">
             <CardHeader><CardTitle>Activity Log</CardTitle></CardHeader>
             <CardContent>
               <AuditLogsList businessId={business?.id || ''} />
             </CardContent>
           </Card>
-        )}
+        </RequireRole>
 
       </div>
     </AppLayout>;

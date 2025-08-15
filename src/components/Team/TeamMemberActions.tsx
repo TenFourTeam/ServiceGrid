@@ -8,15 +8,15 @@ import { useRemoveMember } from "@/hooks/useBusinessMembers";
 import { useToast } from "@/hooks/use-toast";
 import { MoreVertical, Edit, Trash2, UserX, UserCheck, Shield } from "lucide-react";
 import type { BusinessMember } from "@/hooks/useBusinessMembers";
+import { RequireRole } from "@/components/Auth/RequireRole";
 
 interface TeamMemberActionsProps {
   member: BusinessMember;
   businessId: string;
-  canManage: boolean;
   isLastOwner: boolean;
 }
 
-export function TeamMemberActions({ member, businessId, canManage, isLastOwner }: TeamMemberActionsProps) {
+export function TeamMemberActions({ member, businessId, isLastOwner }: TeamMemberActionsProps) {
   const [showRoleDialog, setShowRoleDialog] = useState(false);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const [newRole, setNewRole] = useState(member.role);
@@ -24,8 +24,8 @@ export function TeamMemberActions({ member, businessId, canManage, isLastOwner }
   const { toast } = useToast();
   const removeMember = useRemoveMember();
 
-  // Don't show actions for owners or if user can't manage
-  if (!canManage || member.role === 'owner') {
+  // Don't show actions for owners
+  if (member.role === 'owner') {
     return null;
   }
 
@@ -105,7 +105,7 @@ export function TeamMemberActions({ member, businessId, canManage, isLastOwner }
   };
 
   return (
-    <>
+    <RequireRole role="owner" fallback={null}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="sm">
@@ -214,6 +214,6 @@ export function TeamMemberActions({ member, businessId, canManage, isLastOwner }
           </div>
         </DialogContent>
       </Dialog>
-    </>
+    </RequireRole>
   );
 }

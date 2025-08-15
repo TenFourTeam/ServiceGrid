@@ -3,9 +3,9 @@ import { Navigate } from "react-router-dom";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 
 interface RequireRoleProps {
-  role: 'owner' | 'worker';
+  role: 'owner' | 'worker' | 'owner' | 'worker'[];
   children: ReactNode;
-  fallback?: ReactNode;
+  fallback?: ReactNode | null;
   redirectTo?: string;
 }
 
@@ -37,8 +37,8 @@ export function RequireRole({
 
   if (!hasRequiredRole) {
     // Use custom fallback if provided, otherwise redirect
-    if (fallback) {
-      return <>{fallback}</>;
+    if (fallback !== undefined) {
+      return fallback === null ? null : <>{fallback}</>;
     }
     return <Navigate to={redirectTo} replace />;
   }

@@ -1,4 +1,5 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { RequireRole } from "@/components/Auth/RequireRole";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useBusiness } from "@/queries/unified";
 import {
@@ -122,7 +123,7 @@ export default function AppSidebar() {
         </SidebarGroup>
 
         {/* Owner-only navigation */}
-        {role === 'owner' && (
+        <RequireRole role="owner" fallback={null}>
           <SidebarGroup>
             <SidebarGroupLabel>Management</SidebarGroupLabel>
             <SidebarGroupContent>
@@ -148,7 +149,7 @@ export default function AppSidebar() {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-        )}
+        </RequireRole>
       </SidebarContent>
 
       <SidebarFooter>
