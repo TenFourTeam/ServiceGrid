@@ -19,18 +19,11 @@ import { useProfileOperations } from '@/hooks/useProfileOperations';
 
 
 import { useToast } from '@/hooks/use-toast';
-import { useFocusPulse } from '@/hooks/useFocusPulse';
-import { useLocation, useNavigate } from 'react-router-dom';
 import { formatPhoneInput, formatNameSuggestion } from '@/utils/validation';
-
-
-import { cn } from '@/utils/cn';
 
 export default function SettingsPage() {
   const { business } = useBusinessContext();
   const { data: profile } = useProfile();
-  const location = useLocation();
-  const navigate = useNavigate();
   const {
     getToken,
     isSignedIn
@@ -51,9 +44,6 @@ export default function SettingsPage() {
   const { role, canManage } = useBusinessContext();
   const { updateProfile, isUpdating } = useProfileOperations();
   const { toast } = useToast();
-  const { ref: profileRef, pulse: profilePulse, focus: focusProfile } = useFocusPulse<HTMLDivElement>();
-  const { ref: bankRef, pulse: bankPulse, focus: focusBank } = useFocusPulse<HTMLDivElement>();
-  const { ref: subscriptionRef, pulse: subscriptionPulse, focus: focusSubscription } = useFocusPulse<HTMLDivElement>();
   async function uploadLogoDark() {
     if (!isSignedIn) {
       sonnerToast.error('You must be signed in');
@@ -175,26 +165,6 @@ export default function SettingsPage() {
     }
   }, [profile, isHydrated]);
 
-  // Handle focus from onboarding navigation - run once per navigation
-  const ranFocusRef = useRef(false);
-  
-  useEffect(() => {
-    const state = location.state as any;
-    if (ranFocusRef.current) return;
-    if (!state?.focus) return;
-
-    ranFocusRef.current = true;
-
-    // Use the robust focus method
-    if (state.focus === 'profile') focusProfile();
-    if (state.focus === 'bank') focusBank();
-    if (state.focus === 'subscription') focusSubscription();
-
-    // Clear nav state after scheduling (not before)
-    navigate('.', { replace: true, state: null });
-    
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.key]); // depend on navigation, not changing callbacks
 
   useEffect(() => {
     if (!userLoaded || !user) return;
@@ -313,22 +283,9 @@ export default function SettingsPage() {
   }, [isSignedIn]);
   return <AppLayout title="Settings">
       <div className="grid md:grid-cols-2 gap-6">
-        <Card 
-          ref={profileRef}
-          className={cn(
-            "transition-all duration-300 scroll-mt-20 focus-section",
-            profilePulse && "ring-2 ring-primary/60 shadow-lg scale-[1.02]"
-          )}
-        >
+        <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              Business Profile
-              {profilePulse && (
-                <span className="text-xs text-muted-foreground animate-fade-in">
-                  Complete your profile here
-                </span>
-              )}
-            </CardTitle>
+            <CardTitle>Business Profile</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleProfileSave} className="space-y-4">
@@ -454,22 +411,9 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card 
-          ref={bankRef}
-          className={cn(
-            "transition-all duration-300 scroll-mt-20 focus-section",
-            bankPulse && "ring-2 ring-primary/60 shadow-lg scale-[1.02]"
-          )}
-        >
+        <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              Payouts
-              {bankPulse && (
-                <span className="text-xs text-muted-foreground animate-fade-in">
-                  Link your bank account here
-                </span>
-              )}
-            </CardTitle>
+            <CardTitle>Payouts</CardTitle>
           </CardHeader>
           <CardContent>
             <ConnectBanner
@@ -494,22 +438,9 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card 
-          ref={subscriptionRef}
-          className={cn(
-            "transition-all duration-300 scroll-mt-20 focus-section",
-            subscriptionPulse && "ring-2 ring-primary/60 shadow-lg scale-[1.02]"
-          )}
-        >
+        <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              Subscription
-              {subscriptionPulse && (
-                <span className="text-xs text-muted-foreground animate-fade-in">
-                  Activate your subscription here
-                </span>
-              )}
-            </CardTitle>
+            <CardTitle>Subscription</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
