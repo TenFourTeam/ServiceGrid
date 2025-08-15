@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
-import { edgeFetchJson } from "@/utils/edgeApi";
+import { edgeRequest } from "@/utils/edgeApi";
+import { fn } from "@/utils/functionUrl";
 
 export interface Invite {
   id: string;
@@ -23,7 +24,7 @@ export function usePendingInvites(businessId?: string) {
     enabled,
     queryFn: async () => {
       if (!businessId) return { invites: [] };
-      const data = await edgeFetchJson(`invite-manage?action=list&business_id=${businessId}`, getToken);
+      const data = await edgeRequest(fn(`invite-manage?action=list&business_id=${businessId}`));
       return data || { invites: [] };
     },
     staleTime: 30_000,
@@ -36,9 +37,9 @@ export function useRevokeInvite() {
 
   return useMutation({
     mutationFn: async ({ inviteId }: { inviteId: string }) => {
-      return await edgeFetchJson("invite-manage", getToken, {
+      return await edgeRequest(fn("invite-manage"), {
         method: "POST",
-        body: { inviteId, action: "revoke" },
+        body: JSON.stringify({ inviteId, action: "revoke" }),
       });
     },
     onSuccess: () => {
@@ -53,9 +54,9 @@ export function useResendInvite() {
 
   return useMutation({
     mutationFn: async ({ inviteId }: { inviteId: string }) => {
-      return await edgeFetchJson("invite-manage", getToken, {
+      return await edgeRequest(fn("invite-manage"), {
         method: "POST",
-        body: { inviteId, action: "resend" },
+        body: JSON.stringify({ inviteId, action: "resend" }),
       });
     },
     onSuccess: () => {
@@ -69,9 +70,9 @@ export function useRedeemInvite() {
 
   return useMutation({
     mutationFn: async ({ token }: { token: string }) => {
-      return await edgeFetchJson("invite-redeem", getToken, {
+      return await edgeRequest(fn("invite-redeem"), {
         method: "POST",
-        body: { token },
+        body: JSON.stringify({ token }),
       });
     },
   });

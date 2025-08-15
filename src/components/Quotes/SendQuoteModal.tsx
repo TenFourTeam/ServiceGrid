@@ -11,7 +11,8 @@ import { buildQuoteEmail } from "@/utils/emailTemplates";
 import { toast } from "sonner";
 import { escapeHtml } from "@/utils/sanitize";
 import { useQueryClient } from "@tanstack/react-query";
-import { SUPABASE_URL, edgeFetchJson } from "@/utils/edgeApi";
+import { SUPABASE_URL, edgeRequest } from "@/utils/edgeApi";
+import { fn } from "@/utils/functionUrl";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 
 export interface SendQuoteModalProps {
@@ -81,9 +82,9 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
         return `${introBlock}${hr}${html}`;
       })();
       console.info('[SendQuoteModal] sending quote email', { quoteId: quote.id, to });
-      await edgeFetchJson("resend-send-email", getToken, {
+      await edgeRequest(fn("resend-send-email"), {
         method: "POST",
-        body: { to, subject: subject || defaultSubject, html: finalHtml, quote_id: quote.id },
+        body: JSON.stringify({ to, subject: subject || defaultSubject, html: finalHtml, quote_id: quote.id }),
       });
       console.info('[SendQuoteModal] sent', { quoteId: quote.id });
       // Optimistically mark as Sent in React Query cache for immediate UI update

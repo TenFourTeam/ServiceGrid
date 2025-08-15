@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
-import { edgeFetchJson } from "@/utils/edgeApi";
+import { edgeRequest } from "@/utils/edgeApi";
+import { fn } from "@/utils/functionUrl";
 
 export interface BusinessMember {
   id: string;
@@ -23,7 +24,7 @@ export function useBusinessMembers(businessId?: string, opts?: { enabled?: boole
     enabled,
     queryFn: async () => {
       if (!businessId) return null;
-      const data = await edgeFetchJson(`business-members?business_id=${businessId}`, getToken);
+      const data = await edgeRequest(fn(`business-members?business_id=${businessId}`));
       return data || { members: [] };
     },
     staleTime: 30_000,
@@ -36,7 +37,7 @@ export function useInviteWorker() {
 
   return useMutation({
     mutationFn: async ({ businessId, email }: { businessId: string; email: string }) => {
-      return await edgeFetchJson("invite-worker", getToken, {
+      return await edgeRequest(fn("invite-worker"), {
         method: "POST",
         body: JSON.stringify({ businessId, email }),
       });
@@ -53,7 +54,7 @@ export function useRemoveMember() {
 
   return useMutation({
     mutationFn: async ({ businessId, memberId }: { businessId: string; memberId: string }) => {
-      return await edgeFetchJson(`business-members/${memberId}`, getToken, {
+      return await edgeRequest(fn(`business-members/${memberId}`), {
         method: "DELETE",
       });
     },

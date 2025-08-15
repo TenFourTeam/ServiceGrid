@@ -12,7 +12,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
-import { edgeFetchJson, edgeFetch } from '@/utils/edgeApi';
+import { edgeRequest } from '@/utils/edgeApi';
+import { fn } from '@/utils/functionUrl';
 import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
 import { CustomerCombobox } from '@/components/Quotes/CustomerCombobox';
 import { InlineCustomerForm } from '@/components/Onboarding/InlineCustomerForm';
@@ -92,7 +93,7 @@ export function NewJobSheet() {
       for (const file of files) {
         const fd = new FormData();
         fd.append('file', file);
-        const resp = await edgeFetch('upload-job-photo', getToken, {
+        const resp = await edgeRequest(fn('upload-job-photo'), {
           method: 'POST',
           body: fd,
         });
@@ -102,9 +103,9 @@ export function NewJobSheet() {
       }
 
       // 2) Create job via Edge Function
-      const data = await edgeFetchJson(`jobs`, getToken, {
+      const data = await edgeRequest(fn('jobs'), {
         method: 'POST',
-        body: {
+        body: JSON.stringify({
           customerId,
           address: address || selectedCustomer?.address,
           title: title || undefined,
@@ -113,7 +114,7 @@ export function NewJobSheet() {
           notes: notes || undefined,
           total: totalCents,
           photos: photoUrls,
-        },
+        }),
       });
       const created = (data as any)?.row || (data as any)?.job || data;
 

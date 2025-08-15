@@ -34,9 +34,9 @@ export default function ReschedulePopover({ job, onDone }: ReschedulePopoverProp
       starts.setHours(h || 0, m || 0, 0, 0);
       const ends = addMinutes(starts, durationMins);
 
-      const data = await edgeFetchJson("jobs?id=" + job.id, getToken, {
+      const data = await edgeRequest(fn("jobs?id=" + job.id), {
         method: "PATCH",
-        body: { startsAt: starts.toISOString(), endsAt: ends.toISOString() },
+        body: JSON.stringify({ startsAt: starts.toISOString(), endsAt: ends.toISOString() }),
       });
       toast({ title: "Scheduled" });
       setOpen(false);
@@ -51,9 +51,9 @@ export default function ReschedulePopover({ job, onDone }: ReschedulePopoverProp
   const handleUnschedule = async () => {
     try {
       setSubmitting(true);
-      const data = await edgeFetchJson("jobs?id=" + job.id, getToken, {
+      const data = await edgeRequest(fn("jobs?id=" + job.id), {
         method: "PATCH",
-        body: { startsAt: null, endsAt: null },
+        body: JSON.stringify({ startsAt: null, endsAt: null }),
       });
       toast({ title: "Unscheduled" });
       setOpen(false);

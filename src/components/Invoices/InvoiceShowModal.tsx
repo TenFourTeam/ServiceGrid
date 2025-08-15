@@ -4,7 +4,8 @@ import { formatDate, formatMoney } from '@/utils/format';
 import { useCustomers } from '@/queries/unified';
 import type { Invoice } from '@/types';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
-import { edgeFetchJson } from '@/utils/edgeApi';
+import { edgeRequest } from '@/utils/edgeApi';
+import { fn } from '@/utils/functionUrl';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -24,9 +25,9 @@ export default function InvoiceShowModal({ open, onOpenChange, invoice }: Invoic
   const handlePayOnline = async () => {
     try {
       if (!invoice) return;
-      const data = await edgeFetchJson('create-invoice-payment', getToken, {
+      const data = await edgeRequest(fn('create-invoice-payment'), {
         method: 'POST',
-        body: { invoiceId: invoice.id },
+        body: JSON.stringify({ invoiceId: invoice.id }),
       });
       const url = (data as any)?.url as string | undefined;
       if (!url) {
@@ -80,9 +81,9 @@ export default function InvoiceShowModal({ open, onOpenChange, invoice }: Invoic
               {invoice.status === 'Draft' && (
                 <Button size="sm" onClick={async () => {
                   try {
-                    await edgeFetchJson('invoices', getToken, {
+                    await edgeRequest(fn('invoices'), {
                       method: 'PATCH',
-                      body: { id: invoice.id, status: 'Sent' }
+                      body: JSON.stringify({ id: invoice.id, status: 'Sent' })
                     });
                     queryClient.invalidateQueries({ queryKey: ['supabase', 'invoices'] });
                     toast.success('Invoice marked as sent');

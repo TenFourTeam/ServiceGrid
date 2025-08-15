@@ -9,7 +9,8 @@ import { Upload, FileText, AlertCircle, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { edgeFetchJson } from '@/utils/edgeApi';
+import { edgeRequest } from '@/utils/edgeApi';
+import { fn } from '@/utils/functionUrl';
 
 interface CSVImportModalProps {
   open: boolean;
@@ -112,9 +113,9 @@ export function CSVImportModal({ open, onOpenChange, onImportComplete }: CSVImpo
 
     setImporting(true);
     try {
-      const data = await edgeFetchJson('bulk-import-customers', getToken, {
+      const data = await edgeRequest(fn('bulk-import-customers'), {
         method: 'POST',
-        body: { customers: previewData },
+        body: JSON.stringify({ customers: previewData }),
       });
 
       const imported = data.imported || previewData.length;

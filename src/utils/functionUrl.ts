@@ -1,4 +1,4 @@
 // Centralized function URL helper
-const SUPABASE_URL = "https://ijudkzqfriazabiosnvb.supabase.co";
+import { SUPABASE_URL } from "@/utils/edgeApi";
 
 export const fn = (name: string) => `${SUPABASE_URL}/functions/v1/${name}`;

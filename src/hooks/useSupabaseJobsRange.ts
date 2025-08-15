@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
-import { edgeFetchJson } from "@/utils/edgeApi";
+import { edgeRequest } from "@/utils/edgeApi";
+import { fn } from "@/utils/functionUrl";
 import type { DbJobRow } from "@/hooks/useSupabaseJobs";
 
 export function useSupabaseJobsRange(
@@ -24,7 +25,7 @@ export function useSupabaseJobsRange(
         start: range.start.toISOString(),
         end: range.end.toISOString(),
       });
-      const data = await edgeFetchJson(`jobs?${params.toString()}`, getToken);
+      const data = await edgeRequest(fn(`jobs?${params.toString()}`));
 
       const rows: DbJobRow[] = (data?.rows || []).map((row: any) => ({
         id: row.id,

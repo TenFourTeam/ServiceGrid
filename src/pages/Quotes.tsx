@@ -261,9 +261,9 @@ export default function QuotesPage() {
   //   return;
   // }
   try {
-    const data = await edgeFetchJson(`jobs`, getToken, {
+    const data = await edgeRequest(fn('jobs'), {
       method: 'POST',
-      body: { quoteId: quote.id },
+      body: JSON.stringify({ quoteId: quote.id }),
     });
     const j = (data as any).job || (data as any).row || data;
     // Job creation completed - queries will refetch automatically
@@ -289,9 +289,9 @@ export default function QuotesPage() {
   // Check for existing job via API instead of store
   try {
     // Always create a new job for now
-    const jData = await edgeFetchJson(`jobs`, getToken, {
+    const jData = await edgeRequest(fn('jobs'), {
       method: 'POST',
-      body: { quoteId: quote.id },
+      body: JSON.stringify({ quoteId: quote.id }),
     });
     const j = (jData as any).job || (jData as any).row || jData;
     // Job created - queries will refetch automatically

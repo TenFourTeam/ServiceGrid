@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { queryKeys } from "@/queries/keys";
+import { edgeRequest } from '@/utils/edgeApi';
+import { fn } from '@/utils/functionUrl';
 
 export interface ConnectStatus {
   stripeAccountId: string | null;
@@ -14,8 +16,6 @@ export interface ConnectStatus {
   applicationFeeBps: number;
 }
 
-const SUPABASE_URL = "https://ijudkzqfriazabiosnvb.supabase.co";
-
 export function useStripeConnectStatus(opts?: { enabled?: boolean }) {
   const { isSignedIn, getToken } = useClerkAuth();
   const { businessId } = useBusinessContext();
@@ -25,20 +25,7 @@ export function useStripeConnectStatus(opts?: { enabled?: boolean }) {
     queryKey: queryKeys.billing.stripeStatus(businessId || ''),
     enabled: enabled && !!businessId,
     queryFn: async () => {
-      const token = await getToken();
-      if (!token) return null;
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/connect-account-status`, {
-        method: "GET",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
-      });
-      if (!res.ok) {
-        const t = await res.text();
-        throw new Error(`connect-account-status failed: ${res.status} ${t}`);
-      }
-      const data = (await res.json()) as ConnectStatus;
-      return data;
+      return edgeRequest(fn('connect-account-status')) as Promise<ConnectStatus>;
     },
     staleTime: 30_000,
   });

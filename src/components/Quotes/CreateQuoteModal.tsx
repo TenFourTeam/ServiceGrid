@@ -16,7 +16,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { CustomerCombobox } from "@/components/Quotes/CustomerCombobox";
 import { LineItemsEditor } from "@/components/Quotes/LineItemsEditor";
 import { useNavigate } from "react-router-dom";
-import { edgeFetchJson } from "@/utils/edgeApi";
+import { edgeRequest } from "@/utils/edgeApi";
+import { fn } from "@/utils/functionUrl";
 import { InlineCustomerForm } from "@/components/Onboarding/InlineCustomerForm";
 import { showNextActionToast } from "@/components/Onboarding/NextActionToast";
 
@@ -190,9 +191,9 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
         depositPercent: draft.depositPercent,
       };
 
-      const data = await edgeFetchJson(`quotes`, getToken, {
+      const data = await edgeRequest(fn('quotes'), {
         method: "POST",
-        body: payload,
+        body: JSON.stringify(payload),
       });
 
       const q = (data as any)?.quote || (data as any);
@@ -272,9 +273,9 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
         depositRequired: draft.depositRequired,
         depositPercent: draft.depositPercent,
       };
-      await edgeFetchJson(`quotes/${id}`, getToken, {
+      await edgeRequest(fn(`quotes/${id}`), {
         method: "PATCH",
-        body: payload,
+        body: JSON.stringify(payload),
       });
       setSaveStatus("saved");
       setLastSavedAt(Date.now());

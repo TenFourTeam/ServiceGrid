@@ -19,7 +19,8 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerC
 import { Textarea } from '@/components/ui/textarea';
 // Jobs data now comes from store via dashboard data
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
-import { edgeFetchJson } from '@/utils/edgeApi';
+import { edgeRequest } from '@/utils/edgeApi';
+import { fn } from '@/utils/functionUrl';
 import { toast } from 'sonner';
 import PickQuoteModal from '@/components/Jobs/PickQuoteModal';
 import { supabase } from '@/integrations/supabase/client';
@@ -177,18 +178,14 @@ const minuteOfDayFromAnchorOffset = (offset: number) => {
         toast.error("No time slot selected");
         return;
       }
-      const data = await edgeFetchJson(
-        `jobs`,
-        getToken,
-        {
-          method: 'POST',
-          body: {
-            quoteId,
-            startsAt: pendingSlot.start.toISOString(),
-            endsAt: pendingSlot.end.toISOString(),
-          },
-        }
-      );
+      const data = await edgeRequest(fn('jobs'), {
+        method: 'POST',
+        body: JSON.stringify({
+          quoteId,
+          startsAt: pendingSlot.start.toISOString(),
+          endsAt: pendingSlot.end.toISOString(),
+        }),
+      });
       const row: any = (data as any)?.row ?? (data as any)?.job ?? data;
       const created = {
         id: row.id,
@@ -218,14 +215,10 @@ const minuteOfDayFromAnchorOffset = (offset: number) => {
 
   async function createInvoiceFromJob(jobId: string) {
     try {
-      const data = await edgeFetchJson(
-        `invoices`,
-        getToken,
-        {
-          method: 'POST',
-          body: { jobId },
-        }
-      );
+      const data = await edgeRequest(fn('invoices'), {
+        method: 'POST',
+        body: JSON.stringify({ jobId }),
+      });
       const num = (data as any)?.invoice?.number || '';
       toast.success(num ? `Invoice ${num} created` : 'Invoice created');
     } catch (e: any) {
@@ -307,14 +300,10 @@ function onDragStart(e: React.PointerEvent, job: Job) {
         return;
       }
       try {
-        await edgeFetchJson(
-          `jobs?id=${job.id}`,
-          getToken,
-          {
-            method: 'PATCH',
-            body: { startsAt: latest.startsAt, endsAt: latest.endsAt },
-          }
-        );
+        await edgeRequest(fn(`jobs?id=${job.id}`), {
+          method: 'PATCH',
+          body: JSON.stringify({ startsAt: latest.startsAt, endsAt: latest.endsAt }),
+        });
         toast.success('Rescheduled');
       } catch (err: any) {
         console.error(err);
@@ -364,14 +353,10 @@ function onDragStart(e: React.PointerEvent, job: Job) {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       try {
-        await edgeFetchJson(
-          `jobs?id=${job.id}`,
-          getToken,
-          {
-            method: 'PATCH',
-            body: { endsAt: latestEnd },
-          }
-        );
+        await edgeRequest(fn(`jobs?id=${job.id}`), {
+          method: 'PATCH',
+          body: JSON.stringify({ endsAt: latestEnd }),
+        });
         toast.success('Updated');
       } catch (err: any) {
         console.error(err);

@@ -197,9 +197,9 @@ export default function WorkOrdersPage() {
                     onRescheduled={() => { /* Job data will refresh automatically */ }}
                     onComplete={async ()=> {
                     try {
-                      const data = await edgeFetchJson(`jobs?id=${j.id}`, getToken, {
+                      const data = await edgeRequest(fn(`jobs?id=${j.id}`), {
                         method: 'PATCH',
-                        body: { status: 'Completed' },
+                        body: JSON.stringify({ status: 'Completed' }),
                       });
                       // Job status updated via API, queries will refetch
                       toast({ title: 'Marked complete' });
@@ -210,9 +210,9 @@ export default function WorkOrdersPage() {
                     }}
                     onInvoice={async ()=> {
                       try {
-                      const data = await edgeFetchJson(`invoices`, getToken, {
+                      const data = await edgeRequest(fn('invoices'), {
                         method: 'POST',
-                        body: { jobId: j.id },
+                        body: JSON.stringify({ jobId: j.id }),
                       });
                       toast({ title: 'Invoice created' });
                       // Job data will refresh automatically

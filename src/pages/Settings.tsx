@@ -8,7 +8,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import BusinessLogo from '@/components/BusinessLogo';
 import { useState, useEffect, useRef } from 'react';
 import { useAuth as useClerkAuth, useUser } from '@clerk/clerk-react';
-import { edgeFetch } from '@/utils/edgeApi';
+import { edgeRequest } from '@/utils/edgeApi';
+import { fn } from '@/utils/functionUrl';
 import { toast as sonnerToast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import ConnectBanner from '@/components/Stripe/ConnectBanner';
@@ -68,7 +69,7 @@ export default function SettingsPage() {
       setUploadingDark(true);
       const form = new FormData();
       form.append('file', darkFile);
-      const data = await edgeFetch("upload-business-logo?kind=dark", getToken, {
+      const data = await edgeRequest(fn("upload-business-logo?kind=dark"), {
         method: 'POST',
         body: form
       });
@@ -96,7 +97,7 @@ export default function SettingsPage() {
       setUploadingLight(true);
       const form = new FormData();
       form.append('file', lightFile);
-      const data = await edgeFetch("upload-business-logo?kind=light", getToken, {
+      const data = await edgeRequest(fn("upload-business-logo?kind=light"), {
         method: 'POST',
         body: form
       });
@@ -114,7 +115,7 @@ export default function SettingsPage() {
   async function refreshSubscription() {
     try {
       setSubLoading(true);
-      const data = await edgeFetch('check-subscription', getToken, {
+      const data = await edgeRequest(fn('check-subscription'), {
         method: 'POST'
       });
       setSub(data || null);
@@ -126,10 +127,9 @@ export default function SettingsPage() {
   }
   async function startCheckout(plan: 'monthly' | 'yearly') {
     try {
-      const data = await edgeFetch('create-checkout', getToken, {
+      const data = await edgeRequest(fn('create-checkout'), {
         method: 'POST',
-        body: JSON.stringify({ plan }),
-        headers: { 'Content-Type': 'application/json' }
+        body: JSON.stringify({ plan })
       });
       const url = (data as any)?.url as string | undefined;
       if (!url) throw new Error('No checkout URL');
@@ -140,7 +140,7 @@ export default function SettingsPage() {
   }
   async function openPortal() {
     try {
-      const data = await edgeFetch('customer-portal', getToken, {
+      const data = await edgeRequest(fn('customer-portal'), {
         method: 'POST'
       });
       const url = (data as any)?.url as string | undefined;
@@ -152,7 +152,7 @@ export default function SettingsPage() {
   }
   async function handleStripeConnect() {
     try {
-      const data = await edgeFetch('connect-onboarding-link', getToken, {
+      const data = await edgeRequest(fn('connect-onboarding-link'), {
         method: 'POST'
       });
       const url = (data as any)?.url as string | undefined;
@@ -296,7 +296,7 @@ export default function SettingsPage() {
     if (!isSignedIn) return;
     (async () => {
       try {
-        const data = await edgeFetch('get-business', getToken);
+        const data = await edgeRequest(fn('get-business'));
         const b = (data as any)?.business;
         if (b?.id) {
           // Business data will be handled by React Query
@@ -487,7 +487,7 @@ export default function SettingsPage() {
               onRefresh={() => window.location.reload()} 
               onDisconnect={async () => {
               try {
-                await edgeFetch('connect-disconnect', getToken, { method: 'POST' });
+                await edgeRequest(fn('connect-disconnect'), { method: 'POST' });
                 window.location.reload();
                 sonnerToast.success('Disconnected from Stripe');
               } catch (e: any) {

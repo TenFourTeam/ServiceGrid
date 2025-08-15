@@ -43,9 +43,9 @@ export function CustomerCombobox({ customers, value, onChange, placeholder = "Se
         address: address.trim() || null 
       });
       
-      const data = await edgeFetchJson("customers", getToken, {
+      const data = await edgeRequest(fn("customers"), {
         method: "POST",
-        body: { name: name.trim(), email: email.trim() || null, address: address.trim() || null },
+        body: JSON.stringify({ name: name.trim(), email: email.trim() || null, address: address.trim() || null }),
       });
       
       console.log('[CustomerCombobox] Customer creation response:', data);

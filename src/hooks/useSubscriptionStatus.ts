@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
-import { edgeFetchJson } from "@/utils/edgeApi";
+import { edgeRequest } from "@/utils/edgeApi";
+import { fn } from "@/utils/functionUrl";
 import { queryKeys } from "@/queries/keys";
 
 export interface SubscriptionStatus {
@@ -24,7 +25,7 @@ export function useSubscriptionStatus(opts?: { enabled?: boolean }) {
     enabled: enabled && !!userId,
     queryFn: async () => {
       try {
-        const data = await edgeFetchJson("check-subscription", getToken);
+        const data = await edgeRequest(fn("check-subscription"));
         
         // Calculate trial days from actual user creation date with debugging
         const today = new Date();

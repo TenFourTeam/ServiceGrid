@@ -86,9 +86,9 @@ export default function CustomersPage() {
     try {
       const isEdit = !!editingId;
 
-      await edgeFetchJson("customers", getToken, {
+      await edgeRequest(fn("customers"), {
         method: isEdit ? 'PATCH' : 'POST',
-        body: {
+        body: JSON.stringify({
           ...(isEdit ? { id: editingId } : {}),
           name: draft.name.trim(),
           email: draft.email.trim(),

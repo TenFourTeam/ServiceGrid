@@ -7,7 +7,8 @@ import { Plus } from 'lucide-react';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { edgeFetchJson } from '@/utils/edgeApi';
+import { edgeRequest } from '@/utils/edgeApi';
+import { fn } from '@/utils/functionUrl';
 
 interface InlineCustomerFormProps {
   onCustomerCreated: (customerId: string, customerName: string) => void;
@@ -47,14 +48,14 @@ export function InlineCustomerForm({ onCustomerCreated, trigger }: InlineCustome
 
     setSaving(true);
     try {
-      const result = await edgeFetchJson('customers', getToken, {
+      const result = await edgeRequest(fn('customers'), {
         method: 'POST',
-        body: {
+        body: JSON.stringify({
           name: draft.name.trim(),
           email: draft.email.trim() || null,
           phone: draft.phone.trim() || null,
           address: draft.address.trim() || null,
-        },
+        }),
       });
 
       const customer = result?.customer || result;

@@ -5,7 +5,8 @@ import { Drawer, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle } from "
 import { Textarea } from "@/components/ui/textarea";
 import { formatDateTime, formatMoney } from "@/utils/format";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
-import { edgeFetchJson } from "@/utils/edgeApi";
+import { edgeRequest } from "@/utils/edgeApi";
+import { fn } from "@/utils/functionUrl";
 import { toast } from "sonner";
 import ReschedulePopover from "@/components/WorkOrders/ReschedulePopover";
 import type { Job } from "@/types";
@@ -57,9 +58,9 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
   async function handleCreateInvoice() {
     if (!(job as any).quoteId) { setPickerOpen(true); toast.info('Link a quote to this job before creating an invoice.'); return; }
     try {
-      const data = await edgeFetchJson(`invoices`, getToken, {
+      const data = await edgeRequest(fn('invoices'), {
         method: 'POST',
-        body: { jobId: job.id },
+        body: JSON.stringify({ jobId: job.id }),
       });
       toast.success('Invoice created');
     } catch (e: any) {
@@ -77,9 +78,9 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
     setOptimisticStatus(nextStatus);
 
     try {
-      const data = await edgeFetchJson(`jobs?id=${job.id}`, getToken, {
+      const data = await edgeRequest(fn(`jobs?id=${job.id}`), {
         method: 'PATCH',
-        body: { status: nextStatus },
+        body: JSON.stringify({ status: nextStatus }),
       });
       queryClient.invalidateQueries({ queryKey: ['supabase', 'jobs'] });
       toast.success(`Status updated to ${nextStatus}`);
@@ -135,9 +136,9 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                 if (notesTimer.current) window.clearTimeout(notesTimer.current);
                 notesTimer.current = window.setTimeout(async ()=>{
                     try {
-                      await edgeFetchJson(`jobs?id=${job.id}`, getToken, {
+                      await edgeRequest(fn(`jobs?id=${job.id}`), {
                         method: 'PATCH',
-                        body: { notes: val },
+                        body: JSON.stringify({ notes: val }),
                       });
                       queryClient.invalidateQueries({ queryKey: ['supabase', 'jobs'] });
                     } catch {}
@@ -181,7 +182,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
             <div>
               <Button variant="destructive" onClick={async () => {
                 try {
-                  await edgeFetchJson(`jobs?id=${job.id}`, getToken, { method: 'DELETE' });
+                  await edgeRequest(fn(`jobs?id=${job.id}`), { method: 'DELETE' });
                   queryClient.invalidateQueries({ queryKey: ['supabase', 'jobs'] });
                   toast.success('Job deleted');
                   onOpenChange(false);
@@ -233,9 +234,9 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
           customerId={job.customerId}
           onSelect={async (quoteId) => {
             try {
-              const data = await edgeFetchJson(`jobs?id=${job.id}`, getToken, {
+              const data = await edgeRequest(fn(`jobs?id=${job.id}`), {
                 method: 'PATCH',
-                body: { quoteId },
+                body: JSON.stringify({ quoteId }),
               });
               queryClient.invalidateQueries({ queryKey: ['supabase', 'jobs'] });
               toast.success('Quote linked to job');

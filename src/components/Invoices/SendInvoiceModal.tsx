@@ -7,7 +7,8 @@ import { useCustomers } from '@/queries/unified';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { edgeFetchJson } from '@/utils/edgeApi';
+import { edgeRequest } from '@/utils/edgeApi';
+import { fn } from '@/utils/functionUrl';
 import { buildInvoiceEmail } from '@/utils/emailTemplates';
 import { escapeHtml } from '@/utils/sanitize';
 import { toast } from 'sonner';
@@ -78,9 +79,9 @@ const previewHtml = useMemo(() => {
         return `${introBlock}${hr}${html}`;
       })();
       console.info('[SendInvoiceModal] sending invoice email', { invoiceId: invoice.id, to });
-      await edgeFetchJson("resend-send-email", getToken, {
+      await edgeRequest(fn("resend-send-email"), {
         method: "POST",
-        body: { to, subject: subject || defaultSubject, html: finalHtml, invoice_id: invoice.id },
+        body: JSON.stringify({ to, subject: subject || defaultSubject, html: finalHtml, invoice_id: invoice.id }),
       });
       console.info('[SendInvoiceModal] sent', { invoiceId: invoice.id });
       // Optimistically mark as Sent

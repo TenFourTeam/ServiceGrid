@@ -37,35 +37,25 @@ export type EdgeRequestOptions = {
   headers?: Record<string, string>;
 };
 
-// Authenticated JSON fetch using Clerk token
+// Legacy functions - deprecated, use edgeRequest instead
 export async function edgeFetchJson(
   path: string,
   getToken: () => Promise<string | null>,
   opts: EdgeRequestOptions = {}
 ) {
-  const token = await getApiTokenStrict();
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/${path}`, {
+  console.warn('[DEPRECATED] edgeFetchJson is deprecated. Use edgeRequest instead.');
+  return edgeRequest(`${SUPABASE_URL}/functions/v1/${path}`, {
     method: opts.method || "GET",
     headers: {
-      Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
       ...(opts.headers || {}),
     },
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
   });
-    if (!res.ok) {
-      const txt = await res.text().catch(() => "");
-      throw new ApiError(res.status, `Edge ${path} failed: ${txt}`, 'edge_request_failed');
-    }
-  const ct = res.headers.get("content-type") || "";
-  if (ct.includes("application/json")) {
-    return res.json();
-  }
-  return null;
 }
 
-// Public JSON fetch (no auth header)
 export async function edgePublicJson(path: string, opts: EdgeRequestOptions = {}) {
+  console.warn('[DEPRECATED] edgePublicJson is deprecated. Use fetch directly or edgeRequest.');
   const res = await fetch(`${SUPABASE_URL}/functions/v1/${path}`, {
     method: opts.method || "GET",
     headers: {
@@ -85,30 +75,17 @@ export async function edgePublicJson(path: string, opts: EdgeRequestOptions = {}
   return null;
 }
 
-// Generic authenticated fetch (no forced JSON headers) - supports FormData uploads
 export async function edgeFetch(
   path: string,
   getToken: () => Promise<string | null>,
   opts: EdgeRequestOptions = {}
 ) {
-  const token = await getApiTokenStrict();
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/${path}`, {
+  console.warn('[DEPRECATED] edgeFetch is deprecated. Use edgeRequest instead.');
+  return edgeRequest(`${SUPABASE_URL}/functions/v1/${path}`, {
     method: opts.method || "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      ...(opts.headers || {}),
-    },
+    headers: opts.headers || {},
     body: opts.body,
   });
-  if (!res.ok) {
-    const txt = await res.text().catch(() => "");
-    throw new ApiError(res.status, `Edge ${path} failed: ${txt}`, 'edge_fetch_failed');
-  }
-  const ct = res.headers.get("content-type") || "";
-  if (ct.includes("application/json")) {
-    return res.json();
-  }
-  return null;
 }
 
 // Simplified edge request with bulletproof error handling and retry logic
