@@ -1,6 +1,9 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCustomersData } from '@/queries/unified';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/queries/keys';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -37,6 +40,8 @@ export function NewJobSheet({
   const { data: customers = [] } = useCustomersData();
   const { toast } = useToast();
   const { getToken } = useClerkAuth();
+  const queryClient = useQueryClient();
+  const { businessId } = useBusinessContext();
   // Use customers from React Query hook
   const customersList = customers;
   const comboboxCustomers = useMemo(() => customersList.map((c: any) => ({
@@ -131,13 +136,40 @@ export function NewJobSheet({
       toast({ title: 'Select a customer', description: 'Please choose or add a customer before creating a job.' });
       return;
     }
+    
+    const tempId = crypto.randomUUID();
+    
     try {
       setCreating(true);
       const start = parseStart(date, startTime);
       const end = new Date(start.getTime() + durationMin * 60 * 1000);
       const totalCents = amount ? Math.max(0, Math.round(parseFloat(amount) * 100)) : undefined;
 
-      // 1) Create job immediately (without photos)
+      // Create optimistic job for immediate UI feedback
+      const optimisticJob = {
+        id: tempId,
+        customerId,
+        startsAt: start.toISOString(),
+        endsAt: end.toISOString(),
+        address: address || selectedCustomer?.address || null,
+        title: title || null,
+        notes: notes || null,
+        status: 'Scheduled' as const,
+        total: totalCents || null,
+        photos: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      // Add optimistic job to cache immediately
+      if (businessId) {
+        queryClient.setQueryData(queryKeys.data.jobs(businessId), (old: any) => {
+          if (!old) return { jobs: [optimisticJob], count: 1 };
+          return { ...old, jobs: [...old.jobs, optimisticJob], count: old.count + 1 };
+        });
+      }
+
+      // 1) Create job via API
       const data = await edgeRequest(fn('jobs'), {
         method: 'POST',
         body: JSON.stringify({
@@ -152,6 +184,17 @@ export function NewJobSheet({
         }),
       });
       const created = (data as any)?.row || (data as any)?.job || data;
+      
+      // Replace optimistic job with real job
+      if (businessId && created) {
+        queryClient.setQueryData(queryKeys.data.jobs(businessId), (old: any) => {
+          if (!old) return { jobs: [created], count: 1 };
+          return { 
+            ...old, 
+            jobs: old.jobs.map((j: any) => j.id === tempId ? created : j)
+          };
+        });
+      }
       
       console.log('[NewJobSheet] Job creation completed:', created);
       
@@ -174,6 +217,17 @@ export function NewJobSheet({
         uploadPhotosAsync(created.id, files);
       }
     } catch (e: any) {
+      // Remove optimistic job from cache on failure
+      if (businessId) {
+        queryClient.setQueryData(queryKeys.data.jobs(businessId), (old: any) => {
+          if (!old) return old;
+          return { 
+            ...old, 
+            jobs: old.jobs.filter((j: any) => j.id !== tempId),
+            count: Math.max(0, old.count - 1)
+          };
+        });
+      }
       toast({ title: 'Failed to create job', description: e?.message || String(e) });
     } finally {
       setCreating(false);

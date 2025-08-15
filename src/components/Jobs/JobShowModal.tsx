@@ -32,6 +32,8 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const [photosToUpload, setPhotosToUpload] = useState<File[]>([]);
   
   useEffect(() => {
     setLocalNotes(job.notes ?? "");
@@ -63,6 +65,62 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
       toast.success('Invoice created');
     } catch (e: any) {
       toast.error(e?.message || 'Failed to create invoice');
+    }
+  }
+
+  async function handlePhotoUpload() {
+    if (photosToUpload.length === 0) return;
+    
+    setUploadingPhotos(true);
+    try {
+      const existingPhotos = Array.isArray((job as any).photos) ? (job as any).photos : [];
+      const newPhotoUrls: string[] = [];
+      
+      // Upload each photo
+      for (const file of photosToUpload) {
+        try {
+          const fd = new FormData();
+          fd.append('file', file);
+          const resp = await edgeRequest(fn('upload-job-photo'), {
+            method: 'POST',
+            body: fd,
+          });
+          const out = resp as any;
+          if (out?.url) {
+            newPhotoUrls.push(out.url as string);
+          }
+        } catch (error) {
+          console.warn('[JobShowModal] Photo upload failed:', error);
+          // Continue with other photos even if one fails
+        }
+      }
+
+      if (newPhotoUrls.length > 0) {
+        const allPhotos = [...existingPhotos, ...newPhotoUrls];
+        
+        // Update job with new photos
+        await edgeRequest(fn('jobs') + `?id=${job.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            photos: allPhotos,
+          }),
+        });
+        
+        // Invalidate cache to refresh UI
+        if (businessId) {
+          invalidationHelpers.jobs(queryClient, businessId);
+        }
+        
+        toast.success(`${newPhotoUrls.length} photo${newPhotoUrls.length === 1 ? '' : 's'} uploaded successfully`);
+      }
+      
+      // Clear selected files
+      setPhotosToUpload([]);
+    } catch (error) {
+      console.error('[JobShowModal] Photo upload failed:', error);
+      toast.error('Failed to upload photos');
+    } finally {
+      setUploadingPhotos(false);
     }
   }
 
@@ -141,6 +199,44 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
             ) : (
               <div className="text-sm text-muted-foreground">No photos yet.</div>
             )}
+            
+            {/* Photo Upload Section */}
+            <div className="mt-3 space-y-2">
+              <div className="flex items-center gap-2">
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    setPhotosToUpload(files);
+                  }}
+                  className="text-sm text-muted-foreground file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-sm file:bg-secondary file:text-secondary-foreground hover:file:bg-secondary/80"
+                />
+              </div>
+              {photosToUpload.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">
+                    {photosToUpload.length} photo{photosToUpload.length === 1 ? '' : 's'} selected
+                  </span>
+                  <Button 
+                    size="sm" 
+                    onClick={handlePhotoUpload}
+                    disabled={uploadingPhotos}
+                  >
+                    {uploadingPhotos ? 'Uploading...' : 'Upload Photos'}
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => setPhotosToUpload([])}
+                    disabled={uploadingPhotos}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
         <DrawerFooter>
