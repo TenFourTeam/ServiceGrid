@@ -7,7 +7,8 @@ import { useMemo, useState, useEffect } from "react";
 import { useCustomersData } from "@/queries/unified";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import type { Quote } from "@/types";
-import { generateQuoteEmail, generateQuoteSubject, combineMessageWithQuote } from "@/utils/quoteEmailTemplates";
+import { generateQuoteEmail, generateQuoteSubject } from "@/utils/quoteEmailTemplates";
+import { combineMessageWithEmail } from "@/utils/emailTemplateEngine";
 import { useQueryClient } from "@tanstack/react-query";
 import { edgeToast } from "@/utils/edgeRequestWithToast";
 import { edgeRequest } from "@/utils/edgeApi";
@@ -47,7 +48,7 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
   }, [quote, businessName, businessLogoUrl, businessLightLogoUrl, customerName]);
   
   const previewHtml = useMemo(() => 
-    combineMessageWithQuote(message, html), 
+    combineMessageWithEmail(message, html), 
     [message, html]
   );
 
@@ -77,7 +78,7 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
     }
     setSending(true);
     try {
-      const finalHtml = combineMessageWithQuote(message, html);
+      const finalHtml = combineMessageWithEmail(message, html);
       console.info('[SendQuoteModal] sending quote email', { quoteId: quote.id, to });
       await edgeToast.send(fn("resend-send-email"), { 
         to, 

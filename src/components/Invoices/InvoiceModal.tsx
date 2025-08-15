@@ -19,7 +19,7 @@ import { fn } from '@/utils/functionUrl';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { invalidationHelpers } from '@/queries/keys';
-import { invoiceDefaultHTML } from '@/utils/invoiceEmailTemplates';
+import { generateInvoiceEmail } from '@/utils/emailTemplateEngine';
 import { escapeHtml } from '@/utils/sanitize';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { Invoice } from '@/types';
@@ -75,7 +75,12 @@ export default function InvoiceModal({
   // Email templates
   const defaultEmailHTML = useMemo(() => {
     if (!invoice) return '';
-    return invoiceDefaultHTML(invoice, businessName, businessLogoUrl);
+    const { html } = generateInvoiceEmail({
+      businessName,
+      businessLogoUrl,
+      invoice
+    });
+    return html;
   }, [invoice, businessName, businessLogoUrl]);
 
   const defaultSubject = useMemo(() => {

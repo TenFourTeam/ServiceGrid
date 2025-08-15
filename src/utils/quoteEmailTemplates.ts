@@ -60,16 +60,3 @@ export function generateQuoteEmail({
 export function generateQuoteSubject(businessName: string, quoteNumber: string): string {
   return `${businessName} • Quote ${quoteNumber}`;
 }
-
-// Legacy function - use generateQuoteEmail from emailTemplateEngine instead
-export function buildQuoteEmailTemplate(props: any) {
-  return buildQuoteEmailFromEngine(props);
-}
-
-/**
- * Combine user message with quote email HTML
- * @deprecated Use combineMessageWithEmail from emailTemplateEngine instead
- */
-export function combineMessageWithQuote(message: string, quoteHtml: string): string {
-  return combineMessageWithEmail(message, quoteHtml);
-}
