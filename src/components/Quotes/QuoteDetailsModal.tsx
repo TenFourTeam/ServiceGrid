@@ -42,6 +42,8 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
   const [loading, setLoading] = useState(false);
   const [currentMode, setCurrentMode] = useState<'create' | 'view' | 'edit'>(mode);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isConvertingToJob, setIsConvertingToJob] = useState(false);
+  const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
 
   const customerName = useMemo(() => {
     if (!quote) return '';
@@ -203,6 +205,9 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
       return;
     }
 
+    setIsConvertingToJob(true);
+    toast.info('Converting quote to job...');
+
     try {
       const result = await edgeRequest(fn('jobs'), {
         method: 'POST',
@@ -223,6 +228,8 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
     } catch (error) {
       console.error('Failed to convert quote to job:', error);
       toast.error('Failed to convert quote to job');
+    } finally {
+      setIsConvertingToJob(false);
     }
   };
 
@@ -233,6 +240,9 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
       toast.error('Cannot create invoice from draft quotes. Send the quote first.');
       return;
     }
+
+    setIsCreatingInvoice(true);
+    toast.info('Creating invoice from quote...');
 
     try {
       const result = await edgeRequest(fn('invoices'), {
@@ -253,6 +263,8 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
     } catch (error) {
       console.error('Failed to create invoice from quote:', error);
       toast.error('Failed to create invoice from quote');
+    } finally {
+      setIsCreatingInvoice(false);
     }
   };
 
@@ -353,14 +365,16 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
                 <Button 
                   variant="outline" 
                   onClick={handleConvertToJob}
+                  disabled={isConvertingToJob}
                 >
-                  Convert to Job
+                  {isConvertingToJob ? 'Converting...' : 'Convert to Job'}
                 </Button>
                 <Button 
                   variant="outline" 
                   onClick={handleCreateInvoice}
+                  disabled={isCreatingInvoice}
                 >
-                  Create Invoice
+                  {isCreatingInvoice ? 'Creating...' : 'Create Invoice'}
                 </Button>
               </>
             )}
