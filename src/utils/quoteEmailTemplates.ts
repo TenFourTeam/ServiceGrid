@@ -1,5 +1,6 @@
 import type { Quote } from "@/types";
 import { buildQuoteEmail } from "./emailTemplates";
+import { buildEdgeFunctionUrl } from "./env";
 
 interface QuoteEmailConfig {
   businessName: string;
@@ -24,11 +25,12 @@ export function generateQuoteEmail({
   const editUrl = `${baseUrl}/quote-action?type=edit&quote_id=${encodeURIComponent(quote.id)}&token=${encodeURIComponent(quote.publicToken)}`;
   const viewUrl = `${baseUrl}/quote/${encodeURIComponent(quote.publicToken)}`;
   
-  // Generate tracking pixel URL - use environment-agnostic approach
-  const supabaseUrl = typeof window !== 'undefined' 
-    ? (window as any).VITE_SUPABASE_URL || "https://ijudkzqfriazabiosnvb.supabase.co"
-    : "https://ijudkzqfriazabiosnvb.supabase.co";
-  const pixelUrl = `${supabaseUrl}/functions/v1/quote-events?type=open&quote_id=${encodeURIComponent(quote.id)}&token=${encodeURIComponent(quote.publicToken)}`;
+  // Generate tracking pixel URL
+  const pixelUrl = buildEdgeFunctionUrl('quote-events', {
+    type: 'open',
+    quote_id: quote.id,
+    token: quote.publicToken
+  });
   
   // Build email content
   const emailContent = buildQuoteEmailTemplate({

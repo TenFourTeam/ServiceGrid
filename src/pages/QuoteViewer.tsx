@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { CalendarIcon, PhoneIcon, MailIcon } from 'lucide-react';
 import type { Quote } from '@/types';
 import { formatMoney } from '@/utils/format';
+import { buildEdgeFunctionUrl } from '@/utils/env';
 
 export default function QuoteViewer() {
   const { token } = useParams<{ token: string }>();
@@ -37,8 +38,10 @@ export default function QuoteViewer() {
       }
 
       try {
-        const baseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ijudkzqfriazabiosnvb.supabase.co';
-        const url = `${baseUrl}/functions/v1/quote-events?type=view&token=${encodeURIComponent(token)}`;
+        const url = buildEdgeFunctionUrl('quote-events', {
+          type: 'view',
+          token
+        });
         const response = await fetch(url);
         
         if (!response.ok) {
