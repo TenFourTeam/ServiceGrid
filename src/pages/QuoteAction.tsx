@@ -40,7 +40,8 @@ export default function QuoteActionPage() {
     async function run() {
       if (!type || !quoteId || !token) { setStatus('error'); return; }
       try {
-        const url = `https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/quote-events?type=${encodeURIComponent(type)}&quote_id=${encodeURIComponent(quoteId)}&token=${encodeURIComponent(token)}`;
+        const baseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ijudkzqfriazabiosnvb.supabase.co';
+        const url = `${baseUrl}/functions/v1/quote-events?type=${encodeURIComponent(type)}&quote_id=${encodeURIComponent(quoteId)}&token=${encodeURIComponent(token)}`;
         const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         setStatus('ok');

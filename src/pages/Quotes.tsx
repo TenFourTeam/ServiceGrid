@@ -27,15 +27,6 @@ import type { Customer, QuoteListItem, QuoteStatus, LineItem, Quote } from '@/ty
 import { edgeRequest } from '@/utils/edgeApi';
 import { fn } from '@/utils/functionUrl';
 
-interface QuoteDraft {
-  customerId: string;
-  address: string;
-  lineItems: LineItem[];
-  taxRate: number;
-  discount: number;
-  notesInternal: string;
-  terms: string;
-}
 
 const statusColors: Record<QuoteStatus, string> = {
   'Draft': 'bg-gray-100 text-gray-800',
@@ -59,6 +50,19 @@ export default function QuotesPage() {
 
   const [open, setOpen] = useState(false);
   const [sendQuoteItem, setSendQuoteItem] = useState<Quote | null>(null);
+
+  const handleSendQuote = async (quoteListItem: QuoteListItem) => {
+    // Convert QuoteListItem to full Quote by fetching from API
+    try {
+      const fullQuote = await edgeRequest(fn(`quotes?id=${quoteListItem.id}`), {
+        method: 'GET',
+      });
+      setSendQuoteItem(fullQuote);
+    } catch (error) {
+      console.error('Failed to fetch full quote:', error);
+      toast.error('Failed to load quote details');
+    }
+  };
 
   const [sortKey, setSortKey] = useState<'number' | 'customer' | 'total' | 'status'>('number');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
@@ -190,7 +194,7 @@ export default function QuotesPage() {
                       <TableCell>
                         <QuoteActions 
                           quote={quote} 
-                          onSendQuote={setSendQuoteItem}
+                          onSendQuote={handleSendQuote}
                         />
                       </TableCell>
                     </TableRow>

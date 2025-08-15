@@ -37,7 +37,8 @@ export default function QuoteViewer() {
       }
 
       try {
-        const url = `https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/quote-events?type=view&token=${encodeURIComponent(token)}`;
+        const baseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ijudkzqfriazabiosnvb.supabase.co';
+        const url = `${baseUrl}/functions/v1/quote-events?type=view&token=${encodeURIComponent(token)}`;
         const response = await fetch(url);
         
         if (!response.ok) {
