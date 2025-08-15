@@ -8,8 +8,7 @@ import { Input } from '@/components/ui/input';
 import { formatDate, formatMoney } from '@/utils/format';
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
-import InvoiceEditor from '@/pages/Invoices/InvoiceEditor';
-import SendInvoiceModal from '@/components/Invoices/SendInvoiceModal';
+import InvoiceModal from '@/components/Invoices/InvoiceModal';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Send } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -24,8 +23,8 @@ export default function InvoicesPage() {
   
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<'All' | 'Draft' | 'Sent' | 'Paid' | 'Overdue'>('All');
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [sendId, setSendId] = useState<string | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<string | null>(null);
+  const [modalMode, setModalMode] = useState<'view' | 'edit' | 'send' | 'create'>('view');
   const [sortKey, setSortKey] = useState<'number' | 'customer' | 'amount' | 'due' | 'status'>('number');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const qc = useQueryClient();
@@ -201,14 +200,16 @@ export default function InvoicesPage() {
                             <TooltipTrigger asChild>
                               <span className="inline-flex">
                                 <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setSendId(i.id)}
-                                  disabled={i.status!=='Draft'}
-                                  aria-label="Send invoice"
-                                >
-                                  <Send className="h-4 w-4" />
-                                </Button>
+                                   variant="ghost"
+                                   size="sm"
+                                   onClick={() => {
+                                     setSelectedInvoice(i.id);
+                                     setModalMode(i.status === 'Draft' ? 'send' : 'view');
+                                   }}
+                                   aria-label={i.status === 'Draft' ? "Send invoice" : "View invoice"}
+                                 >
+                                   <Send className="h-4 w-4" />
+                                 </Button>
                               </span>
                             </TooltipTrigger>
                             <TooltipContent>Send Invoice</TooltipContent>
@@ -222,25 +223,11 @@ export default function InvoicesPage() {
           </Table>
         </CardContent>
       </Card>
-      <InvoiceEditor
-        open={!!activeId}
-        onOpenChange={(o)=>{ if(!o) setActiveId(null); }}
-        invoice={formattedInvoices.find(inv=>inv.id===activeId) || null}
-      />
-      <SendInvoiceModal
-        open={!!sendId}
-        onOpenChange={(o)=>{ if(!o) setSendId(null); }}
-        invoice={formattedInvoices.find(inv=>inv.id===sendId) || null}
-        toEmail={( () => {
-          const inv = formattedInvoices.find(i=>i.id===sendId);
-          const cust = inv ? customers.find(c=>c.id===inv.customerId) : undefined;
-          return cust?.email || '';
-        })()}
-        customerName={( () => {
-          const inv = formattedInvoices.find(i=>i.id===sendId);
-          const cust = inv ? customers.find(c=>c.id===inv.customerId) : undefined;
-          return cust?.name || undefined;
-        })()}
+      <InvoiceModal
+        open={!!selectedInvoice}
+        onOpenChange={(open) => { if (!open) setSelectedInvoice(null); }}
+        invoice={formattedInvoices.find(inv => inv.id === selectedInvoice) || null}
+        mode={modalMode}
       />
     </AppLayout>
   );
