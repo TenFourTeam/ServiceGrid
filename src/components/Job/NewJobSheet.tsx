@@ -18,7 +18,21 @@ import { fn } from '@/utils/functionUrl';
 import { CustomerCombobox } from '@/components/Quotes/CustomerCombobox';
 import type { Customer } from '@/types';
 
-export function NewJobSheet() {
+interface NewJobSheetProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  initialDate?: Date;
+  initialStartTime?: string;
+  initialEndTime?: string;
+}
+
+export function NewJobSheet({
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  initialDate,
+  initialStartTime,
+  initialEndTime,
+}: NewJobSheetProps = {}) {
   const navigate = useNavigate();
   const { data: customers = [] } = useCustomersData();
   const { toast } = useToast();
@@ -33,13 +47,24 @@ export function NewJobSheet() {
     phone: c.phone ?? undefined,
     address: c.address ?? undefined,
   } as Customer)), [customersList]);
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = controlledOnOpenChange ?? setInternalOpen;
   const [addingCustomer, setAddingCustomer] = useState(false);
 
   const [customerId, setCustomerId] = useState<string | undefined>(undefined);
-  const [date, setDate] = useState<Date | undefined>(new Date());
-  const [startTime, setStartTime] = useState('09:00');
-  const [durationMin, setDurationMin] = useState(60);
+  const [date, setDate] = useState<Date | undefined>(initialDate || new Date());
+  const [startTime, setStartTime] = useState(initialStartTime || '09:00');
+  const [durationMin, setDurationMin] = useState(() => {
+    if (initialStartTime && initialEndTime) {
+      const [startH, startM] = initialStartTime.split(':').map(Number);
+      const [endH, endM] = initialEndTime.split(':').map(Number);
+      const startMins = startH * 60 + startM;
+      const endMins = endH * 60 + endM;
+      return Math.max(15, endMins - startMins);
+    }
+    return 60;
+  });
   const [address, setAddress] = useState('');
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
@@ -125,7 +150,10 @@ export function NewJobSheet() {
         description: `Job scheduled for ${selectedCustomer?.name || 'customer'} on ${date}.`,
       });
       
-      navigate('/work-orders');
+      // Only navigate if not used as controlled modal
+      if (!controlledOnOpenChange) {
+        navigate('/work-orders');
+      }
       
       // Reset form and close
       resetState();
@@ -139,9 +167,17 @@ export function NewJobSheet() {
 
   function resetState() {
     setCustomerId(undefined);
-    setDate(new Date());
-    setStartTime('09:00');
-    setDurationMin(60);
+    setDate(initialDate || new Date());
+    setStartTime(initialStartTime || '09:00');
+    if (initialStartTime && initialEndTime) {
+      const [startH, startM] = initialStartTime.split(':').map(Number);
+      const [endH, endM] = initialEndTime.split(':').map(Number);
+      const startMins = startH * 60 + startM;
+      const endMins = endH * 60 + endM;
+      setDurationMin(Math.max(15, endMins - startMins));
+    } else {
+      setDurationMin(60);
+    }
     setAddress('');
     setNotes('');
     setTitle('');
@@ -156,9 +192,11 @@ export function NewJobSheet() {
 
   return (
     <Sheet open={open} onOpenChange={(o) => { setOpen(o); if (!o) resetState(); }}>
-      <SheetTrigger asChild>
-        <Button data-testid="new-job-trigger" data-onb="new-job-button">New Job</Button>
-      </SheetTrigger>
+      {!controlledOnOpenChange && (
+        <SheetTrigger asChild>
+          <Button data-testid="new-job-trigger" data-onb="new-job-button">New Job</Button>
+        </SheetTrigger>
+      )}
       <SheetContent side="right" className="sm:max-w-md flex h-full flex-col">
         <SheetHeader>
           <SheetTitle>New Job</SheetTitle>

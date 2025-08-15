@@ -13,7 +13,7 @@ import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { edgeRequest } from '@/utils/edgeApi';
 import { fn } from '@/utils/functionUrl';
 import { toast } from 'sonner';
-import PickQuoteModal from '@/components/Jobs/PickQuoteModal';
+import { NewJobSheet } from '@/components/Job/NewJobSheet';
 import { supabase } from '@/integrations/supabase/client';
 import JobShowModal from '@/components/Jobs/JobShowModal';
 
@@ -35,7 +35,7 @@ export function WeekCalendar({
   const { businessId } = useBusinessContext();
   const queryClient = useQueryClient();
   
-  const [pickerOpen, setPickerOpen] = useState(false);
+  const [newJobOpen, setNewJobOpen] = useState(false);
   const [pendingSlot, setPendingSlot] = useState<{ start: Date; end: Date } | null>(null);
   const notesTimer = useRef<number | null>(null);
   const [highlightJobId, setHighlightJobId] = useState<string | null>(null);
@@ -150,39 +150,6 @@ const minuteOfDayFromAnchorOffset = (offset: number) => {
   const anchor = START_ANCHOR_HOUR * 60;
   return (anchor + offset) % (24 * 60);
 };
-  async function createJobFromQuote(quoteId: string) {
-    try {
-      if (!pendingSlot) {
-        toast.error("No time slot selected");
-        return;
-      }
-      
-      const newJob = await edgeRequest(fn('jobs'), {
-        method: 'POST',
-        body: JSON.stringify({
-          customerId: '', // This will be set by the quote relationship
-          quoteId,
-          startsAt: pendingSlot.start.toISOString(),
-          endsAt: pendingSlot.end.toISOString(),
-        }),
-      });
-
-      // Invalidate jobs data
-      if (businessId) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.data.jobs(businessId) });
-      }
-      
-      setActiveJob(newJob as Job);
-      setHighlightJobId(newJob.id);
-      setTimeout(() => setHighlightJobId(null), 3000);
-      setPickerOpen(false);
-      setPendingSlot(null);
-      toast.success('Job created successfully');
-    } catch (e: any) {
-      console.error(e);
-      toast.error(e?.message || 'Failed to create job');
-    }
-  }
 
   async function createInvoiceFromJob(jobId: string) {
     try {
@@ -211,7 +178,7 @@ const minuteOfDayFromAnchorOffset = (offset: number) => {
 
     const end = new Date(start.getTime() + 60 * 60 * 1000); // default 60m
     setPendingSlot({ start, end });
-    setPickerOpen(true);
+    setNewJobOpen(true);
   }
 
 function onDragStart(e: React.PointerEvent, job: Job) {
@@ -587,12 +554,15 @@ function onDragStart(e: React.PointerEvent, job: Job) {
         />
       )}
 
-      <PickQuoteModal
-        open={pickerOpen}
-        onOpenChange={setPickerOpen}
-        onSelect={async (quoteId) => {
-          await createJobFromQuote(quoteId);
+      <NewJobSheet
+        open={newJobOpen}
+        onOpenChange={(open) => {
+          setNewJobOpen(open);
+          if (!open) setPendingSlot(null);
         }}
+        initialDate={pendingSlot?.start}
+        initialStartTime={pendingSlot?.start ? `${pendingSlot.start.getHours().toString().padStart(2, '0')}:${pendingSlot.start.getMinutes().toString().padStart(2, '0')}` : undefined}
+        initialEndTime={pendingSlot?.end ? `${pendingSlot.end.getHours().toString().padStart(2, '0')}:${pendingSlot.end.getMinutes().toString().padStart(2, '0')}` : undefined}
       />
     </div>;
   }
