@@ -4,16 +4,7 @@ import { edgeRequest } from '@/utils/edgeApi';
 import { fn } from '@/utils/functionUrl';
 import { queryKeys } from './keys';
 import { toBusinessUI } from './transform';
-
-type BusinessUI = {
-  id: string;
-  name: string;
-  phone?: string;
-  replyToEmail?: string;
-  taxRateDefault?: number;
-  role?: 'owner' | 'worker';
-  [key: string]: any;
-};
+import type { BusinessUI } from '@/hooks/useBusinessContext';
 
 /**
  * Unified business query hook with automatic token recovery

@@ -38,10 +38,6 @@ const queryKeys = {
     onboarding: () => ['dashboard', 'onboarding'] as const,
   },
   
-  // Legacy compatibility (will be removed in future iterations)
-  legacy: {
-    dashboardData: () => ['dashboard-data'] as const,
-  }
 } as const;
 
 /**
@@ -65,7 +61,6 @@ const invalidationHelpers = {
     queryClient.invalidateQueries({ queryKey: queryKeys.business.current() });
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary() });
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.onboarding() });
-    queryClient.invalidateQueries({ queryKey: queryKeys.legacy.dashboardData() });
   }
 };
 
