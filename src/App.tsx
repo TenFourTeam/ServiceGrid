@@ -22,6 +22,7 @@ const TeamPage = lazy(() => import("./pages/Team"));
 
 const ClerkAuthPage = lazy(() => import("./pages/ClerkAuth"));
 const QuoteActionPage = lazy(() => import("./pages/QuoteAction"));
+const QuoteViewerPage = lazy(() => import("./pages/QuoteViewer"));
 const PaymentSuccessPage = lazy(() => import("./pages/PaymentSuccess"));
 const PaymentCanceledPage = lazy(() => import("./pages/PaymentCanceled"));
 const InvoicePayPage = lazy(() => import("./pages/InvoicePay"));
@@ -42,6 +43,7 @@ function PrefetchRoutes() {
       import("./pages/NotFound"),
       import("./pages/ClerkAuth"),
       import("./pages/QuoteAction"),
+      import("./pages/QuoteViewer"),
       import("./pages/PaymentSuccess"),
       import("./pages/PaymentCanceled"),
       import("./pages/InvoicePay"),
@@ -86,6 +88,7 @@ const App = () => (
               {/* Public pages that don't require auth checks */}
               <Route path="/clerk-auth" element={<ClerkAuthPage />} />
               <Route path="/quote-action" element={<QuoteActionPage />} />
+              <Route path="/quote/:token" element={<QuoteViewerPage />} />
               <Route path="/payment-success" element={<PaymentSuccessPage />} />
               <Route path="/payment-canceled" element={<PaymentCanceledPage />} />
               <Route path="/invoice-pay" element={<InvoicePayPage />} />

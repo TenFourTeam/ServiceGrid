@@ -7,11 +7,10 @@ import { useMemo, useState, useEffect } from "react";
 import { useCustomersData } from "@/queries/unified";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import type { Quote } from "@/types";
-import { buildQuoteEmail } from "@/utils/emailTemplates";
+import { generateQuoteEmail, generateQuoteSubject, combineMessageWithQuote } from "@/utils/quoteEmailTemplates";
 import { toast } from "sonner";
-import { escapeHtml } from "@/utils/sanitize";
 import { useQueryClient } from "@tanstack/react-query";
-import { SUPABASE_URL, edgeRequest } from "@/utils/edgeApi";
+import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { invalidationHelpers } from '@/queries/keys';
@@ -36,21 +35,20 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
 
   const { html, defaultSubject } = useMemo(() => {
     if (!quote) return { html: "", defaultSubject: "" };
-    const base = window.location.origin;
-    const approveUrl = `${base}/quote-action?type=approve&quote_id=${encodeURIComponent(quote.id)}&token=${encodeURIComponent(quote.publicToken)}`;
-    const editUrl = `${base}/quote-action?type=edit&quote_id=${encodeURIComponent(quote.id)}&token=${encodeURIComponent(quote.publicToken)}`;
-    const pixelUrl = `${SUPABASE_URL}/functions/v1/quote-events?type=open&quote_id=${encodeURIComponent(quote.id)}&token=${encodeURIComponent(quote.publicToken)}`;
     const logo = businessLightLogoUrl || businessLogoUrl;
-    const built = buildQuoteEmail({ businessName: businessName || '', businessLogoUrl: logo, customerName, quote, approveUrl, editUrl, pixelUrl });
-    return { html: built.html, defaultSubject: built.subject };
+    const emailData = generateQuoteEmail({
+      businessName: businessName || '',
+      businessLogoUrl: logo,
+      customerName,
+      quote
+    });
+    return { html: emailData.html, defaultSubject: emailData.subject };
   }, [quote, businessName, businessLogoUrl, businessLightLogoUrl, customerName]);
-  const previewHtml = useMemo(() => {
-    if (!message?.trim()) return html;
-    const safe = escapeHtml(message).replace(/\n/g, '<br />');
-    const introBlock = `<div style="margin-bottom:12px; line-height:1.6; font-size:14px; color:#111827;">${safe}</div>`;
-    const hr = `<hr style="border:none; border-top:1px solid #e5e7eb; margin:12px 0;" />`;
-    return `${introBlock}${hr}${html}`;
-  }, [message, html]);
+  
+  const previewHtml = useMemo(() => 
+    combineMessageWithQuote(message, html), 
+    [message, html]
+  );
 
   // Reset state on open/quote change
   useEffect(() => {
@@ -62,7 +60,7 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
         return cust?.email || "";
       })();
       setTo(defaultTo);
-      setSubject(quote ? `${businessName || ''} • Quote ${quote.number}` : "");
+      setSubject(quote ? generateQuoteSubject(businessName || '', quote.number) : "");
       setMessage("");
     }
   }, [open, quote, toEmail, businessName, customers]);
@@ -75,13 +73,7 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
     }
     setSending(true);
     try {
-      const finalHtml = (() => {
-        if (!message?.trim()) return html;
-        const safe = escapeHtml(message).replace(/\n/g, '<br />');
-        const introBlock = `<div style="margin-bottom:12px; line-height:1.6; font-size:14px; color:#111827;">${safe}</div>`;
-        const hr = `<hr style=\"border:none; border-top:1px solid #e5e7eb; margin:12px 0;\" />`;
-        return `${introBlock}${hr}${html}`;
-      })();
+      const finalHtml = combineMessageWithQuote(message, html);
       console.info('[SendQuoteModal] sending quote email', { quoteId: quote.id, to });
       await edgeRequest(fn("resend-send-email"), {
         method: "POST",
