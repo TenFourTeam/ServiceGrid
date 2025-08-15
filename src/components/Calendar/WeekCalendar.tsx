@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 import PickQuoteModal from '@/components/Jobs/PickQuoteModal';
 import { supabase } from '@/integrations/supabase/client';
 import JobShowModal from '@/components/Jobs/JobShowModal';
-import { StatusLegend } from './StatusLegend';
+
 import { getJobStatusColors, canDragJob, canResizeJob, validateJobTiming } from '@/utils/jobStatus';
 const START_ANCHOR_HOUR = 5; // visual start at 5:00
 const TOTAL_MIN = 24 * 60;
@@ -405,7 +405,6 @@ function onDragStart(e: React.PointerEvent, job: Job) {
     window.addEventListener('pointerup', onUp);
   }
   return <div className="w-full -ml-4 md:-ml-6 w-[calc(100%+1rem)] md:w-[calc(100%+1.5rem)]">
-      <StatusLegend />
       <div className="flex items-center justify-end mb-3">
         
       </div>
@@ -505,7 +504,9 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                       onClick={() => setActiveJob(j)}
                     >
                       <div className="flex items-center gap-1 text-xs font-medium leading-tight">
-                        <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70" />
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-current/20">
+                          {j.status === 'Scheduled' ? 'Scheduled' : j.status === 'In Progress' ? 'In Progress' : 'Completed'}
+                        </span>
                         {startsAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} — {customer?.name || 'Unknown'}
                       </div>
                       <div className="text-xs leading-tight mt-0.5 truncate ml-2.5">{j.title}</div>
