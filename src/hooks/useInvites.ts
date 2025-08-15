@@ -1,7 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
+import { queryKeys, invalidationHelpers } from "@/queries/keys";
+import { useStandardMutation } from "@/mutations/useStandardMutation";
 
 export interface Invite {
   id: string;
@@ -20,7 +22,7 @@ export function usePendingInvites(businessId?: string) {
   const enabled = !!isSignedIn && !!businessId;
 
   return useQuery<{ invites: Invite[] }, Error>({
-    queryKey: ["pending-invites", businessId],
+    queryKey: queryKeys.team.invites(businessId || ''),
     enabled,
     queryFn: async () => {
       if (!businessId) return { invites: [] };
@@ -31,49 +33,47 @@ export function usePendingInvites(businessId?: string) {
   });
 }
 
-export function useRevokeInvite() {
-  const { getToken } = useClerkAuth();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ inviteId }: { inviteId: string }) => {
+export function useRevokeInvite(businessId: string) {
+  return useStandardMutation<any, { inviteId: string }>({
+    mutationFn: async ({ inviteId }) => {
       return await edgeRequest(fn("invite-manage"), {
         method: "POST",
         body: JSON.stringify({ inviteId, action: "revoke" }),
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["pending-invites"] });
+    onSuccess: (_, variables, queryClient) => {
+      invalidationHelpers.team(queryClient, businessId);
     },
+    successMessage: "Invite revoked successfully",
+    errorMessage: "Failed to revoke invite",
   });
 }
 
-export function useResendInvite() {
-  const { getToken } = useClerkAuth();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ inviteId }: { inviteId: string }) => {
+export function useResendInvite(businessId: string) {
+  return useStandardMutation<any, { inviteId: string }>({
+    mutationFn: async ({ inviteId }) => {
       return await edgeRequest(fn("invite-manage"), {
         method: "POST",
         body: JSON.stringify({ inviteId, action: "resend" }),
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["pending-invites"] });
+    onSuccess: (_, variables, queryClient) => {
+      invalidationHelpers.team(queryClient, businessId);
     },
+    successMessage: "Invite resent successfully",
+    errorMessage: "Failed to resend invite",
   });
 }
 
 export function useRedeemInvite() {
-  const { getToken } = useClerkAuth();
-
-  return useMutation({
-    mutationFn: async ({ token }: { token: string }) => {
+  return useStandardMutation<any, { token: string }>({
+    mutationFn: async ({ token }) => {
       return await edgeRequest(fn("invite-redeem"), {
         method: "POST",
         body: JSON.stringify({ token }),
       });
     },
+    successMessage: "Invite redeemed successfully",
+    errorMessage: "Failed to redeem invite",
   });
 }

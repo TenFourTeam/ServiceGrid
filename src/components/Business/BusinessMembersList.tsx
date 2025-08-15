@@ -28,8 +28,8 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
   const { data: membersData, isLoading } = useBusinessMembers(businessId);
   const { data: invitesData, isLoading: loadingInvites } = usePendingInvites(businessId);
   const removeMember = useRemoveMember();
-  const revokeInvite = useRevokeInvite();
-  const resendInvite = useResendInvite();
+  const revokeInvite = useRevokeInvite(businessId || '');
+  const resendInvite = useResendInvite(businessId || '');
 
   // Filtered and sorted data
   const filteredMembers = useMemo(() => {

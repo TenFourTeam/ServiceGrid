@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface StandardMutationOptions<TData, TVariables> {
   mutationFn: (variables: TVariables) => Promise<TData>;
-  onSuccess?: (data: TData, variables: TVariables) => void;
+  onSuccess?: (data: TData, variables: TVariables, queryClient: any) => void;
   invalidateQueries?: readonly string[][];
   successMessage?: string;
   errorMessage?: string;
@@ -31,7 +31,7 @@ export function useStandardMutation<TData = any, TVariables = any>({
       });
 
       // Custom success handler
-      onSuccess?.(data, variables);
+      onSuccess?.(data, variables, queryClient);
 
       // Success toast
       if (successMessage) {

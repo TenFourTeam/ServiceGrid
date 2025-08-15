@@ -17,7 +17,7 @@ export { useJobsCount } from '@/hooks/useJobsCount';
 export { useQuotesCount } from '@/hooks/useQuotesCount';
 export { useInvoicesCount } from '@/hooks/useInvoicesCount';
 
-// Full data queries - return arrays directly for backwards compatibility
+// Full data queries - simplified without wrapper pattern
 export function useCustomers() {
   const result = useSupabaseCustomers();
   return { 
