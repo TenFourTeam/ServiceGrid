@@ -22,6 +22,7 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
   const handleSubmit = async (formData: any) => {
     setIsSubmitting(true);
     try {
+      console.log('Creating quote with data:', formData);
       const result = await createQuote.mutateAsync({
         customerId: formData.customerId,
         address: formData.address,

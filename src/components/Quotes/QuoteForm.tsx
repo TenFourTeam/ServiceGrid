@@ -87,7 +87,12 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
 
   const handleSubmit = () => {
     if (isValid) {
-      onSubmit(data);
+      // Filter out empty line items before submission
+      const filteredData = {
+        ...data,
+        lineItems: data.lineItems.filter(item => item.name.trim() !== '')
+      };
+      onSubmit(filteredData);
     }
   };
 
