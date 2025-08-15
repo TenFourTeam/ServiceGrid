@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { MoreHorizontal, Edit, Trash2 } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { CustomerBottomModal } from '@/components/Customers/CustomerBottomModal';
 import { useState, useEffect } from 'react';
 import { useCustomersData } from '@/queries/unified';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
@@ -244,46 +244,11 @@ export default function CustomersPage() {
         </Card>
       </section>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingId ? 'Edit Customer' : 'New Customer'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <Input
-              placeholder="Name"
-              value={draft.name}
-              onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-            />
-            <Input
-              placeholder="Email *"
-              type="email"
-              value={draft.email}
-              onChange={(e) => setDraft({ ...draft, email: e.target.value })}
-              required
-            />
-            <Input
-              placeholder="Address"
-              value={draft.address}
-              onChange={(e) => setDraft({ ...draft, address: e.target.value })}
-            />
-            <Input
-              placeholder="Phone"
-              type="tel"
-              value={draft.phone}
-              onChange={(e) => setDraft({ ...draft, phone: e.target.value })}
-            />
-            <div className="flex justify-end gap-2">
-              <Button variant="secondary" onClick={() => setOpen(false)} disabled={saving}>
-                Cancel
-              </Button>
-              <Button onClick={save} disabled={saving || !draft.name.trim() || !draft.email.trim()}>
-                {saving ? 'Saving…' : 'Save'}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <CustomerBottomModal
+        open={open}
+        onOpenChange={setOpen}
+        customer={editingId ? rows.find(c => c.id === editingId) : null}
+      />
 
       <SimpleCSVImport
         open={csvImportOpen}
