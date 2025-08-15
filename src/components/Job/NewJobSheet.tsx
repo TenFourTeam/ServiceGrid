@@ -94,6 +94,31 @@ export function NewJobSheet({
     }
   }, [customerId, customersList]);
 
+  // Update date when initialDate changes
+  useEffect(() => {
+    if (initialDate) {
+      setDate(initialDate);
+    }
+  }, [initialDate]);
+
+  // Update start time when initialStartTime changes
+  useEffect(() => {
+    if (initialStartTime) {
+      setStartTime(initialStartTime);
+    }
+  }, [initialStartTime]);
+
+  // Update duration when initial times change
+  useEffect(() => {
+    if (initialStartTime && initialEndTime) {
+      const [startH, startM] = initialStartTime.split(':').map(Number);
+      const [endH, endM] = initialEndTime.split(':').map(Number);
+      const startMins = startH * 60 + startM;
+      const endMins = endH * 60 + endM;
+      setDurationMin(Math.max(15, endMins - startMins));
+    }
+  }, [initialStartTime, initialEndTime]);
+
   function parseStart(dateVal?: Date, time: string = '09:00') {
     const d = dateVal ? new Date(dateVal) : new Date();
     const [h, m] = time.split(':').map(Number);
