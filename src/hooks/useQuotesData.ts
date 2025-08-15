@@ -5,18 +5,7 @@ import { queryKeys } from "@/queries/keys";
 import { useBusinessId } from "@/hooks/useBusinessId";
 import { useAuth } from "@clerk/clerk-react";
 
-export interface Quote {
-  id: string;
-  number: string;
-  total: number;
-  status: "Draft" | "Sent" | "Approved" | "Declined" | "Expired";
-  updatedAt: string;
-  viewCount: number;
-  publicToken: string;
-  customerId: string;
-  customerName?: string;
-  customerEmail?: string;
-}
+import type { QuoteListItem } from '@/types';
 
 interface UseQuotesDataOptions {
   enabled?: boolean;
@@ -44,7 +33,7 @@ export function useQuotesData(opts?: UseQuotesDataOptions) {
         return { quotes: [], count: 0 };
       }
       
-      const quotes: Quote[] = (data.rows || []).map((row: any) => ({
+      const quotes: QuoteListItem[] = (data.rows || []).map((row: any) => ({
         id: row.id,
         number: row.number,
         total: row.total,

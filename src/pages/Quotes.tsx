@@ -23,7 +23,7 @@ import { useOnboardingActions } from '@/onboarding/hooks';
 
 import { toast } from 'sonner';
 import { formatMoney as formatCurrency } from '@/utils/format';
-import type { Customer, LineItem, Quote, QuoteStatus } from '@/types';
+import type { Customer, QuoteListItem, QuoteStatus, LineItem, Quote } from '@/types';
 import { edgeRequest } from '@/utils/edgeApi';
 import { fn } from '@/utils/functionUrl';
 
@@ -46,16 +46,6 @@ const statusColors: Record<QuoteStatus, string> = {
   'Edits Requested': 'bg-orange-100 text-orange-800',
 };
 
-function calculateLineTotal(qty: number, unitPrice: number): number {
-  return Math.round(qty * unitPrice);
-}
-
-function calculateQuoteTotals(lineItems: LineItem[], taxRate: number, discount: number) {
-  const subtotal = lineItems.reduce((sum, item) => sum + item.lineTotal, 0);
-  const taxAmount = Math.round(subtotal * taxRate);
-  const total = subtotal + taxAmount - discount;
-  return { subtotal, taxAmount, total };
-}
 
 export default function QuotesPage() {
   const { isSignedIn, getToken } = useClerkAuth();
@@ -83,33 +73,9 @@ export default function QuotesPage() {
       return key;
     });
   }
-// Transform quotes data to include required fields
-  const transformedQuotes = useMemo(() => {
-    return quotes.map(row => ({
-      ...row,
-      status: row.status as QuoteStatus,
-      // Add required Quote interface fields
-      businessId: '',
-      lineItems: [] as any[],
-      taxRate: 0,
-      discount: 0,
-      subtotal: row.total,
-      address: '',
-      createdAt: row.updatedAt,
-      files: [],
-      notesInternal: '',
-      terms: '',
-      paymentTerms: 'due_on_receipt' as const,
-      frequency: 'one-off' as const,
-      depositRequired: false,
-      depositPercent: 0,
-      sentAt: undefined,
-    }));
-  }, [quotes]);
-
   const sortedQuotes = useMemo(() => {
-    const arr = [...transformedQuotes];
-    const baseCompare = (a: Quote, b: Quote) => {
+    const arr = [...quotes];
+    const baseCompare = (a: QuoteListItem, b: QuoteListItem) => {
       if (sortKey === 'number') return (a.number || '').localeCompare(b.number || '', undefined, { numeric: true, sensitivity: 'base' });
       if (sortKey === 'customer') return getCustomerName(a.customerId).localeCompare(getCustomerName(b.customerId));
       if (sortKey === 'total') return (a.total || 0) - (b.total || 0);
@@ -117,7 +83,7 @@ export default function QuotesPage() {
     };
     arr.sort((a, b) => (sortDir === 'asc' ? baseCompare(a, b) : -baseCompare(a, b)));
     return arr;
-  }, [transformedQuotes, sortKey, sortDir]);
+  }, [quotes, sortKey, sortDir]);
 
   function getCustomerName(customerId: string): string {
     const customer = customers.find(c => c.id === customerId);
@@ -129,7 +95,7 @@ export default function QuotesPage() {
     return customer?.email;
   }
 
-  function copyPublicLink(quote: Quote) {
+  function copyPublicLink(quote: QuoteListItem) {
     const url = `${window.location.origin}/quote/${quote.publicToken}`;
     navigator.clipboard.writeText(url);
     toast.success('Quote link copied to clipboard');
@@ -186,7 +152,7 @@ export default function QuotesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {transformedQuotes.length === 0 ? (
+                {quotes.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="p-0">
                       <div className="flex flex-col items-center justify-center py-16 px-4 text-center space-y-6">

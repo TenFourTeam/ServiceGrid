@@ -7,11 +7,11 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { edgeRequest } from '@/utils/edgeApi';
 import { fn } from '@/utils/functionUrl';
-import type { Quote } from '@/types';
+import type { QuoteListItem } from '@/types';
 
 interface QuoteActionsProps {
-  quote: Quote;
-  onSendQuote: (quote: Quote) => void;
+  quote: QuoteListItem;
+  onSendQuote: (quote: any) => void; // Will be converted to full Quote in parent
 }
 
 export function QuoteActions({ quote, onSendQuote }: QuoteActionsProps) {

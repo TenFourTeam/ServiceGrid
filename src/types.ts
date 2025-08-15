@@ -44,6 +44,22 @@ export interface LineItem {
 }
 
 export type QuoteStatus = 'Draft' | 'Sent' | 'Viewed' | 'Approved' | 'Declined' | 'Edits Requested';
+
+// Minimal quote data for list views
+export interface QuoteListItem {
+  id: ID;
+  number: string;
+  total: Money;
+  status: QuoteStatus;
+  updatedAt: ISODate;
+  viewCount: number;
+  publicToken: string;
+  customerId: ID;
+  customerName?: string;
+  customerEmail?: string;
+}
+
+// Full quote data for detailed operations
 export interface Quote {
   id: ID;
   number: string; // EST-###

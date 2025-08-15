@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { LineItem } from '@/types';
 
+// All calculation logic consolidated here
 export function calculateLineTotal(qty: number, unitPrice: number): number {
   return Math.round(qty * unitPrice);
 }
