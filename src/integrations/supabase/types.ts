@@ -597,8 +597,6 @@ export type Database = {
       }
       profiles: {
         Row: {
-          business_name: string | null
-          business_name_customized: boolean | null
           clerk_user_id: string | null
           created_at: string
           default_business_id: string | null
@@ -609,8 +607,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          business_name?: string | null
-          business_name_customized?: boolean | null
           clerk_user_id?: string | null
           created_at?: string
           default_business_id?: string | null
@@ -621,8 +617,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          business_name?: string | null
-          business_name_customized?: boolean | null
           clerk_user_id?: string | null
           created_at?: string
           default_business_id?: string | null

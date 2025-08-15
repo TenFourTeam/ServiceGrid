@@ -102,9 +102,7 @@ serve(async (req) => {
     return json({
       data: {
         fullName: profileData.full_name,
-        businessName: input.businessName || '', // Echo back for reference
         phoneE164: profileData.phone_e164,
-        businessNameCustomized: false, // No longer stored
         updatedAt: profileData.updated_at,
       }
     });

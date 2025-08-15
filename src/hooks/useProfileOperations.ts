@@ -13,9 +13,7 @@ export type ProfileUpdatePayload = {
 export type ProfileUpdateResponse = {
   data: {
     fullName: string;
-    businessName: string;
     phoneE164: string;
-    businessNameCustomized: boolean;
     updatedAt?: string;
   };
 };
