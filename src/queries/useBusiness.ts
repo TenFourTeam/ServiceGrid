@@ -10,7 +10,7 @@ import type { BusinessUI } from '@/hooks/useBusinessContext';
  * Unified business query hook with automatic token recovery
  * This replaces fragmented business state management
  */
-export function useBusiness() {
+export function useBusiness(enabled: boolean = true) {
   const { getToken } = useAuth();
   
   return useQuery({
@@ -22,6 +22,7 @@ export function useBusiness() {
       business.role = response.role;
       return business;
     },
+    enabled,
     staleTime: 30_000,
     retry: (failureCount, error: any) => {
       // Handle token expiration with automatic recovery

@@ -31,9 +31,13 @@ export function RequireRole({
   }
 
   // Check if user has required role
-  const hasRequiredRole = role === 'worker' ? 
-    (userRole === 'owner' || userRole === 'worker') : // Workers can access worker content, owners can access everything
-    userRole === role; // Exact role match for owner-only content
+  // Owners can access all content (both owner and worker)
+  // Workers can only access worker content
+  const hasRequiredRole = Array.isArray(role) 
+    ? role.includes(userRole as any)
+    : role === 'worker' 
+      ? (userRole === 'owner' || userRole === 'worker') 
+      : userRole === role;
 
   if (!hasRequiredRole) {
     // Use custom fallback if provided, otherwise redirect

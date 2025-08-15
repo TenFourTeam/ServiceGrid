@@ -10,6 +10,7 @@ export class ApiError extends Error {
   status: number;
   code?: string;
   details?: any;
+  isRetryable: boolean;
   
   constructor(status: number, message: string, code?: string, details?: any) {
     super(message);
@@ -17,6 +18,16 @@ export class ApiError extends Error {
     this.status = status;
     this.code = code;
     this.details = details;
+    // Determine if error is retryable based on status
+    this.isRetryable = status >= 500 || status === 429 || status === 408;
+  }
+  
+  static isAuthError(error: unknown): boolean {
+    return error instanceof ApiError && (error.status === 401 || error.status === 403);
+  }
+  
+  static isNetworkError(error: unknown): boolean {
+    return error instanceof ApiError && error.code === 'network_error';
   }
 }
 
@@ -42,10 +53,10 @@ export async function edgeFetchJson(
     },
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
   });
-  if (!res.ok) {
-    const txt = await res.text().catch(() => "");
-    throw new Error(`Edge ${path} failed (${res.status}): ${txt}`);
-  }
+    if (!res.ok) {
+      const txt = await res.text().catch(() => "");
+      throw new ApiError(res.status, `Edge ${path} failed: ${txt}`, 'edge_request_failed');
+    }
   const ct = res.headers.get("content-type") || "";
   if (ct.includes("application/json")) {
     return res.json();
@@ -65,7 +76,7 @@ export async function edgePublicJson(path: string, opts: EdgeRequestOptions = {}
   });
   if (!res.ok) {
     const txt = await res.text().catch(() => "");
-    throw new Error(`Edge ${path} failed (${res.status}): ${txt}`);
+    throw new ApiError(res.status, `Edge ${path} failed: ${txt}`, 'edge_public_failed');
   }
   const ct = res.headers.get("content-type") || "";
   if (ct.includes("application/json")) {
@@ -91,7 +102,7 @@ export async function edgeFetch(
   });
   if (!res.ok) {
     const txt = await res.text().catch(() => "");
-    throw new Error(`Edge ${path} failed (${res.status}): ${txt}`);
+    throw new ApiError(res.status, `Edge ${path} failed: ${txt}`, 'edge_fetch_failed');
   }
   const ct = res.headers.get("content-type") || "";
   if (ct.includes("application/json")) {
