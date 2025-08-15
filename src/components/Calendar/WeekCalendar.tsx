@@ -428,7 +428,15 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                   );
                 })()}
                 {/* jobs */}
-                {dayJobs[dayKey(day)]?.map(j => {
+                {dayJobs[dayKey(day)]?.filter(j => {
+                  // If this job is being dragged, only show it in the day that matches tempStartsAt
+                  if (dragState?.jobId === j.id) {
+                    const tempDay = new Date(dragState.tempStartsAt);
+                    return isSameDay(tempDay, day);
+                  }
+                  // If not dragging, show normally
+                  return true;
+                }).map(j => {
                   // Check if this job is being dragged or resized
                   const isDragging = dragState?.jobId === j.id;
                   const isResizing = resizeState?.jobId === j.id;
