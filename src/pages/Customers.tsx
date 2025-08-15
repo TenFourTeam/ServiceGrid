@@ -13,9 +13,7 @@ import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
 import { SimpleCSVImport } from '@/components/Onboarding/SimpleCSVImport';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { showNextActionToast } from '@/components/Onboarding/NextActionToast';
-import { useOnboardingActions } from '@/onboarding/hooks';
-import { useFocusPulse } from '@/hooks/useFocusPulse';
+// Removed complex onboarding imports
 import { cn } from '@/lib/utils';
 import { invalidationHelpers } from '@/queries/keys';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
@@ -26,8 +24,6 @@ export default function CustomersPage() {
   const { businessId } = useBusinessContext();
   const location = useLocation();
   const navigate = useNavigate();
-  const onboardingActions = useOnboardingActions();
-
   const { data: customers, isLoading, error } = useCustomersData();
   
   // Use customer data directly from hook
@@ -38,7 +34,6 @@ export default function CustomersPage() {
   const [draft, setDraft] = useState({ name: '', email: '', phone: '', address: '' });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
-  const { ref: addCustomerRef, pulse: addCustomerPulse, focus: focusAddCustomer } = useFocusPulse<HTMLButtonElement>();
 
   function openNew() {
     setEditingId(null);
@@ -48,14 +43,13 @@ export default function CustomersPage() {
 
   function openEdit(c: any) {
     setEditingId(c.id);
-    setDraft({ name: c.name || '', email: c.email || '', phone: (c as any).phone || '', address: c.address || '' });
+    setDraft({ name: c.name || '', email: c.email || '', phone: c.phone || '', address: c.address || '' });
     setOpen(true);
   }
 
-  // Check for URL parameters and handle focus
+  // Check for URL parameters
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const state = location.state as any;
     
     if (params.get('import') === '1') {
       setCsvImportOpen(true);
@@ -63,14 +57,8 @@ export default function CustomersPage() {
     } else if (params.get('new') === '1') {
       openNew();
       navigate('/customers', { replace: true });
-    } else if (state?.focus === 'add-customer') {
-      const timer = setTimeout(() => {
-        focusAddCustomer();
-        navigate('.', { replace: true, state: null });
-      }, 100);
-      return () => clearTimeout(timer);
     }
-  }, [location.search, location.state, navigate, focusAddCustomer]);
+  }, [location.search, navigate]);
 
   async function save() {
     if (!isSignedIn) {
@@ -101,15 +89,8 @@ export default function CustomersPage() {
         }),
       });
 
-      // Show appropriate toast
-      if (isEdit) {
-        toast.success('Customer updated');
-      } else {
-        // Show next action toast for new customers
-        showNextActionToast('customer-added', draft.name, () => {
-          onboardingActions.openCreateQuote();
-        });
-      }
+      // Show simple success toast
+      toast.success(isEdit ? 'Customer updated' : 'Customer added successfully');
       
       setOpen(false);
       setEditingId(null);
@@ -132,21 +113,8 @@ export default function CustomersPage() {
           <Button variant="outline" onClick={() => setCsvImportOpen(true)}>
             Import CSV
           </Button>
-          <Button 
-            ref={rows.length > 0 ? addCustomerRef : null}
-            onClick={() => openNew()} 
-            data-onb="add-customer-button"
-            className={cn(
-              "transition-all duration-300",
-              rows.length > 0 && addCustomerPulse && "ring-2 ring-primary/60 shadow-lg scale-[1.02] relative"
-            )}
-          >
+          <Button onClick={() => openNew()}>
             New Customer
-            {rows.length > 0 && addCustomerPulse && (
-              <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-xs text-muted-foreground animate-fade-in whitespace-nowrap">
-                Add your customer here
-              </span>
-            )}
           </Button>
         </div>
 
@@ -180,21 +148,8 @@ export default function CustomersPage() {
                             Add them one by one or import your existing list.
                           </div>
                             <div className="flex gap-2 justify-center">
-                              <Button 
-                                ref={rows.length === 0 ? addCustomerRef : null}
-                                onClick={() => openNew()} 
-                                data-onb="add-customer-button"
-                                className={cn(
-                                  "transition-all duration-300",
-                                  addCustomerPulse && "ring-2 ring-primary/60 shadow-lg scale-[1.02] relative"
-                                )}
-                              >
+                              <Button onClick={() => openNew()}>
                                 Add Customer
-                                {addCustomerPulse && (
-                                  <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-xs text-muted-foreground animate-fade-in whitespace-nowrap">
-                                    Add your first customer here
-                                  </span>
-                                )}
                               </Button>
                               <Button variant="outline" onClick={() => setCsvImportOpen(true)}>Import CSV</Button>
                             </div>
@@ -214,7 +169,7 @@ export default function CustomersPage() {
                       >
                         <TableCell>{c.name}</TableCell>
                         <TableCell>{c.email ?? ''}</TableCell>
-                        <TableCell>{(c as any).phone ?? ''}</TableCell>
+                        <TableCell>{c.phone ?? ''}</TableCell>
                         <TableCell>{c.address ?? ''}</TableCell>
                       </TableRow>
                     ))

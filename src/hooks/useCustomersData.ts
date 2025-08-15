@@ -5,13 +5,7 @@ import { queryKeys } from "@/queries/keys";
 import { useBusinessId } from "@/hooks/useBusinessId";
 import { useAuth } from "@clerk/clerk-react";
 
-export interface Customer {
-  id: string;
-  name: string;
-  email?: string | null;
-  phone?: string | null;
-  address?: string | null;
-}
+import type { Customer } from '@/types';
 
 interface UseCustomersDataOptions {
   enabled?: boolean;
@@ -41,10 +35,12 @@ export function useCustomersData(opts?: UseCustomersDataOptions) {
       
       const customers: Customer[] = (data.rows || []).map((c: any) => ({
         id: c.id,
+        businessId: c.businessId,
         name: c.name,
-        email: c.email ?? null,
-        phone: c.phone ?? null,
-        address: c.address ?? null,
+        email: c.email ?? undefined,
+        phone: c.phone ?? undefined,
+        address: c.address ?? undefined,
+        notes: c.notes ?? undefined,
       }));
       
       const count = data.count ?? customers.length;
