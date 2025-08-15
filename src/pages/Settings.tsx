@@ -16,6 +16,7 @@ import ConnectBanner from '@/components/Stripe/ConnectBanner';
 import { useStripeConnectStatus } from '@/hooks/useStripeConnectStatus';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useProfileOperations } from '@/hooks/useProfileOperations';
+import { useBusinessOperations } from '@/hooks/useBusinessOperations';
 
 
 import { useToast } from '@/hooks/use-toast';
@@ -39,8 +40,10 @@ export default function SettingsPage() {
   const { user, isLoaded: userLoaded } = useUser();
   const [userName, setUserName] = useState('');
   const [userPhone, setUserPhone] = useState('');
+  const [businessName, setBusinessName] = useState('');
   const { role, canManage } = useBusinessContext();
   const { updateProfile, isUpdating } = useProfileOperations();
+  const { updateBusiness, isUpdating: isUpdatingBusiness } = useBusinessOperations();
   const { uploadLogo, isUploading: isUploadingLogo } = useLogoOperations();
   const { toast } = useToast();
   function handleLogoUpload(kind: 'dark' | 'light') {
@@ -100,7 +103,7 @@ export default function SettingsPage() {
       sonnerToast.error(e?.message || 'Failed to start Stripe onboarding');
     }
   }
-  // Hydrate from profile data (authoritative source)
+  // Hydrate from profile and business data
   useEffect(() => {
     if (profile) {
       if (!userName && profile.fullName) {
@@ -112,28 +115,40 @@ export default function SettingsPage() {
     }
   }, [profile, userName, userPhone]);
 
+  useEffect(() => {
+    if (business && !businessName) {
+      setBusinessName(business.name || 'My Business');
+    }
+  }, [business, businessName]);
+
 
 
   const handleProfileSave = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!userName.trim() || !userPhone.trim()) {
+    if (!userName.trim() || !userPhone.trim() || !businessName.trim()) {
       toast({
         title: "Missing information",
-        description: "Please fill in your name and phone number",
+        description: "Please fill in your name, phone number, and business name",
         variant: "destructive",
       });
       return;
     }
 
-    const input = { 
-      fullName: userName.trim(), 
-      phoneRaw: userPhone.trim(),
-      businessName: business?.name || 'My Business'
-    };
-    
     try {
-      await updateProfile.mutateAsync(input);
+      // Update profile and business in parallel
+      const profilePromise = updateProfile.mutateAsync({ 
+        fullName: userName.trim(), 
+        phoneRaw: userPhone.trim(),
+      });
+
+      const businessPromise = updateBusiness.mutateAsync({
+        businessName: businessName.trim(),
+        phone: business?.phone,
+        replyToEmail: business?.replyToEmail,
+      });
+
+      await Promise.all([profilePromise, businessPromise]);
       
       // Optional non-blocking Clerk sync
       if (user && userName.trim()) {
@@ -147,7 +162,7 @@ export default function SettingsPage() {
         }
       }
     } catch (error) {
-      console.error('Profile update failed:', error);
+      console.error('Profile/Business update failed:', error);
     }
   };
 
@@ -212,20 +227,15 @@ export default function SettingsPage() {
                   )}
                 </div>
               </div>
-              <div>
-                <Label>Business Name</Label>
-                <div className="relative">
-                  <Input 
-                    value={business?.name || 'My Business'} 
-                    placeholder="Your business name"
-                    disabled
-                    className="bg-muted"
-                  />
-                  <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                    Manage in Business Settings
-                  </div>
-                </div>
-              </div>
+               <div>
+                 <Label>Business Name</Label>
+                 <Input 
+                   value={businessName} 
+                   onChange={e => setBusinessName(e.target.value)}
+                   placeholder="Your business name"
+                   required
+                 />
+               </div>
               <div>
                 <Label>Phone Number</Label>
                 <Input 
@@ -237,13 +247,13 @@ export default function SettingsPage() {
                 />
               </div>
               
-               <div className="pt-4">
+                <div className="pt-4">
                  <Button 
                    type="submit"
-                   disabled={isUpdating || !userName.trim() || !userPhone.trim()}
+                   disabled={isUpdating || isUpdatingBusiness || !userName.trim() || !userPhone.trim() || !businessName.trim()}
                    className="w-full"
                  >
-                  {isUpdating ? 'Saving...' : 'Save Profile'}
+                  {(isUpdating || isUpdatingBusiness) ? 'Saving...' : 'Save Profile'}
                 </Button>
               </div>
             </form>
