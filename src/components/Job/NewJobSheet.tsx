@@ -137,21 +137,7 @@ export function NewJobSheet({
       const end = new Date(start.getTime() + durationMin * 60 * 1000);
       const totalCents = amount ? Math.max(0, Math.round(parseFloat(amount) * 100)) : undefined;
 
-      // 1) Upload photos via secured Edge Function
-      const photoUrls: string[] = [];
-      for (const file of files) {
-        const fd = new FormData();
-        fd.append('file', file);
-        const resp = await edgeRequest(fn('upload-job-photo'), {
-          method: 'POST',
-          body: fd,
-        });
-        const out = resp as any;
-        if (!out?.url) throw new Error('Upload failed');
-        photoUrls.push(out.url as string);
-      }
-
-      // 2) Create job via Edge Function
+      // 1) Create job immediately (without photos)
       const data = await edgeRequest(fn('jobs'), {
         method: 'POST',
         body: JSON.stringify({
@@ -162,12 +148,11 @@ export function NewJobSheet({
           endsAt: end.toISOString(),
           notes: notes || undefined,
           total: totalCents,
-          photos: photoUrls,
+          photos: [], // Start with empty photos
         }),
       });
       const created = (data as any)?.row || (data as any)?.job || data;
-
-      // Job creation completed - queries will refetch automatically
+      
       console.log('[NewJobSheet] Job creation completed:', created);
       
       toast({
@@ -180,13 +165,58 @@ export function NewJobSheet({
         navigate('/work-orders');
       }
       
-      // Reset form and close
+      // Reset form and close immediately
       resetState();
       setOpen(false);
+
+      // 2) Upload photos asynchronously (don't block job creation)
+      if (files.length > 0 && created?.id) {
+        uploadPhotosAsync(created.id, files);
+      }
     } catch (e: any) {
       toast({ title: 'Failed to create job', description: e?.message || String(e) });
     } finally {
       setCreating(false);
+    }
+  }
+
+  async function uploadPhotosAsync(jobId: string, filesToUpload: File[]) {
+    try {
+      const photoUrls: string[] = [];
+      
+      // Upload each photo
+      for (const file of filesToUpload) {
+        try {
+          const fd = new FormData();
+          fd.append('file', file);
+          const resp = await edgeRequest(fn('upload-job-photo'), {
+            method: 'POST',
+            body: fd,
+          });
+          const out = resp as any;
+          if (out?.url) {
+            photoUrls.push(out.url as string);
+          }
+        } catch (error) {
+          console.warn('[NewJobSheet] Photo upload failed:', error);
+          // Continue with other photos even if one fails
+        }
+      }
+
+      // Update job with uploaded photos if any succeeded
+      if (photoUrls.length > 0) {
+        await edgeRequest(fn('jobs') + `?id=${jobId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            photos: photoUrls,
+          }),
+        });
+        
+        console.log('[NewJobSheet] Photos uploaded successfully:', photoUrls);
+      }
+    } catch (error) {
+      console.warn('[NewJobSheet] Photo upload process failed:', error);
+      // Don't show error toast since job was already created successfully
     }
   }
 
