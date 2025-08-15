@@ -1,10 +1,4 @@
-import { Link } from 'react-router-dom';
 import { ReactNode, useEffect, useState } from 'react';
-import { RequireRole } from '@/components/Auth/RequireRole';
-
-import { Button } from '@/components/ui/button';
-import { NewJobSheet } from '@/components/Job/NewJobSheet';
-import { EnhancedInviteModal } from '@/components/Team/EnhancedInviteModal';
 
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/Layout/AppSidebar';
@@ -15,11 +9,9 @@ import { HelpWidget } from '@/components/Onboarding/HelpWidget';
 import { IntentPickerModal } from '@/components/Onboarding/IntentPickerModal';
 import { useOnboardingState } from '@/onboarding/streamlined';
 import { useOnboardingActions } from '@/onboarding/hooks';
-import { UserPlus } from 'lucide-react';
+
 export default function AppLayout({ children, title }: { children: ReactNode; title?: string }) {
-  const [showInviteModal, setShowInviteModal] = useState(false);
   const [showIntentPicker, setShowIntentPicker] = useState(false);
-  const { businessId, role } = useBusinessContext();
   
   // Onboarding system
   const onboardingState = useOnboardingState();
@@ -47,26 +39,8 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
         <SidebarInset className="flex-1 flex flex-col min-h-0">
           <SubscriptionBanner />
           <div className="p-4 md:p-6 flex flex-col flex-1 min-h-0">
-          <header className="flex items-center justify-between mb-4 md:mb-6">
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl md:text-2xl font-bold">{title ?? 'Dashboard'}</h1>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button asChild variant="secondary"><Link to="/quotes?new=1">New Quote</Link></Button>
-              {/* New Job Sheet trigger */}
-              <NewJobSheet />
-              {/* Global Invite Worker action (owner only) */}
-              <RequireRole role="owner" fallback={null}>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowInviteModal(true)}
-                  className="flex items-center gap-2"
-                >
-                  <UserPlus className="h-4 w-4" />
-                  Invite Worker
-                </Button>
-              </RequireRole>
-            </div>
+          <header className="mb-4 md:mb-6">
+            <h1 className="text-xl md:text-2xl font-bold">{title ?? 'Dashboard'}</h1>
           </header>
           <div className="flex-1">
             <PageFade key={String(title)}>
@@ -91,15 +65,6 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
       />
       
       <HelpWidget onOpenHelp={handleOpenHelp} />
-
-      {/* Global Invite Modal */}
-      <RequireRole role="owner" fallback={null}>
-        <EnhancedInviteModal
-          open={showInviteModal}
-          onOpenChange={setShowInviteModal}
-          businessId={businessId || ''}
-        />
-      </RequireRole>
     </SidebarProvider>
   );
 }
