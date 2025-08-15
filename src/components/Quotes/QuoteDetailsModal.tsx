@@ -154,10 +154,10 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
         onSendQuote?.(newQuote);
         toast.success('Quote created successfully');
       } else if (currentMode === 'edit' && quote) {
-        const result = await edgeRequest(fn('quotes'), {
-          method: 'PUT',
+        console.log('[QuoteDetailsModal] Updating quote:', quote.id);
+        const result = await edgeRequest(fn(`quotes/${quote.id}`), {
+          method: 'PATCH',
           body: JSON.stringify({
-            id: quote.id,
             customerId: formData.customerId,
             address: formData.address,
             lineItems: formData.lineItems.map((li: any) => ({
