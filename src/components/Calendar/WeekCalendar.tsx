@@ -37,9 +37,9 @@ export function WeekCalendar({
   const [pendingSlot, setPendingSlot] = useState<{ start: Date; end: Date } | null>(null);
   const notesTimer = useRef<number | null>(null);
   const [highlightJobId, setHighlightJobId] = useState<string | null>(null);
-  // Add drag and resize state tracking
-  const [dragState, setDragState] = useState<{ jobId: string; tempStartsAt: string; tempEndsAt: string } | null>(null);
-  const [resizeState, setResizeState] = useState<{ jobId: string; tempEndsAt: string } | null>(null);
+  // Visual feedback state only
+  const [isDragging, setIsDragging] = useState<string | null>(null);
+  const [isResizing, setIsResizing] = useState<string | null>(null);
   const [weekStart, setWeekStart] = useState(() => {
     const initial = (() => {
       if (selectedJobId) {
@@ -218,15 +218,14 @@ function onDragStart(e: React.PointerEvent, job: Job) {
       setActiveJob(job);
       return;
     }
-    const original = { ...job };
     const dur = new Date(job.endsAt).getTime() - new Date(job.startsAt).getTime();
     let latest = { startsAt: job.startsAt, endsAt: job.endsAt };
     const startX = e.clientX;
     const startY = e.clientY;
     let movedEnough = false;
 
-    // Set initial drag state
-    setDragState({ jobId: job.id, tempStartsAt: job.startsAt, tempEndsAt: job.endsAt });
+    // Set visual feedback
+    setIsDragging(job.id);
 
     const onMove = (ev: PointerEvent) => {
       const dx = Math.abs(ev.clientX - startX);
@@ -244,7 +243,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
       }
       if (idx === -1) {
         // Fallback to original job day index
-        const startDate = new Date(original.startsAt);
+        const startDate = new Date(job.startsAt);
         const base = new Date(weekStart); base.setHours(0,0,0,0);
         idx = Math.max(0, Math.min(6, Math.floor((startDate.getTime() - base.getTime()) / (24*3600*1000))));
       }
@@ -261,42 +260,30 @@ function onDragStart(e: React.PointerEvent, job: Job) {
       const end = new Date(d.getTime() + dur);
       latest = { startsAt: d.toISOString(), endsAt: end.toISOString() };
       
-      // Update drag state for visual feedback
-      setDragState({ jobId: job.id, tempStartsAt: latest.startsAt, tempEndsAt: latest.endsAt });
+      // Directly update cache for real-time feedback
+      const queryKey = queryKeys.data.jobs(businessId || '');
+      queryClient.setQueryData(queryKey, (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          jobs: old.jobs.map((j: Job) => 
+            j.id === job.id 
+              ? { ...j, startsAt: latest.startsAt, endsAt: latest.endsAt }
+              : j
+          )
+        };
+      });
     };
 
     const onUp = async () => {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
-      
-      // Clear drag state
-      setDragState(null);
+      setIsDragging(null);
       
       if (!movedEnough) {
         setActiveJob(job);
         return;
       }
-      
-      // Optimistically update the cache BEFORE clearing drag state
-      const queryKey = queryKeys.data.jobs(businessId || '');
-      const previousData = queryClient.getQueryData(queryKey);
-      
-      if (businessId && previousData) {
-        queryClient.setQueryData(queryKey, (old: any) => {
-          if (!old) return old;
-          return {
-            ...old,
-            jobs: old.jobs.map((j: Job) => 
-              j.id === job.id 
-                ? { ...j, startsAt: latest.startsAt, endsAt: latest.endsAt }
-                : j
-            )
-          };
-        });
-      }
-      
-      // Now clear drag state
-      setDragState(null);
       
       try {
         await edgeRequest(fn(`jobs?id=${job.id}`), {
@@ -309,10 +296,19 @@ function onDragStart(e: React.PointerEvent, job: Job) {
         toast.success('Job rescheduled successfully');
       } catch (err: any) {
         console.error(err);
-        // Rollback on error
-        if (businessId && previousData) {
-          queryClient.setQueryData(queryKey, previousData);
-        }
+        // Rollback cache on error
+        const queryKey = queryKeys.data.jobs(businessId || '');
+        queryClient.setQueryData(queryKey, (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            jobs: old.jobs.map((j: Job) => 
+              j.id === job.id 
+                ? { ...j, startsAt: job.startsAt, endsAt: job.endsAt }
+                : j
+            )
+          };
+        });
         toast.error(err?.message || 'Failed to reschedule job');
       }
     };
@@ -326,11 +322,10 @@ function onDragStart(e: React.PointerEvent, job: Job) {
       toast.info('You cannot change duration for a job that is ' + job.status.toLowerCase());
       return;
     }
-    const original = { ...job };
     let latestEnd = job.endsAt;
     
-    // Set initial resize state
-    setResizeState({ jobId: job.id, tempEndsAt: job.endsAt });
+    // Set visual feedback
+    setIsResizing(job.id);
     
     const onMove = (ev: PointerEvent) => {
       // Determine which day column we're over
@@ -355,34 +350,25 @@ function onDragStart(e: React.PointerEvent, job: Job) {
       const minEnd = new Date(new Date(job.startsAt).getTime() + 15*60*1000);
       latestEnd = newEnd < minEnd ? minEnd.toISOString() : newEnd.toISOString();
       
-      // Update resize state for visual feedback
-      setResizeState({ jobId: job.id, tempEndsAt: latestEnd });
+      // Directly update cache for real-time feedback
+      const queryKey = queryKeys.data.jobs(businessId || '');
+      queryClient.setQueryData(queryKey, (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          jobs: old.jobs.map((j: Job) => 
+            j.id === job.id 
+              ? { ...j, endsAt: latestEnd }
+              : j
+          )
+        };
+      });
     };
 
     const onUp = async () => {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
-      
-      // Optimistically update the cache BEFORE clearing resize state
-      const queryKey = queryKeys.data.jobs(businessId || '');
-      const previousData = queryClient.getQueryData(queryKey);
-      
-      if (businessId && previousData) {
-        queryClient.setQueryData(queryKey, (old: any) => {
-          if (!old) return old;
-          return {
-            ...old,
-            jobs: old.jobs.map((j: Job) => 
-              j.id === job.id 
-                ? { ...j, endsAt: latestEnd }
-                : j
-            )
-          };
-        });
-      }
-      
-      // Now clear resize state
-      setResizeState(null);
+      setIsResizing(null);
       
       try {
         await edgeRequest(fn(`jobs?id=${job.id}`), {
@@ -394,10 +380,19 @@ function onDragStart(e: React.PointerEvent, job: Job) {
         toast.success('Job duration updated successfully');
       } catch (err: any) {
         console.error(err);
-        // Rollback on error
-        if (businessId && previousData) {
-          queryClient.setQueryData(queryKey, previousData);
-        }
+        // Rollback cache on error
+        const queryKey = queryKeys.data.jobs(businessId || '');
+        queryClient.setQueryData(queryKey, (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            jobs: old.jobs.map((j: Job) => 
+              j.id === job.id 
+                ? { ...j, endsAt: job.endsAt }
+                : j
+            )
+          };
+        });
         toast.error(err?.message || 'Failed to update job duration');
       }
     };
@@ -465,52 +460,45 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                     </div>
                   );
                 })()}
-                {/* jobs */}
-                {dayJobs[dayKey(day)]?.filter(j => {
-                  // If this job is being dragged, only show it in the day that matches tempStartsAt
-                  if (dragState?.jobId === j.id) {
-                    const tempDay = new Date(dragState.tempStartsAt);
-                    return isSameDay(tempDay, day);
-                  }
-                  // If not dragging, show normally
-                  return true;
-                }).map(j => {
-                  // Check if this job is being dragged or resized
-                  const isDragging = dragState?.jobId === j.id;
-                  const isResizing = resizeState?.jobId === j.id;
-                  
-                  // Use temporary positions if dragging/resizing, otherwise use actual positions
-                  const startTime = isDragging ? dragState.tempStartsAt : j.startsAt;
-                  const endTime = isDragging ? dragState.tempEndsAt : (isResizing ? resizeState.tempEndsAt : j.endsAt);
-                  
-                  const start = new Date(startTime);
-                  const end = new Date(endTime);
-                  const top = minutesFromAnchor(start) / TOTAL_MIN * 100;
-                  const minutesDuration = Math.max(15, Math.round((end.getTime() - start.getTime()) / 60000));
-                  const height = Math.max(8, minutesDuration / TOTAL_MIN * 100);
-                  const customer = customers.find(c => c.id === j.customerId)?.name ?? 'Customer';
-                  const color = j.status === 'Scheduled' ? 'bg-primary/10 border-primary' : j.status === 'In Progress' ? 'bg-background border-primary' : 'bg-success/10 border-success';
-                  
-                  // Add visual feedback classes for dragging/resizing
-                  const operationClasses = isDragging ? 'opacity-60 ring-2 ring-primary/50' : 
-                                         isResizing ? 'ring-2 ring-primary/50' : '';
-                  const cursor = isDragging ? 'cursor-grabbing' : (j.status === 'Scheduled' ? 'cursor-grab' : 'cursor-pointer');
-                  
-                  return (
-                    <div key={j.id} className={`absolute left-2 right-2 border rounded-md px-2 py-1 text-xs transition-all duration-150 ${color} ${highlightJobId === j.id ? 'ring-2 ring-primary' : ''} ${operationClasses} ${cursor}`}
-                      style={{ top: `${top}%`, height: `${height}%` }}
+                {/* Jobs rendering */}
+                {dayJobs[dayKey(day)]?.map(j => {
+                    const startsAt = new Date(j.startsAt);
+                    const endsAt = new Date(j.endsAt);
+                    const start = minutesFromAnchor(startsAt);
+                    const dur = endsAt.getTime() - startsAt.getTime();
+                    const durMins = dur / (1000 * 60);
+                    const height = durMins / TOTAL_MIN * 100;
+                    const top = start / TOTAL_MIN * 100;
+                    const customer = customers.find(c => c.id === j.customerId);
+                    const isHighlighted = highlightJobId === j.id;
+                    const isBeingDragged = isDragging === j.id;
+                    const isBeingResized = isResizing === j.id;
+                    
+                    return <div
+                      key={j.id}
+                      className={`absolute left-2 right-2 rounded-md p-2 cursor-pointer select-none transition-colors ${
+                        isHighlighted ? 'bg-primary text-primary-foreground ring-2 ring-primary/50' :
+                        j.status === 'Completed' ? 'bg-green-100 text-green-900 border border-green-200' :
+                        j.status === 'In Progress' ? 'bg-yellow-100 text-yellow-900 border border-yellow-200' :
+                        'bg-blue-100 text-blue-900 border border-blue-200'
+                      } ${isBeingDragged ? 'opacity-80 scale-[1.02]' : ''} ${isBeingResized ? 'opacity-80' : ''}`}
+                      style={{
+                        top: `${top}%`,
+                        height: `${Math.max(height, 4)}%`,
+                        zIndex: isHighlighted ? 10 : 1
+                      }}
                       onPointerDown={(e) => onDragStart(e, j)}
                     >
-                      <div className="flex items-center justify-between gap-1">
-                        <div className="truncate font-medium">{(j as any).title || 'Job'}</div>
-                        <div className="opacity-70 whitespace-nowrap">{new Date(startTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</div>
-                      </div>
-                      <div className="truncate text-muted-foreground">{customer}</div>
-                      <div className={`absolute bottom-0 right-0 w-2 h-2 bg-primary rounded-sm transition-all duration-150 ${isResizing ? 'ring-1 ring-primary scale-125' : 'cursor-ns-resize hover:scale-110'}`} 
-                           onPointerDown={(e) => { e.stopPropagation(); onResizeStart(e as any, j); }} />
-                    </div>
-                  );
-                })}
+                      <div className="text-xs font-medium leading-tight">{startsAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} — {customer?.name || 'Unknown'}</div>
+                      <div className="text-xs leading-tight mt-0.5 truncate">{j.title}</div>
+                      <div className="text-xs leading-tight opacity-75 truncate">{j.address}</div>
+                      {/* Resize handle */}
+                      <div
+                        className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize opacity-0 hover:opacity-100 bg-primary/20"
+                        onPointerDown={(e) => onResizeStart(e, j)}
+                      />
+                    </div>;
+                  })}
               </div>
             ))}
           </div>
