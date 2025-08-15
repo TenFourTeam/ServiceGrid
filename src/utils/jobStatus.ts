@@ -112,3 +112,84 @@ export function checkJobTimeConflict(
     conflicts
   };
 }
+
+/**
+ * Determines if a job should automatically transition to "In Progress" status
+ */
+export function shouldJobBeInProgress(job: { status: string; startsAt: string | null; endsAt: string | null }, currentTime: Date): boolean {
+  if (job.status !== 'Scheduled' || !job.startsAt || !job.endsAt) {
+    return false;
+  }
+  
+  const startTime = new Date(job.startsAt);
+  const endTime = new Date(job.endsAt);
+  
+  return startTime <= currentTime && endTime > currentTime;
+}
+
+/**
+ * Determines if a job should automatically transition to "Completed" status
+ */
+export function shouldJobBeCompleted(job: { status: string; endsAt: string | null }, currentTime: Date): boolean {
+  if (job.status !== 'In Progress' || !job.endsAt) {
+    return false;
+  }
+  
+  const endTime = new Date(job.endsAt);
+  return endTime <= currentTime;
+}
+
+/**
+ * Finds all jobs that need automatic status updates
+ */
+export function getJobsRequiringStatusUpdate(
+  jobs: Array<{ id: string; status: string; startsAt: string | null; endsAt: string | null; title?: string | null }>, 
+  currentTime: Date
+): Array<{ id: string; newStatus: 'In Progress' | 'Completed'; reason: string }> {
+  const updates: Array<{ id: string; newStatus: 'In Progress' | 'Completed'; reason: string }> = [];
+  
+  // Find jobs that should be "In Progress"
+  const shouldBeInProgress = jobs.filter(job => shouldJobBeInProgress(job, currentTime));
+  
+  // Find jobs that should be completed
+  const shouldBeCompleted = jobs.filter(job => shouldJobBeCompleted(job, currentTime));
+  
+  // Only allow one job to be "In Progress" at a time
+  if (shouldBeInProgress.length > 0) {
+    // Sort by start time and take the most recent one
+    const mostRecent = shouldBeInProgress.sort((a, b) => 
+      new Date(b.startsAt!).getTime() - new Date(a.startsAt!).getTime()
+    )[0];
+    
+    updates.push({
+      id: mostRecent.id,
+      newStatus: 'In Progress',
+      reason: 'Current time is within job window'
+    });
+    
+    // Force complete any other "In Progress" jobs to maintain single active job rule
+    const otherInProgress = jobs.filter(job => 
+      job.status === 'In Progress' && 
+      job.id !== mostRecent.id
+    );
+    
+    otherInProgress.forEach(job => {
+      updates.push({
+        id: job.id,
+        newStatus: 'Completed',
+        reason: 'Only one job can be in progress at a time'
+      });
+    });
+  }
+  
+  // Auto-complete past "In Progress" jobs
+  shouldBeCompleted.forEach(job => {
+    updates.push({
+      id: job.id,
+      newStatus: 'Completed',
+      reason: 'Job end time has passed'
+    });
+  });
+  
+  return updates;
+}
