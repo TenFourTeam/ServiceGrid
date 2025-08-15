@@ -1,5 +1,5 @@
 import { useBusinessContext } from '@/hooks/useBusinessContext';
-import { useCustomersCount } from '@/hooks/useCustomersCount';
+import { useCustomersData } from '@/hooks/useCustomersData';
 import { CheckCircle, XCircle, Clock } from 'lucide-react';
 
 /**
@@ -8,7 +8,7 @@ import { CheckCircle, XCircle, Clock } from 'lucide-react';
  */
 export function IntegrationStatus() {
   const { isAuthenticated, businessId, business } = useBusinessContext();
-  const { data: customersCount, isLoading } = useCustomersCount();
+  const { count: customersCount, isLoadingCount: isLoading } = useCustomersData({ loadData: false });
 
   const checks = [
     {

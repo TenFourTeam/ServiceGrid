@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
-import type { DbJobRow } from "@/hooks/useSupabaseJobs";
+import type { Job as DbJobRow } from "@/hooks/useJobsData";
 
 export function useSupabaseJobsRange(
   range: { start: Date; end: Date },

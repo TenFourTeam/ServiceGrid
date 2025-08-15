@@ -7,9 +7,9 @@ import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { 
   // useBusiness integrated into useBusinessContext 
   useProfile, 
-  useCustomersCount, 
-  useJobsCount, 
-  useQuotesCount,
+  useCustomersData, 
+  useJobsData, 
+  useQuotesData,
   useStripeConnectStatus,
   useSubscriptionStatus 
 } from '@/queries/unified';
@@ -37,9 +37,9 @@ export function useOnboardingState(): OnboardingState {
   
   // Direct query consumption - no context layer
   const { data: profile, isLoading: profileLoading, isFetching: profileFetching } = useProfile();
-  const { data: customersCount, isLoading: customersLoading } = useCustomersCount();
-  const { data: jobsCount, isLoading: jobsLoading } = useJobsCount();
-  const { data: quotesCount, isLoading: quotesLoading } = useQuotesCount();
+  const { count: customersCount, isLoadingCount: customersLoading } = useCustomersData({ loadData: false });
+  const { count: jobsCount, isLoadingCount: jobsLoading } = useJobsData({ loadData: false });
+  const { count: quotesCount, isLoadingCount: quotesLoading } = useQuotesData({ loadData: false });
   const { data: stripeStatus, isLoading: stripeLoading } = useStripeConnectStatus();
   const { data: subscription, isLoading: subscriptionLoading } = useSubscriptionStatus();
 

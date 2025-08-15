@@ -1,13 +1,13 @@
 import React from 'react';
-import { useCustomersCount } from '@/hooks/useCustomersCount';
-import { useJobsCount } from '@/hooks/useJobsCount';
-import { useQuotesCount } from '@/hooks/useQuotesCount';
+import { useCustomersData } from '@/hooks/useCustomersData';
+import { useJobsData } from '@/hooks/useJobsData';
+import { useQuotesData } from '@/hooks/useQuotesData';
 import { Progress } from '@/components/ui/progress';
 
 export function GlobalLoadingIndicator() {
-  const { isLoading: customersLoading } = useCustomersCount();
-  const { isLoading: jobsLoading } = useJobsCount();
-  const { isLoading: quotesLoading } = useQuotesCount();
+  const { isLoadingCount: customersLoading } = useCustomersData({ loadData: false });
+  const { isLoadingCount: jobsLoading } = useJobsData({ loadData: false });
+  const { isLoadingCount: quotesLoading } = useQuotesData({ loadData: false });
   
   const isLoading = customersLoading || jobsLoading || quotesLoading;
 
