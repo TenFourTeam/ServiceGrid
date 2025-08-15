@@ -13,6 +13,16 @@ verify_jwt = false
 [functions.resend-send-email]
 verify_jwt = false
 
+# Invite system functions
+[functions.invite-worker]
+verify_jwt = false
+
+[functions.invite-manage]
+verify_jwt = false
+
+[functions.invite-redeem]
+verify_jwt = false
+
 [functions.quote-events]
 verify_jwt = false
 

@@ -1,51 +1,79 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { verifyToken } from "https://esm.sh/@clerk/backend@1";
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.44.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const json = (data: unknown, init: ResponseInit = {}) =>
-  new Response(JSON.stringify(data), {
-    ...init,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json', ...init.headers },
+function json(data: any, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...corsHeaders },
   });
+}
 
-const createAdminClient = () => {
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  return createClient(supabaseUrl, supabaseServiceKey);
-};
+function createAdminClient() {
+  return createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    { auth: { persistSession: false } }
+  );
+}
 
-async function resolveOwnerIdFromClerk(req: Request): Promise<string> {
-  const authHeader = req.headers.get('Authorization') || '';
-  const token = authHeader.replace('Bearer ', '');
-  const clerkSecretKey = Deno.env.get('CLERK_SECRET_KEY');
-  if (!clerkSecretKey) throw new Error('CLERK_SECRET_KEY not configured');
-
-  const payload = await verifyToken(token, { secretKey: clerkSecretKey });
-  const supabase = createAdminClient();
-
-  // First try to find by clerk_user_id
-  let { data: profile } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('clerk_user_id', payload.sub)
-    .single();
-
-  if (!profile && payload.email) {
-    // Fallback to email lookup
-    ({ data: profile } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('email', payload.email)
-      .single());
+async function resolveOwnerIdFromClerk(req: Request) {
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader) {
+    throw new Error('Authorization header required');
   }
 
-  if (!profile) {
-    throw new Error('User profile not found');
+  const token = authHeader.replace('Bearer ', '');
+  const clerkSecretKey = Deno.env.get('CLERK_SECRET_KEY');
+  if (!clerkSecretKey) {
+    throw new Error('CLERK_SECRET_KEY not configured');
+  }
+
+  // Verify the Clerk JWT
+  const clerkResponse = await fetch('https://api.clerk.com/v1/jwts/verify', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${clerkSecretKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ token }),
+  });
+
+  if (!clerkResponse.ok) {
+    throw new Error('Invalid Clerk token');
+  }
+
+  const { payload } = await clerkResponse.json();
+  const clerkUserId = payload.sub;
+
+  // Get the Supabase profile
+  const supabase = createAdminClient();
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('clerk_user_id', clerkUserId)
+    .single();
+
+  if (error || !profile) {
+    // Fallback to email lookup
+    const email = payload.email;
+    if (email) {
+      const { data: emailProfile, error: emailError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .single();
+      
+      if (emailError || !emailProfile) {
+        throw new Error('Profile not found');
+      }
+      return emailProfile.id;
+    }
+    throw new Error('Profile not found');
   }
 
   return profile.id;
@@ -57,149 +85,151 @@ serve(async (req: Request) => {
   }
 
   if (req.method !== 'POST') {
-    return json({ error: 'Method not allowed' }, { status: 405 });
+    return json({ error: 'Method not allowed' }, 405);
   }
 
   try {
     const ownerId = await resolveOwnerIdFromClerk(req);
-    const supabase = createAdminClient();
     const { businessId, email } = await req.json();
 
     if (!businessId || !email) {
-      return json({ error: 'businessId and email are required' }, { status: 400 });
+      return json({ error: 'Business ID and email are required' }, 400);
     }
 
-    // Verify the user is an owner of this business
-    const { data: membership } = await supabase
-      .from('business_members')
-      .select('role')
-      .eq('business_id', businessId)
-      .eq('user_id', ownerId)
+    const supabase = createAdminClient();
+
+    // Verify the user owns this business
+    const { data: business, error: businessError } = await supabase
+      .from('businesses')
+      .select('id, name, logo_url')
+      .eq('id', businessId)
+      .eq('owner_id', ownerId)
       .single();
 
-    if (!membership || membership.role !== 'owner') {
-      return json({ error: 'Only business owners can invite workers' }, { status: 403 });
+    if (businessError || !business) {
+      return json({ error: 'Business not found or not owned by user' }, 403);
     }
 
-    const emailLower = email.toLowerCase();
-
-    // Check for existing pending invite
+    // Check for existing invite or membership
     const { data: existingInvite } = await supabase
       .from('invites')
-      .select('*')
+      .select('id')
       .eq('business_id', businessId)
-      .eq('email', emailLower)
+      .eq('email', email)
       .is('redeemed_at', null)
       .is('revoked_at', null)
       .gt('expires_at', new Date().toISOString())
       .single();
 
     if (existingInvite) {
-      return json({ error: 'An active invitation already exists for this email' }, { status: 400 });
+      return json({ error: 'Active invite already exists for this email' }, 409);
     }
 
-    // Check if user already exists and is a member
-    const { data: existingUser } = await supabase.auth.admin.getUserByEmail(emailLower);
-    
-    if (existingUser.user) {
-      const { data: existingMember } = await supabase
-        .from('business_members')
-        .select('*')
-        .eq('business_id', businessId)
-        .eq('user_id', existingUser.user.id)
-        .single();
+    const { data: existingMember } = await supabase
+      .from('business_members')
+      .select('id')
+      .eq('business_id', businessId)
+      .in('user_id', [
+        supabase.from('profiles').select('id').eq('email', email)
+      ])
+      .single();
 
-      if (existingMember) {
-        return json({ error: 'User is already a member of this business' }, { status: 400 });
-      }
+    if (existingMember) {
+      return json({ error: 'User is already a member of this business' }, 409);
     }
 
     // Generate secure token
-    const tokenBytes = crypto.getRandomValues(new Uint8Array(32));
-    const token = btoa(String.fromCharCode(...tokenBytes))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
-    
-    // Hash the token for storage
+    const token = crypto.randomUUID();
     const encoder = new TextEncoder();
     const data = encoder.encode(token);
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const tokenHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    // Create invite
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days from now
 
-    // Create invite record
     const { data: invite, error: inviteError } = await supabase
       .from('invites')
       .insert({
         business_id: businessId,
-        email: emailLower,
+        email,
         role: 'worker',
         token_hash: tokenHash,
-        expires_at: expiresAt,
+        expires_at: expiresAt.toISOString(),
         invited_by: ownerId,
       })
-      .select('id')
+      .select()
       .single();
 
     if (inviteError) {
-      console.error('Error creating invite:', inviteError);
-      return json({ error: 'Failed to create invitation' }, { status: 500 });
+      console.error('Failed to create invite:', inviteError);
+      return json({ error: 'Failed to create invite' }, 500);
     }
 
-    // Get business info for email
-    const { data: business } = await supabase
-      .from('businesses')
-      .select('name')
-      .eq('id', businessId)
-      .single();
-
-    // Generate invite URL
-    const inviteUrl = `${Deno.env.get('ALLOWED_ORIGINS')?.split(',')[0] || 'http://localhost:8080'}/invite?token=${token}`;
-    
     // Send invitation email
+    const inviteUrl = `${Deno.env.get('SUPABASE_URL')?.replace('/v1', '')}/invite?token=${token}`;
+    
     try {
       await supabase.functions.invoke('resend-send-email', {
         body: {
-          to: emailLower,
-          subject: `You're invited to join ${business?.name || 'the team'}`,
+          to: email,
+          subject: `You're invited to join ${business.name}`,
           html: `
-            <h1>You're invited!</h1>
-            <p>You've been invited to join ${business?.name || 'a business'} on ServiceGrid.</p>
-            <p><a href="${inviteUrl}" style="background: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Accept Invitation</a></p>
-            <p>This invitation will expire in 7 days.</p>
-            <p>If you didn't expect this invitation, you can safely ignore this email.</p>
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <div style="text-align: center; margin-bottom: 30px;">
+                ${business.logo_url ? `<img src="${business.logo_url}" alt="${business.name}" style="max-height: 60px; margin-bottom: 20px;">` : ''}
+                <h1 style="color: #333; margin: 0;">You're invited to join ${business.name}</h1>
+              </div>
+              
+              <p style="color: #666; font-size: 16px; line-height: 1.5;">
+                You've been invited to join <strong>${business.name}</strong> as a team member.
+              </p>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${inviteUrl}" 
+                   style="background: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 500;">
+                  Accept Invitation
+                </a>
+              </div>
+              
+              <p style="color: #888; font-size: 14px;">
+                This invitation will expire in 7 days. If you don't have an account, you'll be able to create one.
+              </p>
+              
+              <p style="color: #888; font-size: 12px; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
+                If you didn't expect this invitation, you can safely ignore this email.
+              </p>
+            </div>
           `,
         },
       });
     } catch (emailError) {
       console.error('Failed to send invitation email:', emailError);
-      // Don't fail the request if email fails
+      // Don't fail the request if email fails, invitation is still created
     }
 
     // Log audit action
     await supabase.rpc('log_audit_action', {
       p_business_id: businessId,
       p_user_id: ownerId,
-      p_action: 'invite_created',
-      p_resource_type: 'invite',
+      p_action: 'invite_sent',
+      p_resource_type: 'business_member',
       p_resource_id: invite.id,
-      p_details: { email: emailLower, role: 'worker' }
+      p_details: { email, role: 'worker' }
     });
 
-    return json({ 
+    console.log('Invitation created successfully');
+
+    return json({
       message: 'Invitation sent successfully',
-      inviteId: invite.id,
-      inviteUrl: inviteUrl
+      invite_id: invite.id,
+      invite_url: inviteUrl,
     });
 
   } catch (error) {
-    console.error('Invite worker error:', error);
-    return json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
-      { status: 500 }
-    );
+    console.error('Error creating invitation:', error);
+    return json({ error: 'Internal server error' }, 500);
   }
 });
