@@ -16,6 +16,8 @@ import { toast } from 'sonner';
 import PickQuoteModal from '@/components/Jobs/PickQuoteModal';
 import { supabase } from '@/integrations/supabase/client';
 import JobShowModal from '@/components/Jobs/JobShowModal';
+import { StatusLegend } from './StatusLegend';
+import { getJobStatusColors, canDragJob, canResizeJob, validateJobTiming } from '@/utils/jobStatus';
 const START_ANCHOR_HOUR = 5; // visual start at 5:00
 const TOTAL_MIN = 24 * 60;
 function dayKey(d: Date) {
@@ -213,8 +215,9 @@ const minuteOfDayFromAnchorOffset = (offset: number) => {
 
 function onDragStart(e: React.PointerEvent, job: Job) {
     e.stopPropagation();
-    if (job.status !== 'Scheduled') {
-      toast.info('You cannot reschedule this job while it is ' + job.status.toLowerCase());
+    const currentTime = new Date();
+    if (!canDragJob(job.status, currentTime, new Date(job.startsAt))) {
+      toast.info(`Cannot move ${job.status.toLowerCase()} jobs`);
       setActiveJob(job);
       return;
     }
@@ -318,8 +321,9 @@ function onDragStart(e: React.PointerEvent, job: Job) {
 
   function onResizeStart(e: React.PointerEvent, job: Job) {
     e.stopPropagation();
-    if (job.status !== 'Scheduled') {
-      toast.info('You cannot change duration for a job that is ' + job.status.toLowerCase());
+    const currentTime = new Date();
+    if (!canResizeJob(job.status, currentTime, new Date(job.startsAt), new Date(job.endsAt))) {
+      toast.info(`Cannot resize ${job.status.toLowerCase()} jobs`);
       return;
     }
     let latestEnd = job.endsAt;
@@ -401,6 +405,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
     window.addEventListener('pointerup', onUp);
   }
   return <div className="w-full -ml-4 md:-ml-6 w-[calc(100%+1rem)] md:w-[calc(100%+1.5rem)]">
+      <StatusLegend />
       <div className="flex items-center justify-end mb-3">
         
       </div>
@@ -473,30 +478,45 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                     const isHighlighted = highlightJobId === j.id;
                     const isBeingDragged = isDragging === j.id;
                     const isBeingResized = isResizing === j.id;
+                    const statusColors = getJobStatusColors(j.status);
+                    const currentTime = new Date();
+                    const canDrag = canDragJob(j.status, currentTime, startsAt);
+                    const canResize = canResizeJob(j.status, currentTime, startsAt, endsAt);
                     
                     return <div
                       key={j.id}
-                      className={`absolute left-2 right-2 rounded-md p-2 cursor-pointer select-none transition-colors ${
-                        isHighlighted ? 'bg-primary text-primary-foreground ring-2 ring-primary/50' :
-                        j.status === 'Completed' ? 'bg-green-100 text-green-900 border border-green-200' :
-                        j.status === 'In Progress' ? 'bg-yellow-100 text-yellow-900 border border-yellow-200' :
-                        'bg-blue-100 text-blue-900 border border-blue-200'
-                      } ${isBeingDragged ? 'opacity-80 scale-[1.02]' : ''} ${isBeingResized ? 'opacity-80' : ''}`}
+                      className={`absolute left-2 right-2 rounded-md p-2 select-none transition-all ${
+                        isHighlighted ? 'ring-2 ring-primary/50 scale-[1.02]' : ''
+                      } ${
+                        statusColors.bg
+                      } ${
+                        statusColors.text
+                      } ${
+                        statusColors.border
+                      } ${
+                        canDrag ? 'cursor-pointer hover:opacity-80' : 'cursor-default opacity-90'
+                      } ${isBeingDragged ? 'opacity-70 scale-[1.05]' : ''} ${isBeingResized ? 'opacity-70' : ''}`}
                       style={{
                         top: `${top}%`,
                         height: `${Math.max(height, 4)}%`,
                         zIndex: isHighlighted ? 10 : 1
                       }}
-                      onPointerDown={(e) => onDragStart(e, j)}
+                      onPointerDown={canDrag ? (e) => onDragStart(e, j) : undefined}
+                      onClick={() => setActiveJob(j)}
                     >
-                      <div className="text-xs font-medium leading-tight">{startsAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} — {customer?.name || 'Unknown'}</div>
-                      <div className="text-xs leading-tight mt-0.5 truncate">{j.title}</div>
-                      <div className="text-xs leading-tight opacity-75 truncate">{j.address}</div>
-                      {/* Resize handle */}
-                      <div
-                        className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize opacity-0 hover:opacity-100 bg-primary/20"
-                        onPointerDown={(e) => onResizeStart(e, j)}
-                      />
+                      <div className="flex items-center gap-1 text-xs font-medium leading-tight">
+                        <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70" />
+                        {startsAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} — {customer?.name || 'Unknown'}
+                      </div>
+                      <div className="text-xs leading-tight mt-0.5 truncate ml-2.5">{j.title}</div>
+                      <div className="text-xs leading-tight opacity-75 truncate ml-2.5">{j.address}</div>
+                      {/* Resize handle - only show if resizable */}
+                      {canResize && (
+                        <div
+                          className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize opacity-0 hover:opacity-100 bg-current/20"
+                          onPointerDown={(e) => onResizeStart(e, j)}
+                        />
+                      )}
                     </div>;
                   })}
               </div>

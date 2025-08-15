@@ -43,6 +43,18 @@ export default {
 					DEFAULT: 'hsl(var(--success))',
 					foreground: 'hsl(var(--success-foreground))'
 				},
+				'status-scheduled': {
+					DEFAULT: 'hsl(var(--status-scheduled))',
+					foreground: 'hsl(var(--status-scheduled-foreground))'
+				},
+				'status-in-progress': {
+					DEFAULT: 'hsl(var(--status-in-progress))',
+					foreground: 'hsl(var(--status-in-progress-foreground))'
+				},
+				'status-completed': {
+					DEFAULT: 'hsl(var(--status-completed))',
+					foreground: 'hsl(var(--status-completed-foreground))'
+				},
 				muted: {
 					DEFAULT: 'hsl(var(--muted))',
 					foreground: 'hsl(var(--muted-foreground))'

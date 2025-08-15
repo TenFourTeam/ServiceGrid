@@ -34,6 +34,14 @@ All colors MUST be HSL.
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
+    /* Job Status semantic tokens */
+    --status-scheduled: 217 91% 60%; /* Blue */
+    --status-scheduled-foreground: 210 40% 98%;
+    --status-in-progress: 43 96% 56%; /* Yellow */
+    --status-in-progress-foreground: 25 95% 15%;
+    --status-completed: 142.1 70.6% 45.3%; /* Green */
+    --status-completed-foreground: 144 61% 96%;
+    
     /* Success semantic tokens */
     --success: 142.1 70.6% 45.3%;
     --success-foreground: 144 61% 96%;
