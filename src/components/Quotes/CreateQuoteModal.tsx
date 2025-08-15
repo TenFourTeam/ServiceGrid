@@ -44,17 +44,17 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
 
       // Map API response to Quote interface
       const quote: Quote = {
-        id: result.id,
-        number: result.number,
+        id: result.quote.id,
+        number: result.quote.number,
         businessId: businessId || '',
         customerId: formData.customerId,
         address: formData.address,
         lineItems: formData.lineItems,
-        taxRate: result.taxRate,
-        discount: result.discount,
-        subtotal: result.subtotal,
-        total: result.total,
-        status: result.status,
+        taxRate: result.quote.taxRate,
+        discount: result.quote.discount,
+        subtotal: result.quote.subtotal,
+        total: result.quote.total,
+        status: result.quote.status,
         files: [],
         notesInternal: formData.notesInternal,
         terms: formData.terms,
@@ -63,10 +63,10 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
         depositRequired: formData.depositRequired,
         depositPercent: formData.depositPercent,
         sentAt: undefined,
-        viewCount: result.viewCount || 0,
-        createdAt: result.createdAt || new Date().toISOString(),
-        updatedAt: result.updatedAt || new Date().toISOString(),
-        publicToken: result.publicToken,
+        viewCount: result.quote.viewCount || 0,
+        createdAt: result.quote.createdAt || new Date().toISOString(),
+        updatedAt: result.quote.updatedAt || new Date().toISOString(),
+        publicToken: result.quote.publicToken,
       };
 
       onOpenChange(false);
