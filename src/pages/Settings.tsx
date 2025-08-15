@@ -123,7 +123,7 @@ export default function SettingsPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label>Name</Label>
+                <Label>Your Name</Label>
                 <div className="space-y-2">
                   <Input 
                     value={userName} 

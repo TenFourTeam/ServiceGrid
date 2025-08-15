@@ -32,6 +32,7 @@ import BusinessLogo from "@/components/BusinessLogo";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useClerk, useUser } from "@clerk/clerk-react";
 import { usePreloadImage } from "@/hooks/usePreloadImage";
+import { useProfile } from "@/queries/useProfile";
 
 const items = [
   { title: "Calendar", url: "/calendar", icon: CalendarIcon },
@@ -53,6 +54,7 @@ export default function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { user } = useUser();
+  const { data: profile } = useProfile();
   
   // Warm the cache for the logo ASAP
   usePreloadImage(businessLightLogoUrl || businessLogoUrl);
@@ -160,7 +162,7 @@ export default function AppSidebar() {
                 aria-label="User menu"
               >
                 <UserIcon className="h-5 w-5 text-primary flex-shrink-0" />
-                <span className="truncate group-data-[collapsible=icon]:hidden transition-all">{(user?.unsafeMetadata as any)?.displayName || user?.fullName || "Account"}</span>
+                <span className="truncate group-data-[collapsible=icon]:hidden transition-all">{profile?.fullName || user?.fullName || "Account"}</span>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent side="top" align="start" sideOffset={8} alignOffset={-4} className="w-56">
