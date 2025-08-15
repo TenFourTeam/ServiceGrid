@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useBusinessContext } from "@/auth";
 import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
-import { qk } from "@/queries/keys";
+import { queryKeys } from "@/queries/keys";
 import { z } from "zod";
 
 export interface DbJobRow {
@@ -31,7 +31,7 @@ export function useSupabaseJobs(opts?: { enabled?: boolean; refetchInterval?: nu
   const enabled = isAuthenticated && (opts?.enabled ?? true);
 
   return useQuery<{ rows: DbJobRow[] } | null, Error>({
-    queryKey: qk.jobsList(businessId || ''),
+    queryKey: queryKeys.counts.jobs(businessId || '').concat(['full']),
     enabled: enabled && !!businessId,
     refetchInterval: opts?.refetchInterval ?? false,
     refetchOnWindowFocus: opts?.refetchOnWindowFocus ?? true,

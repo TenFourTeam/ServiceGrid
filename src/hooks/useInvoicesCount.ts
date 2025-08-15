@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useBusinessContext } from "@/auth";
 import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
-import { qk } from "@/queries/keys";
+import { queryKeys } from "@/queries/keys";
 
 /**
  * Count-only query for invoices (performance optimized for onboarding)
@@ -13,7 +13,7 @@ export function useInvoicesCount(opts?: { enabled?: boolean }) {
   const enabled = isAuthenticated && (opts?.enabled ?? true);
 
   return useQuery({
-    queryKey: qk.invoicesCount(businessId || ''),
+    queryKey: queryKeys.counts.invoices(businessId || ''),
     enabled: enabled && !!businessId,
     queryFn: async (): Promise<number> => {
       console.info("[useInvoicesCount] fetching count...");

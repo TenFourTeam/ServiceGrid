@@ -2,7 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { useBusinessContext } from "@/auth";
-import { qk } from "@/queries/keys";
+import { queryKeys } from "@/queries/keys";
 
 export interface ConnectStatus {
   stripeAccountId: string | null;
@@ -22,7 +22,7 @@ export function useStripeConnectStatus(opts?: { enabled?: boolean }) {
   const enabled = !!isSignedIn && (opts?.enabled ?? true);
 
   return useQuery<ConnectStatus | null, Error>({
-    queryKey: qk.stripeStatus(businessId || ''),
+    queryKey: queryKeys.billing.stripeStatus(businessId || ''),
     enabled: enabled && !!businessId,
     queryFn: async () => {
       const token = await getToken();

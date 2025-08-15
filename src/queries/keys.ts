@@ -69,24 +69,5 @@ const invalidationHelpers = {
   }
 };
 
-/**
- * Backward compatibility export
- * @deprecated Use queryKeys instead
- */
-const qk = {
-  profile: (userId: string) => ['profile', userId],
-  business: (businessId: string) => ['business', businessId],
-  customersList: (businessId: string) => ['customers', 'list', businessId],
-  customersCount: (businessId: string) => ['customers', 'count', businessId],
-  jobsList: (businessId: string) => ['jobs', 'list', businessId],
-  jobsCount: (businessId: string) => ['jobs', 'count', businessId],
-  quotesList: (businessId: string) => ['quotes', 'list', businessId],
-  quotesCount: (businessId: string) => ['quotes', 'count', businessId],
-  invoicesList: (businessId: string) => ['invoices', 'list', businessId],
-  invoicesCount: (businessId: string) => ['invoices', 'count', businessId],
-  stripeStatus: (businessId: string) => ['stripe', 'status', businessId],
-  subscription: (userId: string) => ['subscription', userId]
-};
-
 // Export everything
-export { queryKeys, invalidationHelpers, qk };
+export { queryKeys, invalidationHelpers };

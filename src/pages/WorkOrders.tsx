@@ -190,7 +190,7 @@ export default function WorkOrdersPage() {
                 return (
                   <WorkOrderRow
                     key={j.id}
-                    job={j}
+                    job={j as Job}
                     customerName={customerName}
                     when={when}
                     uninvoiced={uninvoiced}
@@ -225,7 +225,7 @@ export default function WorkOrdersPage() {
                       const addr = j.address || customers.find(c=>c.id===j.customerId)?.address;
                       if (addr) window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`, '_blank');
                     }}
-                    onOpen={() => setActiveJob(j)}
+                    onOpen={() => setActiveJob(j as Job)}
                   />
                 );
               })

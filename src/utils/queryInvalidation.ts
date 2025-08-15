@@ -1,5 +1,5 @@
 import { QueryClient } from "@tanstack/react-query";
-import { qk } from "@/queries/keys";
+import { queryKeys } from "@/queries/keys";
 
 /**
  * Centralized query invalidation helpers to ensure proper cache management
@@ -7,36 +7,36 @@ import { qk } from "@/queries/keys";
  */
 
 export function invalidateCustomers(queryClient: QueryClient, businessId: string) {
-  queryClient.invalidateQueries({ queryKey: qk.customersList(businessId) });
-  queryClient.invalidateQueries({ queryKey: qk.customersCount(businessId) });
+  queryClient.invalidateQueries({ queryKey: queryKeys.counts.customers(businessId).concat(['full']) });
+  queryClient.invalidateQueries({ queryKey: queryKeys.counts.customers(businessId) });
 }
 
 export function invalidateJobs(queryClient: QueryClient, businessId: string) {
-  queryClient.invalidateQueries({ queryKey: qk.jobsList(businessId) });
-  queryClient.invalidateQueries({ queryKey: qk.jobsCount(businessId) });
+  queryClient.invalidateQueries({ queryKey: queryKeys.counts.jobs(businessId).concat(['full']) });
+  queryClient.invalidateQueries({ queryKey: queryKeys.counts.jobs(businessId) });
 }
 
 export function invalidateQuotes(queryClient: QueryClient, businessId: string) {
-  queryClient.invalidateQueries({ queryKey: qk.quotesList(businessId) });
-  queryClient.invalidateQueries({ queryKey: qk.quotesCount(businessId) });
+  queryClient.invalidateQueries({ queryKey: queryKeys.counts.quotes(businessId).concat(['full']) });
+  queryClient.invalidateQueries({ queryKey: queryKeys.counts.quotes(businessId) });
 }
 
 export function invalidateInvoices(queryClient: QueryClient, businessId: string) {
-  queryClient.invalidateQueries({ queryKey: qk.invoicesList(businessId) });
-  queryClient.invalidateQueries({ queryKey: qk.invoicesCount(businessId) });
+  queryClient.invalidateQueries({ queryKey: queryKeys.counts.invoices(businessId).concat(['full']) });
+  queryClient.invalidateQueries({ queryKey: queryKeys.counts.invoices(businessId) });
 }
 
 export function invalidateProfile(queryClient: QueryClient, userId: string) {
-  queryClient.invalidateQueries({ queryKey: qk.profile(userId) });
+  queryClient.invalidateQueries({ queryKey: queryKeys.profile.current() });
 }
 
 export function invalidateBusiness(queryClient: QueryClient, businessId: string) {
-  queryClient.invalidateQueries({ queryKey: qk.business(businessId) });
+  queryClient.invalidateQueries({ queryKey: queryKeys.business.current() });
 }
 
 export function invalidateBilling(queryClient: QueryClient, businessId: string, userId: string) {
-  queryClient.invalidateQueries({ queryKey: qk.stripeStatus(businessId) });
-  queryClient.invalidateQueries({ queryKey: qk.subscription(userId) });
+  queryClient.invalidateQueries({ queryKey: queryKeys.billing.stripeStatus(businessId) });
+  queryClient.invalidateQueries({ queryKey: queryKeys.billing.subscription(userId) });
 }
 
 export function invalidateAll(queryClient: QueryClient, businessId: string, userId: string) {

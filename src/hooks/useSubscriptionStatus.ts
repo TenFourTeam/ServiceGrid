@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { useBusinessContext } from "@/auth";
 import { edgeFetchJson } from "@/utils/edgeApi";
-import { qk } from "@/queries/keys";
+import { queryKeys } from "@/queries/keys";
 
 export interface SubscriptionStatus {
   subscribed: boolean;
@@ -20,7 +20,7 @@ export function useSubscriptionStatus(opts?: { enabled?: boolean }) {
   const enabled = !!isSignedIn && (opts?.enabled ?? true);
 
   return useQuery<SubscriptionStatus | null, Error>({
-    queryKey: qk.subscription(userId || ''),
+    queryKey: queryKeys.billing.subscription(userId || ''),
     enabled: enabled && !!userId,
     queryFn: async () => {
       try {

@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useBusinessContext } from "@/auth";
 import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
-import { qk } from "@/queries/keys";
+import { queryKeys } from "@/queries/keys";
 import type { Tables } from "@/integrations/supabase/types";
 import { z } from "zod";
 
@@ -29,7 +29,7 @@ export function useSupabaseQuotes(opts?: { enabled?: boolean }) {
   const enabled = isAuthenticated && (opts?.enabled ?? true);
 
   return useQuery<{ rows: DbQuoteRow[] } | null, Error>({
-    queryKey: qk.quotesList(businessId || ''),
+    queryKey: queryKeys.counts.quotes(businessId || '').concat(['full']),
     enabled: enabled && !!businessId,
     queryFn: async () => {
       console.info("[useSupabaseQuotes] fetching...");

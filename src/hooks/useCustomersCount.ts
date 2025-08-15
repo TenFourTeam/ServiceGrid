@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useBusinessContext } from "@/auth";
 import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
-import { qk } from "@/queries/keys";
+import { queryKeys } from "@/queries/keys";
 
 /**
  * Count-only query for customers (performance optimized for onboarding)
@@ -13,7 +13,7 @@ export function useCustomersCount(opts?: { enabled?: boolean }) {
   const enabled = isAuthenticated && (opts?.enabled ?? true);
 
   return useQuery({
-    queryKey: qk.customersCount(businessId || ''),
+    queryKey: queryKeys.counts.customers(businessId || ''),
     enabled: enabled && !!businessId,
     queryFn: async (): Promise<number> => {
       console.info("[useCustomersCount] fetching count...");

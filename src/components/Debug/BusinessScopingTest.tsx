@@ -45,7 +45,7 @@ export function BusinessScopingTest() {
       return;
     }
 
-    if (customers.length === 0) {
+    if ((customers || []).length === 0) {
       toast.error('Create a customer first');
       return;
     }
@@ -73,7 +73,7 @@ export function BusinessScopingTest() {
     <div className="space-y-4">
       <div className="text-sm space-y-2">
         <div><strong>Business ID:</strong> {businessId}</div>
-        <div><strong>Current Customers:</strong> {customers.length}</div>
+        <div><strong>Current Customers:</strong> {(customers || []).length}</div>
       </div>
       
       <div className="space-y-3">

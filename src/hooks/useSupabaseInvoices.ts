@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useBusinessContext } from "@/auth";
 import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
-import { qk } from "@/queries/keys";
+import { queryKeys } from "@/queries/keys";
 import { z } from "zod";
 
 export interface DbInvoiceRow {
@@ -31,7 +31,7 @@ export function useSupabaseInvoices(opts?: { enabled?: boolean }) {
   const enabled = isAuthenticated && (opts?.enabled ?? true);
 
   return useQuery<{ rows: DbInvoiceRow[] } | null, Error>({
-    queryKey: qk.invoicesList(businessId || ''),
+    queryKey: queryKeys.counts.invoices(businessId || '').concat(['full']),
     enabled: enabled && !!businessId,
     queryFn: async () => {
       console.info("[useSupabaseInvoices] fetching...");
