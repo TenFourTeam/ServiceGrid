@@ -117,16 +117,13 @@ export default function QuotesPage() {
 
   return (
     <AppLayout title="Quotes">
-      <section className="space-y-4">
-        <div className="flex justify-end">
-          <Button onClick={() => { setOpen(true); }} data-onb="new-quote-button">
-            Create Quote
-          </Button>
-        </div>
-
+      <section>
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <CardTitle>All Quotes</CardTitle>
+            <Button onClick={() => { setOpen(true); }} data-onb="new-quote-button">
+              Create Quote
+            </Button>
           </CardHeader>
           <CardContent>
             <Table>
