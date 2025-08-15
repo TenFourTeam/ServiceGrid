@@ -8,9 +8,10 @@ import { useState, useEffect } from 'react';
 import { useCustomersData } from '@/queries/unified';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { edgeToast } from "@/utils/edgeRequestWithToast";
 import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
+import { toast } from 'sonner';
 import { SimpleCSVImport } from '@/components/Onboarding/SimpleCSVImport';
 import { useLocation, useNavigate } from 'react-router-dom';
 // Removed complex onboarding imports
@@ -78,19 +79,14 @@ export default function CustomersPage() {
     try {
       const isEdit = !!editingId;
 
-      await edgeRequest(fn("customers"), {
-        method: isEdit ? 'PATCH' : 'POST',
-        body: JSON.stringify({
-          ...(isEdit ? { id: editingId } : {}),
-          name: draft.name.trim(),
-          email: draft.email.trim(),
-          phone: draft.phone.trim() || null,
-          address: draft.address.trim() || null,
-        }),
-      });
-
-      // Show simple success toast
-      toast.success(isEdit ? 'Customer updated' : 'Customer added successfully');
+      const successMessage = isEdit ? 'Customer updated successfully' : 'Customer added successfully';
+      await edgeToast.create(fn("customers"), {
+        ...(isEdit ? { id: editingId } : {}),
+        name: draft.name.trim(),
+        email: draft.email.trim(),
+        phone: draft.phone.trim() || null,
+        address: draft.address.trim() || null,
+      }, successMessage);
       
       setOpen(false);
       setEditingId(null);

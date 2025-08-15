@@ -8,11 +8,12 @@ import { useCustomersData } from "@/queries/unified";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import type { Quote } from "@/types";
 import { generateQuoteEmail, generateQuoteSubject, combineMessageWithQuote } from "@/utils/quoteEmailTemplates";
-import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { edgeToast } from "@/utils/edgeRequestWithToast";
 import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
+import { toast } from "sonner";
 import { invalidationHelpers } from '@/queries/keys';
 
 export interface SendQuoteModalProps {
@@ -78,16 +79,17 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
     try {
       const finalHtml = combineMessageWithQuote(message, html);
       console.info('[SendQuoteModal] sending quote email', { quoteId: quote.id, to });
-      await edgeRequest(fn("resend-send-email"), {
-        method: "POST",
-        body: JSON.stringify({ to, subject: subject || defaultSubject, html: finalHtml, quote_id: quote.id }),
-      });
+      await edgeToast.send(fn("resend-send-email"), { 
+        to, 
+        subject: subject || defaultSubject, 
+        html: finalHtml, 
+        quote_id: quote.id 
+      }, "Quote sent successfully");
       console.info('[SendQuoteModal] sent', { quoteId: quote.id });
       // Invalidate cache and let server update the status
       if (businessId) {
         invalidationHelpers.quotes(queryClient, businessId);
       }
-      toast.success("Quote sent successfully");
       onOpenChange(false);
     } catch (e: any) {
       console.error(e);
