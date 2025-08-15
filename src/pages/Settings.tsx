@@ -16,7 +16,7 @@ import ConnectBanner from '@/components/Stripe/ConnectBanner';
 import { useStripeConnectStatus } from '@/hooks/useStripeConnectStatus';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useProfileOperations } from '@/hooks/useProfileOperations';
-import { ProfileCompletionDebug } from '@/components/Auth/ProfileCompletionDebug';
+
 
 import { useToast } from '@/hooks/use-toast';
 import { useFocusPulse } from '@/hooks/useFocusPulse';
@@ -312,7 +312,6 @@ export default function SettingsPage() {
     })();
   }, [isSignedIn]);
   return <AppLayout title="Settings">
-      <ProfileCompletionDebug />
       <div className="grid md:grid-cols-2 gap-6">
         <Card 
           ref={profileRef}
