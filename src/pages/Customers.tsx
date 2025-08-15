@@ -118,11 +118,27 @@ export default function CustomersPage() {
     
     setDeleting(true);
     try {
-      await edgeRequest(fn("customers") + `?id=${customerToDelete.id}`, {
+      const response = await edgeRequest(fn("customers") + `?id=${customerToDelete.id}`, {
         method: 'DELETE'
       });
       
-      toast.success('Customer deleted successfully');
+      // Show cascade deletion details if available
+      if (response?.cascade_deleted) {
+        const counts = response.cascade_deleted;
+        const deletedItems = [];
+        if (counts.quotes > 0) deletedItems.push(`${counts.quotes} quote${counts.quotes > 1 ? 's' : ''}`);
+        if (counts.invoices > 0) deletedItems.push(`${counts.invoices} invoice${counts.invoices > 1 ? 's' : ''}`);
+        if (counts.jobs > 0) deletedItems.push(`${counts.jobs} job${counts.jobs > 1 ? 's' : ''}`);
+        
+        if (deletedItems.length > 0) {
+          toast.success(`Customer and ${deletedItems.join(', ')} deleted successfully`);
+        } else {
+          toast.success('Customer deleted successfully');
+        }
+      } else {
+        toast.success('Customer deleted successfully');
+      }
+      
       setDeleteDialogOpen(false);
       setCustomerToDelete(null);
       
@@ -283,11 +299,20 @@ export default function CustomersPage() {
             <AlertDialogTitle>Delete Customer</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete "{customerToDelete?.name}"? This action cannot be undone.
-              {customerToDelete && (
-                <div className="mt-2 text-sm text-muted-foreground">
-                  If this customer has existing quotes, invoices, or jobs, you'll need to remove those first.
+              <div className="mt-3 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                <div className="text-sm font-medium text-destructive">
+                  ⚠️ This will also delete:
                 </div>
-              )}
+                <div className="text-sm text-muted-foreground mt-1">
+                  • All quotes created for this customer
+                  <br />
+                  • All invoices created for this customer
+                  <br />
+                  • All jobs scheduled for this customer
+                  <br />
+                  • All related line items and payments
+                </div>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -223,39 +223,7 @@ serve(async (req) => {
       const customerId = url.searchParams.get("id");
       if (!customerId) return badRequest("Customer ID is required");
 
-      // Check for existing relationships before deletion
-      const { data: quotes } = await supaAdmin
-        .from("quotes")
-        .select("id")
-        .eq("customer_id", customerId)
-        .eq("business_id", businessId)
-        .limit(1);
-
-      const { data: invoices } = await supaAdmin
-        .from("invoices")
-        .select("id")
-        .eq("customer_id", customerId)
-        .eq("business_id", businessId)
-        .limit(1);
-
-      const { data: jobs } = await supaAdmin
-        .from("jobs")
-        .select("id")
-        .eq("customer_id", customerId)
-        .eq("business_id", businessId)
-        .limit(1);
-
-      if (quotes?.length || invoices?.length || jobs?.length) {
-        const relationships = [];
-        if (quotes?.length) relationships.push("quotes");
-        if (invoices?.length) relationships.push("invoices");  
-        if (jobs?.length) relationships.push("jobs");
-        
-        return badRequest(
-          `Cannot delete customer: has existing ${relationships.join(", ")}. Please remove these first.`,
-          409
-        );
-      }
+      console.log(`[customers] Starting cascade deletion for customer: ${customerId}`);
 
       // Get customer data for audit log before deletion
       const { data: customerData } = await supaAdmin
@@ -267,7 +235,121 @@ serve(async (req) => {
 
       if (!customerData) return badRequest("Customer not found", 404);
 
-      // Delete the customer
+      // Get counts of related records for audit logging
+      const { data: quotes } = await supaAdmin
+        .from("quotes")
+        .select("id")
+        .eq("customer_id", customerId)
+        .eq("business_id", businessId);
+
+      const { data: invoices } = await supaAdmin
+        .from("invoices")
+        .select("id")
+        .eq("customer_id", customerId)
+        .eq("business_id", businessId);
+
+      const { data: jobs } = await supaAdmin
+        .from("jobs")
+        .select("id")
+        .eq("customer_id", customerId)
+        .eq("business_id", businessId);
+
+      const quotesCount = quotes?.length || 0;
+      const invoicesCount = invoices?.length || 0;
+      const jobsCount = jobs?.length || 0;
+
+      console.log(`[customers] Found ${quotesCount} quotes, ${invoicesCount} invoices, ${jobsCount} jobs to cascade delete`);
+
+      // Begin cascade deletion in correct order
+      let deletedCounts = {
+        quote_events: 0,
+        quote_line_items: 0,
+        invoice_line_items: 0,
+        payments: 0,
+        jobs: jobsCount,
+        invoices: invoicesCount,
+        quotes: quotesCount
+      };
+
+      // 1. Delete quote events for all customer quotes
+      if (quotesCount > 0) {
+        const quoteIds = quotes!.map(q => q.id);
+        const { error: quoteEventsError, count } = await supaAdmin
+          .from("quote_events")
+          .delete({ count: 'exact' })
+          .in("quote_id", quoteIds.map(id => id.toString()));
+        if (quoteEventsError) throw quoteEventsError;
+        deletedCounts.quote_events = count || 0;
+        console.log(`[customers] Deleted ${deletedCounts.quote_events} quote events`);
+      }
+
+      // 2. Delete quote line items for all customer quotes
+      if (quotesCount > 0) {
+        const { error: quoteLineItemsError, count } = await supaAdmin
+          .from("quote_line_items")
+          .delete({ count: 'exact' })
+          .in("quote_id", quotes!.map(q => q.id));
+        if (quoteLineItemsError) throw quoteLineItemsError;
+        deletedCounts.quote_line_items = count || 0;
+        console.log(`[customers] Deleted ${deletedCounts.quote_line_items} quote line items`);
+      }
+
+      // 3. Delete invoice line items for all customer invoices
+      if (invoicesCount > 0) {
+        const { error: invoiceLineItemsError, count } = await supaAdmin
+          .from("invoice_line_items")
+          .delete({ count: 'exact' })
+          .in("invoice_id", invoices!.map(i => i.id));
+        if (invoiceLineItemsError) throw invoiceLineItemsError;
+        deletedCounts.invoice_line_items = count || 0;
+        console.log(`[customers] Deleted ${deletedCounts.invoice_line_items} invoice line items`);
+      }
+
+      // 4. Delete payments for all customer invoices
+      if (invoicesCount > 0) {
+        const { error: paymentsError, count } = await supaAdmin
+          .from("payments")
+          .delete({ count: 'exact' })
+          .in("invoice_id", invoices!.map(i => i.id));
+        if (paymentsError) throw paymentsError;
+        deletedCounts.payments = count || 0;
+        console.log(`[customers] Deleted ${deletedCounts.payments} payments`);
+      }
+
+      // 5. Delete jobs for the customer
+      if (jobsCount > 0) {
+        const { error: jobsError } = await supaAdmin
+          .from("jobs")
+          .delete()
+          .eq("customer_id", customerId)
+          .eq("business_id", businessId);
+        if (jobsError) throw jobsError;
+        console.log(`[customers] Deleted ${jobsCount} jobs`);
+      }
+
+      // 6. Delete invoices for the customer
+      if (invoicesCount > 0) {
+        const { error: invoicesError } = await supaAdmin
+          .from("invoices")
+          .delete()
+          .eq("customer_id", customerId)
+          .eq("business_id", businessId);
+        if (invoicesError) throw invoicesError;
+        console.log(`[customers] Deleted ${invoicesCount} invoices`);
+      }
+
+      // 7. Delete quotes for the customer
+      if (quotesCount > 0) {
+        const { error: quotesError } = await supaAdmin
+          .from("quotes")
+          .delete()
+          .eq("customer_id", customerId)
+          .eq("business_id", businessId);
+        if (quotesError) throw quotesError;
+        console.log(`[customers] Deleted ${quotesCount} quotes`);
+      }
+
+      // 8. Finally delete the customer
       const { error } = await supaAdmin
         .from("customers")
         .delete()
@@ -276,17 +358,22 @@ serve(async (req) => {
 
       if (error) throw error;
 
-      // Log audit action
+      console.log(`[customers] Successfully cascade deleted customer and all related records`);
+
+      // Log comprehensive audit action
       await supaAdmin.rpc('log_audit_action', {
         p_business_id: businessId,
         p_user_id: userId,
-        p_action: 'delete',
+        p_action: 'cascade_delete',
         p_resource_type: 'customer',
         p_resource_id: customerId,
-        p_details: { name: customerData.name, email: customerData.email }
+        p_details: { 
+          customer: { name: customerData.name, email: customerData.email },
+          cascade_deleted: deletedCounts
+        }
       });
 
-      return json({ ok: true });
+      return json({ ok: true, cascade_deleted: deletedCounts });
     }
 
     return badRequest("Method not allowed", 405);
