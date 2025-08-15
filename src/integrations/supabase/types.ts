@@ -524,6 +524,30 @@ export type Database = {
         }
         Relationships: []
       }
+      migration_history_backup: {
+        Row: {
+          created_by: string | null
+          idempotency_key: string | null
+          name: string | null
+          statements: string[] | null
+          version: string | null
+        }
+        Insert: {
+          created_by?: string | null
+          idempotency_key?: string | null
+          name?: string | null
+          statements?: string[] | null
+          version?: string | null
+        }
+        Update: {
+          created_by?: string | null
+          idempotency_key?: string | null
+          name?: string | null
+          statements?: string[] | null
+          version?: string | null
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number
