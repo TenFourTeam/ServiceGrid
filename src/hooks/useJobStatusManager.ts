@@ -6,7 +6,7 @@ import { edgeRequest } from '@/utils/edgeApi';
 import { fn } from '@/utils/functionUrl';
 import { queryKeys } from '@/queries/keys';
 import { toast } from 'sonner';
-import { Job } from '@/hooks/useJobsData';
+import { Job } from '@/types';
 
 interface JobStatusUpdate {
   id: string;

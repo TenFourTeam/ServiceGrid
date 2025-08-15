@@ -3,22 +3,7 @@ import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
 import { queryKeys } from "@/queries/keys";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
-
-export interface Job {
-  id: string;
-  customerId: string;
-  quoteId?: string | null;
-  address?: string | null;
-  title?: string | null;
-  startsAt?: string | null;
-  endsAt?: string | null;
-  status: "Scheduled" | "In Progress" | "Completed" | "Cancelled";
-  total?: number | null;
-  notes?: string | null;
-  photos: string[];
-  createdAt?: string;
-  updatedAt?: string;
-}
+import { Job } from "@/types";
 
 interface UseJobsDataOptions {
   enabled?: boolean;
