@@ -3,6 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useState, useEffect } from 'react';
 import { useCustomersData } from '@/queries/unified';
@@ -35,6 +38,9 @@ export default function CustomersPage() {
   const [draft, setDraft] = useState({ name: '', email: '', phone: '', address: '' });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [customerToDelete, setCustomerToDelete] = useState<any>(null);
+  const [deleting, setDeleting] = useState(false);
 
   function openNew() {
     setEditingId(null);
@@ -102,21 +108,51 @@ export default function CustomersPage() {
     }
   }
 
+  function openDeleteDialog(customer: any) {
+    setCustomerToDelete(customer);
+    setDeleteDialogOpen(true);
+  }
+
+  async function deleteCustomer() {
+    if (!customerToDelete) return;
+    
+    setDeleting(true);
+    try {
+      await edgeRequest(fn("customers") + `?id=${customerToDelete.id}`, {
+        method: 'DELETE'
+      });
+      
+      toast.success('Customer deleted successfully');
+      setDeleteDialogOpen(false);
+      setCustomerToDelete(null);
+      
+      if (businessId) {
+        invalidationHelpers.customers(queryClient, businessId);
+      }
+    } catch (e: any) {
+      console.error('[CustomersPage] delete customer failed:', e);
+      toast.error(e?.message || 'Failed to delete customer');
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
     <AppLayout title="Customers">
       <section className="space-y-4">
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => setCsvImportOpen(true)}>
-            Import CSV
-          </Button>
-          <Button onClick={() => openNew()}>
-            New Customer
-          </Button>
-        </div>
-
         <Card>
           <CardHeader>
-            <CardTitle>All Customers</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>All Customers</CardTitle>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setCsvImportOpen(true)}>
+                  Import CSV
+                </Button>
+                <Button onClick={() => openNew()}>
+                  New Customer
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -124,19 +160,20 @@ export default function CustomersPage() {
             ) : error ? (
               <div className="text-destructive">Error loading customers: {error.message}</div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Address</TableHead>
-                  </TableRow>
-                </TableHeader>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Address</TableHead>
+                      <TableHead className="w-12"></TableHead>
+                    </TableRow>
+                  </TableHeader>
                 <TableBody>
                   {rows.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-12">
+                      <TableCell colSpan={5} className="text-center py-12">
                         <div className="space-y-3">
                           <div className="text-4xl">👥</div>
                           <div className="text-lg font-medium">Add customers to get started</div>
@@ -154,19 +191,33 @@ export default function CustomersPage() {
                     </TableRow>
                   ) : (
                     rows.map((c) => (
-                      <TableRow
-                        key={c.id}
-                        className="cursor-pointer hover:bg-muted"
-                        onClick={() => openEdit(c)}
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') openEdit(c);
-                        }}
-                      >
+                      <TableRow key={c.id}>
                         <TableCell>{c.name}</TableCell>
                         <TableCell>{c.email ?? ''}</TableCell>
                         <TableCell>{c.phone ?? ''}</TableCell>
                         <TableCell>{c.address ?? ''}</TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openEdit(c)}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => openDeleteDialog(c)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
@@ -225,6 +276,32 @@ export default function CustomersPage() {
           // Customers list will auto-refresh due to query invalidation
         }}
       />
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Customer</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{customerToDelete?.name}"? This action cannot be undone.
+              {customerToDelete && (
+                <div className="mt-2 text-sm text-muted-foreground">
+                  If this customer has existing quotes, invoices, or jobs, you'll need to remove those first.
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={deleteCustomer}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 }

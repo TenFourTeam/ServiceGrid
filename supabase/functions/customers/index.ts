@@ -218,6 +218,77 @@ serve(async (req) => {
       return json({ ok: true, id: data.id });
     }
 
+    if (req.method === "DELETE") {
+      const url = new URL(req.url);
+      const customerId = url.searchParams.get("id");
+      if (!customerId) return badRequest("Customer ID is required");
+
+      // Check for existing relationships before deletion
+      const { data: quotes } = await supaAdmin
+        .from("quotes")
+        .select("id")
+        .eq("customer_id", customerId)
+        .eq("business_id", businessId)
+        .limit(1);
+
+      const { data: invoices } = await supaAdmin
+        .from("invoices")
+        .select("id")
+        .eq("customer_id", customerId)
+        .eq("business_id", businessId)
+        .limit(1);
+
+      const { data: jobs } = await supaAdmin
+        .from("jobs")
+        .select("id")
+        .eq("customer_id", customerId)
+        .eq("business_id", businessId)
+        .limit(1);
+
+      if (quotes?.length || invoices?.length || jobs?.length) {
+        const relationships = [];
+        if (quotes?.length) relationships.push("quotes");
+        if (invoices?.length) relationships.push("invoices");  
+        if (jobs?.length) relationships.push("jobs");
+        
+        return badRequest(
+          `Cannot delete customer: has existing ${relationships.join(", ")}. Please remove these first.`,
+          409
+        );
+      }
+
+      // Get customer data for audit log before deletion
+      const { data: customerData } = await supaAdmin
+        .from("customers")
+        .select("name, email")
+        .eq("id", customerId)
+        .eq("business_id", businessId)
+        .single();
+
+      if (!customerData) return badRequest("Customer not found", 404);
+
+      // Delete the customer
+      const { error } = await supaAdmin
+        .from("customers")
+        .delete()
+        .eq("id", customerId)
+        .eq("business_id", businessId);
+
+      if (error) throw error;
+
+      // Log audit action
+      await supaAdmin.rpc('log_audit_action', {
+        p_business_id: businessId,
+        p_user_id: userId,
+        p_action: 'delete',
+        p_resource_type: 'customer',
+        p_resource_id: customerId,
+        p_details: { name: customerData.name, email: customerData.email }
+      });
+
+      return json({ ok: true });
+    }
+
     return badRequest("Method not allowed", 405);
   } catch (e) {
     const method = req.method || 'UNKNOWN';
