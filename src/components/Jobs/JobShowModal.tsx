@@ -345,8 +345,6 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                 >
                   {isCreatingInvoice ? 'Creating...' : 'Invoice'}
                 </Button>
-              </div>
-              <div className="flex items-center gap-2">
                 <Button 
                   variant="outline" 
                   onClick={handleCompleteJob}
@@ -355,6 +353,8 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                 >
                   {isCompletingJob ? 'Completing...' : job.status === 'Completed' ? 'Completed' : 'Complete'}
                 </Button>
+              </div>
+              <div className="flex items-center gap-2">
                 <Button variant="destructive" size="sm" onClick={async () => {
                   try {
                     await edgeRequest(fn(`jobs?id=${job.id}`), { method: 'DELETE' });

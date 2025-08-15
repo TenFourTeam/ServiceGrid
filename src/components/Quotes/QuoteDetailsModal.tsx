@@ -378,9 +378,6 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
                 </Button>
               </>
             )}
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Close
-            </Button>
           </div>
         </DrawerFooter>
       </DrawerContent>
