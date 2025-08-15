@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useCustomersData } from "@/queries/unified";
+import { useCustomersData, useQuotesData } from "@/queries/unified";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,6 +15,7 @@ import PickQuoteModal from "@/components/Jobs/PickQuoteModal";
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidationHelpers } from '@/queries/keys';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { useNavigate } from 'react-router-dom';
 
 interface JobShowModalProps {
   open: boolean;
@@ -24,8 +25,10 @@ interface JobShowModalProps {
 
 export default function JobShowModal({ open, onOpenChange, job }: JobShowModalProps) {
   const { data: customers = [] } = useCustomersData();
+  const { data: quotes = [] } = useQuotesData();
   const queryClient = useQueryClient();
   const { businessId } = useBusinessContext();
+  const navigate = useNavigate();
   const [localNotes, setLocalNotes] = useState(job.notes ?? "");
   const notesTimer = useRef<number | null>(null);
   const { getToken } = useClerkAuth();
@@ -40,6 +43,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
   }, [job.id]);
 
   const customerName = useMemo(() => customers.find(c => c.id === job.customerId)?.name || "Customer", [customers, job.customerId]);
+  const linkedQuote = useMemo(() => (job as any).quoteId ? quotes.find(q => q.id === (job as any).quoteId) : null, [quotes, (job as any).quoteId]);
   const photos: string[] = Array.isArray((job as any).photos) ? ((job as any).photos as string[]) : [];
 
   useEffect(() => {
@@ -157,6 +161,28 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
               <div className="text-sm text-muted-foreground">Total</div>
               <div>{typeof job.total === 'number' ? formatMoney(job.total) : '—'}</div>
             </div>
+            <div>
+              <div className="text-sm text-muted-foreground">Quote</div>
+              <div className="flex items-center gap-2">
+                {linkedQuote ? (
+                  <>
+                    <span className="font-medium">{linkedQuote.number}</span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        onOpenChange(false);
+                        navigate(`/quotes?highlight=${linkedQuote.id}`);
+                      }}
+                    >
+                      View Quote
+                    </Button>
+                  </>
+                ) : (
+                  <span>—</span>
+                )}
+              </div>
+            </div>
           </div>
           <div>
             <div className="text-sm text-muted-foreground mb-1">Notes</div>
@@ -247,8 +273,18 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
               {job.status === 'Scheduled' && (
                 <ReschedulePopover job={job as Job} onDone={()=>{ /* no-op, realtime/subsequent fetch updates UI */ }} />
               )}
-              {!(job as any).quoteId && (
+              {!(job as any).quoteId ? (
                 <Button variant="outline" onClick={() => setPickerOpen(true)}>Link Quote</Button>
+              ) : (
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    onOpenChange(false);
+                    navigate(`/quotes?highlight=${(job as any).quoteId}`);
+                  }}
+                >
+                  View Quote
+                </Button>
               )}
               <Button variant="outline" onClick={handleCreateInvoice}>Create Invoice</Button>
             </div>
