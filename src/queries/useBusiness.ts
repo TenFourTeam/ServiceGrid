@@ -5,7 +5,7 @@ import { fn } from '@/utils/functionUrl';
 import { queryKeys } from './keys';
 import { toBusinessUI } from './transform';
 
-export type BusinessUI = {
+type BusinessUI = {
   id: string;
   name: string;
   phone?: string;

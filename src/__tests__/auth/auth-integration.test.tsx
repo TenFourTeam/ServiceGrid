@@ -51,8 +51,14 @@ const mockBusinessQuery = {
   refetch: vi.fn()
 };
 
-vi.mock('@/queries/useBusiness', () => ({
-  useBusiness: () => mockBusinessQuery
+vi.mock('@/hooks/useBusinessContext', () => ({
+  useBusinessContext: () => ({
+    isAuthenticated: mockAuth.isSignedIn,
+    userId: mockAuth.userId,
+    businessId: mockBusinessQuery.data?.id,
+    business: mockBusinessQuery.data,
+    isLoadingBusiness: mockBusinessQuery.isLoading,
+  })
 }));
 
 vi.mock('@/components/LoadingScreen', () => ({
