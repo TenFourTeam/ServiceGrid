@@ -10,7 +10,7 @@ import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/Layout/AppSidebar';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { PageFade } from '@/components/Motion/PageFade';
-import { TrialBanner } from '@/components/Onboarding/TrialBanner';
+import { TrialSystem } from '@/components/Onboarding/TrialSystem';
 import { HelpWidget } from '@/components/Onboarding/HelpWidget';
 import { IntentPickerModal } from '@/components/Onboarding/IntentPickerModal';
 import { useOnboardingState } from '@/onboarding/streamlined';
@@ -45,7 +45,7 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
       <div className="min-h-screen w-full flex">
         <AppSidebar />
         <SidebarInset className="flex-1 flex flex-col min-h-0">
-          <TrialBanner />
+          <TrialSystem />
           <div className="p-4 md:p-6 flex flex-col flex-1 min-h-0">
           <header className="flex items-center justify-between mb-4 md:mb-6">
             <div className="flex items-center gap-2">
