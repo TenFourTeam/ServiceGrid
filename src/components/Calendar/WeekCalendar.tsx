@@ -276,6 +276,25 @@ function onDragStart(e: React.PointerEvent, job: Job) {
         setActiveJob(job);
         return;
       }
+      
+      // Optimistically update the cache
+      const queryKey = queryKeys.data.jobs(businessId || '');
+      const previousData = queryClient.getQueryData(queryKey);
+      
+      if (businessId && previousData) {
+        queryClient.setQueryData(queryKey, (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            jobs: old.jobs.map((j: Job) => 
+              j.id === job.id 
+                ? { ...j, startsAt: latest.startsAt, endsAt: latest.endsAt }
+                : j
+            )
+          };
+        });
+      }
+      
       try {
         await edgeRequest(fn(`jobs?id=${job.id}`), {
           method: 'PATCH',
@@ -284,14 +303,13 @@ function onDragStart(e: React.PointerEvent, job: Job) {
             endsAt: latest.endsAt,
           }),
         });
-
-        // Invalidate jobs data
-        if (businessId) {
-          queryClient.invalidateQueries({ queryKey: queryKeys.data.jobs(businessId) });
-        }
         toast.success('Job rescheduled successfully');
       } catch (err: any) {
         console.error(err);
+        // Rollback on error
+        if (businessId && previousData) {
+          queryClient.setQueryData(queryKey, previousData);
+        }
         toast.error(err?.message || 'Failed to reschedule job');
       }
     };
@@ -345,6 +363,24 @@ function onDragStart(e: React.PointerEvent, job: Job) {
       // Clear resize state
       setResizeState(null);
       
+      // Optimistically update the cache
+      const queryKey = queryKeys.data.jobs(businessId || '');
+      const previousData = queryClient.getQueryData(queryKey);
+      
+      if (businessId && previousData) {
+        queryClient.setQueryData(queryKey, (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            jobs: old.jobs.map((j: Job) => 
+              j.id === job.id 
+                ? { ...j, endsAt: latestEnd }
+                : j
+            )
+          };
+        });
+      }
+      
       try {
         await edgeRequest(fn(`jobs?id=${job.id}`), {
           method: 'PATCH',
@@ -352,14 +388,13 @@ function onDragStart(e: React.PointerEvent, job: Job) {
             endsAt: latestEnd,
           }),
         });
-
-        // Invalidate jobs data
-        if (businessId) {
-          queryClient.invalidateQueries({ queryKey: queryKeys.data.jobs(businessId) });
-        }
         toast.success('Job duration updated successfully');
       } catch (err: any) {
         console.error(err);
+        // Rollback on error
+        if (businessId && previousData) {
+          queryClient.setQueryData(queryKey, previousData);
+        }
         toast.error(err?.message || 'Failed to update job duration');
       }
     };
