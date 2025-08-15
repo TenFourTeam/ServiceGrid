@@ -2,8 +2,6 @@
 // - Single source of truth for SUPABASE_URL
 // - Authenticated and public JSON helpers
 
-import { getApiTokenStrict } from "@/auth/token";
-
 export const SUPABASE_URL = "https://ijudkzqfriazabiosnvb.supabase.co";
 
 export class ApiError extends Error {
@@ -37,56 +35,6 @@ export type EdgeRequestOptions = {
   headers?: Record<string, string>;
 };
 
-// Legacy functions - deprecated, use edgeRequest instead
-export async function edgeFetchJson(
-  path: string,
-  getToken: () => Promise<string | null>,
-  opts: EdgeRequestOptions = {}
-) {
-  console.warn('[DEPRECATED] edgeFetchJson is deprecated. Use edgeRequest instead.');
-  return edgeRequest(`${SUPABASE_URL}/functions/v1/${path}`, {
-    method: opts.method || "GET",
-    headers: {
-      "Content-Type": "application/json",
-      ...(opts.headers || {}),
-    },
-    body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
-  });
-}
-
-export async function edgePublicJson(path: string, opts: EdgeRequestOptions = {}) {
-  console.warn('[DEPRECATED] edgePublicJson is deprecated. Use fetch directly or edgeRequest.');
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/${path}`, {
-    method: opts.method || "GET",
-    headers: {
-      "Content-Type": "application/json",
-      ...(opts.headers || {}),
-    },
-    body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
-  });
-  if (!res.ok) {
-    const txt = await res.text().catch(() => "");
-    throw new ApiError(res.status, `Edge ${path} failed: ${txt}`, 'edge_public_failed');
-  }
-  const ct = res.headers.get("content-type") || "";
-  if (ct.includes("application/json")) {
-    return res.json();
-  }
-  return null;
-}
-
-export async function edgeFetch(
-  path: string,
-  getToken: () => Promise<string | null>,
-  opts: EdgeRequestOptions = {}
-) {
-  console.warn('[DEPRECATED] edgeFetch is deprecated. Use edgeRequest instead.');
-  return edgeRequest(`${SUPABASE_URL}/functions/v1/${path}`, {
-    method: opts.method || "GET",
-    headers: opts.headers || {},
-    body: opts.body,
-  });
-}
 
 // Simplified edge request with bulletproof error handling and retry logic
 export async function edgeRequest(url: string, init: RequestInit = {}): Promise<any> {

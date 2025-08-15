@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { edgePublicJson } from "@/utils/edgeApi";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
@@ -25,10 +24,13 @@ export default function InvoicePay() {
         return;
       }
       try {
-        const data = await edgePublicJson("create-invoice-payment-public", {
+        const response = await fetch("https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/create-invoice-payment-public", {
           method: "POST",
-          body: { invoice_id: invoiceId, token },
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ invoice_id: invoiceId, token }),
         });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
         if (data?.url) {
           setCheckoutUrl(data.url);
           // Open in a new tab per Stripe guidelines

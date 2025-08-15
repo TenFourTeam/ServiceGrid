@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { edgePublicJson } from '@/utils/edgeApi';
 
 export default function PaymentSuccess() {
   const [status, setStatus] = useState<'pending' | 'paid' | 'error'>('pending');
@@ -17,10 +16,13 @@ export default function PaymentSuccess() {
     }
     (async () => {
       try {
-        const data = await edgePublicJson('verify-payment', {
+        const response = await fetch('https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/verify-payment', {
           method: 'POST',
-          body: { session_id: sessionId }
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_id: sessionId })
         });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
           if ((data as any)?.status === 'paid') {
             const receiptSent = (data as any)?.receipt_sent === true;
             setStatus('paid');

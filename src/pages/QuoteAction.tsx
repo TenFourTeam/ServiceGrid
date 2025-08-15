@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { edgePublicJson } from '@/utils/edgeApi';
 
 type ActionType = 'approve' | 'edit';
 
@@ -41,8 +40,9 @@ export default function QuoteActionPage() {
     async function run() {
       if (!type || !quoteId || !token) { setStatus('error'); return; }
       try {
-        const path = `quote-events?type=${encodeURIComponent(type)}&quote_id=${encodeURIComponent(quoteId)}&token=${encodeURIComponent(token)}`;
-        await edgePublicJson(path);
+        const url = `https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/quote-events?type=${encodeURIComponent(type)}&quote_id=${encodeURIComponent(quoteId)}&token=${encodeURIComponent(token)}`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         setStatus('ok');
       } catch (e) {
         console.error('quote action error', e);
