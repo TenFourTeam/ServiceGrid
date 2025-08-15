@@ -27,6 +27,10 @@ export function useBusinessContext() {
     // Loading states
     isLoadingBusiness: businessQuery.isLoading,
     
+    // Error states
+    hasBusinessError: businessQuery.isError,
+    businessError: businessQuery.error,
+    
     // Utilities
     refetchBusiness: businessQuery.refetch,
   };

@@ -88,7 +88,3 @@ export const OnboardingErrorBoundary = ({ children }: { children: React.ReactNod
 export const ProfileErrorBoundary = ({ children }: { children: React.ReactNode }) => (
   <FeatureErrorBoundary feature="profile">{children}</FeatureErrorBoundary>
 );
-
-export const BusinessErrorBoundary = ({ children }: { children: React.ReactNode }) => (
-  <FeatureErrorBoundary feature="business">{children}</FeatureErrorBoundary>
-);

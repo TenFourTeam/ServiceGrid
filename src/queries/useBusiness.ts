@@ -29,6 +29,12 @@ export function useBusiness() {
       return business;
     },
     staleTime: 30_000,
-    retry: 2,
+    retry: (failureCount, error: any) => {
+      // Don't retry on auth errors
+      if (error?.status === 401 || error?.status === 403) return false;
+      // Exponential backoff: max 3 retries
+      return failureCount < 3;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 }
