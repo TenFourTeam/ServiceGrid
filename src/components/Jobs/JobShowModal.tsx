@@ -43,14 +43,26 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
   const [isCompletingJob, setIsCompletingJob] = useState(false);
   const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
   const [linkedQuoteId, setLinkedQuoteId] = useState<string | null>(null);
+  const [linkedQuoteObject, setLinkedQuoteObject] = useState<any>(null);
   
   useEffect(() => {
     setLocalNotes(job.notes ?? "");
   }, [job.id]);
 
+  // Clear optimistic state when modal closes
+  useEffect(() => {
+    if (!open) {
+      setLinkedQuoteObject(null);
+      setLinkedQuoteId(null);
+    }
+  }, [open]);
+
   const customerName = useMemo(() => customers.find(c => c.id === job.customerId)?.name || "Customer", [customers, job.customerId]);
   const currentQuoteId = linkedQuoteId || (job as any).quoteId;
-  const linkedQuote = useMemo(() => currentQuoteId ? quotes.find(q => q.id === currentQuoteId) : null, [quotes, currentQuoteId]);
+  const linkedQuote = useMemo(() => {
+    // Use optimistic quote object first, then fall back to cache lookup
+    return linkedQuoteObject || (currentQuoteId ? quotes.find(q => q.id === currentQuoteId) : null);
+  }, [linkedQuoteObject, quotes, currentQuoteId]);
   const existingInvoice = useMemo(() => invoices.find(inv => inv.jobId === job.id), [invoices, job.id]);
   const photos: string[] = Array.isArray((job as any).photos) ? ((job as any).photos as string[]) : [];
 
@@ -435,6 +447,9 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
           customerId={job.customerId}
           onSelect={async (quoteId) => {
             try {
+              // Find the selected quote and store it optimistically
+              const selectedQuote = quotes.find(q => q.id === quoteId);
+              
               const data = await edgeRequest(fn(`jobs?id=${job.id}`), {
                 method: 'PATCH',
                 body: JSON.stringify({ quoteId }),
@@ -442,7 +457,11 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
               if (businessId) {
                 invalidationHelpers.jobs(queryClient, businessId);
               }
+              
+              // Set both the ID and the complete quote object optimistically
               setLinkedQuoteId(quoteId);
+              setLinkedQuoteObject(selectedQuote);
+              
               toast.success('Quote linked to job');
               setPickerOpen(false);
             } catch (e: any) {
