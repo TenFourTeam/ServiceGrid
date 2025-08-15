@@ -1,18 +1,6 @@
 import { corsHeaders, requireCtx, json } from '../_lib/auth.ts';
 import { z } from 'https://deno.land/x/zod@v3.20.2/mod.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-function json(data: unknown, init: ResponseInit = {}): Response {
-  return new Response(JSON.stringify(data), {
-    headers: { 'Content-Type': 'application/json', ...corsHeaders, ...init.headers },
-    ...init,
-  });
-}
-
 const BusinessUpdateSchema = z.object({
   businessName: z.string().min(1, 'Business name is required'),
   phone: z.string().optional(),
@@ -38,21 +26,20 @@ Deno.serve(async (req: Request) => {
 
     // Parse and validate request body
     let input;
+    const body = await req.text();
+    console.log('[business-update] Raw request body:', body);
+    
     try {
-      const body = await req.text();
-      console.log('[business-update] Raw request body:', body);
-      input = BusinessUpdateSchema.parse(JSON.parse(body));
+      const parsedBody = JSON.parse(body);
+      input = BusinessUpdateSchema.parse(parsedBody);
       console.log('[business-update] Validated input:', { 
         hasBusinessName: !!input.businessName, 
         hasPhone: !!input.phone, 
         hasReplyToEmail: !!input.replyToEmail 
       });
     } catch (parseError) {
-      console.error('[business-update] JSON parsing failed:', parseError);
-      return json({ error: 'Invalid JSON in request body' }, { status: 400 });
-    } catch (validationError) {
-      console.error('[business-update] Validation failed:', validationError);
-      return json({ error: 'Validation failed', details: validationError }, { status: 400 });
+      console.error('[business-update] Parsing/validation failed:', parseError);
+      return json({ error: 'Invalid request data', details: parseError.message }, { status: 400 });
     }
 
     // Update business in database
