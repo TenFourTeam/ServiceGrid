@@ -21,6 +21,7 @@ import { useProfileOperations } from '@/hooks/useProfileOperations';
 import { useToast } from '@/hooks/use-toast';
 import { formatPhoneInput } from '@/utils/validation';
 import { formatNameSuggestion } from '@/validation/profile';
+import { useLogoOperations } from '@/hooks/useLogoOperations';
 
 export default function SettingsPage() {
   const { business } = useBusinessContext();
@@ -31,8 +32,6 @@ export default function SettingsPage() {
   } = useClerkAuth();
   const [darkFile, setDarkFile] = useState<File | null>(null);
   const [lightFile, setLightFile] = useState<File | null>(null);
-  const [uploadingDark, setUploadingDark] = useState(false);
-  const [uploadingLight, setUploadingLight] = useState(false);
   const [sub, setSub] = useState<any>(null);
   const [subLoading, setSubLoading] = useState(false);
   const { data: connectStatus, isLoading: statusLoading } = useStripeConnectStatus();
@@ -44,62 +43,15 @@ export default function SettingsPage() {
   const [isHydrated, setIsHydrated] = useState(false);
   const { role, canManage } = useBusinessContext();
   const { updateProfile, isUpdating } = useProfileOperations();
+  const { uploadLogo, isUploading: isUploadingLogo } = useLogoOperations();
   const { toast } = useToast();
-  async function uploadLogoDark() {
-    if (!isSignedIn) {
-      sonnerToast.error('You must be signed in');
+  function handleLogoUpload(kind: 'dark' | 'light') {
+    const file = kind === 'dark' ? darkFile : lightFile;
+    if (!file) {
       return;
     }
-    if (!darkFile) {
-      sonnerToast.error('Please choose an image file');
-      return;
-    }
-    try {
-      setUploadingDark(true);
-      const form = new FormData();
-      form.append('file', darkFile);
-      const data = await edgeRequest(fn("upload-business-logo?kind=dark"), {
-        method: 'POST',
-        body: form
-      });
-      const url = (data as any)?.url as string;
-      if (url) {
-        sonnerToast.success('Dark icon updated');
-      }
-    } catch (e: any) {
-      console.error(e);
-      sonnerToast.error(e?.message || 'Failed to upload dark icon');
-    } finally {
-      setUploadingDark(false);
-    }
-  }
-  async function uploadLogoLight() {
-    if (!isSignedIn) {
-      sonnerToast.error('You must be signed in');
-      return;
-    }
-    if (!lightFile) {
-      sonnerToast.error('Please choose an image file');
-      return;
-    }
-    try {
-      setUploadingLight(true);
-      const form = new FormData();
-      form.append('file', lightFile);
-      const data = await edgeRequest(fn("upload-business-logo?kind=light"), {
-        method: 'POST',
-        body: form
-      });
-      const url = (data as any)?.url as string;
-      if (url) {
-        sonnerToast.success('Light icon updated');
-      }
-    } catch (e: any) {
-      console.error(e);
-      sonnerToast.error(e?.message || 'Failed to upload light icon');
-    } finally {
-      setUploadingLight(false);
-    }
+    
+    uploadLogo.mutate({ file, kind });
   }
   async function refreshSubscription() {
     try {
@@ -377,7 +329,7 @@ export default function SettingsPage() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span className="inline-flex">
-                        <Button onClick={uploadLogoDark} disabled={uploadingDark || !darkFile}>{uploadingDark ? 'Uploading…' : 'Upload dark icon'}</Button>
+                        <Button onClick={() => handleLogoUpload('dark')} disabled={isUploadingLogo || !darkFile}>{isUploadingLogo ? 'Uploading…' : 'Upload dark icon'}</Button>
                       </span>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-xs">
@@ -399,7 +351,7 @@ export default function SettingsPage() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <span className="inline-flex">
-                      <Button onClick={uploadLogoLight} disabled={uploadingLight || !lightFile}>{uploadingLight ? 'Uploading…' : 'Upload light icon'}</Button>
+                      <Button onClick={() => handleLogoUpload('light')} disabled={isUploadingLogo || !lightFile}>{isUploadingLogo ? 'Uploading…' : 'Upload light icon'}</Button>
                     </span>
                   </TooltipTrigger>
                   <TooltipContent side="top" className="max-w-xs">
