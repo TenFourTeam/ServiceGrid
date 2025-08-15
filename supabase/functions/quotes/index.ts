@@ -75,6 +75,7 @@ serve(async (req) => {
     if (req.method === "GET") {
       const url = new URL(req.url);
       const countOnly = url.searchParams.get("count") === "true";
+      const quoteId = url.searchParams.get("id");
       
       if (countOnly) {
         const { count, error } = await ctx.supaAdmin
@@ -84,7 +85,76 @@ serve(async (req) => {
         if (error) throw error;
         return json({ count: count || 0 });
       }
+
+      // Single quote fetch by ID
+      if (quoteId) {
+        const { data: quote, error } = await ctx.supaAdmin
+          .from("quotes")
+          .select(`
+            id, number, total, status, created_at, updated_at, public_token, view_count, 
+            customer_id, business_id, address, tax_rate, discount, subtotal, 
+            notes_internal, terms, payment_terms, frequency, deposit_required, deposit_percent,
+            customers(name, email)
+          `)
+          .eq("id", quoteId)
+          .eq("business_id", ctx.businessId)
+          .single();
+        
+        if (error) {
+          if (error.code === 'PGRST116') {
+            return badRequest("Quote not found", 404);
+          }
+          throw error;
+        }
+
+        // Fetch line items
+        const { data: lineItems, error: lineItemsError } = await ctx.supaAdmin
+          .from("quote_line_items")
+          .select("id, name, unit, qty, unit_price, line_total, position")
+          .eq("quote_id", quoteId)
+          .eq("owner_id", ctx.userId)
+          .order("position");
+        
+        if (lineItemsError) throw lineItemsError;
+
+        // Transform to UI format
+        const fullQuote = {
+          id: quote.id,
+          number: quote.number,
+          businessId: quote.business_id,
+          customerId: quote.customer_id,
+          customerName: quote.customers?.name || null,
+          customerEmail: quote.customers?.email || null,
+          address: quote.address,
+          lineItems: (lineItems || []).map((item: any) => ({
+            id: item.id,
+            name: item.name,
+            unit: item.unit,
+            qty: item.qty,
+            unitPrice: item.unit_price,
+            lineTotal: item.line_total,
+          })),
+          taxRate: quote.tax_rate,
+          discount: quote.discount,
+          subtotal: quote.subtotal,
+          total: quote.total,
+          status: quote.status,
+          createdAt: quote.created_at,
+          updatedAt: quote.updated_at,
+          publicToken: quote.public_token,
+          viewCount: quote.view_count ?? 0,
+          notesInternal: quote.notes_internal,
+          terms: quote.terms,
+          paymentTerms: quote.payment_terms,
+          frequency: quote.frequency,
+          depositRequired: quote.deposit_required,
+          depositPercent: quote.deposit_percent,
+        };
+
+        return json(fullQuote);
+      }
       
+      // List all quotes (existing behavior)
       const { data, error } = await ctx.supaAdmin
         .from("quotes")
         .select("id, number, total, status, updated_at, public_token, view_count, customer_id, customers(name,email)")
