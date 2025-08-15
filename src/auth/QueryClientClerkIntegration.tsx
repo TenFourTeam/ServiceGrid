@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/clerk-react";
 import { queryKeys } from "@/queries/keys";
+import { useLifecycleEmailTriggers } from "@/hooks/useLifecycleEmailTriggers";
 
 /**
  * Integrates QueryClient with Clerk auth state changes
@@ -13,6 +14,9 @@ export function QueryClientClerkIntegration() {
   const queryClient = useQueryClient();
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const previousSignedInRef = useRef<boolean | null>(null);
+  
+  // Initialize lifecycle email triggers
+  useLifecycleEmailTriggers();
 
   // Clear cache on sign out and handle auth changes
   useEffect(() => {

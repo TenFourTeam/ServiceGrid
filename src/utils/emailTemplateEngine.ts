@@ -436,6 +436,333 @@ function createTotalsTable(config: TotalsConfig): string {
 /**
  * Combine user message with email content
  */
+// ============= LIFECYCLE EMAIL TEMPLATES =============
+
+export interface LifecycleEmailProps extends EmailBaseProps {
+  userFullName?: string;
+  userEmail?: string;
+  appUrl?: string;
+}
+
+export interface WelcomeEmailProps extends LifecycleEmailProps {}
+
+export function generateWelcomeEmail(props: WelcomeEmailProps) {
+  const { businessName, userFullName, appUrl = 'https://your-app.com' } = props;
+  
+  const subject = `Welcome to ServiceGrid, ${userFullName || 'there'}!`;
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Welcome to ServiceGrid</title>
+      </head>
+      <body style="margin:0; padding:0; background:#f1f5f9; font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu, Cantarell, 'Noto Sans', sans-serif;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#f1f5f9; padding:40px 20px;">
+          <tr>
+            <td align="center">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="600" style="max-width:600px; background:#ffffff; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden;">
+                
+                <!-- Header -->
+                <tr>
+                  <td style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding:32px; text-align:center;">
+                    <h1 style="margin:0; color:#f8fafc; font-size:32px; font-weight:700;">
+                      Welcome to ServiceGrid! 🎉
+                    </h1>
+                    <p style="margin:12px 0 0; color:#cbd5e1; font-size:16px;">
+                      Your business management journey starts here
+                    </p>
+                  </td>
+                </tr>
+
+                <!-- Main Content -->
+                <tr>
+                  <td style="padding:40px 32px;">
+                    
+                    <div style="margin-bottom:32px;">
+                      <p style="margin:0 0 16px; font-size:16px; line-height:1.6; color:#374151;">
+                        Hi${userFullName ? ` ${escapeHtml(userFullName)}` : ''},
+                      </p>
+                      <p style="margin:0 0 16px; font-size:16px; line-height:1.6; color:#374151;">
+                        Congratulations on setting up your ${businessName ? escapeHtml(businessName) : 'business'} account! You're now equipped with powerful tools to streamline your service business operations.
+                      </p>
+                    </div>
+
+                    <!-- Next Steps -->
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:24px; margin-bottom:32px;">
+                      <h2 style="margin:0 0 16px; font-size:18px; font-weight:600; color:#111827;">Here's what you can do next:</h2>
+                      <ul style="margin:0; padding-left:20px; color:#374151; line-height:1.7;">
+                        <li style="margin-bottom:8px;">Add your first customer and create a quote</li>
+                        <li style="margin-bottom:8px;">Set up your calendar for job scheduling</li>
+                        <li style="margin-bottom:8px;">Configure your business profile and branding</li>
+                        <li style="margin-bottom:8px;">Connect Stripe to start accepting payments</li>
+                      </ul>
+                    </div>
+
+                    <!-- CTA Button -->
+                    <div style="text-align:center; margin-bottom:32px;">
+                      <a href="${appUrl}/customers" 
+                         style="display:inline-block; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color:#ffffff; padding:16px 32px; border-radius:8px; text-decoration:none; font-weight:600; font-size:16px;">
+                        Get Started →
+                      </a>
+                    </div>
+
+                    <div style="text-align:center; font-size:14px; color:#6b7280;">
+                      Need help? Just reply to this email - we're here to support your success!
+                    </div>
+
+                  </td>
+                </tr>
+
+                <!-- Footer -->
+                <tr>
+                  <td style="background:#f8fafc; padding:24px 32px; border-top:1px solid #e5e7eb; text-align:center;">
+                    <p style="margin:0; font-size:12px; color:#6b7280;">
+                      © ServiceGrid - Professional service management made simple
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
+  `;
+
+  return { subject, html };
+}
+
+export interface FeatureDiscoveryEmailProps extends LifecycleEmailProps {
+  featureName: string;
+  featureDescription: string;
+  featureUrl: string;
+  daysFromSignup: number;
+}
+
+export function generateFeatureDiscoveryEmail(props: FeatureDiscoveryEmailProps) {
+  const { userFullName, featureName, featureDescription, featureUrl, daysFromSignup, appUrl = 'https://your-app.com' } = props;
+  
+  const subject = `Day ${daysFromSignup}: Discover ${featureName}`;
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${featureName} - ServiceGrid Feature</title>
+      </head>
+      <body style="margin:0; padding:0; background:#f1f5f9; font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu, Cantarell, 'Noto Sans', sans-serif;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#f1f5f9; padding:40px 20px;">
+          <tr>
+            <td align="center">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="600" style="max-width:600px; background:#ffffff; border-radius:8px; overflow:hidden;">
+                
+                <tr>
+                  <td style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding:24px 32px;">
+                    <h1 style="margin:0; color:#f8fafc; font-size:24px; font-weight:600;">
+                      ${escapeHtml(featureName)}
+                    </h1>
+                    <p style="margin:8px 0 0; color:#cbd5e1; font-size:14px;">
+                      Day ${daysFromSignup} Feature Discovery
+                    </p>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:32px;">
+                    
+                    <div style="margin-bottom:24px;">
+                      <p style="margin:0 0 16px; font-size:16px; line-height:1.6; color:#374151;">
+                        Hi${userFullName ? ` ${escapeHtml(userFullName)}` : ''},
+                      </p>
+                      <p style="margin:0; font-size:16px; line-height:1.6; color:#374151;">
+                        ${escapeHtml(featureDescription)}
+                      </p>
+                    </div>
+
+                    <div style="text-align:center; margin-bottom:24px;">
+                      <a href="${featureUrl}" 
+                         style="display:inline-block; background:#1e293b; color:#ffffff; padding:12px 24px; border-radius:8px; text-decoration:none; font-weight:600;">
+                        Try ${escapeHtml(featureName)} →
+                      </a>
+                    </div>
+
+                    <div style="text-align:center; font-size:14px; color:#6b7280;">
+                      Questions? Just reply to this email!
+                    </div>
+
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
+  `;
+
+  return { subject, html };
+}
+
+export interface MilestoneEmailProps extends LifecycleEmailProps {
+  milestoneType: 'quote' | 'job' | 'invoice' | 'stripe';
+  nextSteps: string;
+  ctaText: string;
+  ctaUrl: string;
+}
+
+export function generateMilestoneEmail(props: MilestoneEmailProps) {
+  const { userFullName, milestoneType, nextSteps, ctaText, ctaUrl } = props;
+  
+  const milestoneConfig = {
+    quote: { emoji: '📋', title: 'First Quote Created!', message: 'Great start! You\'ve created your first quote.' },
+    job: { emoji: '📅', title: 'First Job Scheduled!', message: 'Excellent! You\'re getting organized with job scheduling.' },
+    invoice: { emoji: '💰', title: 'First Invoice Sent!', message: 'Awesome! You\'re on your way to getting paid.' },
+    stripe: { emoji: '🔗', title: 'Stripe Connected!', message: 'Perfect! You\'re now ready to accept payments.' }
+  };
+  
+  const config = milestoneConfig[milestoneType];
+  const subject = `${config.emoji} ${config.title}`;
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${config.title}</title>
+      </head>
+      <body style="margin:0; padding:0; background:#f1f5f9; font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu, Cantarell, 'Noto Sans', sans-serif;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#f1f5f9; padding:40px 20px;">
+          <tr>
+            <td align="center">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="600" style="max-width:600px; background:#ffffff; border-radius:8px; overflow:hidden;">
+                
+                <tr>
+                  <td style="background: linear-gradient(135deg, #059669 0%, #047857 100%); padding:32px; text-align:center;">
+                    <div style="font-size:48px; margin-bottom:16px;">${config.emoji}</div>
+                    <h1 style="margin:0; color:#ffffff; font-size:28px; font-weight:700;">
+                      ${config.title}
+                    </h1>
+                    <p style="margin:12px 0 0; color:#d1fae5; font-size:16px;">
+                      ${config.message}
+                    </p>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:32px;">
+                    
+                    <div style="margin-bottom:24px;">
+                      <p style="margin:0 0 16px; font-size:16px; line-height:1.6; color:#374151;">
+                        Hi${userFullName ? ` ${escapeHtml(userFullName)}` : ''},
+                      </p>
+                      <p style="margin:0; font-size:16px; line-height:1.6; color:#374151;">
+                        ${escapeHtml(nextSteps)}
+                      </p>
+                    </div>
+
+                    <div style="text-align:center; margin-bottom:24px;">
+                      <a href="${ctaUrl}" 
+                         style="display:inline-block; background:#059669; color:#ffffff; padding:16px 24px; border-radius:8px; text-decoration:none; font-weight:600;">
+                        ${escapeHtml(ctaText)}
+                      </a>
+                    </div>
+
+                    <div style="text-align:center; font-size:14px; color:#6b7280;">
+                      Keep up the great work! 🚀
+                    </div>
+
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
+  `;
+
+  return { subject, html };
+}
+
+export interface EngagementEmailProps extends LifecycleEmailProps {
+  daysInactive: number;
+  ctaText: string;
+  ctaUrl: string;
+}
+
+export function generateEngagementEmail(props: EngagementEmailProps) {
+  const { userFullName, businessName, daysInactive, ctaText, ctaUrl } = props;
+  
+  const subject = daysInactive >= 14 ? 'Need a hand getting started?' : 'Missing you!';
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>We Miss You!</title>
+      </head>
+      <body style="margin:0; padding:0; background:#f1f5f9; font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu, Cantarell, 'Noto Sans', sans-serif;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#f1f5f9; padding:40px 20px;">
+          <tr>
+            <td align="center">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="600" style="max-width:600px; background:#ffffff; border-radius:8px; overflow:hidden;">
+                
+                <tr>
+                  <td style="background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); padding:32px; text-align:center;">
+                    <div style="font-size:48px; margin-bottom:16px;">👋</div>
+                    <h1 style="margin:0; color:#ffffff; font-size:24px; font-weight:600;">
+                      We miss you!
+                    </h1>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:32px;">
+                    
+                    <div style="margin-bottom:24px;">
+                      <p style="margin:0 0 16px; font-size:16px; line-height:1.6; color:#374151;">
+                        Hi${userFullName ? ` ${escapeHtml(userFullName)}` : ''},
+                      </p>
+                      <p style="margin:0 0 16px; font-size:16px; line-height:1.6; color:#374151;">
+                        We noticed you haven't been active with${businessName ? ` ${escapeHtml(businessName)}` : ' your business'} in ServiceGrid for ${daysInactive} days. 
+                      </p>
+                      <p style="margin:0; font-size:16px; line-height:1.6; color:#374151;">
+                        ${daysInactive >= 14 ? 'Need help getting started? We\'re here to support you!' : 'Ready to get back to growing your business?'}
+                      </p>
+                    </div>
+
+                    <div style="text-align:center; margin-bottom:24px;">
+                      <a href="${ctaUrl}" 
+                         style="display:inline-block; background:#7c3aed; color:#ffffff; padding:16px 24px; border-radius:8px; text-decoration:none; font-weight:600;">
+                        ${escapeHtml(ctaText)}
+                      </a>
+                    </div>
+
+                    <div style="text-align:center; font-size:14px; color:#6b7280;">
+                      Questions? Just reply to this email - we're here to help! 💜
+                    </div>
+
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
+  `;
+
+  return { subject, html };
+}
+
 export function combineMessageWithEmail(message: string, emailHtml: string): string {
   if (!message?.trim()) return emailHtml;
   

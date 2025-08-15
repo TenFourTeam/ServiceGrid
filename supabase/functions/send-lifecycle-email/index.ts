@@ -1,0 +1,494 @@
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { Resend } from "npm:resend@2.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { verifyToken } from "https://esm.sh/@clerk/backend@1.3.2";
+
+// Import email templates - simplified versions since we can't import from src
+function escapeHtml(text: string): string {
+  const map: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  };
+  return text.replace(/[&<>"']/g, (m) => map[m]);
+}
+
+interface LifecycleEmailData {
+  userFullName?: string;
+  userEmail?: string;
+  businessName?: string;
+  businessId?: string;
+  userId?: string;
+  signupDate?: string;
+  lastLoginDate?: string;
+}
+
+function generateWelcomeEmail(data: LifecycleEmailData, appUrl: string) {
+  const { businessName, userFullName } = data;
+  const subject = `Welcome to ServiceGrid, ${userFullName || 'there'}!`;
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Welcome to ServiceGrid</title>
+      </head>
+      <body style="margin:0; padding:0; background:#f1f5f9; font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu, Cantarell, 'Noto Sans', sans-serif;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#f1f5f9; padding:40px 20px;">
+          <tr>
+            <td align="center">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="600" style="max-width:600px; background:#ffffff; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden;">
+                
+                <tr>
+                  <td style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding:32px; text-align:center;">
+                    <h1 style="margin:0; color:#f8fafc; font-size:32px; font-weight:700;">
+                      Welcome to ServiceGrid! 🎉
+                    </h1>
+                    <p style="margin:12px 0 0; color:#cbd5e1; font-size:16px;">
+                      Your business management journey starts here
+                    </p>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:40px 32px;">
+                    
+                    <div style="margin-bottom:32px;">
+                      <p style="margin:0 0 16px; font-size:16px; line-height:1.6; color:#374151;">
+                        Hi${userFullName ? ` ${escapeHtml(userFullName)}` : ''},
+                      </p>
+                      <p style="margin:0 0 16px; font-size:16px; line-height:1.6; color:#374151;">
+                        Congratulations on setting up your ${businessName ? escapeHtml(businessName) : 'business'} account! You're now equipped with powerful tools to streamline your service business operations.
+                      </p>
+                    </div>
+
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:24px; margin-bottom:32px;">
+                      <h2 style="margin:0 0 16px; font-size:18px; font-weight:600; color:#111827;">Here's what you can do next:</h2>
+                      <ul style="margin:0; padding-left:20px; color:#374151; line-height:1.7;">
+                        <li style="margin-bottom:8px;">Add your first customer and create a quote</li>
+                        <li style="margin-bottom:8px;">Set up your calendar for job scheduling</li>
+                        <li style="margin-bottom:8px;">Configure your business profile and branding</li>
+                        <li style="margin-bottom:8px;">Connect Stripe to start accepting payments</li>
+                      </ul>
+                    </div>
+
+                    <div style="text-align:center; margin-bottom:32px;">
+                      <a href="${appUrl}/customers" 
+                         style="display:inline-block; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color:#ffffff; padding:16px 32px; border-radius:8px; text-decoration:none; font-weight:600; font-size:16px;">
+                        Get Started →
+                      </a>
+                    </div>
+
+                    <div style="text-align:center; font-size:14px; color:#6b7280;">
+                      Need help? Just reply to this email - we're here to support your success!
+                    </div>
+
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="background:#f8fafc; padding:24px 32px; border-top:1px solid #e5e7eb; text-align:center;">
+                    <p style="margin:0; font-size:12px; color:#6b7280;">
+                      © ServiceGrid - Professional service management made simple
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
+  `;
+
+  return { subject, html };
+}
+
+function generateFeatureDiscoveryEmail(data: LifecycleEmailData, params: any, appUrl: string) {
+  const { userFullName } = data;
+  const { featureName, featureDescription, featureUrl, daysFromSignup } = params;
+  
+  const subject = `Day ${daysFromSignup}: Discover ${featureName}`;
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${featureName} - ServiceGrid Feature</title>
+      </head>
+      <body style="margin:0; padding:0; background:#f1f5f9; font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu, Cantarell, 'Noto Sans', sans-serif;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#f1f5f9; padding:40px 20px;">
+          <tr>
+            <td align="center">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="600" style="max-width:600px; background:#ffffff; border-radius:8px; overflow:hidden;">
+                
+                <tr>
+                  <td style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding:24px 32px;">
+                    <h1 style="margin:0; color:#f8fafc; font-size:24px; font-weight:600;">
+                      ${escapeHtml(featureName)}
+                    </h1>
+                    <p style="margin:8px 0 0; color:#cbd5e1; font-size:14px;">
+                      Day ${daysFromSignup} Feature Discovery
+                    </p>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:32px;">
+                    
+                    <div style="margin-bottom:24px;">
+                      <p style="margin:0 0 16px; font-size:16px; line-height:1.6; color:#374151;">
+                        Hi${userFullName ? ` ${escapeHtml(userFullName)}` : ''},
+                      </p>
+                      <p style="margin:0; font-size:16px; line-height:1.6; color:#374151;">
+                        ${escapeHtml(featureDescription)}
+                      </p>
+                    </div>
+
+                    <div style="text-align:center; margin-bottom:24px;">
+                      <a href="${featureUrl}" 
+                         style="display:inline-block; background:#1e293b; color:#ffffff; padding:12px 24px; border-radius:8px; text-decoration:none; font-weight:600;">
+                        Try ${escapeHtml(featureName)} →
+                      </a>
+                    </div>
+
+                    <div style="text-align:center; font-size:14px; color:#6b7280;">
+                      Questions? Just reply to this email!
+                    </div>
+
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
+  `;
+
+  return { subject, html };
+}
+
+function generateMilestoneEmail(data: LifecycleEmailData, params: any) {
+  const { userFullName } = data;
+  const { milestoneType, nextSteps, ctaText, ctaUrl } = params;
+  
+  const milestoneConfig: Record<string, any> = {
+    quote: { emoji: '📋', title: 'First Quote Created!', message: 'Great start! You\'ve created your first quote.' },
+    job: { emoji: '📅', title: 'First Job Scheduled!', message: 'Excellent! You\'re getting organized with job scheduling.' },
+    invoice: { emoji: '💰', title: 'First Invoice Sent!', message: 'Awesome! You\'re on your way to getting paid.' },
+    stripe: { emoji: '🔗', title: 'Stripe Connected!', message: 'Perfect! You\'re now ready to accept payments.' }
+  };
+  
+  const config = milestoneConfig[milestoneType];
+  const subject = `${config.emoji} ${config.title}`;
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${config.title}</title>
+      </head>
+      <body style="margin:0; padding:0; background:#f1f5f9; font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu, Cantarell, 'Noto Sans', sans-serif;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#f1f5f9; padding:40px 20px;">
+          <tr>
+            <td align="center">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="600" style="max-width:600px; background:#ffffff; border-radius:8px; overflow:hidden;">
+                
+                <tr>
+                  <td style="background: linear-gradient(135deg, #059669 0%, #047857 100%); padding:32px; text-align:center;">
+                    <div style="font-size:48px; margin-bottom:16px;">${config.emoji}</div>
+                    <h1 style="margin:0; color:#ffffff; font-size:28px; font-weight:700;">
+                      ${config.title}
+                    </h1>
+                    <p style="margin:12px 0 0; color:#d1fae5; font-size:16px;">
+                      ${config.message}
+                    </p>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:32px;">
+                    
+                    <div style="margin-bottom:24px;">
+                      <p style="margin:0 0 16px; font-size:16px; line-height:1.6; color:#374151;">
+                        Hi${userFullName ? ` ${escapeHtml(userFullName)}` : ''},
+                      </p>
+                      <p style="margin:0; font-size:16px; line-height:1.6; color:#374151;">
+                        ${escapeHtml(nextSteps)}
+                      </p>
+                    </div>
+
+                    <div style="text-align:center; margin-bottom:24px;">
+                      <a href="${ctaUrl}" 
+                         style="display:inline-block; background:#059669; color:#ffffff; padding:16px 24px; border-radius:8px; text-decoration:none; font-weight:600;">
+                        ${escapeHtml(ctaText)}
+                      </a>
+                    </div>
+
+                    <div style="text-align:center; font-size:14px; color:#6b7280;">
+                      Keep up the great work! 🚀
+                    </div>
+
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
+  `;
+
+  return { subject, html };
+}
+
+function generateEngagementEmail(data: LifecycleEmailData, params: any) {
+  const { userFullName, businessName } = data;
+  const { daysInactive, ctaText, ctaUrl } = params;
+  
+  const subject = daysInactive >= 14 ? 'Need a hand getting started?' : 'Missing you!';
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>We Miss You!</title>
+      </head>
+      <body style="margin:0; padding:0; background:#f1f5f9; font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu, Cantarell, 'Noto Sans', sans-serif;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#f1f5f9; padding:40px 20px;">
+          <tr>
+            <td align="center">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="600" style="max-width:600px; background:#ffffff; border-radius:8px; overflow:hidden;">
+                
+                <tr>
+                  <td style="background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); padding:32px; text-align:center;">
+                    <div style="font-size:48px; margin-bottom:16px;">👋</div>
+                    <h1 style="margin:0; color:#ffffff; font-size:24px; font-weight:600;">
+                      We miss you!
+                    </h1>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:32px;">
+                    
+                    <div style="margin-bottom:24px;">
+                      <p style="margin:0 0 16px; font-size:16px; line-height:1.6; color:#374151;">
+                        Hi${userFullName ? ` ${escapeHtml(userFullName)}` : ''},
+                      </p>
+                      <p style="margin:0 0 16px; font-size:16px; line-height:1.6; color:#374151;">
+                        We noticed you haven't been active with${businessName ? ` ${escapeHtml(businessName)}` : ' your business'} in ServiceGrid for ${daysInactive} days. 
+                      </p>
+                      <p style="margin:0; font-size:16px; line-height:1.6; color:#374151;">
+                        ${daysInactive >= 14 ? 'Need help getting started? We\'re here to support you!' : 'Ready to get back to growing your business?'}
+                      </p>
+                    </div>
+
+                    <div style="text-align:center; margin-bottom:24px;">
+                      <a href="${ctaUrl}" 
+                         style="display:inline-block; background:#7c3aed; color:#ffffff; padding:16px 24px; border-radius:8px; text-decoration:none; font-weight:600;">
+                        ${escapeHtml(ctaText)}
+                      </a>
+                    </div>
+
+                    <div style="text-align:center; font-size:14px; color:#6b7280;">
+                      Questions? Just reply to this email - we're here to help! 💜
+                    </div>
+
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
+  `;
+
+  return { subject, html };
+}
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get("Origin") || req.headers.get("origin") || "*";
+  const allowed = (Deno.env.get("ALLOWED_ORIGINS") || "").split(",").map(s => s.trim()).filter(Boolean);
+  const allowOrigin = allowed.length === 0 || allowed.includes("*") || allowed.includes(origin) ? origin : "*";
+  return {
+    "Access-Control-Allow-Origin": allowOrigin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "*",
+    "Vary": "Origin",
+  } as Record<string, string>;
+}
+
+async function resolveOwnerId(admin: ReturnType<typeof createClient>, clerkUserId: string, email?: string) {
+  const { data: byClerk } = await admin.from('profiles').select('id').eq('clerk_user_id', clerkUserId).limit(1);
+  if (byClerk && byClerk.length) return byClerk[0].id as string;
+  if (email) {
+    const { data: byEmail } = await admin.from('profiles').select('id').ilike('email', email.toLowerCase()).limit(1);
+    if (byEmail && byEmail.length) return byEmail[0].id as string;
+  }
+  return null;
+}
+
+serve(async (req: Request): Promise<Response> => {
+  // CORS preflight
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: getCorsHeaders(req) });
+  }
+
+  const resendApiKey = Deno.env.get("RESEND_API_KEY");
+  const fromEmail = Deno.env.get("RESEND_FROM_EMAIL");
+  if (!resendApiKey || !fromEmail) {
+    console.error("Missing RESEND_API_KEY or RESEND_FROM_EMAIL");
+    return new Response(JSON.stringify({ error: "Email sending not configured." }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...getCorsHeaders(req) },
+    });
+  }
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+  // Auth: require valid Clerk token
+  const authHeader = req.headers.get("Authorization") || req.headers.get("authorization") || "";
+  if (!authHeader.startsWith("Bearer ")) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { 
+      status: 401, 
+      headers: { "Content-Type": "application/json", ...getCorsHeaders(req) } 
+    });
+  }
+
+  let ownerId: string | null = null;
+  try {
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+    const secretKey = Deno.env.get("CLERK_SECRET_KEY");
+    if (!secretKey) throw new Error('Missing CLERK_SECRET_KEY');
+    const clerk = await verifyToken(token, { secretKey });
+
+    const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
+    ownerId = await resolveOwnerId(admin, clerk.sub, (clerk as any).email || (clerk as any).claims?.email || undefined);
+  } catch (e) {
+    console.warn('[send-lifecycle-email] auth failed', e);
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
+      status: 401, 
+      headers: { "Content-Type": "application/json", ...getCorsHeaders(req) } 
+    });
+  }
+
+  if (!ownerId) {
+    return new Response(JSON.stringify({ error: 'User not found' }), { 
+      status: 404, 
+      headers: { "Content-Type": "application/json", ...getCorsHeaders(req) } 
+    });
+  }
+
+  let payload: {
+    type: string;
+    data: LifecycleEmailData;
+    [key: string]: any;
+  };
+
+  try {
+    payload = await req.json();
+  } catch (e) {
+    console.warn('[send-lifecycle-email] Invalid JSON payload', e);
+    return new Response(JSON.stringify({ error: "Invalid JSON" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json", ...getCorsHeaders(req) },
+    });
+  }
+
+  const { type, data } = payload;
+  const appUrl = Deno.env.get("SUPABASE_URL")?.replace('/supabase/', '') || 'https://your-app.com';
+
+  // Validate required fields
+  if (!type || !data?.userEmail) {
+    return new Response(JSON.stringify({ error: "Missing type or data.userEmail" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json", ...getCorsHeaders(req) },
+    });
+  }
+
+  // Generate email based on type
+  let emailTemplate: { subject: string; html: string };
+  
+  try {
+    switch (type) {
+      case 'welcome':
+        emailTemplate = generateWelcomeEmail(data, appUrl);
+        break;
+      case 'feature-discovery':
+        emailTemplate = generateFeatureDiscoveryEmail(data, payload, appUrl);
+        break;
+      case 'milestone':
+        emailTemplate = generateMilestoneEmail(data, payload);
+        break;
+      case 'engagement':
+        emailTemplate = generateEngagementEmail(data, payload);
+        break;
+      default:
+        return new Response(JSON.stringify({ error: `Unknown email type: ${type}` }), {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...getCorsHeaders(req) },
+        });
+    }
+  } catch (e) {
+    console.error('[send-lifecycle-email] Template generation failed', e);
+    return new Response(JSON.stringify({ error: 'Template generation failed' }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...getCorsHeaders(req) },
+    });
+  }
+
+  // Send email via Resend
+  const resend = new Resend(resendApiKey);
+  
+  try {
+    const sendRes = await resend.emails.send({
+      from: `ServiceGrid <${fromEmail}>`,
+      to: [data.userEmail],
+      subject: emailTemplate.subject,
+      html: emailTemplate.html,
+    });
+
+    if ((sendRes as any)?.error) {
+      console.error('Resend send error:', (sendRes as any)?.error);
+      return new Response(JSON.stringify({ error: (sendRes as any)?.error?.message || 'Email send failed' }), {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...getCorsHeaders(req) },
+      });
+    }
+
+    const messageId = (sendRes as any)?.data?.id ?? null;
+    
+    console.info('[send-lifecycle-email] Email sent:', type, data.userEmail, messageId);
+
+    return new Response(JSON.stringify({ 
+      success: true, 
+      messageId,
+      type,
+      recipient: data.userEmail 
+    }), {
+      status: 200,
+      headers: { "Content-Type": "application/json", ...getCorsHeaders(req) },
+    });
+
+  } catch (e: any) {
+    console.error('Unexpected send error:', e);
+    return new Response(JSON.stringify({ error: e?.message || 'Send failed' }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...getCorsHeaders(req) },
+    });
+  }
+});
