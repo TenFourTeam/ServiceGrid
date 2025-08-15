@@ -9,7 +9,8 @@ import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { edgeFetchJson } from "@/utils/edgeApi";
+import { edgeRequest } from "@/utils/edgeApi";
+import { fn } from "@/utils/functionUrl";
 import { CSVImportModal } from '@/components/Onboarding/CSVImportModal';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { showNextActionToast } from '@/components/Onboarding/NextActionToast';
@@ -94,7 +95,7 @@ export default function CustomersPage() {
           email: draft.email.trim(),
           phone: draft.phone.trim() || null,
           address: draft.address.trim() || null,
-        },
+        }),
       });
 
       // Show appropriate toast

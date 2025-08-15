@@ -4,7 +4,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
-import { edgeFetchJson } from "@/utils/edgeApi";
+import { edgeRequest } from "@/utils/edgeApi";
+import { fn } from "@/utils/functionUrl";
 import { toast } from "@/components/ui/use-toast";
 import { addMinutes, format } from "date-fns";
 import type { Job } from "@/types";

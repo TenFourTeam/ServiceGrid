@@ -25,7 +25,8 @@ import { useOnboardingActions } from '@/onboarding/hooks';
 import { toast } from 'sonner';
 import { formatMoney as formatCurrency } from '@/utils/format';
 import type { Customer, LineItem, Quote, QuoteStatus } from '@/types';
-import { edgeFetchJson } from '@/utils/edgeApi';
+import { edgeRequest } from '@/utils/edgeApi';
+import { fn } from '@/utils/functionUrl';
 
 interface QuoteDraft {
   customerId: string;

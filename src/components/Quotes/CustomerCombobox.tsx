@@ -9,7 +9,8 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Input } from "@/components/ui/input";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { edgeFetchJson } from "@/utils/edgeApi";
+import { edgeRequest } from "@/utils/edgeApi";
+import { fn } from "@/utils/functionUrl";
 import { toast } from "sonner";
 
 interface CustomerComboboxProps {
