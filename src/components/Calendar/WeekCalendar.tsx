@@ -277,7 +277,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
         return;
       }
       
-      // Optimistically update the cache
+      // Optimistically update the cache BEFORE clearing drag state
       const queryKey = queryKeys.data.jobs(businessId || '');
       const previousData = queryClient.getQueryData(queryKey);
       
@@ -294,6 +294,9 @@ function onDragStart(e: React.PointerEvent, job: Job) {
           };
         });
       }
+      
+      // Now clear drag state
+      setDragState(null);
       
       try {
         await edgeRequest(fn(`jobs?id=${job.id}`), {
@@ -360,10 +363,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       
-      // Clear resize state
-      setResizeState(null);
-      
-      // Optimistically update the cache
+      // Optimistically update the cache BEFORE clearing resize state
       const queryKey = queryKeys.data.jobs(businessId || '');
       const previousData = queryClient.getQueryData(queryKey);
       
@@ -380,6 +380,9 @@ function onDragStart(e: React.PointerEvent, job: Job) {
           };
         });
       }
+      
+      // Now clear resize state
+      setResizeState(null);
       
       try {
         await edgeRequest(fn(`jobs?id=${job.id}`), {
