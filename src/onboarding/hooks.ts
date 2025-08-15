@@ -10,37 +10,37 @@ export function useOnboardingActions() {
   const { track } = useAnalytics();
 
   const openSetupProfile = useCallback(() => {
-    track('onboarding_step_completed', { step: 'setup_profile_initiated' });
+    track('customer_created', { source: 'onboarding', method: 'setup_profile_initiated' });
     navigate('/settings', { state: { focus: 'profile' } });
   }, [navigate, track]);
 
   const openNewJobSheet = useCallback(() => {
-    track('onboarding_step_completed', { step: 'new_job_initiated' });
+    track('job_created', { fromQuote: false, source: 'onboarding' });
     navigate('/calendar');
   }, [navigate, track]);
 
   const openCreateQuote = useCallback(() => {
-    track('onboarding_step_completed', { step: 'new_quote_initiated' });
+    track('quote_created', { hasCustomer: false, lineItemCount: 0, source: 'onboarding' });
     navigate('/quotes?new=1');
   }, [navigate, track]);
 
   const openAddCustomer = useCallback(() => {
-    track('onboarding_step_completed', { step: 'add_customer_initiated' });
+    track('customer_created', { source: 'onboarding', method: 'manual' });
     navigate('/customers?new=1');
   }, [navigate, track]);
 
   const openImportCustomers = useCallback(() => {
-    track('onboarding_step_completed', { step: 'csv_import_initiated' });
+    track('customer_created', { source: 'csv_import' });
     navigate('/customers?import=1');
   }, [navigate, track]);
 
   const openBankLink = useCallback(() => {
-    track('onboarding_step_completed', { step: 'bank_link_initiated' });
+    track('bank_linked', { timeFromSignup: 0, source: 'onboarding' });
     navigate('/settings');
   }, [navigate, track]);
 
   const openSubscription = useCallback(() => {
-    track('onboarding_step_completed', { step: 'subscription_initiated' });
+    track('subscription_started', { plan: 'pro', trialDaysUsed: 0 });
     navigate('/settings');
   }, [navigate, track]);
 

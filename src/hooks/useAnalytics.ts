@@ -8,16 +8,12 @@ interface AnalyticsEvent {
 }
 
 interface OnboardingEvents {
-  'onboarding_started': { source: string };
-  'onboarding_step_completed': { step: string; timeToComplete?: number };
-  'onboarding_completed': { totalTime: number; stepsCompleted: number };
   'customer_created': { source: 'onboarding' | 'manual' | 'csv_import'; method?: string };
   'quote_created': { hasCustomer: boolean; lineItemCount: number; source?: string };
   'job_created': { fromQuote: boolean; source?: string };
   'bank_linked': { timeFromSignup: number; source?: string };
   'subscription_started': { plan: string; trialDaysUsed: number };
   'trial_expired': { actionTaken: 'subscribed' | 'dismissed' | 'none' };
-  'csv_import_started': { fileSize: number; estimatedRows: number };
   'csv_import_completed': { rowsProcessed: number; successCount: number; errorCount: number };
 }
 
@@ -91,25 +87,8 @@ export function useAnalytics() {
 // Helper hook for onboarding-specific analytics
 export function useOnboardingAnalytics() {
   const { track } = useAnalytics();
-  const startTime = Date.now();
-
-  const trackStepCompleted = useCallback((step: string, stepStartTime?: number) => {
-    track('onboarding_step_completed', {
-      step,
-      timeToComplete: stepStartTime ? Date.now() - stepStartTime : undefined,
-    });
-  }, [track]);
-
-  const trackOnboardingCompleted = useCallback((stepsCompleted: number) => {
-    track('onboarding_completed', {
-      totalTime: Date.now() - startTime,
-      stepsCompleted,
-    });
-  }, [track, startTime]);
 
   return {
     track,
-    trackStepCompleted,
-    trackOnboardingCompleted,
   };
 }

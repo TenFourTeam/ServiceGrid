@@ -11,7 +11,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
-import { CSVImportModal } from '@/components/Onboarding/CSVImportModal';
+import { SimpleCSVImport } from '@/components/Onboarding/SimpleCSVImport';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { showNextActionToast } from '@/components/Onboarding/NextActionToast';
 import { useOnboardingActions } from '@/onboarding/hooks';
@@ -267,7 +267,7 @@ export default function CustomersPage() {
         </DialogContent>
       </Dialog>
 
-      <CSVImportModal
+      <SimpleCSVImport
         open={csvImportOpen}
         onOpenChange={setCsvImportOpen}
         onImportComplete={(count) => {

@@ -18,7 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Trash2, Plus, Send, Download, Receipt, Wrench, Users, Calendar } from 'lucide-react';
-import { AdvancedEmptyState } from '@/components/Onboarding/AdvancedEmptyState';
+
 import { useOnboardingActions } from '@/onboarding/hooks';
 
 import { toast } from 'sonner';
@@ -187,32 +187,25 @@ export default function QuotesPage() {
                 {transformedQuotes.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="p-0">
-                      <AdvancedEmptyState
-                        icon={<Receipt className="h-8 w-8 text-blue-600" />}
-                        title="Ready to create your first quote?"
-                        description="Send professional quotes to customers and convert them to jobs when approved. Get paid faster with integrated payment processing."
-                        actions={[
-                          {
-                            label: 'Create Your First Quote',
-                            onClick: () => setOpen(true),
-                            icon: <Receipt className="h-4 w-4" />,
-                            badge: 'Start here',
-                            description: 'Professional quotes in minutes'
-                          }
-                        ]}
-                        secondaryActions={[
-                          {
-                            label: 'Add Customer First',
-                            onClick: onboarding.openAddCustomer,
-                            icon: <Users className="h-3 w-3" />
-                          },
-                          {
-                            label: 'Schedule a Job',
-                            onClick: onboarding.openNewJobSheet,
-                            icon: <Calendar className="h-3 w-3" />
-                          }
-                        ]}
-                      />
+                      <div className="flex flex-col items-center justify-center py-16 px-4 text-center space-y-6">
+                        <div className="h-16 w-16 mx-auto rounded-full bg-muted flex items-center justify-center">
+                          <Receipt className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                        <div className="space-y-2 max-w-md">
+                          <h3 className="text-xl font-semibold">Ready to create your first quote?</h3>
+                          <p className="text-muted-foreground">Send professional quotes to customers and convert them to jobs when approved. Get paid faster with integrated payment processing.</p>
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <Button onClick={() => setOpen(true)} className="gap-2">
+                            <Receipt className="h-4 w-4" />
+                            Create Your First Quote
+                          </Button>
+                          <Button variant="outline" onClick={onboarding.openAddCustomer} size="sm" className="gap-1">
+                            <Users className="h-3 w-3" />
+                            Add Customer First
+                          </Button>
+                        </div>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ) : (
