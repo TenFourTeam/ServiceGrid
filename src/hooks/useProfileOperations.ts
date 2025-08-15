@@ -1,8 +1,8 @@
-import { useStandardMutation } from '@/mutations/useStandardMutation';
 import { edgeRequest } from '@/utils/edgeApi';
 import { fn } from '@/utils/functionUrl';
 import { queryKeys, invalidationHelpers } from '@/queries/keys';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 export type ProfileUpdatePayload = {
   fullName: string;
@@ -25,7 +25,7 @@ export type ProfileUpdateResponse = {
 export function useProfileOperations() {
   const queryClient = useQueryClient();
 
-  const updateProfile = useStandardMutation<ProfileUpdateResponse, ProfileUpdatePayload>({
+  const updateProfile = useMutation({
     mutationFn: async (input: ProfileUpdatePayload) => {
       console.info('[useProfileOperations] mutation started', { 
         url: fn('profile-update'), 
@@ -43,15 +43,18 @@ export function useProfileOperations() {
       console.info('[useProfileOperations] mutation completed successfully', result);
       return result;
     },
-    onSuccess: (data, variables, queryClient) => {
+    onSuccess: () => {
       // Use centralized invalidation
       invalidationHelpers.profile(queryClient);
       
       // Force dashboard data refresh to update onboarding state
       window.dispatchEvent(new CustomEvent('business-updated'));
+      toast.success('Profile updated successfully');
     },
-    successMessage: 'Profile updated successfully',
-    errorMessage: 'Failed to save your changes. Please check your connection and try again.',
+    onError: (error: any) => {
+      console.error(error);
+      toast.error(error?.message || 'Failed to save your changes. Please check your connection and try again.');
+    },
   });
 
   return {

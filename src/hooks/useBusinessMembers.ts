@@ -1,9 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
 import { queryKeys, invalidationHelpers } from "@/queries/keys";
-import { useStandardMutation } from "@/mutations/useStandardMutation";
+import { toast } from "sonner";
 
 export interface BusinessMember {
   id: string;
@@ -34,32 +34,42 @@ export function useBusinessMembers(businessId?: string, opts?: { enabled?: boole
 }
 
 export function useInviteWorker() {
-  return useStandardMutation<any, { businessId: string; email: string }>({
-    mutationFn: async ({ businessId, email }) => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ businessId, email }: { businessId: string; email: string }) => {
       return await edgeRequest(fn("invite-worker"), {
         method: "POST",
         body: JSON.stringify({ businessId, email }),
       });
     },
-    onSuccess: (_, { businessId }, queryClient) => {
+    onSuccess: (_, { businessId }) => {
       invalidationHelpers.team(queryClient, businessId);
+      toast.success("Team member invited successfully");
     },
-    successMessage: "Team member invited successfully",
-    errorMessage: "Failed to invite team member",
+    onError: (error: any) => {
+      console.error(error);
+      toast.error(error?.message || "Failed to invite team member");
+    },
   });
 }
 
 export function useRemoveMember() {
-  return useStandardMutation<any, { businessId: string; memberId: string }>({
-    mutationFn: async ({ businessId, memberId }) => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ businessId, memberId }: { businessId: string; memberId: string }) => {
       return await edgeRequest(fn(`business-members/${memberId}`), {
         method: "DELETE",
       });
     },
-    onSuccess: (_, { businessId }, queryClient) => {
+    onSuccess: (_, { businessId }) => {
       invalidationHelpers.team(queryClient, businessId);
+      toast.success("Team member removed successfully");
     },
-    successMessage: "Team member removed successfully",
-    errorMessage: "Failed to remove team member",
+    onError: (error: any) => {
+      console.error(error);
+      toast.error(error?.message || "Failed to remove team member");
+    },
   });
 }

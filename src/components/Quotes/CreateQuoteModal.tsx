@@ -2,8 +2,11 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
-import { useQuoteMutations } from "@/mutations/useQuoteMutations";
 import { QuoteForm } from "@/components/Quotes/QuoteForm";
+import { edgeRequest } from "@/utils/edgeApi";
+import { fn } from "@/utils/functionUrl";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/queries/keys";
 import type { Customer, Quote } from "@/types";
 
 export interface CreateQuoteModalProps {
@@ -16,32 +19,40 @@ export interface CreateQuoteModalProps {
 
 export default function CreateQuoteModal({ open, onOpenChange, customers, defaultTaxRate = 0.1, onRequestSend }: CreateQuoteModalProps) {
   const { businessId } = useBusinessContext();
-  const { createQuote } = useQuoteMutations();
+  const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (formData: any) => {
     setIsSubmitting(true);
     try {
       console.log('Creating quote with data:', formData);
-      const result = await createQuote.mutateAsync({
-        customerId: formData.customerId,
-        address: formData.address,
-        lineItems: formData.lineItems.map((li: any) => ({
-          name: li.name,
-          qty: li.qty,
-          unit: li.unit || null,
-          unitPrice: li.unitPrice,
-          lineTotal: li.lineTotal,
-        })),
-        taxRate: formData.taxRate,
-        discount: formData.discount,
-        notesInternal: formData.notesInternal || null,
-        terms: formData.terms || null,
-        paymentTerms: formData.paymentTerms,
-        frequency: formData.frequency,
-        depositRequired: formData.depositRequired,
-        depositPercent: formData.depositPercent,
+      const result = await edgeRequest(fn('quotes'), {
+        method: 'POST',
+        body: JSON.stringify({
+          customerId: formData.customerId,
+          address: formData.address,
+          lineItems: formData.lineItems.map((li: any) => ({
+            name: li.name,
+            qty: li.qty,
+            unit: li.unit || null,
+            unitPrice: li.unitPrice,
+            lineTotal: li.lineTotal,
+          })),
+          taxRate: formData.taxRate,
+          discount: formData.discount,
+          notesInternal: formData.notesInternal || null,
+          terms: formData.terms || null,
+          paymentTerms: formData.paymentTerms,
+          frequency: formData.frequency,
+          depositRequired: formData.depositRequired,
+          depositPercent: formData.depositPercent,
+        }),
       });
+
+      // Invalidate quotes data
+      if (businessId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.data.quotes(businessId) });
+      }
 
       // Map API response to Quote interface
       const quote: Quote = {
@@ -72,6 +83,10 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
 
       onOpenChange(false);
       onRequestSend?.(quote);
+      toast.success('Quote created successfully');
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || 'Failed to create quote');
     } finally {
       setIsSubmitting(false);
     }

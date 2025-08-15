@@ -1,8 +1,8 @@
-import { useStandardMutation } from '@/mutations/useStandardMutation';
 import { edgeRequest } from '@/utils/edgeApi';
 import { fn } from '@/utils/functionUrl';
 import { queryKeys, invalidationHelpers } from '@/queries/keys';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 export type BusinessUpdatePayload = {
   businessName: string;
@@ -31,7 +31,7 @@ export type BusinessUpdateResponse = {
 export function useBusinessOperations() {
   const queryClient = useQueryClient();
 
-  const updateBusiness = useStandardMutation<BusinessUpdateResponse, BusinessUpdatePayload>({
+  const updateBusiness = useMutation({
     mutationFn: async (input: BusinessUpdatePayload) => {
       console.info('[useBusinessOperations] mutation started', { 
         url: fn('business-update'), 
@@ -49,15 +49,18 @@ export function useBusinessOperations() {
       console.info('[useBusinessOperations] mutation completed successfully', result);
       return result;
     },
-    onSuccess: (data, variables, queryClient) => {
+    onSuccess: () => {
       // Use centralized invalidation for business data
       invalidationHelpers.business(queryClient);
       
       // Force dashboard data refresh to update onboarding state
       window.dispatchEvent(new CustomEvent('business-updated'));
+      toast.success('Business profile updated successfully');
     },
-    successMessage: 'Business profile updated successfully',
-    errorMessage: 'Failed to save business changes. Please check your connection and try again.',
+    onError: (error: any) => {
+      console.error(error);
+      toast.error(error?.message || 'Failed to save business changes. Please check your connection and try again.');
+    },
   });
 
   return {

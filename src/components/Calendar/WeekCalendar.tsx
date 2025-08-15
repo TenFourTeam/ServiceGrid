@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Job } from '@/types';
 import { useJobsData, useCustomersData } from '@/queries/unified';
-import { useJobMutations } from '@/mutations';
 import { clamp, formatDateTime, minutesSinceStartOfDay } from '@/utils/format';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { queryKeys } from '@/queries/keys';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerClose } from '@/components/ui/drawer';
 import { Textarea } from '@/components/ui/textarea';
@@ -28,7 +30,8 @@ export function WeekCalendar({
 }) {
   const { data: jobs, refetch: refetchJobs } = useJobsData();
   const { data: customers } = useCustomersData();
-  const { createJob, updateJob, deleteJob } = useJobMutations();
+  const { businessId } = useBusinessContext();
+  const queryClient = useQueryClient();
   
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pendingSlot, setPendingSlot] = useState<{ start: Date; end: Date } | null>(null);
@@ -148,21 +151,30 @@ const minuteOfDayFromAnchorOffset = (offset: number) => {
         return;
       }
       
-      const newJob = await createJob.mutateAsync({
-        customerId: '', // This will be set by the quote relationship
-        quoteId,
-        startsAt: pendingSlot.start.toISOString(),
-        endsAt: pendingSlot.end.toISOString(),
+      const newJob = await edgeRequest(fn('jobs'), {
+        method: 'POST',
+        body: JSON.stringify({
+          customerId: '', // This will be set by the quote relationship
+          quoteId,
+          startsAt: pendingSlot.start.toISOString(),
+          endsAt: pendingSlot.end.toISOString(),
+        }),
       });
+
+      // Invalidate jobs data
+      if (businessId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.data.jobs(businessId) });
+      }
       
       setActiveJob(newJob as Job);
       setHighlightJobId(newJob.id);
       setTimeout(() => setHighlightJobId(null), 3000);
       setPickerOpen(false);
       setPendingSlot(null);
+      toast.success('Job created successfully');
     } catch (e: any) {
       console.error(e);
-      // Error handling is already in the mutation
+      toast.error(e?.message || 'Failed to create job');
     }
   }
 
@@ -253,15 +265,22 @@ function onDragStart(e: React.PointerEvent, job: Job) {
         return;
       }
       try {
-        await updateJob.mutateAsync({
-          id: job.id,
-          customerId: job.customerId,
-          startsAt: latest.startsAt,
-          endsAt: latest.endsAt,
+        await edgeRequest(fn(`jobs?id=${job.id}`), {
+          method: 'PATCH',
+          body: JSON.stringify({
+            startsAt: latest.startsAt,
+            endsAt: latest.endsAt,
+          }),
         });
+
+        // Invalidate jobs data
+        if (businessId) {
+          queryClient.invalidateQueries({ queryKey: queryKeys.data.jobs(businessId) });
+        }
+        toast.success('Job rescheduled successfully');
       } catch (err: any) {
         console.error(err);
-        // Error handling is already in the mutation
+        toast.error(err?.message || 'Failed to reschedule job');
       }
     };
     window.addEventListener('pointermove', onMove);
@@ -305,14 +324,21 @@ function onDragStart(e: React.PointerEvent, job: Job) {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       try {
-        await updateJob.mutateAsync({
-          id: job.id,
-          customerId: job.customerId,
-          endsAt: latestEnd,
+        await edgeRequest(fn(`jobs?id=${job.id}`), {
+          method: 'PATCH',
+          body: JSON.stringify({
+            endsAt: latestEnd,
+          }),
         });
+
+        // Invalidate jobs data
+        if (businessId) {
+          queryClient.invalidateQueries({ queryKey: queryKeys.data.jobs(businessId) });
+        }
+        toast.success('Job duration updated successfully');
       } catch (err: any) {
         console.error(err);
-        // Error handling is already in the mutation
+        toast.error(err?.message || 'Failed to update job duration');
       }
     };
 

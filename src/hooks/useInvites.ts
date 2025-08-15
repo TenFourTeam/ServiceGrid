@@ -1,9 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
 import { queryKeys, invalidationHelpers } from "@/queries/keys";
-import { useStandardMutation } from "@/mutations/useStandardMutation";
+import { toast } from "sonner";
 
 export interface Invite {
   id: string;
@@ -34,46 +34,61 @@ export function usePendingInvites(businessId?: string) {
 }
 
 export function useRevokeInvite(businessId: string) {
-  return useStandardMutation<any, { inviteId: string }>({
-    mutationFn: async ({ inviteId }) => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ inviteId }: { inviteId: string }) => {
       return await edgeRequest(fn("invite-manage"), {
         method: "POST",
         body: JSON.stringify({ inviteId, action: "revoke" }),
       });
     },
-    onSuccess: (_, variables, queryClient) => {
+    onSuccess: () => {
       invalidationHelpers.team(queryClient, businessId);
+      toast.success("Invite revoked successfully");
     },
-    successMessage: "Invite revoked successfully",
-    errorMessage: "Failed to revoke invite",
+    onError: (error: any) => {
+      console.error(error);
+      toast.error(error?.message || "Failed to revoke invite");
+    },
   });
 }
 
 export function useResendInvite(businessId: string) {
-  return useStandardMutation<any, { inviteId: string }>({
-    mutationFn: async ({ inviteId }) => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ inviteId }: { inviteId: string }) => {
       return await edgeRequest(fn("invite-manage"), {
         method: "POST",
         body: JSON.stringify({ inviteId, action: "resend" }),
       });
     },
-    onSuccess: (_, variables, queryClient) => {
+    onSuccess: () => {
       invalidationHelpers.team(queryClient, businessId);
+      toast.success("Invite resent successfully");
     },
-    successMessage: "Invite resent successfully",
-    errorMessage: "Failed to resend invite",
+    onError: (error: any) => {
+      console.error(error);
+      toast.error(error?.message || "Failed to resend invite");
+    },
   });
 }
 
 export function useRedeemInvite() {
-  return useStandardMutation<any, { token: string }>({
-    mutationFn: async ({ token }) => {
+  return useMutation({
+    mutationFn: async ({ token }: { token: string }) => {
       return await edgeRequest(fn("invite-redeem"), {
         method: "POST",
         body: JSON.stringify({ token }),
       });
     },
-    successMessage: "Invite redeemed successfully",
-    errorMessage: "Failed to redeem invite",
+    onSuccess: () => {
+      toast.success("Invite redeemed successfully");
+    },
+    onError: (error: any) => {
+      console.error(error);
+      toast.error(error?.message || "Failed to redeem invite");
+    },
   });
 }

@@ -1,8 +1,9 @@
-import { useStandardMutation } from '@/mutations/useStandardMutation';
 import { useAuth } from '@clerk/clerk-react';
 import { edgeRequest } from '@/utils/edgeApi';
 import { fn } from '@/utils/functionUrl';
 import { queryKeys } from '@/queries/keys';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 export type LogoKind = 'dark' | 'light';
 
@@ -17,8 +18,9 @@ export type LogoUploadPayload = {
  */
 export function useLogoOperations() {
   const { isSignedIn } = useAuth();
+  const queryClient = useQueryClient();
 
-  const uploadLogo = useStandardMutation<{ url: string; kind: string }, LogoUploadPayload>({
+  const uploadLogo = useMutation({
     mutationFn: async ({ file, kind }: LogoUploadPayload) => {
       if (!isSignedIn) {
         throw new Error('You must be signed in');
@@ -38,9 +40,14 @@ export function useLogoOperations() {
       
       return result as { url: string; kind: string };
     },
-    invalidateQueries: [[...queryKeys.business.current()]],
-    successMessage: 'Logo updated successfully',
-    errorMessage: 'Failed to upload logo. Please try again.',
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.business.current() });
+      toast.success('Logo updated successfully');
+    },
+    onError: (error: any) => {
+      console.error(error);
+      toast.error(error?.message || 'Failed to upload logo. Please try again.');
+    },
   });
 
   return {
