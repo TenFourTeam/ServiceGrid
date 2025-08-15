@@ -1,5 +1,4 @@
 import AppLayout from '@/components/Layout/AppLayout';
-import { BusinessUI } from '@/queries/useBusiness';
 import { useProfile } from '@/queries/useProfile';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';

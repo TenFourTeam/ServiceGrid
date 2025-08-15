@@ -14,8 +14,8 @@ vi.mock('@/queries/unified', () => ({
   useSubscriptionStatus: () => ({ data: { subscribed: false }, isLoading: false }),
 }));
 
-vi.mock('@/auth', () => ({
-  useBusinessAuth: () => ({ snapshot: { businessId: 'test-business-id' } }),
+vi.mock('@/hooks/useBusinessContext', () => ({
+  useBusinessContext: () => ({ business: { id: 'test-business-id' } }),
 }));
 
 function renderHookWithProviders<T>(hook: () => T) {
