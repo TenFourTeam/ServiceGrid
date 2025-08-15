@@ -2,8 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
 import { queryKeys } from "@/queries/keys";
-import { useBusinessId } from "@/hooks/useBusinessId";
-import { useAuth } from "@clerk/clerk-react";
+import { useBusinessContext } from "@/hooks/useBusinessContext";
 
 import type { Customer } from '@/types';
 
@@ -15,9 +14,8 @@ interface UseCustomersDataOptions {
  * Simplified customers hook - single query for both count and data
  */
 export function useCustomersData(opts?: UseCustomersDataOptions) {
-  const { isSignedIn } = useAuth();
-  const businessId = useBusinessId();
-  const enabled = isSignedIn && !!businessId && (opts?.enabled ?? true);
+  const { isAuthenticated, businessId } = useBusinessContext();
+  const enabled = isAuthenticated && !!businessId && (opts?.enabled ?? true);
 
   const query = useQuery({
     queryKey: queryKeys.data.customers(businessId || ''),

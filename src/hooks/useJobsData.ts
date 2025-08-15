@@ -2,8 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
 import { queryKeys } from "@/queries/keys";
-import { useBusinessId } from "@/hooks/useBusinessId";
-import { useAuth } from "@clerk/clerk-react";
+import { useBusinessContext } from "@/hooks/useBusinessContext";
 
 export interface Job {
   id: string;
@@ -29,9 +28,8 @@ interface UseJobsDataOptions {
  * Simplified jobs hook - single query for both count and data
  */
 export function useJobsData(opts?: UseJobsDataOptions) {
-  const { isSignedIn } = useAuth();
-  const businessId = useBusinessId();
-  const enabled = isSignedIn && !!businessId && (opts?.enabled ?? true);
+  const { isAuthenticated, businessId } = useBusinessContext();
+  const enabled = isAuthenticated && !!businessId && (opts?.enabled ?? true);
 
   const query = useQuery({
     queryKey: queryKeys.data.jobs(businessId || ''),
