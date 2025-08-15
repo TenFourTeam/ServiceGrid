@@ -24,7 +24,7 @@ function useFilteredJobs() {
   const { data: customers = [] } = useCustomersData();
   const { data: invoices = [] } = useInvoicesData();
   const [q, setQ] = useState('');
-  const [sort, setSort] = useState<'unscheduled' | 'today' | 'upcoming' | 'completed'>('unscheduled');
+  const [sort, setSort] = useState<'all' | 'unscheduled' | 'today' | 'upcoming' | 'completed'>('all');
 
   const todayStart = new Date(); todayStart.setHours(0,0,0,0);
   const todayEnd = new Date(); todayEnd.setHours(23,59,59,999);
@@ -33,7 +33,9 @@ function useFilteredJobs() {
   const filtered = useMemo(() => {
     const qLower = q.trim().toLowerCase();
     let list = jobs.slice();
-    if (sort === 'unscheduled') {
+    if (sort === 'all') {
+      // Show all jobs, no filtering
+    } else if (sort === 'unscheduled') {
       list = list.filter(j => !j.startsAt);
     } else if (sort === 'today') {
       list = list.filter(j => j.status !== 'Completed' && new Date(j.startsAt) >= todayStart && new Date(j.startsAt) <= todayEnd);
@@ -54,6 +56,7 @@ function useFilteredJobs() {
   }, [jobs, customers, sort, q]);
 
   const counts = useMemo(() => ({
+    all: jobs.length,
     unscheduled: jobs.filter(j => !j.startsAt).length,
     today: jobs.filter(j => j.status !== 'Completed' && new Date(j.startsAt) >= todayStart && new Date(j.startsAt) <= todayEnd).length,
     upcoming: jobs.filter(j => j.status !== 'Completed' && new Date(j.startsAt) > todayEnd).length,
@@ -138,6 +141,7 @@ export default function WorkOrdersPage() {
             <div className="flex items-center gap-2">
               <Input value={q} onChange={(e)=>setQ(e.target.value)} placeholder="Search customer or address" className="h-9 w-48" />
               <select value={sort} onChange={(e)=>setSort(e.target.value as any)} className="h-9 rounded-md border bg-background px-2 text-sm">
+                <option value="all">All ({counts.all})</option>
                 <option value="unscheduled">Unscheduled ({counts.unscheduled})</option>
                 <option value="today">Today ({counts.today})</option>
                 <option value="upcoming">Upcoming ({counts.upcoming})</option>
