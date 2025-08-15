@@ -15,7 +15,7 @@ const json = (data: any, status = 200) => new Response(JSON.stringify(data), {
 
 const ProfileUpdateSchema = z.object({
   fullName: z.string().trim().min(2, 'Enter your full name'),
-  businessName: z.string().trim().max(120).optional(), // Optional - only update if provided
+  businessName: z.string().trim().max(120).optional(), // Business name for reference only
   phoneRaw: z.string().trim().min(7, 'Enter a valid phone number').optional().or(z.literal(''))
 });
 
@@ -81,20 +81,15 @@ serve(async (req) => {
 
     const phoneE164 = normalizeToE164(input.phoneRaw || '');
 
-    // Update profiles table with business name logic
-    const businessNameCustomized = input.businessName ? 
-      input.businessName.trim().toLowerCase() !== 'my business' : false;
-
+    // Update profiles table - single source of truth for personal data
     const { data: profileData, error: profileError } = await ctx.supaAdmin
       .from('profiles')
       .update({
         full_name: input.fullName,
         phone_e164: phoneE164,
-        business_name: input.businessName || 'My Business',
-        business_name_customized: businessNameCustomized,
       })
       .eq('id', ctx.userId)
-      .select('id, full_name, phone_e164, business_name, business_name_customized, updated_at')
+      .select('id, full_name, phone_e164, updated_at')
       .single();
 
     if (profileError) {
@@ -102,29 +97,14 @@ serve(async (req) => {
       return json({ error: { code: "profile_update_failed", message: profileError.message }}, 500);
     }
 
-    // Still update business phone if provided
-    if (phoneE164) {
-      const { error: businessError } = await ctx.supaAdmin
-        .from('businesses')
-        .update({
-          phone: phoneE164,
-        })
-        .eq('id', ctx.businessId);
-
-      if (businessError) {
-        console.error('[profile-update] Business phone update failed:', businessError);
-        // Don't fail the whole operation for business phone update
-      }
-    }
-
-    console.log(`🎉 [profile-update] Update successful - Business: ${profileData.business_name}`);
+    console.log(`🎉 [profile-update] Update successful - User: ${profileData.full_name}`);
 
     return json({
       data: {
         fullName: profileData.full_name,
-        businessName: profileData.business_name,
+        businessName: input.businessName || '', // Echo back for reference
         phoneE164: profileData.phone_e164,
-        businessNameCustomized: profileData.business_name_customized,
+        businessNameCustomized: false, // No longer stored
         updatedAt: profileData.updated_at,
       }
     });

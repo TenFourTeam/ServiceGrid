@@ -38,9 +38,7 @@ export default function SettingsPage() {
   const statusError = null;
   const { user, isLoaded: userLoaded } = useUser();
   const [userName, setUserName] = useState('');
-  const [businessName, setBusinessName] = useState('');
-  const [businessPhone, setBusinessPhone] = useState('');
-  const [isHydrated, setIsHydrated] = useState(false);
+  const [userPhone, setUserPhone] = useState('');
   const { role, canManage } = useBusinessContext();
   const { updateProfile, isUpdating } = useProfileOperations();
   const { uploadLogo, isUploading: isUploadingLogo } = useLogoOperations();
@@ -102,57 +100,24 @@ export default function SettingsPage() {
       sonnerToast.error(e?.message || 'Failed to start Stripe onboarding');
     }
   }
+  // Hydrate from profile data (authoritative source)
   useEffect(() => {
-    if (userLoaded) {
-      const metaName = (user?.unsafeMetadata as any)?.displayName as string | undefined;
-      setUserName(metaName || user?.fullName || '');
-    }
-  }, [userLoaded, user]);
-
-  // Handle profile data hydration - only once to prevent clearing during updates
-  useEffect(() => {
-    if (profile && !isHydrated) {
-      setBusinessName(profile.businessName || '');
-      setBusinessPhone(profile.phoneE164 || '');
-      setIsHydrated(true);
-    }
-  }, [profile, isHydrated]);
-
-
-  useEffect(() => {
-    if (!userLoaded || !user) return;
-    const name = userName.trim();
-    if (!name) return;
-    const currentName = ((user.unsafeMetadata as any)?.displayName as string | undefined) || (user.fullName || '');
-    if (name === currentName) return;
-    const handle = setTimeout(async () => {
-      const parts = name.split(' ');
-      const firstName = parts.shift() || '';
-      const lastName = parts.join(' ');
-      try {
-        await user.update({ firstName, lastName });
-      } catch (err: any) {
-        try {
-          const existingMeta = (user.unsafeMetadata as any) || {};
-          await user.update({ unsafeMetadata: { ...existingMeta, displayName: name } });
-        } catch (err2: any) {
-          sonnerToast.error(err2?.message || err?.message || 'Failed to update name');
-        }
+    if (profile) {
+      if (!userName && profile.fullName) {
+        setUserName(profile.fullName);
       }
-    }, 600);
-    return () => clearTimeout(handle);
-  }, [userName, userLoaded, user]);
+      if (!userPhone && profile.phoneE164) {
+        setUserPhone(profile.phoneE164);
+      }
+    }
+  }, [profile, userName, userPhone]);
+
+
 
   const handleProfileSave = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.info('[Settings] handleProfileSave called');
-    
-    if (!userName.trim() || !businessPhone.trim()) {
-      console.warn('[Settings] validation failed - missing required fields:', {
-        hasName: !!userName.trim(),
-        hasPhone: !!businessPhone.trim()
-      });
+    if (!userName.trim() || !userPhone.trim()) {
       toast({
         title: "Missing information",
         description: "Please fill in your name and phone number",
@@ -161,57 +126,40 @@ export default function SettingsPage() {
       return;
     }
 
-    // Always include current values to ensure persistence
-    const input: { fullName: string; phoneRaw: string; businessName: string } = { 
+    const input = { 
       fullName: userName.trim(), 
-      phoneRaw: businessPhone.trim(),
-      businessName: businessName.trim() || 'My Business' // Always send business name
+      phoneRaw: userPhone.trim(),
+      businessName: business?.name || 'My Business'
     };
-    
-    console.info('[Settings] saving profile', input);
-
-    // Save to database first (authoritative)
-    console.info('[Settings] calling profileUpdate.mutateAsync');
     
     try {
       await updateProfile.mutateAsync(input);
       
-      // Non-blocking sync to Clerk after DB success
+      // Optional non-blocking Clerk sync
       if (user && userName.trim()) {
         try {
           const parts = userName.trim().split(' ');
           const firstName = parts.shift() || '';
           const lastName = parts.join(' ');
-          
           await user.update({ firstName, lastName });
-          console.log('✅ [Settings] Clerk name sync successful');
         } catch (clerkError) {
-          console.warn('⚠️ [Settings] Clerk name sync failed (non-blocking):', clerkError);
-          // Don't show error to user - DB is source of truth
+          console.warn('Clerk sync failed (non-blocking):', clerkError);
         }
       }
     } catch (error) {
-      console.error('[Settings] Profile update failed:', error);
-      // Error handling is done by the hook
+      console.error('Profile update failed:', error);
     }
-  };
-
-  // Handle business name changes with formatting suggestion
-  const handleBusinessNameChange = (value: string) => {
-    setBusinessName(value);
   };
 
   // Handle phone changes with real-time formatting
   const handlePhoneChange = (value: string) => {
     const formatted = formatPhoneInput(value);
-    setBusinessPhone(formatted);
+    setUserPhone(formatted);
   };
 
   // Get formatting suggestions
   const userNameSuggestion = formatNameSuggestion(userName);
-  const businessNameSuggestion = formatNameSuggestion(businessName);
   const shouldShowUserNameSuggestion = userName && userNameSuggestion !== userName;
-  const shouldShowBusinessNameSuggestion = businessName && businessNameSuggestion !== businessName;
   useEffect(() => {
     // Hydrate business from server to ensure persistence across devices
     if (!isSignedIn) return;
@@ -266,36 +214,22 @@ export default function SettingsPage() {
               </div>
               <div>
                 <Label>Business Name</Label>
-                <div className="space-y-2">
-                  <div className="relative">
-                     <Input 
-                       value={businessName} 
-                       onChange={e => handleBusinessNameChange(e.target.value)} 
-                       placeholder="Your business name"
-                     />
-                    {isUpdating && (
-                      <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                        Saving...
-                      </div>
-                    )}
+                <div className="relative">
+                  <Input 
+                    value={business?.name || 'My Business'} 
+                    placeholder="Your business name"
+                    disabled
+                    className="bg-muted"
+                  />
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                    Manage in Business Settings
                   </div>
-                  {shouldShowBusinessNameSuggestion && (
-                    <Button 
-                      type="button"
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-6 text-xs text-muted-foreground hover:text-foreground"
-                      onClick={() => handleBusinessNameChange(businessNameSuggestion)}
-                    >
-                      ✨ Use "{businessNameSuggestion}"
-                    </Button>
-                  )}
                 </div>
               </div>
               <div>
                 <Label>Phone Number</Label>
                 <Input 
-                  value={businessPhone}
+                  value={userPhone}
                   onChange={e => handlePhoneChange(e.target.value)}
                   placeholder="(555) 123-4567"
                   type="tel"
@@ -303,10 +237,10 @@ export default function SettingsPage() {
                 />
               </div>
               
-              <div className="pt-4">
+               <div className="pt-4">
                  <Button 
                    type="submit"
-                   disabled={isUpdating || !userName.trim() || !businessPhone.trim()}
+                   disabled={isUpdating || !userName.trim() || !userPhone.trim()}
                    className="w-full"
                  >
                   {isUpdating ? 'Saving...' : 'Save Profile'}

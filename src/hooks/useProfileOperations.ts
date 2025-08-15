@@ -6,7 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 export type ProfileUpdatePayload = {
   fullName: string;
-  businessName?: string;
+  businessName?: string; // For reference only, not stored in profiles
   phoneRaw: string;
 };
 

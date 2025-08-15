@@ -52,7 +52,7 @@ export function useOnboardingState(): OnboardingState {
     const profileComplete = !!(
       profile?.fullName?.trim() &&
       profile?.phoneE164 &&
-      profile?.businessName?.trim()
+      business?.name?.trim()
     );
 
     const hasContent = (jobsCount ?? 0) > 0 || (quotesCount ?? 0) > 0;
@@ -84,7 +84,7 @@ export function useOnboardingState(): OnboardingState {
   }, [
     profile?.fullName,
     profile?.phoneE164,
-    profile?.businessName,
+    business?.name,
     customersCount,
     jobsCount,
     quotesCount,
