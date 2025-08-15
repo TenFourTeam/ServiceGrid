@@ -15,19 +15,22 @@ import { FloatingSetupWidget } from '@/components/Onboarding/FloatingSetupWidget
 import { IntentPickerModal } from '@/components/Onboarding/IntentPickerModal';
 import { useOnboardingState } from '@/onboarding/streamlined';
 import { useOnboardingActions } from '@/onboarding/hooks';
-import { useUI } from '@/store/ui';
 import { UserPlus } from 'lucide-react';
 export default function AppLayout({ children, title }: { children: ReactNode; title?: string }) {
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showIntentPicker, setShowIntentPicker] = useState(false);
   const { businessId, role } = useBusinessContext();
   
   // Onboarding system
   const onboardingState = useOnboardingState();
   const onboardingActions = useOnboardingActions();
-  const { modals, setModal } = useUI();
   
   // Show intent picker modal for new users
-  const showIntentPicker = onboardingState.showIntentPicker && !modals.intentPicker;
+  useEffect(() => {
+    if (onboardingState.showIntentPicker && !showIntentPicker) {
+      setShowIntentPicker(true);
+    }
+  }, [onboardingState.showIntentPicker, showIntentPicker]);
 
   useEffect(() => {
     document.title = title ? `${title} • ServiceGrid` : 'ServiceGrid';
@@ -73,7 +76,7 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
       {/* Onboarding Components */}
       <IntentPickerModal
         open={showIntentPicker}
-        onOpenChange={(open) => setModal('intentPicker', open)}
+        onOpenChange={setShowIntentPicker}
         onScheduleJob={onboardingActions.openNewJobSheet}
         onCreateQuote={onboardingActions.openCreateQuote}
         onAddCustomer={onboardingActions.openAddCustomer}
