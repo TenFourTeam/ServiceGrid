@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Send, Link, FileText, Receipt } from 'lucide-react';
+import { MoreHorizontal, Send, FileText, Receipt } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { edgeRequest } from '@/utils/edgeApi';
@@ -15,11 +15,6 @@ interface QuoteActionsProps {
 export function QuoteActions({ quote, onSendQuote }: QuoteActionsProps) {
   const navigate = useNavigate();
 
-  function copyPublicLink() {
-    const url = `${window.location.origin}/quote/${quote.publicToken}`;
-    navigator.clipboard.writeText(url);
-    toast.success('Quote link copied to clipboard');
-  }
 
   const handleConvertToJob = async () => {
     if (quote.status === 'Draft') {
@@ -87,10 +82,6 @@ export function QuoteActions({ quote, onSendQuote }: QuoteActionsProps) {
         <DropdownMenuItem onClick={() => onSendQuote(quote)} className="gap-2">
           <Send className="h-4 w-4" />
           Send Quote
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={copyPublicLink} className="gap-2">
-          <Link className="h-4 w-4" />
-          Copy Public Link
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleConvertToJob} className="gap-2">
