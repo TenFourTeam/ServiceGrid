@@ -3,13 +3,13 @@ import AppLayout from '@/components/Layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { FileText, Shield, Cookie, BadgeDollarSign } from 'lucide-react';
-import { useBusiness } from '@/queries/unified';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 export default function LegalPage() {
-  const { data: business } = useBusiness();
+  const { businessName } = useBusinessContext();
 
   useEffect(() => {
-    const title = `${business.name ? business.name + ' — ' : ''}Terms & Services`;
+    const title = `${businessName ? businessName + ' — ' : ''}Terms & Services`;
     document.title = title;
 
     const desc = 'Read our Terms of Service, Cookie Policy, Service Credit Terms, and Data Processing Addendum.';
@@ -28,7 +28,7 @@ export default function LegalPage() {
       document.head.appendChild(canonical);
     }
     canonical.setAttribute('href', window.location.href);
-  }, [business.name]);
+  }, [businessName]);
 
   return (
     <AppLayout title="Legal">

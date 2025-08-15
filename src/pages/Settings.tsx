@@ -1,5 +1,5 @@
 import AppLayout from '@/components/Layout/AppLayout';
-import { useBusiness } from '@/queries/unified';
+import { BusinessUI } from '@/queries/useBusiness';
 import { useProfile } from '@/queries/useProfile';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -29,7 +29,7 @@ import { RequireRole } from '@/components/Auth/RequireRole';
 import { cn } from '@/utils/cn';
 
 export default function SettingsPage() {
-  const { data: business } = useBusiness();
+  const { business } = useBusinessContext();
   const { data: profile } = useProfile();
   const location = useLocation();
   const navigate = useNavigate();

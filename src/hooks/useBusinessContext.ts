@@ -2,8 +2,8 @@ import { useAuth } from '@clerk/clerk-react';
 import { useBusiness } from '@/queries/useBusiness';
 
 /**
- * Simplified business context hook
- * Replaces the complex useBusinessAuth with direct data access
+ * Single source of truth for business data access
+ * Consolidates business context and data in one hook
  */
 export function useBusinessContext() {
   const { isSignedIn, isLoaded, userId } = useAuth();
@@ -23,9 +23,17 @@ export function useBusinessContext() {
     isLoaded,
     userId,
     
-    // Business context
+    // Complete business data (replaces need for separate useBusiness calls)
     business,
     businessId: business?.id,
+    businessName: business?.name,
+    businessPhone: business?.phone,
+    businessReplyToEmail: business?.replyToEmail,
+    businessTaxRateDefault: business?.taxRateDefault,
+    businessLogoUrl: business?.logoUrl,
+    businessLightLogoUrl: business?.lightLogoUrl,
+    
+    // Role and permissions
     role,
     canManage: role === 'owner',
     

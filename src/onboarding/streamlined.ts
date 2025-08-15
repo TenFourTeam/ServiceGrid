@@ -5,7 +5,7 @@
 import { useMemo } from 'react';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { 
-  useBusiness, 
+  // useBusiness integrated into useBusinessContext 
   useProfile, 
   useCustomersCount, 
   useJobsCount, 
@@ -33,10 +33,9 @@ export interface OnboardingState {
 }
 
 export function useOnboardingState(): OnboardingState {
-  const { businessId, isAuthenticated } = useBusinessContext();
+  const { businessId, isAuthenticated, business, isLoadingBusiness } = useBusinessContext();
   
   // Direct query consumption - no context layer
-  const { data: business, isLoading: businessLoading, isFetching: businessFetching } = useBusiness();
   const { data: profile, isLoading: profileLoading, isFetching: profileFetching } = useProfile();
   const { data: customersCount, isLoading: customersLoading } = useCustomersCount();
   const { data: jobsCount, isLoading: jobsLoading } = useJobsCount();
@@ -45,11 +44,11 @@ export function useOnboardingState(): OnboardingState {
   const { data: subscription, isLoading: subscriptionLoading } = useSubscriptionStatus();
 
   return useMemo(() => {
-    const loading = businessLoading || profileLoading || customersLoading || 
+    const loading = isLoadingBusiness || profileLoading || customersLoading || 
                    jobsLoading || quotesLoading || stripeLoading || subscriptionLoading;
 
     // Don't show incomplete during active fetching to prevent flickering
-    const isRefetching = businessFetching || profileFetching;
+    const isRefetching = profileFetching;
 
     // Simple, readable guard logic - preserve completion during updates
     const profileComplete = !!(
@@ -100,7 +99,7 @@ export function useOnboardingState(): OnboardingState {
     quotesCount,
     stripeStatus?.chargesEnabled,
     subscription?.subscribed,
-    businessLoading,
+    isLoadingBusiness,
     profileLoading,
     customersLoading,
     jobsLoading,

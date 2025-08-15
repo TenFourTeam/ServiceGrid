@@ -1,13 +1,13 @@
-import { useBusiness } from '@/queries/unified';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { BusinessMembersList } from "@/components/Business/BusinessMembersList";
 
 export default function Team() {
-  const { data: business } = useBusiness();
+  const { businessId } = useBusinessContext();
 
   return (
     <div className="space-y-6">
       <BusinessMembersList 
-        businessId={business?.id || ''} 
+        businessId={businessId || ''} 
       />
     </div>
   );

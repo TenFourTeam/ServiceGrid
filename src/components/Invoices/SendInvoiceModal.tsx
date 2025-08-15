@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useEffect, useMemo, useState } from "react";
-import { useBusiness, useCustomers } from '@/queries/unified';
+import { useCustomers } from '@/queries/unified';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { edgeFetchJson } from '@/utils/edgeApi';
@@ -21,7 +22,7 @@ export interface SendInvoiceModalProps {
 }
 
 export default function SendInvoiceModal({ open, onOpenChange, invoice, toEmail, customerName }: SendInvoiceModalProps) {
-  const { data: business } = useBusiness();
+  const { business, businessName, businessLogoUrl, businessLightLogoUrl } = useBusinessContext();
   const { data: customers = [] } = useCustomers();
   const queryClient = useQueryClient();
   const { getToken } = useClerkAuth();
@@ -32,12 +33,12 @@ export default function SendInvoiceModal({ open, onOpenChange, invoice, toEmail,
 
   const { html, defaultSubject } = useMemo(() => {
     if (!invoice) return { html: "", defaultSubject: "" };
-    const logo = business?.lightLogoUrl || business?.logoUrl;
+    const logo = businessLightLogoUrl || businessLogoUrl;
     const token = (invoice as any).publicToken as string | undefined;
     const payUrl = token ? `${window.location.origin}/invoice-pay?i=${invoice.id}&t=${token}` : undefined;
-    const built = buildInvoiceEmail({ businessName: business?.name || '', businessLogoUrl: logo, customerName, invoice, payUrl });
+    const built = buildInvoiceEmail({ businessName: businessName || '', businessLogoUrl: logo, customerName, invoice, payUrl });
     return { html: built.html, defaultSubject: built.subject };
-  }, [invoice, business?.name, business?.logoUrl, business?.lightLogoUrl, customerName]);
+  }, [invoice, businessName, businessLogoUrl, businessLightLogoUrl, customerName]);
 
 const previewHtml = useMemo(() => {
   if (!message?.trim()) return html;
@@ -56,10 +57,10 @@ const previewHtml = useMemo(() => {
         return cust?.email || "";
       })();
       setTo(defaultTo);
-      setSubject(invoice ? `${business?.name || ''} • Invoice ${invoice.number}` : "");
+      setSubject(invoice ? `${businessName || ''} • Invoice ${invoice.number}` : "");
       setMessage("");
     }
-  }, [open, invoice, toEmail, business?.name, customers]);
+  }, [open, invoice, toEmail, businessName, customers]);
 
   async function send() {
     if (!invoice) return;

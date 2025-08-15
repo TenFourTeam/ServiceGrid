@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useMemo, useState, useEffect } from "react";
-import { useBusiness, useCustomers } from "@/queries/unified";
+import { useCustomers } from "@/queries/unified";
+import { useBusinessContext } from "@/hooks/useBusinessContext";
 import type { Quote } from "@/types";
 import { buildQuoteEmail } from "@/utils/emailTemplates";
 import { toast } from "sonner";
@@ -22,7 +23,7 @@ export interface SendQuoteModalProps {
 }
 
 export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, customerName }: SendQuoteModalProps) {
-  const { data: business } = useBusiness();
+  const { business, businessName, businessLogoUrl, businessLightLogoUrl } = useBusinessContext();
   const { data: customers = [] } = useCustomers();
   const queryClient = useQueryClient();
   const { getToken } = useClerkAuth();
@@ -37,10 +38,10 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
     const approveUrl = `${base}/quote-action?type=approve&quote_id=${encodeURIComponent(quote.id)}&token=${encodeURIComponent(quote.publicToken)}`;
     const editUrl = `${base}/quote-action?type=edit&quote_id=${encodeURIComponent(quote.id)}&token=${encodeURIComponent(quote.publicToken)}`;
     const pixelUrl = `${SUPABASE_URL}/functions/v1/quote-events?type=open&quote_id=${encodeURIComponent(quote.id)}&token=${encodeURIComponent(quote.publicToken)}`;
-    const logo = business?.lightLogoUrl || business?.logoUrl;
-    const built = buildQuoteEmail({ businessName: business?.name || '', businessLogoUrl: logo, customerName, quote, approveUrl, editUrl, pixelUrl });
+    const logo = businessLightLogoUrl || businessLogoUrl;
+    const built = buildQuoteEmail({ businessName: businessName || '', businessLogoUrl: logo, customerName, quote, approveUrl, editUrl, pixelUrl });
     return { html: built.html, defaultSubject: built.subject };
-  }, [quote, business?.name, business?.logoUrl, business?.lightLogoUrl, customerName]);
+  }, [quote, businessName, businessLogoUrl, businessLightLogoUrl, customerName]);
   const previewHtml = useMemo(() => {
     if (!message?.trim()) return html;
     const safe = escapeHtml(message).replace(/\n/g, '<br />');
@@ -59,10 +60,10 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
         return cust?.email || "";
       })();
       setTo(defaultTo);
-      setSubject(quote ? `${business?.name || ''} • Quote ${quote.number}` : "");
+      setSubject(quote ? `${businessName || ''} • Quote ${quote.number}` : "");
       setMessage("");
     }
-  }, [open, quote, toEmail, business?.name, customers]);
+  }, [open, quote, toEmail, businessName, customers]);
 
   async function send() {
     if (!quote) return;

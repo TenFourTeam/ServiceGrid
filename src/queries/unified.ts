@@ -8,7 +8,7 @@ import { useSupabaseQuotes } from '@/hooks/useSupabaseQuotes';
 import { useSupabaseInvoices } from '@/hooks/useSupabaseInvoices';
 
 // Business and profile queries
-export { useBusiness } from './useBusiness';
+// Note: useBusiness is now internal to useBusinessContext for consolidation
 export { useProfile } from '@/queries/useProfile';
 
 // Count queries

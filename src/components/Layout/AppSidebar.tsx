@@ -1,7 +1,6 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { RequireRole } from "@/components/Auth/RequireRole";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
-import { useBusiness } from "@/queries/unified";
 import {
   Sidebar,
   SidebarContent,
@@ -47,8 +46,7 @@ const ownerOnlyItems = [
 ];
 
 export default function AppSidebar() {
-  const { businessId, role, canManage } = useBusinessContext();
-  const { data: business } = useBusiness();
+  const { businessId, role, canManage, business, businessLogoUrl, businessLightLogoUrl, businessName } = useBusinessContext();
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut } = useClerk();
@@ -57,7 +55,7 @@ export default function AppSidebar() {
   const { user } = useUser();
   
   // Warm the cache for the logo ASAP
-  usePreloadImage(business?.lightLogoUrl || business?.logoUrl);
+  usePreloadImage(businessLightLogoUrl || businessLogoUrl);
   
   const isActivePath = (path: string) => location.pathname.startsWith(path);
 
@@ -69,8 +67,8 @@ export default function AppSidebar() {
           <div className="relative h-8 w-8 ml-0 flex items-center justify-center">
             <BusinessLogo
               size={26}
-              src={business?.lightLogoUrl || business?.logoUrl}
-              alt={`${business?.name || "Business"} logo`}
+              src={businessLightLogoUrl || businessLogoUrl}
+              alt={`${businessName || "Business"} logo`}
             />
             {collapsed && (
               <SidebarTrigger
@@ -82,7 +80,7 @@ export default function AppSidebar() {
 
           {/* Title column - hidden when collapsed */}
           <div className="min-w-0 pl-1 group-data-[collapsible=icon]:hidden">
-            <div className="font-semibold truncate">{business?.name || "Business"}</div>
+            <div className="font-semibold truncate">{businessName || "Business"}</div>
             <div className="text-xs text-muted-foreground truncate">Contractor Console</div>
           </div>
 

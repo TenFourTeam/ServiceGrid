@@ -1,5 +1,4 @@
 import { useBusinessContext } from '@/hooks/useBusinessContext';
-import { useBusiness } from '@/queries/unified';
 import { useCustomersCount } from '@/hooks/useCustomersCount';
 import { CheckCircle, XCircle, Clock } from 'lucide-react';
 
@@ -8,8 +7,7 @@ import { CheckCircle, XCircle, Clock } from 'lucide-react';
  * Shows if all systems are properly connected and working
  */
 export function IntegrationStatus() {
-  const { isAuthenticated, businessId } = useBusinessContext();
-  const { data: business } = useBusiness();
+  const { isAuthenticated, businessId, business } = useBusinessContext();
   const { data: customersCount, isLoading } = useCustomersCount();
 
   const checks = [
