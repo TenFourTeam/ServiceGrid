@@ -110,16 +110,19 @@ export default function SettingsPage() {
         setUserName(profile.fullName);
       }
       if (!userPhone && profile.phoneE164) {
-        setUserPhone(profile.phoneE164);
+        // Convert E.164 to display format for user-friendly editing
+        const formatted = formatPhoneInput(profile.phoneE164);
+        setUserPhone(formatted);
       }
     }
   }, [profile, userName, userPhone]);
 
   useEffect(() => {
-    if (business && !businessName) {
+    if (business) {
+      // Always update business name to reflect latest server state
       setBusinessName(business.name || 'My Business');
     }
-  }, [business, businessName]);
+  }, [business]);
 
 
 

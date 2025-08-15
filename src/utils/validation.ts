@@ -20,8 +20,15 @@ export function formatPhoneNumber(phone: string): string {
 
 /**
  * Formats phone for display while user types
+ * Handles E.164 format conversion to user-friendly display
  */
 export function formatPhoneInput(value: string): string {
+  // Handle E.164 format input (e.g., +15551234567)
+  if (value.startsWith('+1') && value.length === 12) {
+    const digits = value.slice(2); // Remove +1
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  }
+  
   const digits = value.replace(/\D/g, '');
   
   if (digits.length <= 3) return digits;
