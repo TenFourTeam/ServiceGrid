@@ -9,7 +9,7 @@ import { EnhancedInviteModal } from "@/components/Team/EnhancedInviteModal";
 import { TeamSearchFilter } from "@/components/Team/TeamSearchFilter";
 import { TeamMemberActions } from "@/components/Team/TeamMemberActions";
 import { UserPlus, Mail, Clock, Send, X, Users, AlertCircle, Shield } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { RequireRole } from "@/components/Auth/RequireRole";
 
 interface BusinessMembersListProps {
@@ -23,7 +23,7 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
     role: null as string | null,
     status: null as string | null,
   });
-  const { toast } = useToast();
+  
 
   const { data: membersData, isLoading } = useBusinessMembers(businessId);
   const { data: invitesData, isLoading: loadingInvites } = usePendingInvites(businessId);
@@ -94,15 +94,12 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
 
     try {
       await revokeInvite.mutateAsync({ inviteId });
-      toast({
-        title: "Invitation revoked",
+      toast.success("Invitation revoked", {
         description: `Invitation for ${email} has been revoked`,
       });
     } catch (error: any) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: error.message || "Failed to revoke invitation",
-        variant: "destructive",
       });
     }
   };
@@ -110,15 +107,12 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
   const handleResendInvite = async (inviteId: string, email: string) => {
     try {
       await resendInvite.mutateAsync({ inviteId });
-      toast({
-        title: "Invitation resent",
+      toast.success("Invitation resent", {
         description: `Invitation for ${email} has been resent`,
       });
     } catch (error: any) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: error.message || "Failed to resend invitation",
-        variant: "destructive",
       });
     }
   };

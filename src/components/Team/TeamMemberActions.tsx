@@ -3,7 +3,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useRemoveMember } from "@/hooks/useBusinessMembers";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { MoreVertical, Trash2 } from "lucide-react";
 import type { BusinessMember } from "@/hooks/useBusinessMembers";
 import { RequireRole } from "@/components/Auth/RequireRole";
@@ -17,7 +17,7 @@ interface TeamMemberActionsProps {
 export function TeamMemberActions({ member, businessId, isLastOwner }: TeamMemberActionsProps) {
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   
-  const { toast } = useToast();
+  
   const removeMember = useRemoveMember();
 
   // Don't show actions for owners
@@ -27,26 +27,21 @@ export function TeamMemberActions({ member, businessId, isLastOwner }: TeamMembe
 
   const handleRemove = async () => {
     if (isLastOwner) {
-      toast({
-        title: "Cannot remove member",
+      toast.error("Cannot remove member", {
         description: "Cannot remove the last owner of the business",
-        variant: "destructive",
       });
       return;
     }
 
     try {
       await removeMember.mutateAsync({ businessId, memberId: member.id });
-      toast({
-        title: "Member removed",
+      toast.success("Member removed", {
         description: `${member.email} has been removed from the team`,
       });
       setShowRemoveDialog(false);
     } catch (error) {
-      toast({
-        title: "Failed to remove member",
+      toast.error("Failed to remove member", {
         description: error instanceof Error ? error.message : "Unknown error",
-        variant: "destructive",
       });
     }
   };

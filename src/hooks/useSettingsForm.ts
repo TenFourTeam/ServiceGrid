@@ -3,7 +3,7 @@ import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useProfile } from '@/queries/useProfile';
 import { useProfileOperations } from '@/hooks/useProfileOperations';
 import { useBusinessOperations } from '@/hooks/useBusinessOperations';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { formatPhoneInput, normalizePhoneToE164 } from '@/utils/validation';
 import { formatNameSuggestion } from '@/validation/profile';
 import { useUser } from '@clerk/clerk-react';
@@ -16,7 +16,7 @@ export function useSettingsForm() {
   const { business } = useBusinessContext();
   const { data: profile } = useProfile();
   const { user } = useUser();
-  const { toast } = useToast();
+  
   
   const { updateProfile, isUpdating: isUpdatingProfile } = useProfileOperations();
   const { updateBusiness, isUpdating: isUpdatingBusiness } = useBusinessOperations();
@@ -61,10 +61,8 @@ export function useSettingsForm() {
     e.preventDefault();
     
     if (!isFormValid) {
-      toast({
-        title: "Missing information",
+      toast.error("Missing information", {
         description: "Please fill in your name, phone number, and business name",
-        variant: "destructive",
       });
       return;
     }

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { addMinutes, format } from "date-fns";
 import type { Job } from "@/types";
 import { useQueryClient } from "@tanstack/react-query";
@@ -30,12 +30,12 @@ export default function ReschedulePopover({ job, onDone }: ReschedulePopoverProp
 
   const handleSave = async () => {
     if (!date) {
-      toast({ title: "Pick a date" });
+      toast.error("Pick a date");
       return;
     }
     try {
       setSubmitting(true);
-      toast({ title: "Rescheduling job..." });
+      toast.loading("Rescheduling job...");
       
       const [h, m] = time.split(":").map((t) => parseInt(t, 10));
       const starts = new Date(date);
@@ -51,11 +51,11 @@ export default function ReschedulePopover({ job, onDone }: ReschedulePopoverProp
         invalidationHelpers.jobs(queryClient, businessId);
       }
       
-      toast({ title: "Job rescheduled successfully" });
+      toast.success("Job rescheduled successfully");
       setOpen(false);
       await onDone?.();
     } catch (e: any) {
-      toast({ title: "Failed to reschedule", description: e?.message || String(e) });
+      toast.error("Failed to reschedule", { description: e?.message || String(e) });
     } finally {
       setSubmitting(false);
     }
@@ -64,7 +64,7 @@ export default function ReschedulePopover({ job, onDone }: ReschedulePopoverProp
   const handleUnschedule = async () => {
     try {
       setSubmitting(true);
-      toast({ title: "Unscheduling job..." });
+      toast.loading("Unscheduling job...");
       
       const data = await edgeRequest(fn("jobs?id=" + job.id), {
         method: "PATCH",
@@ -75,11 +75,11 @@ export default function ReschedulePopover({ job, onDone }: ReschedulePopoverProp
         invalidationHelpers.jobs(queryClient, businessId);
       }
       
-      toast({ title: "Job unscheduled successfully" });
+      toast.success("Job unscheduled successfully");
       setOpen(false);
       await onDone?.();
     } catch (e: any) {
-      toast({ title: "Failed to unschedule", description: e?.message || String(e) });
+      toast.error("Failed to unschedule", { description: e?.message || String(e) });
     } finally {
       setSubmitting(false);
     }

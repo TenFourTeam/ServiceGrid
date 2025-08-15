@@ -13,7 +13,7 @@ import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle, SheetTrigger
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { edgeRequest } from '@/utils/edgeApi';
 import { fn } from '@/utils/functionUrl';
@@ -38,7 +38,7 @@ export function NewJobSheet({
 }: NewJobSheetProps = {}) {
   const navigate = useNavigate();
   const { data: customers = [] } = useCustomersData();
-  const { toast } = useToast();
+  
   const { getToken } = useClerkAuth();
   const queryClient = useQueryClient();
   const { businessId } = useBusinessContext();
@@ -134,7 +134,7 @@ export function NewJobSheet({
 
   async function onCreate() {
     if (!customerId) {
-      toast({ title: 'Select a customer', description: 'Please choose or add a customer before creating a job.' });
+      toast.error('Select a customer', { description: 'Please choose or add a customer before creating a job.' });
       return;
     }
     
@@ -200,8 +200,7 @@ export function NewJobSheet({
       
       console.log('[NewJobSheet] Job creation completed:', created);
       
-      toast({
-        title: "Job scheduled",
+      toast.success("Job scheduled", {
         description: `Job scheduled for ${selectedCustomer?.name || 'customer'} on ${date}.`,
       });
       
@@ -231,7 +230,7 @@ export function NewJobSheet({
           };
         });
       }
-      toast({ title: 'Failed to create job', description: e?.message || String(e) });
+      toast.error('Failed to create job', { description: e?.message || String(e) });
     } finally {
       setCreating(false);
     }

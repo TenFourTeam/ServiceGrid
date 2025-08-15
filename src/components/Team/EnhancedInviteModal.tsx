@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useInviteWorker } from "@/hooks/useBusinessMembers";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { UserPlus, Copy, Mail, X, Check } from "lucide-react";
 
 interface EnhancedInviteModalProps {
@@ -23,7 +23,7 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
   const [inviteLinks, setInviteLinks] = useState<string[]>([]);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   
-  const { toast } = useToast();
+  
   const inviteWorker = useInviteWorker();
 
   const addEmail = () => {
@@ -46,16 +46,13 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
     try {
       await navigator.clipboard.writeText(link);
       setCopiedIndex(index);
-      toast({
-        title: "Link copied",
+      toast.success("Link copied", {
         description: "Invitation link copied to clipboard",
       });
       setTimeout(() => setCopiedIndex(null), 2000);
     } catch (error) {
-      toast({
-        title: "Failed to copy",
+      toast.error("Failed to copy", {
         description: "Could not copy to clipboard",
-        variant: "destructive",
       });
     }
   };
@@ -65,10 +62,8 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
     
     const validEmails = emails.filter(email => email.trim() && email.includes('@'));
     if (validEmails.length === 0) {
-      toast({
-        title: "Invalid emails",
+      toast.error("Invalid emails", {
         description: "Please enter at least one valid email address",
-        variant: "destructive",
       });
       return;
     }
@@ -94,17 +89,14 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
         
         setInviteLinks(links);
 
-        toast({
-          title: "Invitations sent",
+        toast.success("Invitations sent", {
           description: `Successfully sent ${successful.length} invitation${successful.length > 1 ? 's' : ''}`,
         });
       }
 
       if (failed.length > 0) {
-        toast({
-          title: "Some invitations failed",
+        toast.error("Some invitations failed", {
           description: `${failed.length} invitation${failed.length > 1 ? 's' : ''} could not be sent`,
-          variant: "destructive",
         });
       }
 
@@ -116,10 +108,8 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
       }
 
     } catch (error) {
-      toast({
-        title: "Failed to send invitations",
+      toast.error("Failed to send invitations", {
         description: error instanceof Error ? error.message : "Unknown error",
-        variant: "destructive",
       });
     }
   };

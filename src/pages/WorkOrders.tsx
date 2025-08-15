@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatDateTime, formatMoney } from '@/utils/format';
 import { useNavigate } from 'react-router-dom';
 import { Job } from '@/types';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { edgeRequest } from '@/utils/edgeApi';

@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useRedeemInvite } from "@/hooks/useInvites";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { CheckCircle, AlertCircle, UserPlus, Loader2 } from "lucide-react";
 
 export default function InviteAccept() {
@@ -17,7 +17,7 @@ export default function InviteAccept() {
   
   const token = searchParams.get('token');
   const redeemInvite = useRedeemInvite();
-  const { toast } = useToast();
+  
 
   useEffect(() => {
     if (!token) {
@@ -49,8 +49,7 @@ export default function InviteAccept() {
       setStatus('success');
       setMessage(result.message || 'You have successfully joined the team!');
       
-      toast({
-        title: "Welcome!",
+      toast.success("Welcome!", {
         description: "You have successfully joined the team.",
       });
 
@@ -64,10 +63,8 @@ export default function InviteAccept() {
       setStatus('error');
       setMessage(error.message || 'Failed to accept invitation. The link may be expired or invalid.');
       
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: error.message || "Failed to accept invitation",
-        variant: "destructive",
       });
     }
   };
