@@ -124,11 +124,13 @@ serve(async (req: Request) => {
     });
     
     try {
-      await supaAdmin.functions.invoke('resend-send-email', {
+      await supaAdmin.functions.invoke('team-send-email', {
         body: {
+          businessId,
           to: email,
           subject: emailContent.subject,
           html: emailContent.html,
+          emailType: 'team_invitation'
         },
       });
     } catch (emailError) {
