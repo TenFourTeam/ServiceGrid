@@ -110,6 +110,7 @@ export interface Job {
   notes?: string;
   total?: Money;
   photos?: string[]; // public URLs for job photos
+  uploadingPhotos?: boolean; // optimistic state for photo uploads
   createdAt: ISODate;
   updatedAt: ISODate;
 }

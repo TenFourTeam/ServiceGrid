@@ -196,6 +196,8 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                   </a>
                 ))}
               </div>
+            ) : (job as any).uploadingPhotos ? (
+              <div className="text-sm text-muted-foreground">Photos uploading...</div>
             ) : (
               <div className="text-sm text-muted-foreground">No photos yet.</div>
             )}
@@ -224,7 +226,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                     onClick={handlePhotoUpload}
                     disabled={uploadingPhotos}
                   >
-                    {uploadingPhotos ? 'Uploading...' : 'Upload Photos'}
+                    {uploadingPhotos ? (photos.length > 0 ? 'Adding photos...' : 'Uploading photos...') : 'Upload Photos'}
                   </Button>
                   <Button 
                     size="sm" 

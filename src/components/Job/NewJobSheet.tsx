@@ -79,6 +79,7 @@ export function NewJobSheet({
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [creating, setCreating] = useState(false);
+  const [photosUploading, setPhotosUploading] = useState(false);
 
   // New customer quick add
   const [newCustName, setNewCustName] = useState('');
@@ -157,6 +158,7 @@ export function NewJobSheet({
         status: 'Scheduled' as const,
         total: totalCents || null,
         photos: [],
+        uploadingPhotos: files.length > 0, // Track if photos will be uploaded
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -214,6 +216,7 @@ export function NewJobSheet({
 
       // 2) Upload photos asynchronously (don't block job creation)
       if (files.length > 0 && created?.id) {
+        setPhotosUploading(true);
         uploadPhotosAsync(created.id, files);
       }
     } catch (e: any) {
@@ -266,11 +269,41 @@ export function NewJobSheet({
           }),
         });
         
+        // Update job in cache to clear uploadingPhotos state and show real photos
+        if (businessId) {
+          queryClient.setQueryData(queryKeys.data.jobs(businessId), (old: any) => {
+            if (!old) return old;
+            return {
+              ...old,
+              jobs: old.jobs.map((j: any) => 
+                j.id === jobId 
+                  ? { ...j, photos: photoUrls, uploadingPhotos: false }
+                  : j
+              )
+            };
+          });
+        }
+        
         console.log('[NewJobSheet] Photos uploaded successfully:', photoUrls);
       }
     } catch (error) {
       console.warn('[NewJobSheet] Photo upload process failed:', error);
-      // Don't show error toast since job was already created successfully
+      // Clear uploadingPhotos state even on failure
+      if (businessId) {
+        queryClient.setQueryData(queryKeys.data.jobs(businessId), (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            jobs: old.jobs.map((j: any) => 
+              j.id === jobId 
+                ? { ...j, uploadingPhotos: false }
+                : j
+            )
+          };
+        });
+      }
+    } finally {
+      setPhotosUploading(false);
     }
   }
 
