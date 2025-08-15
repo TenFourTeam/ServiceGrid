@@ -53,9 +53,6 @@ export function useBusinessOperations() {
       // Use centralized invalidation for business data
       invalidationHelpers.business(queryClient);
       
-      // Force immediate refresh of business queries
-      queryClient.invalidateQueries(queryKeys.business.current());
-      
       // Force dashboard data refresh to update onboarding state
       window.dispatchEvent(new CustomEvent('business-updated'));
     },

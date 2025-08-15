@@ -1,51 +1,46 @@
 import AppLayout from '@/components/Layout/AppLayout';
-import { useProfile } from '@/queries/useProfile';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import BusinessLogo from '@/components/BusinessLogo';
-import { useState, useEffect, useRef } from 'react';
-import { useAuth as useClerkAuth, useUser } from '@clerk/clerk-react';
+import { useState, useEffect } from 'react';
+import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { edgeRequest } from '@/utils/edgeApi';
 import { fn } from '@/utils/functionUrl';
 import { toast as sonnerToast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 import ConnectBanner from '@/components/Stripe/ConnectBanner';
 import { useStripeConnectStatus } from '@/hooks/useStripeConnectStatus';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
-import { useProfileOperations } from '@/hooks/useProfileOperations';
-import { useBusinessOperations } from '@/hooks/useBusinessOperations';
-
-
-import { useToast } from '@/hooks/use-toast';
-import { formatPhoneInput } from '@/utils/validation';
-import { formatNameSuggestion } from '@/validation/profile';
 import { useLogoOperations } from '@/hooks/useLogoOperations';
+import { useSettingsForm } from '@/hooks/useSettingsForm';
 
 export default function SettingsPage() {
   const { business } = useBusinessContext();
-  const { data: profile } = useProfile();
-  const {
-    getToken,
-    isSignedIn
-  } = useClerkAuth();
+  const { isSignedIn } = useClerkAuth();
   const [darkFile, setDarkFile] = useState<File | null>(null);
   const [lightFile, setLightFile] = useState<File | null>(null);
   const [sub, setSub] = useState<any>(null);
   const [subLoading, setSubLoading] = useState(false);
   const { data: connectStatus, isLoading: statusLoading } = useStripeConnectStatus();
-  const statusError = null;
-  const { user, isLoaded: userLoaded } = useUser();
-  const [userName, setUserName] = useState('');
-  const [userPhone, setUserPhone] = useState('');
-  const [businessName, setBusinessName] = useState('');
-  const { role, canManage } = useBusinessContext();
-  const { updateProfile, isUpdating } = useProfileOperations();
-  const { updateBusiness, isUpdating: isUpdatingBusiness } = useBusinessOperations();
   const { uploadLogo, isUploading: isUploadingLogo } = useLogoOperations();
-  const { toast } = useToast();
+  
+  // Unified form state management
+  const {
+    userName,
+    setUserName,
+    userPhone,
+    setUserPhone,
+    businessName,
+    setBusinessName,
+    isFormValid,
+    isLoading,
+    userNameSuggestion,
+    shouldShowUserNameSuggestion,
+    applySuggestion,
+    handleSubmit,
+  } = useSettingsForm();
   function handleLogoUpload(kind: 'dark' | 'light') {
     const file = kind === 'dark' ? darkFile : lightFile;
     if (!file) {
@@ -103,92 +98,11 @@ export default function SettingsPage() {
       sonnerToast.error(e?.message || 'Failed to start Stripe onboarding');
     }
   }
-  // Hydrate from profile and business data
   useEffect(() => {
-    if (profile) {
-      if (!userName && profile.fullName) {
-        setUserName(profile.fullName);
-      }
-      if (!userPhone && profile.phoneE164) {
-        // Convert E.164 to display format for user-friendly editing
-        const formatted = formatPhoneInput(profile.phoneE164);
-        setUserPhone(formatted);
-      }
-    }
-  }, [profile, userName, userPhone]);
-
-  useEffect(() => {
-    if (business) {
-      // Always update business name to reflect latest server state
-      setBusinessName(business.name || 'My Business');
-    }
-  }, [business]);
-
-
-
-  const handleProfileSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!userName.trim() || !userPhone.trim() || !businessName.trim()) {
-      toast({
-        title: "Missing information",
-        description: "Please fill in your name, phone number, and business name",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      // Update profile and business in parallel
-      const profilePromise = updateProfile.mutateAsync({ 
-        fullName: userName.trim(), 
-        phoneRaw: userPhone.trim(),
-      });
-
-      const businessPromise = updateBusiness.mutateAsync({
-        businessName: businessName.trim(),
-        phone: business?.phone,
-        replyToEmail: business?.replyToEmail,
-      });
-
-      await Promise.all([profilePromise, businessPromise]);
-      
-      // Optional non-blocking Clerk sync
-      if (user && userName.trim()) {
-        try {
-          const parts = userName.trim().split(' ');
-          const firstName = parts.shift() || '';
-          const lastName = parts.join(' ');
-          await user.update({ firstName, lastName });
-        } catch (clerkError) {
-          console.warn('Clerk sync failed (non-blocking):', clerkError);
-        }
-      }
-    } catch (error) {
-      console.error('Profile/Business update failed:', error);
-    }
-  };
-
-  // Handle phone changes with real-time formatting
-  const handlePhoneChange = (value: string) => {
-    const formatted = formatPhoneInput(value);
-    setUserPhone(formatted);
-  };
-
-  // Get formatting suggestions
-  const userNameSuggestion = formatNameSuggestion(userName);
-  const shouldShowUserNameSuggestion = userName && userNameSuggestion !== userName;
-  useEffect(() => {
-    // Hydrate business from server to ensure persistence across devices
+    // Auto-refresh subscription on mount and after checkout redirect
     if (!isSignedIn) return;
     (async () => {
       try {
-        const data = await edgeRequest(fn('get-business'));
-        const b = (data as any)?.business;
-        if (b?.id) {
-          // Business data will be handled by React Query
-        }
-        // Auto-refresh subscription on mount and after checkout redirect
         const params = new URLSearchParams(window.location.search);
         if (params.get('checkout') === 'success' || params.get('checkout') === 'canceled') {
           await refreshSubscription();
@@ -207,7 +121,7 @@ export default function SettingsPage() {
             <CardTitle>Business Profile</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleProfileSave} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <Label>Name</Label>
                 <div className="space-y-2">
@@ -223,7 +137,7 @@ export default function SettingsPage() {
                       variant="ghost" 
                       size="sm" 
                       className="h-6 text-xs text-muted-foreground hover:text-foreground"
-                      onClick={() => setUserName(userNameSuggestion)}
+                      onClick={applySuggestion}
                     >
                       ✨ Use "{userNameSuggestion}"
                     </Button>
@@ -243,20 +157,20 @@ export default function SettingsPage() {
                 <Label>Phone Number</Label>
                 <Input 
                   value={userPhone}
-                  onChange={e => handlePhoneChange(e.target.value)}
+                  onChange={e => setUserPhone(e.target.value)}
                   placeholder="(555) 123-4567"
                   type="tel"
                   required
                 />
               </div>
               
-                <div className="pt-4">
+                 <div className="pt-4">
                  <Button 
                    type="submit"
-                   disabled={isUpdating || isUpdatingBusiness || !userName.trim() || !userPhone.trim() || !businessName.trim()}
+                   disabled={isLoading || !isFormValid}
                    className="w-full"
                  >
-                  {(isUpdating || isUpdatingBusiness) ? 'Saving...' : 'Save Profile'}
+                  {isLoading ? 'Saving...' : 'Save Profile'}
                 </Button>
               </div>
             </form>
