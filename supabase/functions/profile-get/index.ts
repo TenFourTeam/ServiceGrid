@@ -30,7 +30,7 @@ serve(async (req) => {
 
     const { data: profile, error: profileError } = await ctx.supaAdmin
       .from('profiles')
-      .select('id, full_name, phone_e164, business_name, business_name_customized, default_business_id')
+      .select('id, full_name, phone_e164, default_business_id')
       .eq('id', ctx.userId)
       .maybeSingle();
 
