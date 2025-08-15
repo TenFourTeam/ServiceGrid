@@ -1,80 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.44.0";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-function json(data: any, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json', ...corsHeaders },
-  });
-}
-
-async function resolveUserIdFromClerk(req: Request) {
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader) {
-    throw new Error('Authorization header required');
-  }
-
-  const token = authHeader.replace('Bearer ', '');
-  const clerkSecretKey = Deno.env.get('CLERK_SECRET_KEY');
-  if (!clerkSecretKey) {
-    throw new Error('CLERK_SECRET_KEY not configured');
-  }
-
-  // Verify the Clerk JWT
-  const clerkResponse = await fetch('https://api.clerk.com/v1/jwts/verify', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${clerkSecretKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ token }),
-  });
-
-  if (!clerkResponse.ok) {
-    throw new Error('Invalid Clerk token');
-  }
-
-  const { payload } = await clerkResponse.json();
-  const clerkUserId = payload.sub;
-
-  // Get the Supabase profile
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    { auth: { persistSession: false } }
-  );
-
-  const { data: profile, error } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('clerk_user_id', clerkUserId)
-    .single();
-
-  if (error || !profile) {
-    // Fallback to email lookup
-    const email = payload.email;
-    if (email) {
-      const { data: emailProfile, error: emailError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', email)
-        .single();
-      
-      if (emailError || !emailProfile) {
-        throw new Error('Profile not found');
-      }
-      return emailProfile.id;
-    }
-    throw new Error('Profile not found');
-  }
-
-  return profile.id;
-}
+import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -82,12 +7,7 @@ serve(async (req: Request) => {
   }
 
   try {
-    const userId = await resolveUserIdFromClerk(req);
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { persistSession: false } }
-    );
+    const { userId, supaAdmin } = await requireCtx(req);
 
     if (req.method === 'GET') {
       const url = new URL(req.url);
@@ -96,7 +16,7 @@ serve(async (req: Request) => {
 
       if (action === 'list' && businessId) {
         // Verify user is owner of the business
-        const { data: membership } = await supabase
+        const { data: membership } = await supaAdmin
           .from('business_members')
           .select('role')
           .eq('business_id', businessId)
@@ -109,7 +29,7 @@ serve(async (req: Request) => {
         }
 
         // Get pending invites
-        const { data: invites, error } = await supabase
+        const { data: invites, error } = await supaAdmin
           .from('invites')
           .select(`
             id,
@@ -144,7 +64,7 @@ serve(async (req: Request) => {
       }
 
       // Get the invite and verify permissions
-      const { data: invite, error: inviteError } = await supabase
+      const { data: invite, error: inviteError } = await supaAdmin
         .from('invites')
         .select('*, businesses!inner(name, logo_url)')
         .eq('id', inviteId)
@@ -155,7 +75,7 @@ serve(async (req: Request) => {
       }
 
       // Verify user can manage this business
-      const { data: membership } = await supabase
+      const { data: membership } = await supaAdmin
         .from('business_members')
         .select('role')
         .eq('business_id', invite.business_id)
@@ -168,7 +88,7 @@ serve(async (req: Request) => {
       }
 
       if (action === 'revoke') {
-        const { error } = await supabase
+        const { error } = await supaAdmin
           .from('invites')
           .update({ revoked_at: new Date().toISOString() })
           .eq('id', inviteId);
@@ -179,7 +99,7 @@ serve(async (req: Request) => {
         }
 
         // Log audit action
-        await supabase.rpc('log_audit_action', {
+        await supaAdmin.rpc('log_audit_action', {
           p_business_id: invite.business_id,
           p_user_id: userId,
           p_action: 'invite_revoked',
@@ -203,7 +123,7 @@ serve(async (req: Request) => {
         const newExpiresAt = new Date();
         newExpiresAt.setDate(newExpiresAt.getDate() + 7);
 
-        const { error } = await supabase
+        const { error } = await supaAdmin
           .from('invites')
           .update({
             token_hash: tokenHash,
@@ -221,7 +141,7 @@ serve(async (req: Request) => {
         const business = invite.businesses;
 
         try {
-          await supabase.functions.invoke('resend-send-email', {
+          await supaAdmin.functions.invoke('resend-send-email', {
             body: {
               to: invite.email,
               subject: `Reminder: You're invited to join ${business.name}`,
@@ -259,7 +179,7 @@ serve(async (req: Request) => {
         }
 
         // Log audit action
-        await supabase.rpc('log_audit_action', {
+        await supaAdmin.rpc('log_audit_action', {
           p_business_id: invite.business_id,
           p_user_id: userId,
           p_action: 'invite_resent',

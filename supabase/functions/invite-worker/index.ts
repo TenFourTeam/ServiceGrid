@@ -1,83 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.44.0";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-function json(data: any, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json', ...corsHeaders },
-  });
-}
-
-function createAdminClient() {
-  return createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    { auth: { persistSession: false } }
-  );
-}
-
-async function resolveOwnerIdFromClerk(req: Request) {
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader) {
-    throw new Error('Authorization header required');
-  }
-
-  const token = authHeader.replace('Bearer ', '');
-  const clerkSecretKey = Deno.env.get('CLERK_SECRET_KEY');
-  if (!clerkSecretKey) {
-    throw new Error('CLERK_SECRET_KEY not configured');
-  }
-
-  // Verify the Clerk JWT
-  const clerkResponse = await fetch('https://api.clerk.com/v1/jwts/verify', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${clerkSecretKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ token }),
-  });
-
-  if (!clerkResponse.ok) {
-    throw new Error('Invalid Clerk token');
-  }
-
-  const { payload } = await clerkResponse.json();
-  const clerkUserId = payload.sub;
-
-  // Get the Supabase profile
-  const supabase = createAdminClient();
-  const { data: profile, error } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('clerk_user_id', clerkUserId)
-    .single();
-
-  if (error || !profile) {
-    // Fallback to email lookup
-    const email = payload.email;
-    if (email) {
-      const { data: emailProfile, error: emailError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', email)
-        .single();
-      
-      if (emailError || !emailProfile) {
-        throw new Error('Profile not found');
-      }
-      return emailProfile.id;
-    }
-    throw new Error('Profile not found');
-  }
-
-  return profile.id;
-}
+import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -89,21 +11,31 @@ serve(async (req: Request) => {
   }
 
   try {
-    const ownerId = await resolveOwnerIdFromClerk(req);
+    const { userId, businessId: contextBusinessId, supaAdmin } = await requireCtx(req);
     const { businessId, email } = await req.json();
 
     if (!businessId || !email) {
       return json({ error: 'Business ID and email are required' }, 400);
     }
 
-    const supabase = createAdminClient();
+    // Verify the user can manage this business
+    const { data: membership } = await supaAdmin
+      .from('business_members')
+      .select('role')
+      .eq('business_id', businessId)
+      .eq('user_id', userId)
+      .eq('role', 'owner')
+      .single();
 
-    // Verify the user owns this business
-    const { data: business, error: businessError } = await supabase
+    if (!membership) {
+      return json({ error: 'Not authorized to manage this business' }, 403);
+    }
+
+    // Get business details
+    const { data: business, error: businessError } = await supaAdmin
       .from('businesses')
       .select('id, name, logo_url')
       .eq('id', businessId)
-      .eq('owner_id', ownerId)
       .single();
 
     if (businessError || !business) {
@@ -111,7 +43,7 @@ serve(async (req: Request) => {
     }
 
     // Check for existing invite or membership
-    const { data: existingInvite } = await supabase
+    const { data: existingInvite } = await supaAdmin
       .from('invites')
       .select('id')
       .eq('business_id', businessId)
@@ -125,12 +57,12 @@ serve(async (req: Request) => {
       return json({ error: 'Active invite already exists for this email' }, 409);
     }
 
-    const { data: existingMember } = await supabase
+    const { data: existingMember } = await supaAdmin
       .from('business_members')
       .select('id')
       .eq('business_id', businessId)
       .in('user_id', [
-        supabase.from('profiles').select('id').eq('email', email)
+        supaAdmin.from('profiles').select('id').eq('email', email)
       ])
       .single();
 
@@ -150,7 +82,7 @@ serve(async (req: Request) => {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 days from now
 
-    const { data: invite, error: inviteError } = await supabase
+    const { data: invite, error: inviteError } = await supaAdmin
       .from('invites')
       .insert({
         business_id: businessId,
@@ -158,7 +90,7 @@ serve(async (req: Request) => {
         role: 'worker',
         token_hash: tokenHash,
         expires_at: expiresAt.toISOString(),
-        invited_by: ownerId,
+        invited_by: userId,
       })
       .select()
       .single();
@@ -172,7 +104,7 @@ serve(async (req: Request) => {
     const inviteUrl = `${Deno.env.get('SUPABASE_URL')?.replace('/v1', '')}/invite?token=${token}`;
     
     try {
-      await supabase.functions.invoke('resend-send-email', {
+      await supaAdmin.functions.invoke('resend-send-email', {
         body: {
           to: email,
           subject: `You're invited to join ${business.name}`,
@@ -211,9 +143,9 @@ serve(async (req: Request) => {
     }
 
     // Log audit action
-    await supabase.rpc('log_audit_action', {
+    await supaAdmin.rpc('log_audit_action', {
       p_business_id: businessId,
-      p_user_id: ownerId,
+      p_user_id: userId,
       p_action: 'invite_sent',
       p_resource_type: 'business_member',
       p_resource_id: invite.id,
