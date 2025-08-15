@@ -204,26 +204,14 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
               <div>{typeof job.total === 'number' ? formatMoney(job.total) : '—'}</div>
             </div>
             <div>
-              <div className="text-sm text-muted-foreground">Quote</div>
-              <div className="flex items-center gap-2">
-                {linkedQuote ? (
-                  <>
-                    <span className="font-medium">{linkedQuote.number}</span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        onOpenChange(false);
-                        navigate(`/quotes?highlight=${linkedQuote.id}`);
-                      }}
-                    >
-                      View Quote
-                    </Button>
-                  </>
-                ) : (
-                  <span>—</span>
-                )}
-              </div>
+            <div className="text-sm text-muted-foreground">Quote</div>
+            <div className="flex items-center gap-2">
+              {linkedQuote ? (
+                <span className="font-medium">{linkedQuote.number}</span>
+              ) : (
+                <span>—</span>
+              )}
+            </div>
             </div>
           </div>
           <div>
@@ -311,29 +299,33 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
         </div>
         <DrawerFooter>
           <div className="flex flex-col gap-3">
-            {/* Primary Actions */}
-            <div className="grid grid-cols-2 gap-2">
-              <Button 
-                variant="default" 
-                onClick={handleCompleteJob}
-                disabled={job.status === 'Completed' || isCompletingJob}
-              >
-                {isCompletingJob ? 'Completing...' : job.status === 'Completed' ? 'Completed' : 'Complete Job'}
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={handleNavigate}
-              >
-                Navigate
-              </Button>
-            </div>
-            
-            {/* Secondary Actions */}
+            {/* Job Actions */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <ReschedulePopover job={job as Job} onDone={()=>{ /* no-op, realtime/subsequent fetch updates UI */ }} />
+                <ReschedulePopover job={job as Job} onDone={()=>{
+                  if (businessId) {
+                    invalidationHelpers.jobs(queryClient, businessId);
+                  }
+                }} />
+                <Button 
+                  variant="outline" 
+                  onClick={handleCompleteJob}
+                  disabled={job.status === 'Completed' || isCompletingJob}
+                  size="sm"
+                >
+                  {isCompletingJob ? 'Completing...' : job.status === 'Completed' ? 'Completed' : 'Complete'}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleNavigate}
+                  size="sm"
+                >
+                  Navigate
+                </Button>
+              </div>
+              <div className="flex items-center gap-2">
                 {!(job as any).quoteId ? (
-                  <Button variant="outline" onClick={() => setPickerOpen(true)}>Link Quote</Button>
+                  <Button variant="outline" onClick={() => setPickerOpen(true)} size="sm">Link Quote</Button>
                 ) : (
                   <Button 
                     variant="outline" 
@@ -341,6 +333,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                       onOpenChange(false);
                       navigate(`/quotes?highlight=${(job as any).quoteId}`);
                     }}
+                    size="sm"
                   >
                     View Quote
                   </Button>
@@ -349,12 +342,11 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                   variant="outline" 
                   onClick={handleCreateInvoice}
                   disabled={isCreatingInvoice}
+                  size="sm"
                 >
-                  {isCreatingInvoice ? 'Creating...' : 'Create Invoice'}
+                  {isCreatingInvoice ? 'Creating...' : 'Invoice'}
                 </Button>
-              </div>
-              <div>
-                <Button variant="destructive" onClick={async () => {
+                <Button variant="destructive" size="sm" onClick={async () => {
                   try {
                     await edgeRequest(fn(`jobs?id=${job.id}`), { method: 'DELETE' });
                     if (businessId) {
@@ -372,10 +364,13 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
         </DrawerFooter>
 
         <Dialog open={viewerOpen} onOpenChange={setViewerOpen}>
-          <DialogContent className="max-w-4xl">
+          <DialogContent className="max-w-4xl" aria-describedby="photo-viewer-description">
             <DialogHeader>
               <ModalTitle>Photo {viewerIndex + 1} of {photos.length}</ModalTitle>
             </DialogHeader>
+            <div id="photo-viewer-description" className="sr-only">
+              View and navigate through job photos
+            </div>
             {photos.length > 0 && (
               <div className="relative">
                 <img
