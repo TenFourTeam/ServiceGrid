@@ -50,9 +50,9 @@ export function ConsolidatedToaster() {
           cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
         },
       }}
-      // Ensure toasts appear above floating widgets
+      // Ensure toasts appear above floating widgets and modals
       style={{
-        zIndex: 50, // Above floating widgets (z-40)
+        zIndex: 110, // Above modals and drawers
       }}
       expand={true}
       visibleToasts={3}

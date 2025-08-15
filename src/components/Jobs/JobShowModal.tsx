@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useCustomersData, useQuotesData } from "@/queries/unified";
+import { useInvoicesData } from "@/hooks/useInvoicesData";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Textarea } from "@/components/ui/textarea";
 import { formatDateTime, formatMoney } from "@/utils/format";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
+import { edgeRequestWithToast } from "@/utils/edgeRequestWithToast";
 import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
 import { toast } from "sonner";
@@ -26,6 +28,7 @@ interface JobShowModalProps {
 export default function JobShowModal({ open, onOpenChange, job }: JobShowModalProps) {
   const { data: customers = [] } = useCustomersData();
   const { data: quotes = [] } = useQuotesData();
+  const { data: invoices = [] } = useInvoicesData();
   const queryClient = useQueryClient();
   const { businessId } = useBusinessContext();
   const navigate = useNavigate();
@@ -46,6 +49,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
 
   const customerName = useMemo(() => customers.find(c => c.id === job.customerId)?.name || "Customer", [customers, job.customerId]);
   const linkedQuote = useMemo(() => (job as any).quoteId ? quotes.find(q => q.id === (job as any).quoteId) : null, [quotes, (job as any).quoteId]);
+  const existingInvoice = useMemo(() => invoices.find(inv => inv.jobId === job.id), [invoices, job.id]);
   const photos: string[] = Array.isArray((job as any).photos) ? ((job as any).photos as string[]) : [];
 
   useEffect(() => {
@@ -62,20 +66,34 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
   }, [viewerOpen, photos.length]);
 
   async function handleCreateInvoice() {
-    if (!(job as any).quoteId) { setPickerOpen(true); toast.info('Link a quote to this job before creating an invoice.'); return; }
+    if (existingInvoice) {
+      navigate('/invoices');
+      return;
+    }
+    
+    if (!(job as any).quoteId) { 
+      setPickerOpen(true); 
+      return; 
+    }
     
     setIsCreatingInvoice(true);
-    toast.info('Creating invoice...');
     
     try {
-      const data = await edgeRequest(fn('invoices'), {
+      await edgeRequestWithToast(fn('invoices'), {
         method: 'POST',
-        body: JSON.stringify({ jobId: job.id }),
+        body: JSON.stringify({ quoteId: (job as any).quoteId })
+      }, {
+        success: 'Invoice created successfully',
+        loading: 'Creating invoice...'
       });
-      toast.success('Invoice created');
+      
+      if (businessId) {
+        invalidationHelpers.jobs(queryClient, businessId);
+      }
+      
       navigate('/invoices');
     } catch (e: any) {
-      toast.error(e?.message || 'Failed to create invoice');
+      console.error('Invoice creation failed:', e);
     } finally {
       setIsCreatingInvoice(false);
     }
@@ -340,10 +358,10 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                 <Button 
                   variant="outline" 
                   onClick={handleCreateInvoice}
-                  disabled={isCreatingInvoice}
+                  disabled={isCreatingInvoice || (!(job as any).quoteId && !existingInvoice)}
                   size="sm"
                 >
-                  {isCreatingInvoice ? 'Creating...' : 'Invoice'}
+                  {isCreatingInvoice ? 'Creating...' : existingInvoice ? 'View Invoice' : 'Create Invoice'}
                 </Button>
                 <Button 
                   variant="outline" 
