@@ -469,7 +469,6 @@ serve(async (req) => {
       console.log("[jobs][DELETE] deleted job", { ownerId: ctx.userId, jobId: id });
       
       return json({ ok: true, message: "Job deleted successfully" });
-      } });
     }
 
     return badRequest("Method not allowed", 405);
