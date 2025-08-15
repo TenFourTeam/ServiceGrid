@@ -207,25 +207,28 @@ export default function CustomersPage() {
                     </TableRow>
                   ) : (
                     rows.map((c) => (
-                      <TableRow key={c.id}>
+                      <TableRow 
+                        key={c.id}
+                        className="cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => openEdit(c)}
+                      >
                         <TableCell>{c.name}</TableCell>
                         <TableCell>{c.email ?? ''}</TableCell>
                         <TableCell>{c.phone ?? ''}</TableCell>
                         <TableCell>{c.address ?? ''}</TableCell>
                         <TableCell>
                           <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
+                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                               <Button variant="ghost" size="icon">
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => openEdit(c)}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
                               <DropdownMenuItem 
-                                onClick={() => openDeleteDialog(c)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openDeleteDialog(c);
+                                }}
                                 className="text-destructive focus:text-destructive"
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />

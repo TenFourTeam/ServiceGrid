@@ -1,10 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { edgeToast } from "@/utils/edgeRequestWithToast";
@@ -31,15 +29,33 @@ export function CustomerBottomModal({
   customer,
   onSave 
 }: CustomerBottomModalProps) {
-  const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   
   const [formData, setFormData] = useState<Customer>({
-    name: customer?.name || "",
-    email: customer?.email || "",
-    address: customer?.address || "",
-    phone: customer?.phone || "",
+    name: "",
+    email: "",
+    address: "",
+    phone: "",
   });
+
+  // Update form data when customer prop changes
+  useEffect(() => {
+    if (customer) {
+      setFormData({
+        name: customer.name || "",
+        email: customer.email || "",
+        address: customer.address || "",
+        phone: customer.phone || "",
+      });
+    } else {
+      setFormData({
+        name: "",
+        email: "",
+        address: "",
+        phone: "",
+      });
+    }
+  }, [customer]);
 
   const [loading, setLoading] = useState(false);
 
@@ -151,42 +167,23 @@ export function CustomerBottomModal({
     </div>
   );
 
-  if (isMobile) {
-    return (
-      <Drawer open={open} onOpenChange={handleOpenChange}>
-        <DrawerContent className="max-h-[85vh]">
-          <DrawerHeader className="text-left">
-            <DrawerTitle>
-              {customer?.id ? "Edit Customer" : "New Customer"}
-            </DrawerTitle>
-          </DrawerHeader>
-          
-          <div className="px-4 pb-4 overflow-y-auto">
-            <FormContent />
-          </div>
-          
-          <DrawerFooter>
-            <ActionButtons />
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
-    );
-  }
-
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>
+    <Drawer open={open} onOpenChange={handleOpenChange}>
+      <DrawerContent className="max-h-[85vh] max-w-md mx-auto">
+        <DrawerHeader className="text-left">
+          <DrawerTitle>
             {customer?.id ? "Edit Customer" : "New Customer"}
-          </DialogTitle>
-        </DialogHeader>
+          </DrawerTitle>
+        </DrawerHeader>
         
-        <div className="space-y-4">
+        <div className="px-4 pb-4 overflow-y-auto">
           <FormContent />
-          <ActionButtons />
         </div>
-      </DialogContent>
-    </Dialog>
+        
+        <DrawerFooter>
+          <ActionButtons />
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 }
