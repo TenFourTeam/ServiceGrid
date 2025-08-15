@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect, useRef } from 'react';
 import AppLayout from '@/components/Layout/AppLayout';
-import { useJobs, useCustomers, useInvoices } from '@/queries/unified';
+import { useJobsData, useCustomersData, useInvoicesData } from '@/queries/unified';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,7 @@ import { formatDateTime, formatMoney } from '@/utils/format';
 import { useNavigate } from 'react-router-dom';
 import { Job } from '@/types';
 import { toast } from '@/components/ui/use-toast';
-import { useSupabaseJobs } from '@/hooks/useSupabaseJobs';
+
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { edgeRequest } from '@/utils/edgeApi';
 import { fn } from '@/utils/functionUrl';
@@ -20,9 +20,9 @@ import JobShowModal from '@/components/Jobs/JobShowModal';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 function useFilteredJobs() {
-  const { data: jobs = [] } = useJobs();
-  const { data: customers = [] } = useCustomers();
-  const { data: invoices = [] } = useInvoices();
+  const { data: jobs = [] } = useJobsData();
+  const { data: customers = [] } = useCustomersData();
+  const { data: invoices = [] } = useInvoicesData();
   const [filter, setFilter] = useState<'unscheduled' | 'today' | 'upcoming' | 'completed'>('unscheduled');
   const [q, setQ] = useState('');
   const [sort, setSort] = useState<'when' | 'customer' | 'amount'>('when');
@@ -123,9 +123,9 @@ function WorkOrderRow({ job, onRescheduled, onComplete, onInvoice, onViewInvoice
 }
 
 export default function WorkOrdersPage() {
-  const { data: customers = [] } = useCustomers();
+  const { data: customers = [] } = useCustomersData();
   const { isSignedIn, getToken } = useClerkAuth();
-  const { data: jobsData, isLoading, error } = useSupabaseJobs();
+  const { isLoading, error } = useJobsData();
   const { filter, setFilter, q, setQ, sort, setSort, jobs, counts, hasInvoice } = useFilteredJobs();
   const navigate = useNavigate();
   const lastSyncKeyRef = useRef<string | null>(null);

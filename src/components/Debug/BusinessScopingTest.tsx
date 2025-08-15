@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useCustomers } from '@/queries/unified';
+import { useCustomersData } from '@/queries/unified';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,7 @@ import { useQueryClient } from '@tanstack/react-query';
  * Creates test entities and verifies they're properly scoped to the current business
  */
 export function BusinessScopingTest() {
-  const { data: customers = [] } = useCustomers();
+  const { data: customers = [] } = useCustomersData();
   const { businessId, isAuthenticated } = useBusinessContext();
   const [testName, setTestName] = useState('Test Customer');
   const [isCreating, setIsCreating] = useState(false);

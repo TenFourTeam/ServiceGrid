@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useEffect, useMemo, useState } from "react";
-import { useCustomers } from '@/queries/unified';
+import { useCustomersData } from '@/queries/unified';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -25,7 +25,7 @@ export interface SendInvoiceModalProps {
 
 export default function SendInvoiceModal({ open, onOpenChange, invoice, toEmail, customerName }: SendInvoiceModalProps) {
   const { business, businessName, businessLogoUrl, businessLightLogoUrl, businessId } = useBusinessContext();
-  const { data: customers = [] } = useCustomers();
+  const { data: customers = [] } = useCustomersData();
   const queryClient = useQueryClient();
   const { getToken } = useClerkAuth();
   const [to, setTo] = useState("");

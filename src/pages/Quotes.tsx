@@ -8,8 +8,7 @@ import CreateQuoteModal from '@/components/Quotes/CreateQuoteModal';
 import SendQuoteModal from '@/components/Quotes/SendQuoteModal';
 import { Input } from '@/components/ui/input';
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
-import { useSupabaseQuotes } from '@/hooks/useSupabaseQuotes';
-import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
+import { useQuotesData, useCustomersData } from '@/queries/unified';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
@@ -61,8 +60,8 @@ function calculateQuoteTotals(lineItems: LineItem[], taxRate: number, discount: 
 export default function QuotesPage() {
   const { isSignedIn, getToken } = useClerkAuth();
   const { businessTaxRateDefault } = useBusinessContext();
-  const { data: quotesData } = useSupabaseQuotes();
-  const { data: customersData } = useSupabaseCustomers();
+  const { data: quotes } = useQuotesData();
+  const { data: customers } = useCustomersData();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
@@ -84,18 +83,14 @@ export default function QuotesPage() {
       return key;
     });
   }
-  // Use data directly from hooks
-  const customers = customersData?.rows || [];
-  const quotesRows = quotesData?.rows || [];
-  
-  // Transform quotes to match expected format
-  const quotes = useMemo(() => {
-    return quotesRows.map(row => ({
+  // Transform unified data to match expected format  
+  const transformedQuotes = useMemo(() => {
+    return quotes.map(row => ({
       id: row.id,
       number: row.number,
       customerId: row.customerId,
       total: row.total,
-      status: row.status,
+      status: row.status as QuoteStatus,
       updatedAt: row.updatedAt,
       viewCount: row.viewCount,
       publicToken: row.publicToken,
@@ -108,10 +103,10 @@ export default function QuotesPage() {
       address: '',
       createdAt: row.updatedAt
     }));
-  }, [quotesRows]);
+  }, [quotes]);
 
   const sortedQuotes = useMemo(() => {
-    const arr = [...quotes];
+    const arr = [...transformedQuotes];
     const baseCompare = (a: Quote, b: Quote) => {
       if (sortKey === 'number') return (a.number || '').localeCompare(b.number || '', undefined, { numeric: true, sensitivity: 'base' });
       if (sortKey === 'customer') return getCustomerName(a.customerId).localeCompare(getCustomerName(b.customerId));
@@ -120,7 +115,7 @@ export default function QuotesPage() {
     };
     arr.sort((a, b) => (sortDir === 'asc' ? baseCompare(a, b) : -baseCompare(a, b)));
     return arr;
-  }, [quotes, sortKey, sortDir]);
+  }, [transformedQuotes, sortKey, sortDir]);
 
   function getCustomerName(customerId: string): string {
     const customer = customers.find(c => c.id === customerId);
@@ -189,7 +184,7 @@ export default function QuotesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {quotes.length === 0 ? (
+                {transformedQuotes.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="p-0">
                       <AdvancedEmptyState

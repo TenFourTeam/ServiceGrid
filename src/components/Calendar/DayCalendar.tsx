@@ -1,16 +1,14 @@
 import { useMemo, useState } from "react";
 import { endOfDay, startOfDay } from "date-fns";
-import { useSupabaseJobs } from "@/hooks/useSupabaseJobs";
-import { useSupabaseCustomers } from "@/hooks/useSupabaseCustomers";
+import { useJobsData, useCustomersData } from "@/queries/unified";
 import { formatMoney } from "@/utils/format";
 import JobShowModal from "@/components/Jobs/JobShowModal";
 import type { Job } from "@/types";
 
 export default function DayCalendar({ date }: { date: Date }) {
-  const { data: jobsData } = useSupabaseJobs();
-  const { data: customersData } = useSupabaseCustomers();
-  const allJobs = jobsData?.rows || [];
-  const customers = customersData?.rows || [];
+  const { data: allJobs } = useJobsData();
+  const { data: customers } = useCustomersData();
+  
   const dayStart = startOfDay(date);
   const dayEnd = endOfDay(date);
   

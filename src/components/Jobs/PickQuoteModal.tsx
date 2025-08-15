@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useSupabaseQuotes } from '@/hooks/useSupabaseQuotes';
+import { useQuotesData } from '@/queries/unified';
 import { Loader2 } from "lucide-react";
 
 interface PickQuoteModalProps {
@@ -15,13 +15,13 @@ interface PickQuoteModalProps {
 }
 
 export default function PickQuoteModal({ open, onOpenChange, onSelect, customerId }: PickQuoteModalProps) {
-  const { data: quotesData } = useSupabaseQuotes();
+  const { data: quotes } = useQuotesData();
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   
-  const quotes = useMemo(() => {
-    const allQuotes = quotesData?.rows || [];
+  const filteredQuotes = useMemo(() => {
+    const allQuotes = quotes || [];
     
     // Map quotes to include customer info
     const quotesWithCustomer = allQuotes.map((q: any) => ({
@@ -43,7 +43,7 @@ export default function PickQuoteModal({ open, onOpenChange, onSelect, customerI
       (r.customerName || "").toLowerCase().includes(q) ||
       (r.customerEmail || "").toLowerCase().includes(q)
     ));
-  }, [quotesData, query, customerId]);
+  }, [quotes, query, customerId]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -61,13 +61,13 @@ export default function PickQuoteModal({ open, onOpenChange, onSelect, customerI
 
           <ScrollArea className="max-h-80 rounded-md border">
             <div className="p-2 space-y-1">
-              {quotes.length === 0 && (
+              {filteredQuotes.length === 0 && (
                 <div className="text-sm text-muted-foreground p-3">
                   No quotes found.
                 </div>
               )}
 
-              {quotes.map((q) => (
+              {filteredQuotes.map((q) => (
                 <button
                   key={q.id}
                   type="button"

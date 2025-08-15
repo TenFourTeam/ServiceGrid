@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Job } from '@/types';
-import { useSupabaseJobs } from '@/hooks/useSupabaseJobs';
-import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
+import { useJobsData, useCustomersData } from '@/queries/unified';
 
 // TODO: Create proper mutation hooks
 const upsertJob = (job: any) => {
@@ -37,10 +36,9 @@ export function WeekCalendar({
   selectedJobId?: string;
   date?: Date;
 }) {
-  const { data: jobsData } = useSupabaseJobs();
-  const { data: customersData } = useSupabaseCustomers();
-  const jobs = jobsData?.rows || [];
-  const customers = customersData?.rows || [];
+  const { data: jobs } = useJobsData();
+  const { data: customers } = useCustomersData();
+  
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pendingSlot, setPendingSlot] = useState<{ start: Date; end: Date } | null>(null);
   const notesTimer = useRef<number | null>(null);

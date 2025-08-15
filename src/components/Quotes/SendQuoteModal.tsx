@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useMemo, useState, useEffect } from "react";
-import { useCustomers } from "@/queries/unified";
+import { useCustomersData } from "@/queries/unified";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import type { Quote } from "@/types";
 import { buildQuoteEmail } from "@/utils/emailTemplates";
@@ -26,7 +26,7 @@ export interface SendQuoteModalProps {
 
 export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, customerName }: SendQuoteModalProps) {
   const { business, businessName, businessLogoUrl, businessLightLogoUrl, businessId } = useBusinessContext();
-  const { data: customers = [] } = useCustomers();
+  const { data: customers = [] } = useCustomersData();
   const queryClient = useQueryClient();
   const { getToken } = useClerkAuth();
   const [to, setTo] = useState(toEmail ?? "");

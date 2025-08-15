@@ -1,14 +1,12 @@
 
 import AppLayout from '@/components/Layout/AppLayout';
-import { useCustomers } from '@/queries/unified';
+import { useInvoicesData, useCustomersData } from '@/queries/unified';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { formatDate, formatMoney } from '@/utils/format';
 import { useEffect, useMemo, useState } from 'react';
-import { useSupabaseInvoices } from '@/hooks/useSupabaseInvoices';
-import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import InvoiceEditor from '@/pages/Invoices/InvoiceEditor';
 import SendInvoiceModal from '@/components/Invoices/SendInvoiceModal';
@@ -20,10 +18,9 @@ import { invalidationHelpers } from '@/queries/keys';
 
 
 export default function InvoicesPage() {
-  const { data: customersUnified = [] } = useCustomers();
+  const { data: customers = [] } = useCustomersData();
+  const { data: invoices = [] } = useInvoicesData();
   const { isSignedIn } = useClerkAuth();
-  const { data: invoicesData } = useSupabaseInvoices();
-  const { data: customersData } = useSupabaseCustomers();
   
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<'All' | 'Draft' | 'Sent' | 'Paid' | 'Overdue'>('All');
@@ -33,9 +30,6 @@ export default function InvoicesPage() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const qc = useQueryClient();
   
-  // Use customer data directly from hook
-  const customers = customersData?.rows || [];
-
   useEffect(() => {
     if (!isSignedIn) return;
     const channel = supabase
@@ -56,10 +50,9 @@ export default function InvoicesPage() {
     return () => { supabase.removeChannel(channel); };
   }, [qc, isSignedIn]);
 
-  // Use invoices directly from the hook instead of store
-  const invoices = useMemo(() => {
-    if (!invoicesData?.rows) return [];
-    return invoicesData.rows.map(row => ({
+  // Convert unified data to expected format
+  const formattedInvoices = useMemo(() => {
+    return invoices.map(row => ({
       id: row.id,
       number: row.number,
       businessId: '',
@@ -76,17 +69,17 @@ export default function InvoicesPage() {
       updatedAt: row.updatedAt || new Date().toISOString(),
       publicToken: row.publicToken || '',
     }));
-  }, [invoicesData?.rows]);
+  }, [invoices]);
 
   const filteredInvoices = useMemo(() => {
-    let list = invoices.slice();
+    let list = formattedInvoices.slice();
     if (status !== 'All') list = list.filter(i => i.status === status);
     const query = q.trim().toLowerCase();
     if (query) {
       list = list.filter(i => i.number.toLowerCase().includes(query) || ((customers.find(c=>c.id===i.customerId)?.name?.toLowerCase().includes(query)) ?? false));
     }
     return list;
-  }, [invoices, status, q, customers]);
+  }, [formattedInvoices, status, q, customers]);
 
   const sortedInvoices = useMemo(() => {
     const list = filteredInvoices.slice();
@@ -232,19 +225,19 @@ export default function InvoicesPage() {
       <InvoiceEditor
         open={!!activeId}
         onOpenChange={(o)=>{ if(!o) setActiveId(null); }}
-        invoice={invoices.find(inv=>inv.id===activeId) || null}
+        invoice={formattedInvoices.find(inv=>inv.id===activeId) || null}
       />
       <SendInvoiceModal
         open={!!sendId}
         onOpenChange={(o)=>{ if(!o) setSendId(null); }}
-        invoice={invoices.find(inv=>inv.id===sendId) || null}
+        invoice={formattedInvoices.find(inv=>inv.id===sendId) || null}
         toEmail={( () => {
-          const inv = invoices.find(i=>i.id===sendId);
+          const inv = formattedInvoices.find(i=>i.id===sendId);
           const cust = inv ? customers.find(c=>c.id===inv.customerId) : undefined;
           return cust?.email || '';
         })()}
         customerName={( () => {
-          const inv = invoices.find(i=>i.id===sendId);
+          const inv = formattedInvoices.find(i=>i.id===sendId);
           const cust = inv ? customers.find(c=>c.id===inv.customerId) : undefined;
           return cust?.name || undefined;
         })()}

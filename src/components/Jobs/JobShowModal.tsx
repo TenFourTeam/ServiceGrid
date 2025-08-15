@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useCustomers } from "@/queries/unified";
+import { useCustomersData } from "@/queries/unified";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,7 +23,7 @@ interface JobShowModalProps {
 }
 
 export default function JobShowModal({ open, onOpenChange, job }: JobShowModalProps) {
-  const { data: customers = [] } = useCustomers();
+  const { data: customers = [] } = useCustomersData();
   const queryClient = useQueryClient();
   const { businessId } = useBusinessContext();
   const [localNotes, setLocalNotes] = useState(job.notes ?? "");

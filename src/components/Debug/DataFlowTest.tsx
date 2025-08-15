@@ -1,9 +1,5 @@
-import { useCustomers } from '@/queries/unified';
+import { useCustomersData, useJobsData, useQuotesData, useInvoicesData } from '@/queries/unified';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
-import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
-import { useSupabaseQuotes } from '@/hooks/useSupabaseQuotes';
-import { useSupabaseJobs } from '@/hooks/useSupabaseJobs';
-import { useSupabaseInvoices } from '@/hooks/useSupabaseInvoices';
 import { BusinessScopingTest } from './BusinessScopingTest';
 import { IntegrationStatus } from './IntegrationStatus';
 
@@ -12,12 +8,11 @@ import { IntegrationStatus } from './IntegrationStatus';
  * Shows server data vs React Query data to verify integration is working
  */
 export function DataFlowTest() {
-  const { data: customers = [] } = useCustomers();
+  const { data: customers = [], count: customersCount } = useCustomersData();
+  const { data: jobs = [], count: jobsCount } = useJobsData();
+  const { data: quotes = [], count: quotesCount } = useQuotesData();
+  const { data: invoices = [], count: invoicesCount } = useInvoicesData();
   const { isAuthenticated, businessId } = useBusinessContext();
-  const { data: customersData } = useSupabaseCustomers();
-  const { data: quotesData } = useSupabaseQuotes();
-  const { data: jobsData } = useSupabaseJobs();
-  const { data: invoicesData } = useSupabaseInvoices();
 
   if (!isAuthenticated) {
     return <div>Not authenticated</div>;
@@ -41,17 +36,19 @@ export function DataFlowTest() {
           </div>
           
           <div>
-            <h5 className="font-medium text-primary">Server Data</h5>
-            <p>Customers: {customersData?.rows?.length || 0}</p>
-            <p>Quotes: {quotesData?.rows?.length || 0}</p>
-            <p>Jobs: {jobsData?.rows?.length || 0}</p>
-            <p>Invoices: {invoicesData?.rows?.length || 0}</p>
+            <h5 className="font-medium text-primary">Unified Data Counts</h5>
+            <p>Customers: {customersCount}</p>
+            <p>Quotes: {quotesCount}</p>
+            <p>Jobs: {jobsCount}</p>
+            <p>Invoices: {invoicesCount}</p>
           </div>
           
           <div>
-            <h5 className="font-medium text-primary">React Query Data</h5>
+            <h5 className="font-medium text-primary">Unified Data Records</h5>
             <p>Customers: {customers.length}</p>
-            <p>All data now comes from React Query</p>
+            <p>Jobs: {jobs.length}</p>
+            <p>Quotes: {quotes.length}</p>
+            <p>Invoices: {invoices.length}</p>
           </div>
           
           <div>

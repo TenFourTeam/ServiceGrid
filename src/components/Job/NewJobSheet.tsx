@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCustomers } from '@/queries/unified';
+import { useCustomersData } from '@/queries/unified';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,14 +14,14 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { edgeRequest } from '@/utils/edgeApi';
 import { fn } from '@/utils/functionUrl';
-import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
+
 import { CustomerCombobox } from '@/components/Quotes/CustomerCombobox';
 import { InlineCustomerForm } from '@/components/Onboarding/InlineCustomerForm';
 import type { Customer } from '@/types';
 
 export function NewJobSheet() {
   const navigate = useNavigate();
-  const { data: customers = [] } = useCustomers();
+  const { data: customers = [] } = useCustomersData();
   const { toast } = useToast();
   const { getToken } = useClerkAuth();
   // Use customers from React Query hook

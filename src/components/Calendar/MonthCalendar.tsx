@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { addDays, endOfMonth, endOfWeek, format, isSameDay, isSameMonth, parseISO, startOfMonth, startOfWeek } from "date-fns";
-import { useSupabaseJobs } from "@/hooks/useSupabaseJobs";
-import { useSupabaseCustomers } from "@/hooks/useSupabaseCustomers";
+import { useJobsData, useCustomersData } from "@/queries/unified";
 import { formatMoney } from "@/utils/format";
 import JobShowModal from "@/components/Jobs/JobShowModal";
 import type { Job } from "@/types";
@@ -16,10 +15,9 @@ function useMonthGrid(date: Date) {
 
 export default function MonthCalendar({ date, onDateChange }: { date: Date; onDateChange: (d: Date) => void }) {
   const { start, end, days } = useMonthGrid(date);
-  const { data: jobsData } = useSupabaseJobs();
-  const { data: customersData } = useSupabaseCustomers();
-  const allJobs = jobsData?.rows || [];
-  const customers = customersData?.rows || [];
+  const { data: allJobs } = useJobsData();
+  const { data: customers } = useCustomersData();
+  
   
   const jobs = useMemo(() => {
     return allJobs.filter(j => {

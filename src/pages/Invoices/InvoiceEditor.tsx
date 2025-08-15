@@ -1,7 +1,7 @@
 import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { formatDate, formatMoney } from '@/utils/format';
-import { useCustomers } from '@/queries/unified';
+import { useCustomersData } from '@/queries/unified';
 import type { Invoice } from '@/types';
 
 export default function InvoiceEditor({ open, onOpenChange, invoice }: {
@@ -9,7 +9,7 @@ export default function InvoiceEditor({ open, onOpenChange, invoice }: {
   onOpenChange: (open: boolean) => void;
   invoice: Invoice | null;
 }) {
-  const { data: customers = [] } = useCustomers();
+  const { data: customers = [] } = useCustomersData();
   const customerName = invoice ? (customers.find(c => c.id === invoice.customerId)?.name || 'Unknown') : '';
 
   return (
