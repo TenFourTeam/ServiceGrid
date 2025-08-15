@@ -1,4 +1,3 @@
-```sql
 -- ====================================================================
 -- BASELINE MIGRATION: Consolidated schema from 65+ migration files
 -- Created: 2025-01-15
@@ -995,4 +994,3 @@ CREATE POLICY "Business members can read audit logs" ON public.audit_logs
 
 CREATE POLICY "Service role can insert audit logs" ON public.audit_logs
   FOR INSERT WITH CHECK (true);
-```
