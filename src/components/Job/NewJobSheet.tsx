@@ -16,7 +16,6 @@ import { edgeRequest } from '@/utils/edgeApi';
 import { fn } from '@/utils/functionUrl';
 
 import { CustomerCombobox } from '@/components/Quotes/CustomerCombobox';
-import { InlineCustomerForm } from '@/components/Onboarding/InlineCustomerForm';
 import type { Customer } from '@/types';
 
 export function NewJobSheet() {

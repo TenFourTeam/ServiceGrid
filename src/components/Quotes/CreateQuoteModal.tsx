@@ -18,8 +18,6 @@ import { LineItemsEditor } from "@/components/Quotes/LineItemsEditor";
 import { useNavigate } from "react-router-dom";
 import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
-import { InlineCustomerForm } from "@/components/Onboarding/InlineCustomerForm";
-import { showNextActionToast } from "@/components/Onboarding/NextActionToast";
 import { invalidationHelpers } from '@/queries/keys';
 
 export interface CreateQuoteModalProps {
@@ -235,12 +233,6 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
       }
 
       toast.success("Quote saved");
-      
-      // Show next action prompt for quote-to-send conversion
-      const customerName = customers.find(c => c.id === draft.customerId)?.name || 'customer';
-      showNextActionToast('quote-created', saved.number || 'Quote', () => {
-        onRequestSend?.(saved);
-      });
       
       return saved;
     } catch (e) {

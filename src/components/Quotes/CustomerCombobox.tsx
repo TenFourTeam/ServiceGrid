@@ -2,18 +2,9 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Check, ChevronsUpDown, Plus, User } from "lucide-react";
+import { Check, ChevronsUpDown, ExternalLink, User } from "lucide-react";
 import type { Customer } from "@/types";
 import { cn } from "@/lib/utils";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { useAuth as useClerkAuth } from "@clerk/clerk-react";
-import { useQueryClient } from "@tanstack/react-query";
-import { edgeRequest } from "@/utils/edgeApi";
-import { fn } from "@/utils/functionUrl";
-import { toast } from "sonner";
-import { invalidationHelpers } from '@/queries/keys';
-import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 interface CustomerComboboxProps {
   customers: Customer[];
@@ -25,62 +16,14 @@ interface CustomerComboboxProps {
 
 export function CustomerCombobox({ customers, value, onChange, placeholder = "Select customer…", disabled }: CustomerComboboxProps) {
   const [open, setOpen] = useState(false);
-  const [createOpen, setCreateOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [address, setAddress] = useState("");
-  const [creating, setCreating] = useState(false);
-  const [lastCreated, setLastCreated] = useState<{ id: string; name: string } | null>(null);
   const selected = customers.find((c) => c.id === value);
-  const displayName = useMemo(() => selected?.name || (lastCreated && lastCreated.id === value ? lastCreated.name : placeholder), [selected, lastCreated, value, placeholder]);
-  const { getToken } = useClerkAuth();
-  const queryClient = useQueryClient();
-  const { businessId } = useBusinessContext();
+  const displayName = useMemo(() => selected?.name || placeholder, [selected, placeholder]);
 
-  async function createCustomer() {
-    if (!name.trim()) return;
-    setCreating(true);
-    try {
-      console.log('[CustomerCombobox] Creating customer with data:', { 
-        name: name.trim(), 
-        email: email.trim() || null, 
-        address: address.trim() || null 
-      });
-      
-      const data = await edgeRequest(fn("customers"), {
-        method: "POST",
-        body: JSON.stringify({ name: name.trim(), email: email.trim() || null, address: address.trim() || null }),
-      });
-      
-      console.log('[CustomerCombobox] Customer creation response:', data);
-      
-      const newId = data?.id;
-      const newName = data?.name || name.trim();
-      const newEmail = data?.email || email.trim() || null;
-      
-      if (newId) {
-        setLastCreated({ id: newId, name: newName });
-        onChange(newId);
-        setOpen(false);
-        setCreateOpen(false);
-        setName(""); setEmail(""); setAddress("");
-        
-        // Show single success toast
-        toast.success("Customer created", {
-          description: `"${newName}" has been added to your customers.`
-        });
-        
-        // Invalidate both queries to refresh data
-        if (businessId) {
-          invalidationHelpers.customers(queryClient, businessId);
-        }
-      }
-    } catch (e) {
-      console.error('[CustomerCombobox] Failed to create customer:', e);
-    } finally {
-      setCreating(false);
-    }
-  }
+  const handleCreateCustomer = () => {
+    // Open customers page in new tab for customer creation
+    window.open('/customers?new=1', '_blank');
+    setOpen(false);
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -106,9 +49,9 @@ export function CustomerCombobox({ customers, value, onChange, placeholder = "Se
           <CommandList className="max-h-64 overflow-auto">
             <CommandEmpty>No customer found.</CommandEmpty>
             <CommandGroup>
-              <CommandItem value="__create_new__" onSelect={() => setCreateOpen(true)} className="cursor-pointer">
-                <Plus className="mr-2 h-4 w-4" />
-                <span>Create new customer</span>
+              <CommandItem value="__create_new__" onSelect={handleCreateCustomer} className="cursor-pointer">
+                <ExternalLink className="mr-2 h-4 w-4" />
+                <span>Add new customer</span>
               </CommandItem>
             </CommandGroup>
             <CommandGroup>
@@ -130,32 +73,6 @@ export function CustomerCombobox({ customers, value, onChange, placeholder = "Se
           </CommandList>
         </Command>
       </PopoverContent>
-
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>New Customer</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <label htmlFor="new-customer-name" className="text-sm">Name *</label>
-              <Input id="new-customer-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name" />
-            </div>
-            <div className="space-y-1">
-              <label htmlFor="new-customer-email" className="text-sm">Email</label>
-              <Input id="new-customer-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" />
-            </div>
-            <div className="space-y-1">
-              <label htmlFor="new-customer-address" className="text-sm">Address</label>
-              <Input id="new-customer-address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Street, City" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="secondary" type="button" onClick={() => setCreateOpen(false)}>Cancel</Button>
-            <Button type="button" onClick={createCustomer} disabled={!name.trim() || creating}>{creating ? "Creating…" : "Create"}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </Popover>
   );
 }
