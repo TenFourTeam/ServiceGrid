@@ -37,6 +37,9 @@ export function WeekCalendar({
   const [pendingSlot, setPendingSlot] = useState<{ start: Date; end: Date } | null>(null);
   const notesTimer = useRef<number | null>(null);
   const [highlightJobId, setHighlightJobId] = useState<string | null>(null);
+  // Add drag and resize state tracking
+  const [dragState, setDragState] = useState<{ jobId: string; tempStartsAt: string; tempEndsAt: string } | null>(null);
+  const [resizeState, setResizeState] = useState<{ jobId: string; tempEndsAt: string } | null>(null);
   const [weekStart, setWeekStart] = useState(() => {
     const initial = (() => {
       if (selectedJobId) {
@@ -222,6 +225,9 @@ function onDragStart(e: React.PointerEvent, job: Job) {
     const startY = e.clientY;
     let movedEnough = false;
 
+    // Set initial drag state
+    setDragState({ jobId: job.id, tempStartsAt: job.startsAt, tempEndsAt: job.endsAt });
+
     const onMove = (ev: PointerEvent) => {
       const dx = Math.abs(ev.clientX - startX);
       const dy = Math.abs(ev.clientY - startY);
@@ -254,12 +260,18 @@ function onDragStart(e: React.PointerEvent, job: Job) {
       d.setMinutes(minuteOfDay);
       const end = new Date(d.getTime() + dur);
       latest = { startsAt: d.toISOString(), endsAt: end.toISOString() };
-      // Optimistic update - the real update happens in onUp
+      
+      // Update drag state for visual feedback
+      setDragState({ jobId: job.id, tempStartsAt: latest.startsAt, tempEndsAt: latest.endsAt });
     };
 
     const onUp = async () => {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
+      
+      // Clear drag state
+      setDragState(null);
+      
       if (!movedEnough) {
         setActiveJob(job);
         return;
@@ -295,6 +307,10 @@ function onDragStart(e: React.PointerEvent, job: Job) {
     }
     const original = { ...job };
     let latestEnd = job.endsAt;
+    
+    // Set initial resize state
+    setResizeState({ jobId: job.id, tempEndsAt: job.endsAt });
+    
     const onMove = (ev: PointerEvent) => {
       // Determine which day column we're over
       let idx = -1;
@@ -317,12 +333,18 @@ function onDragStart(e: React.PointerEvent, job: Job) {
 
       const minEnd = new Date(new Date(job.startsAt).getTime() + 15*60*1000);
       latestEnd = newEnd < minEnd ? minEnd.toISOString() : newEnd.toISOString();
-      // Optimistic update - the real update happens in onUp
+      
+      // Update resize state for visual feedback
+      setResizeState({ jobId: job.id, tempEndsAt: latestEnd });
     };
 
     const onUp = async () => {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
+      
+      // Clear resize state
+      setResizeState(null);
+      
       try {
         await edgeRequest(fn(`jobs?id=${job.id}`), {
           method: 'PATCH',
@@ -407,24 +429,39 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                 })()}
                 {/* jobs */}
                 {dayJobs[dayKey(day)]?.map(j => {
-                  const start = new Date(j.startsAt);
-                  const end = new Date(j.endsAt);
+                  // Check if this job is being dragged or resized
+                  const isDragging = dragState?.jobId === j.id;
+                  const isResizing = resizeState?.jobId === j.id;
+                  
+                  // Use temporary positions if dragging/resizing, otherwise use actual positions
+                  const startTime = isDragging ? dragState.tempStartsAt : j.startsAt;
+                  const endTime = isDragging ? dragState.tempEndsAt : (isResizing ? resizeState.tempEndsAt : j.endsAt);
+                  
+                  const start = new Date(startTime);
+                  const end = new Date(endTime);
                   const top = minutesFromAnchor(start) / TOTAL_MIN * 100;
                   const minutesDuration = Math.max(15, Math.round((end.getTime() - start.getTime()) / 60000));
                   const height = Math.max(8, minutesDuration / TOTAL_MIN * 100);
                   const customer = customers.find(c => c.id === j.customerId)?.name ?? 'Customer';
                   const color = j.status === 'Scheduled' ? 'bg-primary/10 border-primary' : j.status === 'In Progress' ? 'bg-background border-primary' : 'bg-success/10 border-success';
+                  
+                  // Add visual feedback classes for dragging/resizing
+                  const operationClasses = isDragging ? 'opacity-60 ring-2 ring-primary/50' : 
+                                         isResizing ? 'ring-2 ring-primary/50' : '';
+                  const cursor = isDragging ? 'cursor-grabbing' : (j.status === 'Scheduled' ? 'cursor-grab' : 'cursor-pointer');
+                  
                   return (
-                    <div key={j.id} className={`absolute left-2 right-2 border rounded-md px-2 py-1 text-xs ${color} ${highlightJobId === j.id ? 'ring-2 ring-primary' : ''}`}
+                    <div key={j.id} className={`absolute left-2 right-2 border rounded-md px-2 py-1 text-xs transition-all duration-150 ${color} ${highlightJobId === j.id ? 'ring-2 ring-primary' : ''} ${operationClasses} ${cursor}`}
                       style={{ top: `${top}%`, height: `${height}%` }}
                       onPointerDown={(e) => onDragStart(e, j)}
                     >
                       <div className="flex items-center justify-between gap-1">
                         <div className="truncate font-medium">{(j as any).title || 'Job'}</div>
-                        <div className="opacity-70 whitespace-nowrap">{new Date(j.startsAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</div>
+                        <div className="opacity-70 whitespace-nowrap">{new Date(startTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</div>
                       </div>
                       <div className="truncate text-muted-foreground">{customer}</div>
-                      <div className="absolute bottom-0 right-0 w-2 h-2 bg-primary rounded-sm cursor-ns-resize" onPointerDown={(e) => { e.stopPropagation(); onResizeStart(e as any, j); }} />
+                      <div className={`absolute bottom-0 right-0 w-2 h-2 bg-primary rounded-sm transition-all duration-150 ${isResizing ? 'ring-1 ring-primary scale-125' : 'cursor-ns-resize hover:scale-110'}`} 
+                           onPointerDown={(e) => { e.stopPropagation(); onResizeStart(e as any, j); }} />
                     </div>
                   );
                 })}
