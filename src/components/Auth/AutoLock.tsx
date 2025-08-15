@@ -1,9 +1,9 @@
 import { useEffect, useRef } from "react";
-import { useBusinessAuth } from "@/auth";
+import { useAuth } from "@clerk/clerk-react";
 
 // Auto-lock system with cross-tab sync and activity tracking
 export default function AutoLock() {
-  const { snapshot, signOut } = useBusinessAuth();
+  const { isSignedIn, signOut } = useAuth();
   const idleTimeoutRef = useRef<NodeJS.Timeout>();
   const activityTimeoutRef = useRef<NodeJS.Timeout>();
   const lastActivityRef = useRef(Date.now());
@@ -13,7 +13,7 @@ export default function AutoLock() {
   const ACTIVITY_CHECK_INTERVAL = 30 * 1000; // 30 seconds
 
   useEffect(() => {
-    if (snapshot.phase !== 'authenticated') return;
+    if (!isSignedIn) return;
 
     // Initialize broadcast channel for cross-tab sync
     channelRef.current = new BroadcastChannel('auth-activity');
@@ -80,7 +80,7 @@ export default function AutoLock() {
       channelRef.current?.removeEventListener('message', handleChannelMessage);
       channelRef.current?.close();
     };
-  }, [snapshot.phase, signOut]);
+  }, [isSignedIn, signOut]);
 
   return null;
 }

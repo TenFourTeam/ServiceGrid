@@ -1,5 +1,5 @@
 import { useCustomers } from '@/queries/unified';
-import { useBusinessAuth } from '@/auth';
+import { useBusinessContext } from '@/auth';
 import { useSupabaseCustomers } from '@/hooks/useSupabaseCustomers';
 import { useSupabaseQuotes } from '@/hooks/useSupabaseQuotes';
 import { useSupabaseJobs } from '@/hooks/useSupabaseJobs';
@@ -13,13 +13,13 @@ import { IntegrationStatus } from './IntegrationStatus';
  */
 export function DataFlowTest() {
   const { data: customers = [] } = useCustomers();
-  const { snapshot } = useBusinessAuth();
+  const { isAuthenticated, businessId } = useBusinessContext();
   const { data: customersData } = useSupabaseCustomers();
   const { data: quotesData } = useSupabaseQuotes();
   const { data: jobsData } = useSupabaseJobs();
   const { data: invoicesData } = useSupabaseInvoices();
 
-  if (snapshot.phase !== 'authenticated') {
+  if (!isAuthenticated) {
     return <div>Not authenticated</div>;
   }
 
@@ -36,8 +36,8 @@ export function DataFlowTest() {
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <h5 className="font-medium text-primary">Business Context</h5>
-            <p>Business ID: {snapshot.businessId}</p>
-            <p>Auth Phase: {snapshot.phase}</p>
+            <p>Business ID: {businessId}</p>
+            <p>Authenticated: {isAuthenticated}</p>
           </div>
           
           <div>

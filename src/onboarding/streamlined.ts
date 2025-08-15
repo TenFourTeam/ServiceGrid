@@ -3,7 +3,7 @@
  * No context duplication, no stale memoization
  */
 import { useMemo } from 'react';
-import { useBusinessAuth } from '@/auth';
+import { useBusinessContext } from '@/auth';
 import { 
   useBusiness, 
   useProfile, 
@@ -33,8 +33,7 @@ export interface OnboardingState {
 }
 
 export function useOnboardingState(): OnboardingState {
-  const { snapshot } = useBusinessAuth();
-  const businessId = snapshot.businessId || '';
+  const { businessId, isAuthenticated } = useBusinessContext();
   
   // Direct query consumption - no context layer
   const { data: business, isLoading: businessLoading, isFetching: businessFetching } = useBusiness();

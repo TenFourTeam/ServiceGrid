@@ -10,6 +10,7 @@ export type BusinessUI = {
   phone?: string;
   replyToEmail?: string;
   taxRateDefault?: number;
+  role?: 'owner' | 'worker';
   [key: string]: any;
 };
 
@@ -23,7 +24,9 @@ export function useBusiness() {
     queryFn: async () => {
       console.info('[useBusiness] fetching business from database');
       const response = await edgeRequest(fn('get-business'));
-      return toBusinessUI(response.business) as BusinessUI;
+      const business = toBusinessUI(response.business) as BusinessUI;
+      business.role = response.role;
+      return business;
     },
     staleTime: 30_000,
     retry: 2,

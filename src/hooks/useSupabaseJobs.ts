@@ -1,6 +1,6 @@
 
 import { useQuery } from "@tanstack/react-query";
-import { useBusinessAuth } from "@/auth";
+import { useBusinessContext } from "@/auth";
 import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
 import { qk } from "@/queries/keys";
@@ -27,12 +27,12 @@ const JobsResponseSchema = z.object({
 });
 
 export function useSupabaseJobs(opts?: { enabled?: boolean; refetchInterval?: number | false; refetchOnWindowFocus?: boolean; refetchOnReconnect?: boolean }) {
-  const { snapshot } = useBusinessAuth();
-  const enabled = snapshot.phase === 'authenticated' && (opts?.enabled ?? true);
+  const { businessId, isAuthenticated } = useBusinessContext();
+  const enabled = isAuthenticated && (opts?.enabled ?? true);
 
   return useQuery<{ rows: DbJobRow[] } | null, Error>({
-    queryKey: qk.jobsList(snapshot.businessId || ''),
-    enabled: enabled && !!snapshot.businessId,
+    queryKey: qk.jobsList(businessId || ''),
+    enabled: enabled && !!businessId,
     refetchInterval: opts?.refetchInterval ?? false,
     refetchOnWindowFocus: opts?.refetchOnWindowFocus ?? true,
     refetchOnReconnect: opts?.refetchOnReconnect ?? true,

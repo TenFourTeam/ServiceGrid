@@ -5,10 +5,9 @@ import { Button } from '@/components/ui/button';
 import { NewJobSheet } from '@/components/Job/NewJobSheet';
 import { EnhancedInviteModal } from '@/components/Team/EnhancedInviteModal';
 
-import { useBusinessRole } from '@/hooks/useBusinessRole';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/Layout/AppSidebar';
-import { useBusinessAuth } from '@/auth';
+import { useBusinessContext } from '@/auth';
 import { PageFade } from '@/components/Motion/PageFade';
 import { TrialBanner } from '@/components/Onboarding/TrialBanner';
 import { FloatingSetupWidget } from '@/components/Onboarding/FloatingSetupWidget';
@@ -19,9 +18,7 @@ import { useUI } from '@/store/ui';
 import { UserPlus } from 'lucide-react';
 export default function AppLayout({ children, title }: { children: ReactNode; title?: string }) {
   const [showInviteModal, setShowInviteModal] = useState(false);
-  const { snapshot } = useBusinessAuth();
-  const businessId = snapshot.businessId;
-  const { data: businessRole } = useBusinessRole(businessId);
+  const { businessId, role } = useBusinessContext();
   
   // Onboarding system
   const onboardingState = useOnboardingState();
@@ -51,7 +48,7 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
               {/* New Job Sheet trigger */}
               <NewJobSheet />
               {/* Global Invite Worker action (owner only) */}
-              {businessRole?.role === 'owner' && (
+              {role === 'owner' && (
                 <Button 
                   variant="outline" 
                   onClick={() => setShowInviteModal(true)}
@@ -92,7 +89,7 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
       />
 
       {/* Global Invite Modal */}
-      {businessRole?.role === 'owner' && (
+      {role === 'owner' && (
         <EnhancedInviteModal
           open={showInviteModal}
           onOpenChange={setShowInviteModal}

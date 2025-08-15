@@ -1,7 +1,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
-import { useBusinessAuth } from "@/auth";
+import { useBusinessContext } from "@/auth";
 import { qk } from "@/queries/keys";
 
 export interface ConnectStatus {
@@ -18,12 +18,12 @@ const SUPABASE_URL = "https://ijudkzqfriazabiosnvb.supabase.co";
 
 export function useStripeConnectStatus(opts?: { enabled?: boolean }) {
   const { isSignedIn, getToken } = useClerkAuth();
-  const { snapshot } = useBusinessAuth();
+  const { businessId } = useBusinessContext();
   const enabled = !!isSignedIn && (opts?.enabled ?? true);
 
   return useQuery<ConnectStatus | null, Error>({
-    queryKey: qk.stripeStatus(snapshot.businessId || ''),
-    enabled: enabled && !!snapshot.businessId,
+    queryKey: qk.stripeStatus(businessId || ''),
+    enabled: enabled && !!businessId,
     queryFn: async () => {
       const token = await getToken();
       if (!token) return null;

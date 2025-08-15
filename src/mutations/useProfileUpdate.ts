@@ -2,7 +2,7 @@
  * Standardized mutation pattern with proper error handling and rollback
  */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useBusinessAuth } from '@/auth';
+import { useBusinessContext } from '@/auth';
 import { edgeRequest } from '@/utils/edgeApi';
 import { fn } from '@/utils/functionUrl';
 import { queryKeys, invalidationHelpers } from '@/queries/keys';
@@ -15,7 +15,7 @@ interface ProfileUpdatePayload {
 }
 
 export function useProfileUpdate() {
-  const { snapshot } = useBusinessAuth();
+  const { businessId } = useBusinessContext();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 

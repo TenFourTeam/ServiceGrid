@@ -1,7 +1,6 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { useBusinessAuth } from "@/auth";
+import { useBusinessContext } from "@/auth";
 import { useBusiness } from "@/queries/unified";
-import { useBusinessRole } from "@/hooks/useBusinessRole";
 import {
   Sidebar,
   SidebarContent,
@@ -47,7 +46,7 @@ const ownerOnlyItems = [
 ];
 
 export default function AppSidebar() {
-  const { snapshot } = useBusinessAuth();
+  const { businessId, role, canManage } = useBusinessContext();
   const { data: business } = useBusiness();
   const location = useLocation();
   const navigate = useNavigate();
@@ -55,7 +54,6 @@ export default function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { user } = useUser();
-  const { data: businessRole } = useBusinessRole(snapshot.businessId);
   
   // Warm the cache for the logo ASAP
   usePreloadImage(business?.lightLogoUrl || business?.logoUrl);
@@ -124,7 +122,7 @@ export default function AppSidebar() {
         </SidebarGroup>
 
         {/* Owner-only navigation */}
-        {businessRole?.role === 'owner' && (
+        {role === 'owner' && (
           <SidebarGroup>
             <SidebarGroupLabel>Management</SidebarGroupLabel>
             <SidebarGroupContent>

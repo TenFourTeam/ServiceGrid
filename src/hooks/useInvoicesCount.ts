@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useBusinessAuth } from "@/auth";
+import { useBusinessContext } from "@/auth";
 import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
 import { qk } from "@/queries/keys";
@@ -9,12 +9,12 @@ import { qk } from "@/queries/keys";
  * Uses head-only request to avoid fetching full data
  */
 export function useInvoicesCount(opts?: { enabled?: boolean }) {
-  const { snapshot } = useBusinessAuth();
-  const enabled = snapshot.phase === 'authenticated' && (opts?.enabled ?? true);
+  const { businessId, isAuthenticated } = useBusinessContext();
+  const enabled = isAuthenticated && (opts?.enabled ?? true);
 
   return useQuery({
-    queryKey: qk.invoicesCount(snapshot.businessId || ''),
-    enabled: enabled && !!snapshot.businessId,
+    queryKey: qk.invoicesCount(businessId || ''),
+    enabled: enabled && !!businessId,
     queryFn: async (): Promise<number> => {
       console.info("[useInvoicesCount] fetching count...");
       const data = await edgeRequest(`${fn('invoices')}?count=true`, {

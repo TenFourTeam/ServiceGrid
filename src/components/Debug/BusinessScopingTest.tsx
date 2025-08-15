@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useCustomers } from '@/queries/unified';
-import { useBusinessAuth } from '@/auth';
+import { useBusinessContext } from '@/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -12,13 +12,13 @@ import { useQueryClient } from '@tanstack/react-query';
  */
 export function BusinessScopingTest() {
   const { data: customers = [] } = useCustomers();
-  const { snapshot } = useBusinessAuth();
+  const { businessId, isAuthenticated } = useBusinessContext();
   const [testName, setTestName] = useState('Test Customer');
   const [isCreating, setIsCreating] = useState(false);
   const queryClient = useQueryClient();
 
   const createTestCustomer = async () => {
-    if (!snapshot.businessId) {
+    if (!businessId) {
       toast.error('No business context available');
       return;
     }
@@ -40,7 +40,7 @@ export function BusinessScopingTest() {
   };
 
   const createTestQuote = async () => {
-    if (!snapshot.businessId) {
+    if (!businessId) {
       toast.error('No business context available');
       return;
     }
@@ -65,14 +65,14 @@ export function BusinessScopingTest() {
     toast.success('Test data clearing simulated');
   };
 
-  if (snapshot.phase !== 'authenticated') {
+  if (!isAuthenticated) {
     return <div className="text-sm text-muted-foreground">Not authenticated</div>;
   }
 
   return (
     <div className="space-y-4">
       <div className="text-sm space-y-2">
-        <div><strong>Business ID:</strong> {snapshot.businessId}</div>
+        <div><strong>Business ID:</strong> {businessId}</div>
         <div><strong>Current Customers:</strong> {customers.length}</div>
       </div>
       

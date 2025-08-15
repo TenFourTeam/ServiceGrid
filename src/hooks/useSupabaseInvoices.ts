@@ -1,6 +1,6 @@
 
 import { useQuery } from "@tanstack/react-query";
-import { useBusinessAuth } from "@/auth";
+import { useBusinessContext } from "@/auth";
 import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
 import { qk } from "@/queries/keys";
@@ -27,12 +27,12 @@ const InvoicesResponseSchema = z.object({
 });
 
 export function useSupabaseInvoices(opts?: { enabled?: boolean }) {
-  const { snapshot } = useBusinessAuth();
-  const enabled = snapshot.phase === 'authenticated' && (opts?.enabled ?? true);
+  const { businessId, isAuthenticated } = useBusinessContext();
+  const enabled = isAuthenticated && (opts?.enabled ?? true);
 
   return useQuery<{ rows: DbInvoiceRow[] } | null, Error>({
-    queryKey: qk.invoicesList(snapshot.businessId || ''),
-    enabled: enabled && !!snapshot.businessId,
+    queryKey: qk.invoicesList(businessId || ''),
+    enabled: enabled && !!businessId,
     queryFn: async () => {
       console.info("[useSupabaseInvoices] fetching...");
       const data = await edgeRequest(fn('invoices'), {

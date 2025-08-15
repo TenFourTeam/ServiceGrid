@@ -3,7 +3,7 @@
  * All hooks return camelCase data, transforming at the query boundary
  */
 import { useQuery } from '@tanstack/react-query';
-import { useBusinessAuth } from '@/auth';
+import { useBusinessContext } from '@/auth';
 import { edgeRequest } from '@/utils/edgeApi';
 import { fn } from '@/utils/functionUrl';
 import { queryKeys } from './keys';
@@ -39,11 +39,11 @@ export function useProfile() {
 
 // Count queries for performance
 export function useCustomersCount() {
-  const { snapshot } = useBusinessAuth();
-  const enabled = snapshot.phase === 'authenticated' && !!snapshot.businessId;
+  const { businessId, isAuthenticated } = useBusinessContext();
+  const enabled = isAuthenticated && !!businessId;
 
   return useQuery({
-    queryKey: queryKeys.counts.customers(snapshot.businessId || ''),
+    queryKey: queryKeys.counts.customers(businessId || ''),
     enabled,
     queryFn: async (): Promise<number> => {
       console.info("[useCustomersCount] fetching count...");
@@ -55,11 +55,11 @@ export function useCustomersCount() {
 }
 
 export function useJobsCount() {
-  const { snapshot } = useBusinessAuth();
-  const enabled = snapshot.phase === 'authenticated' && !!snapshot.businessId;
+  const { businessId, isAuthenticated } = useBusinessContext();
+  const enabled = isAuthenticated && !!businessId;
 
   return useQuery({
-    queryKey: queryKeys.counts.jobs(snapshot.businessId || ''),
+    queryKey: queryKeys.counts.jobs(businessId || ''),
     enabled,
     queryFn: async (): Promise<number> => {
       console.info("[useJobsCount] fetching count...");
@@ -71,11 +71,11 @@ export function useJobsCount() {
 }
 
 export function useQuotesCount() {
-  const { snapshot } = useBusinessAuth();
-  const enabled = snapshot.phase === 'authenticated' && !!snapshot.businessId;
+  const { businessId, isAuthenticated } = useBusinessContext();
+  const enabled = isAuthenticated && !!businessId;
 
   return useQuery({
-    queryKey: queryKeys.counts.quotes(snapshot.businessId || ''),
+    queryKey: queryKeys.counts.quotes(businessId || ''),
     enabled,
     queryFn: async (): Promise<number> => {
       console.info("[useQuotesCount] fetching count...");
@@ -87,11 +87,11 @@ export function useQuotesCount() {
 }
 
 export function useInvoicesCount() {
-  const { snapshot } = useBusinessAuth();
-  const enabled = snapshot.phase === 'authenticated' && !!snapshot.businessId;
+  const { businessId, isAuthenticated } = useBusinessContext();
+  const enabled = isAuthenticated && !!businessId;
 
   return useQuery({
-    queryKey: queryKeys.counts.invoices(snapshot.businessId || ''),
+    queryKey: queryKeys.counts.invoices(businessId || ''),
     enabled,
     queryFn: async (): Promise<number> => {
       console.info("[useInvoicesCount] fetching count...");
@@ -104,11 +104,11 @@ export function useInvoicesCount() {
 
 // Billing queries
 export function useStripeConnectStatus() {
-  const { snapshot } = useBusinessAuth();
-  const enabled = snapshot.phase === 'authenticated' && !!snapshot.businessId;
+  const { businessId, isAuthenticated } = useBusinessContext();
+  const enabled = isAuthenticated && !!businessId;
 
   return useQuery({
-    queryKey: queryKeys.billing.stripeStatus(snapshot.businessId || ''),
+    queryKey: queryKeys.billing.stripeStatus(businessId || ''),
     enabled,
     queryFn: async () => {
       const data = await edgeRequest(fn('connect-account-status'));
@@ -119,11 +119,11 @@ export function useStripeConnectStatus() {
 }
 
 export function useSubscriptionStatus() {
-  const { snapshot } = useBusinessAuth();
-  const enabled = snapshot.phase === 'authenticated';
+  const { businessId, isAuthenticated } = useBusinessContext();
+  const enabled = isAuthenticated;
 
   return useQuery({
-    queryKey: queryKeys.billing.subscription(snapshot.businessId || ''),
+    queryKey: queryKeys.billing.subscription(businessId || ''),
     enabled,
     queryFn: async () => {
       const data = await edgeRequest(fn('check-subscription'));
@@ -135,11 +135,11 @@ export function useSubscriptionStatus() {
 
 // Full data queries (for pages that need complete data)
 export function useCustomers() {
-  const { snapshot } = useBusinessAuth();
-  const enabled = snapshot.phase === 'authenticated' && !!snapshot.businessId;
+  const { businessId, isAuthenticated } = useBusinessContext();
+  const enabled = isAuthenticated && !!businessId;
 
   return useQuery({
-    queryKey: queryKeys.counts.customers(snapshot.businessId || '').concat(['full']),
+    queryKey: queryKeys.counts.customers(businessId || '').concat(['full']),
     enabled,
     queryFn: async () => {
       console.info("[useCustomers] fetching customers data...");
@@ -151,11 +151,11 @@ export function useCustomers() {
 }
 
 export function useJobs() {
-  const { snapshot } = useBusinessAuth();
-  const enabled = snapshot.phase === 'authenticated' && !!snapshot.businessId;
+  const { businessId, isAuthenticated } = useBusinessContext();
+  const enabled = isAuthenticated && !!businessId;
 
   return useQuery({
-    queryKey: queryKeys.counts.jobs(snapshot.businessId || '').concat(['full']),
+    queryKey: queryKeys.counts.jobs(businessId || '').concat(['full']),
     enabled,
     queryFn: async () => {
       console.info("[useJobs] fetching jobs data...");
@@ -167,11 +167,11 @@ export function useJobs() {
 }
 
 export function useQuotes() {
-  const { snapshot } = useBusinessAuth();
-  const enabled = snapshot.phase === 'authenticated' && !!snapshot.businessId;
+  const { businessId, isAuthenticated } = useBusinessContext();
+  const enabled = isAuthenticated && !!businessId;
 
   return useQuery({
-    queryKey: queryKeys.counts.quotes(snapshot.businessId || '').concat(['full']),
+    queryKey: queryKeys.counts.quotes(businessId || '').concat(['full']),
     enabled,
     queryFn: async () => {
       console.info("[useQuotes] fetching quotes data...");
@@ -183,11 +183,11 @@ export function useQuotes() {
 }
 
 export function useInvoices() {
-  const { snapshot } = useBusinessAuth();
-  const enabled = snapshot.phase === 'authenticated' && !!snapshot.businessId;
+  const { businessId, isAuthenticated } = useBusinessContext();
+  const enabled = isAuthenticated && !!businessId;
 
   return useQuery({
-    queryKey: queryKeys.counts.invoices(snapshot.businessId || '').concat(['full']),
+    queryKey: queryKeys.counts.invoices(businessId || '').concat(['full']),
     enabled,
     queryFn: async () => {
       console.info("[useInvoices] fetching invoices data...");

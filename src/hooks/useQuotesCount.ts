@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useBusinessAuth } from "@/auth";
+import { useBusinessContext } from "@/auth";
 import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
 import { qk } from "@/queries/keys";
@@ -9,12 +9,12 @@ import { qk } from "@/queries/keys";
  * Uses head-only request to avoid fetching full data
  */
 export function useQuotesCount(opts?: { enabled?: boolean }) {
-  const { snapshot } = useBusinessAuth();
-  const enabled = snapshot.phase === 'authenticated' && (opts?.enabled ?? true);
+  const { businessId, isAuthenticated } = useBusinessContext();
+  const enabled = isAuthenticated && (opts?.enabled ?? true);
 
   return useQuery({
-    queryKey: qk.quotesCount(snapshot.businessId || ''),
-    enabled: enabled && !!snapshot.businessId,
+    queryKey: qk.quotesCount(businessId || ''),
+    enabled: enabled && !!businessId,
     queryFn: async (): Promise<number> => {
       console.info("[useQuotesCount] fetching count...");
       const data = await edgeRequest(`${fn('quotes')}?count=true`, {

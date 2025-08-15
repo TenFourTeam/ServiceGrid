@@ -1,4 +1,4 @@
-import { useBusinessAuth } from '@/auth';
+import { useBusinessContext } from '@/auth';
 import { useBusiness } from '@/queries/unified';
 import { useCustomersCount } from '@/hooks/useCustomersCount';
 import { CheckCircle, XCircle, Clock } from 'lucide-react';
@@ -8,20 +8,20 @@ import { CheckCircle, XCircle, Clock } from 'lucide-react';
  * Shows if all systems are properly connected and working
  */
 export function IntegrationStatus() {
-  const { snapshot } = useBusinessAuth();
+  const { isAuthenticated, businessId } = useBusinessContext();
   const { data: business } = useBusiness();
   const { data: customersCount, isLoading } = useCustomersCount();
 
   const checks = [
     {
       name: 'Authentication',
-      status: snapshot.phase === 'authenticated' ? 'success' : 'error',
-      details: `Phase: ${snapshot.phase}`,
+      status: isAuthenticated ? 'success' : 'error',
+      details: `Authenticated: ${isAuthenticated}`,
     },
     {
       name: 'Business Context',
-      status: snapshot.businessId && business?.id ? 'success' : 'error',
-      details: `Auth: ${snapshot.businessId?.slice(0, 8)}... | Query: ${business?.id?.slice(0, 8)}...`,
+      status: businessId && business?.id ? 'success' : 'error',
+      details: `Auth: ${businessId?.slice(0, 8)}... | Query: ${business?.id?.slice(0, 8)}...`,
     },
     {
       name: 'Business Data Sync',
@@ -35,7 +35,7 @@ export function IntegrationStatus() {
     },
     {
       name: 'API Client',
-      status: snapshot.businessId ? 'success' : 'error',
+      status: businessId ? 'success' : 'error',
       details: 'Business ID header auto-included',
     },
     {
