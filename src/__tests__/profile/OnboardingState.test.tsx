@@ -43,6 +43,6 @@ describe('Streamlined Onboarding State', () => {
     expect(result.current.profileComplete).toBe(true);
     expect(result.current.hasCustomers).toBe(false);
     expect(result.current.loading).toBe(false);
-    expect(result.current.isComplete).toBe(false);
+    expect(result.current.showIntentPicker).toBe(false);
   });
 });

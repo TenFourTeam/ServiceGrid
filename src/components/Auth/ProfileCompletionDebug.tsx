@@ -24,19 +24,13 @@ export function ProfileCompletionDebug() {
         <div>DB Profile Phone: {profile?.phoneE164 || 'None'}</div>
         <div>DB Business Name: "{profile?.businessName || 'None'}"</div>
         <div>Business Name Valid: {profile?.businessName?.trim() ? 'Yes' : 'No'}</div>
-        <div>Progress: {onboarding.completionPercentage}%</div>
         <div>Profile Complete: {onboarding.profileComplete ? '✅' : '❌'}</div>
         <div>Has Customers: {onboarding.hasCustomers ? '✅' : '❌'}</div>
         <div>Has Content: {onboarding.hasContent ? '✅' : '❌'}</div>
         <div>Bank Linked: {onboarding.bankLinked ? '✅' : '❌'}</div>
         <div>Subscribed: {onboarding.subscribed ? '✅' : '❌'}</div>
         <div>Next Action: {onboarding.nextAction || 'Complete!'}</div>
-      </div>
-
-      <div className="mt-2 pt-2 border-t">
-        <div className="text-green-600">
-          ✅ = {onboarding.completionPercentage >= 60 ? 'Should show green check' : 'Not complete yet'}
-        </div>
+        <div>Show Intent Picker: {onboarding.showIntentPicker ? '✅' : '❌'}</div>
       </div>
     </div>
   );

@@ -1,7 +1,8 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Calendar, FileText, Users, Upload } from 'lucide-react';
+import { Calendar, FileText, Users, Upload, User, CreditCard, Crown } from 'lucide-react';
 import { useState } from 'react';
+import { useOnboardingState } from '@/onboarding/streamlined';
 
 interface IntentPickerModalProps {
   open: boolean;
@@ -10,6 +11,9 @@ interface IntentPickerModalProps {
   onCreateQuote: () => void;
   onAddCustomer: () => void;
   onImportCustomers: () => void;
+  onSetupProfile: () => void;
+  onLinkBank: () => void;
+  onStartSubscription: () => void;
 }
 
 export function IntentPickerModal({
@@ -18,9 +22,13 @@ export function IntentPickerModal({
   onScheduleJob,
   onCreateQuote,
   onAddCustomer,
-  onImportCustomers
+  onImportCustomers,
+  onSetupProfile,
+  onLinkBank,
+  onStartSubscription
 }: IntentPickerModalProps) {
   const [dismissed, setDismissed] = useState(false);
+  const onboardingState = useOnboardingState();
 
   const handleAction = (action: () => void) => {
     action();
@@ -40,11 +48,31 @@ export function IntentPickerModal({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="text-center text-xl">
-            What do you want to do first?
+            {onboardingState.profileComplete ? 'What do you want to do next?' : 'Let\'s get you set up'}
           </DialogTitle>
         </DialogHeader>
         
         <div className="space-y-3">
+          {/* Show profile setup if incomplete */}
+          {!onboardingState.profileComplete && (
+            <Button
+              variant="outline" 
+              className="w-full h-auto p-4 flex items-center gap-3 justify-start text-left"
+              onClick={() => handleAction(onSetupProfile)}
+            >
+              <User className="h-5 w-5 text-primary" />
+              <div>
+                <div className="font-medium">Complete Your Profile</div>
+                <div className="text-sm text-muted-foreground">
+                  Add your business name and contact details
+                </div>
+              </div>
+            </Button>
+          )}
+          
+          {/* Show main actions if profile is complete */}
+          {onboardingState.profileComplete && (
+            <>
           <Button
             variant="outline" 
             className="w-full h-auto p-4 flex items-center gap-3 justify-start text-left"
@@ -87,19 +115,54 @@ export function IntentPickerModal({
             </div>
           </Button>
 
-          <Button
-            variant="outline"
-            className="w-full h-auto p-4 flex items-center gap-3 justify-start text-left"
-            onClick={() => handleAction(onImportCustomers)}
-          >
-            <Upload className="h-5 w-5 text-primary" />
-            <div>
-              <div className="font-medium">Import Customers (CSV)</div>
-              <div className="text-sm text-muted-foreground">
-                Upload your existing customer list
+            <Button
+              variant="outline"
+              className="w-full h-auto p-4 flex items-center gap-3 justify-start text-left"
+              onClick={() => handleAction(onImportCustomers)}
+            >
+              <Upload className="h-5 w-5 text-primary" />
+              <div>
+                <div className="font-medium">Import Customers (CSV)</div>
+                <div className="text-sm text-muted-foreground">
+                  Upload your existing customer list
+                </div>
               </div>
-            </div>
-          </Button>
+            </Button>
+            </>
+          )}
+          
+          {/* Show additional setup steps */}
+          {onboardingState.profileComplete && !onboardingState.bankLinked && (
+            <Button
+              variant="outline"
+              className="w-full h-auto p-4 flex items-center gap-3 justify-start text-left"
+              onClick={() => handleAction(onLinkBank)}
+            >
+              <CreditCard className="h-5 w-5 text-primary" />
+              <div>
+                <div className="font-medium">Connect Bank Account</div>
+                <div className="text-sm text-muted-foreground">
+                  Set up payments and get paid faster
+                </div>
+              </div>
+            </Button>
+          )}
+          
+          {onboardingState.profileComplete && !onboardingState.subscribed && (
+            <Button
+              variant="outline"
+              className="w-full h-auto p-4 flex items-center gap-3 justify-start text-left"
+              onClick={() => handleAction(onStartSubscription)}
+            >
+              <Crown className="h-5 w-5 text-primary" />
+              <div>
+                <div className="font-medium">Activate Subscription</div>
+                <div className="text-sm text-muted-foreground">
+                  Unlock all features and remove limits
+                </div>
+              </div>
+            </Button>
+          )}
         </div>
 
         <div className="flex justify-center pt-2">

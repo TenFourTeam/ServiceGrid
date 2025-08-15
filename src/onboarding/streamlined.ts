@@ -26,9 +26,7 @@ export interface OnboardingState {
   loading: boolean;
   
   // Derived state
-  completionPercentage: number;
   nextAction: string | null;
-  isComplete: boolean;
   showIntentPicker: boolean;
 }
 
@@ -62,12 +60,7 @@ export function useOnboardingState(): OnboardingState {
     const bankLinked = stripeStatus?.chargesEnabled ?? false;
     const subscribed = subscription?.subscribed ?? false;
 
-    // Calculate completion
-    const steps = [profileComplete, hasCustomers, hasContent, bankLinked, subscribed];
-    const completedSteps = steps.filter(Boolean).length;
-    const completionPercentage = Math.round((completedSteps / steps.length) * 100);
-
-    // Determine next action
+    // Determine next action and show intent picker
     let nextAction: string | null = null;
     if (!profileComplete) nextAction = 'Complete your profile';
     else if (!hasCustomers) nextAction = 'Add your first customer';
@@ -75,8 +68,8 @@ export function useOnboardingState(): OnboardingState {
     else if (!bankLinked) nextAction = 'Connect your bank account';
     else if (!subscribed) nextAction = 'Activate your subscription';
 
-    const isComplete = completedSteps === steps.length;
-    const showIntentPicker = profileComplete && !hasCustomers && !hasContent;
+    // Show intent picker for new users or when they need guidance
+    const showIntentPicker = !loading && (!profileComplete || (profileComplete && !hasCustomers && !hasContent));
 
     return {
       profileComplete,
@@ -85,9 +78,7 @@ export function useOnboardingState(): OnboardingState {
       bankLinked,
       subscribed,
       loading,
-      completionPercentage,
       nextAction,
-      isComplete,
       showIntentPicker,
     };
   }, [

@@ -11,7 +11,7 @@ import AppSidebar from '@/components/Layout/AppSidebar';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { PageFade } from '@/components/Motion/PageFade';
 import { TrialBanner } from '@/components/Onboarding/TrialBanner';
-import { FloatingSetupWidget } from '@/components/Onboarding/FloatingSetupWidget';
+import { HelpWidget } from '@/components/Onboarding/HelpWidget';
 import { IntentPickerModal } from '@/components/Onboarding/IntentPickerModal';
 import { useOnboardingState } from '@/onboarding/streamlined';
 import { useOnboardingActions } from '@/onboarding/hooks';
@@ -31,6 +31,10 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
       setShowIntentPicker(true);
     }
   }, [onboardingState.showIntentPicker, showIntentPicker]);
+
+  const handleOpenHelp = () => {
+    setShowIntentPicker(true);
+  };
 
   useEffect(() => {
     document.title = title ? `${title} • ServiceGrid` : 'ServiceGrid';
@@ -81,16 +85,12 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
         onCreateQuote={onboardingActions.openCreateQuote}
         onAddCustomer={onboardingActions.openAddCustomer}
         onImportCustomers={onboardingActions.openImportCustomers}
-      />
-      
-      <FloatingSetupWidget
         onSetupProfile={onboardingActions.openSetupProfile}
-        onAddCustomer={onboardingActions.openAddCustomer}
-        onCreateJob={onboardingActions.openNewJobSheet}
-        onCreateQuote={onboardingActions.openCreateQuote}
         onLinkBank={onboardingActions.openBankLink}
         onStartSubscription={onboardingActions.openSubscription}
       />
+      
+      <HelpWidget onOpenHelp={handleOpenHelp} />
 
       {/* Global Invite Modal */}
       <RequireRole role="owner" fallback={null}>
