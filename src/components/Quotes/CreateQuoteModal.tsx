@@ -20,6 +20,7 @@ import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
 import { InlineCustomerForm } from "@/components/Onboarding/InlineCustomerForm";
 import { showNextActionToast } from "@/components/Onboarding/NextActionToast";
+import { invalidationHelpers } from '@/queries/keys';
 
 export interface CreateQuoteModalProps {
   open: boolean;
@@ -229,7 +230,9 @@ export default function CreateQuoteModal({ open, onOpenChange, customers, defaul
       setLastSavedAt(Date.now());
 
       // Refresh list
-      queryClient.invalidateQueries({ queryKey: ["supabase", "quotes"] });
+      if (businessId) {
+        invalidationHelpers.quotes(queryClient, businessId);
+      }
 
       toast.success("Quote saved");
       

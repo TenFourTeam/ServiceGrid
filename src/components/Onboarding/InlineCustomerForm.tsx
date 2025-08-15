@@ -9,6 +9,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { edgeRequest } from '@/utils/edgeApi';
 import { fn } from '@/utils/functionUrl';
+import { invalidationHelpers } from '@/queries/keys';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 interface InlineCustomerFormProps {
   onCustomerCreated: (customerId: string, customerName: string) => void;
@@ -27,6 +29,7 @@ export function InlineCustomerForm({ onCustomerCreated, trigger }: InlineCustome
 
   const { getToken } = useClerkAuth();
   const queryClient = useQueryClient();
+  const { businessId } = useBusinessContext();
 
   async function handleSave() {
     if (!draft.name.trim()) {
@@ -68,7 +71,9 @@ export function InlineCustomerForm({ onCustomerCreated, trigger }: InlineCustome
       setOpen(false);
       
       // Refresh customer list
-      queryClient.invalidateQueries({ queryKey: ['supabase', 'customers'] });
+      if (businessId) {
+        invalidationHelpers.customers(queryClient, businessId);
+      }
     } catch (error: any) {
       console.error('Failed to create customer:', error);
       toast.error(error?.message || 'Failed to create customer');

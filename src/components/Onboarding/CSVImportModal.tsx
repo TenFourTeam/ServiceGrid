@@ -11,6 +11,8 @@ import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { edgeRequest } from '@/utils/edgeApi';
 import { fn } from '@/utils/functionUrl';
+import { invalidationHelpers } from '@/queries/keys';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 interface CSVImportModalProps {
   open: boolean;
@@ -35,6 +37,7 @@ interface ColumnMapping {
 export function CSVImportModal({ open, onOpenChange, onImportComplete }: CSVImportModalProps) {
   const { getToken } = useClerkAuth();
   const queryClient = useQueryClient();
+  const { businessId } = useBusinessContext();
   const [file, setFile] = useState<File | null>(null);
   const [csvData, setCsvData] = useState<string[][]>([]);
   const [columnMapping, setColumnMapping] = useState<ColumnMapping>({});
@@ -119,7 +122,9 @@ export function CSVImportModal({ open, onOpenChange, onImportComplete }: CSVImpo
       });
 
       const imported = data.imported || previewData.length;
-      queryClient.invalidateQueries({ queryKey: ['supabase', 'customers'] });
+      if (businessId) {
+        invalidationHelpers.customers(queryClient, businessId);
+      }
       toast.success(`Successfully imported ${imported} customers`);
       onImportComplete(imported);
       onOpenChange(false);

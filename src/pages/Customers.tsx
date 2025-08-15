@@ -17,10 +17,13 @@ import { showNextActionToast } from '@/components/Onboarding/NextActionToast';
 import { useOnboardingActions } from '@/onboarding/hooks';
 import { useFocusPulse } from '@/hooks/useFocusPulse';
 import { cn } from '@/lib/utils';
+import { invalidationHelpers } from '@/queries/keys';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 export default function CustomersPage() {
   const { isSignedIn, getToken } = useClerkAuth();
   const queryClient = useQueryClient();
+  const { businessId } = useBusinessContext();
   const location = useLocation();
   const navigate = useNavigate();
   const onboardingActions = useOnboardingActions();
@@ -111,8 +114,9 @@ export default function CustomersPage() {
       setOpen(false);
       setEditingId(null);
       setDraft({ name: '', email: '', phone: '', address: '' });
-      await queryClient.invalidateQueries({ queryKey: ['supabase', 'customers'] });
-      await queryClient.invalidateQueries({ queryKey: ['dashboard-data'] });
+      if (businessId) {
+        invalidationHelpers.customers(queryClient, businessId);
+      }
     } catch (e: any) {
       console.error('[CustomersPage] save customer failed:', e);
       toast.error(e?.message || 'Failed to save customer');

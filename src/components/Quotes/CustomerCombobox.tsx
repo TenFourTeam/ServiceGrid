@@ -12,6 +12,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
 import { toast } from "sonner";
+import { invalidationHelpers } from '@/queries/keys';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 interface CustomerComboboxProps {
   customers: Customer[];
@@ -33,6 +35,7 @@ export function CustomerCombobox({ customers, value, onChange, placeholder = "Se
   const displayName = useMemo(() => selected?.name || (lastCreated && lastCreated.id === value ? lastCreated.name : placeholder), [selected, lastCreated, value, placeholder]);
   const { getToken } = useClerkAuth();
   const queryClient = useQueryClient();
+  const { businessId } = useBusinessContext();
 
   async function createCustomer() {
     if (!name.trim()) return;
@@ -68,8 +71,9 @@ export function CustomerCombobox({ customers, value, onChange, placeholder = "Se
         });
         
         // Invalidate both queries to refresh data
-        queryClient.invalidateQueries({ queryKey: ["supabase", "customers"] });
-        queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
+        if (businessId) {
+          invalidationHelpers.customers(queryClient, businessId);
+        }
       }
     } catch (e) {
       console.error('[CustomerCombobox] Failed to create customer:', e);

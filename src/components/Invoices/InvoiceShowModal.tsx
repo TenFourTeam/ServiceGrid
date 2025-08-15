@@ -8,6 +8,8 @@ import { edgeRequest } from '@/utils/edgeApi';
 import { fn } from '@/utils/functionUrl';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
+import { invalidationHelpers } from '@/queries/keys';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 interface InvoiceShowModalProps {
   open: boolean;
@@ -18,6 +20,7 @@ interface InvoiceShowModalProps {
 export default function InvoiceShowModal({ open, onOpenChange, invoice }: InvoiceShowModalProps) {
   const { data: customers = [] } = useCustomers();
   const queryClient = useQueryClient();
+  const { businessId } = useBusinessContext();
   const customerName = invoice ? (customers.find(c => c.id === invoice.customerId)?.name || 'Unknown') : '';
 
   const { getToken } = useClerkAuth();
@@ -85,7 +88,9 @@ export default function InvoiceShowModal({ open, onOpenChange, invoice }: Invoic
                       method: 'PATCH',
                       body: JSON.stringify({ id: invoice.id, status: 'Sent' })
                     });
-                    queryClient.invalidateQueries({ queryKey: ['supabase', 'invoices'] });
+                    if (businessId) {
+                      invalidationHelpers.invoices(queryClient, businessId);
+                    }
                     toast.success('Invoice marked as sent');
                   } catch (e: any) {
                     toast.error(e?.message || 'Failed to mark invoice as sent');

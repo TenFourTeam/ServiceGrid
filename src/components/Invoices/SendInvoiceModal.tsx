@@ -13,6 +13,7 @@ import { buildInvoiceEmail } from '@/utils/emailTemplates';
 import { escapeHtml } from '@/utils/sanitize';
 import { toast } from 'sonner';
 import type { Invoice } from '@/types';
+import { invalidationHelpers } from '@/queries/keys';
 
 export interface SendInvoiceModalProps {
   open: boolean;
@@ -23,7 +24,7 @@ export interface SendInvoiceModalProps {
 }
 
 export default function SendInvoiceModal({ open, onOpenChange, invoice, toEmail, customerName }: SendInvoiceModalProps) {
-  const { business, businessName, businessLogoUrl, businessLightLogoUrl } = useBusinessContext();
+  const { business, businessName, businessLogoUrl, businessLightLogoUrl, businessId } = useBusinessContext();
   const { data: customers = [] } = useCustomers();
   const queryClient = useQueryClient();
   const { getToken } = useClerkAuth();
@@ -97,7 +98,9 @@ const previewHtml = useMemo(() => {
           };
         }
       );
-      await queryClient.invalidateQueries({ queryKey: ["supabase", "invoices"] });
+      if (businessId) {
+        invalidationHelpers.invoices(queryClient, businessId);
+      }
       toast.success("Invoice sent successfully");
       onOpenChange(false);
     } catch (e: any) {

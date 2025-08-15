@@ -5,3 +5,5 @@ export { useStandardMutation } from './useStandardMutation';
 export { useProfileUpdate } from './useProfileUpdate';
 export { useCustomerMutations } from './useCustomerMutations';
 export { useJobMutations } from './useJobMutations';
+export { useQuoteMutations } from './useQuoteMutations';
+export { useInvoiceMutations } from './useInvoiceMutations';

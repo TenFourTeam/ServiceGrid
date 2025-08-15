@@ -13,6 +13,8 @@ import type { Job } from "@/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle as ModalTitle } from "@/components/ui/dialog";
 import PickQuoteModal from "@/components/Jobs/PickQuoteModal";
 import { useQueryClient } from "@tanstack/react-query";
+import { invalidationHelpers } from '@/queries/keys';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 interface JobShowModalProps {
   open: boolean;
@@ -23,6 +25,7 @@ interface JobShowModalProps {
 export default function JobShowModal({ open, onOpenChange, job }: JobShowModalProps) {
   const { data: customers = [] } = useCustomers();
   const queryClient = useQueryClient();
+  const { businessId } = useBusinessContext();
   const [localNotes, setLocalNotes] = useState(job.notes ?? "");
   const notesTimer = useRef<number | null>(null);
   const { getToken } = useClerkAuth();
@@ -82,7 +85,9 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
         method: 'PATCH',
         body: JSON.stringify({ status: nextStatus }),
       });
-      queryClient.invalidateQueries({ queryKey: ['supabase', 'jobs'] });
+      if (businessId) {
+        invalidationHelpers.jobs(queryClient, businessId);
+      }
       toast.success(`Status updated to ${nextStatus}`);
     } catch (e: any) {
       // Revert on failure
@@ -140,7 +145,9 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                         method: 'PATCH',
                         body: JSON.stringify({ notes: val }),
                       });
-                      queryClient.invalidateQueries({ queryKey: ['supabase', 'jobs'] });
+                       if (businessId) {
+                         invalidationHelpers.jobs(queryClient, businessId);
+                       }
                     } catch {}
                 }, 600) as unknown as number;
               }}
@@ -183,7 +190,9 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
               <Button variant="destructive" onClick={async () => {
                 try {
                   await edgeRequest(fn(`jobs?id=${job.id}`), { method: 'DELETE' });
-                  queryClient.invalidateQueries({ queryKey: ['supabase', 'jobs'] });
+                  if (businessId) {
+                    invalidationHelpers.jobs(queryClient, businessId);
+                  }
                   toast.success('Job deleted');
                   onOpenChange(false);
                 } catch (e: any) {
@@ -238,7 +247,9 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                 method: 'PATCH',
                 body: JSON.stringify({ quoteId }),
               });
-              queryClient.invalidateQueries({ queryKey: ['supabase', 'jobs'] });
+              if (businessId) {
+                invalidationHelpers.jobs(queryClient, businessId);
+              }
               toast.success('Quote linked to job');
               setPickerOpen(false);
             } catch (e: any) {

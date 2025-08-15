@@ -14,6 +14,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { SUPABASE_URL, edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
+import { invalidationHelpers } from '@/queries/keys';
 
 export interface SendQuoteModalProps {
   open: boolean;
@@ -24,7 +25,7 @@ export interface SendQuoteModalProps {
 }
 
 export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, customerName }: SendQuoteModalProps) {
-  const { business, businessName, businessLogoUrl, businessLightLogoUrl } = useBusinessContext();
+  const { business, businessName, businessLogoUrl, businessLightLogoUrl, businessId } = useBusinessContext();
   const { data: customers = [] } = useCustomers();
   const queryClient = useQueryClient();
   const { getToken } = useClerkAuth();
@@ -100,7 +101,9 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
           };
         }
       );
-      await queryClient.invalidateQueries({ queryKey: ["supabase", "quotes"] });
+      if (businessId) {
+        invalidationHelpers.quotes(queryClient, businessId);
+      }
       toast.success("Quote sent successfully");
       onOpenChange(false);
     } catch (e: any) {

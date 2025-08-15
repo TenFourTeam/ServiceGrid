@@ -16,6 +16,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 import { Send } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { invalidationHelpers } from '@/queries/keys';
 
 
 export default function InvoicesPage() {
@@ -40,10 +41,16 @@ export default function InvoicesPage() {
     const channel = supabase
       .channel('schema-db-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, () => {
-        qc.invalidateQueries({ queryKey: ['supabase', 'invoices'] });
+        const businessId = ''; // TODO: Get from context if needed
+        if (businessId) {
+          invalidationHelpers.invoices(qc, businessId);
+        }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'invoice_line_items' }, () => {
-        qc.invalidateQueries({ queryKey: ['supabase', 'invoices'] });
+        const businessId = ''; // TODO: Get from context if needed  
+        if (businessId) {
+          invalidationHelpers.invoices(qc, businessId);
+        }
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
