@@ -169,7 +169,7 @@ export function CustomerBottomModal({
 
   return (
     <Drawer open={open} onOpenChange={handleOpenChange}>
-      <DrawerContent className="max-h-[85vh] max-w-md mx-auto">
+      <DrawerContent className="max-h-[90vh]">
         <DrawerHeader className="text-left">
           <DrawerTitle>
             {customer?.id ? "Edit Customer" : "New Customer"}
