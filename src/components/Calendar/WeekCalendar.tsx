@@ -493,7 +493,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                       } ${
                         statusColors.border
                       } ${
-                        canDrag ? 'cursor-pointer hover:opacity-80' : 'cursor-default opacity-90'
+                        canDrag ? 'cursor-pointer hover:opacity-80 hover:z-20' : 'cursor-default opacity-90'
                       } ${isBeingDragged ? 'opacity-70 scale-[1.05]' : ''} ${isBeingResized ? 'opacity-70' : ''}`}
                       style={{
                         top: `${top}%`,
@@ -504,13 +504,15 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                       onClick={() => setActiveJob(j)}
                     >
                       <div className="flex items-center gap-1 text-xs font-medium leading-tight">
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-current/20">
-                          {j.status === 'Scheduled' ? 'Scheduled' : j.status === 'In Progress' ? 'In Progress' : 'Completed'}
-                        </span>
                         {startsAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} — {customer?.name || 'Unknown'}
                       </div>
                       <div className="text-xs leading-tight mt-0.5 truncate ml-2.5">{j.title}</div>
-                      <div className="text-xs leading-tight opacity-75 truncate ml-2.5">{j.address}</div>
+                      <div className="text-xs leading-tight mt-0.5 truncate ml-2.5 opacity-70 flex items-center gap-2">
+                        {j.address}
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-current/20 opacity-100">
+                          {j.status === 'Scheduled' ? 'Scheduled' : j.status === 'In Progress' ? 'In Progress' : 'Completed'}
+                        </span>
+                      </div>
                       {/* Resize handle - only show if resizable */}
                       {canResize && (
                         <div
