@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
+import { buildInviteEmail } from "../_shared/inviteEmailTemplates.ts";
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -31,7 +32,7 @@ serve(async (req: Request) => {
       return json({ error: 'Not authorized to manage this business' }, 403);
     }
 
-    // Get business details
+    // Get business details and inviter info
     const { data: business, error: businessError } = await supaAdmin
       .from('businesses')
       .select('id, name, logo_url')
@@ -41,6 +42,14 @@ serve(async (req: Request) => {
     if (businessError || !business) {
       return json({ error: 'Business not found or not owned by user' }, 403);
     }
+
+    // Get inviter details
+    const { data: inviter, error: inviterError } = await supaAdmin
+      .from('profiles')
+      .select('email, display_name')
+      .eq('id', userId)
+      .single();
+
 
     // Check for existing invite or membership
     const { data: existingInvite } = await supaAdmin
@@ -100,41 +109,26 @@ serve(async (req: Request) => {
       return json({ error: 'Failed to create invite' }, 500);
     }
 
-    // Send invitation email
+    // Generate invitation URL and email
     const inviteUrl = `${Deno.env.get('SUPABASE_URL')?.replace('/v1', '')}/invite?token=${token}`;
+    
+    // Build professional email using template
+    const emailContent = buildInviteEmail({
+      businessName: business.name,
+      businessLogoUrl: business.logo_url,
+      inviterName: inviter?.display_name || inviter?.email || 'Team Administrator',
+      inviteeEmail: email,
+      inviteUrl,
+      role: 'worker',
+      expiresAt: expiresAt.toISOString()
+    });
     
     try {
       await supaAdmin.functions.invoke('resend-send-email', {
         body: {
           to: email,
-          subject: `You're invited to join ${business.name}`,
-          html: `
-            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-              <div style="text-align: center; margin-bottom: 30px;">
-                ${business.logo_url ? `<img src="${business.logo_url}" alt="${business.name}" style="max-height: 60px; margin-bottom: 20px;">` : ''}
-                <h1 style="color: #333; margin: 0;">You're invited to join ${business.name}</h1>
-              </div>
-              
-              <p style="color: #666; font-size: 16px; line-height: 1.5;">
-                You've been invited to join <strong>${business.name}</strong> as a team member.
-              </p>
-              
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${inviteUrl}" 
-                   style="background: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 500;">
-                  Accept Invitation
-                </a>
-              </div>
-              
-              <p style="color: #888; font-size: 14px;">
-                This invitation will expire in 7 days. If you don't have an account, you'll be able to create one.
-              </p>
-              
-              <p style="color: #888; font-size: 12px; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
-                If you didn't expect this invitation, you can safely ignore this email.
-              </p>
-            </div>
-          `,
+          subject: emailContent.subject,
+          html: emailContent.html,
         },
       });
     } catch (emailError) {
