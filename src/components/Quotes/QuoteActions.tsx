@@ -3,7 +3,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MoreHorizontal, Send, FileText, Receipt } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { edgeRequest } from '@/utils/edgeApi';
+import { edgeToast } from '@/utils/edgeRequestWithToast';
 import { fn } from '@/utils/functionUrl';
 import type { QuoteListItem } from '@/types';
 
@@ -23,24 +23,19 @@ export function QuoteActions({ quote, onSendQuote }: QuoteActionsProps) {
     }
 
     try {
-      const result = await edgeRequest(fn('jobs'), {
-        method: 'POST',
-        body: JSON.stringify({
-          quoteId: quote.id,
-          customerId: quote.customerId,
-          title: `Job from Quote ${quote.number}`,
-          total: quote.total,
-          status: 'Scheduled',
-        }),
-      });
+      const result = await edgeToast.create(fn('jobs'), {
+        quoteId: quote.id,
+        customerId: quote.customerId,
+        title: `Job from Quote ${quote.number}`,
+        total: quote.total,
+        status: 'Scheduled',
+      }, `Quote ${quote.number} converted to job successfully`);
 
-      if (result.success) {
-        toast.success('Quote converted to job successfully');
+      if (result.ok || result.success) {
         navigate('/calendar');
       }
     } catch (error) {
       console.error('Failed to convert quote to job:', error);
-      toast.error('Failed to convert quote to job');
     }
   };
 
@@ -51,23 +46,18 @@ export function QuoteActions({ quote, onSendQuote }: QuoteActionsProps) {
     }
 
     try {
-      const result = await edgeRequest(fn('invoices'), {
-        method: 'POST',
-        body: JSON.stringify({
-          quoteId: quote.id,
-          customerId: quote.customerId,
-          status: 'Draft',
-          total: quote.total,
-        }),
-      });
+      const result = await edgeToast.create(fn('invoices'), {
+        quoteId: quote.id,
+        customerId: quote.customerId,
+        status: 'Draft',
+        total: quote.total,
+      }, `Invoice created from quote ${quote.number} successfully`);
 
-      if (result.success) {
-        toast.success('Invoice created from quote successfully');
+      if (result.ok || result.success) {
         navigate('/invoices');
       }
     } catch (error) {
       console.error('Failed to create invoice from quote:', error);
-      toast.error('Failed to create invoice from quote');
     }
   };
 

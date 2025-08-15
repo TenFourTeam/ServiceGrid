@@ -207,28 +207,22 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
     }
 
     setIsConvertingToJob(true);
-    toast.info('Converting quote to job...');
 
     try {
-      const result = await edgeRequest(fn('jobs'), {
-        method: 'POST',
-        body: JSON.stringify({
-          quoteId: quote.id,
-          customerId: quote.customerId,
-          title: `Job from Quote ${quote.number}`,
-          total: quote.total,
-          status: 'Scheduled',
-        }),
-      });
+      const result = await edgeToast.create(fn('jobs'), {
+        quoteId: quote.id,
+        customerId: quote.customerId,
+        title: `Job from Quote ${quote.number}`,
+        total: quote.total,
+        status: 'Scheduled',
+      }, 'Quote converted to job successfully');
 
-      if (result.success) {
-        toast.success('Quote converted to job successfully');
+      if (result.ok || result.success) {
         onOpenChange(false);
         navigate('/calendar');
       }
     } catch (error) {
       console.error('Failed to convert quote to job:', error);
-      toast.error('Failed to convert quote to job');
     } finally {
       setIsConvertingToJob(false);
     }
@@ -243,27 +237,21 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
     }
 
     setIsCreatingInvoice(true);
-    toast.info('Creating invoice from quote...');
 
     try {
-      const result = await edgeRequest(fn('invoices'), {
-        method: 'POST',
-        body: JSON.stringify({
-          quoteId: quote.id,
-          customerId: quote.customerId,
-          status: 'Draft',
-          total: quote.total,
-        }),
-      });
+      const result = await edgeToast.create(fn('invoices'), {
+        quoteId: quote.id,
+        customerId: quote.customerId,
+        status: 'Draft',
+        total: quote.total,
+      }, `Invoice created from quote ${quote.number} successfully`);
 
-      if (result.success) {
-        toast.success('Invoice created from quote successfully');
+      if (result.ok || result.success) {
         onOpenChange(false);
         navigate('/invoices');
       }
     } catch (error) {
       console.error('Failed to create invoice from quote:', error);
-      toast.error('Failed to create invoice from quote');
     } finally {
       setIsCreatingInvoice(false);
     }
