@@ -1,11 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Check, ChevronRight, X, Users, Calendar, CreditCard, Crown, User, Sparkles, CircleDashed, Lock } from 'lucide-react';
+import { Check, ChevronRight, X, Users, Calendar, CreditCard, Crown, User, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useOnboardingState } from '@/onboarding/streamlined';
-import { steps } from '@/onboarding/steps';
 import { cn } from '@/lib/utils';
 
 interface SetupChecklistProps {
