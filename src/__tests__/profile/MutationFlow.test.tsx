@@ -12,8 +12,8 @@ import * as edgeApiModule from '@/utils/edgeApi';
 
 // Mock toast
 const mockToast = vi.fn();
-vi.mock('@/hooks/use-toast', () => ({
-  useToast: () => ({ toast: mockToast })
+vi.mock('sonner', () => ({
+  toast: mockToast
 }));
 
 // Test component that uses the hook

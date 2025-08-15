@@ -9,8 +9,8 @@ import { useProfileOperations } from '@/hooks/useProfileOperations';
 
 // Mock toast
 const mockToast = vi.fn();
-vi.mock('@/hooks/use-toast', () => ({
-  useToast: () => ({ toast: mockToast })
+vi.mock('sonner', () => ({
+  toast: mockToast
 }));
 
 const SUPABASE_URL = 'https://ijudkzqfriazabiosnvb.supabase.co';

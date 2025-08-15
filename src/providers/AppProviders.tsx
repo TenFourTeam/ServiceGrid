@@ -2,7 +2,7 @@ import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { BrowserRouter } from 'react-router-dom';
-import { ConsolidatedToaster } from '@/components/ui/toast-consolidated';
+import { ConsolidatedToaster } from '@/components/ui/toaster';
 
 // Simple query client with basic defaults
 const queryClient = new QueryClient({
