@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Receipt, Users } from 'lucide-react';
 import { QuoteActions } from '@/components/Quotes/QuoteActions';
+import QuoteErrorBoundary from '@/components/ErrorBoundaries/QuoteErrorBoundary';
 
 import { useOnboardingActions } from '@/onboarding/hooks';
 
@@ -117,8 +118,9 @@ export default function QuotesPage() {
 
   return (
     <AppLayout title="Quotes">
-      <section>
-        <Card>
+      <QuoteErrorBoundary>
+        <section>
+          <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <CardTitle>All Quotes</CardTitle>
             <Button onClick={() => { setOpen(true); }} data-onb="new-quote-button">
@@ -218,6 +220,7 @@ export default function QuotesPage() {
         toEmail={sendQuoteItem ? getCustomerEmail(sendQuoteItem.customerId) : undefined}
         customerName={sendQuoteItem ? getCustomerName(sendQuoteItem.customerId) : undefined}
       />
+      </QuoteErrorBoundary>
     </AppLayout>
   );
 }

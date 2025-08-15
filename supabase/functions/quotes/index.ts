@@ -176,6 +176,50 @@ serve(async (req) => {
       return json({ rows });
     }
 
+    if (req.method === "DELETE") {
+      const url = new URL(req.url);
+      const quoteId = url.searchParams.get("id");
+      
+      if (!quoteId) {
+        return badRequest("Quote ID is required");
+      }
+
+      // Verify quote belongs to business and get it first
+      const { data: quote, error: fetchError } = await ctx.supaAdmin
+        .from("quotes")
+        .select("id")
+        .eq("id", quoteId)
+        .eq("business_id", ctx.businessId)
+        .single();
+      
+      if (fetchError) {
+        if (fetchError.code === 'PGRST116') {
+          return badRequest("Quote not found", 404);
+        }
+        throw fetchError;
+      }
+
+      // Delete line items first (foreign key constraint)
+      const { error: lineItemsError } = await ctx.supaAdmin
+        .from("quote_line_items")
+        .delete()
+        .eq("quote_id", quoteId)
+        .eq("owner_id", ctx.userId);
+      
+      if (lineItemsError) throw lineItemsError;
+
+      // Delete the quote
+      const { error: deleteError } = await ctx.supaAdmin
+        .from("quotes")
+        .delete()
+        .eq("id", quoteId)
+        .eq("business_id", ctx.businessId);
+      
+      if (deleteError) throw deleteError;
+
+      return json({ success: true });
+    }
+    
     if (req.method === "POST") {
       const body = (await req.json().catch(() => ({}))) as Partial<CreateQuotePayload>;
       const customerId = (body.customerId || "").toString();

@@ -33,6 +33,11 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
 
+  // Early return if quote is null - prevents crashes
+  if (!quote) {
+    return null;
+  }
+
   const { html, defaultSubject } = useMemo(() => {
     if (!quote) return { html: "", defaultSubject: "" };
     const logo = businessLightLogoUrl || businessLogoUrl;
@@ -67,8 +72,11 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
 
   async function send() {
     if (!quote) return;
-    if (!to) {
-      toast.error("Customer has no email on file. Add an email to the customer to send.");
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!to || !emailRegex.test(to)) {
+      toast.error("Please enter a valid email address.");
       return;
     }
     setSending(true);
