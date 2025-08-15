@@ -5,6 +5,7 @@ export interface ToastOptions {
   success?: string | false;
   error?: string | false;
   loading?: string | false;
+  onSuccess?: () => void;
 }
 
 /**
@@ -19,7 +20,8 @@ export async function edgeRequestWithToast(
   const { 
     success = getDefaultSuccessMessage(init.method || 'GET'),
     error = 'Operation failed. Please try again.',
-    loading = false
+    loading = false,
+    onSuccess
   } = toastOptions;
 
   let toastId: string | number | undefined;
@@ -40,6 +42,11 @@ export async function edgeRequestWithToast(
     // Show success toast if specified
     if (success) {
       toast.success(success);
+    }
+
+    // Call success callback if provided
+    if (onSuccess) {
+      onSuccess();
     }
 
     return result;
@@ -84,13 +91,14 @@ export const edgeToast = {
   /**
    * Create operation with standard success message
    */
-  create: (url: string, body: any, successMessage?: string) =>
+  create: (url: string, body: any, successMessage?: string, onSuccess?: () => void) =>
     edgeRequestWithToast(url, {
       method: 'POST',
       body: JSON.stringify(body),
     }, {
       success: successMessage || 'Created successfully',
       loading: 'Creating...',
+      onSuccess,
     }),
 
   /**

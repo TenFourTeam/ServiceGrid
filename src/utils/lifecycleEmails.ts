@@ -164,6 +164,15 @@ export const lifecycleEmailTriggers = {
   },
 
   // Feature discovery emails
+  async sendFeatureDiscoveryEmail(data: LifecycleEmailData, params: { feature: string; featureDescription: string; ctaUrl: string; ctaText: string }) {
+    return sendLifecycleEmail('feature-discovery', data, {
+      featureName: params.feature,
+      featureDescription: params.featureDescription,
+      featureUrl: params.ctaUrl,
+      ctaText: params.ctaText
+    });
+  },
+
   async sendCustomerManagementEmail(data: LifecycleEmailData) {
     const engagement = await getUserEngagementData(data.userId!);
     
@@ -230,6 +239,17 @@ export const lifecycleEmailTriggers = {
   },
 
   // Engagement recovery emails
+  async sendEngagementRecoveryEmail(data: LifecycleEmailData, params: { type: string; lastActivity?: string }) {
+    const daysInactive = params.type === '7-day' ? 7 : 14;
+    const isLongInactive = daysInactive >= 14;
+    
+    return sendLifecycleEmail('engagement', data, {
+      daysInactive,
+      ctaText: isLongInactive ? 'Get Help Getting Started' : 'Continue Building',
+      ctaUrl: isLongInactive ? `${window.location.origin}/settings` : `${window.location.origin}/calendar`
+    });
+  },
+
   async sendInactiveUserEmail(data: LifecycleEmailData, daysInactive: number) {
     const isLongInactive = daysInactive >= 14;
     

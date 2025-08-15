@@ -14,6 +14,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/queries/keys';
 import LoadingScreen from '@/components/LoadingScreen';
 import { QuoteForm } from '@/components/Quotes/QuoteForm';
+import { useLifecycleEmailIntegration } from '@/hooks/useLifecycleEmailIntegration';
 import type { Quote, QuoteListItem, QuoteStatus, Customer } from '@/types';
 
 const statusColors: Record<QuoteStatus, string> = {
@@ -39,6 +40,7 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
   const { businessId } = useBusinessContext();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { triggerQuoteCreated } = useLifecycleEmailIntegration();
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(false);
   const [currentMode, setCurrentMode] = useState<'create' | 'view' | 'edit'>(mode);
@@ -156,6 +158,13 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
         onOpenChange(false);
         onSendQuote?.(newQuote);
         toast.success('Quote created successfully');
+        
+        // Trigger lifecycle email for first quote
+        try {
+          triggerQuoteCreated();
+        } catch (error) {
+          console.error('[QuoteDetailsModal] Failed to trigger quote milestone email:', error);
+        }
       } else if (currentMode === 'edit' && quote) {
         console.log('[QuoteDetailsModal] Updating quote:', quote.id);
         const result = await edgeRequest(fn(`quotes/${quote.id}`), {

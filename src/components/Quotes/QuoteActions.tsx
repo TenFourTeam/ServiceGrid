@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { edgeToast } from '@/utils/edgeRequestWithToast';
 import { fn } from '@/utils/functionUrl';
+import { useLifecycleEmailIntegration } from '@/hooks/useLifecycleEmailIntegration';
 import type { QuoteListItem } from '@/types';
 
 interface QuoteActionsProps {
@@ -14,6 +15,7 @@ interface QuoteActionsProps {
 
 export function QuoteActions({ quote, onSendQuote }: QuoteActionsProps) {
   const navigate = useNavigate();
+  const { triggerJobScheduled, triggerInvoiceSent } = useLifecycleEmailIntegration();
 
 
   const handleConvertToJob = async () => {
@@ -29,7 +31,7 @@ export function QuoteActions({ quote, onSendQuote }: QuoteActionsProps) {
         title: `Job from Quote ${quote.number}`,
         total: quote.total,
         status: 'Scheduled',
-      }, `Quote ${quote.number} converted to job successfully`);
+      }, `Quote ${quote.number} converted to job successfully`, triggerJobScheduled);
 
       if (result.ok || result.success) {
         navigate('/calendar');
@@ -51,7 +53,7 @@ export function QuoteActions({ quote, onSendQuote }: QuoteActionsProps) {
         customerId: quote.customerId,
         status: 'Draft',
         total: quote.total,
-      }, `Invoice created from quote ${quote.number} successfully`);
+      }, `Invoice created from quote ${quote.number} successfully`, triggerInvoiceSent);
 
       if (result.ok || result.success) {
         navigate('/invoices');
