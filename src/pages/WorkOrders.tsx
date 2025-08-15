@@ -23,9 +23,8 @@ function useFilteredJobs() {
   const { data: jobs = [] } = useJobsData();
   const { data: customers = [] } = useCustomersData();
   const { data: invoices = [] } = useInvoicesData();
-  const [filter, setFilter] = useState<'unscheduled' | 'today' | 'upcoming' | 'completed'>('unscheduled');
   const [q, setQ] = useState('');
-  const [sort, setSort] = useState<'when' | 'customer' | 'amount'>('when');
+  const [sort, setSort] = useState<'unscheduled' | 'today' | 'upcoming' | 'completed'>('unscheduled');
 
   const todayStart = new Date(); todayStart.setHours(0,0,0,0);
   const todayEnd = new Date(); todayEnd.setHours(23,59,59,999);
@@ -34,13 +33,13 @@ function useFilteredJobs() {
   const filtered = useMemo(() => {
     const qLower = q.trim().toLowerCase();
     let list = jobs.slice();
-    if (filter === 'unscheduled') {
+    if (sort === 'unscheduled') {
       list = list.filter(j => !j.startsAt);
-    } else if (filter === 'today') {
+    } else if (sort === 'today') {
       list = list.filter(j => j.status !== 'Completed' && new Date(j.startsAt) >= todayStart && new Date(j.startsAt) <= todayEnd);
-    } else if (filter === 'upcoming') {
+    } else if (sort === 'upcoming') {
       list = list.filter(j => j.status !== 'Completed' && new Date(j.startsAt) > todayEnd);
-    } else if (filter === 'completed') {
+    } else if (sort === 'completed') {
       list = list.filter(j => j.status === 'Completed' && new Date(j.startsAt) >= sevenDaysAgo);
     }
     if (qLower) {
@@ -51,11 +50,8 @@ function useFilteredJobs() {
         return customer.includes(qLower) || addr.includes(qLower);
       });
     }
-    if (sort === 'when') list.sort((a,b)=> new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
-    if (sort === 'customer') list.sort((a,b)=> (customers.find(c=>c.id===a.customerId)?.name || '').localeCompare(customers.find(c=>c.id===b.customerId)?.name || ''));
-    if (sort === 'amount') list.sort((a,b)=> (b.total||0) - (a.total||0));
     return list;
-  }, [jobs, customers, filter, q, sort]);
+  }, [jobs, customers, sort, q]);
 
   const counts = useMemo(() => ({
     unscheduled: jobs.filter(j => !j.startsAt).length,
@@ -67,7 +63,7 @@ function useFilteredJobs() {
   const hasInvoice = (jobId: string) => invoices.some(i=> i.jobId === jobId);
   const getInvoiceForJob = (jobId: string) => invoices.find(i=> i.jobId === jobId);
 
-  return { filter, setFilter, q, setQ, sort, setSort, jobs: filtered, counts, hasInvoice, getInvoiceForJob };
+  return { q, setQ, sort, setSort, jobs: filtered, counts, hasInvoice, getInvoiceForJob };
 }
 
 function StatusChip({ status }: { status: Job['status'] }) {
@@ -126,7 +122,7 @@ export default function WorkOrdersPage() {
   const { data: customers = [] } = useCustomersData();
   const { isSignedIn, getToken } = useClerkAuth();
   const { isLoading, error } = useJobsData();
-  const { filter, setFilter, q, setQ, sort, setSort, jobs, counts, hasInvoice } = useFilteredJobs();
+  const { q, setQ, sort, setSort, jobs, counts, hasInvoice } = useFilteredJobs();
   const navigate = useNavigate();
   const lastSyncKeyRef = useRef<string | null>(null);
   const [activeJob, setActiveJob] = useState<Job | null>(null);
@@ -139,30 +135,13 @@ export default function WorkOrdersPage() {
       <section aria-label="work-orders" className="space-y-3">
         <div className="sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b py-2">
           <div className="flex items-center gap-2 overflow-x-auto">
-            <ToggleGroup type="single" value={filter} onValueChange={(v)=> v && setFilter(v as any)} className="flex flex-wrap justify-start">
-              <ToggleGroupItem value="unscheduled" size="sm" aria-label="Unscheduled">
-                <span>Unscheduled</span>
-                <Badge variant="secondary" className="ml-2">{counts.unscheduled}</Badge>
-              </ToggleGroupItem>
-              <ToggleGroupItem value="today" size="sm" aria-label="Today">
-                <span>Today</span>
-                <Badge variant="secondary" className="ml-2">{counts.today}</Badge>
-              </ToggleGroupItem>
-              <ToggleGroupItem value="upcoming" size="sm" aria-label="Upcoming">
-                <span>Upcoming</span>
-                <Badge variant="secondary" className="ml-2">{counts.upcoming}</Badge>
-              </ToggleGroupItem>
-              <ToggleGroupItem value="completed" size="sm" aria-label="Completed (7d)">
-                <span>Completed (7d)</span>
-                <Badge variant="secondary" className="ml-2">{counts.completed}</Badge>
-              </ToggleGroupItem>
-            </ToggleGroup>
-            <div className="ml-auto flex items-center gap-2">
+            <div className="flex items-center gap-2">
               <Input value={q} onChange={(e)=>setQ(e.target.value)} placeholder="Search customer or address" className="h-9 w-48" />
               <select value={sort} onChange={(e)=>setSort(e.target.value as any)} className="h-9 rounded-md border bg-background px-2 text-sm">
-                <option value="when">Sort: When</option>
-                <option value="customer">Sort: Customer</option>
-                <option value="amount">Sort: Amount</option>
+                <option value="unscheduled">Unscheduled ({counts.unscheduled})</option>
+                <option value="today">Today ({counts.today})</option>
+                <option value="upcoming">Upcoming ({counts.upcoming})</option>
+                <option value="completed">Completed ({counts.completed})</option>
               </select>
             </div>
           </div>
