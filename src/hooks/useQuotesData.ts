@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
 import { queryKeys } from "@/queries/keys";
-import { z } from "zod";
+import { useBusinessId } from "@/hooks/useBusinessId";
+import { useAuth } from "@clerk/clerk-react";
 
 export interface Quote {
   id: string;
@@ -18,58 +18,33 @@ export interface Quote {
   customerEmail?: string;
 }
 
-const QuotesResponseSchema = z.object({
-  rows: z.array(z.any()).optional().default([]),
-  count: z.number().optional(),
-});
-
 interface UseQuotesDataOptions {
   enabled?: boolean;
-  loadData?: boolean;
 }
 
 /**
- * Unified quotes hook that provides both count and data
+ * Simplified quotes hook - single query for both count and data
  */
 export function useQuotesData(opts?: UseQuotesDataOptions) {
-  const { businessId, isAuthenticated } = useBusinessContext();
-  const enabled = isAuthenticated && (opts?.enabled ?? true);
-  const loadData = opts?.loadData ?? true;
+  const { isSignedIn } = useAuth();
+  const businessId = useBusinessId();
+  const enabled = isSignedIn && !!businessId && (opts?.enabled ?? true);
 
-  // Count query
-  const countQuery = useQuery({
-    queryKey: queryKeys.counts.quotes(businessId || ''),
-    enabled: enabled && !!businessId,
-    queryFn: async (): Promise<number> => {
-      console.info("[useQuotesData] fetching count...");
-      const data = await edgeRequest(`${fn('quotes')}?count=true`, {
-        method: 'GET',
-      });
-      
-      const count = data?.count ?? 0;
-      console.info("[useQuotesData] count:", count);
-      return count;
-    },
-    staleTime: 30_000,
-  });
-
-  // Full data query
-  const dataQuery = useQuery<Quote[]>({
+  const query = useQuery({
     queryKey: queryKeys.data.quotes(businessId || ''),
-    enabled: enabled && !!businessId && loadData,
+    enabled,
     queryFn: async () => {
-      console.info("[useQuotesData] fetching full data...");
+      console.info("[useQuotesData] fetching quotes...");
       const data = await edgeRequest(fn('quotes'), {
         method: 'GET',
       });
       
       if (!data) {
-        console.info("[useQuotesData] no data (null) – likely signed out");
-        return [];
+        console.info("[useQuotesData] no data - likely signed out");
+        return { quotes: [], count: 0 };
       }
       
-      const parsed = QuotesResponseSchema.parse(data);
-      const quotes: Quote[] = (parsed.rows || []).map((row: any) => ({
+      const quotes: Quote[] = (data.rows || []).map((row: any) => ({
         id: row.id,
         number: row.number,
         total: row.total,
@@ -82,32 +57,20 @@ export function useQuotesData(opts?: UseQuotesDataOptions) {
         customerEmail: row.customerEmail ?? row.customers?.email,
       }));
       
+      const count = data.count ?? quotes.length;
       console.info("[useQuotesData] fetched", quotes.length, "quotes");
-      return quotes;
+      
+      return { quotes, count };
     },
     staleTime: 30_000,
   });
 
   return {
-    count: countQuery.data ?? 0,
-    isLoadingCount: countQuery.isLoading,
-    isErrorCount: countQuery.isError,
-    errorCount: countQuery.error,
-    
-    data: dataQuery.data ?? [],
-    isLoadingData: dataQuery.isLoading,
-    isErrorData: dataQuery.isError,
-    errorData: dataQuery.error,
-    
-    isLoading: countQuery.isLoading || (loadData && dataQuery.isLoading),
-    isError: countQuery.isError || (loadData && dataQuery.isError),
-    error: countQuery.error || (loadData && dataQuery.error),
-    
-    refetchCount: countQuery.refetch,
-    refetchData: dataQuery.refetch,
-    refetch: () => {
-      countQuery.refetch();
-      if (loadData) dataQuery.refetch();
-    },
+    data: query.data?.quotes ?? [],
+    count: query.data?.count ?? 0,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
+    refetch: query.refetch,
   };
 }

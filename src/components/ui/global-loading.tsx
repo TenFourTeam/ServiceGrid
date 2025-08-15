@@ -5,9 +5,9 @@ import { useQuotesData } from '@/hooks/useQuotesData';
 import { Progress } from '@/components/ui/progress';
 
 export function GlobalLoadingIndicator() {
-  const { isLoadingCount: customersLoading } = useCustomersData({ loadData: false });
-  const { isLoadingCount: jobsLoading } = useJobsData({ loadData: false });
-  const { isLoadingCount: quotesLoading } = useQuotesData({ loadData: false });
+  const { isLoading: customersLoading } = useCustomersData();
+  const { isLoading: jobsLoading } = useJobsData();
+  const { isLoading: quotesLoading } = useQuotesData();
   
   const isLoading = customersLoading || jobsLoading || quotesLoading;
 

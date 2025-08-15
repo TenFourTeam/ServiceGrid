@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
 import { queryKeys } from "@/queries/keys";
-import { z } from "zod";
+import { useBusinessId } from "@/hooks/useBusinessId";
+import { useAuth } from "@clerk/clerk-react";
 
 export interface Job {
   id: string;
@@ -21,58 +21,33 @@ export interface Job {
   updatedAt?: string;
 }
 
-const JobsResponseSchema = z.object({
-  rows: z.array(z.any()).optional().default([]),
-  count: z.number().optional(),
-});
-
 interface UseJobsDataOptions {
   enabled?: boolean;
-  loadData?: boolean;
 }
 
 /**
- * Unified jobs hook that provides both count and data
+ * Simplified jobs hook - single query for both count and data
  */
 export function useJobsData(opts?: UseJobsDataOptions) {
-  const { businessId, isAuthenticated } = useBusinessContext();
-  const enabled = isAuthenticated && (opts?.enabled ?? true);
-  const loadData = opts?.loadData ?? true;
+  const { isSignedIn } = useAuth();
+  const businessId = useBusinessId();
+  const enabled = isSignedIn && !!businessId && (opts?.enabled ?? true);
 
-  // Count query
-  const countQuery = useQuery({
-    queryKey: queryKeys.counts.jobs(businessId || ''),
-    enabled: enabled && !!businessId,
-    queryFn: async (): Promise<number> => {
-      console.info("[useJobsData] fetching count...");
-      const data = await edgeRequest(`${fn('jobs')}?count=true`, {
-        method: 'GET',
-      });
-      
-      const count = data?.count ?? 0;
-      console.info("[useJobsData] count:", count);
-      return count;
-    },
-    staleTime: 30_000,
-  });
-
-  // Full data query
-  const dataQuery = useQuery<Job[]>({
+  const query = useQuery({
     queryKey: queryKeys.data.jobs(businessId || ''),
-    enabled: enabled && !!businessId && loadData,
+    enabled,
     queryFn: async () => {
-      console.info("[useJobsData] fetching full data...");
+      console.info("[useJobsData] fetching jobs...");
       const data = await edgeRequest(fn('jobs'), {
         method: 'GET',
       });
       
       if (!data) {
-        console.info("[useJobsData] no data (null) – likely signed out");
-        return [];
+        console.info("[useJobsData] no data - likely signed out");
+        return { jobs: [], count: 0 };
       }
       
-      const parsed = JobsResponseSchema.parse(data);
-      const jobs: Job[] = (parsed.rows || []).map((row: any) => ({
+      const jobs: Job[] = (data.rows || []).map((row: any) => ({
         id: row.id,
         customerId: row.customerId || row.customer_id,
         quoteId: row.quoteId ?? row.quote_id ?? null,
@@ -88,32 +63,20 @@ export function useJobsData(opts?: UseJobsDataOptions) {
         updatedAt: row.updatedAt || row.updated_at,
       }));
       
+      const count = data.count ?? jobs.length;
       console.info("[useJobsData] fetched", jobs.length, "jobs");
-      return jobs;
+      
+      return { jobs, count };
     },
     staleTime: 30_000,
   });
 
   return {
-    count: countQuery.data ?? 0,
-    isLoadingCount: countQuery.isLoading,
-    isErrorCount: countQuery.isError,
-    errorCount: countQuery.error,
-    
-    data: dataQuery.data ?? [],
-    isLoadingData: dataQuery.isLoading,
-    isErrorData: dataQuery.isError,
-    errorData: dataQuery.error,
-    
-    isLoading: countQuery.isLoading || (loadData && dataQuery.isLoading),
-    isError: countQuery.isError || (loadData && dataQuery.isError),
-    error: countQuery.error || (loadData && dataQuery.error),
-    
-    refetchCount: countQuery.refetch,
-    refetchData: dataQuery.refetch,
-    refetch: () => {
-      countQuery.refetch();
-      if (loadData) dataQuery.refetch();
-    },
+    data: query.data?.jobs ?? [],
+    count: query.data?.count ?? 0,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
+    refetch: query.refetch,
   };
 }

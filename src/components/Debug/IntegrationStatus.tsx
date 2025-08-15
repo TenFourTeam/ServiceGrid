@@ -8,7 +8,7 @@ import { CheckCircle, XCircle, Clock } from 'lucide-react';
  */
 export function IntegrationStatus() {
   const { isAuthenticated, businessId, business } = useBusinessContext();
-  const { count: customersCount, isLoadingCount: isLoading } = useCustomersData({ loadData: false });
+  const { count: customersCount, isLoading } = useCustomersData();
 
   const checks = [
     {

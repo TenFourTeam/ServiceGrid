@@ -2,6 +2,16 @@
 // - Single source of truth for SUPABASE_URL
 // - Authenticated and public JSON helpers
 
+declare global {
+  interface Window {
+    Clerk?: {
+      session?: {
+        getToken: (options?: { refresh?: boolean }) => Promise<string | null>;
+      };
+    };
+  }
+}
+
 export const SUPABASE_URL = "https://ijudkzqfriazabiosnvb.supabase.co";
 
 export class ApiError extends Error {
@@ -36,33 +46,15 @@ export type EdgeRequestOptions = {
 };
 
 
-// Simplified edge request with bulletproof error handling and retry logic
+// Simplified edge request using Clerk directly
 export async function edgeRequest(url: string, init: RequestInit = {}): Promise<any> {
   console.info('[edgeRequest] Starting request to:', url, { hasBody: !!init.body });
   
-  // Try to get a fresh token with retry logic
-  let token: string | null = null;
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    try {
-      console.info(`[edgeRequest] Getting token (attempt ${attempt}/3)`);
-      token = await window.Clerk?.session?.getToken({ refresh: attempt > 1 });
-      if (token) {
-        console.info('[edgeRequest] Successfully obtained token');
-        break;
-      } else {
-        console.warn(`[edgeRequest] No token received on attempt ${attempt}`);
-      }
-    } catch (err) {
-      console.error(`[edgeRequest] Token fetch failed on attempt ${attempt}:`, err);
-      if (attempt < 3) {
-        await new Promise(resolve => setTimeout(resolve, 500 * attempt));
-      }
-    }
-  }
-
+  // Get token directly from Clerk
+  const token = await window.Clerk?.session?.getToken();
   if (!token) {
-    console.error('[edgeRequest] Failed to obtain token after 3 attempts');
-    throw new ApiError(401, 'Authentication failed - unable to obtain token', 'auth_failed');
+    console.error('[edgeRequest] No authentication token available');
+    throw new ApiError(401, 'Authentication required', 'auth_required');
   }
 
   const headers = {

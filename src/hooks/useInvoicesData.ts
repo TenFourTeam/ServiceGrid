@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
 import { queryKeys } from "@/queries/keys";
-import { z } from "zod";
+import { useBusinessId } from "@/hooks/useBusinessId";
+import { useAuth } from "@clerk/clerk-react";
 
 export interface Invoice {
   id: string;
@@ -21,58 +21,33 @@ export interface Invoice {
   publicToken?: string;
 }
 
-const InvoicesResponseSchema = z.object({
-  rows: z.array(z.any()).optional().default([]),
-  count: z.number().optional(),
-});
-
 interface UseInvoicesDataOptions {
   enabled?: boolean;
-  loadData?: boolean;
 }
 
 /**
- * Unified invoices hook that provides both count and data
+ * Simplified invoices hook - single query for both count and data
  */
 export function useInvoicesData(opts?: UseInvoicesDataOptions) {
-  const { businessId, isAuthenticated } = useBusinessContext();
-  const enabled = isAuthenticated && (opts?.enabled ?? true);
-  const loadData = opts?.loadData ?? true;
+  const { isSignedIn } = useAuth();
+  const businessId = useBusinessId();
+  const enabled = isSignedIn && !!businessId && (opts?.enabled ?? true);
 
-  // Count query
-  const countQuery = useQuery({
-    queryKey: queryKeys.counts.invoices(businessId || ''),
-    enabled: enabled && !!businessId,
-    queryFn: async (): Promise<number> => {
-      console.info("[useInvoicesData] fetching count...");
-      const data = await edgeRequest(`${fn('invoices')}?count=true`, {
-        method: 'GET',
-      });
-      
-      const count = data?.count ?? 0;
-      console.info("[useInvoicesData] count:", count);
-      return count;
-    },
-    staleTime: 30_000,
-  });
-
-  // Full data query
-  const dataQuery = useQuery<Invoice[]>({
+  const query = useQuery({
     queryKey: queryKeys.data.invoices(businessId || ''),
-    enabled: enabled && !!businessId && loadData,
+    enabled,
     queryFn: async () => {
-      console.info("[useInvoicesData] fetching full data...");
+      console.info("[useInvoicesData] fetching invoices...");
       const data = await edgeRequest(fn('invoices'), {
         method: 'GET',
       });
       
       if (!data) {
-        console.info("[useInvoicesData] no data (null) – likely signed out");
-        return [];
+        console.info("[useInvoicesData] no data - likely signed out");
+        return { invoices: [], count: 0 };
       }
       
-      const parsed = InvoicesResponseSchema.parse(data);
-      const invoices: Invoice[] = (parsed.rows || []).map((row: any) => ({
+      const invoices: Invoice[] = (data.rows || []).map((row: any) => ({
         id: row.id,
         number: row.number,
         customerId: row.customerId || row.customer_id,
@@ -88,32 +63,20 @@ export function useInvoicesData(opts?: UseInvoicesDataOptions) {
         publicToken: row.publicToken || row.public_token,
       }));
       
+      const count = data.count ?? invoices.length;
       console.info("[useInvoicesData] fetched", invoices.length, "invoices");
-      return invoices;
+      
+      return { invoices, count };
     },
     staleTime: 30_000,
   });
 
   return {
-    count: countQuery.data ?? 0,
-    isLoadingCount: countQuery.isLoading,
-    isErrorCount: countQuery.isError,
-    errorCount: countQuery.error,
-    
-    data: dataQuery.data ?? [],
-    isLoadingData: dataQuery.isLoading,
-    isErrorData: dataQuery.isError,
-    errorData: dataQuery.error,
-    
-    isLoading: countQuery.isLoading || (loadData && dataQuery.isLoading),
-    isError: countQuery.isError || (loadData && dataQuery.isError),
-    error: countQuery.error || (loadData && dataQuery.error),
-    
-    refetchCount: countQuery.refetch,
-    refetchData: dataQuery.refetch,
-    refetch: () => {
-      countQuery.refetch();
-      if (loadData) dataQuery.refetch();
-    },
+    data: query.data?.invoices ?? [],
+    count: query.data?.count ?? 0,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
+    refetch: query.refetch,
   };
 }
