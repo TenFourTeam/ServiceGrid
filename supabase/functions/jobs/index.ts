@@ -444,6 +444,34 @@ serve(async (req) => {
       } });
     }
 
+    if (req.method === "DELETE") {
+      const possibleId = pathParts[pathParts.length - 1];
+      const id = url.searchParams.get("id") || (possibleId && possibleId !== "jobs" ? possibleId : null);
+      if (!id) return badRequest("id is required in path or query");
+
+      // Ensure job exists and belongs to business
+      const { data: existing, error: exErr } = await ctx.supaAdmin
+        .from("jobs")
+        .select("id, business_id")
+        .eq("id", id)
+        .eq("business_id", ctx.businessId)
+        .single();
+      if (exErr) return badRequest("Job not found", 404);
+
+      // Delete the job
+      const { error: delErr } = await ctx.supaAdmin
+        .from("jobs")
+        .delete()
+        .eq("id", id)
+        .eq("business_id", ctx.businessId);
+      if (delErr) throw delErr;
+
+      console.log("[jobs][DELETE] deleted job", { ownerId: ctx.userId, jobId: id });
+      
+      return json({ ok: true, message: "Job deleted successfully" });
+      } });
+    }
+
     return badRequest("Method not allowed", 405);
   } catch (e) {
     console.error("[jobs] error", e);
