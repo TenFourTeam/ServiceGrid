@@ -15,6 +15,7 @@ const InvoicesPage = lazy(() => import("./pages/Invoices"));
 const CustomersPage = lazy(() => import("./pages/Customers"));
 const SettingsPage = lazy(() => import("./pages/Settings"));
 const LegalPage = lazy(() => import("./pages/Legal"));
+const LegalDocument = lazy(() => import("./components/Legal/LegalDocument"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const LandingPage = lazy(() => import("./pages/Landing"));
 const TeamPage = lazy(() => import("./pages/Team"));
@@ -36,6 +37,7 @@ function PrefetchRoutes() {
       import("./pages/Customers"),
       import("./pages/Settings"),
       import("./pages/Legal"),
+      import("./components/Legal/LegalDocument"),
       import("./pages/Team"),
       import("./pages/NotFound"),
       import("./pages/ClerkAuth"),
@@ -71,6 +73,7 @@ const App = () => (
                 <Route path="/customers" element={<CustomersPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/legal" element={<LegalPage />} />
+                <Route path="/legal/:slug" element={<LegalDocument />} />
                 
                 {/* Owner-only routes */}
                 <Route path="/team" element={
