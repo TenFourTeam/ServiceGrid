@@ -13,7 +13,7 @@ export function useSupabaseJobsRange(
 
   return useQuery<{ rows: DbJobRow[] } | null, Error>({
     queryKey: [
-      "supabase",
+      "data",
       "jobs",
       "range",
       range.start.toISOString(),

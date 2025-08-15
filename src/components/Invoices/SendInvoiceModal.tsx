@@ -85,19 +85,7 @@ const previewHtml = useMemo(() => {
         body: JSON.stringify({ to, subject: subject || defaultSubject, html: finalHtml, invoice_id: invoice.id }),
       });
       console.info('[SendInvoiceModal] sent', { invoiceId: invoice.id });
-      // Optimistically mark as Sent
-      queryClient.setQueryData<{ rows: Array<{ id: string; status: string; updatedAt?: string }> }>(
-        ["supabase", "invoices"],
-        (old) => {
-          if (!old) return old;
-          const now = new Date().toISOString();
-          return {
-            rows: old.rows.map((r) =>
-              r.id === invoice.id ? { ...r, status: "Sent", updatedAt: now } : r
-            ),
-          };
-        }
-      );
+      // Invalidate cache and let server update the status
       if (businessId) {
         invalidationHelpers.invoices(queryClient, businessId);
       }
