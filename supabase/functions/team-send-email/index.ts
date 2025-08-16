@@ -45,16 +45,11 @@ serve(async (req: Request) => {
       return json({ error: 'Business not found' }, 403);
     }
 
-    // Get sender details for from field
-    const { data: sender, error: senderError } = await supaAdmin
-      .from('profiles')
-      .select('email, full_name')
-      .eq('id', userId)
-      .single();
-
-    // Determine from email - use business reply-to if available, otherwise sender email
-    const fromEmail = business.reply_to_email || sender?.email || Deno.env.get('RESEND_FROM_EMAIL') || 'noreply@resend.dev';
+    // Use RESEND_FROM_EMAIL as primary sender (matches working pattern from other functions)
+    const fromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'noreply@resend.dev';
     const fromName = business.name || 'Team';
+    
+    console.log('Sending team email with from:', `${fromName} <${fromEmail}>`);
 
     // Send email using Resend
     const emailResponse = await resend.emails.send({
