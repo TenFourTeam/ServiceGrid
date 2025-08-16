@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { useAuth as useClerkAuth } from "@clerk/clerk-react";
+import { useAuth as useClerkAuth, SignedOut, SignInButton } from "@clerk/clerk-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,7 @@ export default function InviteAccept() {
   const { isSignedIn, isLoaded } = useClerkAuth();
   const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'auth-required'>('loading');
   const [message, setMessage] = useState('');
+  const autoOpenRef = useRef<HTMLButtonElement | null>(null);
   
   const token = searchParams.get('token');
   const redeemInvite = useRedeemInvite();
@@ -69,12 +70,13 @@ export default function InviteAccept() {
     }
   };
 
-  const handleSignIn = () => {
-    // Store the current URL to redirect back after sign-in
-    const currentUrl = window.location.href;
-    localStorage.setItem('redirect_after_auth', currentUrl);
-    navigate('/auth');
-  };
+  // Auto-trigger sign-in when auth is required
+  useEffect(() => {
+    if (status === 'auth-required' && !isSignedIn) {
+      const t = setTimeout(() => autoOpenRef.current?.click(), 0);
+      return () => clearTimeout(t);
+    }
+  }, [status, isSignedIn]);
 
   if (!token) {
     return (
@@ -111,11 +113,24 @@ export default function InviteAccept() {
           </CardHeader>
           <CardContent className="text-center space-y-4">
             <p className="text-muted-foreground">
-              You've been invited to join a team on ServiceGrid. Please sign in or create an account to accept this invitation.
+              You've been invited to join a team on ServiceGrid. Opening sign-in to accept your invitation...
             </p>
-            <Button onClick={handleSignIn} className="w-full">
-              Sign In to Accept Invitation
-            </Button>
+            <SignedOut>
+              <SignInButton
+                mode="modal"
+                forceRedirectUrl={window.location.href}
+                fallbackRedirectUrl={window.location.href}
+                appearance={{ elements: { modalBackdrop: "fixed inset-0 bg-background" } }}
+              >
+                <Button ref={autoOpenRef} className="sr-only">Open sign in</Button>
+              </SignInButton>
+              <p className="text-sm text-muted-foreground">
+                If nothing happens, {" "}
+                <button className="underline" onClick={() => autoOpenRef.current?.click()}>
+                  click here to sign in
+                </button>.
+              </p>
+            </SignedOut>
           </CardContent>
         </Card>
       </div>
