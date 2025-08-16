@@ -83,16 +83,7 @@ export async function requireCtx(req: Request): Promise<AuthContext> {
   const candidateBusinessId = req.headers.get("X-Business-Id") || url.searchParams.get("businessId") || null;
 
   // 1) Resolve internal UUID via profiles (Clerk -> UUID)
-  const userUuid = await resolveUserUuid(supaAdmin, clerkUserId);
-
-  // 2) Update profile email if we have it and profile was just created
-  if (email) {
-    await supaAdmin
-      .from("profiles")
-      .update({ email: email.toLowerCase() })
-      .eq("id", userUuid)
-      .eq("email", ""); // Only update if email is empty (new profile)
-  }
+  const userUuid = await resolveUserUuid(supaAdmin, clerkUserId, email);
 
   // 3) Resolve business using UUID (do NOT call the Clerk->UUID mapper again)
   const businessId = await resolveBusinessId(supaAdmin, userUuid, candidateBusinessId);
@@ -142,7 +133,7 @@ async function resolveBusinessId(
   return defaultBiz.id;
 }
 
-async function resolveUserUuid(supabase: ReturnType<typeof createClient>, clerkUserId: ClerkUserId): Promise<UserUuid> {
+async function resolveUserUuid(supabase: ReturnType<typeof createClient>, clerkUserId: ClerkUserId, email: string): Promise<UserUuid> {
   // Look up by clerk_user_id first
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
@@ -161,7 +152,7 @@ async function resolveUserUuid(supabase: ReturnType<typeof createClient>, clerkU
     .from("profiles")
     .insert({
       clerk_user_id: clerkUserId,
-      email: "" // Email will be updated by the caller if available
+      email: email.toLowerCase() || ""
     })
     .select("id")
     .single();
