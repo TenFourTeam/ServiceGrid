@@ -43,7 +43,7 @@ export function QueryClientClerkIntegration() {
     const handleTokenExpiration = async () => {
       try {
         // Force token refresh
-        await getToken({ template: 'supabase' });
+        await getToken({ skipCache: true });
         console.info('[QueryClientClerkIntegration] token refreshed, invalidating business queries');
         
         // Invalidate business queries to trigger refetch with new token
