@@ -113,7 +113,7 @@ serve(async (req: Request) => {
     }
 
     // Generate invitation URL and send email
-    const frontendUrl = 'https://lovable.dev/projects/f4772f86-29e7-457f-b6ca-38196d888422';
+    const frontendUrl = 'https://preview--lawn-flow-dash.lovable.app';
     const inviteUrl = `${frontendUrl}/invite?token=${token}`;
     
     // Build professional email using template
