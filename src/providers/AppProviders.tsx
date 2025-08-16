@@ -1,7 +1,6 @@
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { BrowserRouter } from 'react-router-dom';
 import { ConsolidatedToaster } from '@/components/ui/toaster';
 
 // Simple query client with basic defaults
@@ -28,16 +27,14 @@ interface AppProvidersProps {
 }
 
 /**
- * Minimal provider hierarchy: QueryClient → Tooltip → Router
+ * Minimal provider hierarchy: QueryClient → Tooltip
  */
 export function AppProviders({ children }: AppProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider delayDuration={100}>
         <ConsolidatedToaster />
-        <BrowserRouter>
-          {children}
-        </BrowserRouter>
+        {children}
       </TooltipProvider>
     </QueryClientProvider>
   );
