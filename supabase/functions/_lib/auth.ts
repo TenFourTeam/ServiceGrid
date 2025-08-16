@@ -85,7 +85,16 @@ export async function requireCtx(req: Request): Promise<AuthContext> {
   // 1) Resolve internal UUID via profiles (Clerk -> UUID)
   const userUuid = await resolveUserUuid(supaAdmin, clerkUserId);
 
-  // 2) Resolve business using UUID (do NOT call the Clerk->UUID mapper again)
+  // 2) Update profile email if we have it and profile was just created
+  if (email) {
+    await supaAdmin
+      .from("profiles")
+      .update({ email: email.toLowerCase() })
+      .eq("id", userUuid)
+      .eq("email", ""); // Only update if email is empty (new profile)
+  }
+
+  // 3) Resolve business using UUID (do NOT call the Clerk->UUID mapper again)
   const businessId = await resolveBusinessId(supaAdmin, userUuid, candidateBusinessId);
 
   return {
@@ -145,18 +154,33 @@ async function resolveUserUuid(supabase: ReturnType<typeof createClient>, clerkU
   if (profileError) throw profileError;
   if (profile?.id) return profile.id as UserUuid;
 
-  // Profile doesn't exist - this should be handled by bootstrap
-  console.error(`❌ [auth] Profile not found for Clerk user: ${clerkUserId}. Bootstrap required.`);
-  throw new Response(JSON.stringify({ 
-    error: { 
-      code: "profile_not_found",
-      message: "User profile not found. Please refresh the page to complete setup.",
-      action: "refresh_page"
-    }
-  }), { 
-    status: 404,
-    headers: { "Content-Type": "application/json" }
-  });
+  // Profile doesn't exist - create it automatically for new users
+  console.info(`🔄 [auth] Creating profile for new Clerk user: ${clerkUserId}`);
+  
+  const { data: newProfile, error: createError } = await supabase
+    .from("profiles")
+    .insert({
+      clerk_user_id: clerkUserId,
+      email: "" // Email will be updated by the caller if available
+    })
+    .select("id")
+    .single();
+
+  if (createError) {
+    console.error('❌ [auth] Failed to create profile:', createError);
+    throw new Response(JSON.stringify({ 
+      error: { 
+        code: "profile_creation_failed",
+        message: "Failed to create user profile" 
+      }
+    }), { 
+      status: 500,
+      headers: { "Content-Type": "application/json" }
+    });
+  }
+
+  console.info(`✅ [auth] Profile created successfully for user: ${clerkUserId}`);
+  return newProfile.id as UserUuid;
 }
 
 // CORS headers for Edge Functions
