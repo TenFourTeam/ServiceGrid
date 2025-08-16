@@ -30,7 +30,6 @@ serve(async (req) => {
         businesses(id, name, phone, reply_to_email, logo_url, light_logo_url, tax_rate_default, inv_prefix, inv_seq, est_prefix, est_seq, created_at)
       `)
       .eq("user_id", ownerId)
-      .eq("role", "owner")
       .limit(1)
       .maybeSingle();
     
