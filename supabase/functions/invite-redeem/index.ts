@@ -74,6 +74,27 @@ serve(async (req: Request) => {
 
     console.log('Redeeming invite for user:', user.id);
 
+    // Ensure user profile exists (create if needed)
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .upsert({
+        id: user.id,
+        email: user.email || invite.email,
+        clerk_user_id: user.id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'id',
+        ignoreDuplicates: true
+      });
+
+    if (profileError) {
+      console.error('Failed to create/update profile:', profileError);
+      return json({ error: 'Failed to create user profile' }, 500);
+    }
+
+    console.log('User profile ensured for:', user.id);
+
     // Check if user is already a member of this business
     const { data: existingMember } = await supabase
       .from('business_members')
