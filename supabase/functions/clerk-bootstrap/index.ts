@@ -1,7 +1,9 @@
 // Idempotent Clerk Bootstrap - UUID-First Integration
 // Auth: Bearer Clerk token; CORS with allowed origins
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
+import { verifyToken } from "https://esm.sh/@clerk/backend@1.7.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.54.0";
+import { corsHeaders, json } from "../_lib/auth.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -15,24 +17,81 @@ serve(async (req) => {
 
     console.log('🚀 [clerk-bootstrap] Starting bootstrap process');
 
-    const { userId, supaAdmin: supabase, clerkUserId, email } = await requireCtx(req);
-    
+    // Extract and verify Clerk token manually (don't use requireCtx since profile might not exist)
+    const authHeader = req.headers.get("authorization") || req.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      console.error('❌ [clerk-bootstrap] Missing or invalid authorization header');
+      return json({ error: { code: "auth_missing", message: "Missing authentication token" }}, 401);
+    }
+
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+    const secretKey = Deno.env.get("CLERK_SECRET_KEY");
+    if (!secretKey) {
+      console.error('❌ [clerk-bootstrap] Missing CLERK_SECRET_KEY');
+      return json({ error: { code: "config_error", message: "Server configuration error" }}, 500);
+    }
+
+    let payload: any;
+    try {
+      payload = await verifyToken(token, { secretKey });
+    } catch (e) {
+      console.error('❌ [clerk-bootstrap] Token verification failed:', e);
+      return json({ error: { code: "auth_invalid", message: "Authentication failed" }}, 401);
+    }
+
+    const clerkUserId = payload.sub as string;
+    const email = (payload.email || payload["primary_email"] || "") as string;
+
     console.log(`📧 [clerk-bootstrap] Extracted email: "${email}"`);
     console.log(`✅ [clerk-bootstrap] Verified Clerk user: ${clerkUserId}`);
 
-    // 1) Get the existing profile (already resolved by requireCtx)
-    let { data: profile } = await supabase
-      .from('profiles')
-      .select('id, default_business_id, full_name')
-      .eq('id', userId)
-      .single();
-
-    if (!profile) {
-      console.error('❌ [clerk-bootstrap] Profile not found - this should not happen after requireCtx');
-      return json({ error: { code: "profile_not_found", message: "Profile not found" }}, 500);
+    // Create admin Supabase client
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !serviceKey) {
+      return json({ error: { code: "config_error", message: "Supabase configuration missing" }}, 500);
     }
     
-    console.log(`✅ [clerk-bootstrap] Found existing profile: ${profile.id}`);
+    const supabase = createClient(supabaseUrl, serviceKey, {
+      auth: { persistSession: false }
+    });
+    
+    // 1) Check if profile exists, create if needed
+    let { data: profile } = await supabase
+      .from('profiles')
+      .select('id, default_business_id, full_name, email, clerk_user_id')
+      .eq('clerk_user_id', clerkUserId)
+      .maybeSingle();
+
+    let userId: string;
+
+    if (!profile) {
+      console.log('🆕 [clerk-bootstrap] Profile not found, creating new profile');
+      
+      // Create new profile with Clerk user ID as primary key initially
+      const { data: newProfile, error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          clerk_user_id: clerkUserId,
+          email: email.toLowerCase(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .select('id, default_business_id, full_name')
+        .single();
+
+      if (profileError) {
+        console.error('❌ [clerk-bootstrap] Profile creation failed:', profileError);
+        return json({ error: { code: "profile_creation_failed", message: profileError.message }}, 400);
+      }
+
+      profile = newProfile;
+      userId = newProfile.id;
+      console.log(`✅ [clerk-bootstrap] Created new profile: ${userId}`);
+    } else {
+      userId = profile.id;
+      console.log(`✅ [clerk-bootstrap] Found existing profile: ${userId}`);
+    }
 
     // 2) Ensure default business exists using direct service role operations
     console.log("🏢 [clerk-bootstrap] Ensuring default business");
@@ -41,7 +100,7 @@ serve(async (req) => {
     const { data: existingMembership } = await supabase
       .from('business_members')
       .select('business_id')
-      .eq('user_id', profile.id)
+      .eq('user_id', userId)
       .eq('role', 'owner')
       .maybeSingle();
 
@@ -55,7 +114,7 @@ serve(async (req) => {
         .from('businesses')
         .insert({ 
           name: 'My Business',
-          owner_id: profile.id 
+          owner_id: userId 
         })
         .select('id')
         .single();
@@ -71,7 +130,7 @@ serve(async (req) => {
       const { error: membershipError } = await supabase
         .from('business_members')
         .insert({
-          user_id: profile.id,
+          user_id: userId,
           business_id: businessId,
           role: 'owner',
           joined_at: new Date().toISOString()
@@ -87,7 +146,7 @@ serve(async (req) => {
         const { error: profileUpdateError } = await supabase
           .from('profiles')
           .update({ default_business_id: businessId })
-          .eq('id', profile.id);
+          .eq('id', userId);
 
         if (profileUpdateError) {
           console.warn('⚠️ [clerk-bootstrap] Profile update failed (non-blocking):', profileUpdateError);
@@ -97,13 +156,13 @@ serve(async (req) => {
       console.log(`✅ [clerk-bootstrap] Found existing business: ${businessId}`);
     }
 
-    // 3) Bootstrap complete - profile and business already ensured by requireCtx
-    console.log(`🎉 [clerk-bootstrap] Bootstrap complete - User: ${profile.id}, Business: ${businessId}`);
+    // 3) Bootstrap complete - profile and business now guaranteed to exist
+    console.log(`🎉 [clerk-bootstrap] Bootstrap complete - User: ${userId}, Business: ${businessId}`);
 
     return json({
       success: true,
       data: {
-        userUuid: profile.id,
+        userUuid: userId,
         businessId: businessId,
         message: "Bootstrap successful"
       }
