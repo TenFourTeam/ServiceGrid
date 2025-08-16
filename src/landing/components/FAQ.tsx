@@ -17,7 +17,6 @@ export function FAQ() {
               <span aria-hidden>+</span>
             </summary>
             <div className="mt-2 text-muted-foreground">{f.a}</div>
-            {/* TODO: event faq_toggle { id: f.q, open } */}
           </details>
         ))}
       </div>

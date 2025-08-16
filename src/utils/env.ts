@@ -86,16 +86,3 @@ export function getEnvironmentConfig(): EnvironmentConfig {
     appUrl: getAppUrl(),
   };
 }
-
-/**
- * Legacy environment access (for backward compatibility)
- * @deprecated Use specific getter functions instead
- */
-export const env = {
-  get SUPABASE_URL() { return getSupabaseUrl(); },
-  get SUPABASE_ANON_KEY() { return getSupabaseAnonKey(); },
-  get CLERK_PUBLISHABLE_KEY() { return getClerkPublishableKey(); },
-  get APP_URL() { return getAppUrl(); },
-  get IS_DEV() { return isDevelopment(); },
-  get IS_PROD() { return isProduction(); },
-};

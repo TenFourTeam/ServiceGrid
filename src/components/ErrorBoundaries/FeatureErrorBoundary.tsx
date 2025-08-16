@@ -29,12 +29,6 @@ export class FeatureErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error(`[${this.props.feature}] Feature error:`, error, errorInfo);
-    
-    // TODO: Send to error reporting service
-    // errorReporting.captureException(error, {
-    //   tags: { feature: this.props.feature },
-    //   extra: errorInfo,
-    // });
   }
 
   handleRetry = () => {

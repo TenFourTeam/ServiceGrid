@@ -14,12 +14,14 @@ import { Send } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { invalidationHelpers } from '@/queries/keys';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 
 export default function InvoicesPage() {
   const { data: customers = [] } = useCustomersData();
   const { data: invoices = [] } = useInvoicesData();
   const { isSignedIn } = useClerkAuth();
+  const { businessId } = useBusinessContext();
   
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<'All' | 'Draft' | 'Sent' | 'Paid' | 'Overdue'>('All');
@@ -34,20 +36,14 @@ export default function InvoicesPage() {
     const channel = supabase
       .channel('schema-db-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, () => {
-        const businessId = ''; // TODO: Get from context if needed
-        if (businessId) {
-          invalidationHelpers.invoices(qc, businessId);
-        }
+        if (businessId) invalidationHelpers.invoices(qc, businessId);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'invoice_line_items' }, () => {
-        const businessId = ''; // TODO: Get from context if needed  
-        if (businessId) {
-          invalidationHelpers.invoices(qc, businessId);
-        }
+        if (businessId) invalidationHelpers.invoices(qc, businessId);
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [qc, isSignedIn]);
+  }, [qc, isSignedIn, businessId]);
 
   // Convert unified data to expected format
   const formattedInvoices = useMemo(() => {
