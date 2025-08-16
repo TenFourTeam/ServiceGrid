@@ -1,53 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.54.0";
-import { verifyToken } from "https://esm.sh/@clerk/backend@1.3.2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-function createAdminClient() {
-  const url = Deno.env.get("SUPABASE_URL");
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!url || !serviceKey) throw new Error("Missing Supabase env vars");
-  return createClient(url, serviceKey, { auth: { persistSession: false } });
-}
-
-async function resolveOwnerIdFromClerk(req: Request) {
-  const authHeader = req.headers.get("authorization") || req.headers.get("Authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer ")) throw new Error("Missing Authorization header");
-  const token = authHeader.replace(/^Bearer\s+/i, "");
-  const secretKey = Deno.env.get("CLERK_SECRET_KEY");
-  if (!secretKey) throw new Error("Missing CLERK_SECRET_KEY");
-  const payload = await verifyToken(token, { secretKey });
-  const clerkSub = (payload as any).sub as string;
-  const email = (payload as any)?.email as string | undefined;
-  const supabase = createAdminClient();
-
-  let { data: profByClerk, error: profErr } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("clerk_user_id", clerkSub)
-    .limit(1)
-    .maybeSingle();
-  if (profErr) throw profErr;
-  if (profByClerk?.id) return { ownerId: profByClerk.id as string, email };
-
-  if (email) {
-    const { data: profByEmail, error: profByEmailErr } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("email", email.toLowerCase())
-      .limit(1)
-      .maybeSingle();
-    if (profByEmailErr) throw profByEmailErr;
-    if (profByEmail?.id) return { ownerId: profByEmail.id as string, email };
-  }
-
-  throw new Error("Unable to resolve user profile");
-}
+import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -55,9 +8,7 @@ serve(async (req) => {
   }
 
   try {
-    const { ownerId } = await resolveOwnerIdFromClerk(req);
-
-    const supabase = createAdminClient();
+    const { userId, supaAdmin: supabase } = await requireCtx(req);
 
     const { invoiceId } = await req.json();
     if (!invoiceId) throw new Error("invoiceId is required");
@@ -70,7 +21,7 @@ serve(async (req) => {
       .maybeSingle();
     if (invErr) throw new Error(invErr.message);
     if (!invoice) throw new Error("Invoice not found");
-    if (invoice.owner_id !== ownerId) throw new Error("Not allowed");
+    if (invoice.owner_id !== userId) throw new Error("Not allowed");
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2023-10-16" });
 
@@ -96,15 +47,9 @@ serve(async (req) => {
       }
     });
 
-    return new Response(JSON.stringify({ url: session.url }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+    return json({ url: session.url });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    return new Response(JSON.stringify({ error: msg }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    return json({ error: msg }, { status: 500 });
   }
 });

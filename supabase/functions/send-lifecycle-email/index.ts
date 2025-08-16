@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { verifyToken } from "https://esm.sh/@clerk/backend@1.3.2";
+import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
 
 // Import email templates - simplified versions since we can't import from src
 function escapeHtml(text: string): string {
@@ -319,92 +318,35 @@ function generateEngagementEmail(data: LifecycleEmailData, params: any) {
   return { subject, html };
 }
 
-function getCorsHeaders(req: Request) {
-  const origin = req.headers.get("Origin") || req.headers.get("origin") || "*";
-  const allowed = (Deno.env.get("ALLOWED_ORIGINS") || "").split(",").map(s => s.trim()).filter(Boolean);
-  const allowOrigin = allowed.length === 0 || allowed.includes("*") || allowed.includes(origin) ? origin : "*";
-  return {
-    "Access-Control-Allow-Origin": allowOrigin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Methods": "*",
-    "Vary": "Origin",
-  } as Record<string, string>;
-}
-
-async function resolveOwnerId(admin: ReturnType<typeof createClient>, clerkUserId: string, email?: string) {
-  const { data: byClerk } = await admin.from('profiles').select('id').eq('clerk_user_id', clerkUserId).limit(1);
-  if (byClerk && byClerk.length) return byClerk[0].id as string;
-  if (email) {
-    const { data: byEmail } = await admin.from('profiles').select('id').ilike('email', email.toLowerCase()).limit(1);
-    if (byEmail && byEmail.length) return byEmail[0].id as string;
-  }
-  return null;
-}
 
 serve(async (req: Request): Promise<Response> => {
   // CORS preflight
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: getCorsHeaders(req) });
+    return new Response(null, { headers: corsHeaders });
   }
 
   const resendApiKey = Deno.env.get("RESEND_API_KEY");
   const fromEmail = Deno.env.get("RESEND_FROM_EMAIL");
   if (!resendApiKey || !fromEmail) {
     console.error("Missing RESEND_API_KEY or RESEND_FROM_EMAIL");
-    return new Response(JSON.stringify({ error: "Email sending not configured." }), {
-      status: 500,
-      headers: { "Content-Type": "application/json", ...getCorsHeaders(req) },
-    });
+    return json({ error: "Email sending not configured." }, { status: 500 });
   }
-
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-  // Auth: require valid Clerk token
-  const authHeader = req.headers.get("Authorization") || req.headers.get("authorization") || "";
-  if (!authHeader.startsWith("Bearer ")) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { 
-      status: 401, 
-      headers: { "Content-Type": "application/json", ...getCorsHeaders(req) } 
-    });
-  }
-
-  let ownerId: string | null = null;
-  try {
-    const token = authHeader.replace(/^Bearer\s+/i, "");
-    const secretKey = Deno.env.get("CLERK_SECRET_KEY");
-    if (!secretKey) throw new Error('Missing CLERK_SECRET_KEY');
-    const clerk = await verifyToken(token, { secretKey });
-
-    const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
-    ownerId = await resolveOwnerId(admin, clerk.sub, (clerk as any).email || (clerk as any).claims?.email || undefined);
-  } catch (e) {
-    console.warn('[send-lifecycle-email] auth failed', e);
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
-      status: 401, 
-      headers: { "Content-Type": "application/json", ...getCorsHeaders(req) } 
-    });
-  }
-
-  if (!ownerId) {
-    return new Response(JSON.stringify({ error: 'User not found' }), { 
-      status: 404, 
-      headers: { "Content-Type": "application/json", ...getCorsHeaders(req) } 
-    });
-  }
-
-  let payload: {
-    type: string;
-    data: LifecycleEmailData;
-    [key: string]: any;
-  };
 
   try {
-    payload = await req.json();
-  } catch (e) {
-    console.warn('[send-lifecycle-email] Invalid JSON payload', e);
-    return new Response(JSON.stringify({ error: "Invalid JSON" }), {
-      status: 400,
+    const { userId } = await requireCtx(req);
+    const ownerId = userId;
+
+    let payload: {
+      type: string;
+      data: LifecycleEmailData;
+      [key: string]: any;
+    };
+
+    try {
+      payload = await req.json();
+    } catch (e) {
+      console.warn('[send-lifecycle-email] Invalid JSON payload', e);
+      return json({ error: "Invalid JSON" }, { status: 400 });
       headers: { "Content-Type": "application/json", ...getCorsHeaders(req) },
     });
   }
