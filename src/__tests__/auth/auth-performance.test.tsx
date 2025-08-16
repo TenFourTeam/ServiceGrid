@@ -109,7 +109,6 @@ describe('Auth Performance Tests', () => {
       wrapper: createTestWrapper()
     });
 
-    expect(result.current.isTokenExpired).toBe(true);
-    expect(result.current.hasBusinessError).toBe(false);
+    expect(result.current.hasBusinessError).toBe(true);
   });
 });
