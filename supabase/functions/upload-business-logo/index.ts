@@ -1,43 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { verifyToken } from "https://esm.sh/@clerk/backend@1.3.2";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.54.0";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "*",
-};
-
-function json(data: unknown, init: ResponseInit = {}) {
-  return new Response(JSON.stringify(data), {
-    headers: { "Content-Type": "application/json", ...corsHeaders },
-    ...init,
-  });
-}
-
-async function getClerkPayload(req: Request) {
-  const authHeader = req.headers.get("authorization") || req.headers.get("Authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return { error: "Missing Bearer token" } as const;
-  }
-  const token = authHeader.replace(/^Bearer\s+/i, "");
-  const secretKey = Deno.env.get("CLERK_SECRET_KEY");
-  if (!secretKey) return { error: "Missing CLERK_SECRET_KEY" } as const;
-  try {
-    const payload = await verifyToken(token, { secretKey });
-    return { payload } as const;
-  } catch (e) {
-    return { error: `Invalid token: ${e}` } as const;
-  }
-}
-
-function createAdminClient() {
-  const url = Deno.env.get("SUPABASE_URL");
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!url || !serviceKey) throw new Error("Missing Supabase env vars");
-  return createClient(url, serviceKey);
-}
+import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -54,40 +17,7 @@ serve(async (req) => {
   }
 
   try {
-    const { payload, error } = await getClerkPayload(req);
-    if (error || !payload) return json({ error: error || "Unauthorized" }, { status: 401 });
-
-    const supabase = createAdminClient();
-    const clerkSub = (payload as any).sub as string;
-
-    // Resolve owner_id from profiles by clerk_user_id (fallback: by email)
-    let { data: profByClerk, error: profErr } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("clerk_user_id", clerkSub)
-      .limit(1)
-      .maybeSingle();
-    if (profErr) throw profErr;
-
-    let ownerId: string | null = profByClerk?.id as string | null;
-
-    if (!ownerId) {
-      const email = (payload as any)?.email as string | undefined;
-      if (email) {
-        const { data: profByEmail, error: profByEmailErr } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("email", email.toLowerCase())
-          .limit(1)
-          .maybeSingle();
-        if (profByEmailErr) throw profByEmailErr;
-        ownerId = profByEmail?.id || null;
-      }
-    }
-
-    if (!ownerId) {
-      return json({ error: "Unable to resolve user profile" }, { status: 401 });
-    }
+    const { userId: ownerId, supaAdmin: supabase } = await requireCtx(req);
 
     // Determine which icon to update from query string: ?kind=light|dark (default: dark)
     const url = new URL(req.url);

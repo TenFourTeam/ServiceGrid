@@ -1,59 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.54.0";
-import { verifyToken } from "https://esm.sh/@clerk/backend@1.3.2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-function createAdminClient() {
-  const url = Deno.env.get("SUPABASE_URL");
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!url || !serviceKey) throw new Error("Missing Supabase env vars");
-  return createClient(url, serviceKey, { auth: { persistSession: false } });
-}
-
-async function resolveOwnerIdFromClerk(req: Request) {
-  const authHeader = req.headers.get("authorization") || req.headers.get("Authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    throw new Error("Missing Authorization header");
-  }
-  const token = authHeader.replace(/^Bearer\s+/i, "");
-  const secretKey = Deno.env.get("CLERK_SECRET_KEY");
-  if (!secretKey) throw new Error("Missing CLERK_SECRET_KEY");
-  
-  const payload = await verifyToken(token, { secretKey });
-  const clerkSub = (payload as any).sub as string;
-  const email = (payload as any)?.email as string | undefined;
-  
-  const supabase = createAdminClient();
-
-  // Try mapping by clerk_user_id first
-  let { data: profByClerk, error: profErr } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("clerk_user_id", clerkSub)
-    .limit(1)
-    .maybeSingle();
-  
-  if (profErr) throw profErr;
-  if (profByClerk?.id) return { ownerId: profByClerk.id as string, email };
-
-  if (email) {
-    const { data: profByEmail, error: profByEmailErr } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("email", email.toLowerCase())
-      .limit(1)
-      .maybeSingle();
-    
-    if (profByEmailErr) throw profByEmailErr;
-    if (profByEmail?.id) return { ownerId: profByEmail.id as string, email };
-  }
-
-  throw new Error("Unable to resolve user profile");
-}
+import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
 
 interface CustomerImport {
   name: string;
@@ -68,14 +14,12 @@ serve(async (req) => {
   }
 
   try {
-    const { ownerId } = await resolveOwnerIdFromClerk(req);
+    const { userId: ownerId, supaAdmin: supabase } = await requireCtx(req);
     const { customers }: { customers: CustomerImport[] } = await req.json();
 
     if (!Array.isArray(customers) || customers.length === 0) {
       throw new Error("No customers provided for import");
     }
-
-    const supabase = createAdminClient();
 
     // Get the business for this owner
     const { data: business, error: businessError } = await supabase
@@ -115,12 +59,9 @@ serve(async (req) => {
     });
 
     if (uniqueCustomers.length === 0) {
-      return new Response(JSON.stringify({ 
+      return json({ 
         imported: 0, 
         message: "No new customers to import (duplicates or invalid data)" 
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
       });
     }
 
@@ -145,20 +86,14 @@ serve(async (req) => {
       throw new Error(`Failed to import customers: ${insertError.message}`);
     }
 
-    return new Response(JSON.stringify({ 
+    return json({ 
       imported: insertedCustomers?.length || 0,
       message: `Successfully imported ${insertedCustomers?.length || 0} customers`
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
     });
 
   } catch (error) {
     console.error("Bulk import error:", error);
     const msg = error instanceof Error ? error.message : String(error);
-    return new Response(JSON.stringify({ error: msg }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    return json({ error: msg }, { status: 500 });
   }
 });

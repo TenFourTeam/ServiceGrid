@@ -1,68 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { verifyToken } from "https://esm.sh/@clerk/backend@1.3.2";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.54.0";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "*",
-};
-
-function json(data: unknown, init: ResponseInit = {}) {
-  return new Response(JSON.stringify(data), {
-    headers: { "Content-Type": "application/json", ...corsHeaders },
-    ...init,
-  });
-}
-
-function createAdminClient() {
-  const url = Deno.env.get("SUPABASE_URL");
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!url || !serviceKey) throw new Error("Missing Supabase env vars");
-  return createClient(url, serviceKey);
-}
-
-async function resolveOwnerIdFromClerk(req: Request): Promise<string> {
-  const authHeader = req.headers.get("authorization") || req.headers.get("Authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    throw new Error("Missing Bearer token");
-  }
-  const token = authHeader.replace(/^Bearer\s+/i, "");
-  const secretKey = Deno.env.get("CLERK_SECRET_KEY");
-  if (!secretKey) throw new Error("Missing CLERK_SECRET_KEY");
-
-  const payload = await verifyToken(token, { secretKey });
-  const clerkSub = (payload as any).sub as string;
-  const email = (payload as any)?.email as string | undefined;
-
-  const supabase = createAdminClient();
-
-  // Prefer mapping via clerk_user_id
-  let { data: profByClerk, error: profErr } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("clerk_user_id", clerkSub)
-    .limit(1)
-    .maybeSingle();
-  if (profErr) throw profErr;
-
-  if (profByClerk?.id) return profByClerk.id as string;
-
-  // Fallback by email if available
-  if (email) {
-    const { data: profByEmail, error: profByEmailErr } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("email", email.toLowerCase())
-      .limit(1)
-      .maybeSingle();
-    if (profByEmailErr) throw profByEmailErr;
-    if (profByEmail?.id) return profByEmail.id as string;
-  }
-
-  throw new Error("Unable to resolve user profile");
-}
+import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -80,10 +18,8 @@ serve(async (req) => {
 
   try {
     console.log("[get-business] Starting business resolution");
-    const ownerId = await resolveOwnerIdFromClerk(req);
+    const { userId: ownerId, supaAdmin: supabase } = await requireCtx(req);
     console.log(`[get-business] Resolved owner ID: ${ownerId}`);
-    
-    const supabase = createAdminClient();
 
     // Find existing business via membership (single business per user model)
     console.log("[get-business] Querying for existing business membership");

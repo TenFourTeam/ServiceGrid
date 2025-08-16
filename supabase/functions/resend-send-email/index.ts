@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { verifyToken } from "https://esm.sh/@clerk/backend@1.3.2";
+import { requireCtx, corsHeaders } from "../_lib/auth.ts";
 
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get("Origin") || req.headers.get("origin") || "*";
@@ -19,15 +19,7 @@ function toHex(bytes: ArrayBuffer) {
   return Array.from(new Uint8Array(bytes)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-async function resolveOwnerId(admin: ReturnType<typeof createClient>, clerkUserId: string, email?: string) {
-  const { data: byClerk } = await admin.from('profiles').select('id').eq('clerk_user_id', clerkUserId).limit(1);
-  if (byClerk && byClerk.length) return byClerk[0].id as string;
-  if (email) {
-    const { data: byEmail } = await admin.from('profiles').select('id').ilike('email', email.toLowerCase()).limit(1);
-    if (byEmail && byEmail.length) return byEmail[0].id as string;
-  }
-  return null;
-}
+// Remove the resolveOwnerId function - using requireCtx instead
 
 serve(async (req: Request): Promise<Response> => {
   // CORS preflight
@@ -50,29 +42,18 @@ serve(async (req: Request): Promise<Response> => {
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
   // Auth: require valid Clerk token
-  const authHeader = req.headers.get("Authorization") || req.headers.get("authorization") || "";
-  if (!authHeader.startsWith("Bearer ")) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { "Content-Type": "application/json", ...getCorsHeaders(req) } });
-  }
-
-  let ownerId: string | null = null;
+  let ownerId: string;
+  let supabaseAdmin: ReturnType<typeof createClient>;
   try {
-    const token = authHeader.replace(/^Bearer\s+/i, "");
-    const secretKey = Deno.env.get("CLERK_SECRET_KEY");
-    if (!secretKey) throw new Error('Missing CLERK_SECRET_KEY');
-    const clerk = await verifyToken(token, { secretKey });
-
-    const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
-    ownerId = await resolveOwnerId(admin, clerk.sub, (clerk as any).email || (clerk as any).claims?.email || undefined);
+    const { userId, supaAdmin } = await requireCtx(req);
+    ownerId = userId;
+    supabaseAdmin = supaAdmin;
   } catch (e) {
     console.warn('[resend-send-email] auth failed', e);
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { "Content-Type": "application/json", ...getCorsHeaders(req) } });
   }
 
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    global: { headers: { Authorization: authHeader } },
-  });
-  const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
+  // Remove duplicate supabase client creation - already available as supabaseAdmin
 
   let payload: {
     to?: string; subject?: string; html?: string; quote_id?: string; job_id?: string; invoice_id?: string; reply_to?: string; from_name?: string;

@@ -1,24 +1,10 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.54.0";
-import { verifyToken } from "https://esm.sh/@clerk/backend@1.3.2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-function createAdminClient() {
-  const url = Deno.env.get("SUPABASE_URL");
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!url || !serviceKey) throw new Error("Missing Supabase env vars");
-  return createClient(url, serviceKey, { auth: { persistSession: false } });
-}
+import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
 
 async function fetchClerkUserCreationDate(clerkUserId: string, secretKey: string) {
   try {
     console.log(`[TRIAL-FIX] Fetching creation date for Clerk user: ${clerkUserId}`);
-    // Use Clerk's management API to get user details
     const response = await fetch(`https://api.clerk.dev/v1/users/${clerkUserId}`, {
       headers: {
         'Authorization': `Bearer ${secretKey}`,
@@ -28,20 +14,17 @@ async function fetchClerkUserCreationDate(clerkUserId: string, secretKey: string
     
     if (!response.ok) {
       console.warn(`[TRIAL-FIX] Failed to fetch user from Clerk API: ${response.status}`);
-      return new Date().toISOString(); // Fallback to current date
+      return new Date().toISOString();
     }
     
     const userData = await response.json();
     console.log(`[TRIAL-FIX] Raw created_at from Clerk:`, userData.created_at, typeof userData.created_at);
     
-    // Handle different timestamp formats from Clerk
     let createdDate;
     if (typeof userData.created_at === 'number') {
-      // If it's already in milliseconds (13 digits) or seconds (10 digits)
       const timestamp = userData.created_at.toString().length === 10 ? userData.created_at * 1000 : userData.created_at;
       createdDate = new Date(timestamp);
     } else if (typeof userData.created_at === 'string') {
-      // If it's an ISO string
       createdDate = new Date(userData.created_at);
     } else {
       throw new Error('Unexpected created_at format');
@@ -52,45 +35,8 @@ async function fetchClerkUserCreationDate(clerkUserId: string, secretKey: string
     return isoString;
   } catch (error) {
     console.warn(`[TRIAL-FIX] Error fetching user creation date from Clerk:`, error);
-    return new Date().toISOString(); // Fallback to current date
+    return new Date().toISOString();
   }
-}
-
-async function resolveOwnerIdFromClerk(req: Request) {
-  const authHeader = req.headers.get("authorization") || req.headers.get("Authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer ")) throw new Error("Missing Authorization header");
-  const token = authHeader.replace(/^Bearer\s+/i, "");
-  const secretKey = Deno.env.get("CLERK_SECRET_KEY");
-  if (!secretKey) throw new Error("Missing CLERK_SECRET_KEY");
-  const payload = await verifyToken(token, { secretKey });
-  const clerkSub = (payload as any).sub as string;
-  const email = (payload as any)?.email as string | undefined;
-  // Get actual user creation date from Clerk API
-  const userCreatedAt = await fetchClerkUserCreationDate(clerkSub, secretKey);
-  const supabase = createAdminClient();
-
-  // Try mapping by clerk_user_id first
-  let { data: profByClerk, error: profErr } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("clerk_user_id", clerkSub)
-    .limit(1)
-    .maybeSingle();
-  if (profErr) throw profErr;
-  if (profByClerk?.id) return { ownerId: profByClerk.id as string, email, userCreatedAt };
-
-  if (email) {
-    const { data: profByEmail, error: profByEmailErr } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("email", email.toLowerCase())
-      .limit(1)
-      .maybeSingle();
-    if (profByEmailErr) throw profByEmailErr;
-    if (profByEmail?.id) return { ownerId: profByEmail.id as string, email, userCreatedAt };
-  }
-
-  throw new Error("Unable to resolve user profile");
 }
 
 serve(async (req) => {
@@ -99,7 +45,10 @@ serve(async (req) => {
   }
 
   try {
-    const { ownerId, email, userCreatedAt } = await resolveOwnerIdFromClerk(req);
+    const { clerkUserId, userId: ownerId, email, supaAdmin } = await requireCtx(req);
+    const secretKey = Deno.env.get("CLERK_SECRET_KEY");
+    if (!secretKey) throw new Error("Missing CLERK_SECRET_KEY");
+    const userCreatedAt = await fetchClerkUserCreationDate(clerkUserId, secretKey);
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("Missing STRIPE_SECRET_KEY");
@@ -125,8 +74,7 @@ serve(async (req) => {
       subscription_tier = amt >= 50400 ? "Yearly" : "Monthly";
     }
 
-    const supabase = createAdminClient();
-    await supabase.from("subscribers").upsert({
+    await supaAdmin.from("subscribers").upsert({
       email,
       user_id: ownerId,
       stripe_customer_id: customerId,
