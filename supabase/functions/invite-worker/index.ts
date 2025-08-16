@@ -1,6 +1,9 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
 import { buildInviteEmail } from "../_shared/inviteEmailTemplates.ts";
+import { Resend } from "npm:resend@2.0.0";
+
+const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -123,16 +126,22 @@ serve(async (req: Request) => {
       expiresAt: expiresAt.toISOString()
     });
     
-    // Send invitation email
-    await supaAdmin.functions.invoke('team-send-email', {
-      body: {
-        businessId,
-        to: email,
-        subject: emailContent.subject,
-        html: emailContent.html,
-        emailType: 'team_invitation'
-      },
+    // Send invitation email directly using Resend
+    const fromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'onboarding@resend.dev';
+    
+    const emailResponse = await resend.emails.send({
+      from: `${business.name} <${fromEmail}>`,
+      to: [email],
+      subject: emailContent.subject,
+      html: emailContent.html,
     });
+
+    if (emailResponse.error) {
+      console.error('Failed to send invitation email:', emailResponse.error);
+      return json({ error: 'Failed to send invitation email' }, 500);
+    }
+
+    console.log('Invitation email sent successfully:', emailResponse.data?.id);
 
     // Log audit action
     await supaAdmin.rpc('log_audit_action', {
