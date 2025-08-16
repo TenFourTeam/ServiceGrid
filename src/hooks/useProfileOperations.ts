@@ -1,9 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
-import { queryKeys, invalidationHelpers } from '@/queries/keys';
+import { invalidationHelpers } from '@/queries/keys';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
-import { useAuth } from '@clerk/clerk-react';
 import { toast } from 'sonner';
-import { parsePhoneNumber } from 'libphonenumber-js';
 
 export type ProfileUpdatePayload = {
   fullName: string;
@@ -20,14 +18,13 @@ export type ProfileUpdateResponse = {
 };
 
 /**
- * Direct Supabase profile operations hook - no Edge Function needed
+ * Profile operations hook using server-side edge function with proper Clerk authentication
  */
 export function useProfileOperations() {
   const queryClient = useQueryClient();
-  const { userId } = useAuth();
 
   const updateProfile = useMutation({
-    mutationFn: async (input: ProfileUpdatePayload) => {
+    mutationFn: async (input: ProfileUpdatePayload): Promise<ProfileUpdateResponse> => {
       console.info('[useProfileOperations] mutation started', { 
         payload: input,
         hasName: !!input.fullName, 
@@ -35,42 +32,22 @@ export function useProfileOperations() {
         hasPhone: !!input.phoneRaw 
       });
       
-      // Normalize phone to E.164 format
-      let phoneE164: string | null = null;
-      if (input.phoneRaw?.trim()) {
-        try {
-          const parsed = parsePhoneNumber(input.phoneRaw, 'US');
-          phoneE164 = parsed?.format('E.164') || null;
-        } catch (error) {
-          console.warn('[useProfileOperations] phone parsing failed:', error);
-          phoneE164 = input.phoneRaw; // Fallback to raw input
+      // Call the edge function instead of direct Supabase access
+      const { data, error } = await supabase.functions.invoke('update-profile', {
+        body: {
+          fullName: input.fullName,
+          phoneRaw: input.phoneRaw,
+          businessName: input.businessName
         }
-      }
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .update({
-          full_name: input.fullName,
-          phone_e164: phoneE164,
-          updated_at: new Date().toISOString()
-        })
-        .eq('clerk_user_id', userId!)
-        .select('full_name, phone_e164, updated_at')
-        .single();
+      });
       
       if (error) {
-        console.error('[useProfileOperations] error:', error);
-        throw error;
+        console.error('[useProfileOperations] edge function error:', error);
+        throw new Error(error.message || 'Failed to update profile');
       }
       
       console.info('[useProfileOperations] mutation completed successfully', data);
-      return {
-        data: {
-          fullName: data.full_name,
-          phoneE164: data.phone_e164,
-          updatedAt: data.updated_at
-        }
-      };
+      return data as ProfileUpdateResponse;
     },
     onSuccess: () => {
       // Use centralized invalidation
