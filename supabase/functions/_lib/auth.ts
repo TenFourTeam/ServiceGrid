@@ -115,10 +115,21 @@ async function resolveBusinessId(
     return membership.business_id;
   }
 
-  // No business exists - use the database function for atomic creation
-  const { data: defaultBiz, error: ensureErr } = await supabase.rpc('ensure_default_business');
-  if (ensureErr) {
-    console.error('❌ [auth] Failed to ensure default business:', ensureErr);
+  // No business exists - create one directly with service role permissions
+  console.info(`🔄 [auth] Creating default business for user: ${userUuid}`);
+  
+  // 1. Create the business
+  const { data: newBusiness, error: businessError } = await supabase
+    .from("businesses")
+    .insert({
+      name: 'My Business',
+      owner_id: userUuid
+    })
+    .select("id")
+    .single();
+
+  if (businessError) {
+    console.error('❌ [auth] Failed to create business:', businessError);
     throw new Response(JSON.stringify({ 
       error: { 
         code: "business_creation_failed", 
@@ -130,7 +141,34 @@ async function resolveBusinessId(
     });
   }
 
-  return defaultBiz.id;
+  // 2. Create business membership
+  const { error: membershipError } = await supabase
+    .from("business_members")
+    .insert({
+      business_id: newBusiness.id,
+      user_id: userUuid,
+      role: 'owner',
+      joined_at: new Date().toISOString()
+    });
+
+  if (membershipError) {
+    console.error('❌ [auth] Failed to create business membership:', membershipError);
+    // Don't throw here - business was created successfully
+  }
+
+  // 3. Update profile default_business_id
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .update({ default_business_id: newBusiness.id })
+    .eq("id", userUuid);
+
+  if (profileError) {
+    console.error('❌ [auth] Failed to update profile default_business_id:', profileError);
+    // Don't throw here - business was created successfully
+  }
+
+  console.info(`✅ [auth] Default business created successfully: ${newBusiness.id}`);
+  return newBusiness.id;
 }
 
 async function resolveUserUuid(supabase: ReturnType<typeof createClient>, clerkUserId: ClerkUserId, email: string): Promise<UserUuid> {
