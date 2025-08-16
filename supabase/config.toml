@@ -31,29 +31,32 @@ verify_jwt = false
 [functions.jobs-status-batch]
 verify_jwt = false
 
-# File uploads
+# File uploads (require authentication)
 [functions.upload-business-logo]
-verify_jwt = false
+verify_jwt = true
 
 [functions.upload-job-photo]
-verify_jwt = false
+verify_jwt = true
 
-# Business operations
+# Business operations (require authentication)
 [functions.business-update]
-verify_jwt = false
+verify_jwt = true
 
-# Payments & Stripe
+[functions.business-role]
+verify_jwt = true
+
+# Payments & Stripe (require authentication)
 [functions.create-checkout]
-verify_jwt = false
+verify_jwt = true
 
 [functions.check-subscription]
-verify_jwt = false
+verify_jwt = true
 
 [functions.customer-portal]
-verify_jwt = false
+verify_jwt = true
 
 [functions.create-invoice-payment]
-verify_jwt = false
+verify_jwt = true
 
 [functions.verify-payment]
 verify_jwt = false
@@ -61,12 +64,12 @@ verify_jwt = false
 [functions.create-invoice-payment-public]
 verify_jwt = false
 
-# Stripe Connect
+# Stripe Connect (require authentication)
 [functions.connect-onboarding-link]
-verify_jwt = false
+verify_jwt = true
 
 [functions.connect-account-status]
-verify_jwt = false
+verify_jwt = true
 
 [functions.connect-disconnect]
-verify_jwt = false
+verify_jwt = true
