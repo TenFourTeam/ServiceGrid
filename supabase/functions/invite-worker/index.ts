@@ -109,8 +109,8 @@ serve(async (req: Request) => {
       return json({ error: 'Failed to create invite' }, 500);
     }
 
-    // Generate invitation URL and email
-    const inviteUrl = `${Deno.env.get('SUPABASE_URL')?.replace('/v1', '')}/invite?token=${token}`;
+    // Generate invitation URL and send email
+    const inviteUrl = `${Deno.env.get('SUPABASE_URL')?.replace('/v1', '')}/invite-accept?token=${token}`;
     
     // Build professional email using template
     const emailContent = buildInviteEmail({
@@ -123,20 +123,16 @@ serve(async (req: Request) => {
       expiresAt: expiresAt.toISOString()
     });
     
-    try {
-      await supaAdmin.functions.invoke('team-send-email', {
-        body: {
-          businessId,
-          to: email,
-          subject: emailContent.subject,
-          html: emailContent.html,
-          emailType: 'team_invitation'
-        },
-      });
-    } catch (emailError) {
-      console.error('Failed to send invitation email:', emailError);
-      // Don't fail the request if email fails, invitation is still created
-    }
+    // Send invitation email
+    await supaAdmin.functions.invoke('team-send-email', {
+      body: {
+        businessId,
+        to: email,
+        subject: emailContent.subject,
+        html: emailContent.html,
+        emailType: 'team_invitation'
+      },
+    });
 
     // Log audit action
     await supaAdmin.rpc('log_audit_action', {
@@ -151,9 +147,9 @@ serve(async (req: Request) => {
     console.log('Invitation created successfully');
 
     return json({
+      success: true,
       message: 'Invitation sent successfully',
       invite_id: invite.id,
-      invite_url: inviteUrl,
     });
 
   } catch (error) {

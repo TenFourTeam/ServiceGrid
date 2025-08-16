@@ -4,11 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useInviteWorker } from "@/hooks/useBusinessMembers";
 import { toast } from "sonner";
-import { UserPlus, Copy, Mail, X, Check } from "lucide-react";
+import { UserPlus, X } from "lucide-react";
 
 interface EnhancedInviteModalProps {
   open: boolean;
@@ -19,10 +18,6 @@ interface EnhancedInviteModalProps {
 export function EnhancedInviteModal({ open, onOpenChange, businessId }: EnhancedInviteModalProps) {
   const [emails, setEmails] = useState<string[]>([""]);
   const [role, setRole] = useState("worker");
-  const [sendEmail, setSendEmail] = useState(true);
-  const [inviteLinks, setInviteLinks] = useState<string[]>([]);
-  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
-  
   
   const inviteWorker = useInviteWorker();
 
@@ -42,20 +37,6 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
     setEmails(newEmails);
   };
 
-  const copyToClipboard = async (link: string, index: number) => {
-    try {
-      await navigator.clipboard.writeText(link);
-      setCopiedIndex(index);
-      toast.success("Link copied", {
-        description: "Invitation link copied to clipboard",
-      });
-      setTimeout(() => setCopiedIndex(null), 2000);
-    } catch (error) {
-      toast.error("Failed to copy", {
-        description: "Could not copy to clipboard",
-      });
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,29 +63,16 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
       const failed = results.filter(result => result.status === 'rejected');
 
       if (successful.length > 0) {
-        // Extract invite links from successful invitations
-        const links = successful.map(result => 
-          (result as any).value?.inviteLink || ''
-        ).filter(Boolean);
-        
-        setInviteLinks(links);
-
         toast.success("Invitations sent", {
-          description: `Successfully sent ${successful.length} invitation${successful.length > 1 ? 's' : ''}`,
+          description: `Successfully sent ${successful.length} invitation email${successful.length > 1 ? 's' : ''}`,
         });
+        handleClose();
       }
 
       if (failed.length > 0) {
         toast.error("Some invitations failed", {
           description: `${failed.length} invitation${failed.length > 1 ? 's' : ''} could not be sent`,
         });
-      }
-
-      if (successful.length === validEmails.length) {
-        // If all successful and sending email, close modal
-        if (sendEmail) {
-          handleClose();
-        }
       }
 
     } catch (error) {
@@ -117,9 +85,6 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
   const handleClose = () => {
     setEmails([""]);
     setRole("worker");
-    setSendEmail(true);
-    setInviteLinks([]);
-    setCopiedIndex(null);
     onOpenChange(false);
   };
 
@@ -133,46 +98,7 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
           </DialogTitle>
         </DialogHeader>
 
-        {inviteLinks.length > 0 ? (
-          // Success state - show invite links
-          <div className="space-y-4">
-            <div className="text-center p-6 bg-muted/20 rounded-lg">
-              <Check className="h-12 w-12 text-green-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Invitations Created!</h3>
-              <p className="text-muted-foreground">
-                {sendEmail ? "Emails sent and" : ""} Invitation links generated below
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Invitation Links</Label>
-              {inviteLinks.map((link, index) => (
-                <div key={index} className="flex items-center gap-2 p-3 border rounded-lg bg-muted/10">
-                  <div className="flex-1 text-sm font-mono truncate">{link}</div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => copyToClipboard(link, index)}
-                    className="flex items-center gap-2"
-                  >
-                    {copiedIndex === index ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                    {copiedIndex === index ? "Copied" : "Copy"}
-                  </Button>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex justify-end">
-              <Button onClick={handleClose}>Done</Button>
-            </div>
-          </div>
-        ) : (
-          // Invite form
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
             
             {/* Email addresses */}
             <div className="space-y-3">
@@ -227,23 +153,6 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
               </Select>
             </div>
 
-            {/* Options */}
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="send-email"
-                  checked={sendEmail}
-                  onCheckedChange={(checked) => setSendEmail(checked === true)}
-                />
-                <Label htmlFor="send-email" className="flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  Send invitation email
-                </Label>
-              </div>
-              <p className="text-xs text-muted-foreground ml-6">
-                When disabled, you'll get shareable invitation links instead
-              </p>
-            </div>
 
             {/* Actions */}
             <div className="flex justify-end gap-2">
@@ -260,13 +169,12 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
                 ) : (
                   <>
                     <UserPlus className="h-4 w-4" />
-                    Send Invitation{emails.filter(e => e.trim()).length > 1 ? 's' : ''}
+                    Send Email Invitation{emails.filter(e => e.trim()).length > 1 ? 's' : ''}
                   </>
                 )}
               </Button>
             </div>
           </form>
-        )}
       </DialogContent>
     </Dialog>
   );
