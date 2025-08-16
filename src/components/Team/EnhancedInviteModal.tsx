@@ -3,8 +3,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { useInviteWorker } from "@/hooks/useBusinessMembers";
 import { toast } from "sonner";
 import { UserPlus, X } from "lucide-react";
@@ -17,7 +15,6 @@ interface EnhancedInviteModalProps {
 
 export function EnhancedInviteModal({ open, onOpenChange, businessId }: EnhancedInviteModalProps) {
   const [emails, setEmails] = useState<string[]>([""]);
-  const [role, setRole] = useState("worker");
   
   const inviteWorker = useInviteWorker();
 
@@ -84,7 +81,6 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
 
   const handleClose = () => {
     setEmails([""]);
-    setRole("worker");
     onOpenChange(false);
   };
 
@@ -107,7 +103,7 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
                 <div key={index} className="flex items-center gap-2">
                   <Input
                     type="email"
-                    placeholder={`worker${emails.length > 1 ? index + 1 : ''}@company.com`}
+                    placeholder={`team-member${emails.length > 1 ? index + 1 : ''}@company.com`}
                     value={email}
                     onChange={(e) => updateEmail(index, e.target.value)}
                     className="flex-1"
@@ -135,23 +131,6 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
               </Button>
             </div>
 
-            {/* Role selection */}
-            <div className="space-y-2">
-              <Label>Role</Label>
-              <Select value={role} onValueChange={setRole}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="worker">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary">Worker</Badge>
-                      <span className="text-sm text-muted-foreground">Can view and edit jobs, quotes, customers</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
 
 
             {/* Actions */}
