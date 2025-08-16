@@ -49,7 +49,7 @@ serve(async (req: Request) => {
     // Get inviter details
     const { data: inviter, error: inviterError } = await supaAdmin
       .from('profiles')
-      .select('email, display_name')
+      .select('email, full_name')
       .eq('id', userId)
       .single();
 
@@ -119,7 +119,7 @@ serve(async (req: Request) => {
     const emailContent = buildInviteEmail({
       businessName: business.name,
       businessLogoUrl: business.logo_url,
-      inviterName: inviter?.display_name || inviter?.email || 'Team Administrator',
+      inviterName: inviter?.full_name || inviter?.email || 'Team Administrator',
       inviteeEmail: email,
       inviteUrl,
       role: 'worker',
