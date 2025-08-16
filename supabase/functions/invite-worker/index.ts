@@ -113,7 +113,7 @@ serve(async (req: Request) => {
     }
 
     // Generate invitation URL and send email
-    const inviteUrl = `${Deno.env.get('SUPABASE_URL')?.replace('/v1', '')}/invite-accept?token=${token}`;
+    const inviteUrl = `${Deno.env.get('SUPABASE_URL')?.replace('/v1', '')}/invite?token=${token}`;
     
     // Build professional email using template
     const emailContent = buildInviteEmail({
