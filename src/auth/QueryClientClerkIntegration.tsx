@@ -36,36 +36,20 @@ export function QueryClientClerkIntegration() {
     }
   }, [isLoaded, isSignedIn, queryClient]);
 
-  // Listen for token expiration and handle automatic recovery
+  // Simplified token handling - rely on Clerk's built-in recovery
   useEffect(() => {
     if (!isSignedIn) return;
 
-    const handleTokenExpiration = async () => {
-      try {
-        // Force token refresh
-        await getToken({ skipCache: true });
-        console.info('[QueryClientClerkIntegration] token refreshed, invalidating business queries');
-        
-        // Invalidate business queries to trigger refetch with new token
-        queryClient.invalidateQueries({ 
-          queryKey: queryKeys.business.current()
-        });
-      } catch (error) {
-        console.error('[QueryClientClerkIntegration] token refresh failed:', error);
-        // Clear cache on token refresh failure to force re-authentication
-        queryClient.clear();
-      }
-    };
-
-    // Set up periodic token validation (every 5 minutes)
+    // Set up lightweight token validation (every 10 minutes)
     const tokenCheckInterval = setInterval(async () => {
       try {
-        await getToken(); // This will refresh if needed
+        await getToken({ skipCache: true });
+        console.info('[QueryClientClerkIntegration] Token refreshed successfully');
       } catch (error) {
-        console.warn('[QueryClientClerkIntegration] token validation failed, triggering recovery');
-        handleTokenExpiration();
+        console.warn('[QueryClientClerkIntegration] Token refresh failed, clearing cache');
+        queryClient.clear();
       }
-    }, 5 * 60 * 1000); // 5 minutes
+    }, 10 * 60 * 1000); // 10 minutes
 
     return () => clearInterval(tokenCheckInterval);
   }, [isSignedIn, getToken, queryClient]);

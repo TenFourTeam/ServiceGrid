@@ -25,10 +25,8 @@ export function useBusinessContext() {
   const business = businessQuery.data as BusinessUI;
   const role = business?.role || 'worker';
   
-  // Detect token expiration errors specifically
-  const isTokenExpired = businessQuery.isError && 
-    (businessQuery.error as any)?.status === 401 || 
-    (businessQuery.error as any)?.status === 403;
+  // Simplified error detection
+  const hasError = businessQuery.isError;
   
   // Coordinated loading state - don't show as loading if Clerk isn't ready
   const isLoadingBusiness = !isLoaded || (shouldFetchBusiness && businessQuery.isLoading);
@@ -57,9 +55,8 @@ export function useBusinessContext() {
     isLoadingBusiness,
     
     // Error states
-    hasBusinessError: businessQuery.isError && !isTokenExpired,
+    hasBusinessError: hasError,
     businessError: businessQuery.error,
-    isTokenExpired,
     
     // Utilities
     refetchBusiness: businessQuery.refetch,

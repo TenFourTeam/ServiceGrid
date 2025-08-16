@@ -17,56 +17,47 @@ export function useBusiness(enabled: boolean = true) {
     queryFn: async () => {
       console.info('[useBusiness] fetching business from database');
       
-      // First get the user's profile to find their default business
-      const { data: profile, error: profileError } = await supabase
+      // Single optimized query with joins
+      const { data, error } = await supabase
         .from('profiles')
-        .select('default_business_id')
+        .select(`
+          default_business_id,
+          id,
+          businesses!profiles_default_business_id_fkey (
+            id,
+            name,
+            phone,
+            reply_to_email,
+            tax_rate_default,
+            logo_url,
+            light_logo_url,
+            created_at,
+            updated_at
+          ),
+          business_members!business_members_user_id_fkey (
+            role,
+            business_id
+          )
+        `)
         .eq('clerk_user_id', userId!)
         .maybeSingle();
       
-      if (profileError) {
-        console.error('[useBusiness] profile error:', profileError);
-        throw profileError;
+      if (error) {
+        console.error('[useBusiness] query error:', error);
+        throw error;
       }
       
-      if (!profile?.default_business_id) {
+      if (!data?.default_business_id || !data.businesses) {
         console.warn('[useBusiness] no default business found');
         return null;
       }
       
-      // Get the business details
-      const { data: business, error: businessError } = await supabase
-        .from('businesses')
-        .select('*')
-        .eq('id', profile.default_business_id)
-        .single();
+      // Find the membership for the default business
+      const membership = data.business_members?.find(
+        (member: any) => member.business_id === data.default_business_id
+      );
       
-      if (businessError) {
-        console.error('[useBusiness] business error:', businessError);
-        throw businessError;
-      }
-      
-      // Get the user's profile ID for membership lookup
-      const { data: profileWithId, error: profileIdError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('clerk_user_id', userId!)
-        .maybeSingle();
-      
-      // Get the user's role in this business
-      const { data: membership, error: membershipError } = await supabase
-        .from('business_members')
-        .select('role')
-        .eq('business_id', profile.default_business_id)
-        .eq('user_id', profileWithId?.id)
-        .maybeSingle();
-      
-      if (membershipError) {
-        console.error('[useBusiness] membership error:', membershipError);
-        // Default to owner role if membership lookup fails
-      }
-      
-      const businessUI = toBusinessUI(business) as BusinessUI;
+      const businessUI = toBusinessUI(data.businesses) as BusinessUI;
       businessUI.role = membership?.role || 'owner';
       return businessUI;
     },
