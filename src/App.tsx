@@ -54,13 +54,14 @@ function PrefetchRoutes() {
 }
 
 const App = () => (
-        <AppProviders>
-          <ClerkLoaded>
-            <QueryClientClerkIntegration />
-            <ErrorBoundary>
-              <Suspense fallback={<LoadingScreen />}>
-                <PrefetchRoutes />
-                <Routes>
+  <>
+    <ClerkLoaded>
+      <AppProviders>
+        <QueryClientClerkIntegration />
+        <ErrorBoundary>
+          <Suspense fallback={<LoadingScreen />}>
+            <PrefetchRoutes />
+            <Routes>
               {/* Public routes */}
               <Route element={<PublicOnly redirectTo="/calendar" />}>
                 <Route path="/" element={<LandingPage />} />
@@ -95,14 +96,15 @@ const App = () => (
               <Route path="/invite" element={<InvitePage />} />
               
               <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </Suspense>
-              </ErrorBoundary>
-          </ClerkLoaded>
+            </Routes>
+          </Suspense>
+        </ErrorBoundary>
+      </AppProviders>
+    </ClerkLoaded>
     <ClerkLoading>
       <LoadingScreen full />
     </ClerkLoading>
-  </AppProviders>
+  </>
 );
 
 export default App;
