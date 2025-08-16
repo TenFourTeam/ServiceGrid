@@ -347,20 +347,15 @@ serve(async (req: Request): Promise<Response> => {
     } catch (e) {
       console.warn('[send-lifecycle-email] Invalid JSON payload', e);
       return json({ error: "Invalid JSON" }, { status: 400 });
-      headers: { "Content-Type": "application/json", ...getCorsHeaders(req) },
-    });
-  }
+    }
 
   const { type, data } = payload;
   const appUrl = Deno.env.get("SUPABASE_URL")?.replace('/supabase/', '') || 'https://your-app.com';
 
-  // Validate required fields
-  if (!type || !data?.userEmail) {
-    return new Response(JSON.stringify({ error: "Missing type or data.userEmail" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json", ...getCorsHeaders(req) },
-    });
-  }
+    // Validate required fields
+    if (!type || !data?.userEmail) {
+      return json({ error: "Missing type or data.userEmail" }, { status: 400 });
+    }
 
   // Generate email based on type
   let emailTemplate: { subject: string; html: string };
@@ -380,17 +375,11 @@ serve(async (req: Request): Promise<Response> => {
         emailTemplate = generateEngagementEmail(data, payload);
         break;
       default:
-        return new Response(JSON.stringify({ error: `Unknown email type: ${type}` }), {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...getCorsHeaders(req) },
-        });
+        return json({ error: `Unknown email type: ${type}` }, { status: 400 });
     }
   } catch (e) {
     console.error('[send-lifecycle-email] Template generation failed', e);
-    return new Response(JSON.stringify({ error: 'Template generation failed' }), {
-      status: 500,
-      headers: { "Content-Type": "application/json", ...getCorsHeaders(req) },
-    });
+    return json({ error: 'Template generation failed' }, { status: 500 });
   }
 
   // Send email via Resend
@@ -406,31 +395,27 @@ serve(async (req: Request): Promise<Response> => {
 
     if ((sendRes as any)?.error) {
       console.error('Resend send error:', (sendRes as any)?.error);
-      return new Response(JSON.stringify({ error: (sendRes as any)?.error?.message || 'Email send failed' }), {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...getCorsHeaders(req) },
-      });
+      return json({ error: (sendRes as any)?.error?.message || 'Email send failed' }, { status: 500 });
     }
 
     const messageId = (sendRes as any)?.data?.id ?? null;
     
     console.info('[send-lifecycle-email] Email sent:', type, data.userEmail, messageId);
 
-    return new Response(JSON.stringify({ 
+    return json({ 
       success: true, 
       messageId,
       type,
       recipient: data.userEmail 
-    }), {
-      status: 200,
-      headers: { "Content-Type": "application/json", ...getCorsHeaders(req) },
     });
 
   } catch (e: any) {
     console.error('Unexpected send error:', e);
-    return new Response(JSON.stringify({ error: e?.message || 'Send failed' }), {
-      status: 500,
-      headers: { "Content-Type": "application/json", ...getCorsHeaders(req) },
-    });
+    return json({ error: e?.message || 'Send failed' }, { status: 500 });
+  }
+
+  } catch (error: any) {
+    console.error('Error in send-lifecycle-email:', error);
+    return json({ error: 'Internal server error' }, { status: 500 });
   }
 });
