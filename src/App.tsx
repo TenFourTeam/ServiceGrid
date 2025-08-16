@@ -1,5 +1,6 @@
 import React, { Suspense, lazy, useEffect } from "react";
-import { Routes, Route, BrowserRouter } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
+import { BrowserRouter } from "react-router-dom";
 import { ClerkLoaded, ClerkLoading } from "@clerk/clerk-react";
 import { AppProviders } from "@/providers/AppProviders";
 
