@@ -833,6 +833,10 @@ export type Database = {
         Args: { p_business_id: string }
         Returns: boolean
       }
+      current_clerk_user_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       ensure_default_business: {
         Args: Record<PropertyKey, never>
         Returns: {
