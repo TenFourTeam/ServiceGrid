@@ -33,30 +33,30 @@ verify_jwt = false
 
 # File uploads (require authentication)
 [functions.upload-business-logo]
-verify_jwt = true
+verify_jwt = false
 
 [functions.upload-job-photo]
-verify_jwt = true
+verify_jwt = false
 
 # Business operations (require authentication)
 [functions.business-update]
-verify_jwt = true
+verify_jwt = false
 
 [functions.business-role]
-verify_jwt = true
+verify_jwt = false
 
 # Payments & Stripe (require authentication)
 [functions.create-checkout]
-verify_jwt = true
+verify_jwt = false
 
 [functions.check-subscription]
-verify_jwt = true
+verify_jwt = false
 
 [functions.customer-portal]
-verify_jwt = true
+verify_jwt = false
 
 [functions.create-invoice-payment]
-verify_jwt = true
+verify_jwt = false
 
 [functions.verify-payment]
 verify_jwt = false
@@ -66,10 +66,10 @@ verify_jwt = false
 
 # Stripe Connect (require authentication)
 [functions.connect-onboarding-link]
-verify_jwt = true
+verify_jwt = false
 
 [functions.connect-account-status]
-verify_jwt = true
+verify_jwt = false
 
 [functions.connect-disconnect]
-verify_jwt = true
+verify_jwt = false

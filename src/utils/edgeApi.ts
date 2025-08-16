@@ -6,7 +6,7 @@ declare global {
   interface Window {
     Clerk?: {
       session?: {
-        getToken: (options?: { refresh?: boolean }) => Promise<string | null>;
+        getToken: (options?: { refresh?: boolean; skipCache?: boolean }) => Promise<string | null>;
       };
     };
   }
@@ -46,12 +46,12 @@ export type EdgeRequestOptions = {
 };
 
 
-// Simplified edge request using Clerk directly
+// Enhanced edge request with proper token handling and retry logic
 export async function edgeRequest(url: string, init: RequestInit = {}): Promise<any> {
   console.info('[edgeRequest] Starting request to:', url, { hasBody: !!init.body });
   
-  // Get token directly from Clerk
-  const token = await window.Clerk?.session?.getToken();
+  // Get token directly from Clerk with proper refresh handling
+  const token = await window.Clerk?.session?.getToken({ refresh: true });
   if (!token) {
     console.error('[edgeRequest] No authentication token available');
     throw new ApiError(401, 'Authentication required', 'auth_required');

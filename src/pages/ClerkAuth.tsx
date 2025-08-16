@@ -1,8 +1,7 @@
-import { useEffect, useRef } from "react";
-import { SignedOut, SignInButton, useAuth as useClerkAuth } from "@clerk/clerk-react";
+import { useEffect, useState } from "react";
+import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { useLocation, useNavigate } from "react-router-dom";
-import LoadingScreen from "@/components/LoadingScreen";
-import { Button } from "@/components/ui/button";
+import { EnhancedSignIn } from "@/components/Auth/EnhancedSignIn";
 
 export default function ClerkAuthPage() {
   const location = useLocation();
@@ -13,49 +12,46 @@ export default function ClerkAuthPage() {
 }
 
 function ClerkAuthInner({ redirectTarget }: { redirectTarget: string }) {
-  const { isSignedIn } = useClerkAuth();
+  const { isSignedIn, isLoaded } = useClerkAuth();
   const navigate = useNavigate();
-  const autoOpenRef = useRef<HTMLButtonElement | null>(null);
+  const [authMode, setAuthMode] = useState<"sign-in" | "sign-up">("sign-in");
 
   useEffect(() => {
-    document.title = "Sign In • ServiceGrid";
+    document.title = `${authMode === "sign-in" ? "Sign In" : "Create Account"} • ServiceGrid`;
     const meta = document.querySelector('meta[name="description"]');
-    if (meta) meta.setAttribute("content", "Sign in or create an account with Clerk for ServiceGrid");
-  }, []);
+    if (meta) {
+      meta.setAttribute("content", 
+        authMode === "sign-in" 
+          ? "Sign in to your ServiceGrid account"
+          : "Create a new ServiceGrid account and start managing your business"
+      );
+    }
+  }, [authMode]);
 
   useEffect(() => {
-    if (isSignedIn) {
+    if (isSignedIn && isLoaded) {
       navigate(redirectTarget, { replace: true });
     }
-  }, [isSignedIn, redirectTarget, navigate]);
-
-  useEffect(() => {
-    if (!isSignedIn) {
-      const t = setTimeout(() => autoOpenRef.current?.click(), 0);
-      return () => clearTimeout(t);
-    }
-  }, [isSignedIn]);
+  }, [isSignedIn, isLoaded, redirectTarget, navigate]);
 
   return (
-    <main className="container mx-auto max-w-md py-10">
+    <main className="container mx-auto max-w-md py-10 px-4">
       <link rel="canonical" href={`${window.location.origin}/clerk-auth`} />
-
-      <SignedOut>
-        <SignInButton
-          mode="modal"
-          forceRedirectUrl={redirectTarget}
-          fallbackRedirectUrl={redirectTarget}
-          appearance={{ elements: { modalBackdrop: "fixed inset-0 bg-background" } }}
-        >
-          <Button ref={autoOpenRef} className="sr-only">Open sign in</Button>
-        </SignInButton>
-        <p className="mt-4 text-center text-sm text-muted-foreground">
-          Opening sign-in… If nothing happens, {" "}
-          <button className="underline" onClick={() => autoOpenRef.current?.click()}>
-            click here
-          </button>.
+      
+      <div className="mb-8 text-center">
+        <h1 className="text-2xl font-bold text-foreground mb-2">
+          Welcome to ServiceGrid
+        </h1>
+        <p className="text-muted-foreground">
+          Streamline your service business operations
         </p>
-      </SignedOut>
+      </div>
+
+      <EnhancedSignIn
+        redirectTo={redirectTarget}
+        mode={authMode}
+        onModeChange={setAuthMode}
+      />
     </main>
   );
 }

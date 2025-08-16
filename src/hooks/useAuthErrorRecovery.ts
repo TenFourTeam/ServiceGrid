@@ -20,8 +20,8 @@ export function useAuthErrorRecovery() {
     console.warn('[useAuthErrorRecovery] Auth error detected, attempting recovery');
     
     try {
-      // Force token refresh
-      await getToken({ template: 'supabase', skipCache: true });
+      // Force token refresh (using default Clerk token, not Supabase template)
+      await getToken({ skipCache: true });
       
       // Invalidate business queries to trigger refetch with new token
       queryClient.invalidateQueries({ 

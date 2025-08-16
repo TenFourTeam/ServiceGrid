@@ -33,6 +33,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { useClerk, useUser } from "@clerk/clerk-react";
 import { usePreloadImage } from "@/hooks/usePreloadImage";
 import { useProfile } from "@/queries/useProfile";
+import { SignOutButton } from "@/components/Auth/SignOutButton";
 
 const items = [
   { title: "Calendar", url: "/calendar", icon: CalendarIcon },
@@ -177,12 +178,16 @@ export default function AppSidebar() {
                 <FileText className="mr-2 h-4 w-4" /> Terms & Services
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => {
-                sessionStorage.setItem('just-logged-out', 'true');
-                signOut({ redirectUrl: '/' });
-              }}>
-                <LogOut className="mr-2 h-4 w-4" /> Sign out
-              </DropdownMenuItem>
+              <div className="px-2 py-1">
+                <SignOutButton 
+                  variant="ghost" 
+                  size="sm"
+                  showConfirmation={false}
+                  onSignOut={() => {
+                    sessionStorage.setItem('just-logged-out', 'true');
+                  }}
+                />
+              </div>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
