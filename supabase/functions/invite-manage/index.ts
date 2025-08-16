@@ -137,7 +137,7 @@ serve(async (req: Request) => {
         }
 
         // Send new invitation email
-        const frontendUrl = Deno.env.get('FRONTEND_URL') || 'http://localhost:8080';
+        const frontendUrl = 'https://lovable.dev/projects/f4772f86-29e7-457f-b6ca-38196d888422';
         const inviteUrl = `${frontendUrl}/invite?token=${token}`;
         const business = invite.businesses;
 
