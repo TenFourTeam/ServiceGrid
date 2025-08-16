@@ -137,7 +137,8 @@ serve(async (req: Request) => {
         }
 
         // Send new invitation email
-        const inviteUrl = `${Deno.env.get('SUPABASE_URL')?.replace('/v1', '')}/invite?token=${token}`;
+        const frontendUrl = Deno.env.get('FRONTEND_URL') || 'http://localhost:8080';
+        const inviteUrl = `${frontendUrl}/invite?token=${token}`;
         const business = invite.businesses;
 
         try {
