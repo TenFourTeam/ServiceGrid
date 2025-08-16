@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { edgeRequest } from "@/utils/edgeApi";
-import { fn } from "@/utils/functionUrl";
+import { supabase } from "@/integrations/supabase/client";
 import { queryKeys } from "@/queries/keys";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 
@@ -25,7 +24,7 @@ interface UseInvoicesDataOptions {
 }
 
 /**
- * Simplified invoices hook - single query for both count and data
+ * Direct Supabase invoices hook - no Edge Function needed
  */
 export function useInvoicesData(opts?: UseInvoicesDataOptions) {
   const { isAuthenticated, businessId } = useBusinessContext();
@@ -36,35 +35,37 @@ export function useInvoicesData(opts?: UseInvoicesDataOptions) {
     enabled,
     queryFn: async () => {
       console.info("[useInvoicesData] fetching invoices...");
-      const data = await edgeRequest(fn('invoices'), {
-        method: 'GET',
-      });
       
-      if (!data) {
-        console.info("[useInvoicesData] no data - likely signed out");
-        return { invoices: [], count: 0 };
+      const { data, error, count } = await supabase
+        .from('invoices')
+        .select('*', { count: 'exact' })
+        .eq('business_id', businessId!)
+        .order('updated_at', { ascending: false });
+      
+      if (error) {
+        console.error("[useInvoicesData] error:", error);
+        throw error;
       }
       
-      const invoices: Invoice[] = (data.rows || []).map((row: any) => ({
+      const invoices: Invoice[] = (data || []).map((row: any) => ({
         id: row.id,
         number: row.number,
-        customerId: row.customerId || row.customer_id,
-        jobId: row.jobId ?? row.job_id ?? null,
+        customerId: row.customer_id,
+        jobId: row.job_id ?? null,
         subtotal: row.subtotal,
         total: row.total,
-        taxRate: row.taxRate ?? row.tax_rate ?? 0,
+        taxRate: row.tax_rate ?? 0,
         discount: row.discount ?? 0,
         status: row.status,
-        dueAt: row.dueAt || row.due_at,
-        createdAt: row.createdAt || row.created_at,
-        updatedAt: row.updatedAt || row.updated_at,
-        publicToken: row.publicToken || row.public_token,
+        dueAt: row.due_at,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        publicToken: row.public_token,
       }));
       
-      const count = data.count ?? invoices.length;
       console.info("[useInvoicesData] fetched", invoices.length, "invoices");
       
-      return { invoices, count };
+      return { invoices, count: count ?? invoices.length };
     },
     staleTime: 30_000,
   });

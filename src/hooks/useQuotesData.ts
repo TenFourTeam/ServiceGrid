@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { edgeRequest } from "@/utils/edgeApi";
-import { fn } from "@/utils/functionUrl";
+import { supabase } from "@/integrations/supabase/client";
 import { queryKeys } from "@/queries/keys";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 
@@ -11,7 +10,7 @@ interface UseQuotesDataOptions {
 }
 
 /**
- * Simplified quotes hook - single query for both count and data
+ * Direct Supabase quotes hook - no Edge Function needed
  */
 export function useQuotesData(opts?: UseQuotesDataOptions) {
   const { isAuthenticated, businessId } = useBusinessContext();
@@ -22,32 +21,37 @@ export function useQuotesData(opts?: UseQuotesDataOptions) {
     enabled,
     queryFn: async () => {
       console.info("[useQuotesData] fetching quotes...");
-      const data = await edgeRequest(fn('quotes'), {
-        method: 'GET',
-      });
       
-      if (!data) {
-        console.info("[useQuotesData] no data - likely signed out");
-        return { quotes: [], count: 0 };
+      const { data, error, count } = await supabase
+        .from('quotes')
+        .select(`
+          *,
+          customers!inner(name, email)
+        `, { count: 'exact' })
+        .eq('business_id', businessId!)
+        .order('updated_at', { ascending: false });
+      
+      if (error) {
+        console.error("[useQuotesData] error:", error);
+        throw error;
       }
       
-      const quotes: QuoteListItem[] = (data.rows || []).map((row: any) => ({
+      const quotes: QuoteListItem[] = (data || []).map((row: any) => ({
         id: row.id,
         number: row.number,
         total: row.total,
         status: row.status,
-        updatedAt: row.updatedAt || row.updated_at,
-        publicToken: row.publicToken || row.public_token,
-        viewCount: row.viewCount ?? row.view_count ?? 0,
-        customerId: row.customerId || row.customer_id,
-        customerName: row.customerName ?? row.customers?.name,
-        customerEmail: row.customerEmail ?? row.customers?.email,
+        updatedAt: row.updated_at,
+        publicToken: row.public_token,
+        viewCount: row.view_count ?? 0,
+        customerId: row.customer_id,
+        customerName: row.customers?.name,
+        customerEmail: row.customers?.email,
       }));
       
-      const count = data.count ?? quotes.length;
       console.info("[useQuotesData] fetched", quotes.length, "quotes");
       
-      return { quotes, count };
+      return { quotes, count: count ?? quotes.length };
     },
     staleTime: 30_000,
   });

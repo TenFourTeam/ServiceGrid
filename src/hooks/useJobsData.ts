@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { edgeRequest } from "@/utils/edgeApi";
-import { fn } from "@/utils/functionUrl";
+import { supabase } from "@/integrations/supabase/client";
 import { queryKeys } from "@/queries/keys";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { Job } from "@/types";
@@ -10,7 +9,7 @@ interface UseJobsDataOptions {
 }
 
 /**
- * Simplified jobs hook - single query for both count and data
+ * Direct Supabase jobs hook - no Edge Function needed
  */
 export function useJobsData(opts?: UseJobsDataOptions) {
   const { isAuthenticated, businessId } = useBusinessContext();
@@ -21,35 +20,38 @@ export function useJobsData(opts?: UseJobsDataOptions) {
     enabled,
     queryFn: async () => {
       console.info("[useJobsData] fetching jobs...");
-      const data = await edgeRequest(fn('jobs'), {
-        method: 'GET',
-      });
       
-      if (!data) {
-        console.info("[useJobsData] no data - likely signed out");
-        return { jobs: [], count: 0 };
+      const { data, error, count } = await supabase
+        .from('jobs')
+        .select('*', { count: 'exact' })
+        .eq('business_id', businessId!)
+        .order('updated_at', { ascending: false });
+      
+      if (error) {
+        console.error("[useJobsData] error:", error);
+        throw error;
       }
       
-      const jobs: Job[] = (data.rows || []).map((row: any) => ({
+      const jobs: Job[] = (data || []).map((row: any) => ({
         id: row.id,
-        customerId: row.customerId || row.customer_id,
-        quoteId: row.quoteId ?? row.quote_id ?? null,
+        businessId: row.business_id,
+        customerId: row.customer_id,
+        quoteId: row.quote_id ?? null,
         address: row.address ?? null,
         title: row.title ?? null,
-        startsAt: row.startsAt || row.starts_at,
-        endsAt: row.endsAt || row.ends_at,
+        startsAt: row.starts_at,
+        endsAt: row.ends_at,
         status: row.status,
         total: row.total ?? null,
         notes: row.notes ?? null,
         photos: Array.isArray(row.photos) ? row.photos : [],
-        createdAt: row.createdAt || row.created_at,
-        updatedAt: row.updatedAt || row.updated_at,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
       }));
       
-      const count = data.count ?? jobs.length;
       console.info("[useJobsData] fetched", jobs.length, "jobs");
       
-      return { jobs, count };
+      return { jobs, count: count ?? jobs.length };
     },
     staleTime: 30_000,
   });

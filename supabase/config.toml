@@ -1,16 +1,16 @@
 project_id = "ijudkzqfriazabiosnvb"
 
-[functions.profile-update]
-verify_jwt = false
-
 [functions.clerk-publishable-key]
 verify_jwt = false
 
-[functions.clerk-whoami]
+# Email functions
+[functions.resend-send-email]
 verify_jwt = false
 
-# Keep these core functions
-[functions.resend-send-email]
+[functions.send-lifecycle-email]
+verify_jwt = false
+
+[functions.team-send-email]
 verify_jwt = false
 
 # Invite system functions
@@ -23,37 +23,26 @@ verify_jwt = false
 [functions.invite-redeem]
 verify_jwt = false
 
+# Public endpoints
 [functions.quote-events]
 verify_jwt = false
 
-[functions.customers]
-verify_jwt = false
-
-[functions.quotes]
-verify_jwt = false
-
-[functions.jobs]
-verify_jwt = false
-
+# Batch operations
 [functions.jobs-status-batch]
 verify_jwt = false
 
-[functions.invoices]
-verify_jwt = false
-
+# File uploads
 [functions.upload-business-logo]
-verify_jwt = false
-
-[functions.get-business]
-verify_jwt = false
-
-[functions.business-update]
 verify_jwt = false
 
 [functions.upload-job-photo]
 verify_jwt = false
 
-# Subscriptions & Payments
+# Business operations
+[functions.business-update]
+verify_jwt = false
+
+# Payments & Stripe
 [functions.create-checkout]
 verify_jwt = false
 
@@ -66,15 +55,13 @@ verify_jwt = false
 [functions.create-invoice-payment]
 verify_jwt = false
 
-# Public endpoint used by Stripe Checkout success redirect
 [functions.verify-payment]
 verify_jwt = false
 
-# Public function to start invoice payment without auth (uses public token)
 [functions.create-invoice-payment-public]
 verify_jwt = false
 
-# Stripe Connect onboarding and status (public, uses Clerk bearer token internally)
+# Stripe Connect
 [functions.connect-onboarding-link]
 verify_jwt = false
 
@@ -82,13 +69,4 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.connect-disconnect]
-verify_jwt = false
-
-[functions.clerk-bootstrap]
-verify_jwt = false
-
-[functions.dashboard-data]
-verify_jwt = false
-
-[functions.profile-get]
 verify_jwt = false

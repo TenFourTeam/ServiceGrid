@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { edgeRequest } from "@/utils/edgeApi";
-import { fn } from "@/utils/functionUrl";
+import { supabase } from "@/integrations/supabase/client";
 import { queryKeys } from "@/queries/keys";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 
@@ -11,7 +10,7 @@ interface UseCustomersDataOptions {
 }
 
 /**
- * Simplified customers hook - single query for both count and data
+ * Direct Supabase customers hook - no Edge Function needed
  */
 export function useCustomersData(opts?: UseCustomersDataOptions) {
   const { isAuthenticated, businessId } = useBusinessContext();
@@ -22,18 +21,21 @@ export function useCustomersData(opts?: UseCustomersDataOptions) {
     enabled,
     queryFn: async () => {
       console.info("[useCustomersData] fetching customers...");
-      const data = await edgeRequest(fn('customers'), {
-        method: 'GET',
-      });
       
-      if (!data) {
-        console.info("[useCustomersData] no data - likely signed out");
-        return { customers: [], count: 0 };
+      const { data, error, count } = await supabase
+        .from('customers')
+        .select('*', { count: 'exact' })
+        .eq('business_id', businessId!)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error("[useCustomersData] error:", error);
+        throw error;
       }
       
-      const customers: Customer[] = (data.rows || []).map((c: any) => ({
+      const customers: Customer[] = (data || []).map((c: any) => ({
         id: c.id,
-        businessId: c.businessId,
+        businessId: c.business_id,
         name: c.name,
         email: c.email ?? undefined,
         phone: c.phone ?? undefined,
@@ -41,10 +43,9 @@ export function useCustomersData(opts?: UseCustomersDataOptions) {
         notes: c.notes ?? undefined,
       }));
       
-      const count = data.count ?? customers.length;
       console.info("[useCustomersData] fetched", customers.length, "customers");
       
-      return { customers, count };
+      return { customers, count: count ?? customers.length };
     },
     staleTime: 30_000,
   });
