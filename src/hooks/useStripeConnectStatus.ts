@@ -25,7 +25,9 @@ export function useStripeConnectStatus(opts?: { enabled?: boolean }) {
     queryKey: queryKeys.billing.stripeStatus(businessId || ''),
     enabled: enabled && !!businessId,
     queryFn: async () => {
-      const { data, error } = await authApi.invoke('connect-account-status');
+      const { data, error } = await authApi.invoke('connect-account-status', {
+        method: 'GET'
+      });
       
       if (error) {
         throw new Error(error.message || 'Failed to fetch Stripe connect status');
