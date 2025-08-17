@@ -30,7 +30,7 @@ export type BusinessUpdateResponse = {
 export function useBusinessOperations() {
   const queryClient = useQueryClient();
   const { getToken } = useAuth();
-  const authApi = createAuthEdgeApi(getToken);
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
 
   const updateBusiness = useMutation({
     mutationFn: async (input: BusinessUpdatePayload) => {

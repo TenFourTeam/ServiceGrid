@@ -17,7 +17,7 @@ export type LogoUploadPayload = {
  */
 export function useLogoOperations() {
   const { isSignedIn, getToken } = useAuth();
-  const authApi = createAuthEdgeApi(getToken);
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const queryClient = useQueryClient();
 
   const uploadLogo = useMutation({

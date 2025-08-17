@@ -24,7 +24,7 @@ export type ProfileUpdateResponse = {
 export function useProfileOperations() {
   const queryClient = useQueryClient();
   const { getToken } = useAuth();
-  const authApi = createAuthEdgeApi(getToken);
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
 
   const updateProfile = useMutation({
     mutationFn: async (input: ProfileUpdatePayload): Promise<ProfileUpdateResponse> => {

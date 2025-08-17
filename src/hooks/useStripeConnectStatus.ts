@@ -18,7 +18,7 @@ export interface ConnectStatus {
 export function useStripeConnectStatus(opts?: { enabled?: boolean }) {
   const { isSignedIn, getToken } = useClerkAuth();
   const { businessId } = useBusinessContext();
-  const authApi = createAuthEdgeApi(getToken);
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const enabled = !!isSignedIn && (opts?.enabled ?? true);
 
   return useQuery<ConnectStatus | null, Error>({

@@ -46,7 +46,7 @@ export function createAuthEdgeApi(getToken: () => Promise<string | null>) {
           toastId = toast.loading(loading);
         }
         
-        console.info(`🔧 [AuthEdgeApi] Getting Clerk token...`);
+        console.info(`🔧 [AuthEdgeApi] Getting Clerk token with 'supabase' template...`);
         const startToken = Date.now();
         const token = await getToken();
         const endToken = Date.now();

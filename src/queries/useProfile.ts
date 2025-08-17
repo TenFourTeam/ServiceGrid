@@ -5,7 +5,7 @@ import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 
 export function useProfile() {
   const { userId, getToken } = useAuth();
-  const authApi = createAuthEdgeApi(getToken);
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
 
   return useQuery({
     queryKey: queryKeys.profile.current(),
