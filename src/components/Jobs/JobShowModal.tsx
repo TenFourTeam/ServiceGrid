@@ -410,7 +410,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                     onClick={() => clockInOut({ jobId: job.id, isClockingIn: !job.isClockedIn })}
                     disabled={isClockingInOut}
                   >
-                    {isClockingInOut ? 'Updating...' : job.isClockedIn ? 'Clock Out' : 'Clock In'}
+                    {isClockingInOut ? 'Updating...' : job.isClockedIn ? 'Stop Job' : 'Start Job'}
                   </Button>
                 )}
                 <Button 

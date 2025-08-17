@@ -16,13 +16,13 @@ export function useClockInOut() {
     mutationFn: async ({ jobId, isClockingIn }: { jobId: string; isClockingIn: boolean }) => {
       const updateData = isClockingIn
         ? {
-            clock_in_time: new Date().toISOString(),
-            is_clocked_in: true,
+            clockInTime: new Date().toISOString(),
+            isClockedIn: true,
             status: 'In Progress' as const
           }
         : {
-            clock_out_time: new Date().toISOString(),
-            is_clocked_in: false,
+            clockOutTime: new Date().toISOString(),
+            isClockedIn: false,
             status: 'Completed' as const
           };
 
@@ -76,7 +76,7 @@ export function useClockInOut() {
       // Invalidate jobs queries to refresh the data
       queryClient.invalidateQueries({ queryKey: queryKeys.data.jobs(businessId || '') });
       
-      toast.success(isClockingIn ? "Clocked In - Time tracking started" : "Clocked Out - Time tracking stopped");
+      toast.success(isClockingIn ? "Job Started - Time tracking started" : "Job Stopped - Time tracking stopped");
     },
     onError: (error, variables, context) => {
       // Roll back to the previous state
