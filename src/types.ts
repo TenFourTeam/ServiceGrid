@@ -27,11 +27,14 @@ export interface Business {
 export interface Customer {
   id: ID;
   businessId: ID;
+  ownerId: ID;
   name: string;
-  email?: string;
+  email: string; // Required in database
   phone?: string;
   address?: string;
   notes?: string;
+  createdAt?: ISODate;
+  updatedAt?: ISODate;
 }
 
 export interface LineItem {

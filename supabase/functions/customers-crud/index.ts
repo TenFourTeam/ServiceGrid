@@ -32,11 +32,14 @@ Deno.serve(async (req) => {
       const customers = data?.map(customer => ({
         id: customer.id,
         businessId: customer.business_id,
+        ownerId: customer.owner_id,
         name: customer.name,
         email: customer.email,
         phone: customer.phone,
         address: customer.address,
         notes: customer.notes,
+        createdAt: customer.created_at,
+        updatedAt: customer.updated_at,
       })) || [];
 
       console.log('[customers-crud] Fetched', customers.length, 'customers');
@@ -76,8 +79,21 @@ Deno.serve(async (req) => {
         throw new Error(`Failed to create customer: ${error.message}`);
       }
 
+      const transformedCustomer = {
+        id: data.id,
+        businessId: data.business_id,
+        ownerId: data.owner_id,
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        address: data.address,
+        notes: data.notes,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+      };
+
       console.log('[customers-crud] Customer created:', data.id);
-      return json({ customer: data });
+      return json({ customer: transformedCustomer });
     }
 
     if (req.method === 'PUT') {
@@ -107,8 +123,21 @@ Deno.serve(async (req) => {
         throw new Error(`Failed to update customer: ${error.message}`);
       }
 
+      const transformedCustomer = {
+        id: data.id,
+        businessId: data.business_id,
+        ownerId: data.owner_id,
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        address: data.address,
+        notes: data.notes,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+      };
+
       console.log('[customers-crud] Customer updated:', data.id);
-      return json({ customer: data });
+      return json({ customer: transformedCustomer });
     }
 
     if (req.method === 'DELETE') {

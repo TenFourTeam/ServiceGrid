@@ -9,20 +9,21 @@ import { invalidationHelpers } from "@/queries/keys";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useAuth } from '@clerk/clerk-react';
 import { createAuthEdgeApi } from "@/utils/authEdgeApi";
-
-interface Customer {
-  id?: string;
-  name: string;
-  email?: string;
-  address?: string;
-  phone?: string;
-}
+import type { Customer } from "@/types";
 
 interface CustomerBottomModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   customer?: Customer | null;
   onSave?: () => void;
+}
+
+// Form data interface for internal component state
+interface CustomerFormData {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
 }
 
 export function CustomerBottomModal({ 
@@ -36,7 +37,7 @@ export function CustomerBottomModal({
   const { getToken } = useAuth();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   
-  const [formData, setFormData] = useState<Customer>({
+  const [formData, setFormData] = useState<CustomerFormData>({
     name: "",
     email: "",
     address: "",
@@ -65,7 +66,7 @@ export function CustomerBottomModal({
   const [loading, setLoading] = useState(false);
 
   const handleSave = async () => {
-    if (!formData.name.trim() || !formData.email?.trim()) {
+    if (!formData.name.trim() || !formData.email.trim()) {
       toast.error("Name and email are required");
       return;
     }
@@ -75,9 +76,9 @@ export function CustomerBottomModal({
       const isEdit = !!customer?.id;
       const customerData = {
         name: formData.name.trim(),
-        email: formData.email?.trim() || '',
-        phone: formData.phone?.trim() || null,
-        address: formData.address?.trim() || null,
+        email: formData.email.trim(),
+        phone: formData.phone.trim() || null,
+        address: formData.address.trim() || null,
       };
       
       if (isEdit) {
