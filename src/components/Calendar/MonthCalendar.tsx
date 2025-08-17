@@ -71,28 +71,62 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
               </div>
               <ul className="space-y-1">
                 {visible.map((j) => {
-                  const t = new Date(j.startsAt);
-                  return (
-                    <li key={j.id} className="truncate">
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); setActiveJob(j as Job); setOpen(true); }}
-                        className={`w-full truncate rounded px-2 py-1 text-xs border bg-background/60 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary ${j.status === 'Completed' ? 'border-success bg-success/5' : j.status === 'In Progress' ? 'border-primary' : 'border-primary/50'}`}
-                        aria-label={`Open job ${j.title || 'Job'} at ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
-                      >
-                        <span className={`mr-2 inline-block h-2 w-2 rounded-full align-middle ${j.status === 'Completed' ? 'bg-success' : 'bg-primary'}`} aria-hidden="true" />
-                        <span className="font-medium">
-                          {t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                        </span>
-                        <span className="mx-1 opacity-70">•</span>
-                        <span className="truncate">{j.title || 'Job'}</span>
-                        {customersMap.get(j.customerId) && (
-                          <span className="opacity-70"> — {customersMap.get(j.customerId)}</span>
-                        )}
-                      </button>
-                    </li>
-                  );
-                })}
+                  const blocks: JSX.Element[] = [];
+                  
+                  // Scheduled time block
+                  if (displayMode === 'scheduled' || displayMode === 'combined') {
+                    const t = new Date(j.startsAt);
+                    blocks.push(
+                      <li key={`${j.id}-scheduled`} className="truncate">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setActiveJob(j as Job); setOpen(true); }}
+                          className={`w-full truncate rounded px-2 py-1 text-xs border bg-background/60 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary ${j.status === 'Completed' ? 'border-success bg-success/5' : j.status === 'In Progress' ? 'border-primary' : 'border-primary/50'} ${displayMode === 'combined' ? 'opacity-60' : ''}`}
+                          aria-label={`Open job ${j.title || 'Job'} at ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
+                        >
+                          <span className={`mr-2 inline-block h-2 w-2 rounded-full align-middle ${j.status === 'Completed' ? 'bg-success' : 'bg-primary'}`} aria-hidden="true" />
+                          <span className="font-medium">
+                            {t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                          </span>
+                          <span className="mx-1 opacity-70">•</span>
+                          <span className="truncate">{j.title || 'Job'}</span>
+                          {customersMap.get(j.customerId) && (
+                            <span className="opacity-70"> — {customersMap.get(j.customerId)}</span>
+                          )}
+                          {displayMode === 'combined' && <span className="text-[10px] opacity-60"> (S)</span>}
+                        </button>
+                      </li>
+                    );
+                  }
+                  
+                  // Clocked time block
+                  if ((displayMode === 'clocked' || displayMode === 'combined') && j.clockInTime && j.clockOutTime) {
+                    const clockStart = new Date(j.clockInTime);
+                    blocks.push(
+                      <li key={`${j.id}-clocked`} className="truncate">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setActiveJob(j as Job); setOpen(true); }}
+                          className="w-full truncate rounded px-2 py-1 text-xs border bg-[hsl(var(--clocked-time))] text-[hsl(var(--clocked-time-foreground))] border-[hsl(var(--clocked-time))] hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-primary"
+                          aria-label={`Open worked time for ${j.title || 'Job'} at ${clockStart.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
+                        >
+                          <span className="mr-2 inline-block h-2 w-2 rounded-full bg-white align-middle" aria-hidden="true" />
+                          <span className="font-medium">
+                            {clockStart.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                          </span>
+                          <span className="mx-1 opacity-70">•</span>
+                          <span className="truncate">{j.title || 'Job'}</span>
+                          {customersMap.get(j.customerId) && (
+                            <span className="opacity-70"> — {customersMap.get(j.customerId)}</span>
+                          )}
+                          <span className="text-[10px] opacity-80"> (W)</span>
+                        </button>
+                      </li>
+                    );
+                  }
+                  
+                  return blocks;
+                }).flat()}
                 {overflow > 0 && (
                   <li className="text-xs opacity-70">+{overflow} more</li>
                 )}

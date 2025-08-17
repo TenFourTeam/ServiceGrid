@@ -487,69 +487,117 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                   );
                 })()}
                 {/* Jobs rendering */}
-                {dayJobs[dayKey(day)]?.map(j => {
-                    const startsAt = new Date(j.startsAt);
-                    const endsAt = new Date(j.endsAt);
-                    const start = minutesFromAnchor(startsAt);
-                    const dur = endsAt.getTime() - startsAt.getTime();
-                    const durMins = dur / (1000 * 60);
-                    const height = durMins / TOTAL_MIN * 100;
-                    const top = start / TOTAL_MIN * 100;
-                    const customer = customers.find(c => c.id === j.customerId);
-                    const isHighlighted = highlightJobId === j.id;
-                    const isBeingDragged = isDragging === j.id;
-                    const isBeingResized = isResizing === j.id;
-                    const statusColors = getJobStatusColors(j.status);
-                    const currentTime = new Date();
-                    const canDrag = canDragJob(j.status, currentTime, startsAt);
-                    const canResize = canResizeJob(j.status, currentTime, startsAt, endsAt);
+                {(() => {
+                  const renderJobBlocks = () => {
+                    const blocks: JSX.Element[] = [];
                     
-                    return <div
-                      key={j.id}
-                      className={`absolute left-2 right-2 rounded-md p-2 select-none transition-all ${
-                        isHighlighted ? 'ring-2 ring-primary/50 scale-[1.02]' : ''
-                      } ${
-                        statusColors.bg
-                      } ${
-                        statusColors.text
-                      } ${
-                        statusColors.border
-                      } ${
-                        canDrag ? 'cursor-pointer hover:opacity-80 hover:z-20' : 'cursor-default opacity-90'
-                      } ${isBeingDragged ? 'opacity-70 scale-[1.05]' : ''} ${isBeingResized ? 'opacity-70' : ''} ${
-                        conflictingJobId === j.id ? 'ring-2 ring-red-500 bg-red-600' : ''
-                      }`}
-                      style={{
-                        top: `${top}%`,
-                        height: `${Math.max(height, 4)}%`,
-                        zIndex: isHighlighted ? 10 : 1
-                      }}
-                      onPointerDown={canDrag ? (e) => onDragStart(e, j) : undefined}
-                      onClick={() => setActiveJob(j)}
-                    >
-                      <div className="flex items-center gap-1 text-xs font-medium leading-tight">
-                        {startsAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} — {customer?.name || 'Unknown'}
-                      </div>
-                      <div className="text-xs leading-tight mt-0.5 truncate ml-2.5">{j.title}</div>
-                      {j.address && (
-                        <div className="text-xs leading-tight mt-0.5 truncate ml-2.5 opacity-70">
-                          {j.address}
-                        </div>
-                      )}
-                      <div className="text-xs leading-tight mt-0.5 truncate ml-2.5">
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-current/20">
-                          {j.status === 'Scheduled' ? 'Scheduled' : j.status === 'In Progress' ? 'In Progress' : 'Completed'}
-                        </span>
-                      </div>
-                      {/* Resize handle - only show if resizable */}
-                      {canResize && (
-                        <div
-                          className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize opacity-0 hover:opacity-100 bg-current/20"
-                          onPointerDown={(e) => onResizeStart(e, j)}
-                        />
-                      )}
-                    </div>;
-                  })}
+                    dayJobs[dayKey(day)]?.forEach(j => {
+                      // Scheduled time block (always shown in 'scheduled' and 'combined' modes)
+                      if (displayMode === 'scheduled' || displayMode === 'combined') {
+                        const startsAt = new Date(j.startsAt);
+                        const endsAt = new Date(j.endsAt);
+                        const start = minutesFromAnchor(startsAt);
+                        const dur = endsAt.getTime() - startsAt.getTime();
+                        const durMins = dur / (1000 * 60);
+                        const height = durMins / TOTAL_MIN * 100;
+                        const top = start / TOTAL_MIN * 100;
+                        const customer = customers.find(c => c.id === j.customerId);
+                        const isHighlighted = highlightJobId === j.id;
+                        const isBeingDragged = isDragging === j.id;
+                        const isBeingResized = isResizing === j.id;
+                        const statusColors = getJobStatusColors(j.status);
+                        const currentTime = new Date();
+                        const canDrag = canDragJob(j.status, currentTime, startsAt);
+                        const canResize = canResizeJob(j.status, currentTime, startsAt, endsAt);
+                        
+                        blocks.push(<div
+                          key={`${j.id}-scheduled`}
+                          className={`absolute left-2 right-2 rounded-md p-2 select-none transition-all ${
+                            isHighlighted ? 'ring-2 ring-primary/50 scale-[1.02]' : ''
+                          } ${
+                            statusColors.bg
+                          } ${
+                            statusColors.text
+                          } ${
+                            statusColors.border
+                          } ${
+                            canDrag ? 'cursor-pointer hover:opacity-80 hover:z-20' : 'cursor-default opacity-90'
+                          } ${isBeingDragged ? 'opacity-70 scale-[1.05]' : ''} ${isBeingResized ? 'opacity-70' : ''} ${
+                            conflictingJobId === j.id ? 'ring-2 ring-red-500 bg-red-600' : ''
+                          } ${displayMode === 'combined' ? 'opacity-60' : ''}`}
+                          style={{
+                            top: `${top}%`,
+                            height: `${Math.max(height, 4)}%`,
+                            zIndex: isHighlighted ? 10 : 1
+                          }}
+                          onPointerDown={canDrag ? (e) => onDragStart(e, j) : undefined}
+                          onClick={() => setActiveJob(j)}
+                        >
+                          <div className="flex items-center gap-1 text-xs font-medium leading-tight">
+                            {startsAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} — {customer?.name || 'Unknown'}
+                          </div>
+                          <div className="text-xs leading-tight mt-0.5 truncate ml-2.5">{j.title}</div>
+                          {j.address && (
+                            <div className="text-xs leading-tight mt-0.5 truncate ml-2.5 opacity-70">
+                              {j.address}
+                            </div>
+                          )}
+                          <div className="text-xs leading-tight mt-0.5 truncate ml-2.5">
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-current/20">
+                              {displayMode === 'scheduled' || displayMode === 'combined' ? 'Scheduled' : j.status}
+                            </span>
+                          </div>
+                          {/* Resize handle - only show if resizable */}
+                          {canResize && displayMode === 'scheduled' && (
+                            <div
+                              className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize opacity-0 hover:opacity-100 bg-current/20"
+                              onPointerDown={(e) => onResizeStart(e, j)}
+                            />
+                          )}
+                        </div>);
+                      }
+                      
+                      // Clocked time block (shown in 'clocked' and 'combined' modes)
+                      if ((displayMode === 'clocked' || displayMode === 'combined') && j.clockInTime && j.clockOutTime) {
+                        const clockStart = new Date(j.clockInTime);
+                        const clockEnd = new Date(j.clockOutTime);
+                        const clockStartMins = minutesFromAnchor(clockStart);
+                        const clockDur = clockEnd.getTime() - clockStart.getTime();
+                        const clockDurMins = clockDur / (1000 * 60);
+                        const clockHeight = clockDurMins / TOTAL_MIN * 100;
+                        const clockTop = clockStartMins / TOTAL_MIN * 100;
+                        const customer = customers.find(c => c.id === j.customerId);
+                        
+                        blocks.push(<div
+                          key={`${j.id}-clocked`}
+                          className={`absolute left-2 right-2 rounded-md p-2 select-none transition-all cursor-pointer hover:opacity-80 bg-[hsl(var(--clocked-time))] text-[hsl(var(--clocked-time-foreground))] border border-[hsl(var(--clocked-time))] ${
+                            highlightJobId === j.id ? 'ring-2 ring-primary/50 scale-[1.02]' : ''
+                          } ${displayMode === 'combined' ? 'z-10' : ''}`}
+                          style={{
+                            top: `${clockTop}%`,
+                            height: `${Math.max(clockHeight, 4)}%`,
+                            zIndex: displayMode === 'combined' ? 10 : (highlightJobId === j.id ? 10 : 2)
+                          }}
+                          onClick={() => setActiveJob(j)}
+                        >
+                          <div className="flex items-center gap-1 text-xs font-medium leading-tight">
+                            {clockStart.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} — {customer?.name || 'Unknown'}
+                          </div>
+                          <div className="text-xs leading-tight mt-0.5 truncate ml-2.5">{j.title}</div>
+                          <div className="text-xs leading-tight mt-0.5 truncate ml-2.5">
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-white/20">
+                              Worked Time
+                            </span>
+                          </div>
+                        </div>);
+                      }
+                    });
+                    
+                    return blocks;
+                  };
+                  
+                  return renderJobBlocks();
+                })()}
               </div>
             ))}
           </div>
