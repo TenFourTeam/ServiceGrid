@@ -552,7 +552,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                             canDrag ? 'cursor-pointer hover:opacity-80 hover:z-20' : 'cursor-default opacity-90'
                           } ${isBeingDragged ? 'opacity-70 scale-[1.05]' : ''} ${isBeingResized ? 'opacity-70' : ''} ${
                             conflictingJobId === j.id ? 'ring-2 ring-red-500 bg-red-600' : ''
-                          } ${displayMode === 'combined' ? 'opacity-60' : ''}`}
+                          } ${displayMode === 'combined' ? 'opacity-70' : ''}`}
                           style={{
                             top: `${top}%`,
                             height: `${Math.max(height, 4)}%`,
@@ -610,7 +610,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                               : 'bg-[hsl(var(--clocked-time))] text-[hsl(var(--clocked-time-foreground))] border border-[hsl(var(--clocked-time))]'
                           } ${
                             highlightJobId === j.id ? 'ring-2 ring-primary/50 scale-[1.02]' : ''
-                          } ${displayMode === 'combined' ? 'z-10' : ''}`}
+                          } ${displayMode === 'combined' ? 'z-10 opacity-75' : ''}`}
                           style={{
                             top: `${clockTop}%`,
                             height: `${Math.max(clockHeight, 4)}%`,
