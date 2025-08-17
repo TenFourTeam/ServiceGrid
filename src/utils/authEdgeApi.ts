@@ -93,7 +93,7 @@ export function createAuthEdgeApi(getToken: (options?: { template?: string }) =>
 
         const startInvoke = Date.now();
         const { data, error } = await supabase.functions.invoke(functionName, {
-          body: requestOptions.body,
+          body: requestOptions.body ? JSON.stringify(requestOptions.body) : undefined,
           headers,
           method: (requestOptions.method as "POST" | "PUT" | "PATCH" | "DELETE" | "GET") || "POST", // Pass through the method parameter
         });
