@@ -8,7 +8,7 @@ import { lifecycleEmailTriggers, getUserEngagementData, daysSinceSignup, daysSin
 /**
  * Hook to handle lifecycle email triggers based on user state and actions
  */
-export function useLifecycleEmailTriggers() {
+export function useLifecycleEmailTriggers(enableAutoTriggers: boolean = false) {
   const { isSignedIn, isLoaded, getToken } = useAuth();
   const { user } = useUser();
   const { business, businessName, isLoadingBusiness } = useBusinessContext();
@@ -33,7 +33,7 @@ export function useLifecycleEmailTriggers() {
 
   // Welcome email trigger - send once on first successful login
   useEffect(() => {
-    if (!isLoaded || !isSignedIn || !profile || hasTriggeredWelcome.current || isLoadingBusiness) {
+    if (!enableAutoTriggers || !isLoaded || !isSignedIn || !profile || hasTriggeredWelcome.current || isLoadingBusiness) {
       return;
     }
 
@@ -43,11 +43,11 @@ export function useLifecycleEmailTriggers() {
       hasTriggeredWelcome.current = true;
       console.info('[useLifecycleEmailTriggers] Welcome email triggered');
     }
-  }, [isLoaded, isSignedIn, profile, isLoadingBusiness, emailData.userEmail, emailData.userId]);
+  }, [enableAutoTriggers, isLoaded, isSignedIn, profile, isLoadingBusiness, emailData.userEmail, emailData.userId]);
 
   // Stripe connection celebration trigger
   useEffect(() => {
-    if (!stripeStatus || !emailData.userEmail || hasTriggeredStripeConnected.current) {
+    if (!enableAutoTriggers || !stripeStatus || !emailData.userEmail || hasTriggeredStripeConnected.current) {
       return;
     }
 
@@ -57,11 +57,11 @@ export function useLifecycleEmailTriggers() {
       hasTriggeredStripeConnected.current = true;
       console.info('[useLifecycleEmailTriggers] Stripe connected email triggered');
     }
-  }, [stripeStatus, emailData.userEmail]);
+  }, [enableAutoTriggers, stripeStatus, emailData.userEmail]);
 
   // Time-based discovery emails (Day 3, 5, 10)
   useEffect(() => {
-    if (!isSignedIn || !business?.createdAt || !emailData.userEmail) {
+    if (!enableAutoTriggers || !isSignedIn || !business?.createdAt || !emailData.userEmail) {
       return;
     }
 
@@ -98,12 +98,12 @@ export function useLifecycleEmailTriggers() {
         ctaText: 'Create Your First Quote'
       });
     }
-  }, [isSignedIn, business?.createdAt, emailData.userEmail]);
+  }, [enableAutoTriggers, isSignedIn, business?.createdAt, emailData.userEmail]);
 
   // Engagement recovery emails (7-day, 14-day inactive)
   useEffect(() => {
     const checkEngagement = async () => {
-      if (!isSignedIn || !emailData.userId || !emailData.userEmail) {
+      if (!enableAutoTriggers || !isSignedIn || !emailData.userId || !emailData.userEmail) {
         return;
       }
 
@@ -139,10 +139,10 @@ export function useLifecycleEmailTriggers() {
     };
 
     // Check engagement daily when user is active
-    if (isSignedIn) {
+    if (enableAutoTriggers && isSignedIn) {
       checkEngagement();
     }
-  }, [isSignedIn, emailData.userId, emailData.userEmail]);
+  }, [enableAutoTriggers, isSignedIn, emailData.userId, emailData.userEmail]);
 
   return {
     emailData,
