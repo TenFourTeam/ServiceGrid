@@ -7,6 +7,7 @@ import DayCalendar from "@/components/Calendar/DayCalendar";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { addMonths, startOfDay, addDays, format, startOfWeek, endOfWeek } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useJobsData } from "@/hooks/useJobsData";
 type CalendarDisplayMode = 'scheduled' | 'clocked' | 'combined';
 
 export default function CalendarShell({
@@ -17,6 +18,15 @@ export default function CalendarShell({
   const [view, setView] = useState<"month" | "week" | "day">("week");
   const [displayMode, setDisplayMode] = useState<CalendarDisplayMode>('scheduled');
   const [date, setDate] = useState<Date>(startOfDay(new Date()));
+  const { data: jobs } = useJobsData();
+  
+  // Auto-switch to combined mode if there are any clocked jobs
+  useEffect(() => {
+    const hasClockedJobs = jobs.some(job => job.clockInTime || job.clockOutTime);
+    if (hasClockedJobs && displayMode === 'scheduled') {
+      setDisplayMode('combined');
+    }
+  }, [jobs, displayMode]);
   const month = useMemo(() => new Date(date), [date]);
   const rangeTitle = useMemo(() => {
     if (view === "month") return format(date, "MMMM yyyy");

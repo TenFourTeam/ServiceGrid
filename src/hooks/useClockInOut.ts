@@ -3,11 +3,13 @@ import { queryKeys } from "@/queries/keys";
 import { toast } from "sonner";
 import { useAuth } from '@clerk/clerk-react';
 import { createAuthEdgeApi } from "@/utils/authEdgeApi";
+import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { Job } from "@/types";
 
 export function useClockInOut() {
   const queryClient = useQueryClient();
   const { getToken } = useAuth();
+  const { businessId } = useBusinessContext();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
 
   const clockInOut = useMutation({
@@ -36,14 +38,17 @@ export function useClockInOut() {
       return data;
     },
     onMutate: async ({ jobId, isClockingIn }) => {
+      // Use the correct query key with businessId
+      const queryKey = queryKeys.data.jobs(businessId || '');
+      
       // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: queryKeys.data.jobs('') });
+      await queryClient.cancelQueries({ queryKey });
 
       // Snapshot the previous value
-      const previousJobs = queryClient.getQueryData(queryKeys.data.jobs(''));
+      const previousJobs = queryClient.getQueryData(queryKey);
 
       // Optimistically update the job
-      queryClient.setQueryData(queryKeys.data.jobs(''), (old: any) => {
+      queryClient.setQueryData(queryKey, (old: any) => {
         if (!old?.jobs) return old;
         
         const currentTime = new Date().toISOString();
@@ -63,20 +68,20 @@ export function useClockInOut() {
         };
       });
 
-      return { previousJobs };
+      return { previousJobs, queryKey };
     },
     onSuccess: (data, variables) => {
       const { isClockingIn } = variables;
       
       // Invalidate jobs queries to refresh the data
-      queryClient.invalidateQueries({ queryKey: queryKeys.data.jobs('') });
+      queryClient.invalidateQueries({ queryKey: queryKeys.data.jobs(businessId || '') });
       
       toast.success(isClockingIn ? "Clocked In - Time tracking started" : "Clocked Out - Time tracking stopped");
     },
     onError: (error, variables, context) => {
       // Roll back to the previous state
-      if (context?.previousJobs) {
-        queryClient.setQueryData(queryKeys.data.jobs(''), context.previousJobs);
+      if (context?.previousJobs && context?.queryKey) {
+        queryClient.setQueryData(context.queryKey, context.previousJobs);
       }
       
       toast.error("Failed to update clock status");
