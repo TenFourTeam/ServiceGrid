@@ -9,23 +9,42 @@ import { HelpWidget } from '@/components/Onboarding/HelpWidget';
 import { IntentPickerModal } from '@/components/Onboarding/IntentPickerModal';
 import { useOnboardingState } from '@/onboarding/streamlined';
 import { useOnboardingActions } from '@/onboarding/hooks';
+import { useSessionStorage } from '@/hooks/useSessionStorage';
 
 export default function AppLayout({ children, title }: { children: ReactNode; title?: string }) {
   const [showIntentPicker, setShowIntentPicker] = useState(false);
+  
+  // Session-based dismissal state for intent picker modal
+  const [intentPickerDismissed, setIntentPickerDismissed] = useSessionStorage('intentPickerDismissed', false);
   
   // Onboarding system
   const onboardingState = useOnboardingState();
   const onboardingActions = useOnboardingActions();
   
-  // Show intent picker modal for new users
+  // Show intent picker modal for new users, but respect session dismissal
   useEffect(() => {
-    if (onboardingState.showIntentPicker && !showIntentPicker) {
+    if (onboardingState.showIntentPicker && !intentPickerDismissed && !showIntentPicker) {
       setShowIntentPicker(true);
     }
-  }, [onboardingState.showIntentPicker, showIntentPicker]);
+  }, [onboardingState.showIntentPicker, intentPickerDismissed, showIntentPicker]);
+
+  // Reset dismissal state when profile becomes complete
+  useEffect(() => {
+    if (onboardingState.profileComplete && intentPickerDismissed) {
+      setIntentPickerDismissed(false);
+    }
+  }, [onboardingState.profileComplete, intentPickerDismissed, setIntentPickerDismissed]);
 
   const handleOpenHelp = () => {
     setShowIntentPicker(true);
+  };
+
+  const handleIntentPickerClose = (open: boolean) => {
+    setShowIntentPicker(open);
+    if (!open && onboardingState.showIntentPicker) {
+      // Mark as dismissed for this session when user closes it
+      setIntentPickerDismissed(true);
+    }
   };
 
   useEffect(() => {
@@ -54,7 +73,7 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
       {/* Onboarding Components */}
       <IntentPickerModal
         open={showIntentPicker}
-        onOpenChange={setShowIntentPicker}
+        onOpenChange={handleIntentPickerClose}
         onScheduleJob={onboardingActions.openNewJobSheet}
         onCreateQuote={onboardingActions.openCreateQuote}
         onAddCustomer={onboardingActions.openAddCustomer}
