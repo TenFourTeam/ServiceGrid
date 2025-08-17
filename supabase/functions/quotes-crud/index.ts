@@ -51,7 +51,17 @@ Deno.serve(async (req) => {
     }
 
     if (req.method === 'POST') {
-      const body = await req.json();
+      let body;
+      try {
+        body = await req.json();
+        if (!body) {
+          throw new Error('Request body is empty');
+        }
+      } catch (jsonError) {
+        console.error('[quotes-crud] JSON parsing error:', jsonError);
+        return json({ error: 'Invalid JSON in request body' }, { status: 400 });
+      }
+      
       const { customerId, status, total, subtotal, taxRate, discount, terms, address } = body;
 
       // Get next quote number
@@ -91,7 +101,17 @@ Deno.serve(async (req) => {
     }
 
     if (req.method === 'PUT') {
-      const body = await req.json();
+      let body;
+      try {
+        body = await req.json();
+        if (!body) {
+          throw new Error('Request body is empty');
+        }
+      } catch (jsonError) {
+        console.error('[quotes-crud] JSON parsing error:', jsonError);
+        return json({ error: 'Invalid JSON in request body' }, { status: 400 });
+      }
+      
       const { id, status, total, subtotal, taxRate, discount, terms, address, viewCount } = body;
 
       const updateData: any = {};
@@ -122,7 +142,17 @@ Deno.serve(async (req) => {
     }
 
     if (req.method === 'DELETE') {
-      const body = await req.json();
+      let body;
+      try {
+        body = await req.json();
+        if (!body) {
+          throw new Error('Request body is empty');
+        }
+      } catch (jsonError) {
+        console.error('[quotes-crud] JSON parsing error:', jsonError);
+        return json({ error: 'Invalid JSON in request body' }, { status: 400 });
+      }
+      
       const { id } = body;
 
       const { error } = await supabase
