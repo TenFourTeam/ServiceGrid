@@ -21,13 +21,6 @@ export default function CalendarShell({
   const [date, setDate] = useState<Date>(startOfDay(new Date()));
   const { data: jobs } = useJobsData();
   
-  // Auto-switch to combined mode if there are any clocked jobs
-  useEffect(() => {
-    const hasClockedJobs = jobs.some(job => job.clockInTime || job.clockOutTime);
-    if (hasClockedJobs && displayMode === 'scheduled') {
-      setDisplayMode('combined');
-    }
-  }, [jobs, displayMode]);
   const month = useMemo(() => new Date(date), [date]);
   const rangeTitle = useMemo(() => {
     if (view === "month") return format(date, "MMMM yyyy");
@@ -62,18 +55,16 @@ export default function CalendarShell({
             <h2 className="text-sm md:text-base font-semibold">{rangeTitle}</h2>
           </div>
           <div className="flex items-center gap-2">
-            <div className="hidden lg:block">
-              <Select value={displayMode} onValueChange={v => setDisplayMode(v as CalendarDisplayMode)}>
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="scheduled">Scheduled</SelectItem>
-                  <SelectItem value="clocked">Clocked</SelectItem>
-                  <SelectItem value="combined">Combined</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <Select value={displayMode} onValueChange={v => setDisplayMode(v as CalendarDisplayMode)}>
+              <SelectTrigger className="w-[120px] md:w-[140px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="scheduled">Scheduled</SelectItem>
+                <SelectItem value="clocked">Clocked</SelectItem>
+                <SelectItem value="combined">Combined</SelectItem>
+              </SelectContent>
+            </Select>
             <div className="hidden md:block">
               <Tabs value={view} onValueChange={v => setView(v as any)}>
                 <TabsList>
