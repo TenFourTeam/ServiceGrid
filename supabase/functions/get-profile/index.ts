@@ -47,6 +47,12 @@ Deno.serve(async (req) => {
 
   } catch (error: any) {
     console.error('[get-profile] Error:', error);
+    
+    // Handle auth errors specifically
+    if (error.message?.includes('Authentication failed') || error.message?.includes('Missing authentication')) {
+      return json({ error: error.message || 'Authentication failed' }, { status: 401 });
+    }
+    
     return json(
       { error: error.message || 'Failed to get profile' },
       { status: 500 }
