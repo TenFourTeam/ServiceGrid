@@ -23,7 +23,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    console.log(`[customers] ${req.method} request received`);
+    console.log(`[customers] ${req.method} request received - v2`);
     
     // Get authenticated context
     const ctx = await requireCtx(req);
