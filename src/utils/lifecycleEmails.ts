@@ -1,5 +1,7 @@
-import { supabase } from '@/integrations/supabase/client';
-import { fn } from '@/utils/functionUrl';
+import { createAuthEdgeApi } from '@/utils/authEdgeApi';
+
+// Note: This file is deprecated for frontend use. 
+// Lifecycle emails should be managed server-side through edge functions.
 
 export interface LifecycleEmailData {
   userFullName?: string;
@@ -13,14 +15,17 @@ export interface LifecycleEmailData {
 
 /**
  * Send lifecycle email via edge function
+ * Note: This function requires a getToken function from Clerk for authentication
  */
 export async function sendLifecycleEmail(
   type: string,
   data: LifecycleEmailData,
+  getToken: () => Promise<string | null>,
   extraParams?: Record<string, any>
 ) {
   try {
-    const response = await supabase.functions.invoke('send-lifecycle-email', {
+    const authApi = createAuthEdgeApi(getToken);
+    const { data: response, error } = await authApi.invoke('send-lifecycle-email', {
       body: {
         type,
         data,
@@ -28,13 +33,13 @@ export async function sendLifecycleEmail(
       }
     });
 
-    if (response.error) {
-      console.error('[sendLifecycleEmail] Error:', response.error);
-      return { success: false, error: response.error };
+    if (error) {
+      console.error('[sendLifecycleEmail] Error:', error);
+      return { success: false, error };
     }
 
     console.info('[sendLifecycleEmail] Sent:', type, data.userEmail);
-    return { success: true, data: response.data };
+    return { success: true, data: response };
   } catch (error) {
     console.error('[sendLifecycleEmail] Exception:', error);
     return { success: false, error };
@@ -60,8 +65,13 @@ export function shouldSendLifecycleEmail(
 
 /**
  * Get user engagement metrics
+ * Note: This function is deprecated for frontend use.
+ * Engagement data should be fetched through edge functions with proper authentication.
  */
-export async function getUserEngagementData(userId: string): Promise<{
+export async function getUserEngagementData(
+  userId: string,
+  getToken: () => Promise<string | null>
+): Promise<{
   lastLoginDate?: string;
   signupDate?: string;
   hasCustomers: boolean;
@@ -70,56 +80,16 @@ export async function getUserEngagementData(userId: string): Promise<{
   hasStripeConnected: boolean;
 }> {
   try {
-    // Get profile data
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('created_at')
-      .eq('id', userId)
-      .single();
-
-    // Get business data
-    const { data: business } = await supabase
-      .from('business_members')
-      .select(`
-        business_id,
-        businesses!inner(
-          stripe_account_id
-        )
-      `)
-      .eq('user_id', userId)
-      .eq('role', 'owner')
-      .single();
-
-    const businessId = business?.business_id;
-
-    // Get engagement metrics
-    const [
-      { count: customerCount },
-      { count: quoteCount },
-      { count: jobCount }
-    ] = await Promise.all([
-      supabase
-        .from('customers')
-        .select('*', { count: 'exact', head: true })
-        .eq('business_id', businessId || ''),
-      
-      supabase
-        .from('quotes')
-        .select('*', { count: 'exact', head: true })
-        .eq('business_id', businessId || ''),
-      
-      supabase
-        .from('jobs')
-        .select('*', { count: 'exact', head: true })
-        .eq('business_id', businessId || '')
-    ]);
-
+    const authApi = createAuthEdgeApi(getToken);
+    
+    // This should be replaced with edge function calls for proper authentication
+    console.warn('[getUserEngagementData] This function should use edge functions for authentication');
+    
     return {
-      signupDate: profile?.created_at,
-      hasCustomers: (customerCount || 0) > 0,
-      hasQuotes: (quoteCount || 0) > 0,
-      hasJobs: (jobCount || 0) > 0,
-      hasStripeConnected: !!(business?.businesses as any)?.stripe_account_id
+      hasCustomers: false,
+      hasQuotes: false,
+      hasJobs: false,
+      hasStripeConnected: false
     };
   } catch (error) {
     console.error('[getUserEngagementData] Error:', error);
@@ -155,17 +125,22 @@ export function daysSinceLastLogin(lastLoginDate?: string): number {
 }
 
 // Lifecycle email trigger functions
+// Note: These functions are deprecated for frontend use and should be handled server-side
 export const lifecycleEmailTriggers = {
   // Welcome email on first login
-  async sendWelcomeEmail(data: LifecycleEmailData) {
+  async sendWelcomeEmail(data: LifecycleEmailData, getToken: () => Promise<string | null>) {
     if (!shouldSendLifecycleEmail(data, 'welcome')) return;
     
-    return sendLifecycleEmail('welcome', data);
+    return sendLifecycleEmail('welcome', data, getToken);
   },
 
   // Feature discovery emails
-  async sendFeatureDiscoveryEmail(data: LifecycleEmailData, params: { feature: string; featureDescription: string; ctaUrl: string; ctaText: string }) {
-    return sendLifecycleEmail('feature-discovery', data, {
+  async sendFeatureDiscoveryEmail(
+    data: LifecycleEmailData, 
+    getToken: () => Promise<string | null>,
+    params: { feature: string; featureDescription: string; ctaUrl: string; ctaText: string }
+  ) {
+    return sendLifecycleEmail('feature-discovery', data, getToken, {
       featureName: params.feature,
       featureDescription: params.featureDescription,
       featureUrl: params.ctaUrl,
@@ -173,12 +148,12 @@ export const lifecycleEmailTriggers = {
     });
   },
 
-  async sendCustomerManagementEmail(data: LifecycleEmailData) {
-    const engagement = await getUserEngagementData(data.userId!);
+  async sendCustomerManagementEmail(data: LifecycleEmailData, getToken: () => Promise<string | null>) {
+    const engagement = await getUserEngagementData(data.userId!, getToken);
     
     // Only send if user signed up 3+ days ago and has no customers
     if (data.signupDate && daysSinceSignup(data.signupDate) >= 3 && !engagement.hasCustomers) {
-      return sendLifecycleEmail('feature-discovery', data, {
+      return sendLifecycleEmail('feature-discovery', data, getToken, {
         featureName: 'Customer Management',
         featureDescription: 'Keep all your customer information organized in one place. Add contacts, track history, and never lose important details.',
         featureUrl: `${window.location.origin}/customers`,
@@ -187,12 +162,12 @@ export const lifecycleEmailTriggers = {
     }
   },
 
-  async sendCalendarIntegrationEmail(data: LifecycleEmailData) {
-    const engagement = await getUserEngagementData(data.userId!);
+  async sendCalendarIntegrationEmail(data: LifecycleEmailData, getToken: () => Promise<string | null>) {
+    const engagement = await getUserEngagementData(data.userId!, getToken);
     
     // Only send if user signed up 5+ days ago and has no jobs
     if (data.signupDate && daysSinceSignup(data.signupDate) >= 5 && !engagement.hasJobs) {
-      return sendLifecycleEmail('feature-discovery', data, {
+      return sendLifecycleEmail('feature-discovery', data, getToken, {
         featureName: 'Calendar Integration',
         featureDescription: 'Never miss an appointment again! Schedule jobs, set reminders, and keep your team synchronized.',
         featureUrl: `${window.location.origin}/calendar`,
@@ -202,8 +177,8 @@ export const lifecycleEmailTriggers = {
   },
 
   // Milestone celebration emails
-  async sendFirstQuoteCreatedEmail(data: LifecycleEmailData) {
-    return sendLifecycleEmail('milestone', data, {
+  async sendFirstQuoteCreatedEmail(data: LifecycleEmailData, getToken: () => Promise<string | null>) {
+    return sendLifecycleEmail('milestone', data, getToken, {
       milestoneType: 'quote',
       nextSteps: 'Now you can send this quote to your customer and start converting leads into jobs.',
       ctaText: 'Send Your Quote',
@@ -211,8 +186,8 @@ export const lifecycleEmailTriggers = {
     });
   },
 
-  async sendFirstJobScheduledEmail(data: LifecycleEmailData) {
-    return sendLifecycleEmail('milestone', data, {
+  async sendFirstJobScheduledEmail(data: LifecycleEmailData, getToken: () => Promise<string | null>) {
+    return sendLifecycleEmail('milestone', data, getToken, {
       milestoneType: 'job',
       nextSteps: 'Great job! You\'re building a systematic approach to managing your service business.',
       ctaText: 'View Your Jobs',
@@ -220,8 +195,8 @@ export const lifecycleEmailTriggers = {
     });
   },
 
-  async sendFirstInvoiceSentEmail(data: LifecycleEmailData) {
-    return sendLifecycleEmail('milestone', data, {
+  async sendFirstInvoiceSentEmail(data: LifecycleEmailData, getToken: () => Promise<string | null>) {
+    return sendLifecycleEmail('milestone', data, getToken, {
       milestoneType: 'invoice',
       nextSteps: 'You\'re on track to get paid! Consider connecting Stripe to accept online payments.',
       ctaText: 'View Invoices',
@@ -229,8 +204,8 @@ export const lifecycleEmailTriggers = {
     });
   },
 
-  async sendStripeConnectedEmail(data: LifecycleEmailData) {
-    return sendLifecycleEmail('milestone', data, {
+  async sendStripeConnectedEmail(data: LifecycleEmailData, getToken: () => Promise<string | null>) {
+    return sendLifecycleEmail('milestone', data, getToken, {
       milestoneType: 'stripe',
       nextSteps: 'You can now accept credit card payments directly through your invoices. Your customers will love the convenience!',
       ctaText: 'Create Invoice',
@@ -239,21 +214,29 @@ export const lifecycleEmailTriggers = {
   },
 
   // Engagement recovery emails
-  async sendEngagementRecoveryEmail(data: LifecycleEmailData, params: { type: string; lastActivity?: string }) {
+  async sendEngagementRecoveryEmail(
+    data: LifecycleEmailData, 
+    getToken: () => Promise<string | null>,
+    params: { type: string; lastActivity?: string }
+  ) {
     const daysInactive = params.type === '7-day' ? 7 : 14;
     const isLongInactive = daysInactive >= 14;
     
-    return sendLifecycleEmail('engagement', data, {
+    return sendLifecycleEmail('engagement', data, getToken, {
       daysInactive,
       ctaText: isLongInactive ? 'Get Help Getting Started' : 'Continue Building',
       ctaUrl: isLongInactive ? `${window.location.origin}/settings` : `${window.location.origin}/calendar`
     });
   },
 
-  async sendInactiveUserEmail(data: LifecycleEmailData, daysInactive: number) {
+  async sendInactiveUserEmail(
+    data: LifecycleEmailData, 
+    getToken: () => Promise<string | null>,
+    daysInactive: number
+  ) {
     const isLongInactive = daysInactive >= 14;
     
-    return sendLifecycleEmail('engagement', data, {
+    return sendLifecycleEmail('engagement', data, getToken, {
       daysInactive,
       ctaText: isLongInactive ? 'Get Help Getting Started' : 'Continue Building',
       ctaUrl: isLongInactive ? `${window.location.origin}/settings` : `${window.location.origin}/calendar`

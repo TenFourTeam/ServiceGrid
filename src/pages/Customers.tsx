@@ -11,7 +11,8 @@ import { useState, useEffect } from 'react';
 import { useCustomersData } from '@/queries/unified';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from '@clerk/clerk-react';
+import { createAuthEdgeApi } from "@/utils/authEdgeApi";
 import { toast } from 'sonner';
 import { SimpleCSVImport } from '@/components/Onboarding/SimpleCSVImport';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -21,7 +22,9 @@ import { invalidationHelpers } from '@/queries/keys';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 export default function CustomersPage() {
-  const { isSignedIn, getToken } = useClerkAuth();
+  const { isSignedIn } = useClerkAuth();
+  const { getToken } = useAuth();
+  const authApi = createAuthEdgeApi(getToken);
   const queryClient = useQueryClient();
   const { businessId } = useBusinessContext();
   const location = useLocation();
@@ -76,7 +79,7 @@ export default function CustomersPage() {
     
     setDeleting(true);
     try {
-      const { data, error } = await supabase.functions.invoke('customers-crud', {
+      const { data, error } = await authApi.invoke('customers-crud', {
         method: 'DELETE',
         body: { id: customerToDelete.id }
       });

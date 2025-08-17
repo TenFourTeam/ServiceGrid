@@ -5,9 +5,10 @@ import { Label } from "@/components/ui/label";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { invalidationHelpers } from "@/queries/keys";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
+import { useAuth } from '@clerk/clerk-react';
+import { createAuthEdgeApi } from "@/utils/authEdgeApi";
 
 interface Customer {
   id?: string;
@@ -32,6 +33,8 @@ export function CustomerBottomModal({
 }: CustomerBottomModalProps) {
   const queryClient = useQueryClient();
   const { businessId } = useBusinessContext();
+  const { getToken } = useAuth();
+  const authApi = createAuthEdgeApi(getToken);
   
   const [formData, setFormData] = useState<Customer>({
     name: "",
@@ -78,7 +81,7 @@ export function CustomerBottomModal({
       };
       
       if (isEdit) {
-        const { data, error } = await supabase.functions.invoke('customers-crud', {
+        const { data, error } = await authApi.invoke('customers-crud', {
           method: 'PUT',
           body: {
             id: customer.id,
@@ -94,7 +97,7 @@ export function CustomerBottomModal({
         
         toast.success("Customer updated successfully");
       } else {
-        const { data, error } = await supabase.functions.invoke('customers-crud', {
+        const { data, error } = await authApi.invoke('customers-crud', {
           method: 'POST',
           body: customerData
         });

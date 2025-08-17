@@ -5,7 +5,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useCustomersData } from '@/hooks/useCustomersData';
 import { Customer, Job, JobType } from '@/types';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@clerk/clerk-react';
+import { createAuthEdgeApi } from "@/utils/authEdgeApi";
 import { 
   Drawer,
   DrawerContent,
@@ -56,6 +57,8 @@ export function JobBottomModal({
 
   const { data: customers } = useCustomersData();
   const queryClient = useQueryClient();
+  const { getToken } = useAuth();
+  const authApi = createAuthEdgeApi(getToken);
 
   // Reset state when modal closes
   useEffect(() => {
@@ -142,7 +145,7 @@ export function JobBottomModal({
       };
 
       // Create the job using edge function
-      const { data: jobData, error: jobError } = await supabase.functions.invoke('jobs-crud', {
+      const { data: jobData, error: jobError } = await authApi.invoke('jobs-crud', {
         method: 'POST',
         body: newJob
       });
@@ -185,7 +188,7 @@ export function JobBottomModal({
         const formData = new FormData();
         formData.append('file', file);
 
-        const { data, error } = await supabase.functions.invoke('upload-job-photo', {
+        const { data, error } = await authApi.invoke('upload-job-photo', {
           method: 'POST',
           body: { file: file, jobId: jobId }
         });
@@ -200,7 +203,7 @@ export function JobBottomModal({
       const uploadedUrls = await Promise.all(uploadPromises);
 
       // Update the job with photo URLs using edge function
-      const { data: jobData, error: updateError } = await supabase.functions.invoke('jobs-crud', {
+      const { data: jobData, error: updateError } = await authApi.invoke('jobs-crud', {
         method: 'PUT',
         body: { 
           id: jobId,
