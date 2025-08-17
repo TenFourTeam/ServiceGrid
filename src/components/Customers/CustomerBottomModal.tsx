@@ -167,9 +167,6 @@ export function CustomerBottomModal({
         phone: formData.phone.trim() || null,
         address: formData.address.trim() || null,
         notes: null, // Add notes field to match database schema
-        ...(isEdit && { id: customer.id }), // Only include ID for updates
-        // Add ownerId for POST requests (required by database)
-        ...(!isEdit && { ownerId: userId }),
       };
       
       

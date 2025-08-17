@@ -51,6 +51,7 @@ Deno.serve(async (req) => {
       let body;
       try {
         body = await req.json();
+        console.log('[customers-crud] POST request body:', body);
         if (!body) {
           throw new Error('Request body is empty');
         }
@@ -60,6 +61,7 @@ Deno.serve(async (req) => {
       }
       
       const { name, email, phone, address, notes } = body;
+      console.log('[customers-crud] Extracted fields:', { name, email, phone, address, notes });
 
       const { data, error } = await supabase
         .from('customers')
