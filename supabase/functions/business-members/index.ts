@@ -16,7 +16,7 @@ serve(async (req: Request) => {
     }
 
     // Verify user has access to this business
-    const { data: membership } = await ctx.supabase
+    const { data: membership } = await ctx.supaAdmin
       .from('business_members')
       .select('role')
       .eq('business_id', businessId)
@@ -29,7 +29,7 @@ serve(async (req: Request) => {
 
     if (req.method === 'GET') {
       // Get all members for this business
-      const { data: members, error } = await ctx.supabase
+      const { data: members, error } = await ctx.supaAdmin
         .from('business_members')
         .select(`
           id,

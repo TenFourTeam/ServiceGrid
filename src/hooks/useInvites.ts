@@ -26,9 +26,8 @@ export function usePendingInvites(businessId?: string) {
     queryFn: async () => {
       if (!businessId) return { invites: [] };
       
-      const { data, error } = await authApi.invoke('invite-manage', {
-        method: 'GET',
-        body: { action: 'list', business_id: businessId }
+      const { data, error } = await authApi.invoke(`invite-manage?action=list&business_id=${businessId}`, {
+        method: 'GET'
       });
       
       if (error) {

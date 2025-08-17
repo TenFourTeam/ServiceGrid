@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
           .from('quotes')
           .select(`
             id, number, total, status, updated_at, public_token, view_count,
-            customer_id, address, line_items, tax_rate, discount, subtotal,
+            customer_id, address, tax_rate, discount, subtotal,
             terms, payment_terms, frequency, deposit_required, deposit_percent,
             notes_internal, files, sent_at, created_at,
             customers!inner(name, email)
@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
           businessId: ctx.businessId,
           customerId: data.customer_id,
           address: data.address,
-          lineItems: data.line_items || [],
+          lineItems: [], // Line items are stored in separate table
           taxRate: data.tax_rate,
           discount: data.discount,
           subtotal: data.subtotal,
@@ -160,7 +160,6 @@ Deno.serve(async (req) => {
           discount: discount || 0,
           terms,
           address,
-          line_items: lineItems || [],
           payment_terms: paymentTerms,
           frequency,
           deposit_required: depositRequired,
@@ -202,7 +201,7 @@ Deno.serve(async (req) => {
       if (terms !== undefined) updateData.terms = terms;
       if (address !== undefined) updateData.address = address;
       if (viewCount !== undefined) updateData.view_count = viewCount;
-      if (lineItems !== undefined) updateData.line_items = lineItems;
+      // Line items are stored in separate table - skip this field
       if (paymentTerms !== undefined) updateData.payment_terms = paymentTerms;
       if (frequency !== undefined) updateData.frequency = frequency;
       if (depositRequired !== undefined) updateData.deposit_required = depositRequired;
