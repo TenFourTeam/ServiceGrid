@@ -19,6 +19,15 @@ export function CustomerCombobox({ customers, value, onChange, placeholder = "Se
   const selected = customers.find((c) => c.id === value);
   const displayName = useMemo(() => selected?.name || placeholder, [selected, placeholder]);
 
+  // Helper to check if multiple customers have the same name
+  const getCustomerDisplayName = (customer: Customer) => {
+    const duplicateNames = customers.filter(c => c.name === customer.name);
+    if (duplicateNames.length > 1) {
+      return `${customer.name} (${customer.email})`;
+    }
+    return customer.name;
+  };
+
   const handleCreateCustomer = () => {
     // Open customers page in new tab for customer creation
     window.open('/customers?new=1', '_blank');
@@ -38,14 +47,21 @@ export function CustomerCombobox({ customers, value, onChange, placeholder = "Se
         >
           <span className="flex items-center gap-2 truncate">
             <User className="h-4 w-4 opacity-60" />
-            {selected ? selected.name : displayName}
+            {selected ? getCustomerDisplayName(selected) : displayName}
           </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0 z-50" align="start">
-        <Command>
-          <CommandInput placeholder="Search customer…" />
+        <Command filter={(value, search) => {
+          if (value === "__create_new__") return 1;
+          const customer = customers.find(c => c.id === value);
+          if (!customer) return 0;
+          const searchLower = search.toLowerCase();
+          return (customer.name.toLowerCase().includes(searchLower) || 
+                  customer.email.toLowerCase().includes(searchLower)) ? 1 : 0;
+        }}>
+          <CommandInput placeholder="Search by name or email…" />
           <CommandList className="max-h-64 overflow-auto">
             <CommandEmpty>No customer found.</CommandEmpty>
             <CommandGroup>
@@ -58,7 +74,7 @@ export function CustomerCombobox({ customers, value, onChange, placeholder = "Se
               {customers.map((customer) => (
                 <CommandItem
                   key={customer.id}
-                  value={customer.name}
+                  value={customer.id}
                   onSelect={() => {
                     onChange(customer.id);
                     setOpen(false);
@@ -66,7 +82,7 @@ export function CustomerCombobox({ customers, value, onChange, placeholder = "Se
                   className="cursor-pointer"
                 >
                   <Check className={cn("mr-2 h-4 w-4", value === customer.id ? "opacity-100" : "opacity-0")} />
-                  <span className="truncate">{customer.name}</span>
+                  <span className="truncate">{getCustomerDisplayName(customer)}</span>
                 </CommandItem>
               ))}
             </CommandGroup>
