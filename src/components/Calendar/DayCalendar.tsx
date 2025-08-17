@@ -32,6 +32,7 @@ export default function DayCalendar({ date, displayMode = 'scheduled' }: { date:
   const handleDayDoubleClick = () => {
     setNewJobOpen(true);
   };
+  
   return (
     <section className="rounded-lg border p-3" onDoubleClick={handleDayDoubleClick}>
       <h2 className="sr-only">Day view</h2>
@@ -89,7 +90,7 @@ export default function DayCalendar({ date, displayMode = 'scheduled' }: { date:
           }
           
           return blocks;
-        }).flat() as JSX.Element[]}
+        }).flat()}
         </ul>
         {activeJob && (
           <JobShowModal

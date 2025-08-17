@@ -131,7 +131,7 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
                   }
                   
                   return blocks;
-                }).flat() as JSX.Element[]}
+                }).flat()}
                 {overflow > 0 && (
                   <li className="text-xs opacity-70">+{overflow} more</li>
                 )}
