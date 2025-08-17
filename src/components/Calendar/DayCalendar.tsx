@@ -1,3 +1,4 @@
+
 import { useMemo, useState } from "react";
 import { endOfDay, startOfDay } from "date-fns";
 import { useJobsData, useCustomersData } from "@/queries/unified";
@@ -88,7 +89,7 @@ export default function DayCalendar({ date, displayMode = 'scheduled' }: { date:
           }
           
           return blocks;
-        }).flat()}
+        }).flat() as JSX.Element[]}
         </ul>
         {activeJob && (
           <JobShowModal

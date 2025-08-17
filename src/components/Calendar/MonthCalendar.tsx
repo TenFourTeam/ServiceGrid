@@ -1,3 +1,4 @@
+
 import { useMemo, useState } from "react";
 import { addDays, endOfMonth, endOfWeek, format, isSameDay, isSameMonth, parseISO, startOfMonth, startOfWeek } from "date-fns";
 import { useJobsData, useCustomersData } from "@/queries/unified";
@@ -130,7 +131,7 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
                   }
                   
                   return blocks;
-                }).flat()}
+                }).flat() as JSX.Element[]}
                 {overflow > 0 && (
                   <li className="text-xs opacity-70">+{overflow} more</li>
                 )}
