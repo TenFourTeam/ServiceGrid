@@ -31,6 +31,8 @@ Deno.serve(async (req: Request) => {
 
     // Handle different HTTP methods
     switch (req.method) {
+      case 'GET':
+        return await handleGetCustomers(req, ctx);
       case 'POST':
         return await handleCreateCustomer(req, ctx);
       case 'PUT':
@@ -52,6 +54,50 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'Internal server error' }, { status: 500 });
   }
 });
+
+async function handleGetCustomers(req: Request, ctx: any) {
+  try {
+    console.log('[customers] Fetching customers for business:', ctx.businessId);
+
+    // Get customers from database using service role (bypasses RLS)
+    const { data, error, count } = await ctx.supaAdmin
+      .from('customers')
+      .select('*', { count: 'exact' })
+      .eq('business_id', ctx.businessId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('[customers] Database fetch failed:', error);
+      return json({ 
+        error: 'Failed to fetch customers',
+        details: error.message 
+      }, { status: 500 });
+    }
+
+    const customers = (data || []).map((c: any) => ({
+      id: c.id,
+      businessId: c.business_id,
+      name: c.name,
+      email: c.email ?? undefined,
+      phone: c.phone ?? undefined,
+      address: c.address ?? undefined,
+      notes: c.notes ?? undefined,
+    }));
+
+    console.log('[customers] Fetched', customers.length, 'customers');
+
+    return json({
+      customers,
+      count: count ?? customers.length
+    });
+
+  } catch (error) {
+    console.error('[customers] Get operation failed:', error);
+    return json({ 
+      error: 'Failed to fetch customers' 
+    }, { status: 500 });
+  }
+}
 
 async function handleCreateCustomer(req: Request, ctx: any) {
   try {

@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { queryKeys } from "@/queries/keys";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
+import { edgeRequest } from "@/utils/edgeApi";
+import { fn } from "@/utils/functionUrl";
 
 import type { Customer } from '@/types';
 
@@ -10,7 +11,7 @@ interface UseCustomersDataOptions {
 }
 
 /**
- * Direct Supabase customers hook - no Edge Function needed
+ * Edge Function customers hook - unified authentication context
  */
 export function useCustomersData(opts?: UseCustomersDataOptions) {
   const { isAuthenticated, businessId } = useBusinessContext();
@@ -20,32 +21,16 @@ export function useCustomersData(opts?: UseCustomersDataOptions) {
     queryKey: queryKeys.data.customers(businessId || ''),
     enabled,
     queryFn: async () => {
-      console.info("[useCustomersData] fetching customers...");
+      console.info("[useCustomersData] fetching customers via Edge Function...");
       
-      const { data, error, count } = await supabase
-        .from('customers')
-        .select('*', { count: 'exact' })
-        .eq('business_id', businessId!)
-        .order('created_at', { ascending: false });
+      const response = await edgeRequest(fn('customers'));
       
-      if (error) {
-        console.error("[useCustomersData] error:", error);
-        throw error;
-      }
+      console.info("[useCustomersData] fetched", response.customers.length, "customers");
       
-      const customers: Customer[] = (data || []).map((c: any) => ({
-        id: c.id,
-        businessId: c.business_id,
-        name: c.name,
-        email: c.email ?? undefined,
-        phone: c.phone ?? undefined,
-        address: c.address ?? undefined,
-        notes: c.notes ?? undefined,
-      }));
-      
-      console.info("[useCustomersData] fetched", customers.length, "customers");
-      
-      return { customers, count: count ?? customers.length };
+      return {
+        customers: response.customers as Customer[],
+        count: response.count
+      };
     },
     staleTime: 30_000,
   });
