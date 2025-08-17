@@ -27,9 +27,11 @@ function dayKey(d: Date) {
 export function WeekCalendar({
   selectedJobId,
   date,
+  displayMode = 'scheduled',
 }: {
   selectedJobId?: string;
   date?: Date;
+  displayMode?: 'scheduled' | 'clocked' | 'combined';
 }) {
   const { data: jobs, refetch: refetchJobs } = useJobsData();
   const { data: customers } = useCustomersData();

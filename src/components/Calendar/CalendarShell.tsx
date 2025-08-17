@@ -7,12 +7,15 @@ import DayCalendar from "@/components/Calendar/DayCalendar";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { addMonths, startOfDay, addDays, format, startOfWeek, endOfWeek } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+type CalendarDisplayMode = 'scheduled' | 'clocked' | 'combined';
+
 export default function CalendarShell({
   selectedJobId
 }: {
   selectedJobId?: string;
 }) {
   const [view, setView] = useState<"month" | "week" | "day">("week");
+  const [displayMode, setDisplayMode] = useState<CalendarDisplayMode>('scheduled');
   const [date, setDate] = useState<Date>(startOfDay(new Date()));
   const month = useMemo(() => new Date(date), [date]);
   const rangeTitle = useMemo(() => {
@@ -48,6 +51,15 @@ export default function CalendarShell({
             <h2 className="text-sm md:text-base font-semibold">{rangeTitle}</h2>
           </div>
           <div className="flex items-center gap-2">
+            <div className="hidden lg:block">
+              <Tabs value={displayMode} onValueChange={v => setDisplayMode(v as CalendarDisplayMode)}>
+                <TabsList>
+                  <TabsTrigger value="scheduled">Scheduled</TabsTrigger>
+                  <TabsTrigger value="clocked">Clocked</TabsTrigger>
+                  <TabsTrigger value="combined">Combined</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
             <div className="hidden md:block">
               <Tabs value={view} onValueChange={v => setView(v as any)}>
                 <TabsList>
@@ -85,9 +97,9 @@ export default function CalendarShell({
         
         {/* Main calendar area */}
         <main className="h-full min-h-0" role="grid">
-          {view === "month" && <MonthCalendar date={date} onDateChange={setDate} />}
-          {view === "week" && <WeekCalendar selectedJobId={selectedJobId} date={date} />}
-          {view === "day" && <DayCalendar date={date} />}
+          {view === "month" && <MonthCalendar date={date} onDateChange={setDate} displayMode={displayMode} />}
+          {view === "week" && <WeekCalendar selectedJobId={selectedJobId} date={date} displayMode={displayMode} />}
+          {view === "day" && <DayCalendar date={date} displayMode={displayMode} />}
         </main>
 
         {/* Right rail (search/shortcuts placeholder) */}

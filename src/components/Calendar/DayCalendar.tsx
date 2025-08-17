@@ -5,7 +5,7 @@ import { formatMoney } from "@/utils/format";
 import JobShowModal from "@/components/Jobs/JobShowModal";
 import type { Job } from "@/types";
 
-export default function DayCalendar({ date }: { date: Date }) {
+export default function DayCalendar({ date, displayMode = 'scheduled' }: { date: Date; displayMode?: 'scheduled' | 'clocked' | 'combined'; }) {
   const { data: allJobs } = useJobsData();
   const { data: customers } = useCustomersData();
   

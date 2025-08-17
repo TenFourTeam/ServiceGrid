@@ -398,10 +398,14 @@ export type Database = {
         Row: {
           address: string | null
           business_id: string
+          clock_in_time: string | null
+          clock_out_time: string | null
           created_at: string
           customer_id: string
           ends_at: string | null
           id: string
+          is_clocked_in: boolean | null
+          job_type: Database["public"]["Enums"]["job_type"] | null
           notes: string | null
           owner_id: string
           photos: Json
@@ -416,10 +420,14 @@ export type Database = {
         Insert: {
           address?: string | null
           business_id: string
+          clock_in_time?: string | null
+          clock_out_time?: string | null
           created_at?: string
           customer_id: string
           ends_at?: string | null
           id?: string
+          is_clocked_in?: boolean | null
+          job_type?: Database["public"]["Enums"]["job_type"] | null
           notes?: string | null
           owner_id: string
           photos?: Json
@@ -434,10 +442,14 @@ export type Database = {
         Update: {
           address?: string | null
           business_id?: string
+          clock_in_time?: string | null
+          clock_out_time?: string | null
           created_at?: string
           customer_id?: string
           ends_at?: string | null
           id?: string
+          is_clocked_in?: boolean | null
+          job_type?: Database["public"]["Enums"]["job_type"] | null
           notes?: string | null
           owner_id?: string
           photos?: Json
@@ -896,6 +908,7 @@ export type Database = {
       business_role: "owner" | "worker"
       invoice_status: "Draft" | "Sent" | "Paid" | "Overdue"
       job_status: "Scheduled" | "In Progress" | "Completed"
+      job_type: "scheduled" | "time_and_materials"
       payment_status: "Succeeded" | "Failed"
       payment_terms: "due_on_receipt" | "net_15" | "net_30" | "net_60"
       quote_frequency:
@@ -1041,6 +1054,7 @@ export const Constants = {
       business_role: ["owner", "worker"],
       invoice_status: ["Draft", "Sent", "Paid", "Overdue"],
       job_status: ["Scheduled", "In Progress", "Completed"],
+      job_type: ["scheduled", "time_and_materials"],
       payment_status: ["Succeeded", "Failed"],
       payment_terms: ["due_on_receipt", "net_15", "net_30", "net_60"],
       quote_frequency: [

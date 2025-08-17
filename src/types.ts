@@ -96,6 +96,8 @@ export type EstimateStatus = QuoteStatus;
 export interface Estimate extends Quote {}
 
 export type JobStatus = 'Scheduled' | 'In Progress' | 'Completed';
+export type JobType = 'scheduled' | 'time_and_materials';
+
 export interface Job {
   id: ID;
   businessId: ID;
@@ -103,14 +105,18 @@ export interface Job {
   customerId: ID;
   address?: string;
   title?: string;
-  startsAt: ISODate;
-  endsAt: ISODate;
+  startsAt?: ISODate;
+  endsAt?: ISODate;
   status: JobStatus;
   recurrence?: 'biweekly';
   notes?: string;
   total?: Money;
   photos?: string[]; // public URLs for job photos
   uploadingPhotos?: boolean; // optimistic state for photo uploads
+  jobType: JobType;
+  clockInTime?: ISODate | null;
+  clockOutTime?: ISODate | null;
+  isClockedIn: boolean;
   createdAt: ISODate;
   updatedAt: ISODate;
 }

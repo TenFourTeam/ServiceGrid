@@ -13,7 +13,7 @@ function useMonthGrid(date: Date) {
   return { start, end, days };
 }
 
-export default function MonthCalendar({ date, onDateChange }: { date: Date; onDateChange: (d: Date) => void }) {
+export default function MonthCalendar({ date, onDateChange, displayMode = 'scheduled' }: { date: Date; onDateChange: (d: Date) => void; displayMode?: 'scheduled' | 'clocked' | 'combined'; }) {
   const { start, end, days } = useMonthGrid(date);
   const { data: allJobs } = useJobsData();
   const { data: customers } = useCustomersData();

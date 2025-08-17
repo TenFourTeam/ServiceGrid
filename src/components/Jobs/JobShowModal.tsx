@@ -18,11 +18,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { invalidationHelpers } from '@/queries/keys';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useNavigate } from 'react-router-dom';
+import { useClockInOut } from "@/hooks/useClockInOut";
 
 interface JobShowModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  job: Pick<Job, "id" | "customerId" | "startsAt" | "endsAt" | "status"> & Partial<Pick<Job, "notes" | "address" | "total" | "photos" | "quoteId" >>;
+  job: Pick<Job, "id" | "customerId" | "startsAt" | "endsAt" | "status" | "jobType" | "isClockedIn"> & Partial<Pick<Job, "notes" | "address" | "total" | "photos" | "quoteId" | "clockInTime" | "clockOutTime">>;
 }
 
 export default function JobShowModal({ open, onOpenChange, job }: JobShowModalProps) {
@@ -44,6 +45,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
   const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
   const [linkedQuoteId, setLinkedQuoteId] = useState<string | null>(null);
   const [linkedQuoteObject, setLinkedQuoteObject] = useState<any>(null);
+  const { clockInOut, isLoading: isClockingInOut } = useClockInOut();
   
   useEffect(() => {
     setLocalNotes(job.notes ?? "");
@@ -216,6 +218,10 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
               <div className="font-medium">{customerName}</div>
             </div>
             <div>
+              <div className="text-sm text-muted-foreground">Type</div>
+              <div className="font-medium capitalize">{job.jobType?.replace('_', ' ') || 'Scheduled'}</div>
+            </div>
+            <div>
               <div className="text-sm text-muted-foreground">Status</div>
               <div className="font-medium">{job.status}</div>
             </div>
@@ -227,6 +233,18 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
               <div className="text-sm text-muted-foreground">Ends</div>
               <div>{formatDateTime(job.endsAt)}</div>
             </div>
+            {job.jobType === 'time_and_materials' && (
+              <>
+                <div>
+                  <div className="text-sm text-muted-foreground">Clock In</div>
+                  <div>{job.clockInTime ? formatDateTime(job.clockInTime) : '—'}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">Clock Out</div>
+                  <div>{job.clockOutTime ? formatDateTime(job.clockOutTime) : '—'}</div>
+                </div>
+              </>
+            )}
             <div>
               <div className="text-sm text-muted-foreground">Address</div>
               <div className="truncate">{job.address || "—"}</div>
@@ -369,6 +387,16 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                 >
                   Navigate
                 </Button>
+                {job.jobType === 'time_and_materials' && (
+                  <Button
+                    variant={job.isClockedIn ? "destructive" : "default"}
+                    size="sm"
+                    onClick={() => clockInOut({ jobId: job.id, isClockingIn: !job.isClockedIn })}
+                    disabled={isClockingInOut}
+                  >
+                    {isClockingInOut ? 'Updating...' : job.isClockedIn ? 'Clock Out' : 'Clock In'}
+                  </Button>
+                )}
                 <Button 
                   variant="outline" 
                   onClick={handleCreateInvoice}

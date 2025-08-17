@@ -45,6 +45,10 @@ export function useJobsData(opts?: UseJobsDataOptions) {
         total: row.total ?? null,
         notes: row.notes ?? null,
         photos: Array.isArray(row.photos) ? row.photos : [],
+        jobType: row.job_type || 'scheduled',
+        clockInTime: row.clock_in_time,
+        clockOutTime: row.clock_out_time,
+        isClockedIn: row.is_clocked_in || false,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
       }));
