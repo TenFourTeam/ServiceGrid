@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { edgeToast } from "@/utils/edgeRequestWithToast";
 import { fn } from "@/utils/functionUrl";
+import { invalidationHelpers } from "@/queries/keys";
+import { useBusinessContext } from "@/hooks/useBusinessContext";
 
 interface Customer {
   id?: string;
@@ -30,6 +32,7 @@ export function CustomerBottomModal({
   onSave 
 }: CustomerBottomModalProps) {
   const queryClient = useQueryClient();
+  const { businessId } = useBusinessContext();
   
   const [formData, setFormData] = useState<Customer>({
     name: "",
@@ -86,7 +89,9 @@ export function CustomerBottomModal({
         }, "Customer created successfully");
       }
       
-      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      if (businessId) {
+        invalidationHelpers.customers(queryClient, businessId);
+      }
       onOpenChange(false);
       onSave?.();
     } catch (error) {

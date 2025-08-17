@@ -67,46 +67,6 @@ export default function CustomersPage() {
     }
   }, [location.search, navigate]);
 
-  async function save() {
-    if (!isSignedIn) {
-      toast.error('You must be signed in to create customers.');
-      return;
-    }
-    if (!draft.name.trim()) {
-      toast.error('Please enter a customer name.');
-      return;
-    }
-    if (!draft.email.trim()) {
-      toast.error('Please enter a customer email.');
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const isEdit = !!editingId;
-
-      const successMessage = isEdit ? 'Customer updated successfully' : 'Customer added successfully';
-      await edgeToast.create(fn("customers"), {
-        ...(isEdit ? { id: editingId } : {}),
-        name: draft.name.trim(),
-        email: draft.email.trim(),
-        phone: draft.phone.trim() || null,
-        address: draft.address.trim() || null,
-      }, successMessage);
-      
-      setOpen(false);
-      setEditingId(null);
-      setDraft({ name: '', email: '', phone: '', address: '' });
-      if (businessId) {
-        invalidationHelpers.customers(queryClient, businessId);
-      }
-    } catch (e: any) {
-      console.error('[CustomersPage] save customer failed:', e);
-      toast.error(e?.message || 'Failed to save customer');
-    } finally {
-      setSaving(false);
-    }
-  }
 
   function openDeleteDialog(customer: any) {
     setCustomerToDelete(customer);
