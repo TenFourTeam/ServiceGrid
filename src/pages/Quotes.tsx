@@ -25,8 +25,7 @@ import { useOnboardingActions } from '@/onboarding/hooks';
 import { toast } from 'sonner';
 import { formatMoney as formatCurrency } from '@/utils/format';
 import type { Customer, QuoteListItem, QuoteStatus, LineItem, Quote } from '@/types';
-import { edgeRequest } from '@/utils/edgeApi';
-import { fn } from '@/utils/functionUrl';
+import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 
 
 const statusColors: Record<QuoteStatus, string> = {
@@ -41,6 +40,7 @@ const statusColors: Record<QuoteStatus, string> = {
 
 export default function QuotesPage() {
   const { isSignedIn, getToken } = useClerkAuth();
+  const authApi = createAuthEdgeApi(getToken);
   const { businessTaxRateDefault } = useBusinessContext();
   const { data: quotes } = useQuotesData();
   const { data: customers } = useCustomersData();
@@ -57,9 +57,14 @@ export default function QuotesPage() {
   const handleSendQuote = async (quoteListItem: QuoteListItem) => {
     // Convert QuoteListItem to full Quote by fetching from API
     try {
-      const fullQuote = await edgeRequest(fn(`quotes?id=${quoteListItem.id}`), {
-        method: 'GET',
+      const { data: fullQuote, error } = await authApi.invoke(`quotes?id=${quoteListItem.id}`, {
+        method: 'GET'
       });
+      
+      if (error) {
+        throw new Error(error.message || 'Failed to load quote details');
+      }
+      
       setSendQuoteItem(fullQuote);
     } catch (error) {
       console.error('Failed to fetch full quote:', error);

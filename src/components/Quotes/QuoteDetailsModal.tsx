@@ -3,8 +3,6 @@ import { Drawer, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle } from '
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { formatMoney, formatDate } from '@/utils/format';
-import { edgeRequest } from '@/utils/edgeApi';
-import { fn } from '@/utils/functionUrl';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { toast } from 'sonner';
@@ -84,9 +82,14 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
     const fetchQuote = async () => {
       setLoading(true);
       try {
-        const fullQuote = await edgeRequest(fn(`quotes?id=${quoteId}`), {
-          method: 'GET',
+        const { data: fullQuote, error } = await authApi.invoke(`quotes?id=${quoteId}`, {
+          method: 'GET'
         });
+        
+        if (error) {
+          throw new Error(error.message || 'Failed to fetch quote');
+        }
+        
         setQuote(fullQuote);
       } catch (error) {
         console.error('Failed to fetch quote:', error);
@@ -104,9 +107,9 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
     setIsSubmitting(true);
     try {
       if (currentMode === 'create') {
-        const result = await edgeRequest(fn('quotes'), {
+        const { data: result, error } = await authApi.invoke('quotes', {
           method: 'POST',
-          body: JSON.stringify({
+          body: {
             customerId: formData.customerId,
             address: formData.address,
             lineItems: formData.lineItems.map((li: any) => ({
@@ -124,8 +127,17 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
             frequency: formData.frequency,
             depositRequired: formData.depositRequired,
             depositPercent: formData.depositPercent,
-          }),
+          },
+          toast: {
+            success: 'Quote created successfully',
+            loading: 'Creating quote...',
+            error: 'Failed to create quote'
+          }
         });
+        
+        if (error) {
+          throw new Error(error.message || 'Failed to create quote');
+        }
 
         // Invalidate quotes data
         if (businessId) {
@@ -160,7 +172,6 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
 
         onOpenChange(false);
         onSendQuote?.(newQuote);
-        toast.success('Quote created successfully');
         
         // Trigger lifecycle email for first quote
         try {
@@ -170,9 +181,9 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
         }
       } else if (currentMode === 'edit' && quote) {
         console.log('[QuoteDetailsModal] Updating quote:', quote.id);
-        const result = await edgeRequest(fn(`quotes/${quote.id}`), {
+        const { data: result, error } = await authApi.invoke(`quotes/${quote.id}`, {
           method: 'PATCH',
-          body: JSON.stringify({
+          body: {
             customerId: formData.customerId,
             address: formData.address,
             lineItems: formData.lineItems.map((li: any) => ({
@@ -190,8 +201,17 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
             frequency: formData.frequency,
             depositRequired: formData.depositRequired,
             depositPercent: formData.depositPercent,
-          }),
+          },
+          toast: {
+            success: 'Quote updated successfully',
+            loading: 'Updating quote...',
+            error: 'Failed to update quote'
+          }
         });
+        
+        if (error) {
+          throw new Error(error.message || 'Failed to update quote');
+        }
 
         // Refresh quote data
         if (businessId) {
@@ -200,11 +220,10 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
 
         setQuote(result.quote);
         setCurrentMode('view');
-        toast.success('Quote updated successfully');
       }
     } catch (e: any) {
       console.error(e);
-      toast.error(e?.message || `Failed to ${currentMode === 'create' ? 'create' : 'update'} quote`);
+      // Error already handled by authApi toast
     } finally {
       setIsSubmitting(false);
     }

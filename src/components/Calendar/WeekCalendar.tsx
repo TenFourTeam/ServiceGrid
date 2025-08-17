@@ -10,8 +10,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerC
 import { Textarea } from '@/components/ui/textarea';
 // Jobs data now comes from store via dashboard data
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
-import { edgeRequest } from '@/utils/edgeApi';
-import { fn } from '@/utils/functionUrl';
+import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 import { toast } from 'sonner';
 import { JobBottomModal } from '@/components/Jobs/JobBottomModal';
 import { supabase } from '@/integrations/supabase/client';
@@ -88,6 +87,7 @@ export function WeekCalendar({
   }, [date]);
 
   const { isSignedIn, getToken } = useClerkAuth();
+  const authApi = createAuthEdgeApi(getToken);
   
   // Jobs data is now loaded via dashboard data in AppLayout
   // No need for separate range fetching
@@ -163,15 +163,21 @@ const minuteOfDayFromAnchorOffset = (offset: number) => {
 
   async function createInvoiceFromJob(jobId: string) {
     try {
-      const data = await edgeRequest(fn('invoices'), {
+      const { data, error } = await authApi.invoke('invoices', {
         method: 'POST',
-        body: JSON.stringify({ jobId }),
+        body: { jobId },
+        toast: {
+          success: 'Invoice created',
+          loading: 'Creating invoice...',
+          error: 'Failed to create invoice'
+        }
       });
-      const num = (data as any)?.invoice?.number || '';
-      toast.success(num ? `Invoice ${num} created` : 'Invoice created');
+      
+      if (error) {
+        throw new Error(error.message || 'Failed to create invoice');
+      }
     } catch (e: any) {
       console.error(e);
-      toast.error(e?.message || 'Failed to create invoice');
     }
   }
 
@@ -311,14 +317,21 @@ function onDragStart(e: React.PointerEvent, job: Job) {
       }
       
       try {
-        await edgeRequest(fn(`jobs?id=${job.id}`), {
+        const { error } = await authApi.invoke(`jobs?id=${job.id}`, {
           method: 'PATCH',
-          body: JSON.stringify({
+          body: {
             startsAt: latest.startsAt,
             endsAt: latest.endsAt,
-          }),
+          },
+          toast: {
+            success: 'Job rescheduled successfully',
+            error: 'Failed to reschedule job'
+          }
         });
-        toast.success('Job rescheduled successfully');
+        
+        if (error) {
+          throw new Error(error.message || 'Failed to reschedule job');
+        }
       } catch (err: any) {
         console.error(err);
         // Rollback cache on error
@@ -334,7 +347,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
             )
           };
         });
-        toast.error(err?.message || 'Failed to reschedule job');
+        // Error already handled by authApi toast
       }
     };
     window.addEventListener('pointermove', onMove);
@@ -397,13 +410,20 @@ function onDragStart(e: React.PointerEvent, job: Job) {
       setIsResizing(null);
       
       try {
-        await edgeRequest(fn(`jobs?id=${job.id}`), {
+        const { error } = await authApi.invoke(`jobs?id=${job.id}`, {
           method: 'PATCH',
-          body: JSON.stringify({
+          body: {
             endsAt: latestEnd,
-          }),
+          },
+          toast: {
+            success: 'Job duration updated successfully',
+            error: 'Failed to update job duration'
+          }
         });
-        toast.success('Job duration updated successfully');
+        
+        if (error) {
+          throw new Error(error.message || 'Failed to update job duration');
+        }
       } catch (err: any) {
         console.error(err);
         // Rollback cache on error
@@ -419,7 +439,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
             )
           };
         });
-        toast.error(err?.message || 'Failed to update job duration');
+        // Error already handled by authApi toast
       }
     };
 

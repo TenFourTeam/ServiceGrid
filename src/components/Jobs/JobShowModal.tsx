@@ -7,8 +7,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatDateTime, formatMoney } from "@/utils/format";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
-import { edgeRequest } from "@/utils/edgeApi";
-import { fn } from "@/utils/functionUrl";
 import { toast } from "sonner";
 import ReschedulePopover from "@/components/WorkOrders/ReschedulePopover";
 import type { Job } from "@/types";
@@ -120,21 +118,27 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
 
   async function handleCompleteJob() {
     setIsCompletingJob(true);
-    toast.info('Marking job as complete...');
     
     try {
-      await edgeRequest(fn(`jobs?id=${job.id}`), {
+      const { error } = await authApi.invoke(`jobs?id=${job.id}`, {
         method: 'PATCH',
-        body: JSON.stringify({ status: 'Completed' }),
+        body: { status: 'Completed' },
+        toast: {
+          success: 'Job marked as complete',
+          loading: 'Marking job as complete...',
+          error: 'Failed to mark job as complete'
+        }
       });
+      
+      if (error) {
+        throw new Error(error.message || 'Failed to mark job as complete');
+      }
       
       if (businessId) {
         invalidationHelpers.jobs(queryClient, businessId);
       }
-      
-      toast.success('Job marked as complete');
     } catch (e: any) {
-      toast.error(e?.message || 'Failed to mark job as complete');
+      console.error('Failed to complete job:', e);
     } finally {
       setIsCompletingJob(false);
     }
@@ -164,13 +168,17 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
         try {
           const fd = new FormData();
           fd.append('file', file);
-          const resp = await edgeRequest(fn('upload-job-photo'), {
+          const { data, error } = await authApi.invoke('upload-job-photo', {
             method: 'POST',
             body: fd,
+            headers: {} // Let browser set Content-Type for FormData
           });
-          const out = resp as any;
-          if (out?.url) {
-            newPhotoUrls.push(out.url as string);
+          
+          if (error) {
+            console.warn('[JobShowModal] Photo upload failed:', error);
+            // Continue with other photos even if one fails
+          } else if (data?.url) {
+            newPhotoUrls.push(data.url as string);
           }
         } catch (error) {
           console.warn('[JobShowModal] Photo upload failed:', error);
@@ -182,12 +190,16 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
         const allPhotos = [...existingPhotos, ...newPhotoUrls];
         
         // Update job with new photos
-        await edgeRequest(fn('jobs') + `?id=${job.id}`, {
+        const { error: updateError } = await authApi.invoke(`jobs?id=${job.id}`, {
           method: 'PATCH',
-          body: JSON.stringify({
+          body: {
             photos: allPhotos,
-          }),
+          }
         });
+        
+        if (updateError) {
+          throw new Error(updateError.message || 'Failed to update job photos');
+        }
         
         // Invalidate cache to refresh UI
         if (businessId) {
@@ -300,13 +312,14 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                 if (notesTimer.current) window.clearTimeout(notesTimer.current);
                 notesTimer.current = window.setTimeout(async ()=>{
                     try {
-                      await edgeRequest(fn(`jobs?id=${job.id}`), {
+                      const { error } = await authApi.invoke(`jobs?id=${job.id}`, {
                         method: 'PATCH',
-                        body: JSON.stringify({ notes: val }),
+                        body: { notes: val }
                       });
-                       if (businessId) {
-                         invalidationHelpers.jobs(queryClient, businessId);
-                       }
+                      
+                      if (!error && businessId) {
+                        invalidationHelpers.jobs(queryClient, businessId);
+                      }
                     } catch {}
                 }, 600) as unknown as number;
               }}
@@ -420,14 +433,25 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
               <div className="flex items-center gap-2">
                 <Button variant="destructive" size="sm" onClick={async () => {
                   try {
-                    await edgeRequest(fn(`jobs?id=${job.id}`), { method: 'DELETE' });
+                    const { error } = await authApi.invoke(`jobs?id=${job.id}`, { 
+                      method: 'DELETE',
+                      toast: {
+                        success: 'Job deleted',
+                        loading: 'Deleting job...',
+                        error: 'Failed to delete job'
+                      }
+                    });
+                    
+                    if (error) {
+                      throw new Error(error.message || 'Failed to delete job');
+                    }
+                    
                     if (businessId) {
                       invalidationHelpers.jobs(queryClient, businessId);
                     }
-                    toast.success('Job deleted');
                     onOpenChange(false);
                   } catch (e: any) {
-                    toast.error(e?.message || 'Failed to delete job');
+                    console.error('Failed to delete job:', e);
                   }
                 }}>Delete</Button>
               </div>
@@ -481,10 +505,14 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
               // Find the selected quote and store it optimistically
               const selectedQuote = quotes.find(q => q.id === quoteId);
               
-              const data = await edgeRequest(fn(`jobs?id=${job.id}`), {
+              const { error: linkError } = await authApi.invoke(`jobs?id=${job.id}`, {
                 method: 'PATCH',
-                body: JSON.stringify({ quoteId }),
+                body: { quoteId }
               });
+              
+              if (linkError) {
+                throw new Error(linkError.message || 'Failed to link quote');
+              }
               if (businessId) {
                 invalidationHelpers.jobs(queryClient, businessId);
               }

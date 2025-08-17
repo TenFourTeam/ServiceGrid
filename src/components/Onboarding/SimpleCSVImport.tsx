@@ -7,8 +7,7 @@ import { Upload, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { edgeRequest } from '@/utils/edgeApi';
-import { fn } from '@/utils/functionUrl';
+import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 import { invalidationHelpers } from '@/queries/keys';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 
@@ -20,6 +19,7 @@ interface SimpleCSVImportProps {
 
 export function SimpleCSVImport({ open, onOpenChange, onImportComplete }: SimpleCSVImportProps) {
   const { getToken } = useClerkAuth();
+  const authApi = createAuthEdgeApi(getToken);
   const queryClient = useQueryClient();
   const { businessId } = useBusinessContext();
   const [file, setFile] = useState<File | null>(null);
@@ -43,20 +43,21 @@ export function SimpleCSVImport({ open, onOpenChange, onImportComplete }: Simple
       formData.append('file', file);
       formData.append('businessId', businessId);
 
-      const token = await getToken();
-      const response = await fetch(fn('bulk-import-customers'), {
+      const { data: result, error } = await authApi.invoke('bulk-import-customers', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
         body: formData,
+        headers: {}, // Let browser set Content-Type for FormData
+        toast: {
+          success: false, // We'll show custom success message
+          loading: 'Importing customers...',
+          error: 'Failed to import customers. Please check your file format.'
+        }
       });
 
-      if (!response.ok) {
-        throw new Error('Import failed');
+      if (error) {
+        throw new Error(error.message || 'Import failed');
       }
 
-      const result = await response.json();
       toast.success(`Successfully imported ${result.count} customers`);
       
       invalidationHelpers.customers(queryClient, businessId);
@@ -64,7 +65,6 @@ export function SimpleCSVImport({ open, onOpenChange, onImportComplete }: Simple
       resetModal();
     } catch (error) {
       console.error('Import error:', error);
-      toast.error('Failed to import customers. Please check your file format.');
     } finally {
       setImporting(false);
     }

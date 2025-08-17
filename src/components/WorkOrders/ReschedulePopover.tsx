@@ -4,8 +4,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
-import { edgeRequest } from "@/utils/edgeApi";
-import { fn } from "@/utils/functionUrl";
+import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 import { toast } from "sonner";
 import { addMinutes, format } from "date-fns";
 import type { Job } from "@/types";
@@ -20,6 +19,7 @@ interface ReschedulePopoverProps {
 
 export default function ReschedulePopover({ job, onDone }: ReschedulePopoverProps) {
   const { getToken } = useClerkAuth();
+  const authApi = createAuthEdgeApi(getToken);
   const queryClient = useQueryClient();
   const { businessId } = useBusinessContext();
   const [open, setOpen] = useState(false);
@@ -35,27 +35,34 @@ export default function ReschedulePopover({ job, onDone }: ReschedulePopoverProp
     }
     try {
       setSubmitting(true);
-      toast.loading("Rescheduling job...");
       
       const [h, m] = time.split(":").map((t) => parseInt(t, 10));
       const starts = new Date(date);
       starts.setHours(h || 0, m || 0, 0, 0);
       const ends = addMinutes(starts, durationMins);
 
-      const data = await edgeRequest(fn("jobs?id=" + job.id), {
+      const { error } = await authApi.invoke("jobs?id=" + job.id, {
         method: "PATCH",
-        body: JSON.stringify({ startsAt: starts.toISOString(), endsAt: ends.toISOString() }),
+        body: { startsAt: starts.toISOString(), endsAt: ends.toISOString() },
+        toast: {
+          success: "Job rescheduled successfully",
+          loading: "Rescheduling job...",
+          error: "Failed to reschedule"
+        }
       });
+      
+      if (error) {
+        throw new Error(error.message || 'Failed to reschedule job');
+      }
       
       if (businessId) {
         invalidationHelpers.jobs(queryClient, businessId);
       }
       
-      toast.success("Job rescheduled successfully");
       setOpen(false);
       await onDone?.();
     } catch (e: any) {
-      toast.error("Failed to reschedule", { description: e?.message || String(e) });
+      console.error('Failed to reschedule job:', e);
     } finally {
       setSubmitting(false);
     }
@@ -64,22 +71,29 @@ export default function ReschedulePopover({ job, onDone }: ReschedulePopoverProp
   const handleUnschedule = async () => {
     try {
       setSubmitting(true);
-      toast.loading("Unscheduling job...");
       
-      const data = await edgeRequest(fn("jobs?id=" + job.id), {
+      const { error } = await authApi.invoke("jobs?id=" + job.id, {
         method: "PATCH",
-        body: JSON.stringify({ startsAt: null, endsAt: null }),
+        body: { startsAt: null, endsAt: null },
+        toast: {
+          success: "Job unscheduled successfully",
+          loading: "Unscheduling job...",
+          error: "Failed to unschedule"
+        }
       });
+      
+      if (error) {
+        throw new Error(error.message || 'Failed to unschedule job');
+      }
       
       if (businessId) {
         invalidationHelpers.jobs(queryClient, businessId);
       }
       
-      toast.success("Job unscheduled successfully");
       setOpen(false);
       await onDone?.();
     } catch (e: any) {
-      toast.error("Failed to unschedule", { description: e?.message || String(e) });
+      console.error('Failed to unschedule job:', e);
     } finally {
       setSubmitting(false);
     }
