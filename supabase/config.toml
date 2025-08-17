@@ -1,8 +1,5 @@
 project_id = "ijudkzqfriazabiosnvb"
 
-[functions.customers]
-verify_jwt = false
-
 [functions.complete-profile-email]
 verify_jwt = true
 

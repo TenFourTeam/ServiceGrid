@@ -93,9 +93,9 @@ export function createAuthEdgeApi(getToken: (options?: { template?: string }) =>
 
         const startInvoke = Date.now();
         const { data, error } = await supabase.functions.invoke(functionName, {
-          body: requestOptions.body ? JSON.stringify(requestOptions.body) : undefined,
+          body: requestOptions.body,
           headers,
-          method: (requestOptions.method as "POST" | "PUT" | "PATCH" | "DELETE" | "GET") || "POST", // Pass through the method parameter
+          method: (requestOptions.method as "POST" | "PUT" | "PATCH" | "DELETE" | "GET") || "POST",
         });
         const endInvoke = Date.now();
         console.info(`🔧 [AuthEdgeApi] Function call took ${endInvoke - startInvoke}ms`);

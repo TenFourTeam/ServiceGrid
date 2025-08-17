@@ -11,6 +11,7 @@ Deno.serve(async (req) => {
 
   try {
     console.log(`[customers-crud] ${req.method} request received`);
+    console.log(`[customers-crud] Function is being called successfully!`);
     
     const ctx = await requireCtx(req);
     console.log('[customers-crud] Context resolved:', { userId: ctx.userId, businessId: ctx.businessId });
