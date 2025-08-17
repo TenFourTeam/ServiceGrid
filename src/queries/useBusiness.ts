@@ -13,7 +13,7 @@ export function useBusiness(enabled: boolean = true) {
     queryFn: async () => {
       console.info('[useBusiness] fetching business via edge function');
       
-      const { data, error } = await authApi.invoke('get-business');
+      const { data, error } = await authApi.invoke('business-info');
       
       if (error) {
         console.error('[useBusiness] error:', error);

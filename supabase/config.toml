@@ -84,7 +84,7 @@ verify_jwt = false
 [functions.get-profile]
 verify_jwt = true
 
-[functions.get-business]
+[functions.business-info]
 verify_jwt = true
 
 [functions.customers-crud]
