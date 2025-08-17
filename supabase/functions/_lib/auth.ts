@@ -241,32 +241,6 @@ async function resolveUserUuid(supabase: ReturnType<typeof createClient>, clerkU
     throw new Error(`Failed to create user profile: ${createError.message}`);
   }
 
-  // Complete the profile email using Clerk's backend API
-  console.info(`🔄 [auth] Completing email for new profile: ${newProfile.id}`);
-  try {
-    const completeEmailResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/complete-profile-email`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`
-      },
-      body: JSON.stringify({
-        clerkUserId,
-        profileId: newProfile.id
-      })
-    });
-
-    if (!completeEmailResponse.ok) {
-      const errorText = await completeEmailResponse.text();
-      console.warn(`⚠️ [auth] Failed to complete profile email: ${errorText}`);
-      // Don't throw here - profile creation succeeded, email completion is supplementary
-    } else {
-      console.info(`✅ [auth] Profile email completed successfully`);
-    }
-  } catch (error) {
-    console.warn(`⚠️ [auth] Error completing profile email:`, error);
-    // Don't throw here - profile creation succeeded, email completion is supplementary
-  }
 
   console.info(`✅ [auth] Profile created successfully for user: ${clerkUserId}`);
   return newProfile.id as UserUuid;
