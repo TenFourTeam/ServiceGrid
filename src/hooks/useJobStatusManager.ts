@@ -22,7 +22,7 @@ export function useJobStatusManager() {
   const { data: jobs, refetch } = useJobsData();
   const { businessId, isAuthenticated } = useBusinessContext();
   const { getToken } = useClerkAuth();
-  const authApi = createAuthEdgeApi(getToken);
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const queryClient = useQueryClient();
 
   // Check which jobs need status updates

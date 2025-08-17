@@ -17,7 +17,7 @@ const TRIAL_DURATION_DAYS = 7;
 export function useSubscriptionStatus(opts?: { enabled?: boolean }) {
   const { isSignedIn, getToken } = useClerkAuth();
   const { userId } = useBusinessContext();
-  const authApi = createAuthEdgeApi(getToken);
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const enabled = !!isSignedIn && (opts?.enabled ?? true);
 
   return useQuery<SubscriptionStatus | null, Error>({

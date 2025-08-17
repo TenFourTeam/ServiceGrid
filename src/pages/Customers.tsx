@@ -24,7 +24,7 @@ import { useBusinessContext } from '@/hooks/useBusinessContext';
 export default function CustomersPage() {
   const { isSignedIn } = useClerkAuth();
   const { getToken } = useAuth();
-  const authApi = createAuthEdgeApi(getToken);
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const queryClient = useQueryClient();
   const { businessId } = useBusinessContext();
   const location = useLocation();

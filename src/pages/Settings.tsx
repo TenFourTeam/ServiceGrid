@@ -18,7 +18,7 @@ import { useBusinessNameForm } from '@/hooks/useBusinessNameForm';
 export default function SettingsPage() {
   const { business, role } = useBusinessContext();
   const { isSignedIn, getToken } = useClerkAuth();
-  const authApi = createAuthEdgeApi(getToken);
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const [darkFile, setDarkFile] = useState<File | null>(null);
   const [lightFile, setLightFile] = useState<File | null>(null);
   const [sub, setSub] = useState<any>(null);

@@ -58,7 +58,7 @@ export function JobBottomModal({
   const { data: customers } = useCustomersData();
   const queryClient = useQueryClient();
   const { getToken } = useAuth();
-  const authApi = createAuthEdgeApi(getToken);
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
 
   // Reset state when modal closes
   useEffect(() => {

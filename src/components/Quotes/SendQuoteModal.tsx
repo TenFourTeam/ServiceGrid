@@ -28,7 +28,7 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
   const { data: customers = [] } = useCustomersData();
   const queryClient = useQueryClient();
   const { getToken } = useClerkAuth();
-  const authApi = createAuthEdgeApi(getToken);
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const [to, setTo] = useState(toEmail ?? "");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");

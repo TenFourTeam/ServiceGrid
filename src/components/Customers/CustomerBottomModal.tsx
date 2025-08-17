@@ -34,7 +34,7 @@ export function CustomerBottomModal({
   const queryClient = useQueryClient();
   const { businessId } = useBusinessContext();
   const { getToken } = useAuth();
-  const authApi = createAuthEdgeApi(getToken);
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   
   const [formData, setFormData] = useState<Customer>({
     name: "",

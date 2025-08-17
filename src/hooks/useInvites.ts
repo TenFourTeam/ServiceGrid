@@ -17,7 +17,7 @@ export interface Invite {
 
 export function usePendingInvites(businessId?: string) {
   const { isSignedIn, getToken } = useClerkAuth();
-  const authApi = createAuthEdgeApi(getToken);
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const enabled = !!isSignedIn && !!businessId;
 
   return useQuery<{ invites: Invite[] }, Error>({
@@ -44,7 +44,7 @@ export function usePendingInvites(businessId?: string) {
 export function useRevokeInvite(businessId: string) {
   const queryClient = useQueryClient();
   const { getToken } = useClerkAuth();
-  const authApi = createAuthEdgeApi(getToken);
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   
   return useMutation({
     mutationFn: async ({ inviteId }: { inviteId: string }) => {
@@ -76,7 +76,7 @@ export function useRevokeInvite(businessId: string) {
 export function useResendInvite(businessId: string) {
   const queryClient = useQueryClient();
   const { getToken } = useClerkAuth();
-  const authApi = createAuthEdgeApi(getToken);
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   
   return useMutation({
     mutationFn: async ({ inviteId }: { inviteId: string }) => {
@@ -107,7 +107,7 @@ export function useResendInvite(businessId: string) {
 
 export function useRedeemInvite() {
   const { getToken } = useClerkAuth();
-  const authApi = createAuthEdgeApi(getToken);
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   
   return useMutation({
     mutationFn: async ({ token }: { token: string }) => {

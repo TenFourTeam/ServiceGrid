@@ -8,7 +8,7 @@ import { Job } from "@/types";
 export function useClockInOut() {
   const queryClient = useQueryClient();
   const { getToken } = useAuth();
-  const authApi = createAuthEdgeApi(getToken);
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
 
   const clockInOut = useMutation({
     mutationFn: async ({ jobId, isClockingIn }: { jobId: string; isClockingIn: boolean }) => {

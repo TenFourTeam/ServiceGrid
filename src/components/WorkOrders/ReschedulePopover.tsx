@@ -19,7 +19,7 @@ interface ReschedulePopoverProps {
 
 export default function ReschedulePopover({ job, onDone }: ReschedulePopoverProps) {
   const { getToken } = useClerkAuth();
-  const authApi = createAuthEdgeApi(getToken);
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const queryClient = useQueryClient();
   const { businessId } = useBusinessContext();
   const [open, setOpen] = useState(false);

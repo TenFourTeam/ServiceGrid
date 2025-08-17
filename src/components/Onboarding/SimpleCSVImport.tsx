@@ -19,7 +19,7 @@ interface SimpleCSVImportProps {
 
 export function SimpleCSVImport({ open, onOpenChange, onImportComplete }: SimpleCSVImportProps) {
   const { getToken } = useClerkAuth();
-  const authApi = createAuthEdgeApi(getToken);
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const queryClient = useQueryClient();
   const { businessId } = useBusinessContext();
   const [file, setFile] = useState<File | null>(null);

@@ -19,7 +19,7 @@ export interface AuditLog {
 export function useAuditLogs(businessId?: string, opts?: { enabled?: boolean }) {
   const { isAuthenticated } = useBusinessContext();
   const { getToken } = useAuth();
-  const authApi = createAuthEdgeApi(getToken);
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const enabled = !!isAuthenticated && !!businessId && (opts?.enabled ?? true);
 
   return useQuery<AuditLog[], Error>({

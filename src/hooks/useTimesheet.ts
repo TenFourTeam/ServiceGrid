@@ -20,7 +20,7 @@ export function useTimesheet() {
   const { businessId } = useBusinessContext();
   const queryClient = useQueryClient();
   const { getToken } = useAuth();
-  const authApi = createAuthEdgeApi(getToken);
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
 
   // Get current user's timesheet entries via edge function
   const { data: entries = [], isLoading } = useQuery({

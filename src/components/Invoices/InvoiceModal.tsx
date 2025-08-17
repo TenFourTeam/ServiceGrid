@@ -41,7 +41,7 @@ export default function InvoiceModal({
   const { data: customers = [] } = useCustomersData();
   const { business, businessName, businessLogoUrl, businessLightLogoUrl, businessId } = useBusinessContext();
   const { getToken } = useClerkAuth();
-  const authApi = createAuthEdgeApi(getToken);
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const queryClient = useQueryClient();
 
   const [mode, setMode] = useState(initialMode);
@@ -203,7 +203,7 @@ export default function InvoiceModal({
 
     try {
       setLoading(true);
-      const token = await getToken();
+      const token = await getToken({ template: 'supabase' });
       
       const { data: response } = await authApi.invoke('create-invoice-payment', {
         method: 'POST',

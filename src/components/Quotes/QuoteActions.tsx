@@ -16,7 +16,7 @@ interface QuoteActionsProps {
 export function QuoteActions({ quote, onSendQuote }: QuoteActionsProps) {
   const navigate = useNavigate();
   const { getToken } = useClerkAuth();
-  const authApi = createAuthEdgeApi(getToken);
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const { triggerJobScheduled, triggerInvoiceSent } = useLifecycleEmailIntegration();
 
 

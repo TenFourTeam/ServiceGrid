@@ -87,7 +87,7 @@ export function WeekCalendar({
   }, [date]);
 
   const { isSignedIn, getToken } = useClerkAuth();
-  const authApi = createAuthEdgeApi(getToken);
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   
   // Jobs data is now loaded via dashboard data in AppLayout
   // No need for separate range fetching

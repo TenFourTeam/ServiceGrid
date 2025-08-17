@@ -38,7 +38,7 @@ export function useLifecycleEmailTriggers() {
 
     // Only send welcome email if we have basic user data
     if (emailData.userEmail && emailData.userId) {
-      lifecycleEmailTriggers.sendWelcomeEmail(emailData, getToken);
+      lifecycleEmailTriggers.sendWelcomeEmail(emailData, () => getToken({ template: 'supabase' }));
       hasTriggeredWelcome.current = true;
       console.info('[useLifecycleEmailTriggers] Welcome email triggered');
     }
@@ -52,7 +52,7 @@ export function useLifecycleEmailTriggers() {
 
     // Check if Stripe is newly connected (charges enabled and details submitted)
     if (stripeStatus.chargesEnabled && stripeStatus.detailsSubmitted) {
-      lifecycleEmailTriggers.sendStripeConnectedEmail(emailData, getToken);
+      lifecycleEmailTriggers.sendStripeConnectedEmail(emailData, () => getToken({ template: 'supabase' }));
       hasTriggeredStripeConnected.current = true;
       console.info('[useLifecycleEmailTriggers] Stripe connected email triggered');
     }
@@ -70,7 +70,7 @@ export function useLifecycleEmailTriggers() {
 
     // Day 3: Customer Management discovery
     if (daysSinceSignup >= 3 && daysSinceSignup < 4) {
-      lifecycleEmailTriggers.sendFeatureDiscoveryEmail(emailData, getToken, {
+      lifecycleEmailTriggers.sendFeatureDiscoveryEmail(emailData, () => getToken({ template: 'supabase' }), {
         feature: 'Customer Management',
         featureDescription: 'Organize your customer information',
         ctaUrl: '/customers',
@@ -80,7 +80,7 @@ export function useLifecycleEmailTriggers() {
 
     // Day 5: Calendar Integration discovery
     if (daysSinceSignup >= 5 && daysSinceSignup < 6) {
-      lifecycleEmailTriggers.sendFeatureDiscoveryEmail(emailData, getToken, {
+      lifecycleEmailTriggers.sendFeatureDiscoveryEmail(emailData, () => getToken({ template: 'supabase' }), {
         feature: 'Calendar Integration',
         featureDescription: 'Schedule and track your jobs',
         ctaUrl: '/calendar',
@@ -90,7 +90,7 @@ export function useLifecycleEmailTriggers() {
 
     // Day 10: Case study/social proof
     if (daysSinceSignup >= 10 && daysSinceSignup < 11) {
-      lifecycleEmailTriggers.sendFeatureDiscoveryEmail(emailData, getToken, {
+      lifecycleEmailTriggers.sendFeatureDiscoveryEmail(emailData, () => getToken({ template: 'supabase' }), {
         feature: 'Success Stories',
         featureDescription: 'See how other businesses are growing',
         ctaUrl: '/quotes',
@@ -112,12 +112,12 @@ export function useLifecycleEmailTriggers() {
       }
 
       try {
-        const engagementData = await getUserEngagementData(emailData.userId, getToken);
+        const engagementData = await getUserEngagementData(emailData.userId, () => getToken({ template: 'supabase' }));
         const daysSinceLogin = daysSinceLastLogin(engagementData.lastLoginDate);
 
         // 7-day inactive email
         if (daysSinceLogin >= 7 && daysSinceLogin < 8) {
-          lifecycleEmailTriggers.sendEngagementRecoveryEmail(emailData, getToken, {
+          lifecycleEmailTriggers.sendEngagementRecoveryEmail(emailData, () => getToken({ template: 'supabase' }), {
             type: '7-day',
             lastActivity: engagementData.lastLoginDate
           });
@@ -125,7 +125,7 @@ export function useLifecycleEmailTriggers() {
 
         // 14-day inactive email
         if (daysSinceLogin >= 14 && daysSinceLogin < 15) {
-          lifecycleEmailTriggers.sendEngagementRecoveryEmail(emailData, getToken, {
+          lifecycleEmailTriggers.sendEngagementRecoveryEmail(emailData, () => getToken({ template: 'supabase' }), {
             type: '14-day',
             lastActivity: engagementData.lastLoginDate
           });
@@ -147,10 +147,10 @@ export function useLifecycleEmailTriggers() {
     emailData,
     // Export trigger functions for manual use in mutations
     triggerMilestoneEmail: {
-      firstQuoteCreated: () => lifecycleEmailTriggers.sendFirstQuoteCreatedEmail(emailData, getToken),
-      firstJobScheduled: () => lifecycleEmailTriggers.sendFirstJobScheduledEmail(emailData, getToken),
-      firstInvoiceSent: () => lifecycleEmailTriggers.sendFirstInvoiceSentEmail(emailData, getToken),
-      stripeConnected: () => lifecycleEmailTriggers.sendStripeConnectedEmail(emailData, getToken)
+      firstQuoteCreated: () => lifecycleEmailTriggers.sendFirstQuoteCreatedEmail(emailData, () => getToken({ template: 'supabase' })),
+      firstJobScheduled: () => lifecycleEmailTriggers.sendFirstJobScheduledEmail(emailData, () => getToken({ template: 'supabase' })),
+      firstInvoiceSent: () => lifecycleEmailTriggers.sendFirstInvoiceSentEmail(emailData, () => getToken({ template: 'supabase' })),
+      stripeConnected: () => lifecycleEmailTriggers.sendStripeConnectedEmail(emailData, () => getToken({ template: 'supabase' }))
     }
   };
 }

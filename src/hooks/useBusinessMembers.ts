@@ -17,7 +17,7 @@ export interface BusinessMember {
 
 export function useBusinessMembers(businessId?: string, opts?: { enabled?: boolean }) {
   const { isSignedIn, getToken } = useClerkAuth();
-  const authApi = createAuthEdgeApi(getToken);
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const enabled = !!isSignedIn && !!businessId && (opts?.enabled ?? true);
 
   return useQuery<{ members: BusinessMember[] } | null, Error>({
@@ -43,7 +43,7 @@ export function useBusinessMembers(businessId?: string, opts?: { enabled?: boole
 export function useInviteWorker() {
   const queryClient = useQueryClient();
   const { getToken } = useClerkAuth();
-  const authApi = createAuthEdgeApi(getToken);
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   
   return useMutation({
     mutationFn: async ({ businessId, email }: { businessId: string; email: string }) => {
@@ -75,7 +75,7 @@ export function useInviteWorker() {
 export function useRemoveMember() {
   const queryClient = useQueryClient();
   const { getToken } = useClerkAuth();
-  const authApi = createAuthEdgeApi(getToken);
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   
   return useMutation({
     mutationFn: async ({ businessId, memberId }: { businessId: string; memberId: string }) => {

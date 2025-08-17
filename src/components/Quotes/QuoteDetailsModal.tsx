@@ -40,7 +40,7 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { getToken } = useClerkAuth();
-  const authApi = createAuthEdgeApi(getToken);
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const { triggerQuoteCreated } = useLifecycleEmailIntegration();
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(false);

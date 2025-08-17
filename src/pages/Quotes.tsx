@@ -40,7 +40,7 @@ const statusColors: Record<QuoteStatus, string> = {
 
 export default function QuotesPage() {
   const { isSignedIn, getToken } = useClerkAuth();
-  const authApi = createAuthEdgeApi(getToken);
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const { businessTaxRateDefault } = useBusinessContext();
   const { data: quotes } = useQuotesData();
   const { data: customers } = useCustomersData();
