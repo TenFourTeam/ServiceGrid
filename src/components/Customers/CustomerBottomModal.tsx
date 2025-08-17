@@ -172,60 +172,33 @@ export function CustomerBottomModal({
         ...(!isEdit && { ownerId: userId }),
       };
       
-      console.log('[CustomerModal] === FRONTEND REQUEST DEBUG ===');
-      console.log('[CustomerModal] Operation:', isEdit ? 'UPDATE' : 'CREATE');
-      console.log('[CustomerModal] Business context:', { businessId, userId });
-      console.log('[CustomerModal] Customer data being sent:', customerData);
-      console.log('[CustomerModal] Form data source:', formData);
-      console.log('[CustomerModal] AuthApi function will be called with:', {
-        functionName: 'customers-crud',
-        method: isEdit ? 'PUT' : 'POST',
-        bodySize: JSON.stringify(customerData).length,
-        body: customerData
-      });
-      
-      console.log('[CustomerModal] About to call authApi.invoke...');
-      const startTime = Date.now();
       
       if (isEdit) {
-        console.log('[CustomerModal] === UPDATE REQUEST ===');
         const updatePayload = {
           id: customer.id,
           ...customerData
         };
-        console.log('[CustomerModal] Update payload:', updatePayload);
         
         const { data, error } = await authApi.invoke('customers-crud', {
           method: 'PUT',
           body: updatePayload
         });
-        
-        const endTime = Date.now();
-        console.log(`[CustomerModal] Update request took ${endTime - startTime}ms`);
-        console.log('[CustomerModal] Update response:', { data, error });
           
         if (error) {
-          console.error("[CustomerModal] Error updating customer:", error);
+          console.error("Error updating customer:", error);
           toast.error(`Failed to update customer: ${error.message || 'Unknown error'}`);
           return;
         }
         
         toast.success("Customer updated successfully");
       } else {
-        console.log('[CustomerModal] === CREATE REQUEST ===');
-        console.log('[CustomerModal] Create payload:', customerData);
-        
         const { data, error } = await authApi.invoke('customers-crud', {
           method: 'POST',
           body: customerData
         });
-        
-        const endTime = Date.now();
-        console.log(`[CustomerModal] Create request took ${endTime - startTime}ms`);
-        console.log('[CustomerModal] Create response:', { data, error });
           
         if (error) {
-          console.error("[CustomerModal] Error creating customer:", error);
+          console.error("Error creating customer:", error);
           toast.error(`Failed to create customer: ${error.message || 'Unknown error'}`);
           return;
         }

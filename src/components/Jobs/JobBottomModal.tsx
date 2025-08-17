@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { CalendarIcon, Upload } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { useCustomersData } from '@/hooks/useCustomersData';
+import { useCustomersData } from '@/queries/unified';
 import { Customer, Job, JobType } from '@/types';
 import { useAuth } from '@clerk/clerk-react';
 import { createAuthEdgeApi } from "@/utils/authEdgeApi";
