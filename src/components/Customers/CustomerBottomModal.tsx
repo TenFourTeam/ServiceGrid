@@ -69,13 +69,22 @@ export function CustomerBottomModal({
     try {
       const isEdit = !!customer?.id;
       
-      await edgeToast.create(fn("customers"), {
-        ...(isEdit ? { id: customer.id } : {}),
-        name: formData.name.trim(),
-        email: formData.email?.trim(),
-        phone: formData.phone?.trim() || null,
-        address: formData.address?.trim() || null,
-      }, isEdit ? "Customer updated successfully" : "Customer created successfully");
+      if (isEdit) {
+        await edgeToast.update(fn("customers"), {
+          id: customer.id,
+          name: formData.name.trim(),
+          email: formData.email?.trim(),
+          phone: formData.phone?.trim() || null,
+          address: formData.address?.trim() || null,
+        }, "Customer updated successfully");
+      } else {
+        await edgeToast.create(fn("customers"), {
+          name: formData.name.trim(),
+          email: formData.email?.trim(),
+          phone: formData.phone?.trim() || null,
+          address: formData.address?.trim() || null,
+        }, "Customer created successfully");
+      }
       
       queryClient.invalidateQueries({ queryKey: ["customers"] });
       onOpenChange(false);
