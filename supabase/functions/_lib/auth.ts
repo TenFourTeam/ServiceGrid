@@ -14,15 +14,52 @@ export type AuthContext = {
 };
 
 export async function requireCtx(req: Request): Promise<AuthContext> {
+  console.info('🔍 [auth] === JWT DEBUGGING START ===');
+  console.info('🔍 [auth] Request URL:', req.url);
+  console.info('🔍 [auth] Request method:', req.method);
+  
   // Extract and verify Clerk token
   const authHeader = req.headers.get("authorization") || req.headers.get("Authorization");
+  console.info('🔍 [auth] Auth header present:', !!authHeader);
+  console.info('🔍 [auth] Auth header starts with Bearer:', authHeader?.startsWith("Bearer "));
+  
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    console.error('❌ [auth] Missing or invalid authorization header');
+    console.error('❌ [auth] Missing or invalid authorization header, full headers:', Object.fromEntries(req.headers.entries()));
     throw new Error("Missing authentication token");
   }
 
   const token = authHeader.replace(/^Bearer\s+/i, "");
+  console.info('🔍 [auth] Token extracted, length:', token.length);
+  console.info('🔍 [auth] Token prefix (first 20 chars):', token.substring(0, 20));
+  console.info('🔍 [auth] Token suffix (last 20 chars):', token.substring(token.length - 20));
+  
+  // Try to decode JWT header to inspect structure (without verification)
+  try {
+    const [header, payload] = token.split('.');
+    if (header && payload) {
+      const decodedHeader = JSON.parse(atob(header));
+      const decodedPayload = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+      console.info('🔍 [auth] JWT Header:', decodedHeader);
+      console.info('🔍 [auth] JWT Payload preview:', {
+        sub: decodedPayload.sub,
+        iss: decodedPayload.iss,
+        exp: decodedPayload.exp,
+        iat: decodedPayload.iat,
+        nbf: decodedPayload.nbf
+      });
+      console.info('🔍 [auth] Token expiry (UTC):', new Date(decodedPayload.exp * 1000).toISOString());
+      console.info('🔍 [auth] Token issued at (UTC):', new Date(decodedPayload.iat * 1000).toISOString());
+      console.info('🔍 [auth] Current time (UTC):', new Date().toISOString());
+    }
+  } catch (decodeError) {
+    console.warn('⚠️ [auth] Could not decode token structure:', decodeError);
+  }
+  
   const secretKey = Deno.env.get("CLERK_SECRET_KEY");
+  console.info('🔍 [auth] CLERK_SECRET_KEY present:', !!secretKey);
+  console.info('🔍 [auth] CLERK_SECRET_KEY length:', secretKey?.length || 0);
+  console.info('🔍 [auth] CLERK_SECRET_KEY prefix:', secretKey?.substring(0, 10) || 'N/A');
+  
   if (!secretKey) {
     console.error('❌ [auth] Missing CLERK_SECRET_KEY');
     throw new Error("Server configuration error - missing CLERK_SECRET_KEY");
@@ -30,9 +67,24 @@ export async function requireCtx(req: Request): Promise<AuthContext> {
 
   let payload: any;
   try {
+    console.info('🔍 [auth] Starting Clerk token verification...');
+    const startTime = Date.now();
     payload = await verifyToken(token, { secretKey });
+    const endTime = Date.now();
+    console.info('✅ [auth] Token verification successful in', endTime - startTime, 'ms');
+    console.info('🔍 [auth] Verified payload:', {
+      sub: payload.sub,
+      email: payload.email,
+      primary_email: payload.primary_email,
+      session_id: payload.sid,
+      azp: payload.azp
+    });
   } catch (e) {
-    console.error('❌ [auth] Token verification failed:', e);
+    console.error('❌ [auth] Token verification failed');
+    console.error('❌ [auth] Error type:', e.constructor.name);
+    console.error('❌ [auth] Error message:', e.message);
+    console.error('❌ [auth] Error stack:', e.stack);
+    console.error('❌ [auth] Full error object:', JSON.stringify(e, null, 2));
     throw new Error(`Authentication failed: ${e.message || e}`);
   }
 

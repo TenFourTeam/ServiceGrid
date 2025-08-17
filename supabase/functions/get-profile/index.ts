@@ -10,9 +10,17 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('[get-profile] Request received');
+    console.log('🚀 [get-profile] === REQUEST START ===');
+    console.log('🚀 [get-profile] URL:', req.url);
+    console.log('🚀 [get-profile] Method:', req.method);
+    console.log('🚀 [get-profile] Headers:', Object.fromEntries(req.headers.entries()));
+    console.log('🚀 [get-profile] Request received');
     
+    console.log('🚀 [get-profile] Calling requireCtx...');
+    const startAuth = Date.now();
     const ctx = await requireCtx(req);
+    const endAuth = Date.now();
+    console.log('🚀 [get-profile] Auth completed in', endAuth - startAuth, 'ms');
     console.log('[get-profile] Context resolved:', { userId: ctx.userId, email: ctx.email });
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);

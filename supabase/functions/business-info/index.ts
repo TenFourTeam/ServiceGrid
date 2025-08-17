@@ -8,10 +8,18 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.info('[business-info] Starting business info request');
+    console.info('🚀 [business-info] === REQUEST START ===');
+    console.info('🚀 [business-info] URL:', req.url);
+    console.info('🚀 [business-info] Method:', req.method);
+    console.info('🚀 [business-info] Headers:', Object.fromEntries(req.headers.entries()));
+    console.info('🚀 [business-info] Starting business info request');
     
     // Get authenticated context with business resolution
+    console.info('🚀 [business-info] Calling requireCtx...');
+    const startAuth = Date.now();
     const ctx = await requireCtx(req);
+    const endAuth = Date.now();
+    console.info('🚀 [business-info] Auth completed in', endAuth - startAuth, 'ms');
     console.info('[business-info] Auth context resolved', { 
       userId: ctx.userId, 
       businessId: ctx.businessId 
