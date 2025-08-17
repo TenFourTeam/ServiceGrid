@@ -146,6 +146,15 @@ Deno.serve(async (req) => {
 
       const quoteNumber = businessData.est_prefix + newSeq.toString().padStart(3, '0');
 
+      // Calculate totals from line items
+      let calculatedSubtotal = 0;
+      let calculatedTotal = 0;
+      
+      if (lineItems && Array.isArray(lineItems)) {
+        calculatedSubtotal = lineItems.reduce((sum: number, item: any) => sum + (item.lineTotal || 0), 0);
+        calculatedTotal = calculatedSubtotal + Math.round(calculatedSubtotal * (taxRate || 0)) - (discount || 0);
+      }
+
       const { data, error } = await supabase
         .from('quotes')
         .insert([{
@@ -154,8 +163,8 @@ Deno.serve(async (req) => {
           customer_id: customerId,
           number: quoteNumber,
           status: status || 'Draft',
-          total: total || 0,
-          subtotal: subtotal || 0,
+          total: calculatedTotal,
+          subtotal: calculatedSubtotal,
           tax_rate: taxRate || 0,
           discount: discount || 0,
           terms,
@@ -172,6 +181,36 @@ Deno.serve(async (req) => {
       if (error) {
         console.error('[quotes-crud] POST error:', error);
         throw new Error(`Failed to create quote: ${error.message}`);
+      }
+
+      // Save line items if provided
+      if (lineItems && Array.isArray(lineItems) && lineItems.length > 0) {
+        const lineItemsToInsert = lineItems.map((item: any, index: number) => ({
+          quote_id: data.id,
+          owner_id: ctx.userId,
+          name: item.name || '',
+          qty: item.qty || 1,
+          unit: item.unit || null,
+          unit_price: item.unitPrice || 0,
+          line_total: item.lineTotal || 0,
+          position: index
+        }));
+
+        const { error: lineItemError } = await supabase
+          .from('quote_line_items')
+          .insert(lineItemsToInsert);
+
+        if (lineItemError) {
+          console.error('[quotes-crud] Line items insert error:', lineItemError);
+          // Delete the quote if line items failed to save
+          await supabase
+            .from('quotes')
+            .delete()
+            .eq('id', data.id);
+          throw new Error(`Failed to save line items: ${lineItemError.message}`);
+        }
+
+        console.log('[quotes-crud] Saved', lineItems.length, 'line items for quote:', data.id);
       }
 
       console.log('[quotes-crud] Quote created:', data.id);
