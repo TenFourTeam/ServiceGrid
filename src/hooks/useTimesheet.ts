@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useBusinessContext } from './useBusinessContext';
 import { toast } from 'sonner';
 import { queryKeys } from '@/queries/keys';
+import { useAuth } from '@clerk/clerk-react';
+import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 
 export interface TimesheetEntry {
   id: string;
@@ -18,6 +19,8 @@ export interface TimesheetEntry {
 export function useTimesheet() {
   const { businessId } = useBusinessContext();
   const queryClient = useQueryClient();
+  const { getToken } = useAuth();
+  const authApi = createAuthEdgeApi(getToken);
 
   // Get current user's timesheet entries via edge function
   const { data: entries = [], isLoading } = useQuery({
@@ -25,7 +28,7 @@ export function useTimesheet() {
     queryFn: async () => {
       if (!businessId) return [];
       
-      const { data, error } = await supabase.functions.invoke('timesheet-crud', {
+      const { data, error } = await authApi.invoke('timesheet-crud', {
         method: 'GET'
       });
 
@@ -48,7 +51,7 @@ export function useTimesheet() {
     mutationFn: async ({ notes }: { notes?: string }) => {
       if (!businessId) throw new Error('No business selected');
 
-      const { data, error } = await supabase.functions.invoke('timesheet-crud', {
+      const { data, error } = await authApi.invoke('timesheet-crud', {
         method: 'POST',
         body: { notes }
       });
@@ -69,7 +72,7 @@ export function useTimesheet() {
   // Clock out mutation
   const clockOutMutation = useMutation({
     mutationFn: async ({ entryId, notes }: { entryId: string; notes?: string }) => {
-      const { data, error } = await supabase.functions.invoke('timesheet-crud', {
+      const { data, error } = await authApi.invoke('timesheet-crud', {
         method: 'PUT',
         body: { entryId, notes }
       });

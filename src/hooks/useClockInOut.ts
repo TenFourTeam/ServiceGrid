@@ -1,11 +1,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { queryKeys } from "@/queries/keys";
 import { toast } from "sonner";
+import { useAuth } from '@clerk/clerk-react';
+import { createAuthEdgeApi } from "@/utils/authEdgeApi";
 import { Job } from "@/types";
 
 export function useClockInOut() {
   const queryClient = useQueryClient();
+  const { getToken } = useAuth();
+  const authApi = createAuthEdgeApi(getToken);
 
   const clockInOut = useMutation({
     mutationFn: async ({ jobId, isClockingIn }: { jobId: string; isClockingIn: boolean }) => {
@@ -21,7 +24,7 @@ export function useClockInOut() {
             status: 'Completed' as const
           };
 
-      const { data, error } = await supabase.functions.invoke('jobs-crud', {
+      const { data, error } = await authApi.invoke('jobs-crud', {
         method: 'PUT',
         body: {
           id: jobId,

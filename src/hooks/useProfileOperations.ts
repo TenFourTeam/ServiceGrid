@@ -1,7 +1,8 @@
-import { supabase } from '@/integrations/supabase/client';
 import { invalidationHelpers } from '@/queries/keys';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useAuth } from '@clerk/clerk-react';
+import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 
 export type ProfileUpdatePayload = {
   fullName: string;
@@ -22,6 +23,8 @@ export type ProfileUpdateResponse = {
  */
 export function useProfileOperations() {
   const queryClient = useQueryClient();
+  const { getToken } = useAuth();
+  const authApi = createAuthEdgeApi(getToken);
 
   const updateProfile = useMutation({
     mutationFn: async (input: ProfileUpdatePayload): Promise<ProfileUpdateResponse> => {
@@ -33,7 +36,7 @@ export function useProfileOperations() {
       });
       
       // Call the edge function instead of direct Supabase access
-      const { data, error } = await supabase.functions.invoke('update-profile', {
+      const { data, error } = await authApi.invoke('update-profile', {
         body: {
           fullName: input.fullName,
           phoneRaw: input.phoneRaw,

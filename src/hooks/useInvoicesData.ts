@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { queryKeys } from "@/queries/keys";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
+import { useAuth } from '@clerk/clerk-react';
+import { createAuthEdgeApi } from "@/utils/authEdgeApi";
 
 export interface Invoice {
   id: string;
@@ -28,6 +29,8 @@ interface UseInvoicesDataOptions {
  */
 export function useInvoicesData(opts?: UseInvoicesDataOptions) {
   const { isAuthenticated, businessId } = useBusinessContext();
+  const { getToken } = useAuth();
+  const authApi = createAuthEdgeApi(getToken);
   const enabled = isAuthenticated && !!businessId && (opts?.enabled ?? true);
 
   const query = useQuery({
@@ -36,7 +39,7 @@ export function useInvoicesData(opts?: UseInvoicesDataOptions) {
     queryFn: async () => {
       console.info("[useInvoicesData] fetching invoices via edge function");
       
-      const { data, error } = await supabase.functions.invoke('invoices-crud', {
+      const { data, error } = await authApi.invoke('invoices-crud', {
         method: 'GET'
       });
       
