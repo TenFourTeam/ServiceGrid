@@ -2,7 +2,7 @@ import { useState } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useRemoveMember } from "@/hooks/useBusinessMembers";
+import { useBusinessMemberOperations } from "@/hooks/useBusinessMembers";
 import { toast } from "sonner";
 import { MoreVertical, Trash2 } from "lucide-react";
 import type { BusinessMember } from "@/hooks/useBusinessMembers";
@@ -18,7 +18,7 @@ export function TeamMemberActions({ member, businessId, isLastOwner }: TeamMembe
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   
   
-  const removeMember = useRemoveMember();
+  const { removeMember } = useBusinessMemberOperations();
 
   // Don't show actions for owners
   if (member.role === 'owner') {
@@ -34,7 +34,7 @@ export function TeamMemberActions({ member, businessId, isLastOwner }: TeamMembe
     }
 
     try {
-      await removeMember.mutateAsync({ businessId, memberId: member.id });
+      await removeMember.mutateAsync({ memberId: member.id });
       toast.success("Member removed", {
         description: `${member.email} has been removed from the team`,
       });

@@ -30,6 +30,7 @@ const queryKeys = {
     jobs: (businessId: string) => ['data', 'jobs', businessId] as const,
     quotes: (businessId: string) => ['data', 'quotes', businessId] as const,
     invoices: (businessId: string) => ['data', 'invoices', businessId] as const,
+    members: (businessId: string) => ['data', 'members', businessId] as const,
     timesheet: (businessId: string) => ['data', 'timesheet', businessId] as const,
   },
   

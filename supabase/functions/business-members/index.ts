@@ -1,35 +1,25 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { corsHeaders, json, requireCtx } from '../_lib/auth.ts';
 
-serve(async (req: Request) => {
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    console.log(`[business-members] ${req.method} request received`);
+    
     const ctx = await requireCtx(req);
-    const body = req.method === 'GET' ? {} : await req.json();
-    const businessId = body.business_id;
+    console.log('[business-members] Context resolved:', { userId: ctx.userId, businessId: ctx.businessId });
 
-    if (!businessId) {
-      return json({ error: 'business_id is required' }, { status: 400 });
-    }
-
-    // Verify user has access to this business
-    const { data: membership } = await ctx.supaAdmin
-      .from('business_members')
-      .select('role')
-      .eq('business_id', businessId)
-      .eq('user_id', ctx.userId)
-      .single();
-
-    if (!membership) {
-      return json({ error: 'Not authorized' }, { status: 403 });
-    }
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     if (req.method === 'GET') {
       // Get all members for this business
-      const { data: members, error } = await ctx.supaAdmin
+      const { data: members, error, count } = await supabase
         .from('business_members')
         .select(`
           id,
@@ -39,15 +29,15 @@ serve(async (req: Request) => {
           invited_at,
           joined_at,
           invited_by,
-          profiles!business_members_user_id_fkey(email)
-        `)
-        .eq('business_id', businessId)
+          profiles!business_members_user_id_fkey(email, full_name)
+        `, { count: 'exact' })
+        .eq('business_id', ctx.businessId)
         .order('role', { ascending: false }) // owners first
         .order('joined_at', { ascending: true });
 
       if (error) {
-        console.error('Error fetching members:', error);
-        return json({ error: 'Failed to fetch members' }, { status: 500 });
+        console.error('[business-members] GET error:', error);
+        throw new Error(`Failed to fetch members: ${error.message}`);
       }
 
       const formattedMembers = members?.map(member => ({
@@ -59,16 +49,110 @@ serve(async (req: Request) => {
         joined_at: member.joined_at,
         invited_by: member.invited_by,
         email: member.profiles?.email,
+        name: member.profiles?.full_name,
       })) || [];
 
-      return json({ members: formattedMembers });
+      console.log('[business-members] Fetched', formattedMembers.length, 'members');
+      return json({ members: formattedMembers, count: count || 0 });
+    }
+
+    if (req.method === 'POST') {
+      let body;
+      try {
+        body = await req.json();
+        if (!body) {
+          throw new Error('Request body is empty');
+        }
+      } catch (jsonError) {
+        console.error('[business-members] JSON parsing error:', jsonError);
+        return json({ error: 'Invalid JSON in request body' }, { status: 400 });
+      }
+
+      const { email } = body;
+
+      if (!email) {
+        return json({ error: 'Email is required' }, { status: 400 });
+      }
+
+      // Create invite entry
+      const inviteToken = crypto.randomUUID();
+      const tokenHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(inviteToken))
+        .then(buffer => Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join(''));
+
+      const { data: invite, error: inviteError } = await supabase
+        .from('invites')
+        .insert([{
+          business_id: ctx.businessId,
+          email: email,
+          role: 'worker',
+          token_hash: tokenHash,
+          invited_by: ctx.userId,
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        }])
+        .select()
+        .single();
+
+      if (inviteError) {
+        console.error('[business-members] Invite creation error:', inviteError);
+        throw new Error(`Failed to create invite: ${inviteError.message}`);
+      }
+
+      console.log('[business-members] Invite created:', invite.id);
+      return json({ invite, token: inviteToken });
+    }
+
+    if (req.method === 'DELETE') {
+      let body;
+      try {
+        body = await req.json();
+        if (!body) {
+          throw new Error('Request body is empty');
+        }
+      } catch (jsonError) {
+        console.error('[business-members] JSON parsing error:', jsonError);
+        return json({ error: 'Invalid JSON in request body' }, { status: 400 });
+      }
+
+      const { memberId } = body;
+
+      if (!memberId) {
+        return json({ error: 'Member ID is required' }, { status: 400 });
+      }
+
+      // Verify user is business owner
+      const { data: membership } = await supabase
+        .from('business_members')
+        .select('role')
+        .eq('business_id', ctx.businessId)
+        .eq('user_id', ctx.userId)
+        .single();
+
+      if (!membership || membership.role !== 'owner') {
+        return json({ error: 'Only business owners can remove members' }, { status: 403 });
+      }
+
+      // Remove member
+      const { error } = await supabase
+        .from('business_members')
+        .delete()
+        .eq('id', memberId)
+        .eq('business_id', ctx.businessId);
+
+      if (error) {
+        console.error('[business-members] DELETE error:', error);
+        throw new Error(`Failed to remove member: ${error.message}`);
+      }
+
+      console.log('[business-members] Member removed:', memberId);
+      return json({ success: true });
     }
 
     return json({ error: 'Method not allowed' }, { status: 405 });
-  } catch (error) {
-    console.error('Business members error:', error);
+
+  } catch (error: any) {
+    console.error('[business-members] Error:', error);
     return json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
+      { error: error.message || 'Failed to process request' },
       { status: 500 }
     );
   }

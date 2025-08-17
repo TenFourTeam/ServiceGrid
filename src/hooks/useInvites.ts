@@ -105,6 +105,7 @@ export function useResendInvite(businessId: string) {
 }
 
 export function useRedeemInvite() {
+  const queryClient = useQueryClient();
   const { getToken } = useClerkAuth();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   
@@ -126,7 +127,12 @@ export function useRedeemInvite() {
       
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Invalidate team queries to refresh member list
+      if (data?.businessId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.data.members(data.businessId) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.team.invites(data.businessId) });
+      }
       // Toast is handled by authApi
     },
     onError: (error: any) => {

@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useInviteWorker } from "@/hooks/useBusinessMembers";
+import { useBusinessMemberOperations } from "@/hooks/useBusinessMembers";
 import { toast } from "sonner";
 import { UserPlus, X } from "lucide-react";
 
@@ -16,7 +16,7 @@ interface EnhancedInviteModalProps {
 export function EnhancedInviteModal({ open, onOpenChange, businessId }: EnhancedInviteModalProps) {
   const [emails, setEmails] = useState<string[]>([""]);
   
-  const inviteWorker = useInviteWorker();
+  const { inviteWorker } = useBusinessMemberOperations();
 
   const addEmail = () => {
     setEmails([...emails, ""]);
@@ -50,7 +50,6 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
       const results = await Promise.allSettled(
         validEmails.map(email => 
           inviteWorker.mutateAsync({
-            businessId,
             email: email.trim(),
           })
         )

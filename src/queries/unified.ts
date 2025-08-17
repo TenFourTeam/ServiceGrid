@@ -11,6 +11,7 @@ export { useCustomersData } from '@/hooks/useCustomersData';
 export { useJobsData } from '@/hooks/useJobsData';
 export { useQuotesData } from '@/hooks/useQuotesData';
 export { useInvoicesData } from '@/hooks/useInvoicesData';
+export { useBusinessMembersData, useBusinessMemberOperations } from '@/hooks/useBusinessMembers';
 
 // Optimized data hooks - unified count + data pattern
 

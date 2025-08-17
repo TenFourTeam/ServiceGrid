@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useBusinessMembers, useRemoveMember } from "@/hooks/useBusinessMembers";
+import { useBusinessMembersData, useBusinessMemberOperations } from "@/hooks/useBusinessMembers";
 import { usePendingInvites, useRevokeInvite, useResendInvite } from "@/hooks/useInvites";
 import { EnhancedInviteModal } from "@/components/Team/EnhancedInviteModal";
 import { TeamSearchFilter } from "@/components/Team/TeamSearchFilter";
@@ -25,17 +25,17 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
   });
   
 
-  const { data: membersData, isLoading } = useBusinessMembers(businessId);
+  const { data: members, isLoading, count: membersCount } = useBusinessMembersData();
   const { data: invitesData, isLoading: loadingInvites } = usePendingInvites(businessId);
-  const removeMember = useRemoveMember();
+  const { removeMember } = useBusinessMemberOperations();
   const revokeInvite = useRevokeInvite(businessId || '');
   const resendInvite = useResendInvite(businessId || '');
 
   // Filtered and sorted data
   const filteredMembers = useMemo(() => {
-    if (!membersData?.members) return [];
+    if (!members) return [];
     
-    return membersData.members.filter(member => {
+    return members.filter(member => {
       const matchesSearch = !filters.search || 
         member.email?.toLowerCase().includes(filters.search.toLowerCase()) ||
         member.name?.toLowerCase().includes(filters.search.toLowerCase());
@@ -56,7 +56,7 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
       const bDate = b.joined_at || b.invited_at;
       return new Date(bDate).getTime() - new Date(aDate).getTime();
     });
-  }, [membersData?.members, filters]);
+  }, [members, filters]);
 
   const filteredInvites = useMemo(() => {
     if (!invitesData?.invites) return [];
@@ -71,7 +71,6 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
     );
   }, [invitesData?.invites, filters]);
 
-  const members = membersData?.members || [];
   const ownerCount = members.filter(m => m.role === 'owner').length;
 
   // Event handlers
@@ -134,7 +133,7 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
         <div>
           <h3 className="text-xl font-bold flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Team Management
+            Team Members
           </h3>
           <p className="text-sm text-muted-foreground mt-1">
             Manage team members and pending invitations • {members.length} member{members.length !== 1 ? 's' : ''}
