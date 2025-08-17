@@ -3,8 +3,8 @@ import { z } from 'https://deno.land/x/zod@v3.20.2/mod.ts';
 
 const BusinessUpdateSchema = z.object({
   businessName: z.string().min(1, 'Business name is required'),
-  phone: z.string().optional(),
-  replyToEmail: z.string().email().optional().or(z.literal('')),
+  phone: z.string().nullable().optional().transform(val => val === null ? undefined : val),
+  replyToEmail: z.string().email().optional().or(z.literal('')).or(z.null()).transform(val => val === null ? '' : val),
 });
 
 Deno.serve(async (req: Request) => {
@@ -49,12 +49,12 @@ Deno.serve(async (req: Request) => {
       updated_at: new Date().toISOString(),
     };
 
-    if (input.phone) {
-      updateData.phone = input.phone.trim();
+    if (input.phone !== undefined && input.phone !== null) {
+      updateData.phone = input.phone.trim() || null;
     }
 
     if (input.replyToEmail !== undefined) {
-      updateData.reply_to_email = input.replyToEmail.trim() || null;
+      updateData.reply_to_email = input.replyToEmail?.trim() || null;
     }
 
     console.log('[business-update] Updating business with data:', updateData);

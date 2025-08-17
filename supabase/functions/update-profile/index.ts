@@ -15,7 +15,7 @@ interface UpdateProfileResponse {
   };
 }
 
-export default async function handler(req: Request): Promise<Response> {
+Deno.serve(async (req: Request) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -111,4 +111,4 @@ export default async function handler(req: Request): Promise<Response> {
       } 
     }, { status: 500 });
   }
-}
+});
