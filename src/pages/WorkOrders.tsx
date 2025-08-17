@@ -28,19 +28,35 @@ function useFilteredJobs() {
   const todayEnd = new Date(); todayEnd.setHours(23,59,59,999);
   const sevenDaysAgo = new Date(Date.now() - 7*24*3600*1000);
 
+  // Helper function to check if a date string is valid
+  const isValidDate = (dateStr: string | null | undefined) => {
+    if (!dateStr || dateStr === '') return false;
+    const date = new Date(dateStr);
+    return !isNaN(date.getTime());
+  };
+
+  // Debug logging - temporary to identify the issue
+  console.log('Jobs debug info:', jobs.map(j => ({ 
+    id: j.id, 
+    status: j.status, 
+    startsAt: j.startsAt, 
+    startsAtType: typeof j.startsAt,
+    isValidDate: isValidDate(j.startsAt)
+  })));
+
   const filtered = useMemo(() => {
     const qLower = q.trim().toLowerCase();
     let list = jobs.slice();
     if (sort === 'all') {
       // Show all jobs, no filtering
     } else if (sort === 'unscheduled') {
-      list = list.filter(j => !j.startsAt);
+      list = list.filter(j => !isValidDate(j.startsAt));
     } else if (sort === 'today') {
-      list = list.filter(j => j.status !== 'Completed' && j.startsAt && new Date(j.startsAt) >= todayStart && new Date(j.startsAt) <= todayEnd);
+      list = list.filter(j => j.status !== 'Completed' && isValidDate(j.startsAt) && new Date(j.startsAt!) >= todayStart && new Date(j.startsAt!) <= todayEnd);
     } else if (sort === 'upcoming') {
-      list = list.filter(j => j.status !== 'Completed' && j.startsAt && new Date(j.startsAt) > todayEnd);
+      list = list.filter(j => j.status !== 'Completed' && isValidDate(j.startsAt) && new Date(j.startsAt!) > todayEnd);
     } else if (sort === 'completed') {
-      list = list.filter(j => j.status === 'Completed' && j.startsAt && new Date(j.startsAt) >= sevenDaysAgo);
+      list = list.filter(j => j.status === 'Completed' && isValidDate(j.startsAt) && new Date(j.startsAt!) >= sevenDaysAgo);
     }
     if (qLower) {
       list = list.filter(j => {
@@ -55,10 +71,10 @@ function useFilteredJobs() {
 
   const counts = useMemo(() => ({
     all: jobs.length,
-    unscheduled: jobs.filter(j => !j.startsAt).length,
-    today: jobs.filter(j => j.status !== 'Completed' && j.startsAt && new Date(j.startsAt) >= todayStart && new Date(j.startsAt) <= todayEnd).length,
-    upcoming: jobs.filter(j => j.status !== 'Completed' && j.startsAt && new Date(j.startsAt) > todayEnd).length,
-    completed: jobs.filter(j => j.status === 'Completed' && j.startsAt && new Date(j.startsAt) >= sevenDaysAgo).length,
+    unscheduled: jobs.filter(j => !isValidDate(j.startsAt)).length,
+    today: jobs.filter(j => j.status !== 'Completed' && isValidDate(j.startsAt) && new Date(j.startsAt!) >= todayStart && new Date(j.startsAt!) <= todayEnd).length,
+    upcoming: jobs.filter(j => j.status !== 'Completed' && isValidDate(j.startsAt) && new Date(j.startsAt!) > todayEnd).length,
+    completed: jobs.filter(j => j.status === 'Completed' && isValidDate(j.startsAt) && new Date(j.startsAt!) >= sevenDaysAgo).length,
   }), [jobs]);
 
   const hasInvoice = (jobId: string) => invoices.some(i=> i.jobId === jobId);
