@@ -82,7 +82,7 @@ verify_jwt = false
 
 # New unified CRUD functions
 [functions.get-profile]
-verify_jwt = true
+verify_jwt = false
 
 [functions.business-info]
 verify_jwt = true
