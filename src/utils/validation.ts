@@ -129,3 +129,48 @@ export function sanitizeAddressInput(value: string): string {
   // Allow letters, numbers, spaces, and common punctuation
   return value.replace(/[^a-zA-Z0-9\s\.\,\-\#]/g, '');
 }
+
+/**
+ * Safely creates a Date object and validates it
+ */
+export function safeCreateDate(dateInput: string | Date | null | undefined): Date | null {
+  if (!dateInput) return null;
+  
+  try {
+    const date = new Date(dateInput);
+    // Check if the date is valid by testing if getTime() returns NaN
+    if (isNaN(date.getTime())) {
+      console.warn('[safeCreateDate] Invalid date:', dateInput);
+      return null;
+    }
+    return date;
+  } catch (error) {
+    console.warn('[safeCreateDate] Error creating date:', dateInput, error);
+    return null;
+  }
+}
+
+/**
+ * Safely gets an ISO string from a date, returns null if invalid
+ */
+export function safeToISOString(dateInput: string | Date | null | undefined): string | null {
+  const date = safeCreateDate(dateInput);
+  if (!date) return null;
+  
+  try {
+    return date.toISOString();
+  } catch (error) {
+    console.warn('[safeToISOString] Error converting to ISO:', dateInput, error);
+    return null;
+  }
+}
+
+/**
+ * Filters jobs with valid dates only
+ */
+export function filterJobsWithValidDates<T extends { startsAt?: string | Date | null; endsAt?: string | Date | null; clockInTime?: string | Date | null; clockOutTime?: string | Date | null }>(jobs: T[]): T[] {
+  return jobs.filter(job => {
+    const startsAt = safeCreateDate(job.startsAt);
+    return startsAt !== null; // Only include jobs with valid start dates
+  });
+}

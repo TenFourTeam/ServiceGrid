@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { addDays, endOfMonth, endOfWeek, format, isSameDay, isSameMonth, parseISO, startOfMonth, startOfWeek } from "date-fns";
 import { useJobsData, useCustomersData } from "@/queries/unified";
 import { formatMoney } from "@/utils/format";
+import { safeCreateDate, safeToISOString, filterJobsWithValidDates } from "@/utils/validation";
 import JobShowModal from "@/components/Jobs/JobShowModal";
 import { JobBottomModal } from "@/components/Jobs/JobBottomModal";
 import type { Job } from "@/types";
@@ -21,9 +22,13 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
   
   
   const jobs = useMemo(() => {
-    return allJobs.filter(j => {
+    // Filter jobs with valid dates first
+    const validJobs = filterJobsWithValidDates(allJobs);
+    
+    return validJobs.filter(j => {
       if (!j.startsAt) return false;
-      const jobStart = new Date(j.startsAt);
+      const jobStart = safeCreateDate(j.startsAt);
+      if (!jobStart) return false;
       return jobStart >= start && jobStart <= end;
     });
   }, [allJobs, start, end]);
@@ -36,8 +41,10 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
   const jobsByDay = useMemo(() => {
     const map = new Map<string, Job[]>();
     for (const job of jobs) {
-      const s = new Date(job.startsAt);
-      const key = s.toISOString().slice(0, 10);
+      const isoString = safeToISOString(job.startsAt);
+      if (!isoString) continue; // Skip jobs with invalid dates
+      
+      const key = isoString.slice(0, 10);
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(job as Job);
     }
@@ -54,7 +61,12 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
       <div className="grid grid-cols-7 auto-rows-[minmax(112px,1fr)]">
         {days.map((d) => {
           const key = d.toISOString().slice(0, 10);
-          const dayJobs = (jobsByDay.get(key) || []).slice().sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+          const dayJobs = (jobsByDay.get(key) || []).slice().sort((a, b) => {
+            const dateA = safeCreateDate(a.startsAt);
+            const dateB = safeCreateDate(b.startsAt);
+            if (!dateA || !dateB) return 0;
+            return dateA.getTime() - dateB.getTime();
+          });
           const visible = dayJobs.slice(0, 3);
           const overflow = dayJobs.length - visible.length;
           const isToday = isSameDay(d, new Date());
@@ -79,7 +91,8 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
                   
                   // Scheduled time block
                   if (displayMode === 'scheduled' || displayMode === 'combined') {
-                    const t = new Date(j.startsAt);
+                    const t = safeCreateDate(j.startsAt);
+                    if (!t) return []; // Skip if invalid date
                     blocks.push(
                       <li key={`${j.id}-scheduled`} className="truncate">
                         <button
@@ -105,7 +118,8 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
                   
                   // Clocked time block
                   if ((displayMode === 'clocked' || displayMode === 'combined') && j.clockInTime && j.clockOutTime) {
-                    const clockStart = new Date(j.clockInTime);
+                    const clockStart = safeCreateDate(j.clockInTime);
+                    if (!clockStart) return []; // Skip if invalid date
                     blocks.push(
                       <li key={`${j.id}-clocked`} className="truncate">
                         <button
