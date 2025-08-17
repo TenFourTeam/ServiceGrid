@@ -47,32 +47,15 @@ Deno.serve(async (req) => {
     }
 
     if (req.method === 'POST') {
-      console.log('[customers-crud] === POST REQUEST DEBUG ===');
-      console.log('[customers-crud] Request headers:', Object.fromEntries(req.headers.entries()));
-      console.log('[customers-crud] Content-Type:', req.headers.get('content-type'));
-      
-      // Read the raw body first for debugging
-      const rawBody = await req.text();
-      console.log('[customers-crud] Raw body length:', rawBody.length);
-      console.log('[customers-crud] Raw body content:', rawBody);
-      
       let body;
       try {
-        if (!rawBody || rawBody.trim() === '') {
-          console.error('[customers-crud] Empty request body received');
-          return json({ error: 'Request body is empty' }, { status: 400 });
-        }
-        
-        body = JSON.parse(rawBody);
-        console.log('[customers-crud] Parsed body:', body);
-        
+        body = await req.json();
         if (!body) {
-          throw new Error('Request body is null after parsing');
+          throw new Error('Request body is empty');
         }
       } catch (jsonError) {
         console.error('[customers-crud] JSON parsing error:', jsonError);
-        console.error('[customers-crud] Raw body that failed to parse:', rawBody);
-        return json({ error: 'Invalid JSON in request body: ' + jsonError.message }, { status: 400 });
+        return json({ error: 'Invalid JSON in request body' }, { status: 400 });
       }
       
       const { name, email, phone, address, notes } = body;
