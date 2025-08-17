@@ -118,14 +118,33 @@ Deno.serve(async (req) => {
       
       const { customerId, status, total, subtotal, taxRate, discount, terms, address, lineItems, paymentTerms, frequency, depositRequired, depositPercent, notesInternal } = body;
 
-      // Get next quote number
-      const { data: numberData, error: numberError } = await supabase
-        .rpc('next_est_number', { p_business_id: ctx.businessId });
+      // Get next quote number - direct database operation like customers-crud
+      const { data: businessData, error: businessError } = await supabase
+        .from('businesses')
+        .select('est_prefix, est_seq')
+        .eq('id', ctx.businessId)
+        .eq('owner_id', ctx.userId)
+        .single();
 
-      if (numberError) {
-        console.error('[quotes-crud] Number generation error:', numberError);
-        throw new Error(`Failed to generate quote number: ${numberError.message}`);
+      if (businessError || !businessData) {
+        console.error('[quotes-crud] Business fetch error:', businessError);
+        throw new Error('Failed to fetch business data for quote numbering');
       }
+
+      // Increment sequence number
+      const newSeq = businessData.est_seq + 1;
+      const { error: updateError } = await supabase
+        .from('businesses')
+        .update({ est_seq: newSeq })
+        .eq('id', ctx.businessId)
+        .eq('owner_id', ctx.userId);
+
+      if (updateError) {
+        console.error('[quotes-crud] Sequence update error:', updateError);
+        throw new Error('Failed to update quote sequence number');
+      }
+
+      const quoteNumber = businessData.est_prefix + newSeq.toString().padStart(3, '0');
 
       const { data, error } = await supabase
         .from('quotes')
@@ -133,7 +152,7 @@ Deno.serve(async (req) => {
           business_id: ctx.businessId,
           owner_id: ctx.userId,
           customer_id: customerId,
-          number: numberData,
+          number: quoteNumber,
           status: status || 'Draft',
           total: total || 0,
           subtotal: subtotal || 0,
