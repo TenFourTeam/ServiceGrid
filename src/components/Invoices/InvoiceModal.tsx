@@ -533,7 +533,7 @@ export default function InvoiceModal({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-w-2xl mx-auto">
+      <DrawerContent className="max-h-[90vh]">
         <DrawerHeader>
           <DrawerTitle>{getModalTitle()}</DrawerTitle>
           <DrawerDescription>{getModalDescription()}</DrawerDescription>
