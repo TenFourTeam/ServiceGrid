@@ -3,6 +3,7 @@ import { addDays, endOfMonth, endOfWeek, format, isSameDay, isSameMonth, parseIS
 import { useJobsData, useCustomersData } from "@/queries/unified";
 import { formatMoney } from "@/utils/format";
 import JobShowModal from "@/components/Jobs/JobShowModal";
+import { JobBottomModal } from "@/components/Jobs/JobBottomModal";
 import type { Job } from "@/types";
 
 function useMonthGrid(date: Date) {
@@ -29,6 +30,8 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
 
   const [activeJob, setActiveJob] = useState<Job | null>(null);
   const [open, setOpen] = useState(false);
+  const [newJobOpen, setNewJobOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const customersMap = useMemo(() => new Map(customers.map(c => [c.id, c.name])), [customers]);
   const jobsByDay = useMemo(() => {
     const map = new Map<string, Job[]>();
@@ -62,6 +65,7 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
               role="button"
               tabIndex={0}
               onClick={() => onDateChange(d)}
+              onDoubleClick={() => { setSelectedDate(d); setNewJobOpen(true); }}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onDateChange(d); } }}
               aria-current={isToday ? 'date' : undefined}
               className={`border p-2 text-left align-top focus:outline-none focus:ring-2 focus:ring-primary ${inMonth ? '' : 'opacity-60'} ${isToday ? 'bg-muted/40' : ''}`}
@@ -142,6 +146,15 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
           job={activeJob as any}
         />
       )}
+      
+      <JobBottomModal
+        open={newJobOpen}
+        onOpenChange={(open) => { setNewJobOpen(open); if (!open) setSelectedDate(null); }}
+        initialDate={selectedDate || date}
+        initialStartTime="09:00"
+        initialEndTime="10:00"
+        onJobCreated={() => { setNewJobOpen(false); setSelectedDate(null); }}
+      />
     </section>
   );
 }

@@ -13,7 +13,7 @@ import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { edgeRequest } from '@/utils/edgeApi';
 import { fn } from '@/utils/functionUrl';
 import { toast } from 'sonner';
-import { NewJobSheet } from '@/components/Job/NewJobSheet';
+import { JobBottomModal } from '@/components/Jobs/JobBottomModal';
 import { supabase } from '@/integrations/supabase/client';
 import JobShowModal from '@/components/Jobs/JobShowModal';
 
@@ -612,15 +612,19 @@ function onDragStart(e: React.PointerEvent, job: Job) {
         />
       )}
 
-      <NewJobSheet
+      <JobBottomModal
         open={newJobOpen}
-        onOpenChange={(open) => {
-          setNewJobOpen(open);
-          if (!open) setPendingSlot(null);
+        onOpenChange={(open) => { 
+          setNewJobOpen(open); 
+          if (!open) setPendingSlot(null); 
         }}
         initialDate={pendingSlot?.start}
         initialStartTime={pendingSlot?.start ? `${pendingSlot.start.getHours().toString().padStart(2, '0')}:${pendingSlot.start.getMinutes().toString().padStart(2, '0')}` : undefined}
         initialEndTime={pendingSlot?.end ? `${pendingSlot.end.getHours().toString().padStart(2, '0')}:${pendingSlot.end.getMinutes().toString().padStart(2, '0')}` : undefined}
+        onJobCreated={() => {
+          setNewJobOpen(false);
+          setPendingSlot(null);
+        }}
       />
     </div>;
   }

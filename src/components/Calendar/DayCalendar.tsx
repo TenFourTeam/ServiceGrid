@@ -3,6 +3,7 @@ import { endOfDay, startOfDay } from "date-fns";
 import { useJobsData, useCustomersData } from "@/queries/unified";
 import { formatMoney } from "@/utils/format";
 import JobShowModal from "@/components/Jobs/JobShowModal";
+import { JobBottomModal } from "@/components/Jobs/JobBottomModal";
 import type { Job } from "@/types";
 
 export default function DayCalendar({ date, displayMode = 'scheduled' }: { date: Date; displayMode?: 'scheduled' | 'clocked' | 'combined'; }) {
@@ -25,8 +26,13 @@ export default function DayCalendar({ date, displayMode = 'scheduled' }: { date:
   const customersMap = useMemo(() => new Map(customers.map(c => [c.id, c.name])), [customers]);
   const [activeJob, setActiveJob] = useState<Job | null>(null);
   const [open, setOpen] = useState(false);
+  const [newJobOpen, setNewJobOpen] = useState(false);
+
+  const handleDayDoubleClick = () => {
+    setNewJobOpen(true);
+  };
   return (
-    <section className="rounded-lg border p-3">
+    <section className="rounded-lg border p-3" onDoubleClick={handleDayDoubleClick}>
       <h2 className="sr-only">Day view</h2>
       {jobs.length === 0 && (
         <p className="text-sm opacity-70">No jobs scheduled for this day.</p>
@@ -91,6 +97,15 @@ export default function DayCalendar({ date, displayMode = 'scheduled' }: { date:
             job={activeJob as any}
           />
         )}
+        
+        <JobBottomModal
+          open={newJobOpen}
+          onOpenChange={setNewJobOpen}
+          initialDate={date}
+          initialStartTime="09:00"
+          initialEndTime="10:00"
+          onJobCreated={() => setNewJobOpen(false)}
+        />
       </section>
   );
 }
