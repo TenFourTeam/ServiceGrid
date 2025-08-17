@@ -53,26 +53,29 @@ export function IntentPickerModal({
         </DialogHeader>
         
         <div className="space-y-3">
-          {/* Show profile setup if incomplete */}
-          {!onboardingState.profileComplete && (
-            <Button
-              variant="outline" 
-              className="w-full h-auto p-4 flex items-center gap-3 justify-start text-left"
-              onClick={() => handleAction(onSetupProfile)}
-            >
-              <User className="h-5 w-5 text-primary" />
-              <div>
-                <div className="font-medium">Complete Your Profile</div>
-                <div className="text-sm text-muted-foreground">
-                  Add your business name and contact details
-                </div>
+          {/* Profile setup - always shown with completion indicator */}
+          <Button
+            variant="outline" 
+            className="w-full h-auto p-4 flex items-center gap-3 justify-start text-left"
+            onClick={() => handleAction(onSetupProfile)}
+            disabled={onboardingState.profileComplete}
+          >
+            <User className={`h-5 w-5 ${onboardingState.profileComplete ? 'text-green-600' : 'text-primary'}`} />
+            <div className="flex-1">
+              <div className="font-medium flex items-center gap-2">
+                Complete Your Profile
+                {onboardingState.profileComplete && <span className="text-green-600">✓</span>}
               </div>
-            </Button>
-          )}
-          
-          {/* Show main actions if profile is complete */}
-          {onboardingState.profileComplete && (
-            <>
+              <div className="text-sm text-muted-foreground">
+                {onboardingState.profileComplete 
+                  ? 'Profile setup complete' 
+                  : 'Add your business name and contact details'
+                }
+              </div>
+            </div>
+          </Button>
+
+          {/* Main actions - always shown */}
           <Button
             variant="outline" 
             className="w-full h-auto p-4 flex items-center gap-3 justify-start text-left"
@@ -115,21 +118,19 @@ export function IntentPickerModal({
             </div>
           </Button>
 
-            <Button
-              variant="outline"
-              className="w-full h-auto p-4 flex items-center gap-3 justify-start text-left"
-              onClick={() => handleAction(onImportCustomers)}
-            >
-              <Upload className="h-5 w-5 text-primary" />
-              <div>
-                <div className="font-medium">Import Customers (CSV)</div>
-                <div className="text-sm text-muted-foreground">
-                  Upload your existing customer list
-                </div>
+          <Button
+            variant="outline"
+            className="w-full h-auto p-4 flex items-center gap-3 justify-start text-left"
+            onClick={() => handleAction(onImportCustomers)}
+          >
+            <Upload className="h-5 w-5 text-primary" />
+            <div>
+              <div className="font-medium">Import Customers (CSV)</div>
+              <div className="text-sm text-muted-foreground">
+                Upload your existing customer list
               </div>
-            </Button>
-            </>
-          )}
+            </div>
+          </Button>
           
           {/* Show additional setup steps */}
           {onboardingState.profileComplete && !onboardingState.bankLinked && (
