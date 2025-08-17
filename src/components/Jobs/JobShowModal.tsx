@@ -404,14 +404,28 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                   Navigate
                 </Button>
                 {job.jobType === 'time_and_materials' && (
-                  <Button
-                    variant={job.isClockedIn ? "destructive" : "default"}
-                    size="sm"
-                    onClick={() => clockInOut({ jobId: job.id, isClockingIn: !job.isClockedIn })}
-                    disabled={isClockingInOut}
-                  >
-                    {isClockingInOut ? 'Updating...' : job.isClockedIn ? 'Stop Job' : 'Start Job'}
-                  </Button>
+                  <>
+                    {!job.isClockedIn && (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => clockInOut({ jobId: job.id, isClockingIn: true })}
+                        disabled={isClockingInOut}
+                      >
+                        {isClockingInOut ? 'Starting...' : 'Start Job'}
+                      </Button>
+                    )}
+                    {job.isClockedIn && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => clockInOut({ jobId: job.id, isClockingIn: false })}
+                        disabled={isClockingInOut}
+                      >
+                        {isClockingInOut ? 'Stopping...' : 'Stop Job'}
+                      </Button>
+                    )}
+                  </>
                 )}
                 <Button 
                   variant="outline" 

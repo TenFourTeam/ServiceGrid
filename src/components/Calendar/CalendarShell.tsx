@@ -1,6 +1,7 @@
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { WeekCalendar } from "@/components/Calendar/WeekCalendar";
 import MonthCalendar from "@/components/Calendar/MonthCalendar";
 import DayCalendar from "@/components/Calendar/DayCalendar";
@@ -62,13 +63,16 @@ export default function CalendarShell({
           </div>
           <div className="flex items-center gap-2">
             <div className="hidden lg:block">
-              <Tabs value={displayMode} onValueChange={v => setDisplayMode(v as CalendarDisplayMode)}>
-                <TabsList>
-                  <TabsTrigger value="scheduled">Scheduled</TabsTrigger>
-                  <TabsTrigger value="clocked">Clocked</TabsTrigger>
-                  <TabsTrigger value="combined">Combined</TabsTrigger>
-                </TabsList>
-              </Tabs>
+              <Select value={displayMode} onValueChange={v => setDisplayMode(v as CalendarDisplayMode)}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="scheduled">Scheduled</SelectItem>
+                  <SelectItem value="clocked">Clocked</SelectItem>
+                  <SelectItem value="combined">Combined</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="hidden md:block">
               <Tabs value={view} onValueChange={v => setView(v as any)}>
