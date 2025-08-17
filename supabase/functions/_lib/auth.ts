@@ -18,30 +18,14 @@ export async function requireCtx(req: Request): Promise<AuthContext> {
   const authHeader = req.headers.get("authorization") || req.headers.get("Authorization");
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     console.error('❌ [auth] Missing or invalid authorization header');
-    throw new Response(JSON.stringify({ 
-      error: { 
-        code: "auth_missing", 
-        message: "Missing authentication token" 
-      }
-    }), { 
-      status: 401,
-      headers: { "Content-Type": "application/json" }
-    });
+    throw new Error("Missing authentication token");
   }
 
   const token = authHeader.replace(/^Bearer\s+/i, "");
   const secretKey = Deno.env.get("CLERK_SECRET_KEY");
   if (!secretKey) {
     console.error('❌ [auth] Missing CLERK_SECRET_KEY');
-    throw new Response(JSON.stringify({ 
-      error: { 
-        code: "config_error", 
-        message: "Server configuration error" 
-      }
-    }), { 
-      status: 500,
-      headers: { "Content-Type": "application/json" }
-    });
+    throw new Error("Server configuration error - missing CLERK_SECRET_KEY");
   }
 
   let payload: any;
@@ -49,16 +33,7 @@ export async function requireCtx(req: Request): Promise<AuthContext> {
     payload = await verifyToken(token, { secretKey });
   } catch (e) {
     console.error('❌ [auth] Token verification failed:', e);
-    throw new Response(JSON.stringify({ 
-      error: { 
-        code: "auth_invalid", 
-        message: "Authentication failed",
-        details: `${e}`
-      }
-    }), { 
-      status: 401,
-      headers: { "Content-Type": "application/json" }
-    });
+    throw new Error(`Authentication failed: ${e.message || e}`);
   }
 
   const clerkUserId = payload.sub as ClerkUserId;
@@ -68,10 +43,7 @@ export async function requireCtx(req: Request): Promise<AuthContext> {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!supabaseUrl || !serviceKey) {
-    throw new Response(JSON.stringify({ error: "Supabase configuration missing" }), { 
-      status: 500,
-      headers: { "Content-Type": "application/json" }
-    });
+    throw new Error("Supabase configuration missing");
   }
   
   const supaAdmin = createClient(supabaseUrl, serviceKey, {
@@ -130,15 +102,7 @@ async function resolveBusinessId(
 
   if (businessError) {
     console.error('❌ [auth] Failed to create business:', businessError);
-    throw new Response(JSON.stringify({ 
-      error: { 
-        code: "business_creation_failed", 
-        message: "Failed to create default business" 
-      }
-    }), { 
-      status: 500,
-      headers: { "Content-Type": "application/json" }
-    });
+    throw new Error(`Failed to create default business: ${businessError.message}`);
   }
 
   // 2. Create business membership
@@ -149,7 +113,9 @@ async function resolveBusinessId(
       user_id: userUuid,
       role: 'owner',
       joined_at: new Date().toISOString()
-    });
+    })
+    .select()
+    .single();
 
   if (membershipError) {
     console.error('❌ [auth] Failed to create business membership:', membershipError);
@@ -197,15 +163,7 @@ async function resolveUserUuid(supabase: ReturnType<typeof createClient>, clerkU
 
   if (createError) {
     console.error('❌ [auth] Failed to create profile:', createError);
-    throw new Response(JSON.stringify({ 
-      error: { 
-        code: "profile_creation_failed",
-        message: "Failed to create user profile" 
-      }
-    }), { 
-      status: 500,
-      headers: { "Content-Type": "application/json" }
-    });
+    throw new Error(`Failed to create user profile: ${createError.message}`);
   }
 
   // Complete the profile email using Clerk's backend API
