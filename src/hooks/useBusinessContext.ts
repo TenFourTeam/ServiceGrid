@@ -23,7 +23,7 @@ export function useBusinessContext() {
   const businessQuery = useBusiness(shouldFetchBusiness);
   
   const business = businessQuery.data as BusinessUI;
-  const role = business?.role || 'worker';
+  const role = business?.role || 'owner';
   
   // Simplified error detection
   const hasError = businessQuery.isError;
