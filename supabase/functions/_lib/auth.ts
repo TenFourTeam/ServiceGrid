@@ -99,7 +99,14 @@ export async function requireCtx(req: Request, options: { autoCreate?: boolean }
   }
   
   const supaAdmin = createClient(supabaseUrl, serviceKey, {
-    auth: { persistSession: false }
+    auth: { persistSession: false },
+    db: { schema: 'public' },
+    global: {
+      headers: {
+        'Authorization': `Bearer ${serviceKey}`,
+        'apikey': serviceKey
+      }
+    }
   });
 
   // Resolve business context
