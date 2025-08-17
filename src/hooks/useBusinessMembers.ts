@@ -28,7 +28,7 @@ export function useBusinessMembers(businessId?: string, opts?: { enabled?: boole
       
       const { data, error } = await authApi.invoke('business-members', {
         method: 'GET',
-        queryParams: { business_id: businessId }
+        body: { business_id: businessId }
       });
       
       if (error) {

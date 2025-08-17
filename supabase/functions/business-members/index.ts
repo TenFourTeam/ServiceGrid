@@ -8,8 +8,8 @@ serve(async (req: Request) => {
 
   try {
     const ctx = await requireCtx(req);
-    const url = new URL(req.url);
-    const businessId = url.searchParams.get('business_id');
+    const body = req.method === 'GET' ? {} : await req.json();
+    const businessId = body.business_id;
 
     if (!businessId) {
       return json({ error: 'business_id is required' }, { status: 400 });
