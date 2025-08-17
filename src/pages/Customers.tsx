@@ -76,10 +76,10 @@ export default function CustomersPage() {
     
     setDeleting(true);
     try {
-      const { error } = await supabase
-        .from('customers')
-        .delete()
-        .eq('id', customerToDelete.id);
+      const { data, error } = await supabase.functions.invoke('customers-crud', {
+        method: 'DELETE',
+        body: { id: customerToDelete.id }
+      });
       
       if (error) {
         console.error('[CustomersPage] delete customer failed:', error);

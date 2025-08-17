@@ -24,7 +24,7 @@ interface UseInvoicesDataOptions {
 }
 
 /**
- * Direct Supabase invoices hook - no Edge Function needed
+ * Edge Function invoices hook - unified Clerk authentication
  */
 export function useInvoicesData(opts?: UseInvoicesDataOptions) {
   const { isAuthenticated, businessId } = useBusinessContext();
@@ -34,38 +34,20 @@ export function useInvoicesData(opts?: UseInvoicesDataOptions) {
     queryKey: queryKeys.data.invoices(businessId || ''),
     enabled,
     queryFn: async () => {
-      console.info("[useInvoicesData] fetching invoices...");
+      console.info("[useInvoicesData] fetching invoices via edge function");
       
-      const { data, error, count } = await supabase
-        .from('invoices')
-        .select('*', { count: 'exact' })
-        .eq('business_id', businessId!)
-        .order('updated_at', { ascending: false });
+      const { data, error } = await supabase.functions.invoke('invoices-crud', {
+        method: 'GET'
+      });
       
       if (error) {
         console.error("[useInvoicesData] error:", error);
-        throw error;
+        throw new Error(error.message || 'Failed to fetch invoices');
       }
       
-      const invoices: Invoice[] = (data || []).map((row: any) => ({
-        id: row.id,
-        number: row.number,
-        customerId: row.customer_id,
-        jobId: row.job_id ?? null,
-        subtotal: row.subtotal,
-        total: row.total,
-        taxRate: row.tax_rate ?? 0,
-        discount: row.discount ?? 0,
-        status: row.status,
-        dueAt: row.due_at,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-        publicToken: row.public_token,
-      }));
+      console.info("[useInvoicesData] fetched", data?.invoices?.length || 0, "invoices");
       
-      console.info("[useInvoicesData] fetched", invoices.length, "invoices");
-      
-      return { invoices, count: count ?? invoices.length };
+      return { invoices: data?.invoices || [], count: data?.count || 0 };
     },
     staleTime: 30_000,
   });

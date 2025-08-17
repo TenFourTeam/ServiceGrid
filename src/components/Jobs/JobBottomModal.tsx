@@ -143,10 +143,8 @@ export function JobBottomModal({
 
       // Create the job using edge function
       const { data: jobData, error: jobError } = await supabase.functions.invoke('jobs-crud', {
-        body: JSON.stringify(newJob),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        method: 'POST',
+        body: newJob
       });
 
       if (jobError) {
@@ -188,7 +186,8 @@ export function JobBottomModal({
         formData.append('file', file);
 
         const { data, error } = await supabase.functions.invoke('upload-job-photo', {
-          body: formData,
+          method: 'POST',
+          body: { file: file, jobId: jobId }
         });
 
         if (error) {
@@ -202,13 +201,11 @@ export function JobBottomModal({
 
       // Update the job with photo URLs using edge function
       const { data: jobData, error: updateError } = await supabase.functions.invoke('jobs-crud', {
-        body: JSON.stringify({ 
+        method: 'PUT',
+        body: { 
           id: jobId,
           photos: uploadedUrls 
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        }
       });
 
       if (updateError) {
