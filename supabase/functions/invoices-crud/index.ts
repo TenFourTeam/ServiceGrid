@@ -55,7 +55,49 @@ Deno.serve(async (req) => {
 
     if (req.method === 'POST') {
       const body = await req.json();
-      const { customerId, jobId, status, total, subtotal, taxRate, discount, dueAt } = body;
+      const { customerId, jobId, status, total, subtotal, taxRate, discount, dueAt, quoteId } = body;
+
+      let invoiceData: any = {
+        business_id: ctx.businessId,
+        owner_id: ctx.userId,
+        status: status || 'Draft',
+      };
+
+      // If creating from a quote, fetch quote data and line items
+      if (quoteId) {
+        console.log('[invoices-crud] Creating invoice from quote:', quoteId);
+        
+        // Fetch the quote
+        const { data: quoteData, error: quoteError } = await supabase
+          .from('quotes')
+          .select('customer_id, total, subtotal, tax_rate, discount')
+          .eq('id', quoteId)
+          .eq('business_id', ctx.businessId)
+          .single();
+
+        if (quoteError) {
+          console.error('[invoices-crud] Quote fetch error:', quoteError);
+          throw new Error(`Failed to fetch quote: ${quoteError.message}`);
+        }
+
+        // Copy quote data to invoice
+        invoiceData.customer_id = quoteData.customer_id;
+        invoiceData.total = quoteData.total;
+        invoiceData.subtotal = quoteData.subtotal;
+        invoiceData.tax_rate = quoteData.tax_rate;
+        invoiceData.discount = quoteData.discount;
+        invoiceData.job_id = jobId;
+        invoiceData.due_at = dueAt;
+      } else {
+        // Creating invoice manually
+        invoiceData.customer_id = customerId;
+        invoiceData.job_id = jobId;
+        invoiceData.total = total || 0;
+        invoiceData.subtotal = subtotal || 0;
+        invoiceData.tax_rate = taxRate || 0;
+        invoiceData.discount = discount || 0;
+        invoiceData.due_at = dueAt;
+      }
 
       // Get next invoice number
       const { data: numberData, error: numberError } = await supabase
@@ -66,27 +108,60 @@ Deno.serve(async (req) => {
         throw new Error(`Failed to generate invoice number: ${numberError.message}`);
       }
 
+      invoiceData.number = numberData;
+
+      // Create the invoice
       const { data, error } = await supabase
         .from('invoices')
-        .insert([{
-          business_id: ctx.businessId,
-          owner_id: ctx.userId,
-          customer_id: customerId,
-          job_id: jobId,
-          number: numberData,
-          status: status || 'Draft',
-          total: total || 0,
-          subtotal: subtotal || 0,
-          tax_rate: taxRate || 0,
-          discount: discount || 0,
-          due_at: dueAt
-        }])
+        .insert([invoiceData])
         .select()
         .single();
 
       if (error) {
         console.error('[invoices-crud] POST error:', error);
         throw new Error(`Failed to create invoice: ${error.message}`);
+      }
+
+      // If creating from a quote, copy line items
+      if (quoteId) {
+        console.log('[invoices-crud] Copying line items from quote to invoice');
+        
+        // Fetch quote line items
+        const { data: quoteLineItems, error: lineItemsError } = await supabase
+          .from('quote_line_items')
+          .select('name, qty, unit, unit_price, line_total, position')
+          .eq('quote_id', quoteId)
+          .order('position');
+
+        if (lineItemsError) {
+          console.error('[invoices-crud] Line items fetch error:', lineItemsError);
+          throw new Error(`Failed to fetch quote line items: ${lineItemsError.message}`);
+        }
+
+        // Create invoice line items
+        if (quoteLineItems && quoteLineItems.length > 0) {
+          const invoiceLineItems = quoteLineItems.map(item => ({
+            invoice_id: data.id,
+            owner_id: ctx.userId,
+            name: item.name,
+            qty: item.qty,
+            unit: item.unit,
+            unit_price: item.unit_price,
+            line_total: item.line_total,
+            position: item.position
+          }));
+
+          const { error: insertLineItemsError } = await supabase
+            .from('invoice_line_items')
+            .insert(invoiceLineItems);
+
+          if (insertLineItemsError) {
+            console.error('[invoices-crud] Line items insert error:', insertLineItemsError);
+            throw new Error(`Failed to create invoice line items: ${insertLineItemsError.message}`);
+          }
+
+          console.log('[invoices-crud] Created', invoiceLineItems.length, 'line items');
+        }
       }
 
       console.log('[invoices-crud] Invoice created:', data.id);
