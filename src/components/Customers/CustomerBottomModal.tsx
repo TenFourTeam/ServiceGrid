@@ -26,6 +26,88 @@ interface CustomerFormData {
   address: string;
 }
 
+// Form content component to prevent recreation on every render
+interface FormContentProps {
+  formData: CustomerFormData;
+  setFormData: (data: CustomerFormData) => void;
+}
+
+const FormContent = ({ formData, setFormData }: FormContentProps) => (
+  <div className="space-y-4">
+    <div className="space-y-2">
+      <Label htmlFor="name">Name *</Label>
+      <Input
+        id="name"
+        value={formData.name}
+        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+        placeholder="Customer name"
+        required
+      />
+    </div>
+    
+    <div className="space-y-2">
+      <Label htmlFor="email">Email *</Label>
+      <Input
+        id="email"
+        type="email"
+        value={formData.email}
+        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+        placeholder="customer@example.com"
+        required
+      />
+    </div>
+    
+    <div className="space-y-2">
+      <Label htmlFor="phone">Phone</Label>
+      <Input
+        id="phone"
+        type="tel"
+        value={formData.phone}
+        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+        placeholder="(555) 123-4567"
+      />
+    </div>
+    
+    <div className="space-y-2">
+      <Label htmlFor="address">Address</Label>
+      <Input
+        id="address"
+        value={formData.address}
+        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+        placeholder="123 Main St, City, State 12345"
+      />
+    </div>
+  </div>
+);
+
+// Action buttons component to prevent recreation on every render
+interface ActionButtonsProps {
+  customer?: Customer | null;
+  loading: boolean;
+  onCancel: () => void;
+  onSave: () => void;
+}
+
+const ActionButtons = ({ customer, loading, onCancel, onSave }: ActionButtonsProps) => (
+  <div className="flex gap-2">
+    <Button
+      variant="outline"
+      onClick={onCancel}
+      disabled={loading}
+      className="flex-1"
+    >
+      Cancel
+    </Button>
+    <Button
+      onClick={onSave}
+      disabled={loading}
+      className="flex-1"
+    >
+      {customer?.id ? "Update" : "Create"} Customer
+    </Button>
+  </div>
+);
+
 export function CustomerBottomModal({ 
   open, 
   onOpenChange, 
@@ -176,74 +258,6 @@ export function CustomerBottomModal({
     onOpenChange(newOpen);
   };
 
-  const FormContent = () => (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="name">Name *</Label>
-        <Input
-          id="name"
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          placeholder="Customer name"
-          required
-        />
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="email">Email *</Label>
-        <Input
-          id="email"
-          type="email"
-          value={formData.email}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          placeholder="customer@example.com"
-          required
-        />
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="phone">Phone</Label>
-        <Input
-          id="phone"
-          type="tel"
-          value={formData.phone}
-          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-          placeholder="(555) 123-4567"
-        />
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="address">Address</Label>
-        <Input
-          id="address"
-          value={formData.address}
-          onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-          placeholder="123 Main St, City, State 12345"
-        />
-      </div>
-    </div>
-  );
-
-  const ActionButtons = () => (
-    <div className="flex gap-2">
-      <Button
-        variant="outline"
-        onClick={() => handleOpenChange(false)}
-        disabled={loading}
-        className="flex-1"
-      >
-        Cancel
-      </Button>
-      <Button
-        onClick={handleSave}
-        disabled={loading}
-        className="flex-1"
-      >
-        {customer?.id ? "Update" : "Create"} Customer
-      </Button>
-    </div>
-  );
-
   return (
     <Drawer open={open} onOpenChange={handleOpenChange}>
       <DrawerContent className="max-h-[90vh]">
@@ -254,11 +268,16 @@ export function CustomerBottomModal({
         </DrawerHeader>
         
         <div className="px-4 pb-4 overflow-y-auto">
-          <FormContent />
+          <FormContent formData={formData} setFormData={setFormData} />
         </div>
         
         <DrawerFooter>
-          <ActionButtons />
+          <ActionButtons 
+            customer={customer}
+            loading={loading}
+            onCancel={() => handleOpenChange(false)}
+            onSave={handleSave}
+          />
         </DrawerFooter>
       </DrawerContent>
     </Drawer>
