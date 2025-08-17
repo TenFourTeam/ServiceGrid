@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/queries/keys";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from '@clerk/clerk-react';
+import { createAuthEdgeApi } from "@/utils/authEdgeApi";
 
 import type { Customer } from '@/types';
 
@@ -14,6 +15,8 @@ interface UseCustomersDataOptions {
  */
 export function useCustomersData(opts?: UseCustomersDataOptions) {
   const { isAuthenticated, businessId } = useBusinessContext();
+  const { getToken } = useAuth();
+  const authApi = createAuthEdgeApi(getToken);
   const enabled = isAuthenticated && !!businessId && (opts?.enabled ?? true);
 
   const query = useQuery({
@@ -22,7 +25,7 @@ export function useCustomersData(opts?: UseCustomersDataOptions) {
     queryFn: async () => {
       console.info("[useCustomersData] fetching customers via edge function");
       
-      const { data, error } = await supabase.functions.invoke('customers-crud', {
+      const { data, error } = await authApi.invoke('customers-crud', {
         method: 'GET'
       });
       

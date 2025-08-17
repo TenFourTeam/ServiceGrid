@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@clerk/clerk-react';
-import { supabase } from '@/integrations/supabase/client';
 import { queryKeys } from './keys';
+import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 
 export function useBusiness(enabled: boolean = true) {
-  const { userId } = useAuth();
+  const { userId, getToken } = useAuth();
+  const authApi = createAuthEdgeApi(getToken);
   
   return useQuery({
     queryKey: queryKeys.business.current(),
@@ -12,7 +13,7 @@ export function useBusiness(enabled: boolean = true) {
     queryFn: async () => {
       console.info('[useBusiness] fetching business via edge function');
       
-      const { data, error } = await supabase.functions.invoke('get-business');
+      const { data, error } = await authApi.invoke('get-business');
       
       if (error) {
         console.error('[useBusiness] error:', error);

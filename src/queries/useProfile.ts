@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { queryKeys } from './keys';
 import { useAuth } from '@clerk/clerk-react';
+import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 
 export function useProfile() {
-  const { userId } = useAuth();
+  const { userId, getToken } = useAuth();
+  const authApi = createAuthEdgeApi(getToken);
 
   return useQuery({
     queryKey: queryKeys.profile.current(),
@@ -12,7 +13,7 @@ export function useProfile() {
     queryFn: async () => {
       console.info('[useProfile] fetching profile via edge function');
       
-      const { data, error } = await supabase.functions.invoke('get-profile');
+      const { data, error } = await authApi.invoke('get-profile');
       
       if (error) {
         console.error('[useProfile] error:', error);

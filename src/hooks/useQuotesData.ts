@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { queryKeys } from "@/queries/keys";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
+import { useAuth } from '@clerk/clerk-react';
+import { createAuthEdgeApi } from "@/utils/authEdgeApi";
 
 import type { QuoteListItem } from '@/types';
 
@@ -14,6 +15,8 @@ interface UseQuotesDataOptions {
  */
 export function useQuotesData(opts?: UseQuotesDataOptions) {
   const { isAuthenticated, businessId } = useBusinessContext();
+  const { getToken } = useAuth();
+  const authApi = createAuthEdgeApi(getToken);
   const enabled = isAuthenticated && !!businessId && (opts?.enabled ?? true);
 
   const query = useQuery({
@@ -22,7 +25,7 @@ export function useQuotesData(opts?: UseQuotesDataOptions) {
     queryFn: async () => {
       console.info("[useQuotesData] fetching quotes via edge function");
       
-      const { data, error } = await supabase.functions.invoke('quotes-crud', {
+      const { data, error } = await authApi.invoke('quotes-crud', {
         method: 'GET'
       });
       
