@@ -35,6 +35,36 @@ export function useClockInOut() {
       if (error) throw error;
       return data;
     },
+    onMutate: async ({ jobId, isClockingIn }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: queryKeys.data.jobs('') });
+
+      // Snapshot the previous value
+      const previousJobs = queryClient.getQueryData(queryKeys.data.jobs(''));
+
+      // Optimistically update the job
+      queryClient.setQueryData(queryKeys.data.jobs(''), (old: any) => {
+        if (!old?.jobs) return old;
+        
+        const currentTime = new Date().toISOString();
+        return {
+          ...old,
+          jobs: old.jobs.map((job: Job) => 
+            job.id === jobId 
+              ? {
+                  ...job,
+                  isClockedIn: isClockingIn,
+                  clockInTime: isClockingIn ? currentTime : job.clockInTime,
+                  clockOutTime: !isClockingIn ? currentTime : job.clockOutTime,
+                  status: isClockingIn ? 'In Progress' : 'Completed'
+                }
+              : job
+          )
+        };
+      });
+
+      return { previousJobs };
+    },
     onSuccess: (data, variables) => {
       const { isClockingIn } = variables;
       
@@ -43,7 +73,12 @@ export function useClockInOut() {
       
       toast.success(isClockingIn ? "Clocked In - Time tracking started" : "Clocked Out - Time tracking stopped");
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
+      // Roll back to the previous state
+      if (context?.previousJobs) {
+        queryClient.setQueryData(queryKeys.data.jobs(''), context.previousJobs);
+      }
+      
       toast.error("Failed to update clock status");
       console.error("Clock in/out error:", error);
     },
