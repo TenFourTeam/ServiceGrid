@@ -33,7 +33,7 @@ export function CustomerBottomModal({
   onSave 
 }: CustomerBottomModalProps) {
   const queryClient = useQueryClient();
-  const { businessId } = useBusinessContext();
+  const { businessId, userId } = useBusinessContext();
   const { getToken } = useAuth();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   
@@ -71,6 +71,11 @@ export function CustomerBottomModal({
       return;
     }
 
+    if (!businessId || !userId) {
+      toast.error("Authentication context missing");
+      return;
+    }
+
     setLoading(true);
     try {
       const isEdit = !!customer?.id;
@@ -79,7 +84,13 @@ export function CustomerBottomModal({
         email: formData.email.trim(),
         phone: formData.phone.trim() || null,
         address: formData.address.trim() || null,
+        notes: null, // Add notes field to match database schema
+        ...(isEdit && { id: customer.id }), // Only include ID for updates
       };
+      
+      console.log('[CustomerModal] Sending customer data:', customerData);
+      console.log('[CustomerModal] Business context:', { businessId, userId });
+      console.log('[CustomerModal] Operation:', isEdit ? 'UPDATE' : 'CREATE');
       
       if (isEdit) {
         const { data, error } = await authApi.invoke('customers-crud', {
