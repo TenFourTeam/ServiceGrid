@@ -131,19 +131,26 @@ export function IntentPickerModal({
               </div>
             </div>
           </Button>
-          
-          {/* Show additional setup steps */}
-          {onboardingState.profileComplete && !onboardingState.bankLinked && (
+
+          {/* Bank linking - show when profile is complete */}
+          {onboardingState.profileComplete && (
             <Button
               variant="outline"
               className="w-full h-auto p-4 flex items-center gap-3 justify-start text-left"
               onClick={() => handleAction(onLinkBank)}
+              disabled={onboardingState.bankLinked}
             >
-              <CreditCard className="h-5 w-5 text-primary" />
-              <div>
-                <div className="font-medium">Connect Bank Account</div>
+              <CreditCard className={`h-5 w-5 ${onboardingState.bankLinked ? 'text-green-600' : 'text-primary'}`} />
+              <div className="flex-1">
+                <div className="font-medium flex items-center gap-2">
+                  Connect Bank Account
+                  {onboardingState.bankLinked && <span className="text-green-600">✓</span>}
+                </div>
                 <div className="text-sm text-muted-foreground">
-                  Set up payments and get paid faster
+                  {onboardingState.bankLinked 
+                    ? 'Bank account connected' 
+                    : 'Set up payments and get paid faster'
+                  }
                 </div>
               </div>
             </Button>
