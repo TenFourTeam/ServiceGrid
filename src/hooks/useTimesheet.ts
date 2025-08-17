@@ -19,24 +19,22 @@ export function useTimesheet() {
   const { businessId } = useBusinessContext();
   const queryClient = useQueryClient();
 
-  // Get current user's timesheet entries
+  // Get current user's timesheet entries via edge function
   const { data: entries = [], isLoading } = useQuery({
     queryKey: queryKeys.data.timesheet(businessId || ''),
     queryFn: async () => {
       if (!businessId) return [];
       
-      const { data, error } = await supabase
-        .from('timesheet_entries')
-        .select('*')
-        .eq('business_id', businessId)
-        .order('clock_in_time', { ascending: false });
+      const { data, error } = await supabase.functions.invoke('timesheet-crud', {
+        method: 'GET'
+      });
 
       if (error) {
         console.error('Error fetching timesheet entries:', error);
-        throw error;
+        throw new Error(error.message || 'Failed to fetch timesheet entries');
       }
 
-      return data as TimesheetEntry[];
+      return data?.entries || [];
     },
     enabled: !!businessId,
   });
@@ -50,52 +48,42 @@ export function useTimesheet() {
     mutationFn: async ({ notes }: { notes?: string }) => {
       if (!businessId) throw new Error('No business selected');
 
-      const { data, error } = await supabase
-        .from('timesheet_entries')
-        .insert([{
-          business_id: businessId,
-          user_id: (await supabase.auth.getUser()).data.user?.id!,
-          notes: notes || null,
-        }])
-        .select()
-        .single();
+      const { data, error } = await supabase.functions.invoke('timesheet-crud', {
+        method: 'POST',
+        body: { notes }
+      });
 
-      if (error) throw error;
+      if (error) throw new Error(error.message || 'Failed to clock in');
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.data.timesheet(businessId || '') });
       toast.success('Clocked in successfully');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Clock in error:', error);
-      toast.error('Failed to clock in');
+      toast.error(error.message || 'Failed to clock in');
     },
   });
 
   // Clock out mutation
   const clockOutMutation = useMutation({
     mutationFn: async ({ entryId, notes }: { entryId: string; notes?: string }) => {
-      const { data, error } = await supabase
-        .from('timesheet_entries')
-        .update({
-          clock_out_time: new Date().toISOString(),
-          notes: notes || null,
-        })
-        .eq('id', entryId)
-        .select()
-        .single();
+      const { data, error } = await supabase.functions.invoke('timesheet-crud', {
+        method: 'PUT',
+        body: { entryId, notes }
+      });
 
-      if (error) throw error;
+      if (error) throw new Error(error.message || 'Failed to clock out');
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.data.timesheet(businessId || '') });
       toast.success('Clocked out successfully');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Clock out error:', error);
-      toast.error('Failed to clock out');
+      toast.error(error.message || 'Failed to clock out');
     },
   });
 

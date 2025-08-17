@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { queryKeys } from './keys';
-import { toProfileUI } from './transform';
 import { useAuth } from '@clerk/clerk-react';
 
 export function useProfile() {
@@ -11,25 +10,26 @@ export function useProfile() {
     queryKey: queryKeys.profile.current(),
     enabled: !!userId,
     queryFn: async () => {
-      console.info('[useProfile] fetching profile from database');
+      console.info('[useProfile] fetching profile via edge function');
       
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, phone_e164, default_business_id')
-        .eq('clerk_user_id', userId!)
-        .maybeSingle();
+      const { data, error } = await supabase.functions.invoke('get-profile');
       
       if (error) {
         console.error('[useProfile] error:', error);
-        throw error;
+        throw new Error(error.message || 'Failed to fetch profile');
       }
       
-      if (!data) {
+      if (!data?.profile) {
         console.warn('[useProfile] profile not found');
         return null;
       }
       
-      return toProfileUI(data);
+      return {
+        id: data.profile.id,
+        fullName: data.profile.fullName,
+        phoneE164: data.profile.phoneE164,
+        defaultBusinessId: data.profile.defaultBusinessId
+      };
     },
     staleTime: 30_000,
     retry: 2,

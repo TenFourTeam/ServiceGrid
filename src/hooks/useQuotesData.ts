@@ -10,7 +10,7 @@ interface UseQuotesDataOptions {
 }
 
 /**
- * Direct Supabase quotes hook - no Edge Function needed
+ * Edge Function quotes hook - unified Clerk authentication
  */
 export function useQuotesData(opts?: UseQuotesDataOptions) {
   const { isAuthenticated, businessId } = useBusinessContext();
@@ -20,38 +20,20 @@ export function useQuotesData(opts?: UseQuotesDataOptions) {
     queryKey: queryKeys.data.quotes(businessId || ''),
     enabled,
     queryFn: async () => {
-      console.info("[useQuotesData] fetching quotes...");
+      console.info("[useQuotesData] fetching quotes via edge function");
       
-      const { data, error, count } = await supabase
-        .from('quotes')
-        .select(`
-          *,
-          customers!inner(name, email)
-        `, { count: 'exact' })
-        .eq('business_id', businessId!)
-        .order('updated_at', { ascending: false });
+      const { data, error } = await supabase.functions.invoke('quotes-crud', {
+        method: 'GET'
+      });
       
       if (error) {
         console.error("[useQuotesData] error:", error);
-        throw error;
+        throw new Error(error.message || 'Failed to fetch quotes');
       }
       
-      const quotes: QuoteListItem[] = (data || []).map((row: any) => ({
-        id: row.id,
-        number: row.number,
-        total: row.total,
-        status: row.status,
-        updatedAt: row.updated_at,
-        publicToken: row.public_token,
-        viewCount: row.view_count ?? 0,
-        customerId: row.customer_id,
-        customerName: row.customers?.name,
-        customerEmail: row.customers?.email,
-      }));
+      console.info("[useQuotesData] fetched", data?.quotes?.length || 0, "quotes");
       
-      console.info("[useQuotesData] fetched", quotes.length, "quotes");
-      
-      return { quotes, count: count ?? quotes.length };
+      return { quotes: data?.quotes || [], count: data?.count || 0 };
     },
     staleTime: 30_000,
   });

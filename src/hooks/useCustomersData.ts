@@ -10,7 +10,7 @@ interface UseCustomersDataOptions {
 }
 
 /**
- * Edge Function customers hook - unified authentication context
+ * Edge Function customers hook - unified Clerk authentication
  */
 export function useCustomersData(opts?: UseCustomersDataOptions) {
   const { isAuthenticated, businessId } = useBusinessContext();
@@ -20,34 +20,22 @@ export function useCustomersData(opts?: UseCustomersDataOptions) {
     queryKey: queryKeys.data.customers(businessId || ''),
     enabled,
     queryFn: async () => {
-      console.info("[useCustomersData] fetching customers via Supabase...");
+      console.info("[useCustomersData] fetching customers via edge function");
       
-      const { data, error, count } = await supabase
-        .from('customers')
-        .select('*', { count: 'exact' })
-        .order('created_at', { ascending: false });
+      const { data, error } = await supabase.functions.invoke('customers-crud', {
+        method: 'GET'
+      });
       
       if (error) {
         console.error("[useCustomersData] error:", error);
-        throw error;
+        throw new Error(error.message || 'Failed to fetch customers');
       }
       
-      console.info("[useCustomersData] fetched", data?.length || 0, "customers");
-      
-      // Transform DB data to match Customer type
-      const customers = data?.map(customer => ({
-        id: customer.id,
-        businessId: customer.business_id,
-        name: customer.name,
-        email: customer.email,
-        phone: customer.phone,
-        address: customer.address,
-        notes: customer.notes,
-      })) || [];
+      console.info("[useCustomersData] fetched", data?.customers?.length || 0, "customers");
       
       return {
-        customers: customers as Customer[],
-        count: count || 0
+        customers: data?.customers || [],
+        count: data?.count || 0
       };
     },
     staleTime: 30_000,

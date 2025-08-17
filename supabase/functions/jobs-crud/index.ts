@@ -1,0 +1,158 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { corsHeaders, json, requireCtx } from '../_lib/auth.ts';
+
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    console.log(`[jobs-crud] ${req.method} request received`);
+    
+    const ctx = await requireCtx(req);
+    console.log('[jobs-crud] Context resolved:', { userId: ctx.userId, businessId: ctx.businessId });
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    if (req.method === 'GET') {
+      const { data, error, count } = await supabase
+        .from('jobs')
+        .select(`
+          id, title, status, starts_at, ends_at, total, address, notes,
+          job_type, photos, is_clocked_in, clock_in_time, clock_out_time,
+          recurrence, created_at, updated_at,
+          customer_id, quote_id,
+          customers!inner(name, email, phone)
+        `, { count: 'exact' })
+        .eq('business_id', ctx.businessId)
+        .order('updated_at', { ascending: false });
+
+      if (error) {
+        console.error('[jobs-crud] GET error:', error);
+        throw new Error(`Failed to fetch jobs: ${error.message}`);
+      }
+
+      const jobs = data?.map((job: any) => ({
+        id: job.id,
+        title: job.title,
+        status: job.status,
+        startsAt: job.starts_at,
+        endsAt: job.ends_at,
+        total: job.total,
+        address: job.address,
+        notes: job.notes,
+        jobType: job.job_type,
+        photos: job.photos,
+        isClockedIn: job.is_clocked_in,
+        clockInTime: job.clock_in_time,
+        clockOutTime: job.clock_out_time,
+        recurrence: job.recurrence,
+        createdAt: job.created_at,
+        updatedAt: job.updated_at,
+        customerId: job.customer_id,
+        quoteId: job.quote_id,
+        customerName: job.customers?.name,
+        customerEmail: job.customers?.email,
+        customerPhone: job.customers?.phone,
+      })) || [];
+
+      console.log('[jobs-crud] Fetched', jobs.length, 'jobs');
+      return json({ jobs, count: count || 0 });
+    }
+
+    if (req.method === 'POST') {
+      const body = await req.json();
+      const { title, customerId, status, startsAt, endsAt, address, notes, jobType, quoteId } = body;
+
+      const { data, error } = await supabase
+        .from('jobs')
+        .insert([{
+          business_id: ctx.businessId,
+          owner_id: ctx.userId,
+          title,
+          customer_id: customerId,
+          status: status || 'Scheduled',
+          starts_at: startsAt,
+          ends_at: endsAt,
+          address,
+          notes,
+          job_type: jobType || 'scheduled',
+          quote_id: quoteId
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('[jobs-crud] POST error:', error);
+        throw new Error(`Failed to create job: ${error.message}`);
+      }
+
+      console.log('[jobs-crud] Job created:', data.id);
+      return json({ job: data });
+    }
+
+    if (req.method === 'PUT') {
+      const body = await req.json();
+      const { id, title, status, startsAt, endsAt, address, notes, photos, isClockedIn, clockInTime, clockOutTime } = body;
+
+      const updateData: any = {};
+      if (title !== undefined) updateData.title = title;
+      if (status !== undefined) updateData.status = status;
+      if (startsAt !== undefined) updateData.starts_at = startsAt;
+      if (endsAt !== undefined) updateData.ends_at = endsAt;
+      if (address !== undefined) updateData.address = address;
+      if (notes !== undefined) updateData.notes = notes;
+      if (photos !== undefined) updateData.photos = photos;
+      if (isClockedIn !== undefined) updateData.is_clocked_in = isClockedIn;
+      if (clockInTime !== undefined) updateData.clock_in_time = clockInTime;
+      if (clockOutTime !== undefined) updateData.clock_out_time = clockOutTime;
+
+      const { data, error } = await supabase
+        .from('jobs')
+        .update(updateData)
+        .eq('id', id)
+        .eq('business_id', ctx.businessId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('[jobs-crud] PUT error:', error);
+        throw new Error(`Failed to update job: ${error.message}`);
+      }
+
+      console.log('[jobs-crud] Job updated:', data.id);
+      return json({ job: data });
+    }
+
+    if (req.method === 'DELETE') {
+      const body = await req.json();
+      const { id } = body;
+
+      const { error } = await supabase
+        .from('jobs')
+        .delete()
+        .eq('id', id)
+        .eq('business_id', ctx.businessId);
+
+      if (error) {
+        console.error('[jobs-crud] DELETE error:', error);
+        throw new Error(`Failed to delete job: ${error.message}`);
+      }
+
+      console.log('[jobs-crud] Job deleted:', id);
+      return json({ success: true });
+    }
+
+    return json({ error: 'Method not allowed' }, { status: 405 });
+
+  } catch (error: any) {
+    console.error('[jobs-crud] Error:', error);
+    return json(
+      { error: error.message || 'Failed to process request' },
+      { status: 500 }
+    );
+  }
+});

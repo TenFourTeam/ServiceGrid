@@ -79,3 +79,25 @@ verify_jwt = false
 
 [functions.connect-disconnect]
 verify_jwt = false
+
+# New unified CRUD functions
+[functions.get-profile]
+verify_jwt = true
+
+[functions.get-business]
+verify_jwt = true
+
+[functions.customers-crud]
+verify_jwt = true
+
+[functions.jobs-crud]
+verify_jwt = true
+
+[functions.quotes-crud]
+verify_jwt = true
+
+[functions.invoices-crud]
+verify_jwt = true
+
+[functions.timesheet-crud]
+verify_jwt = true

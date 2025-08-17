@@ -2,12 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@clerk/clerk-react';
 import { supabase } from '@/integrations/supabase/client';
 import { queryKeys } from './keys';
-import { toBusinessUI } from './transform';
-import type { BusinessUI } from '@/hooks/useBusinessContext';
 
-/**
- * Direct Supabase business query hook - no Edge Function needed
- */
 export function useBusiness(enabled: boolean = true) {
   const { userId } = useAuth();
   
@@ -15,54 +10,32 @@ export function useBusiness(enabled: boolean = true) {
     queryKey: queryKeys.business.current(),
     enabled: enabled && !!userId,
     queryFn: async () => {
-      console.info('[useBusiness] fetching business from database');
+      console.info('[useBusiness] fetching business via edge function');
       
-      // Single optimized query with joins
-      const { data, error } = await supabase
-        .from('profiles')
-        .select(`
-          default_business_id,
-          id,
-          businesses!profiles_default_business_id_fkey (
-            id,
-            name,
-            phone,
-            reply_to_email,
-            tax_rate_default,
-            logo_url,
-            light_logo_url,
-            created_at,
-            updated_at
-          ),
-          business_members!business_members_user_id_fkey (
-            role,
-            business_id
-          )
-        `)
-        .eq('clerk_user_id', userId!)
-        .maybeSingle();
+      const { data, error } = await supabase.functions.invoke('get-business');
       
       if (error) {
-        console.error('[useBusiness] query error:', error);
-        throw error;
+        console.error('[useBusiness] error:', error);
+        throw new Error(error.message || 'Failed to fetch business');
       }
       
-      if (!data?.default_business_id || !data.businesses) {
-        console.warn('[useBusiness] no default business found');
+      if (!data?.business) {
+        console.warn('[useBusiness] business not found');
         return null;
       }
       
-      // Find the membership for the default business
-      const membership = data.business_members?.find(
-        (member: any) => member.business_id === data.default_business_id
-      );
-      
-      const businessUI = toBusinessUI(data.businesses) as BusinessUI;
-      businessUI.role = membership?.role || 'owner';
-      return businessUI;
+      return {
+        id: data.business.id,
+        name: data.business.name,
+        phone: data.business.phone,
+        replyToEmail: data.business.replyToEmail,
+        taxRateDefault: data.business.taxRateDefault,
+        logoUrl: data.business.logoUrl,
+        lightLogoUrl: data.business.lightLogoUrl,
+        role: data.business.role
+      };
     },
     staleTime: 30_000,
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    retry: 2,
   });
 }
