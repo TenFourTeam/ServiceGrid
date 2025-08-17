@@ -48,7 +48,7 @@ export default function InviteAccept() {
       const result = await redeemInvite.mutateAsync({ token });
       
       setStatus('success');
-      setMessage(result.message || 'You have successfully joined the team!');
+      setMessage('You have successfully joined the team!');
       
       toast.success("Welcome!", {
         description: "You have successfully joined the team.",
