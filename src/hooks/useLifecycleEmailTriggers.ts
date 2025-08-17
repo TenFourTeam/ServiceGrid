@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useAuth } from '@clerk/clerk-react';
+import { useAuth, useUser } from '@clerk/clerk-react';
 import { useBusinessContext } from './useBusinessContext';
 import { useProfile } from '@/queries/useProfile';
 import { useStripeConnectStatus } from './useStripeConnectStatus';
@@ -10,6 +10,7 @@ import { lifecycleEmailTriggers, getUserEngagementData, daysSinceSignup, daysSin
  */
 export function useLifecycleEmailTriggers() {
   const { isSignedIn, isLoaded, getToken } = useAuth();
+  const { user } = useUser();
   const { business, businessName, isLoadingBusiness } = useBusinessContext();
   const { data: profile } = useProfile();
   const { data: stripeStatus } = useStripeConnectStatus();
@@ -18,11 +19,11 @@ export function useLifecycleEmailTriggers() {
   const lastLoginCheck = useRef<string | null>(null);
   const lastEngagementCheck = useRef<string | null>(null);
 
-  // Prepare email data - use business context for user ID
+  // Prepare email data - use user's actual email from Clerk
   const { userId } = useBusinessContext();
   const emailData = {
     userFullName: profile?.profile?.fullName,
-    userEmail: business?.replyToEmail, // Use business email for now as profile doesn't have email
+    userEmail: user?.primaryEmailAddress?.emailAddress || business?.replyToEmail,
     businessName: businessName || business?.name,
     businessId: business?.id,
     userId: userId,
