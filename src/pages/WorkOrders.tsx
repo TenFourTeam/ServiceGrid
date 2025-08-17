@@ -11,8 +11,6 @@ import { Job } from '@/types';
 import { toast } from 'sonner';
 
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
-import { edgeRequest } from '@/utils/edgeApi';
-import { fn } from '@/utils/functionUrl';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import ReschedulePopover from '@/components/WorkOrders/ReschedulePopover';
