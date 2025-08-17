@@ -18,36 +18,90 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     if (req.method === 'GET') {
-      const { data, error, count } = await supabase
-        .from('quotes')
-        .select(`
-          id, number, total, status, updated_at, public_token, view_count,
-          customer_id,
-          customers!inner(name, email)
-        `, { count: 'exact' })
-        .eq('business_id', ctx.businessId)
-        .order('updated_at', { ascending: false });
+      const url = new URL(req.url);
+      const quoteId = url.searchParams.get('id');
 
-      if (error) {
-        console.error('[quotes-crud] GET error:', error);
-        throw new Error(`Failed to fetch quotes: ${error.message}`);
+      if (quoteId) {
+        // Fetch individual quote by ID
+        const { data, error } = await supabase
+          .from('quotes')
+          .select(`
+            id, number, total, status, updated_at, public_token, view_count,
+            customer_id, address, line_items, tax_rate, discount, subtotal,
+            terms, payment_terms, frequency, deposit_required, deposit_percent,
+            notes_internal, files, sent_at, created_at,
+            customers!inner(name, email)
+          `)
+          .eq('id', quoteId)
+          .eq('business_id', ctx.businessId)
+          .single();
+
+        if (error) {
+          console.error('[quotes-crud] GET single quote error:', error);
+          throw new Error(`Failed to fetch quote: ${error.message}`);
+        }
+
+        const quote = {
+          id: data.id,
+          number: data.number,
+          businessId: ctx.businessId,
+          customerId: data.customer_id,
+          address: data.address,
+          lineItems: data.line_items || [],
+          taxRate: data.tax_rate,
+          discount: data.discount,
+          subtotal: data.subtotal,
+          total: data.total,
+          status: data.status,
+          files: data.files || [],
+          notesInternal: data.notes_internal,
+          terms: data.terms,
+          paymentTerms: data.payment_terms,
+          frequency: data.frequency,
+          depositRequired: data.deposit_required,
+          depositPercent: data.deposit_percent,
+          sentAt: data.sent_at,
+          viewCount: data.view_count ?? 0,
+          createdAt: data.created_at,
+          updatedAt: data.updated_at,
+          publicToken: data.public_token,
+        };
+
+        console.log('[quotes-crud] Fetched quote:', data.id);
+        return json(quote);
+      } else {
+        // Fetch all quotes
+        const { data, error, count } = await supabase
+          .from('quotes')
+          .select(`
+            id, number, total, status, updated_at, public_token, view_count,
+            customer_id,
+            customers!inner(name, email)
+          `, { count: 'exact' })
+          .eq('business_id', ctx.businessId)
+          .order('updated_at', { ascending: false });
+
+        if (error) {
+          console.error('[quotes-crud] GET error:', error);
+          throw new Error(`Failed to fetch quotes: ${error.message}`);
+        }
+
+        const quotes = data?.map((quote: any) => ({
+          id: quote.id,
+          number: quote.number,
+          total: quote.total,
+          status: quote.status,
+          updatedAt: quote.updated_at,
+          publicToken: quote.public_token,
+          viewCount: quote.view_count ?? 0,
+          customerId: quote.customer_id,
+          customerName: quote.customers?.name,
+          customerEmail: quote.customers?.email,
+        })) || [];
+
+        console.log('[quotes-crud] Fetched', quotes.length, 'quotes');
+        return json({ quotes, count: count || 0 });
       }
-
-      const quotes = data?.map((quote: any) => ({
-        id: quote.id,
-        number: quote.number,
-        total: quote.total,
-        status: quote.status,
-        updatedAt: quote.updated_at,
-        publicToken: quote.public_token,
-        viewCount: quote.view_count ?? 0,
-        customerId: quote.customer_id,
-        customerName: quote.customers?.name,
-        customerEmail: quote.customers?.email,
-      })) || [];
-
-      console.log('[quotes-crud] Fetched', quotes.length, 'quotes');
-      return json({ quotes, count: count || 0 });
     }
 
     if (req.method === 'POST') {
@@ -62,7 +116,7 @@ Deno.serve(async (req) => {
         return json({ error: 'Invalid JSON in request body' }, { status: 400 });
       }
       
-      const { customerId, status, total, subtotal, taxRate, discount, terms, address } = body;
+      const { customerId, status, total, subtotal, taxRate, discount, terms, address, lineItems, paymentTerms, frequency, depositRequired, depositPercent, notesInternal } = body;
 
       // Get next quote number
       const { data: numberData, error: numberError } = await supabase
@@ -86,7 +140,13 @@ Deno.serve(async (req) => {
           tax_rate: taxRate || 0,
           discount: discount || 0,
           terms,
-          address
+          address,
+          line_items: lineItems || [],
+          payment_terms: paymentTerms,
+          frequency,
+          deposit_required: depositRequired,
+          deposit_percent: depositPercent,
+          notes_internal: notesInternal
         }])
         .select()
         .single();
@@ -112,7 +172,7 @@ Deno.serve(async (req) => {
         return json({ error: 'Invalid JSON in request body' }, { status: 400 });
       }
       
-      const { id, status, total, subtotal, taxRate, discount, terms, address, viewCount } = body;
+      const { id, status, total, subtotal, taxRate, discount, terms, address, viewCount, lineItems, paymentTerms, frequency, depositRequired, depositPercent, notesInternal } = body;
 
       const updateData: any = {};
       if (status !== undefined) updateData.status = status;
@@ -123,6 +183,12 @@ Deno.serve(async (req) => {
       if (terms !== undefined) updateData.terms = terms;
       if (address !== undefined) updateData.address = address;
       if (viewCount !== undefined) updateData.view_count = viewCount;
+      if (lineItems !== undefined) updateData.line_items = lineItems;
+      if (paymentTerms !== undefined) updateData.payment_terms = paymentTerms;
+      if (frequency !== undefined) updateData.frequency = frequency;
+      if (depositRequired !== undefined) updateData.deposit_required = depositRequired;
+      if (depositPercent !== undefined) updateData.deposit_percent = depositPercent;
+      if (notesInternal !== undefined) updateData.notes_internal = notesInternal;
 
       const { data, error } = await supabase
         .from('quotes')

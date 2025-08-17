@@ -82,7 +82,7 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
     const fetchQuote = async () => {
       setLoading(true);
       try {
-        const { data: fullQuote, error } = await authApi.invoke(`quotes?id=${quoteId}`, {
+        const { data: fullQuote, error } = await authApi.invoke(`quotes-crud?id=${quoteId}`, {
           method: 'GET'
         });
         
@@ -107,7 +107,7 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
     setIsSubmitting(true);
     try {
       if (currentMode === 'create') {
-        const { data: result, error } = await authApi.invoke('quotes', {
+        const { data: result, error } = await authApi.invoke('quotes-crud', {
           method: 'POST',
           body: {
             customerId: formData.customerId,
@@ -181,9 +181,10 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
         }
       } else if (currentMode === 'edit' && quote) {
         console.log('[QuoteDetailsModal] Updating quote:', quote.id);
-        const { data: result, error } = await authApi.invoke(`quotes/${quote.id}`, {
-          method: 'PATCH',
+        const { data: result, error } = await authApi.invoke('quotes-crud', {
+          method: 'PUT',
           body: {
+            id: quote.id,
             customerId: formData.customerId,
             address: formData.address,
             lineItems: formData.lineItems.map((li: any) => ({
