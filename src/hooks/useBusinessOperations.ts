@@ -1,8 +1,7 @@
-import { edgeRequest } from '@/utils/edgeApi';
-import { fn } from '@/utils/functionUrl';
 import { queryKeys, invalidationHelpers } from '@/queries/keys';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { useAuth } from '@clerk/clerk-react';
+import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 
 export type BusinessUpdatePayload = {
   businessName: string;
@@ -30,24 +29,34 @@ export type BusinessUpdateResponse = {
  */
 export function useBusinessOperations() {
   const queryClient = useQueryClient();
+  const { getToken } = useAuth();
+  const authApi = createAuthEdgeApi(getToken);
 
   const updateBusiness = useMutation({
     mutationFn: async (input: BusinessUpdatePayload) => {
       console.info('[useBusinessOperations] mutation started', { 
-        url: fn('business-update'), 
         payload: input,
         hasName: !!input.businessName, 
         hasPhone: !!input.phone, 
         hasReplyToEmail: !!input.replyToEmail 
       });
       
-      const result = await edgeRequest(fn('business-update'), {
+      const { data, error } = await authApi.invoke('business-update', {
         method: 'POST',
-        body: JSON.stringify(input),
+        body: input,
+        toast: {
+          success: 'Business profile updated successfully',
+          loading: 'Updating business profile...',
+          error: 'Failed to save business changes. Please check your connection and try again.'
+        }
       });
       
-      console.info('[useBusinessOperations] mutation completed successfully', result);
-      return result;
+      if (error) {
+        throw new Error(error.message || 'Failed to update business');
+      }
+      
+      console.info('[useBusinessOperations] mutation completed successfully', data);
+      return data;
     },
     onSuccess: () => {
       // Use centralized invalidation for business data
@@ -55,11 +64,9 @@ export function useBusinessOperations() {
       
       // Force dashboard data refresh to update onboarding state
       window.dispatchEvent(new CustomEvent('business-updated'));
-      toast.success('Business profile updated successfully');
     },
     onError: (error: any) => {
-      console.error(error);
-      toast.error(error?.message || 'Failed to save business changes. Please check your connection and try again.');
+      console.error('[useBusinessOperations] mutation error:', error);
     },
   });
 

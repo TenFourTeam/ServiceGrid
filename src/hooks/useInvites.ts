@@ -1,9 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
-import { edgeRequest } from "@/utils/edgeApi";
-import { fn } from "@/utils/functionUrl";
 import { queryKeys, invalidationHelpers } from "@/queries/keys";
-import { toast } from "sonner";
+import { createAuthEdgeApi } from "@/utils/authEdgeApi";
 
 export interface Invite {
   id: string;
@@ -19,6 +17,7 @@ export interface Invite {
 
 export function usePendingInvites(businessId?: string) {
   const { isSignedIn, getToken } = useClerkAuth();
+  const authApi = createAuthEdgeApi(getToken);
   const enabled = !!isSignedIn && !!businessId;
 
   return useQuery<{ invites: Invite[] }, Error>({
@@ -26,7 +25,16 @@ export function usePendingInvites(businessId?: string) {
     enabled,
     queryFn: async () => {
       if (!businessId) return { invites: [] };
-      const data = await edgeRequest(fn(`invite-manage?action=list&business_id=${businessId}`));
+      
+      const { data, error } = await authApi.invoke('invite-manage', {
+        method: 'GET',
+        body: { action: 'list', business_id: businessId }
+      });
+      
+      if (error) {
+        throw new Error(error.message || 'Failed to fetch pending invites');
+      }
+      
       return data || { invites: [] };
     },
     staleTime: 30_000,
@@ -35,60 +43,95 @@ export function usePendingInvites(businessId?: string) {
 
 export function useRevokeInvite(businessId: string) {
   const queryClient = useQueryClient();
+  const { getToken } = useClerkAuth();
+  const authApi = createAuthEdgeApi(getToken);
   
   return useMutation({
     mutationFn: async ({ inviteId }: { inviteId: string }) => {
-      return await edgeRequest(fn("invite-manage"), {
+      const { data, error } = await authApi.invoke("invite-manage", {
         method: "POST",
-        body: JSON.stringify({ inviteId, action: "revoke" }),
+        body: { inviteId, action: "revoke" },
+        toast: {
+          success: "Invite revoked successfully",
+          loading: "Revoking invitation...",
+          error: "Failed to revoke invite"
+        }
       });
+      
+      if (error) {
+        throw new Error(error.message || 'Failed to revoke invite');
+      }
+      
+      return data;
     },
     onSuccess: () => {
       invalidationHelpers.team(queryClient, businessId);
-      toast.success("Invite revoked successfully");
     },
     onError: (error: any) => {
-      console.error(error);
-      toast.error(error?.message || "Failed to revoke invite");
+      console.error('[useRevokeInvite] error:', error);
     },
   });
 }
 
 export function useResendInvite(businessId: string) {
   const queryClient = useQueryClient();
+  const { getToken } = useClerkAuth();
+  const authApi = createAuthEdgeApi(getToken);
   
   return useMutation({
     mutationFn: async ({ inviteId }: { inviteId: string }) => {
-      return await edgeRequest(fn("invite-manage"), {
+      const { data, error } = await authApi.invoke("invite-manage", {
         method: "POST",
-        body: JSON.stringify({ inviteId, action: "resend" }),
+        body: { inviteId, action: "resend" },
+        toast: {
+          success: "Invite resent successfully",
+          loading: "Resending invitation...",
+          error: "Failed to resend invite"
+        }
       });
+      
+      if (error) {
+        throw new Error(error.message || 'Failed to resend invite');
+      }
+      
+      return data;
     },
     onSuccess: () => {
       invalidationHelpers.team(queryClient, businessId);
-      toast.success("Invite resent successfully");
     },
     onError: (error: any) => {
-      console.error(error);
-      toast.error(error?.message || "Failed to resend invite");
+      console.error('[useResendInvite] error:', error);
     },
   });
 }
 
 export function useRedeemInvite() {
+  const { getToken } = useClerkAuth();
+  const authApi = createAuthEdgeApi(getToken);
+  
   return useMutation({
     mutationFn: async ({ token }: { token: string }) => {
-      return await edgeRequest(fn("invite-redeem"), {
+      const { data, error } = await authApi.invoke("invite-redeem", {
         method: "POST",
-        body: JSON.stringify({ token }),
+        body: { token },
+        toast: {
+          success: "Invite redeemed successfully",
+          loading: "Redeeming invitation...",
+          error: "Failed to redeem invite"
+        }
       });
+      
+      if (error) {
+        throw new Error(error.message || 'Failed to redeem invite');
+      }
+      
+      return data;
     },
     onSuccess: () => {
-      toast.success("Invite redeemed successfully");
+      // Toast is handled by authApi
     },
     onError: (error: any) => {
-      console.error(error);
-      toast.error(error?.message || "Failed to redeem invite");
+      console.error('[useRedeemInvite] error:', error);
     },
   });
 }

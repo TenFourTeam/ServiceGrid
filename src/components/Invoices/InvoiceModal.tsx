@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { formatDate, formatMoney } from '@/utils/format';
 import { useCustomersData } from '@/queries/unified';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
-import { edgeToast } from '@/utils/edgeRequestWithToast';
+// edgeToast removed - migrate to authApi.invoke() pattern
 import { fn } from '@/utils/functionUrl';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';

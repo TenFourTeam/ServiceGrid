@@ -1,9 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
-import { edgeRequest } from "@/utils/edgeApi";
-import { fn } from "@/utils/functionUrl";
 import { queryKeys, invalidationHelpers } from "@/queries/keys";
-import { toast } from "sonner";
+import { createAuthEdgeApi } from "@/utils/authEdgeApi";
 
 export interface BusinessMember {
   id: string;
@@ -19,6 +17,7 @@ export interface BusinessMember {
 
 export function useBusinessMembers(businessId?: string, opts?: { enabled?: boolean }) {
   const { isSignedIn, getToken } = useClerkAuth();
+  const authApi = createAuthEdgeApi(getToken);
   const enabled = !!isSignedIn && !!businessId && (opts?.enabled ?? true);
 
   return useQuery<{ members: BusinessMember[] } | null, Error>({
@@ -26,7 +25,15 @@ export function useBusinessMembers(businessId?: string, opts?: { enabled?: boole
     enabled,
     queryFn: async () => {
       if (!businessId) return null;
-      const data = await edgeRequest(fn(`business-members?business_id=${businessId}`));
+      
+      const { data, error } = await authApi.invoke('business-members', {
+        method: 'GET'
+      });
+      
+      if (error) {
+        throw new Error(error.message || 'Failed to fetch business members');
+      }
+      
       return data || { members: [] };
     },
     staleTime: 30_000,
@@ -35,41 +42,64 @@ export function useBusinessMembers(businessId?: string, opts?: { enabled?: boole
 
 export function useInviteWorker() {
   const queryClient = useQueryClient();
+  const { getToken } = useClerkAuth();
+  const authApi = createAuthEdgeApi(getToken);
   
   return useMutation({
     mutationFn: async ({ businessId, email }: { businessId: string; email: string }) => {
-      return await edgeRequest(fn("invite-worker"), {
+      const { data, error } = await authApi.invoke("invite-worker", {
         method: "POST",
-        body: JSON.stringify({ businessId, email }),
+        body: { businessId, email },
+        toast: {
+          success: "Team member invited successfully",
+          loading: "Sending invitation...",
+          error: "Failed to invite team member"
+        }
       });
+      
+      if (error) {
+        throw new Error(error.message || 'Failed to invite team member');
+      }
+      
+      return data;
     },
     onSuccess: (_, { businessId }) => {
       invalidationHelpers.team(queryClient, businessId);
-      toast.success("Team member invited successfully");
     },
     onError: (error: any) => {
-      console.error(error);
-      toast.error(error?.message || "Failed to invite team member");
+      console.error('[useInviteWorker] error:', error);
     },
   });
 }
 
 export function useRemoveMember() {
   const queryClient = useQueryClient();
+  const { getToken } = useClerkAuth();
+  const authApi = createAuthEdgeApi(getToken);
   
   return useMutation({
     mutationFn: async ({ businessId, memberId }: { businessId: string; memberId: string }) => {
-      return await edgeRequest(fn(`business-members/${memberId}`), {
+      const { data, error } = await authApi.invoke('business-members', {
         method: "DELETE",
+        body: { memberId },
+        toast: {
+          success: "Team member removed successfully",
+          loading: "Removing team member...",
+          error: "Failed to remove team member"
+        }
       });
+      
+      if (error) {
+        throw new Error(error.message || 'Failed to remove team member');
+      }
+      
+      return data;
     },
     onSuccess: (_, { businessId }) => {
       invalidationHelpers.team(queryClient, businessId);
-      toast.success("Team member removed successfully");
     },
     onError: (error: any) => {
-      console.error(error);
-      toast.error(error?.message || "Failed to remove team member");
+      console.error('[useRemoveMember] error:', error);
     },
   });
 }

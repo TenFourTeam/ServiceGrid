@@ -3,7 +3,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MoreHorizontal, Send, FileText, Receipt } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { edgeToast } from '@/utils/edgeRequestWithToast';
+// edgeToast removed - migrate to authApi.invoke() pattern
 import { fn } from '@/utils/functionUrl';
 import { useLifecycleEmailIntegration } from '@/hooks/useLifecycleEmailIntegration';
 import type { QuoteListItem } from '@/types';

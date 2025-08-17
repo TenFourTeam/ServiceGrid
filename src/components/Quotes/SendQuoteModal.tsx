@@ -10,7 +10,7 @@ import type { Quote } from "@/types";
 import { generateQuoteEmail, generateQuoteSubject } from "@/utils/quoteEmailTemplates";
 import { combineMessageWithEmail } from "@/utils/emailTemplateEngine";
 import { useQueryClient } from "@tanstack/react-query";
-import { edgeToast } from "@/utils/edgeRequestWithToast";
+// edgeToast removed - migrate to authApi.invoke() pattern
 import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";

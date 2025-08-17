@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { formatMoney, formatDate } from '@/utils/format';
 import { edgeRequest } from '@/utils/edgeApi';
-import { edgeToast } from '@/utils/edgeRequestWithToast';
+// edgeToast removed - migrate to authApi.invoke() pattern
 import { fn } from '@/utils/functionUrl';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';

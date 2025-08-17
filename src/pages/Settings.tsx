@@ -7,9 +7,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import BusinessLogo from '@/components/BusinessLogo';
 import { useState, useEffect } from 'react';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
-import { edgeRequest } from '@/utils/edgeApi';
-import { fn } from '@/utils/functionUrl';
-import { toast as sonnerToast } from 'sonner';
+import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 import ConnectBanner from '@/components/Stripe/ConnectBanner';
 import { useStripeConnectStatus } from '@/hooks/useStripeConnectStatus';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
@@ -19,7 +17,8 @@ import { useBusinessNameForm } from '@/hooks/useBusinessNameForm';
 
 export default function SettingsPage() {
   const { business, role } = useBusinessContext();
-  const { isSignedIn } = useClerkAuth();
+  const { isSignedIn, getToken } = useClerkAuth();
+  const authApi = createAuthEdgeApi(getToken);
   const [darkFile, setDarkFile] = useState<File | null>(null);
   const [lightFile, setLightFile] = useState<File | null>(null);
   const [sub, setSub] = useState<any>(null);
@@ -54,50 +53,85 @@ export default function SettingsPage() {
   async function refreshSubscription() {
     try {
       setSubLoading(true);
-      const data = await edgeRequest(fn('check-subscription'), {
-        method: 'POST'
+      const { data, error } = await authApi.invoke('check-subscription', {
+        method: 'POST',
+        toast: {
+          error: 'Failed to refresh subscription'
+        }
       });
+      
+      if (error) {
+        throw new Error(error.message || 'Failed to refresh subscription');
+      }
+      
       setSub(data || null);
     } catch (e: any) {
-      sonnerToast.error(e?.message || 'Failed to refresh subscription');
+      console.error('[refreshSubscription] error:', e);
     } finally {
       setSubLoading(false);
     }
   }
   async function startCheckout(plan: 'monthly' | 'yearly') {
     try {
-      const data = await edgeRequest(fn('create-checkout'), {
+      const { data, error } = await authApi.invoke('create-checkout', {
         method: 'POST',
-        body: JSON.stringify({ plan })
+        body: { plan },
+        toast: {
+          loading: 'Creating checkout session...',
+          error: 'Failed to start checkout'
+        }
       });
-      const url = (data as any)?.url as string | undefined;
+      
+      if (error) {
+        throw new Error(error.message || 'Failed to start checkout');
+      }
+      
+      const url = data?.url as string | undefined;
       if (!url) throw new Error('No checkout URL');
       window.open(url, '_blank');
     } catch (e: any) {
-      sonnerToast.error(e?.message || 'Failed to start checkout');
+      console.error('[startCheckout] error:', e);
     }
   }
   async function openPortal() {
     try {
-      const data = await edgeRequest(fn('customer-portal'), {
-        method: 'POST'
+      const { data, error } = await authApi.invoke('customer-portal', {
+        method: 'POST',
+        toast: {
+          loading: 'Opening customer portal...',
+          error: 'Failed to open portal'
+        }
       });
-      const url = (data as any)?.url as string | undefined;
+      
+      if (error) {
+        throw new Error(error.message || 'Failed to open portal');
+      }
+      
+      const url = data?.url as string | undefined;
       if (!url) throw new Error('No portal URL');
       window.open(url, '_blank');
     } catch (e: any) {
-      sonnerToast.error(e?.message || 'Failed to open portal');
+      console.error('[openPortal] error:', e);
     }
   }
   async function handleStripeConnect() {
     try {
-      const data = await edgeRequest(fn('connect-onboarding-link'), {
-        method: 'POST'
+      const { data, error } = await authApi.invoke('connect-onboarding-link', {
+        method: 'POST',
+        toast: {
+          loading: 'Creating Stripe onboarding link...',
+          error: 'Failed to start Stripe onboarding'
+        }
       });
-      const url = (data as any)?.url as string | undefined;
+      
+      if (error) {
+        throw new Error(error.message || 'Failed to start Stripe onboarding');
+      }
+      
+      const url = data?.url as string | undefined;
       if (url) window.open(url, '_blank');
     } catch (e: any) {
-      sonnerToast.error(e?.message || 'Failed to start Stripe onboarding');
+      console.error('[handleStripeConnect] error:', e);
     }
   }
   useEffect(() => {
@@ -268,11 +302,13 @@ export default function SettingsPage() {
                   onRefresh={() => window.location.reload()} 
                   onDisconnect={async () => {
                   try {
-                    await edgeRequest(fn('connect-disconnect'), { method: 'POST' });
-                    window.location.reload();
-                    sonnerToast.success('Disconnected from Stripe');
+                    const { error } = await authApi.invoke('connect-disconnect', { 
+                      method: 'POST',
+                      toast: { success: 'Disconnected from Stripe', error: 'Failed to disconnect' }
+                    });
+                    if (!error) window.location.reload();
                   } catch (e: any) {
-                    sonnerToast.error(e?.message || 'Failed to disconnect');
+                    console.error(e);
                   }
                 }} />
               </CardContent>

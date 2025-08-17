@@ -6,7 +6,7 @@ import { Drawer, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle } from "
 import { Textarea } from "@/components/ui/textarea";
 import { formatDateTime, formatMoney } from "@/utils/format";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
-import { edgeRequestWithToast } from "@/utils/edgeRequestWithToast";
+// edgeRequestWithToast removed - migrate to authApi.invoke() pattern
 import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
 import { toast } from "sonner";
