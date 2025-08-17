@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Job } from '@/types';
 import { useJobsData, useCustomersData } from '@/queries/unified';
 import { clamp, formatDateTime, minutesSinceStartOfDay } from '@/utils/format';
+import { safeCreateDate, safeToISOString, filterJobsWithValidDates } from '@/utils/validation';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { queryKeys } from '@/queries/keys';
 import { useQueryClient } from '@tanstack/react-query';
@@ -21,7 +22,9 @@ import { useJobStatusManager } from '@/hooks/useJobStatusManager';
 const START_ANCHOR_HOUR = 5; // visual start at 5:00
 const TOTAL_MIN = 24 * 60;
 function dayKey(d: Date) {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().slice(0, 10);
+  const dayDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const isoString = safeToISOString(dayDate);
+  return isoString ? isoString.slice(0, 10) : d.toISOString().slice(0, 10);
 }
 export function WeekCalendar({
   selectedJobId,
@@ -52,7 +55,10 @@ export function WeekCalendar({
     const initial = (() => {
       if (selectedJobId) {
         const j = jobs.find(j => j.id === selectedJobId);
-        if (j) return new Date(j.startsAt);
+        if (j) {
+          const jobDate = safeCreateDate(j.startsAt);
+          return jobDate || new Date();
+        }
       }
       return new Date();
     })();
@@ -107,10 +113,16 @@ export function WeekCalendar({
   const dayJobs = useMemo(() => {
     const map: Record<string, Job[]> = {};
     days.forEach(d => map[dayKey(d)] = []);
-    jobs.forEach(j => {
-      const d = new Date(j.startsAt);
-      const key = dayKey(d);
-      if (map[key]) map[key].push(j as Job);
+    
+    // Filter jobs with valid dates first
+    const validJobs = filterJobsWithValidDates(jobs);
+    
+    validJobs.forEach(j => {
+      const d = safeCreateDate(j.startsAt);
+      if (d) {
+        const key = dayKey(d);
+        if (map[key]) map[key].push(j as Job);
+      }
     });
     return map;
   }, [jobs, weekStart]);
@@ -458,7 +470,8 @@ function onDragStart(e: React.PointerEvent, job: Job) {
             <div />
             {days.map(day => {
             const isToday = isSameDay(day, now);
-            return <div key={day.toISOString()} className={`${isToday ? 'bg-primary/10 text-primary' : 'bg-muted/30 text-foreground'} rounded-md px-2 py-2 text-sm font-medium`}>
+            const dayISOString = safeToISOString(day) || day.toISOString();
+            return <div key={dayISOString} className={`${isToday ? 'bg-primary/10 text-primary' : 'bg-muted/30 text-foreground'} rounded-md px-2 py-2 text-sm font-medium`}>
                   <div className="flex items-baseline justify-between">
                     <span>{day.toLocaleDateString(undefined, {
                     weekday: 'short'
@@ -479,9 +492,11 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                 <div key={h + '-' + Math.random()} className="h-16 pr-2 text-right">{h}:00</div>
               ))}
             </div>
-            {days.map((day, i) => (
+            {days.map((day, i) => {
+              const dayISOString = safeToISOString(day) || day.toISOString();
+              return (
               <div
-                key={day.toISOString()}
+                key={dayISOString}
                 className="border rounded-md p-2 relative overflow-hidden"
                 ref={(el) => { if (el) dayRefs.current[i] = el; }}
                 onDoubleClick={(e) => handleEmptyDoubleClick(e, day)}
@@ -514,8 +529,10 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                     dayJobs[dayKey(day)]?.forEach(j => {
                       // Scheduled time block (always shown in 'scheduled' and 'combined' modes)
                       if (displayMode === 'scheduled' || displayMode === 'combined') {
-                        const startsAt = new Date(j.startsAt);
-                        const endsAt = new Date(j.endsAt);
+                        const startsAt = safeCreateDate(j.startsAt);
+                        const endsAt = safeCreateDate(j.endsAt);
+                        
+                        if (!startsAt || !endsAt) return; // Skip jobs with invalid dates
                         const start = minutesFromAnchor(startsAt);
                         const dur = endsAt.getTime() - startsAt.getTime();
                         const durMins = dur / (1000 * 60);
@@ -578,9 +595,13 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                       }
                       
                       // Clocked time block (shown in 'clocked' and 'combined' modes)
-                      if ((displayMode === 'clocked' || displayMode === 'combined') && j.clockInTime && j.clockOutTime) {
-                        const clockStart = new Date(j.clockInTime);
-                        const clockEnd = new Date(j.clockOutTime);
+                      if ((displayMode === 'clocked' || displayMode === 'combined') && j.clockInTime) {
+                        const clockStart = safeCreateDate(j.clockInTime);
+                        if (!clockStart) return; // Skip jobs with invalid clock-in time
+                        
+                        // Handle active clocking (no clock-out time yet) vs completed work
+                        const clockEnd = j.clockOutTime ? safeCreateDate(j.clockOutTime) : now;
+                        if (!clockEnd) return; // Skip if we can't determine end time
                         const clockStartMins = minutesFromAnchor(clockStart);
                         const clockDur = clockEnd.getTime() - clockStart.getTime();
                         const clockDurMins = clockDur / (1000 * 60);
@@ -588,9 +609,15 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                         const clockTop = clockStartMins / TOTAL_MIN * 100;
                         const customer = customers.find(c => c.id === j.customerId);
                         
+                        const isActivelyClocked = j.isClockedIn && !j.clockOutTime;
+                        
                         blocks.push(<div
                           key={`${j.id}-clocked`}
-                          className={`absolute left-2 right-2 rounded-md p-2 select-none transition-all cursor-pointer hover:opacity-80 bg-[hsl(var(--clocked-time))] text-[hsl(var(--clocked-time-foreground))] border border-[hsl(var(--clocked-time))] ${
+                          className={`absolute left-2 right-2 rounded-md p-2 select-none transition-all cursor-pointer hover:opacity-80 ${
+                            isActivelyClocked 
+                              ? 'bg-[hsl(var(--active-clocked-time))] text-[hsl(var(--active-clocked-time-foreground))] border border-[hsl(var(--active-clocked-time))] animate-pulse' 
+                              : 'bg-[hsl(var(--clocked-time))] text-[hsl(var(--clocked-time-foreground))] border border-[hsl(var(--clocked-time))]'
+                          } ${
                             highlightJobId === j.id ? 'ring-2 ring-primary/50 scale-[1.02]' : ''
                           } ${displayMode === 'combined' ? 'z-10' : ''}`}
                           style={{
@@ -606,7 +633,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                           <div className="text-xs leading-tight mt-0.5 truncate ml-2.5">{j.title}</div>
                           <div className="text-xs leading-tight mt-0.5 truncate ml-2.5">
                             <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-white/20">
-                              Worked Time
+                              {isActivelyClocked ? 'Currently Clocked In' : 'Worked Time'}
                             </span>
                           </div>
                         </div>);
@@ -619,7 +646,8 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                   return renderJobBlocks();
                 })()}
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>

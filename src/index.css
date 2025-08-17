@@ -49,6 +49,8 @@ All colors MUST be HSL.
     /* Time tracking semantic tokens */
     --clocked-time: 0 72% 51%; /* Red for actual worked time */
     --clocked-time-foreground: 210 40% 98%;
+    --active-clocked-time: 120 72% 45%; /* Green for currently active clocking */
+    --active-clocked-time-foreground: 210 40% 98%;
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
