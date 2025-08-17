@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
   try {
     // Step 2: Authentication context validation with detailed logging
     console.log('[customers-crud] Starting authentication context resolution...');
-    const ctx = await requireCtx(req.clone());
+    const ctx = await requireCtx(req);
     console.log('[customers-crud] Raw context resolved:', JSON.stringify(ctx, null, 2));
     
     // Validate authentication context

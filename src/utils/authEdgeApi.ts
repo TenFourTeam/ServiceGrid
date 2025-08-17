@@ -82,26 +82,20 @@ export function createAuthEdgeApi(getToken: (options?: { template?: string }) =>
           console.warn('⚠️ [AuthEdgeApi] Could not decode token:', decodeError);
         }
 
-        const headers = {
+        // Keep it simple: let supabase client set Content-Type / stringify objects.
+        const headers: Record<string, string> = {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          ...requestOptions.headers,
+          ...(requestOptions.headers || {}),
         };
 
-        // Auto-serialize body to JSON if it's an object and content-type is application/json
-        let serializedBody = requestOptions.body;
-        if (requestOptions.body && typeof requestOptions.body === 'object' && 
-            headers['Content-Type'] === 'application/json') {
-          serializedBody = JSON.stringify(requestOptions.body);
-          console.info(`🔧 [AuthEdgeApi] Serialized body:`, serializedBody);
-        }
+        const bodyToSend = requestOptions.body; // object | string | FormData | undefined
 
         console.info(`🔧 [AuthEdgeApi] Prepared headers:`, Object.keys(headers));
         console.info(`🔧 [AuthEdgeApi] Calling ${functionName} with auth token`);
 
         const startInvoke = Date.now();
         const { data, error } = await supabase.functions.invoke(functionName, {
-          body: serializedBody,
+          body: bodyToSend,
           headers,
           method: (requestOptions.method as "POST" | "PUT" | "PATCH" | "DELETE" | "GET") || "POST",
         });
