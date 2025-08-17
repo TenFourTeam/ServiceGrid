@@ -36,11 +36,11 @@ function useFilteredJobs() {
     } else if (sort === 'unscheduled') {
       list = list.filter(j => !j.startsAt);
     } else if (sort === 'today') {
-      list = list.filter(j => j.status !== 'Completed' && new Date(j.startsAt) >= todayStart && new Date(j.startsAt) <= todayEnd);
+      list = list.filter(j => j.status !== 'Completed' && j.startsAt && new Date(j.startsAt) >= todayStart && new Date(j.startsAt) <= todayEnd);
     } else if (sort === 'upcoming') {
-      list = list.filter(j => j.status !== 'Completed' && new Date(j.startsAt) > todayEnd);
+      list = list.filter(j => j.status !== 'Completed' && j.startsAt && new Date(j.startsAt) > todayEnd);
     } else if (sort === 'completed') {
-      list = list.filter(j => j.status === 'Completed' && new Date(j.startsAt) >= sevenDaysAgo);
+      list = list.filter(j => j.status === 'Completed' && j.startsAt && new Date(j.startsAt) >= sevenDaysAgo);
     }
     if (qLower) {
       list = list.filter(j => {
@@ -56,9 +56,9 @@ function useFilteredJobs() {
   const counts = useMemo(() => ({
     all: jobs.length,
     unscheduled: jobs.filter(j => !j.startsAt).length,
-    today: jobs.filter(j => j.status !== 'Completed' && new Date(j.startsAt) >= todayStart && new Date(j.startsAt) <= todayEnd).length,
-    upcoming: jobs.filter(j => j.status !== 'Completed' && new Date(j.startsAt) > todayEnd).length,
-    completed: jobs.filter(j => j.status === 'Completed' && new Date(j.startsAt) >= sevenDaysAgo).length,
+    today: jobs.filter(j => j.status !== 'Completed' && j.startsAt && new Date(j.startsAt) >= todayStart && new Date(j.startsAt) <= todayEnd).length,
+    upcoming: jobs.filter(j => j.status !== 'Completed' && j.startsAt && new Date(j.startsAt) > todayEnd).length,
+    completed: jobs.filter(j => j.status === 'Completed' && j.startsAt && new Date(j.startsAt) >= sevenDaysAgo).length,
   }), [jobs]);
 
   const hasInvoice = (jobId: string) => invoices.some(i=> i.jobId === jobId);
