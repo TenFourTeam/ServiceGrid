@@ -1,9 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
-import { edgeRequest } from "@/utils/edgeApi";
-import { fn } from "@/utils/functionUrl";
 import { queryKeys } from "@/queries/keys";
+import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 
 export interface SubscriptionStatus {
   subscribed: boolean;
@@ -18,6 +17,7 @@ const TRIAL_DURATION_DAYS = 7;
 export function useSubscriptionStatus(opts?: { enabled?: boolean }) {
   const { isSignedIn, getToken } = useClerkAuth();
   const { userId } = useBusinessContext();
+  const authApi = createAuthEdgeApi(getToken);
   const enabled = !!isSignedIn && (opts?.enabled ?? true);
 
   return useQuery<SubscriptionStatus | null, Error>({
@@ -25,7 +25,11 @@ export function useSubscriptionStatus(opts?: { enabled?: boolean }) {
     enabled: enabled && !!userId,
     queryFn: async () => {
       try {
-        const data = await edgeRequest(fn("check-subscription"));
+        const { data, error } = await authApi.invoke('check-subscription');
+        
+        if (error) {
+          throw new Error(error.message || 'Failed to fetch subscription status');
+        }
         
         // Calculate trial days from actual user creation date with debugging
         const today = new Date();

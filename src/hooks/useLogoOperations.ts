@@ -1,9 +1,8 @@
 import { useAuth } from '@clerk/clerk-react';
-import { edgeRequest } from '@/utils/edgeApi';
-import { fn } from '@/utils/functionUrl';
 import { queryKeys } from '@/queries/keys';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 
 export type LogoKind = 'dark' | 'light';
 
@@ -17,7 +16,8 @@ export type LogoUploadPayload = {
  * Handles both dark and light logo uploads with consistent error handling
  */
 export function useLogoOperations() {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, getToken } = useAuth();
+  const authApi = createAuthEdgeApi(getToken);
   const queryClient = useQueryClient();
 
   const uploadLogo = useMutation({
@@ -33,12 +33,18 @@ export function useLogoOperations() {
       const form = new FormData();
       form.append('file', file);
       
-      const result = await edgeRequest(fn(`upload-business-logo?kind=${kind}`), {
+      // For FormData, we need to pass it directly and let the authApi handle headers
+      const { data, error } = await authApi.invoke(`upload-business-logo?kind=${kind}`, {
         method: 'POST',
         body: form,
+        headers: {} // Let browser set Content-Type for FormData
       });
       
-      return result as { url: string; kind: string };
+      if (error) {
+        throw new Error(error.message || 'Failed to upload logo');
+      }
+      
+      return data as { url: string; kind: string };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.business.current() });

@@ -1,12 +1,12 @@
 import { useEffect, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { useJobsData } from '@/hooks/useJobsData';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
-import { edgeRequest } from '@/utils/edgeApi';
-import { fn } from '@/utils/functionUrl';
 import { queryKeys } from '@/queries/keys';
 import { toast } from 'sonner';
 import { Job } from '@/types';
+import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 
 interface JobStatusUpdate {
   id: string;
@@ -21,6 +21,8 @@ interface JobStatusUpdate {
 export function useJobStatusManager() {
   const { data: jobs, refetch } = useJobsData();
   const { businessId, isAuthenticated } = useBusinessContext();
+  const { getToken } = useClerkAuth();
+  const authApi = createAuthEdgeApi(getToken);
   const queryClient = useQueryClient();
 
   // Check which jobs need status updates
@@ -88,10 +90,14 @@ export function useJobStatusManager() {
 
     try {
       // Use batch update for better performance and atomicity
-      await edgeRequest(fn('jobs-status-batch'), {
+      const { error } = await authApi.invoke('jobs-status-batch', {
         method: 'POST',
-        body: JSON.stringify({ updates })
+        body: { updates }
       });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to update job statuses');
+      }
 
       // Update the cache immediately for responsive UI
       const queryKey = queryKeys.data.jobs(businessId || '');
