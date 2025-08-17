@@ -23,6 +23,7 @@ export function createAuthEdgeApi(getToken: (options?: { template?: string }) =>
         body?: any;
         method?: string;
         headers?: Record<string, string>;
+        queryParams?: Record<string, string>;
         toast?: ToastOptions;
       } = {}
     ): Promise<{ data: any; error: any }> {
@@ -93,8 +94,16 @@ export function createAuthEdgeApi(getToken: (options?: { template?: string }) =>
         console.info(`🔧 [AuthEdgeApi] Prepared headers:`, Object.keys(headers));
         console.info(`🔧 [AuthEdgeApi] Calling ${functionName} with auth token`);
 
+        // Build function URL with query parameters if provided
+        let functionUrl = functionName;
+        if (requestOptions.queryParams) {
+          const searchParams = new URLSearchParams(requestOptions.queryParams);
+          functionUrl = `${functionName}?${searchParams.toString()}`;
+          console.info(`🔧 [AuthEdgeApi] Function URL with query params: ${functionUrl}`);
+        }
+
         const startInvoke = Date.now();
-        const { data, error } = await supabase.functions.invoke(functionName, {
+        const { data, error } = await supabase.functions.invoke(functionUrl, {
           body: bodyToSend,
           headers,
           method: (requestOptions.method as "POST" | "PUT" | "PATCH" | "DELETE" | "GET") || "POST",
