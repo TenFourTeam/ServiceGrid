@@ -11,9 +11,7 @@ import { useState, useEffect } from 'react';
 import { useCustomersData } from '@/queries/unified';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { edgeToast } from "@/utils/edgeRequestWithToast";
-import { edgeRequest } from "@/utils/edgeApi";
-import { fn } from "@/utils/functionUrl";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from 'sonner';
 import { SimpleCSVImport } from '@/components/Onboarding/SimpleCSVImport';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -78,27 +76,18 @@ export default function CustomersPage() {
     
     setDeleting(true);
     try {
-      const response = await edgeRequest(fn("customers") + `?id=${customerToDelete.id}`, {
-        method: 'DELETE'
-      });
+      const { error } = await supabase
+        .from('customers')
+        .delete()
+        .eq('id', customerToDelete.id);
       
-      // Show cascade deletion details if available
-      if (response?.cascade_deleted) {
-        const counts = response.cascade_deleted;
-        const deletedItems = [];
-        if (counts.quotes > 0) deletedItems.push(`${counts.quotes} quote${counts.quotes > 1 ? 's' : ''}`);
-        if (counts.invoices > 0) deletedItems.push(`${counts.invoices} invoice${counts.invoices > 1 ? 's' : ''}`);
-        if (counts.jobs > 0) deletedItems.push(`${counts.jobs} job${counts.jobs > 1 ? 's' : ''}`);
-        
-        if (deletedItems.length > 0) {
-          toast.success(`Customer and ${deletedItems.join(', ')} deleted successfully`);
-        } else {
-          toast.success('Customer deleted successfully');
-        }
-      } else {
-        toast.success('Customer deleted successfully');
+      if (error) {
+        console.error('[CustomersPage] delete customer failed:', error);
+        toast.error('Failed to delete customer');
+        return;
       }
       
+      toast.success('Customer deleted successfully');
       setDeleteDialogOpen(false);
       setCustomerToDelete(null);
       

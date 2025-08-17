@@ -5,8 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import { edgeToast } from "@/utils/edgeRequestWithToast";
-import { fn } from "@/utils/functionUrl";
+import { supabase } from "@/integrations/supabase/client";
 import { invalidationHelpers } from "@/queries/keys";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 
@@ -71,22 +70,47 @@ export function CustomerBottomModal({
     setLoading(true);
     try {
       const isEdit = !!customer?.id;
+      const customerData = {
+        name: formData.name.trim(),
+        email: formData.email?.trim() || '',
+        phone: formData.phone?.trim() || null,
+        address: formData.address?.trim() || null,
+      };
       
       if (isEdit) {
-        await edgeToast.update(fn("customers"), {
-          id: customer.id,
-          name: formData.name.trim(),
-          email: formData.email?.trim(),
-          phone: formData.phone?.trim() || null,
-          address: formData.address?.trim() || null,
-        }, "Customer updated successfully");
+        const { error } = await supabase
+          .from('customers')
+          .update(customerData)
+          .eq('id', customer.id);
+          
+        if (error) {
+          console.error("Error updating customer:", error);
+          toast.error("Failed to update customer");
+          return;
+        }
+        
+        toast.success("Customer updated successfully");
       } else {
-        await edgeToast.create(fn("customers"), {
-          name: formData.name.trim(),
-          email: formData.email?.trim(),
-          phone: formData.phone?.trim() || null,
-          address: formData.address?.trim() || null,
-        }, "Customer created successfully");
+        if (!businessId) {
+          toast.error("Business context not available");
+          return;
+        }
+        
+        const { error } = await supabase
+          .from('customers')
+          .insert([{
+            ...customerData,
+            business_id: businessId,
+            owner_id: businessId, // RLS will handle this based on current user
+          }]);
+          
+        if (error) {
+          console.error("Error creating customer:", error);
+          toast.error("Failed to create customer");
+          return;
+        }
+        
+        toast.success("Customer created successfully");
       }
       
       if (businessId) {
@@ -96,6 +120,7 @@ export function CustomerBottomModal({
       onSave?.();
     } catch (error) {
       console.error("Error saving customer:", error);
+      toast.error("Failed to save customer");
     } finally {
       setLoading(false);
     }
