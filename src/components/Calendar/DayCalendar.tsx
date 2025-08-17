@@ -60,7 +60,7 @@ export default function DayCalendar({ date, displayMode = 'scheduled' }: { date:
                   {displayMode === 'combined' && <span className="text-xs opacity-60">(Scheduled)</span>}
                 </div>
                 <div className="text-sm font-medium truncate">{j.title || 'Job'}</div>
-                <div className="text-xs text-muted-foreground truncate">{customersMap.get(j.customerId) || 'Customer'}</div>
+                <div className="text-xs text-muted-foreground truncate">{(customersMap.get(j.customerId) ?? 'Customer') as string}</div>
                 {j.address && <div className="text-xs text-muted-foreground">{j.address}</div>}
               </li>
             );
@@ -82,7 +82,7 @@ export default function DayCalendar({ date, displayMode = 'scheduled' }: { date:
                   <span className="text-xs opacity-80">(Worked)</span>
                 </div>
                 <div className="text-sm font-medium truncate">{j.title || 'Job'}</div>
-                <div className="text-xs text-white/70 truncate">{customersMap.get(j.customerId) || 'Customer'}</div>
+                <div className="text-xs text-white/70 truncate">{(customersMap.get(j.customerId) ?? 'Customer') as string}</div>
                 {j.address && <div className="text-xs text-white/70">{j.address}</div>}
               </li>
             );
