@@ -35,20 +35,22 @@ import { usePreloadImage } from "@/hooks/usePreloadImage";
 import { useProfile } from "@/queries/useProfile";
 import { SignOutButton } from "@/components/Auth/SignOutButton";
 
-const items = [
-  { title: "Calendar", url: "/calendar", icon: CalendarIcon },
-  { title: "Work Orders", url: "/work-orders", icon: Wrench },
-  { title: "Quotes", url: "/quotes", icon: FileText },
-  { title: "Invoices", url: "/invoices", icon: Receipt },
-  { title: "Customers", url: "/customers", icon: Users },
-];
-
-const ownerOnlyItems = [
-  { title: "Team", url: "/team", icon: Shield },
+const allItems = [
+  { title: "Calendar", url: "/calendar", icon: CalendarIcon, workerAccess: true },
+  { title: "Work Orders", url: "/work-orders", icon: Wrench, workerAccess: false },
+  { title: "Quotes", url: "/quotes", icon: FileText, workerAccess: false },
+  { title: "Invoices", url: "/invoices", icon: Receipt, workerAccess: false },
+  { title: "Customers", url: "/customers", icon: Users, workerAccess: false },
+  { title: "Team", url: "/team", icon: Shield, workerAccess: true },
 ];
 
 export default function AppSidebar() {
   const { businessId, role, canManage, business, businessLogoUrl, businessLightLogoUrl, businessName } = useBusinessContext();
+  
+  // Filter items based on user role
+  const visibleItems = allItems.filter(item => 
+    role === 'owner' || item.workerAccess
+  );
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut } = useClerk();
@@ -98,10 +100,10 @@ export default function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Main</SidebarGroupLabel>
+          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
+              {visibleItems.map((item) => (
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton asChild isActive={isActivePath(item.url)}>
                     <NavLink
@@ -122,35 +124,6 @@ export default function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
-        {/* Owner-only navigation */}
-        <RequireRole role="owner" fallback={null}>
-          <SidebarGroup>
-            <SidebarGroupLabel>Management</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {ownerOnlyItems.map((item) => (
-                  <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton asChild isActive={isActivePath(item.url)}>
-                      <NavLink
-                        to={item.url}
-                        end
-                        className={({ isActive }) =>
-                          isActive
-                            ? "bg-accent text-accent-foreground"
-                            : "hover:bg-muted/50"
-                        }
-                      >
-                        <item.icon className="mr-2 h-4 w-4" />
-                        <span className="truncate">{item.title}</span>
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </RequireRole>
       </SidebarContent>
 
       <SidebarFooter>

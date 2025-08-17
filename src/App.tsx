@@ -70,21 +70,38 @@ const App = () => (
               
               {/* Protected routes */}
               <Route element={<RequireAuth />}>
+                {/* Routes accessible to both owners and workers */}
                 <Route path="/calendar" element={<CalendarPage />} />
-                <Route path="/work-orders" element={<WorkOrdersPage />} />
-                <Route path="/quotes" element={<QuotesPage />} />
-                <Route path="/invoices" element={<InvoicesPage />} />
-                <Route path="/customers" element={<CustomersPage />} />
-                <Route path="/settings" element={<SettingsPage />} />
-                <Route path="/legal" element={<LegalPage />} />
-                <Route path="/legal/:slug" element={<LegalDocument />} />
+                <Route path="/team" element={<TeamPage />} />
                 
                 {/* Owner-only routes */}
-                <Route path="/team" element={
+                <Route path="/work-orders" element={
                   <RequireRole role="owner">
-                    <TeamPage />
+                    <WorkOrdersPage />
                   </RequireRole>
                 } />
+                <Route path="/quotes" element={
+                  <RequireRole role="owner">
+                    <QuotesPage />
+                  </RequireRole>
+                } />
+                <Route path="/invoices" element={
+                  <RequireRole role="owner">
+                    <InvoicesPage />
+                  </RequireRole>
+                } />
+                <Route path="/customers" element={
+                  <RequireRole role="owner">
+                    <CustomersPage />
+                  </RequireRole>
+                } />
+                <Route path="/settings" element={
+                  <RequireRole role="owner">
+                    <SettingsPage />
+                  </RequireRole>
+                } />
+                <Route path="/legal" element={<LegalPage />} />
+                <Route path="/legal/:slug" element={<LegalDocument />} />
               </Route>
 
               {/* Public pages that don't require auth checks */}
