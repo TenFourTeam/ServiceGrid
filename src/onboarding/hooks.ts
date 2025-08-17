@@ -35,6 +35,10 @@ export function useOnboardingActions() {
     navigate('/settings');
   }, [navigate]);
 
+  const openSendInvoice = useCallback(() => {
+    navigate('/invoices?new=1');
+  }, [navigate]);
+
   return {
     openSetupProfile,
     openNewJobSheet,
@@ -43,5 +47,6 @@ export function useOnboardingActions() {
     openImportCustomers,
     openBankLink,
     openSubscription,
+    openSendInvoice,
   };
 }

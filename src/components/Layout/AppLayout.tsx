@@ -81,6 +81,7 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
         onSetupProfile={onboardingActions.openSetupProfile}
         onLinkBank={onboardingActions.openBankLink}
         onStartSubscription={onboardingActions.openSubscription}
+        onSendInvoice={onboardingActions.openSendInvoice}
       />
       
       <HelpWidget onOpenHelp={handleOpenHelp} />
