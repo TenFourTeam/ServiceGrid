@@ -20,6 +20,7 @@ const LegalDocument = lazy(() => import("./components/Legal/LegalDocument"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const LandingPage = lazy(() => import("./pages/Landing"));
 const TeamPage = lazy(() => import("./pages/Team"));
+const TimesheetPage = lazy(() => import("./pages/Timesheet"));
 
 const ClerkAuthPage = lazy(() => import("./pages/ClerkAuth"));
 const QuoteActionPage = lazy(() => import("./pages/QuoteAction"));
@@ -41,6 +42,7 @@ function PrefetchRoutes() {
       import("./pages/Legal"),
       import("./components/Legal/LegalDocument"),
       import("./pages/Team"),
+      import("./pages/Timesheet"),
       import("./pages/NotFound"),
       import("./pages/ClerkAuth"),
       import("./pages/QuoteAction"),
@@ -72,7 +74,14 @@ const App = () => (
               <Route element={<RequireAuth />}>
                 {/* Routes accessible to both owners and workers */}
                 <Route path="/calendar" element={<CalendarPage />} />
-                <Route path="/team" element={<TeamPage />} />
+                <Route path="/timesheet" element={<TimesheetPage />} />
+                
+                {/* Owner-only routes */}
+                <Route path="/team" element={
+                  <RequireRole role="owner">
+                    <TeamPage />
+                  </RequireRole>
+                } />
                 
                 {/* Owner-only routes */}
                 <Route path="/work-orders" element={

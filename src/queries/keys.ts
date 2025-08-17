@@ -30,6 +30,7 @@ const queryKeys = {
     jobs: (businessId: string) => ['data', 'jobs', businessId] as const,
     quotes: (businessId: string) => ['data', 'quotes', businessId] as const,
     invoices: (businessId: string) => ['data', 'invoices', businessId] as const,
+    timesheet: (businessId: string) => ['data', 'timesheet', businessId] as const,
   },
   
   // Count-only queries for performance
@@ -98,6 +99,10 @@ const invalidationHelpers = {
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary() });
     // Cross-entity: invoices can affect jobs
     queryClient.invalidateQueries({ queryKey: queryKeys.data.jobs(businessId) });
+  },
+  
+  timesheet: (queryClient: any, businessId: string) => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.data.timesheet(businessId) });
   },
   
   team: (queryClient: any, businessId: string) => {

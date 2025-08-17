@@ -26,6 +26,7 @@ import {
   LifeBuoy,
   LogOut,
   Shield,
+  Clock,
 } from "lucide-react";
 
 import BusinessLogo from "@/components/BusinessLogo";
@@ -37,11 +38,12 @@ import { SignOutButton } from "@/components/Auth/SignOutButton";
 
 const allItems = [
   { title: "Calendar", url: "/calendar", icon: CalendarIcon, workerAccess: true },
+  { title: "Timesheet", url: "/timesheet", icon: Clock, workerAccess: true },
   { title: "Work Orders", url: "/work-orders", icon: Wrench, workerAccess: false },
   { title: "Quotes", url: "/quotes", icon: FileText, workerAccess: false },
   { title: "Invoices", url: "/invoices", icon: Receipt, workerAccess: false },
   { title: "Customers", url: "/customers", icon: Users, workerAccess: false },
-  { title: "Team", url: "/team", icon: Shield, workerAccess: true },
+  { title: "Team", url: "/team", icon: Shield, workerAccess: false },
 ];
 
 export default function AppSidebar() {
