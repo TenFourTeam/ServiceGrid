@@ -22,12 +22,12 @@ export function useSettingsForm() {
   
   // Auto-sync form state with server data
   useEffect(() => {
-    if (profile?.fullName) {
-      setUserName(profile.fullName);
+    if (profile?.profile?.fullName) {
+      setUserName(profile.profile.fullName);
     }
-    if (profile?.phoneE164) {
+    if (profile?.profile?.phoneE164) {
       // Always display phone in user-friendly format
-      setUserPhone(formatPhoneInput(profile.phoneE164));
+      setUserPhone(formatPhoneInput(profile.profile.phoneE164));
     }
   }, [profile]);
   

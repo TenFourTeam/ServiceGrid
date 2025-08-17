@@ -26,10 +26,22 @@ export function useProfile() {
       }
       
       return {
-        id: data.profile.id,
-        fullName: data.profile.fullName,
-        phoneE164: data.profile.phoneE164,
-        defaultBusinessId: data.profile.defaultBusinessId
+        profile: {
+          id: data.profile.id,
+          fullName: data.profile.fullName,
+          phoneE164: data.profile.phoneE164,
+          defaultBusinessId: data.profile.defaultBusinessId
+        },
+        business: data.business ? {
+          id: data.business.id,
+          name: data.business.name,
+          phone: data.business.phone,
+          replyToEmail: data.business.replyToEmail,
+          taxRateDefault: data.business.taxRateDefault,
+          logoUrl: data.business.logoUrl,
+          lightLogoUrl: data.business.lightLogoUrl,
+          role: data.business.role
+        } : null
       };
     },
     staleTime: 30_000,

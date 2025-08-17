@@ -39,10 +39,62 @@ Deno.serve(async (req) => {
 
     if (!profile) {
       console.warn('[get-profile] Profile not found');
-      return json({ profile: null });
+      return json({ profile: null, business: null });
     }
 
     console.log('[get-profile] Profile fetched successfully');
+
+    // Fetch business details if user has a default business
+    let business = null;
+    if (profile.default_business_id) {
+      console.log('[get-profile] Fetching business data for:', profile.default_business_id);
+      
+      // Get business details
+      const { data: businessData, error: businessError } = await supabase
+        .from('businesses')
+        .select(`
+          id,
+          name,
+          phone,
+          reply_to_email,
+          tax_rate_default,
+          logo_url,
+          light_logo_url
+        `)
+        .eq('id', profile.default_business_id)
+        .single();
+
+      if (businessError) {
+        console.error('[get-profile] Error fetching business:', businessError);
+        // Don't throw, just return profile without business
+      } else {
+        // Get user's role in the business
+        const { data: memberData, error: memberError } = await supabase
+          .from('business_members')
+          .select('role')
+          .eq('business_id', profile.default_business_id)
+          .eq('user_id', ctx.userId)
+          .single();
+
+        if (memberError) {
+          console.error('[get-profile] Error fetching member role:', memberError);
+          // Don't throw, use business data without role
+        }
+
+        business = {
+          id: businessData.id,
+          name: businessData.name,
+          phone: businessData.phone,
+          replyToEmail: businessData.reply_to_email,
+          taxRateDefault: businessData.tax_rate_default,
+          logoUrl: businessData.logo_url,
+          lightLogoUrl: businessData.light_logo_url,
+          role: memberData?.role || 'owner'
+        };
+
+        console.log('[get-profile] Business data fetched successfully');
+      }
+    }
     
     return json({
       profile: {
@@ -50,7 +102,8 @@ Deno.serve(async (req) => {
         fullName: profile.full_name,
         phoneE164: profile.phone_e164,
         defaultBusinessId: profile.default_business_id
-      }
+      },
+      business
     });
 
   } catch (error: any) {

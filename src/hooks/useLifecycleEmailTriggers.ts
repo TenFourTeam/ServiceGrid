@@ -21,7 +21,7 @@ export function useLifecycleEmailTriggers() {
   // Prepare email data - use business context for user ID
   const { userId } = useBusinessContext();
   const emailData = {
-    userFullName: profile?.fullName,
+    userFullName: profile?.profile?.fullName,
     userEmail: business?.replyToEmail, // Use business email for now as profile doesn't have email
     businessName: businessName || business?.name,
     businessId: business?.id,

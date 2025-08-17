@@ -1,5 +1,5 @@
 import { useAuth } from '@clerk/clerk-react';
-import { useBusiness } from '@/queries/useBusiness';
+import { useProfile } from '@/queries/useProfile';
 
 export type BusinessUI = {
   id: string;
@@ -18,18 +18,18 @@ export type BusinessUI = {
 export function useBusinessContext() {
   const { isSignedIn, isLoaded, userId } = useAuth();
   
-  // Don't query business until Clerk is fully loaded and user is authenticated
-  const shouldFetchBusiness = isLoaded && isSignedIn;
-  const businessQuery = useBusiness(shouldFetchBusiness);
+  // Don't query profile until Clerk is fully loaded and user is authenticated
+  const shouldFetchProfile = isLoaded && isSignedIn;
+  const profileQuery = useProfile();
   
-  const business = businessQuery.data as BusinessUI;
+  const business = profileQuery.data?.business as BusinessUI;
   const role = business?.role || 'owner';
   
   // Simplified error detection
-  const hasError = businessQuery.isError;
+  const hasError = profileQuery.isError;
   
   // Coordinated loading state - don't show as loading if Clerk isn't ready
-  const isLoadingBusiness = !isLoaded || (shouldFetchBusiness && businessQuery.isLoading);
+  const isLoadingBusiness = !isLoaded || (shouldFetchProfile && profileQuery.isLoading);
   
   return {
     // Authentication state
@@ -37,7 +37,7 @@ export function useBusinessContext() {
     isLoaded,
     userId,
     
-    // Complete business data (replaces need for separate useBusiness calls)
+    // Complete business data (now sourced from profile query)
     business,
     businessId: business?.id,
     businessName: business?.name,
@@ -51,14 +51,14 @@ export function useBusinessContext() {
     role,
     canManage: role === 'owner',
     
-    // Loading states - coordinated between Clerk and business query
+    // Loading states - coordinated between Clerk and profile query
     isLoadingBusiness,
     
     // Error states
     hasBusinessError: hasError,
-    businessError: businessQuery.error,
+    businessError: profileQuery.error,
     
     // Utilities
-    refetchBusiness: businessQuery.refetch,
+    refetchBusiness: profileQuery.refetch,
   };
 }

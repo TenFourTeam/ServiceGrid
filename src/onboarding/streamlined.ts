@@ -50,8 +50,8 @@ export function useOnboardingState(): OnboardingState {
 
     // Simple, readable guard logic - preserve completion during updates
     const profileComplete = !!(
-      profile?.fullName?.trim() &&
-      profile?.phoneE164 &&
+      profile?.profile?.fullName?.trim() &&
+      profile?.profile?.phoneE164 &&
       business?.name?.trim()
     );
 
@@ -82,8 +82,8 @@ export function useOnboardingState(): OnboardingState {
       showIntentPicker,
     };
   }, [
-    profile?.fullName,
-    profile?.phoneE164,
+    profile?.profile?.fullName,
+    profile?.profile?.phoneE164,
     business?.name,
     customersCount,
     jobsCount,
