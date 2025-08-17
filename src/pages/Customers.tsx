@@ -2,16 +2,14 @@ import AppLayout from '@/components/Layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Trash2 } from 'lucide-react';
 import { CustomerBottomModal } from '@/components/Customers/CustomerBottomModal';
 import { useState, useEffect } from 'react';
 import { useCustomersData } from '@/queries/unified';
-import { useAuth as useClerkAuth } from '@clerk/clerk-react';
-import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@clerk/clerk-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { createAuthEdgeApi } from "@/utils/authEdgeApi";
 import { toast } from 'sonner';
 import { SimpleCSVImport } from '@/components/Onboarding/SimpleCSVImport';
@@ -22,7 +20,6 @@ import { invalidationHelpers } from '@/queries/keys';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 export default function CustomersPage() {
-  const { isSignedIn } = useClerkAuth();
   const { getToken } = useAuth();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const queryClient = useQueryClient();
@@ -31,12 +28,9 @@ export default function CustomersPage() {
   const navigate = useNavigate();
   const { data: customers, isLoading, error } = useCustomersData();
   
-  // Use customer data directly from hook
   const rows = customers || [];
 
   const [open, setOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [draft, setDraft] = useState({ name: '', email: '', phone: '', address: '' });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -45,13 +39,11 @@ export default function CustomersPage() {
 
   function openNew() {
     setEditingId(null);
-    setDraft({ name: '', email: '', phone: '', address: '' });
     setOpen(true);
   }
 
   function openEdit(c: any) {
     setEditingId(c.id);
-    setDraft({ name: c.name || '', email: c.email || '', phone: c.phone || '', address: c.address || '' });
     setOpen(true);
   }
 
