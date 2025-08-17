@@ -98,17 +98,8 @@ export function WeekCalendar({
   // Jobs data is now loaded via dashboard data in AppLayout
   // No need for separate range fetching
 
-  useEffect(() => {
-    if (!isSignedIn) return;
-    const channel = supabase
-      .channel('jobs-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'jobs' }, () => {
-        // Refetch jobs data when any change occurs
-        refetchJobs();
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [isSignedIn, refetchJobs]);
+  // Removed aggressive realtime subscription that was causing race conditions
+  // React Query will handle cache updates naturally with its staleTime configuration
 
   const dayJobs = useMemo(() => {
     const map: Record<string, Job[]> = {};
