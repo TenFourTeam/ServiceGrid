@@ -4,10 +4,10 @@ import { useBusinessOperations } from '@/hooks/useBusinessOperations';
 import { toast } from 'sonner';
 
 /**
- * Branding form state management for Settings page
- * Handles business name updates separately from profile
+ * Business name form state management for Settings page
+ * Handles business name updates separately from profile and branding
  */
-export function useBrandingForm() {
+export function useBusinessNameForm() {
   const { business, role } = useBusinessContext();
   const { updateBusiness, isUpdating } = useBusinessOperations();
   
@@ -43,7 +43,7 @@ export function useBrandingForm() {
         replyToEmail: business?.replyToEmail,
       });
     } catch (error) {
-      console.error('Business branding update failed:', error);
+      console.error('Business name update failed:', error);
     }
   };
   

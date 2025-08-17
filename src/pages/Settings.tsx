@@ -15,7 +15,7 @@ import { useStripeConnectStatus } from '@/hooks/useStripeConnectStatus';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useLogoOperations } from '@/hooks/useLogoOperations';
 import { useSettingsForm } from '@/hooks/useSettingsForm';
-import { useBrandingForm } from '@/hooks/useBrandingForm';
+import { useBusinessNameForm } from '@/hooks/useBusinessNameForm';
 
 export default function SettingsPage() {
   const { business, role } = useBusinessContext();
@@ -41,14 +41,8 @@ export default function SettingsPage() {
     handleSubmit: handleProfileSubmit,
   } = useSettingsForm();
   
-  // Branding form state management
-  const {
-    businessName,
-    setBusinessName,
-    isFormValid: isBrandingValid,
-    isLoading: isBrandingLoading,
-    handleSubmit: handleBrandingSubmit,
-  } = useBrandingForm();
+  // Business name form state management
+  const businessNameForm = useBusinessNameForm();
   function handleLogoUpload(kind: 'dark' | 'light') {
     const file = kind === 'dark' ? darkFile : lightFile;
     if (!file) {
@@ -182,14 +176,14 @@ export default function SettingsPage() {
         {isOwner && (
           <>
             <Card>
-              <CardHeader><CardTitle>Branding</CardTitle></CardHeader>
-              <CardContent className="space-y-6">
-                <form onSubmit={handleBrandingSubmit} className="space-y-4">
+              <CardHeader><CardTitle>Business Name</CardTitle></CardHeader>
+              <CardContent>
+                <form onSubmit={businessNameForm.handleSubmit} className="space-y-4">
                   <div>
                     <Label>Business Name</Label>
                     <Input 
-                      value={businessName} 
-                      onChange={e => setBusinessName(e.target.value)}
+                      value={businessNameForm.businessName} 
+                      onChange={e => businessNameForm.setBusinessName(e.target.value)}
                       placeholder="Your business name"
                       required
                     />
@@ -198,15 +192,19 @@ export default function SettingsPage() {
                   <div className="pt-4">
                     <Button 
                       type="submit"
-                      disabled={isBrandingLoading || !isBrandingValid}
+                      disabled={businessNameForm.isLoading || !businessNameForm.isFormValid}
                       className="w-full"
                     >
-                      {isBrandingLoading ? 'Saving...' : 'Save Branding'}
+                      {businessNameForm.isLoading ? 'Saving...' : 'Save Business Name'}
                     </Button>
                   </div>
                 </form>
-                
-                <div className="border-t pt-6 space-y-6">
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader><CardTitle>Visual Branding</CardTitle></CardHeader>
+              <CardContent className="space-y-6">
                   <div className="space-y-2">
                     <Label>Dark Icon</Label>
                     <div className="flex items-center gap-4">
@@ -231,26 +229,25 @@ export default function SettingsPage() {
 
                   <div className="space-y-2">
                     <Label>Light Icon</Label>
-                  <div className="flex items-center gap-4">
-                    <div className="shrink-0 w-14 h-14 rounded-lg bg-primary p-2 shadow-sm -ml-1 flex items-center justify-center overflow-hidden">
-                      <BusinessLogo size={40} src={business?.lightLogoUrl} alt="Light icon preview" />
-                    </div>
-                    <div className="flex-1 grid gap-2 sm:grid-cols-[1fr_auto]">
-                      <Input type="file" accept="image/png,image/svg+xml,image/webp,image/jpeg" onChange={e => setLightFile(e.target.files?.[0] || null)} />
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="inline-flex">
-                            <Button onClick={() => handleLogoUpload('light')} disabled={isUploadingLogo || !lightFile}>{isUploadingLogo ? 'Uploading…' : 'Upload light icon'}</Button>
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-xs">
-                          Used in emails and email previews. Use a white/light version. Use PNG/SVG/WebP. Recommended size: 32x32.
-                        </TooltipContent>
+                    <div className="flex items-center gap-4">
+                      <div className="shrink-0 w-14 h-14 rounded-lg bg-primary p-2 shadow-sm -ml-1 flex items-center justify-center overflow-hidden">
+                        <BusinessLogo size={40} src={business?.lightLogoUrl} alt="Light icon preview" />
+                      </div>
+                      <div className="flex-1 grid gap-2 sm:grid-cols-[1fr_auto]">
+                        <Input type="file" accept="image/png,image/svg+xml,image/webp,image/jpeg" onChange={e => setLightFile(e.target.files?.[0] || null)} />
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="inline-flex">
+                              <Button onClick={() => handleLogoUpload('light')} disabled={isUploadingLogo || !lightFile}>{isUploadingLogo ? 'Uploading…' : 'Upload light icon'}</Button>
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs">
+                            Used in emails and email previews. Use a white/light version. Use PNG/SVG/WebP. Recommended size: 32x32.
+                          </TooltipContent>
                         </Tooltip>
                       </div>
                     </div>
                   </div>
-                </div>
               </CardContent>
             </Card>
 
