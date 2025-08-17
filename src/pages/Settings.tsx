@@ -17,7 +17,7 @@ import { useLogoOperations } from '@/hooks/useLogoOperations';
 import { useSettingsForm } from '@/hooks/useSettingsForm';
 
 export default function SettingsPage() {
-  const { business } = useBusinessContext();
+  const { business, role } = useBusinessContext();
   const { isSignedIn } = useClerkAuth();
   const [darkFile, setDarkFile] = useState<File | null>(null);
   const [lightFile, setLightFile] = useState<File | null>(null);
@@ -114,11 +114,14 @@ export default function SettingsPage() {
       }
     })();
   }, [isSignedIn]);
-  return <AppLayout title="Settings">
+  const isOwner = role === 'owner';
+  const pageTitle = isOwner ? "Settings" : "Profile";
+  
+  return <AppLayout title={pageTitle}>
       <div className="grid md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Business Profile</CardTitle>
+            <CardTitle>{isOwner ? "Business Profile" : "Profile"}</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -144,15 +147,17 @@ export default function SettingsPage() {
                   )}
                 </div>
               </div>
-               <div>
-                 <Label>Business Name</Label>
-                 <Input 
-                   value={businessName} 
-                   onChange={e => setBusinessName(e.target.value)}
-                   placeholder="Your business name"
-                   required
-                 />
-               </div>
+              {isOwner && (
+                <div>
+                  <Label>Business Name</Label>
+                  <Input 
+                    value={businessName} 
+                    onChange={e => setBusinessName(e.target.value)}
+                    placeholder="Your business name"
+                    required
+                  />
+                </div>
+              )}
               <div>
                 <Label>Phone Number</Label>
                 <Input 
@@ -164,113 +169,118 @@ export default function SettingsPage() {
                 />
               </div>
               
-                 <div className="pt-4">
-                 <Button 
-                   type="submit"
-                   disabled={isLoading || !isFormValid}
-                   className="w-full"
-                 >
+              <div className="pt-4">
+                <Button 
+                  type="submit"
+                  disabled={isLoading || !isFormValid}
+                  className="w-full"
+                >
                   {isLoading ? 'Saving...' : 'Save Profile'}
                 </Button>
               </div>
             </form>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader><CardTitle>Branding</CardTitle></CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label>Dark Icon</Label>
-              <div className="flex items-center gap-4">
-                <div className="shrink-0 w-14 h-14 rounded-lg bg-background p-2 border border-border shadow-sm -ml-1 flex items-center justify-center overflow-hidden">
-                  <BusinessLogo size={40} src={business?.logoUrl} alt="Dark icon preview" />
+        
+        {isOwner && (
+          <>
+            <Card>
+              <CardHeader><CardTitle>Branding</CardTitle></CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label>Dark Icon</Label>
+                  <div className="flex items-center gap-4">
+                    <div className="shrink-0 w-14 h-14 rounded-lg bg-background p-2 border border-border shadow-sm -ml-1 flex items-center justify-center overflow-hidden">
+                      <BusinessLogo size={40} src={business?.logoUrl} alt="Dark icon preview" />
+                    </div>
+                    <div className="flex-1 grid gap-2 sm:grid-cols-[1fr_auto]">
+                      <Input type="file" accept="image/png,image/svg+xml,image/webp,image/jpeg" onChange={e => setDarkFile(e.target.files?.[0] || null)} />
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="inline-flex">
+                            <Button onClick={() => handleLogoUpload('dark')} disabled={isUploadingLogo || !darkFile}>{isUploadingLogo ? 'Uploading…' : 'Upload dark icon'}</Button>
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                          Used across the app (sidebar, headers). Use PNG/SVG/WebP. Recommended size: 32x32.
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex-1 grid gap-2 sm:grid-cols-[1fr_auto]">
-                  <Input type="file" accept="image/png,image/svg+xml,image/webp,image/jpeg" onChange={e => setDarkFile(e.target.files?.[0] || null)} />
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="inline-flex">
-                        <Button onClick={() => handleLogoUpload('dark')} disabled={isUploadingLogo || !darkFile}>{isUploadingLogo ? 'Uploading…' : 'Upload dark icon'}</Button>
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-xs">
-                      Used across the app (sidebar, headers). Use PNG/SVG/WebP. Recommended size: 32x32.
-                    </TooltipContent>
-                  </Tooltip>
+
+                <div className="space-y-2">
+                  <Label>Light Icon</Label>
+                <div className="flex items-center gap-4">
+                  <div className="shrink-0 w-14 h-14 rounded-lg bg-primary p-2 shadow-sm -ml-1 flex items-center justify-center overflow-hidden">
+                    <BusinessLogo size={40} src={business?.lightLogoUrl} alt="Light icon preview" />
+                  </div>
+                  <div className="flex-1 grid gap-2 sm:grid-cols-[1fr_auto]">
+                    <Input type="file" accept="image/png,image/svg+xml,image/webp,image/jpeg" onChange={e => setLightFile(e.target.files?.[0] || null)} />
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex">
+                          <Button onClick={() => handleLogoUpload('light')} disabled={isUploadingLogo || !lightFile}>{isUploadingLogo ? 'Uploading…' : 'Upload light icon'}</Button>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        Used in emails and email previews. Use a white/light version. Use PNG/SVG/WebP. Recommended size: 32x32.
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                 </div>
-              </div>
-            </div>
+                </div>
+              </CardContent>
+            </Card>
 
-            <div className="space-y-2">
-              <Label>Light Icon</Label>
-            <div className="flex items-center gap-4">
-              <div className="shrink-0 w-14 h-14 rounded-lg bg-primary p-2 shadow-sm -ml-1 flex items-center justify-center overflow-hidden">
-                <BusinessLogo size={40} src={business?.lightLogoUrl} alt="Light icon preview" />
-              </div>
-              <div className="flex-1 grid gap-2 sm:grid-cols-[1fr_auto]">
-                <Input type="file" accept="image/png,image/svg+xml,image/webp,image/jpeg" onChange={e => setLightFile(e.target.files?.[0] || null)} />
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="inline-flex">
-                      <Button onClick={() => handleLogoUpload('light')} disabled={isUploadingLogo || !lightFile}>{isUploadingLogo ? 'Uploading…' : 'Upload light icon'}</Button>
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-xs">
-                    Used in emails and email previews. Use a white/light version. Use PNG/SVG/WebP. Recommended size: 32x32.
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-            </div>
-            </div>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Payouts</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ConnectBanner
+                  loading={statusLoading} 
+                  error={null} 
+                  chargesEnabled={connectStatus?.chargesEnabled} 
+                  payoutsEnabled={connectStatus?.payoutsEnabled} 
+                  detailsSubmitted={connectStatus?.detailsSubmitted} 
+                  bankLast4={null} 
+                  scheduleText={null} 
+                  onConnect={handleStripeConnect} 
+                  onRefresh={() => window.location.reload()} 
+                  onDisconnect={async () => {
+                  try {
+                    await edgeRequest(fn('connect-disconnect'), { method: 'POST' });
+                    window.location.reload();
+                    sonnerToast.success('Disconnected from Stripe');
+                  } catch (e: any) {
+                    sonnerToast.error(e?.message || 'Failed to disconnect');
+                  }
+                }} />
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Payouts</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ConnectBanner
-              loading={statusLoading} 
-              error={null} 
-              chargesEnabled={connectStatus?.chargesEnabled} 
-              payoutsEnabled={connectStatus?.payoutsEnabled} 
-              detailsSubmitted={connectStatus?.detailsSubmitted} 
-              bankLast4={null} 
-              scheduleText={null} 
-              onConnect={handleStripeConnect} 
-              onRefresh={() => window.location.reload()} 
-              onDisconnect={async () => {
-              try {
-                await edgeRequest(fn('connect-disconnect'), { method: 'POST' });
-                window.location.reload();
-                sonnerToast.success('Disconnected from Stripe');
-              } catch (e: any) {
-                sonnerToast.error(e?.message || 'Failed to disconnect');
-              }
-            }} />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Subscription</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-muted-foreground">Status</div>
-                <div className="text-sm">{sub?.subscribed ? `Active • ${sub?.subscription_tier || ''}` : 'Not subscribed'}</div>
-              </div>
-              
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button size="sm" onClick={() => startCheckout('monthly')}>Start Monthly ($50)</Button>
-              <Button size="sm" onClick={() => startCheckout('yearly')}>Start Yearly ($504)</Button>
-              <Button size="sm" variant="secondary" onClick={openPortal}>Manage Subscription</Button>
-            </div>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Subscription</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-muted-foreground">Status</div>
+                    <div className="text-sm">{sub?.subscribed ? `Active • ${sub?.subscription_tier || ''}` : 'Not subscribed'}</div>
+                  </div>
+                  
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" onClick={() => startCheckout('monthly')}>Start Monthly ($50)</Button>
+                  <Button size="sm" onClick={() => startCheckout('yearly')}>Start Yearly ($504)</Button>
+                  <Button size="sm" variant="secondary" onClick={openPortal}>Manage Subscription</Button>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
 
 
       </div>

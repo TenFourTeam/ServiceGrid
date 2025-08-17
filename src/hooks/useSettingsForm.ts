@@ -13,7 +13,7 @@ import { useUser } from '@clerk/clerk-react';
  * Handles auto-sync with server data and optimistic updates
  */
 export function useSettingsForm() {
-  const { business } = useBusinessContext();
+  const { business, role } = useBusinessContext();
   const { data: profile } = useProfile();
   const { user } = useUser();
   
@@ -43,8 +43,8 @@ export function useSettingsForm() {
     }
   }, [business]);
   
-  // Form validation
-  const isFormValid = userName.trim() && userPhone.trim() && businessName.trim();
+  // Form validation - business name only required for owners
+  const isFormValid = userName.trim() && userPhone.trim() && (role === 'worker' || businessName.trim());
   const isLoading = isUpdatingProfile || isUpdatingBusiness;
   
   // Phone formatting helper
@@ -72,19 +72,24 @@ export function useSettingsForm() {
       const optimisticName = userName.trim();
       const optimisticBusinessName = businessName.trim();
       
-      // Update profile and business in parallel
+      // Always update profile
       const profilePromise = updateProfile.mutateAsync({ 
         fullName: optimisticName, 
         phoneRaw: userPhone.trim(),
       });
 
-      const businessPromise = updateBusiness.mutateAsync({
-        businessName: optimisticBusinessName,
-        phone: normalizePhoneToE164(userPhone.trim()),
-        replyToEmail: business?.replyToEmail,
-      });
+      // Only update business if user is owner
+      const promises = [profilePromise];
+      if (role === 'owner') {
+        const businessPromise = updateBusiness.mutateAsync({
+          businessName: optimisticBusinessName,
+          phone: normalizePhoneToE164(userPhone.trim()),
+          replyToEmail: business?.replyToEmail,
+        });
+        promises.push(businessPromise);
+      }
 
-      await Promise.all([profilePromise, businessPromise]);
+      await Promise.all(promises);
       
       // Optional non-blocking Clerk sync
       if (user && optimisticName) {

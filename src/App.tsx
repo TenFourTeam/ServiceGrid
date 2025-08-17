@@ -104,11 +104,7 @@ const App = () => (
                     <CustomersPage />
                   </RequireRole>
                 } />
-                <Route path="/settings" element={
-                  <RequireRole role="owner">
-                    <SettingsPage />
-                  </RequireRole>
-                } />
+                <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/legal" element={<LegalPage />} />
                 <Route path="/legal/:slug" element={<LegalDocument />} />
               </Route>
