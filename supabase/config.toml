@@ -84,20 +84,17 @@ verify_jwt = false
 [functions.get-profile]
 verify_jwt = false
 
-[functions.business-info]
-verify_jwt = true
-
 [functions.customers-crud]
-verify_jwt = true
+verify_jwt = false
 
 [functions.jobs-crud]
-verify_jwt = true
+verify_jwt = false
 
 [functions.quotes-crud]
-verify_jwt = true
+verify_jwt = false
 
 [functions.invoices-crud]
-verify_jwt = true
+verify_jwt = false
 
 [functions.timesheet-crud]
-verify_jwt = true
+verify_jwt = false
