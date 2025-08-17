@@ -13,7 +13,7 @@ export type AuthContext = {
   supaAdmin: ReturnType<typeof createClient>;
 };
 
-export async function requireCtx(req: Request): Promise<AuthContext> {
+export async function requireCtx(req: Request, options: { autoCreate?: boolean } = { autoCreate: true }): Promise<AuthContext> {
   console.info('🔍 [auth] === JWT DEBUGGING START ===');
   console.info('🔍 [auth] Request URL:', req.url);
   console.info('🔍 [auth] Request method:', req.method);
@@ -107,10 +107,10 @@ export async function requireCtx(req: Request): Promise<AuthContext> {
   const candidateBusinessId = req.headers.get("X-Business-Id") || url.searchParams.get("businessId") || null;
 
   // 1) Resolve internal UUID via profiles (Clerk -> UUID)
-  const userUuid = await resolveUserUuid(supaAdmin, clerkUserId, email);
+  const userUuid = await resolveUserUuid(supaAdmin, clerkUserId, email, options.autoCreate);
 
   // 3) Resolve business using UUID (do NOT call the Clerk->UUID mapper again)
-  const businessId = await resolveBusinessId(supaAdmin, userUuid, candidateBusinessId);
+  const businessId = await resolveBusinessId(supaAdmin, userUuid, candidateBusinessId, options.autoCreate);
 
   return {
     clerkUserId,
@@ -124,7 +124,8 @@ export async function requireCtx(req: Request): Promise<AuthContext> {
 async function resolveBusinessId(
   supabase: ReturnType<typeof createClient>, 
   userUuid: UserUuid, 
-  candidate?: string | null
+  candidate?: string | null,
+  autoCreate: boolean = true
 ): Promise<string> {
   // Single business per user model - get user's only business via owner membership
   const { data: membership } = await supabase
@@ -137,6 +138,10 @@ async function resolveBusinessId(
 
   if (membership?.business_id) {
     return membership.business_id;
+  }
+
+  if (!autoCreate) {
+    throw new Error('No business found and auto-creation disabled');
   }
 
   // No business exists - create one directly with service role permissions
@@ -189,7 +194,7 @@ async function resolveBusinessId(
   return newBusiness.id;
 }
 
-async function resolveUserUuid(supabase: ReturnType<typeof createClient>, clerkUserId: ClerkUserId, email: string): Promise<UserUuid> {
+async function resolveUserUuid(supabase: ReturnType<typeof createClient>, clerkUserId: ClerkUserId, email: string, autoCreate: boolean = true): Promise<UserUuid> {
   // Look up by clerk_user_id first
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
@@ -200,6 +205,10 @@ async function resolveUserUuid(supabase: ReturnType<typeof createClient>, clerkU
 
   if (profileError) throw profileError;
   if (profile?.id) return profile.id as UserUuid;
+
+  if (!autoCreate) {
+    throw new Error('Profile not found and auto-creation disabled');
+  }
 
   // Profile doesn't exist - create it automatically for new users
   console.info(`🔄 [auth] Creating profile for new Clerk user: ${clerkUserId}`);
@@ -214,6 +223,20 @@ async function resolveUserUuid(supabase: ReturnType<typeof createClient>, clerkU
     .single();
 
   if (createError) {
+    // Handle race condition - another request may have created the profile
+    if (createError.code === '23505') {
+      console.info('🔄 [auth] Profile already exists, re-querying...');
+      const { data: existingProfile, error: existingError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("clerk_user_id", clerkUserId)
+        .limit(1)
+        .maybeSingle();
+      
+      if (existingError) throw existingError;
+      if (existingProfile?.id) return existingProfile.id as UserUuid;
+    }
+    
     console.error('❌ [auth] Failed to create profile:', createError);
     throw new Error(`Failed to create user profile: ${createError.message}`);
   }

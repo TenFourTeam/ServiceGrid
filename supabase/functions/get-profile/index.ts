@@ -16,9 +16,9 @@ Deno.serve(async (req) => {
     console.log('🚀 [get-profile] Headers:', Object.fromEntries(req.headers.entries()));
     console.log('🚀 [get-profile] Request received');
     
-    console.log('🚀 [get-profile] Calling requireCtx...');
+    console.log('🚀 [get-profile] Calling requireCtx in read-only mode...');
     const startAuth = Date.now();
-    const ctx = await requireCtx(req);
+    const ctx = await requireCtx(req, { autoCreate: false });
     const endAuth = Date.now();
     console.log('🚀 [get-profile] Auth completed in', endAuth - startAuth, 'ms');
     console.log('[get-profile] Context resolved:', { userId: ctx.userId, email: ctx.email });
@@ -112,6 +112,12 @@ Deno.serve(async (req) => {
     // Handle auth errors specifically
     if (error.message?.includes('Authentication failed') || error.message?.includes('Missing authentication')) {
       return json({ error: error.message || 'Authentication failed' }, { status: 401 });
+    }
+    
+    // Handle missing profile/business gracefully (when auto-creation is disabled)
+    if (error.message?.includes('Profile not found') || error.message?.includes('No business found')) {
+      console.info('[get-profile] Profile or business not found, returning null');
+      return json({ profile: null, business: null });
     }
     
     return json(
