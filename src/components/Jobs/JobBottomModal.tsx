@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useCustomersData } from '@/hooks/useCustomersData';
 import { Customer, Job, JobType } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Drawer,
   DrawerContent,
@@ -140,18 +141,19 @@ export function JobBottomModal({
         isClockedIn: false,
       };
 
-      // Create the job
-      const response = await fetch('/api/jobs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      // Create the job using edge function
+      const { data: jobData, error: jobError } = await supabase.functions.invoke('jobs-crud', {
         body: JSON.stringify(newJob),
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to create job');
+      if (jobError) {
+        throw new Error(jobError.message || 'Failed to create job');
       }
 
-      const createdJob: Job = await response.json();
+      const createdJob: Job = jobData.job;
 
       // Update the cache optimistically
       queryClient.setQueryData(['jobs'], (oldJobs: Job[] = []) => {
@@ -184,40 +186,43 @@ export function JobBottomModal({
       const uploadPromises = files.map(async (file) => {
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('jobId', jobId);
 
-        const response = await fetch('/api/upload-job-photo', {
-          method: 'POST',
+        const { data, error } = await supabase.functions.invoke('upload-job-photo', {
           body: formData,
         });
 
-        if (!response.ok) {
-          throw new Error('Failed to upload photo');
+        if (error) {
+          throw new Error(error.message || 'Failed to upload photo');
         }
 
-        const { url } = await response.json();
-        return url;
+        return data.url;
       });
 
       const uploadedUrls = await Promise.all(uploadPromises);
 
-      // Update the job with photo URLs
-      const response = await fetch(`/api/jobs/${jobId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ photos: uploadedUrls }),
+      // Update the job with photo URLs using edge function
+      const { data: jobData, error: updateError } = await supabase.functions.invoke('jobs-crud', {
+        body: JSON.stringify({ 
+          id: jobId,
+          photos: uploadedUrls 
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
 
-      if (response.ok) {
-        const updatedJob = await response.json();
-        
-        // Update cache
-        queryClient.setQueryData(['jobs'], (oldJobs: Job[] = []) => {
-          return oldJobs.map(job => 
-            job.id === jobId ? updatedJob : job
-          );
-        });
+      if (updateError) {
+        throw new Error(updateError.message || 'Failed to update job with photos');
       }
+
+      const updatedJob = jobData.job;
+      
+      // Update cache
+      queryClient.setQueryData(['jobs'], (oldJobs: Job[] = []) => {
+        return oldJobs.map(job => 
+          job.id === jobId ? updatedJob : job
+        );
+      });
     } catch (error) {
       console.error('Error uploading photos:', error);
       toast.error("Job created but photo upload failed");
