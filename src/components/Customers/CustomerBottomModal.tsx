@@ -78,10 +78,13 @@ export function CustomerBottomModal({
       };
       
       if (isEdit) {
-        const { error } = await supabase
-          .from('customers')
-          .update(customerData)
-          .eq('id', customer.id);
+        const { data, error } = await supabase.functions.invoke('customers-crud', {
+          method: 'PUT',
+          body: {
+            id: customer.id,
+            ...customerData
+          }
+        });
           
         if (error) {
           console.error("Error updating customer:", error);
@@ -91,18 +94,10 @@ export function CustomerBottomModal({
         
         toast.success("Customer updated successfully");
       } else {
-        if (!businessId) {
-          toast.error("Business context not available");
-          return;
-        }
-        
-        const { error } = await supabase
-          .from('customers')
-          .insert([{
-            ...customerData,
-            business_id: businessId,
-            owner_id: businessId, // RLS will handle this based on current user
-          }]);
+        const { data, error } = await supabase.functions.invoke('customers-crud', {
+          method: 'POST',
+          body: customerData
+        });
           
         if (error) {
           console.error("Error creating customer:", error);

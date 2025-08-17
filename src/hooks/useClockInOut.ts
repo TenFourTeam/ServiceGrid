@@ -21,12 +21,13 @@ export function useClockInOut() {
             status: 'Completed' as const
           };
 
-      const { data, error } = await supabase
-        .from('jobs')
-        .update(updateData)
-        .eq('id', jobId)
-        .select()
-        .single();
+      const { data, error } = await supabase.functions.invoke('jobs-crud', {
+        method: 'PUT',
+        body: {
+          id: jobId,
+          ...updateData
+        }
+      });
 
       if (error) throw error;
       return data;

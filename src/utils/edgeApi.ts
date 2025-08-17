@@ -51,10 +51,34 @@ export async function edgeRequest(url: string, init: RequestInit = {}): Promise<
   console.info('[edgeRequest] Starting request to:', url, { hasBody: !!init.body });
   
   // Get token directly from Clerk with proper refresh handling
-  const token = await window.Clerk?.session?.getToken({ refresh: true });
+  const token = await window.Clerk?.session?.getToken({ 
+    refresh: true,
+    skipCache: true
+  });
+  
   if (!token) {
     console.error('[edgeRequest] No authentication token available');
     throw new ApiError(401, 'Authentication required', 'auth_required');
+  }
+
+  // Validate token format to debug the kid='undefined' issue
+  try {
+    const tokenParts = token.split('.');
+    if (tokenParts.length !== 3) {
+      console.error('[edgeRequest] Invalid JWT token format - expected 3 parts, got:', tokenParts.length);
+      throw new ApiError(401, 'Invalid token format', 'auth_invalid');
+    }
+    
+    const header = JSON.parse(atob(tokenParts[0]));
+    console.info('[edgeRequest] Token header:', header);
+    
+    if (!header.kid) {
+      console.error('[edgeRequest] Token missing kid (key ID)');
+      throw new ApiError(401, 'Invalid token - missing key ID', 'auth_invalid');
+    }
+  } catch (e) {
+    console.error('[edgeRequest] Token validation failed:', e);
+    throw new ApiError(401, 'Token validation failed', 'auth_invalid');
   }
 
   const headers = {
@@ -68,7 +92,8 @@ export async function edgeRequest(url: string, init: RequestInit = {}): Promise<
     headers["Content-Type"] = "application/json";
   }
 
-  console.info('[edgeRequest] Making request with token prefix:', token.substring(0, 20) + '...');
+  console.info('[edgeRequest] Making request with valid token, kid:', 
+    JSON.parse(atob(token.split('.')[0])).kid);
   
   try {
     const res = await fetch(url, { ...init, headers });

@@ -1,4 +1,3 @@
-
 import { useMemo, useState } from "react";
 import { addDays, endOfMonth, endOfWeek, format, isSameDay, isSameMonth, parseISO, startOfMonth, startOfWeek } from "date-fns";
 import { useJobsData, useCustomersData } from "@/queries/unified";
@@ -75,7 +74,7 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
                 <span className="font-medium" aria-label={format(d, 'PPPP')}>{format(d, "d")}</span>
               </div>
               <ul className="space-y-1">
-                {visible.map((j) => {
+                {visible.flatMap((j) => {
                   const blocks: JSX.Element[] = [];
                   
                   // Scheduled time block
@@ -131,7 +130,7 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
                   }
                   
                   return blocks;
-                }).flat()}
+                })}
                 {overflow > 0 && (
                   <li className="text-xs opacity-70">+{overflow} more</li>
                 )}

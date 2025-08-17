@@ -1,4 +1,3 @@
-
 import { useMemo, useState } from "react";
 import { endOfDay, startOfDay } from "date-fns";
 import { useJobsData, useCustomersData } from "@/queries/unified";
@@ -40,7 +39,7 @@ export default function DayCalendar({ date, displayMode = 'scheduled' }: { date:
         <p className="text-sm opacity-70">No jobs scheduled for this day.</p>
       )}
       <ul className="space-y-2">
-        {jobs.map((j) => {
+        {jobs.flatMap((j) => {
           const blocks: JSX.Element[] = [];
           
           // Scheduled time block
@@ -90,7 +89,7 @@ export default function DayCalendar({ date, displayMode = 'scheduled' }: { date:
           }
           
           return blocks;
-        }).flat()}
+        })}
         </ul>
         {activeJob && (
           <JobShowModal
