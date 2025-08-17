@@ -151,7 +151,7 @@ function generateFeatureDiscoveryEmail(data: LifecycleEmailData, params: any, ap
                     </div>
 
                     <div style="text-align:center; margin-bottom:24px;">
-                      <a href="${featureUrl}" 
+                      <a href="${featureUrl?.startsWith('/') ? `${appUrl}${featureUrl}` : featureUrl || `${appUrl}/customers`}" 
                          style="display:inline-block; background:#1e293b; color:#ffffff; padding:12px 24px; border-radius:8px; text-decoration:none; font-weight:600;">
                         Try ${escapeHtml(featureName)} →
                       </a>
@@ -174,7 +174,7 @@ function generateFeatureDiscoveryEmail(data: LifecycleEmailData, params: any, ap
   return { subject, html };
 }
 
-function generateMilestoneEmail(data: LifecycleEmailData, params: any) {
+function generateMilestoneEmail(data: LifecycleEmailData, params: any, appUrl: string) {
   const { userFullName } = data;
   const { milestoneType, nextSteps, ctaText, ctaUrl } = params;
   
@@ -227,7 +227,7 @@ function generateMilestoneEmail(data: LifecycleEmailData, params: any) {
                     </div>
 
                     <div style="text-align:center; margin-bottom:24px;">
-                      <a href="${ctaUrl}" 
+                      <a href="${ctaUrl?.startsWith('/') ? `${appUrl}${ctaUrl}` : ctaUrl || `${appUrl}/quotes`}" 
                          style="display:inline-block; background:#059669; color:#ffffff; padding:16px 24px; border-radius:8px; text-decoration:none; font-weight:600;">
                         ${escapeHtml(ctaText)}
                       </a>
@@ -250,7 +250,7 @@ function generateMilestoneEmail(data: LifecycleEmailData, params: any) {
   return { subject, html };
 }
 
-function generateEngagementEmail(data: LifecycleEmailData, params: any) {
+function generateEngagementEmail(data: LifecycleEmailData, params: any, appUrl: string) {
   const { userFullName, businessName } = data;
   const { daysInactive, ctaText, ctaUrl } = params;
   
@@ -295,7 +295,7 @@ function generateEngagementEmail(data: LifecycleEmailData, params: any) {
                     </div>
 
                     <div style="text-align:center; margin-bottom:24px;">
-                      <a href="${ctaUrl}" 
+                      <a href="${ctaUrl?.startsWith('/') ? `${appUrl}${ctaUrl}` : ctaUrl || `${appUrl}/calendar`}" 
                          style="display:inline-block; background:#7c3aed; color:#ffffff; padding:16px 24px; border-radius:8px; text-decoration:none; font-weight:600;">
                         ${escapeHtml(ctaText)}
                       </a>
@@ -350,7 +350,7 @@ serve(async (req: Request): Promise<Response> => {
     }
 
   const { type, data } = payload;
-  const appUrl = Deno.env.get("SUPABASE_URL")?.replace('/supabase/', '') || 'https://your-app.com';
+  const appUrl = Deno.env.get("FRONTEND_URL") || 'https://your-app.com';
 
     // Validate required fields
     if (!type || !data?.userEmail) {
@@ -369,10 +369,10 @@ serve(async (req: Request): Promise<Response> => {
         emailTemplate = generateFeatureDiscoveryEmail(data, payload, appUrl);
         break;
       case 'milestone':
-        emailTemplate = generateMilestoneEmail(data, payload);
+        emailTemplate = generateMilestoneEmail(data, payload, appUrl);
         break;
       case 'engagement':
-        emailTemplate = generateEngagementEmail(data, payload);
+        emailTemplate = generateEngagementEmail(data, payload, appUrl);
         break;
       default:
         return json({ error: `Unknown email type: ${type}` }, { status: 400 });

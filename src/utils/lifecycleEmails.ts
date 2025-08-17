@@ -138,13 +138,14 @@ export const lifecycleEmailTriggers = {
   async sendFeatureDiscoveryEmail(
     data: LifecycleEmailData, 
     getToken: () => Promise<string | null>,
-    params: { feature: string; featureDescription: string; ctaUrl: string; ctaText: string }
+    params: { feature: string; featureDescription: string; ctaUrl: string; ctaText: string; daysFromSignup?: number }
   ) {
     return sendLifecycleEmail('feature-discovery', data, getToken, {
       featureName: params.feature,
       featureDescription: params.featureDescription,
       featureUrl: params.ctaUrl,
-      ctaText: params.ctaText
+      ctaText: params.ctaText,
+      daysFromSignup: params.daysFromSignup || 3
     });
   },
 
@@ -156,7 +157,7 @@ export const lifecycleEmailTriggers = {
       return sendLifecycleEmail('feature-discovery', data, getToken, {
         featureName: 'Customer Management',
         featureDescription: 'Keep all your customer information organized in one place. Add contacts, track history, and never lose important details.',
-        featureUrl: `${window.location.origin}/customers`,
+        featureUrl: '/customers',
         daysFromSignup: 3
       });
     }
@@ -170,7 +171,7 @@ export const lifecycleEmailTriggers = {
       return sendLifecycleEmail('feature-discovery', data, getToken, {
         featureName: 'Calendar Integration',
         featureDescription: 'Never miss an appointment again! Schedule jobs, set reminders, and keep your team synchronized.',
-        featureUrl: `${window.location.origin}/calendar`,
+        featureUrl: '/calendar',
         daysFromSignup: 5
       });
     }
@@ -182,7 +183,7 @@ export const lifecycleEmailTriggers = {
       milestoneType: 'quote',
       nextSteps: 'Now you can send this quote to your customer and start converting leads into jobs.',
       ctaText: 'Send Your Quote',
-      ctaUrl: `${window.location.origin}/quotes`
+      ctaUrl: '/quotes'
     });
   },
 
@@ -191,7 +192,7 @@ export const lifecycleEmailTriggers = {
       milestoneType: 'job',
       nextSteps: 'Great job! You\'re building a systematic approach to managing your service business.',
       ctaText: 'View Your Jobs',
-      ctaUrl: `${window.location.origin}/calendar`
+      ctaUrl: '/calendar'
     });
   },
 
@@ -200,7 +201,7 @@ export const lifecycleEmailTriggers = {
       milestoneType: 'invoice',
       nextSteps: 'You\'re on track to get paid! Consider connecting Stripe to accept online payments.',
       ctaText: 'View Invoices',
-      ctaUrl: `${window.location.origin}/invoices`
+      ctaUrl: '/invoices'
     });
   },
 
@@ -209,7 +210,7 @@ export const lifecycleEmailTriggers = {
       milestoneType: 'stripe',
       nextSteps: 'You can now accept credit card payments directly through your invoices. Your customers will love the convenience!',
       ctaText: 'Create Invoice',
-      ctaUrl: `${window.location.origin}/invoices`
+      ctaUrl: '/invoices'
     });
   },
 
@@ -225,7 +226,7 @@ export const lifecycleEmailTriggers = {
     return sendLifecycleEmail('engagement', data, getToken, {
       daysInactive,
       ctaText: isLongInactive ? 'Get Help Getting Started' : 'Continue Building',
-      ctaUrl: isLongInactive ? `${window.location.origin}/settings` : `${window.location.origin}/calendar`
+      ctaUrl: isLongInactive ? '/settings' : '/calendar'
     });
   },
 
@@ -239,7 +240,7 @@ export const lifecycleEmailTriggers = {
     return sendLifecycleEmail('engagement', data, getToken, {
       daysInactive,
       ctaText: isLongInactive ? 'Get Help Getting Started' : 'Continue Building',
-      ctaUrl: isLongInactive ? `${window.location.origin}/settings` : `${window.location.origin}/calendar`
+      ctaUrl: isLongInactive ? '/settings' : '/calendar'
     });
   }
 };
