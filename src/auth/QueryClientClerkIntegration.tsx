@@ -43,7 +43,7 @@ export function QueryClientClerkIntegration() {
     // Set up lightweight token validation (every 10 minutes)
     const tokenCheckInterval = setInterval(async () => {
       try {
-        await getToken({ skipCache: true });
+        await getToken({ template: 'supabase', skipCache: true });
         console.info('[QueryClientClerkIntegration] Token refreshed successfully');
       } catch (error) {
         console.warn('[QueryClientClerkIntegration] Token refresh failed, clearing cache');

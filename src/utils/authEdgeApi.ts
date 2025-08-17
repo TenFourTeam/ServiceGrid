@@ -12,7 +12,7 @@ export interface ToastOptions {
  * Authenticated edge function helper with integrated toast support
  * Creates a function that includes Clerk authentication tokens in edge function calls
  */
-export function createAuthEdgeApi(getToken: () => Promise<string | null>) {
+export function createAuthEdgeApi(getToken: (options?: { template?: string }) => Promise<string | null>) {
   return {
     /**
      * Invoke an edge function with automatic Clerk authentication and optional toast notifications
@@ -48,7 +48,7 @@ export function createAuthEdgeApi(getToken: () => Promise<string | null>) {
         
         console.info(`🔧 [AuthEdgeApi] Getting Clerk token with 'supabase' template...`);
         const startToken = Date.now();
-        const token = await getToken();
+        const token = await getToken({ template: 'supabase' });
         const endToken = Date.now();
         console.info(`🔧 [AuthEdgeApi] Token fetch took ${endToken - startToken}ms`);
         
