@@ -7,6 +7,8 @@ import { useCustomersData } from '@/queries/unified';
 import { Customer, Job, JobType } from '@/types';
 import { useAuth } from '@clerk/clerk-react';
 import { createAuthEdgeApi } from "@/utils/authEdgeApi";
+import { queryKeys } from '@/queries/keys';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { 
   Drawer,
   DrawerContent,
@@ -58,6 +60,7 @@ export function JobBottomModal({
   const { data: customers } = useCustomersData();
   const queryClient = useQueryClient();
   const { getToken } = useAuth();
+  const { businessId } = useBusinessContext();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
 
   // Reset state when modal closes
@@ -119,19 +122,60 @@ export function JobBottomModal({
       return;
     }
 
+    if (!businessId) {
+      toast.error("Business context not available");
+      return;
+    }
+
     setIsCreating(true);
 
+    // Parse date and time
+    const start = new Date(date);
+    const [startHour, startMinute] = startTime.split(':').map(Number);
+    start.setHours(startHour, startMinute, 0, 0);
+
+    const end = new Date(date);
+    const [endHour, endMinute] = endTime.split(':').map(Number);
+    end.setHours(endHour, endMinute, 0, 0);
+
+    // Create optimistic job with temporary ID
+    const optimisticJob: Job = {
+      id: `temp-${Date.now()}`, // Temporary ID for optimistic update
+      title: title || undefined,
+      customerId: customer.id,
+      address: address || customer.address || undefined,
+      startsAt: start.toISOString(),
+      endsAt: end.toISOString(),
+      status: 'Scheduled',
+      notes: notes || undefined,
+      total: amount ? Math.round(parseFloat(amount) * 100) : undefined,
+      jobType,
+      isClockedIn: false,
+      businessId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    } as Job;
+
+    // Store previous data for rollback
+    const previousData = queryClient.getQueryData(queryKeys.data.jobs(businessId));
+
+    // Optimistic update - show job immediately
+    queryClient.setQueryData(queryKeys.data.jobs(businessId), (oldData: { jobs: Job[], count: number } | undefined) => {
+      const currentJobs = oldData?.jobs || [];
+      const currentCount = oldData?.count || 0;
+      return {
+        jobs: [...currentJobs, optimisticJob],
+        count: currentCount + 1
+      };
+    });
+
+    // Close modal and show optimistic state immediately
+    onJobCreated?.(optimisticJob);
+    onOpenChange?.(false);
+    resetState();
+
     try {
-      // Parse date and time
-      const start = new Date(date);
-      const [startHour, startMinute] = startTime.split(':').map(Number);
-      start.setHours(startHour, startMinute, 0, 0);
-
-      const end = new Date(date);
-      const [endHour, endMinute] = endTime.split(':').map(Number);
-      end.setHours(endHour, endMinute, 0, 0);
-
-      const newJob: Partial<Job> = {
+      const newJobData: Partial<Job> = {
         title: title || undefined,
         customerId: customer.id,
         address: address || customer.address || undefined,
@@ -147,7 +191,7 @@ export function JobBottomModal({
       // Create the job using edge function
       const { data: jobData, error: jobError } = await authApi.invoke('jobs-crud', {
         method: 'POST',
-        body: newJob
+        body: newJobData
       });
 
       if (jobError) {
@@ -156,9 +200,16 @@ export function JobBottomModal({
 
       const createdJob: Job = jobData.job;
 
-      // Update the cache optimistically
-      queryClient.setQueryData(['jobs'], (oldJobs: Job[] = []) => {
-        return [...oldJobs, createdJob];
+      // Replace optimistic job with real job data
+      queryClient.setQueryData(queryKeys.data.jobs(businessId), (oldData: { jobs: Job[], count: number } | undefined) => {
+        const currentJobs = oldData?.jobs || [];
+        const currentCount = oldData?.count || 0;
+        return {
+          jobs: currentJobs.map(job => 
+            job.id === optimisticJob.id ? createdJob : job
+          ),
+          count: currentCount
+        };
       });
 
       // Handle photo uploads if any
@@ -168,12 +219,14 @@ export function JobBottomModal({
 
       toast.success("Job created successfully");
 
-      onJobCreated?.(createdJob);
-      onOpenChange?.(false);
-      resetState();
-
     } catch (error) {
       console.error('Error creating job:', error);
+      
+      // Rollback optimistic update on error
+      if (previousData) {
+        queryClient.setQueryData(queryKeys.data.jobs(businessId), previousData);
+      }
+      
       toast.error("Failed to create job");
     } finally {
       setIsCreating(false);
@@ -217,12 +270,18 @@ export function JobBottomModal({
 
       const updatedJob = jobData.job;
       
-      // Update cache
-      queryClient.setQueryData(['jobs'], (oldJobs: Job[] = []) => {
-        return oldJobs.map(job => 
-          job.id === jobId ? updatedJob : job
-        );
-      });
+      // Update cache with correct query key
+      if (businessId) {
+        queryClient.setQueryData(queryKeys.data.jobs(businessId), (oldData: { jobs: Job[], count: number } | undefined) => {
+          const currentJobs = oldData?.jobs || [];
+          return {
+            jobs: currentJobs.map(job => 
+              job.id === jobId ? updatedJob : job
+            ),
+            count: oldData?.count || 0
+          };
+        });
+      }
     } catch (error) {
       console.error('Error uploading photos:', error);
       toast.error("Job created but photo upload failed");
