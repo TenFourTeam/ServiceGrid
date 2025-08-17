@@ -117,8 +117,11 @@ export function JobBottomModal({
       return;
     }
 
-    if (!date) {
-      toast.error("Please select a date");
+    // Validate date and provide fallback
+    const validDate = date && !isNaN(date.getTime()) ? date : new Date();
+    
+    if (!validDate) {
+      toast.error("Please select a valid date");
       return;
     }
 
@@ -129,14 +132,37 @@ export function JobBottomModal({
 
     setIsCreating(true);
 
-    // Parse date and time
-    const start = new Date(date);
+    // Parse date and time with validation
+    const start = new Date(validDate);
     const [startHour, startMinute] = startTime.split(':').map(Number);
+    
+    // Validate time parsing
+    if (isNaN(startHour) || isNaN(startMinute)) {
+      toast.error("Invalid start time");
+      setIsCreating(false);
+      return;
+    }
+    
     start.setHours(startHour, startMinute, 0, 0);
 
-    const end = new Date(date);
+    const end = new Date(validDate);
     const [endHour, endMinute] = endTime.split(':').map(Number);
+    
+    // Validate time parsing
+    if (isNaN(endHour) || isNaN(endMinute)) {
+      toast.error("Invalid end time");
+      setIsCreating(false);
+      return;
+    }
+    
     end.setHours(endHour, endMinute, 0, 0);
+
+    // Validate that we have valid dates
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      toast.error("Invalid date or time values");
+      setIsCreating(false);
+      return;
+    }
 
     // Create optimistic job with temporary ID
     const optimisticJob: Job = {
