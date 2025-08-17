@@ -6,7 +6,7 @@ import { Drawer, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle } from "
 import { Textarea } from "@/components/ui/textarea";
 import { formatDateTime, formatMoney } from "@/utils/format";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
-// edgeRequestWithToast removed - migrate to authApi.invoke() pattern
+import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 import { edgeRequest } from "@/utils/edgeApi";
 import { fn } from "@/utils/functionUrl";
 import { toast } from "sonner";
@@ -36,6 +36,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
   const [localNotes, setLocalNotes] = useState(job.notes ?? "");
   const notesTimer = useRef<number | null>(null);
   const { getToken } = useClerkAuth();
+  const authApi = createAuthEdgeApi(getToken);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -95,12 +96,14 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
     setIsCreatingInvoice(true);
     
     try {
-      await edgeRequestWithToast(fn('invoices'), {
+      await authApi.invoke('invoices', {
         method: 'POST',
-        body: JSON.stringify({ quoteId: currentQuoteId })
-      }, {
-        success: 'Invoice created successfully',
-        loading: 'Creating invoice...'
+        body: { quoteId: currentQuoteId },
+        toast: {
+          success: 'Invoice created successfully',
+          loading: 'Creating invoice...',
+          error: 'Failed to create invoice'
+        }
       });
       
       if (businessId) {

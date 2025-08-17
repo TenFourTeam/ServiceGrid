@@ -10,9 +10,7 @@ import type { Quote } from "@/types";
 import { generateQuoteEmail, generateQuoteSubject } from "@/utils/quoteEmailTemplates";
 import { combineMessageWithEmail } from "@/utils/emailTemplateEngine";
 import { useQueryClient } from "@tanstack/react-query";
-// edgeToast removed - migrate to authApi.invoke() pattern
-import { edgeRequest } from "@/utils/edgeApi";
-import { fn } from "@/utils/functionUrl";
+import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { toast } from "sonner";
 import { invalidationHelpers } from '@/queries/keys';
@@ -30,6 +28,7 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
   const { data: customers = [] } = useCustomersData();
   const queryClient = useQueryClient();
   const { getToken } = useClerkAuth();
+  const authApi = createAuthEdgeApi(getToken);
   const [to, setTo] = useState(toEmail ?? "");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
@@ -80,12 +79,20 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
     try {
       const finalHtml = combineMessageWithEmail(message, html);
       console.info('[SendQuoteModal] sending quote email', { quoteId: quote.id, to });
-      await edgeToast.send(fn("resend-send-email"), { 
-        to, 
-        subject: subject || defaultSubject, 
-        html: finalHtml, 
-        quote_id: quote.id 
-      }, "Quote sent successfully");
+      await authApi.invoke("resend-send-email", { 
+        method: 'POST',
+        body: {
+          to, 
+          subject: subject || defaultSubject, 
+          html: finalHtml, 
+          quote_id: quote.id 
+        },
+        toast: {
+          success: "Quote sent successfully",
+          loading: 'Sending quote...',
+          error: 'Failed to send quote'
+        }
+      });
       console.info('[SendQuoteModal] sent', { quoteId: quote.id });
       // Invalidate cache and let server update the status
       if (businessId) {
@@ -109,8 +116,8 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
           <div className="space-y-6">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-muted-foreground">To (from customer)</label>
-                <Input value={to} disabled placeholder="No email on file" />
+                <label className="text-sm font-medium text-muted-foreground">To</label>
+                <Input value={to} onChange={(e) => setTo(e.target.value)} placeholder="customer@example.com" />
               </div>
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-muted-foreground">Subject</label>

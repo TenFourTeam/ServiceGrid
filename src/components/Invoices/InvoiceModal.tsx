@@ -13,8 +13,7 @@ import { cn } from '@/lib/utils';
 import { formatDate, formatMoney } from '@/utils/format';
 import { useCustomersData } from '@/queries/unified';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
-// edgeToast removed - migrate to authApi.invoke() pattern
-import { fn } from '@/utils/functionUrl';
+import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { invalidationHelpers } from '@/queries/keys';
@@ -42,6 +41,7 @@ export default function InvoiceModal({
   const { data: customers = [] } = useCustomersData();
   const { business, businessName, businessLogoUrl, businessLightLogoUrl, businessId } = useBusinessContext();
   const { getToken } = useClerkAuth();
+  const authApi = createAuthEdgeApi(getToken);
   const queryClient = useQueryClient();
 
   const [mode, setMode] = useState(initialMode);
@@ -132,13 +132,26 @@ export default function InvoiceModal({
 
       if (invoice) {
         // Update existing invoice
-        await edgeToast.update(fn('invoices'), {
-          id: invoice.id,
-          ...data,
-        }, `Invoice ${invoice.number} updated successfully`);
+        await authApi.invoke('invoices', {
+          method: 'PATCH',
+          body: { id: invoice.id, ...data },
+          toast: {
+            success: `Invoice ${invoice.number} updated successfully`,
+            loading: 'Updating invoice...',
+            error: 'Failed to update invoice'
+          }
+        });
       } else {
         // Create new invoice
-        await edgeToast.create(fn('invoices'), data, 'Invoice created successfully');
+        await authApi.invoke('invoices', {
+          method: 'POST',
+          body: data,
+          toast: {
+            success: 'Invoice created successfully',
+            loading: 'Creating invoice...',
+            error: 'Failed to create invoice'
+          }
+        });
       }
 
       invalidationHelpers.invoices(queryClient, businessId);
@@ -158,12 +171,20 @@ export default function InvoiceModal({
     try {
       const finalHtml = message.trim() ? previewHtml : defaultEmailHTML;
 
-      await edgeToast.send(fn('resend-send-email'), {
-        to: to.trim(),
-        subject: subject || defaultSubject,
-        html: finalHtml,
-        invoice_id: invoice.id,
-      }, 'Invoice sent successfully');
+      await authApi.invoke('resend-send-email', {
+        method: 'POST',
+        body: {
+          to: to.trim(),
+          subject: subject || defaultSubject,
+          html: finalHtml,
+          invoice_id: invoice.id,
+        },
+        toast: {
+          success: 'Invoice sent successfully',
+          loading: 'Sending invoice...',
+          error: 'Failed to send invoice'
+        }
+      });
 
       if (businessId) {
         invalidationHelpers.invoices(queryClient, businessId);
@@ -184,8 +205,13 @@ export default function InvoiceModal({
       setLoading(true);
       const token = await getToken();
       
-      const response = await edgeToast.create('create-invoice-payment', {
-        invoiceId: invoice.id,
+      const { data: response } = await authApi.invoke('create-invoice-payment', {
+        method: 'POST',
+        body: { invoiceId: invoice.id },
+        toast: {
+          loading: 'Creating payment link...',
+          error: 'Failed to create payment link'
+        }
       });
 
       if (response.url) {
@@ -202,10 +228,18 @@ export default function InvoiceModal({
     if (!invoice || !businessId) return;
 
     try {
-      await edgeToast.update(fn('invoices'), {
-        id: invoice.id,
-        status: 'Sent',
-      }, `Invoice ${invoice.number} marked as sent`);
+      await authApi.invoke('invoices', {
+        method: 'PATCH',
+        body: {
+          id: invoice.id,
+          status: 'Sent',
+        },
+        toast: {
+          success: `Invoice ${invoice.number} marked as sent`,
+          loading: 'Updating invoice status...',
+          error: 'Failed to update invoice status'
+        }
+      });
 
       invalidationHelpers.invoices(queryClient, businessId);
       onOpenChange(false);

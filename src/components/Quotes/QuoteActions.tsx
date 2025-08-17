@@ -3,8 +3,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MoreHorizontal, Send, FileText, Receipt } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-// edgeToast removed - migrate to authApi.invoke() pattern
-import { fn } from '@/utils/functionUrl';
+import { createAuthEdgeApi } from '@/utils/authEdgeApi';
+import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useLifecycleEmailIntegration } from '@/hooks/useLifecycleEmailIntegration';
 import type { QuoteListItem } from '@/types';
 
@@ -15,6 +15,8 @@ interface QuoteActionsProps {
 
 export function QuoteActions({ quote, onSendQuote }: QuoteActionsProps) {
   const navigate = useNavigate();
+  const { getToken } = useClerkAuth();
+  const authApi = createAuthEdgeApi(getToken);
   const { triggerJobScheduled, triggerInvoiceSent } = useLifecycleEmailIntegration();
 
 
@@ -25,15 +27,24 @@ export function QuoteActions({ quote, onSendQuote }: QuoteActionsProps) {
     }
 
     try {
-      const result = await edgeToast.create(fn('jobs'), {
-        quoteId: quote.id,
-        customerId: quote.customerId,
-        title: `Job from Quote ${quote.number}`,
-        total: quote.total,
-        status: 'Scheduled',
-      }, `Quote ${quote.number} converted to job successfully`, triggerJobScheduled);
+      const { data: result } = await authApi.invoke('jobs', {
+        method: 'POST',
+        body: {
+          quoteId: quote.id,
+          customerId: quote.customerId,
+          title: `Job from Quote ${quote.number}`,
+          total: quote.total,
+          status: 'Scheduled',
+        },
+        toast: {
+          success: `Quote ${quote.number} converted to job successfully`,
+          loading: 'Converting quote to job...',
+          error: 'Failed to convert quote to job',
+          onSuccess: triggerJobScheduled
+        }
+      });
 
-      if (result.ok || result.success) {
+      if (result) {
         navigate('/calendar');
       }
     } catch (error) {
@@ -48,14 +59,23 @@ export function QuoteActions({ quote, onSendQuote }: QuoteActionsProps) {
     }
 
     try {
-      const result = await edgeToast.create(fn('invoices'), {
-        quoteId: quote.id,
-        customerId: quote.customerId,
-        status: 'Draft',
-        total: quote.total,
-      }, `Invoice created from quote ${quote.number} successfully`, triggerInvoiceSent);
+      const { data: result } = await authApi.invoke('invoices', {
+        method: 'POST',
+        body: {
+          quoteId: quote.id,
+          customerId: quote.customerId,
+          status: 'Draft',
+          total: quote.total,
+        },
+        toast: {
+          success: `Invoice created from quote ${quote.number} successfully`,
+          loading: 'Creating invoice...',
+          error: 'Failed to create invoice',
+          onSuccess: triggerInvoiceSent
+        }
+      });
 
-      if (result.ok || result.success) {
+      if (result) {
         navigate('/invoices');
       }
     } catch (error) {

@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { formatMoney, formatDate } from '@/utils/format';
 import { edgeRequest } from '@/utils/edgeApi';
-// edgeToast removed - migrate to authApi.invoke() pattern
 import { fn } from '@/utils/functionUrl';
+import { createAuthEdgeApi } from '@/utils/authEdgeApi';
+import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useCustomersData } from '@/queries/unified';
@@ -40,6 +41,8 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
   const { businessId } = useBusinessContext();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { getToken } = useClerkAuth();
+  const authApi = createAuthEdgeApi(getToken);
   const { triggerQuoteCreated } = useLifecycleEmailIntegration();
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(false);
@@ -218,15 +221,23 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
     setIsConvertingToJob(true);
 
     try {
-      const result = await edgeToast.create(fn('jobs'), {
-        quoteId: quote.id,
-        customerId: quote.customerId,
-        title: `Job from Quote ${quote.number}`,
-        total: quote.total,
-        status: 'Scheduled',
-      }, 'Quote converted to job successfully');
+      const { data: result } = await authApi.invoke('jobs', {
+        method: 'POST',
+        body: {
+          quoteId: quote.id,
+          customerId: quote.customerId,
+          title: `Job from Quote ${quote.number}`,
+          total: quote.total,
+          status: 'Scheduled',
+        },
+        toast: {
+          success: 'Quote converted to job successfully',
+          loading: 'Converting quote to job...',
+          error: 'Failed to convert quote to job'
+        }
+      });
 
-      if (result.ok || result.success) {
+      if (result) {
         onOpenChange(false);
         navigate('/calendar');
       }
@@ -248,14 +259,22 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
     setIsCreatingInvoice(true);
 
     try {
-      const result = await edgeToast.create(fn('invoices'), {
-        quoteId: quote.id,
-        customerId: quote.customerId,
-        status: 'Draft',
-        total: quote.total,
-      }, `Invoice created from quote ${quote.number} successfully`);
+      const { data: result } = await authApi.invoke('invoices', {
+        method: 'POST',
+        body: {
+          quoteId: quote.id,
+          customerId: quote.customerId,
+          status: 'Draft',
+          total: quote.total,
+        },
+        toast: {
+          success: `Invoice created from quote ${quote.number} successfully`,
+          loading: 'Creating invoice...',
+          error: 'Failed to create invoice'
+        }
+      });
 
-      if (result.ok || result.success) {
+      if (result) {
         onOpenChange(false);
         navigate('/invoices');
       }
