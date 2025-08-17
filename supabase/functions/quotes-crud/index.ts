@@ -41,13 +41,35 @@ Deno.serve(async (req) => {
           throw new Error(`Failed to fetch quote: ${error.message}`);
         }
 
+        // Fetch line items for this quote
+        const { data: lineItemsData, error: lineItemsError } = await supabase
+          .from('quote_line_items')
+          .select('id, name, qty, unit, unit_price, line_total, position')
+          .eq('quote_id', quoteId)
+          .order('position');
+
+        if (lineItemsError) {
+          console.error('[quotes-crud] GET line items error:', lineItemsError);
+          throw new Error(`Failed to fetch line items: ${lineItemsError.message}`);
+        }
+
+        // Map line items to frontend format
+        const lineItems = (lineItemsData || []).map(item => ({
+          id: item.id,
+          name: item.name,
+          qty: item.qty,
+          unit: item.unit,
+          unitPrice: item.unit_price,
+          lineTotal: item.line_total
+        }));
+
         const quote = {
           id: data.id,
           number: data.number,
           businessId: ctx.businessId,
           customerId: data.customer_id,
           address: data.address,
-          lineItems: [], // Line items are stored in separate table
+          lineItems: lineItems,
           taxRate: data.tax_rate,
           discount: data.discount,
           subtotal: data.subtotal,
