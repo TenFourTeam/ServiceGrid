@@ -101,7 +101,30 @@ Deno.serve(async (req) => {
       }
 
       console.log('[jobs-crud] Job created:', data.id);
-      return json({ job: data });
+      
+      // Transform to camelCase to match GET response format
+      const transformedJob = {
+        id: data.id,
+        title: data.title,
+        status: data.status,
+        startsAt: data.starts_at,
+        endsAt: data.ends_at,
+        total: data.total,
+        address: data.address,
+        notes: data.notes,
+        jobType: data.job_type,
+        photos: data.photos,
+        isClockedIn: data.is_clocked_in,
+        clockInTime: data.clock_in_time,
+        clockOutTime: data.clock_out_time,
+        recurrence: data.recurrence,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+        customerId: data.customer_id,
+        quoteId: data.quote_id,
+      };
+      
+      return json({ job: transformedJob });
     }
 
     if (req.method === 'PUT') {
