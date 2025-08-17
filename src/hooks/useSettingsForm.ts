@@ -1,30 +1,24 @@
 import { useState, useEffect } from 'react';
-import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useProfile } from '@/queries/useProfile';
 import { useProfileOperations } from '@/hooks/useProfileOperations';
-import { useBusinessOperations } from '@/hooks/useBusinessOperations';
 import { toast } from 'sonner';
-import { formatPhoneInput, normalizePhoneToE164 } from '@/utils/validation';
+import { formatPhoneInput } from '@/utils/validation';
 import { formatNameSuggestion } from '@/validation/profile';
 import { useUser } from '@clerk/clerk-react';
 
 /**
- * Unified form state management for Settings page
- * Handles auto-sync with server data and optimistic updates
+ * Profile form state management for Settings page
+ * Handles personal profile data (name + phone) only
  */
 export function useSettingsForm() {
-  const { business, role } = useBusinessContext();
   const { data: profile } = useProfile();
   const { user } = useUser();
   
-  
-  const { updateProfile, isUpdating: isUpdatingProfile } = useProfileOperations();
-  const { updateBusiness, isUpdating: isUpdatingBusiness } = useBusinessOperations();
+  const { updateProfile, isUpdating } = useProfileOperations();
   
   // Form state - computed from server data
   const [userName, setUserName] = useState('');
   const [userPhone, setUserPhone] = useState('');
-  const [businessName, setBusinessName] = useState('');
   
   // Auto-sync form state with server data
   useEffect(() => {
@@ -37,15 +31,9 @@ export function useSettingsForm() {
     }
   }, [profile]);
   
-  useEffect(() => {
-    if (business?.name) {
-      setBusinessName(business.name);
-    }
-  }, [business]);
-  
-  // Form validation - business name only required for owners
-  const isFormValid = userName.trim() && userPhone.trim() && (role === 'worker' || businessName.trim());
-  const isLoading = isUpdatingProfile || isUpdatingBusiness;
+  // Form validation - only name and phone required
+  const isFormValid = userName.trim() && userPhone.trim();
+  const isLoading = isUpdating;
   
   // Phone formatting helper
   const handlePhoneChange = (value: string) => {
@@ -62,34 +50,19 @@ export function useSettingsForm() {
     
     if (!isFormValid) {
       toast.error("Missing information", {
-        description: "Please fill in your name, phone number, and business name",
+        description: "Please fill in your name and phone number",
       });
       return;
     }
 
     try {
-      // Optimistic update for immediate UI feedback
+      // Update profile only
       const optimisticName = userName.trim();
-      const optimisticBusinessName = businessName.trim();
       
-      // Always update profile
-      const profilePromise = updateProfile.mutateAsync({ 
+      await updateProfile.mutateAsync({ 
         fullName: optimisticName, 
         phoneRaw: userPhone.trim(),
       });
-
-      // Only update business if user is owner
-      const promises = [profilePromise];
-      if (role === 'owner') {
-        const businessPromise = updateBusiness.mutateAsync({
-          businessName: optimisticBusinessName,
-          phone: normalizePhoneToE164(userPhone.trim()),
-          replyToEmail: business?.replyToEmail,
-        });
-        promises.push(businessPromise);
-      }
-
-      await Promise.all(promises);
       
       // Optional non-blocking Clerk sync
       if (user && optimisticName) {
@@ -103,7 +76,7 @@ export function useSettingsForm() {
         }
       }
     } catch (error) {
-      console.error('Profile/Business update failed:', error);
+      console.error('Profile update failed:', error);
     }
   };
   
@@ -113,8 +86,6 @@ export function useSettingsForm() {
     setUserName,
     userPhone,
     setUserPhone: handlePhoneChange,
-    businessName,
-    setBusinessName,
     
     // Form status
     isFormValid,
