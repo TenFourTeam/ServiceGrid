@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,7 +20,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { invalidationHelpers } from '@/queries/keys';
 import { generateInvoiceEmail } from '@/utils/emailTemplateEngine';
 import { escapeHtml } from '@/utils/sanitize';
-import { useIsMobile } from '@/hooks/use-mobile';
 import type { Invoice } from '@/types';
 
 export interface InvoiceModalProps {
@@ -41,7 +39,6 @@ export default function InvoiceModal({
   initialCustomerId,
   onSuccess 
 }: InvoiceModalProps) {
-  const isMobile = useIsMobile();
   const { data: customers = [] } = useCustomersData();
   const { business, businessName, businessLogoUrl, businessLightLogoUrl, businessId } = useBusinessContext();
   const { getToken } = useClerkAuth();
@@ -500,29 +497,22 @@ export default function InvoiceModal({
     );
   };
 
-  const ModalComponent = isMobile ? Drawer : Dialog;
-  const ModalContent = isMobile ? DrawerContent : DialogContent;
-  const ModalHeader = isMobile ? DrawerHeader : DialogHeader;
-  const ModalTitle = isMobile ? DrawerTitle : DialogTitle;
-  const ModalDescription = isMobile ? DrawerDescription : DialogDescription;
-  const ModalFooter = isMobile ? DrawerFooter : 'div';
-
   return (
-    <ModalComponent open={open} onOpenChange={onOpenChange}>
-      <ModalContent className={isMobile ? undefined : "max-w-2xl"}>
-        <ModalHeader>
-          <ModalTitle>{getModalTitle()}</ModalTitle>
-          <ModalDescription>{getModalDescription()}</ModalDescription>
-        </ModalHeader>
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="max-w-2xl mx-auto">
+        <DrawerHeader>
+          <DrawerTitle>{getModalTitle()}</DrawerTitle>
+          <DrawerDescription>{getModalDescription()}</DrawerDescription>
+        </DrawerHeader>
         
-        <div className={isMobile ? "px-4 pb-4" : "px-6 pb-6"}>
+        <div className="px-4 pb-4">
           {renderContent()}
         </div>
         
-        <ModalFooter className={isMobile ? undefined : "flex justify-end gap-2 px-6 pb-6"}>
+        <DrawerFooter>
           {renderActions()}
-        </ModalFooter>
-      </ModalContent>
-    </ModalComponent>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 }
