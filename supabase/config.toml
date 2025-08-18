@@ -98,3 +98,6 @@ verify_jwt = false
 
 [functions.timesheet-crud]
 verify_jwt = false
+
+[functions.business-members]
+verify_jwt = false
