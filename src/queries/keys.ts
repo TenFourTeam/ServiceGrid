@@ -8,6 +8,7 @@ const queryKeys = {
   profile: {
     current: () => ['profile', 'current'] as const,
     byId: (id: string) => ['profile', id] as const,
+    forBusiness: (businessId: string) => ['profile', 'business', businessId] as const,
   },
   
   // Business queries

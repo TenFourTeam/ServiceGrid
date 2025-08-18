@@ -32,6 +32,7 @@ export function useBusinessSwitcher() {
       // Invalidate all business-related queries
       invalidationHelpers.profile(queryClient);
       invalidationHelpers.business(queryClient);
+      queryClient.invalidateQueries({ queryKey: ['user-businesses'] });
       
       // Force a page refresh to ensure all components update with new business context
       window.location.reload();

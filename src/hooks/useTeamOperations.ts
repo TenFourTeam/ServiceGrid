@@ -81,6 +81,8 @@ export function useTeamOperations() {
       queryClient.invalidateQueries({ queryKey: ['business-members'] });
       queryClient.invalidateQueries({ queryKey: ['pending-invites'] });
       queryClient.invalidateQueries({ queryKey: ['user-businesses'] });
+      // Invalidate profile queries to update role context
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
   });
 

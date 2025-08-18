@@ -3,17 +3,21 @@ import { queryKeys } from './keys';
 import { useAuth } from '@clerk/clerk-react';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 
-export function useProfile() {
+export function useProfile(businessId?: string) {
   const { userId, getToken } = useAuth();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
 
   return useQuery({
-    queryKey: queryKeys.profile.current(),
+    queryKey: businessId ? queryKeys.profile.forBusiness(businessId) : queryKeys.profile.current(),
     enabled: !!userId,
     queryFn: async () => {
-      console.info('[useProfile] fetching profile via edge function');
+      console.info('[useProfile] fetching profile via edge function', { businessId });
       
-      const { data, error } = await authApi.invoke('get-profile');
+      const queryParams = businessId ? { businessId } : {};
+      const { data, error } = await authApi.invoke('get-profile', {
+        method: 'GET',
+        queryParams
+      });
       
       if (error) {
         console.error('[useProfile] error:', error);
