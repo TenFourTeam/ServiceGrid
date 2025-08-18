@@ -74,18 +74,18 @@ export default function Team() {
         />
 
         {/* Teams I'm a member of */}
-        {otherBusinesses.length > 0 && (
-          <Card className="p-6">
-            <div className="mb-4">
-              <h3 className="text-xl font-bold flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Teams I'm a Member Of
-              </h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Other businesses where you're a team member
-              </p>
-            </div>
+        <Card className="p-6">
+          <div className="mb-4">
+            <h3 className="text-xl font-bold flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Teams I'm a Member Of
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Other businesses where you're a team member
+            </p>
+          </div>
 
+          {otherBusinesses.length > 0 ? (
             <div className="grid gap-3">
               {otherBusinesses.map((business) => (
                 <div
@@ -156,8 +156,17 @@ export default function Team() {
                 </div>
               ))}
             </div>
-          </Card>
-        )}
+          ) : (
+            <div className="text-center py-8">
+              <div className="text-muted-foreground mb-2">
+                You're not a member of any other teams yet
+              </div>
+              <p className="text-sm text-muted-foreground">
+                You'll see other businesses here when you get invited to join them
+              </p>
+            </div>
+          )}
+        </Card>
       </div>
     </AppLayout>
   );
