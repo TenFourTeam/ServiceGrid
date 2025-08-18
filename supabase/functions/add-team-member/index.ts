@@ -15,7 +15,7 @@ serve(async (req: Request) => {
 
   try {
     const { userId, supaAdmin } = await requireCtx(req);
-    const { userId: targetUserId, businessId, role = 'worker' } = await req.json();
+    const { targetUserId, businessId, role = 'worker' } = await req.json();
 
     if (!targetUserId || !businessId) {
       return json({ error: 'User ID and business ID are required' }, { status: 400 });

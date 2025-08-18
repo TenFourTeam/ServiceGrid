@@ -62,7 +62,7 @@ export function useTeamOperations() {
       
       const { data, error } = await authApi.invoke('add-team-member', {
         method: 'POST',
-        body: { userId, businessId, role },
+        body: { targetUserId: userId, businessId, role },
         toast: {
           loading: 'Adding team member...',
           success: 'Team member added successfully',
@@ -80,6 +80,7 @@ export function useTeamOperations() {
       // Invalidate related queries - use generic invalidation
       queryClient.invalidateQueries({ queryKey: ['business-members'] });
       queryClient.invalidateQueries({ queryKey: ['pending-invites'] });
+      queryClient.invalidateQueries({ queryKey: ['user-businesses'] });
     },
   });
 

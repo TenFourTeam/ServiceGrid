@@ -10,6 +10,9 @@ verify_jwt = false
 [functions.user-businesses]
 verify_jwt = false
 
+[functions.leave-business]
+verify_jwt = false
+
 [functions.complete-profile-email]
 verify_jwt = true
 
