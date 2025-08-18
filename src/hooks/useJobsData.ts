@@ -14,31 +14,57 @@ interface UseJobsDataOptions {
  * Edge Function jobs hook - unified Clerk authentication
  */
 export function useJobsData(opts?: UseJobsDataOptions) {
-  const { isAuthenticated, businessId, userId } = useBusinessContext();
+  const { isAuthenticated, businessId, userId, role } = useBusinessContext();
   const { getToken } = useAuth();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const enabled = isAuthenticated && !!businessId && (opts?.enabled ?? true);
 
+  const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
+  console.log("[useJobsData] DEBUG - Query setup:", {
+    queryKey,
+    businessId,
+    userId,
+    role,
+    enabled,
+    isAuthenticated
+  });
+
   const query = useQuery({
-    queryKey: queryKeys.data.jobs(businessId || '', userId || ''),
+    queryKey,
     enabled,
     queryFn: async () => {
-      console.info("[useJobsData] fetching jobs via edge function");
+      console.log("[useJobsData] DEBUG - Starting fetch with context:", {
+        businessId,
+        userId,
+        role,
+        timestamp: new Date().toISOString()
+      });
       
       const { data, error } = await authApi.invoke('jobs-crud', {
         method: 'GET'
       });
       
       if (error) {
-        console.error("[useJobsData] error:", error);
+        console.error("[useJobsData] ERROR:", error);
         throw new Error(error.message || 'Failed to fetch jobs');
       }
       
-      console.info("[useJobsData] fetched", data?.jobs?.length || 0, "jobs");
+      console.log("[useJobsData] DEBUG - Raw response:", {
+        jobsCount: data?.jobs?.length || 0,
+        totalCount: data?.count || 0,
+        jobs: data?.jobs?.map((job: any) => ({
+          id: job.id,
+          title: job.title,
+          scheduledStart: job.scheduled_start,
+          scheduledEnd: job.scheduled_end
+        })) || [],
+        fullResponse: data
+      });
       
       return { jobs: data?.jobs || [], count: data?.count || 0 };
     },
-    staleTime: 30_000,
+    staleTime: 0, // Force fresh fetch
+    gcTime: 0, // Don't cache
   });
 
   return {

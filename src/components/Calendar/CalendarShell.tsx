@@ -19,7 +19,7 @@ export default function CalendarShell({
   const [view, setView] = useState<"month" | "week" | "day">("week");
   const [displayMode, setDisplayMode] = useState<CalendarDisplayMode>('scheduled');
   const [date, setDate] = useState<Date>(startOfDay(new Date()));
-  const { data: jobs } = useJobsData();
+  const { data: jobs, refetch: refetchJobs } = useJobsData();
   
   const month = useMemo(() => new Date(date), [date]);
   const rangeTitle = useMemo(() => {
@@ -103,7 +103,7 @@ export default function CalendarShell({
         {/* Main calendar area */}
         <main className="h-full min-h-0" role="grid">
           {view === "month" && <MonthCalendar date={date} onDateChange={setDate} displayMode={displayMode} />}
-          {view === "week" && <WeekCalendar selectedJobId={selectedJobId} date={date} displayMode={displayMode} />}
+          {view === "week" && <WeekCalendar selectedJobId={selectedJobId} date={date} displayMode={displayMode} jobs={jobs} refetchJobs={refetchJobs} />}
           {view === "day" && <DayCalendar date={date} displayMode={displayMode} />}
         </main>
 

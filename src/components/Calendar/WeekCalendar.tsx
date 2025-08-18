@@ -30,12 +30,20 @@ export function WeekCalendar({
   selectedJobId,
   date,
   displayMode = 'scheduled',
+  jobs: propsJobs,
+  refetchJobs: propsRefetchJobs,
 }: {
   selectedJobId?: string;
   date?: Date;
   displayMode?: 'scheduled' | 'clocked' | 'combined';
+  jobs?: Job[];
+  refetchJobs?: () => void;
 }) {
-  const { data: jobs, refetch: refetchJobs } = useJobsData();
+  // Use jobs from props if provided, otherwise fetch independently
+  const jobsQuery = useJobsData({ enabled: !propsJobs });
+  const jobs = propsJobs || jobsQuery.data;
+  const refetchJobs = propsRefetchJobs || jobsQuery.refetch;
+  
   const { data: customers } = useCustomersData();
   const { businessId, userId, role } = useBusinessContext();
   const queryClient = useQueryClient();
