@@ -3,6 +3,7 @@ import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 import { invalidationHelpers } from '@/queries/keys';
+import { toast } from 'sonner';
 
 export function useBusinessSwitcher() {
   const queryClient = useQueryClient();
@@ -14,14 +15,9 @@ export function useBusinessSwitcher() {
     mutationFn: async (businessId: string) => {
       console.log('[useBusinessSwitcher] Switching to business:', businessId);
       
-    const { data, error } = await authApi.invoke('switch-business', {
-      method: 'POST',
-      body: { businessId },
-        toast: {
-          loading: 'Switching business...',
-          success: 'Business switched successfully',
-          error: 'Failed to switch business'
-        }
+      const { data, error } = await authApi.invoke('switch-business', {
+        method: 'POST',
+        body: { businessId },
       });
       
       if (error) {
@@ -30,11 +26,16 @@ export function useBusinessSwitcher() {
       
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data, businessId) => {
       // Invalidate all business-related queries
       invalidationHelpers.profile(queryClient);
       invalidationHelpers.business(queryClient);
       queryClient.invalidateQueries({ queryKey: ['user-businesses'] });
+      
+      // Show success toast with business info
+      toast.success('Business switched successfully', {
+        description: 'You are now viewing your selected business'
+      });
       
       // Navigate to calendar after switching business
       navigate('/calendar');

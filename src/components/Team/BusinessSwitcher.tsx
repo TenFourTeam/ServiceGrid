@@ -52,12 +52,18 @@ export function BusinessSwitcher() {
             {currentBusiness && (
               <Badge 
                 variant={currentBusiness.role === 'owner' ? 'default' : 'secondary'} 
-                className="flex-shrink-0"
+                className="flex-shrink-0 flex items-center gap-1"
               >
                 {currentBusiness.role === 'owner' ? (
-                  <Crown className="h-3 w-3" />
+                  <>
+                    <Crown className="h-3 w-3" />
+                    <span className="text-xs">Owner</span>
+                  </>
                 ) : (
-                  <Users className="h-3 w-3" />
+                  <>
+                    <Users className="h-3 w-3" />
+                    <span className="text-xs">Worker</span>
+                  </>
                 )}
               </Badge>
             )}

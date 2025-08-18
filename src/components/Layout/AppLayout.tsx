@@ -10,6 +10,7 @@ import { IntentPickerModal } from '@/components/Onboarding/IntentPickerModal';
 import { useOnboardingState } from '@/onboarding/streamlined';
 import { useOnboardingActions } from '@/onboarding/hooks';
 import { useSessionStorage } from '@/hooks/useSessionStorage';
+import { RoleIndicator } from '@/components/Layout/RoleIndicator';
 
 export default function AppLayout({ children, title }: { children: ReactNode; title?: string }) {
   const [showIntentPicker, setShowIntentPicker] = useState(false);
@@ -59,7 +60,10 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
           <SubscriptionBanner />
           <div className="p-4 md:p-6 flex flex-col flex-1 min-h-0">
           <header className="mb-4 md:mb-6">
-            <h1 className="text-xl md:text-2xl font-bold">{title ?? 'Dashboard'}</h1>
+            <div className="flex items-center justify-between">
+              <h1 className="text-xl md:text-2xl font-bold">{title ?? 'Dashboard'}</h1>
+              <RoleIndicator size="default" />
+            </div>
           </header>
           <div className="flex-1">
             <PageFade key={String(title)}>

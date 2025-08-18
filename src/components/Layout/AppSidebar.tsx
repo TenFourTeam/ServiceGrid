@@ -69,8 +69,8 @@ export default function AppSidebar() {
   const ownedBusiness = userBusinesses?.find(b => b.role === 'owner');
   const isInOwnBusiness = businessId === ownedBusiness?.id;
   
-  // Display "My Business" for workers in someone else's business
-  const displayBusinessName = (role === 'worker' && !isInOwnBusiness) ? "My Business" : businessName;
+  // Always show actual business name instead of "My Business"
+  const displayBusinessName = businessName;
   
   // Warm the cache for the logo ASAP
   usePreloadImage(businessLightLogoUrl || businessLogoUrl);
@@ -99,7 +99,14 @@ export default function AppSidebar() {
           {/* Title column - hidden when collapsed */}
           <div className="min-w-0 pl-1 group-data-[collapsible=icon]:hidden">
             <div className="font-semibold truncate">{displayBusinessName || "Business"}</div>
-            <div className="text-xs text-muted-foreground truncate">Contractor Console</div>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="truncate">Contractor Console</span>
+              {role && (
+                <span className="flex items-center gap-1 bg-muted px-1.5 py-0.5 rounded text-xs">
+                  {role === 'owner' ? '👑' : '👥'} {role}
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Trigger column - only show when expanded */}
