@@ -26,7 +26,7 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
   
 
   const { data: members, isLoading, count: membersCount } = useBusinessMembersData();
-  const { data: invitesResponse, isLoading: loadingInvites } = usePendingInvites(businessId);
+  const { data: invitesData, isLoading: loadingInvites } = usePendingInvites(businessId);
   const { removeMember } = useBusinessMemberOperations();
   const revokeInvite = useRevokeInvite(businessId || '');
   const resendInvite = useResendInvite(businessId || '');
@@ -59,9 +59,9 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
   }, [members, filters]);
 
   const filteredInvites = useMemo(() => {
-    if (!invitesResponse?.invites) return [];
+    if (!invitesData?.invites) return [];
     
-    return invitesResponse.invites.filter(invite => {
+    return invitesData.invites.filter(invite => {
       const matchesSearch = !filters.search || 
         invite.email.toLowerCase().includes(filters.search.toLowerCase());
       
@@ -69,7 +69,7 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
     }).sort((a, b) => 
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
-  }, [invitesResponse?.invites, filters]);
+  }, [invitesData?.invites, filters]);
 
   const ownerCount = members.filter(m => m.role === 'owner').length;
 
