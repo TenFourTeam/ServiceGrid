@@ -120,8 +120,23 @@ export interface Job {
   clockInTime?: ISODate | null;
   clockOutTime?: ISODate | null;
   isClockedIn: boolean;
+  assignedMembers?: BusinessMember[]; // NEW: assigned team members
   createdAt: ISODate;
   updatedAt: ISODate;
+}
+
+// Business member interface for job assignments
+export interface BusinessMember {
+  id: ID;
+  business_id: ID;
+  user_id: ID;
+  role: 'owner' | 'worker';
+  invited_at: ISODate;
+  joined_at?: ISODate;
+  invited_by?: ID;
+  joined_via_invite: boolean;
+  email?: string;
+  name?: string;
 }
 
 export type InvoiceStatus = 'Draft' | 'Sent' | 'Paid' | 'Overdue';

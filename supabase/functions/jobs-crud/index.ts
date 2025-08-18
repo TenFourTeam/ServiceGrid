@@ -18,17 +18,32 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     if (req.method === 'GET') {
-      const { data, error, count } = await supabase
+      // Check user role to determine job filtering
+      const { data: userRole } = await supabase
+        .rpc('user_business_role', { p_business_id: ctx.businessId });
+
+      let jobsQuery = supabase
         .from('jobs')
         .select(`
           id, title, status, starts_at, ends_at, total, address, notes,
           job_type, photos, is_clocked_in, clock_in_time, clock_out_time,
           recurrence, created_at, updated_at,
           customer_id, quote_id,
-          customers!inner(name, email, phone)
+          customers!inner(name, email, phone),
+          job_assignments(
+            user_id,
+            assigned_at,
+            profiles(id, email, full_name)
+          )
         `, { count: 'exact' })
-        .eq('business_id', ctx.businessId)
-        .order('updated_at', { ascending: false });
+        .eq('business_id', ctx.businessId);
+
+      // If user is a worker, only show jobs they're assigned to
+      if (userRole === 'worker') {
+        jobsQuery = jobsQuery.filter('job_assignments.user_id', 'eq', ctx.userId);
+      }
+
+      const { data, error, count } = await jobsQuery.order('updated_at', { ascending: false });
 
       if (error) {
         console.error('[jobs-crud] GET error:', error);
@@ -57,6 +72,18 @@ Deno.serve(async (req) => {
         customerName: job.customers?.name,
         customerEmail: job.customers?.email,
         customerPhone: job.customers?.phone,
+        // Transform assigned members
+        assignedMembers: job.job_assignments?.map((assignment: any) => ({
+          id: assignment.user_id,
+          business_id: ctx.businessId,
+          user_id: assignment.user_id,
+          role: 'worker',
+          invited_at: assignment.assigned_at,
+          joined_at: assignment.assigned_at,
+          joined_via_invite: false,
+          email: assignment.profiles?.email,
+          name: assignment.profiles?.full_name,
+        })) || [],
       })) || [];
 
       console.log('[jobs-crud] Fetched', jobs.length, 'jobs');

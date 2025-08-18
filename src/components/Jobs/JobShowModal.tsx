@@ -12,6 +12,7 @@ import ReschedulePopover from "@/components/WorkOrders/ReschedulePopover";
 import type { Job } from "@/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle as ModalTitle } from "@/components/ui/dialog";
 import PickQuoteModal from "@/components/Jobs/PickQuoteModal";
+import { JobMemberAssignments } from "@/components/Jobs/JobMemberAssignments";
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidationHelpers } from '@/queries/keys';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
@@ -21,7 +22,7 @@ import { useClockInOut } from "@/hooks/useClockInOut";
 interface JobShowModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  job: Pick<Job, "id" | "customerId" | "startsAt" | "endsAt" | "status" | "jobType" | "isClockedIn"> & Partial<Pick<Job, "notes" | "address" | "total" | "photos" | "quoteId" | "clockInTime" | "clockOutTime">>;
+  job: Pick<Job, "id" | "customerId" | "startsAt" | "endsAt" | "status" | "jobType" | "isClockedIn" | "businessId" | "createdAt" | "updatedAt"> & Partial<Pick<Job, "notes" | "address" | "total" | "photos" | "quoteId" | "clockInTime" | "clockOutTime" | "assignedMembers">>;
 }
 
 export default function JobShowModal({ open, onOpenChange, job }: JobShowModalProps) {
@@ -387,6 +388,9 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
               )}
             </div>
           </div>
+          
+          {/* Team Assignment Section */}
+          <JobMemberAssignments job={job} />
         </div>
         <DrawerFooter>
           <div className="flex flex-col gap-3">
