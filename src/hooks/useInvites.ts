@@ -26,7 +26,7 @@ export function usePendingInvites(businessId?: string) {
     queryFn: async () => {
       if (!businessId) return { invites: [] };
       
-      const { data, error } = await authApi.invoke(`invite-manage?action=list&business_id=${businessId}`, {
+      const { data, error } = await authApi.invoke(`invite-worker?business_id=${businessId}`, {
         method: 'GET'
       });
       
@@ -47,9 +47,8 @@ export function useRevokeInvite(businessId: string) {
   
   return useMutation({
     mutationFn: async ({ inviteId }: { inviteId: string }) => {
-      const { data, error } = await authApi.invoke("invite-manage", {
-        method: "POST",
-        body: { inviteId, action: "revoke" },
+      const { data, error } = await authApi.invoke(`invite-worker?invite_id=${inviteId}`, {
+        method: "DELETE",
         toast: {
           success: "Invite revoked successfully",
           loading: "Revoking invitation...",
@@ -79,9 +78,9 @@ export function useResendInvite(businessId: string) {
   
   return useMutation({
     mutationFn: async ({ inviteId }: { inviteId: string }) => {
-      const { data, error } = await authApi.invoke("invite-manage", {
-        method: "POST",
-        body: { inviteId, action: "resend" },
+      const { data, error } = await authApi.invoke("invite-worker", {
+        method: "PUT",
+        body: { inviteId },
         toast: {
           success: "Invite resent successfully",
           loading: "Resending invitation...",

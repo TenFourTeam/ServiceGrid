@@ -20,9 +20,6 @@ verify_jwt = false
 [functions.invite-worker]
 verify_jwt = false
 
-[functions.invite-manage]
-verify_jwt = false
-
 [functions.invite-redeem]
 verify_jwt = false
 
@@ -100,7 +97,4 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.business-members]
-verify_jwt = false
-
-[functions.invite-manage]
 verify_jwt = false

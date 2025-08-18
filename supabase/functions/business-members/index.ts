@@ -56,50 +56,6 @@ Deno.serve(async (req) => {
       return json({ members: formattedMembers, count: count || 0 });
     }
 
-    if (req.method === 'POST') {
-      let body;
-      try {
-        body = await req.json();
-        if (!body) {
-          throw new Error('Request body is empty');
-        }
-      } catch (jsonError) {
-        console.error('[business-members] JSON parsing error:', jsonError);
-        return json({ error: 'Invalid JSON in request body' }, { status: 400 });
-      }
-
-      const { email } = body;
-
-      if (!email) {
-        return json({ error: 'Email is required' }, { status: 400 });
-      }
-
-      // Create invite entry
-      const inviteToken = crypto.randomUUID();
-      const tokenHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(inviteToken))
-        .then(buffer => Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join(''));
-
-      const { data: invite, error: inviteError } = await supabase
-        .from('invites')
-        .insert([{
-          business_id: ctx.businessId,
-          email: email,
-          role: 'worker',
-          token_hash: tokenHash,
-          invited_by: ctx.userId,
-          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-        }])
-        .select()
-        .single();
-
-      if (inviteError) {
-        console.error('[business-members] Invite creation error:', inviteError);
-        throw new Error(`Failed to create invite: ${inviteError.message}`);
-      }
-
-      console.log('[business-members] Invite created:', invite.id);
-      return json({ invite, token: inviteToken });
-    }
 
     if (req.method === 'DELETE') {
       let body;

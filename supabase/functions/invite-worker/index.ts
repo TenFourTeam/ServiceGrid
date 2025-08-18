@@ -10,12 +10,226 @@ serve(async (req: Request) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  if (req.method !== 'POST') {
-    return json({ error: 'Method not allowed' }, 405);
-  }
-
   try {
-    const { userId, businessId: contextBusinessId, supaAdmin } = await requireCtx(req);
+    const { userId, supaAdmin } = await requireCtx(req);
+
+    if (req.method === 'GET') {
+      const url = new URL(req.url);
+      const businessId = url.searchParams.get('business_id');
+
+      if (!businessId) {
+        return json({ error: 'Business ID is required' }, 400);
+      }
+
+      // Verify user is owner of the business
+      const { data: membership } = await supaAdmin
+        .from('business_members')
+        .select('role')
+        .eq('business_id', businessId)
+        .eq('user_id', userId)
+        .eq('role', 'owner')
+        .single();
+
+      if (!membership) {
+        return json({ error: 'Not authorized to manage this business' }, 403);
+      }
+
+      // Get pending invites
+      const { data: invites, error } = await supaAdmin
+        .from('invites')
+        .select(`
+          id,
+          email,
+          role,
+          expires_at,
+          created_at,
+          invited_by,
+          profiles!invites_invited_by_fkey (email)
+        `)
+        .eq('business_id', businessId)
+        .is('redeemed_at', null)
+        .is('revoked_at', null)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching invites:', error);
+        return json({ error: 'Failed to fetch invites' }, 500);
+      }
+
+      return json({ invites: invites || [] });
+    }
+
+    if (req.method === 'DELETE') {
+      const url = new URL(req.url);
+      const inviteId = url.searchParams.get('invite_id');
+
+      if (!inviteId) {
+        return json({ error: 'Invite ID is required' }, 400);
+      }
+
+      // Get the invite and verify permissions
+      const { data: invite, error: inviteError } = await supaAdmin
+        .from('invites')
+        .select('*')
+        .eq('id', inviteId)
+        .single();
+
+      if (inviteError || !invite) {
+        return json({ error: 'Invite not found' }, 404);
+      }
+
+      // Verify user can manage this business
+      const { data: membership } = await supaAdmin
+        .from('business_members')
+        .select('role')
+        .eq('business_id', invite.business_id)
+        .eq('user_id', userId)
+        .eq('role', 'owner')
+        .single();
+
+      if (!membership) {
+        return json({ error: 'Not authorized to manage this business' }, 403);
+      }
+
+      const { error } = await supaAdmin
+        .from('invites')
+        .update({ revoked_at: new Date().toISOString() })
+        .eq('id', inviteId);
+
+      if (error) {
+        console.error('Error revoking invite:', error);
+        return json({ error: 'Failed to revoke invite' }, 500);
+      }
+
+      // Log audit action
+      await supaAdmin.rpc('log_audit_action', {
+        p_business_id: invite.business_id,
+        p_user_id: userId,
+        p_action: 'invite_revoked',
+        p_resource_type: 'business_member',
+        p_resource_id: inviteId,
+        p_details: { email: invite.email }
+      });
+
+      return json({ message: 'Invite revoked successfully' });
+    }
+
+    if (req.method === 'PUT' || req.method === 'PATCH') {
+      const { inviteId } = await req.json();
+
+      if (!inviteId) {
+        return json({ error: 'Invite ID is required' }, 400);
+      }
+
+      // Get the invite and verify permissions
+      const { data: invite, error: inviteError } = await supaAdmin
+        .from('invites')
+        .select('*, businesses!inner(name, logo_url)')
+        .eq('id', inviteId)
+        .single();
+
+      if (inviteError || !invite) {
+        return json({ error: 'Invite not found' }, 404);
+      }
+
+      // Verify user can manage this business
+      const { data: membership } = await supaAdmin
+        .from('business_members')
+        .select('role')
+        .eq('business_id', invite.business_id)
+        .eq('user_id', userId)
+        .eq('role', 'owner')
+        .single();
+
+      if (!membership) {
+        return json({ error: 'Not authorized to manage this business' }, 403);
+      }
+
+      // Generate new token and extend expiry
+      const token = crypto.randomUUID();
+      const encoder = new TextEncoder();
+      const data = encoder.encode(token);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const tokenHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+      const newExpiresAt = new Date();
+      newExpiresAt.setDate(newExpiresAt.getDate() + 7);
+
+      const { error } = await supaAdmin
+        .from('invites')
+        .update({
+          token_hash: tokenHash,
+          expires_at: newExpiresAt.toISOString(),
+        })
+        .eq('id', inviteId);
+
+      if (error) {
+        console.error('Error updating invite:', error);
+        return json({ error: 'Failed to update invite' }, 500);
+      }
+
+      // Get inviter details
+      const { data: inviter } = await supaAdmin
+        .from('profiles')
+        .select('email, full_name')
+        .eq('id', userId)
+        .single();
+
+      // Generate invitation URL and send email
+      const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://preview--lawn-flow-dash.lovable.app';
+      const inviteUrl = `${frontendUrl}/invite?token=${token}`;
+      const business = invite.businesses;
+
+      // Build professional email using template
+      const emailContent = buildInviteEmail({
+        businessName: business.name,
+        businessLogoUrl: business.logo_url,
+        inviterName: inviter?.full_name || inviter?.email || 'Team Administrator',
+        inviteeEmail: invite.email,
+        inviteUrl,
+        role: invite.role,
+        expiresAt: newExpiresAt.toISOString()
+      });
+
+      // Send invitation email directly using Resend
+      const fromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'onboarding@resend.dev';
+
+      const emailResponse = await resend.emails.send({
+        from: `${business.name} <${fromEmail}>`,
+        to: [invite.email],
+        subject: `Reminder: ${emailContent.subject}`,
+        html: emailContent.html,
+      });
+
+      if (emailResponse.error) {
+        console.error('Failed to send invitation email:', emailResponse.error);
+        return json({ error: 'Failed to send invitation email' }, 500);
+      }
+
+      console.log('Invitation email resent successfully:', emailResponse.data?.id);
+
+      // Log audit action
+      await supaAdmin.rpc('log_audit_action', {
+        p_business_id: invite.business_id,
+        p_user_id: userId,
+        p_action: 'invite_resent',
+        p_resource_type: 'business_member',
+        p_resource_id: inviteId,
+        p_details: { email: invite.email }
+      });
+
+      return json({ 
+        message: 'Invite resent successfully',
+        invite_url: inviteUrl
+      });
+    }
+
+    if (req.method !== 'POST') {
+      return json({ error: 'Method not allowed' }, 405);
+    }
+
+    // POST - Create new invite and send email
     const { businessId, email } = await req.json();
 
     if (!businessId || !email) {
@@ -113,7 +327,7 @@ serve(async (req: Request) => {
     }
 
     // Generate invitation URL and send email
-    const frontendUrl = 'https://preview--lawn-flow-dash.lovable.app';
+    const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://preview--lawn-flow-dash.lovable.app';
     const inviteUrl = `${frontendUrl}/invite?token=${token}`;
     
     // Build professional email using template
@@ -163,7 +377,7 @@ serve(async (req: Request) => {
     });
 
   } catch (error) {
-    console.error('Error creating invitation:', error);
+    console.error('Error in invite-worker:', error);
     return json({ error: 'Internal server error' }, 500);
   }
 });

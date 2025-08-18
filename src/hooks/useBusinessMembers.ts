@@ -69,9 +69,9 @@ export function useBusinessMemberOperations() {
 
   const inviteWorker = useMutation({
     mutationFn: async ({ email }: { email: string }) => {
-      const { data, error } = await authApi.invoke('business-members', {
+      const { data, error } = await authApi.invoke('invite-worker', {
         method: "POST",
-        body: { email },
+        body: { businessId, email },
         toast: {
           success: "Team member invited successfully",
           loading: "Sending invitation...",
