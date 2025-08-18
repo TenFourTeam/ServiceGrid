@@ -40,7 +40,12 @@ Deno.serve(async (req) => {
 
       // If user is a worker, only show jobs they're assigned to
       if (userRole === 'worker') {
-        jobsQuery = jobsQuery.filter('job_assignments.user_id', 'eq', ctx.userId);
+        jobsQuery = jobsQuery.in('id', 
+          supabase
+            .from('job_assignments')
+            .select('job_id')
+            .eq('user_id', ctx.userId)
+        );
       }
 
       const { data, error, count } = await jobsQuery.order('updated_at', { ascending: false });
