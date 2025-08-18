@@ -28,7 +28,7 @@ export default function Team() {
   const { leaveBusiness, isLeaving } = useBusinessLeaving();
   const [leavingBusinessId, setLeavingBusinessId] = useState<string | null>(null);
 
-  const otherBusinesses = businesses?.filter(b => !b.is_current) || [];
+  const allBusinesses = businesses || [];
 
   const handleSwitchBusiness = async (targetBusinessId: string) => {
     try {
@@ -50,23 +50,6 @@ export default function Team() {
   return (
     <AppLayout title="Team Management">
       <div className="space-y-6">
-        {/* Business Switcher (if user has multiple businesses) */}
-        {businesses && businesses.length > 1 && (
-          <Card className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold flex items-center gap-2">
-                  <Building2 className="h-5 w-5" />
-                  Switch Business
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Currently managing: <span className="font-medium">{businessName}</span> • Role: <span className="font-medium capitalize">{role}</span>
-                </p>
-              </div>
-              <BusinessSwitcher />
-            </div>
-          </Card>
-        )}
 
         {/* Current Business Team */}
         <BusinessMembersList 
@@ -78,16 +61,16 @@ export default function Team() {
           <div className="mb-4">
             <h3 className="text-xl font-bold flex items-center gap-2">
               <Users className="h-5 w-5" />
-              Teams I'm a Member Of
+              All My Business Memberships
             </h3>
             <p className="text-sm text-muted-foreground mt-1">
-              Other businesses where you're a team member
+              All businesses where you're a team member
             </p>
           </div>
 
-          {otherBusinesses.length > 0 ? (
+          {allBusinesses.length > 0 ? (
             <div className="grid gap-3">
-              {otherBusinesses.map((business) => (
+              {allBusinesses.map((business) => (
                 <div
                   key={business.id}
                   className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/20 transition-colors"
@@ -107,16 +90,27 @@ export default function Team() {
                   </div>
                   
                   <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleSwitchBusiness(business.id)}
-                      className="flex items-center gap-2"
-                      disabled={switchBusiness.isPending}
-                    >
-                      <ArrowRight className="h-4 w-4" />
-                      Switch
-                    </Button>
+                    {business.is_current ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled
+                        className="flex items-center gap-2"
+                      >
+                        Current
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleSwitchBusiness(business.id)}
+                        className="flex items-center gap-2"
+                        disabled={switchBusiness.isPending}
+                      >
+                        <ArrowRight className="h-4 w-4" />
+                        Switch
+                      </Button>
+                    )}
                     
                     {business.role !== 'owner' && (
                       <AlertDialog>
