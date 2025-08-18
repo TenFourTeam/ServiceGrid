@@ -1,6 +1,8 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { RequireRole } from "@/components/Auth/RequireRole";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
+import { useUserBusinesses } from "@/hooks/useUserBusinesses";
+import { useBusinessSwitcher } from "@/hooks/useBusinessSwitcher";
 import {
   Sidebar,
   SidebarContent,
@@ -48,6 +50,8 @@ const allItems = [
 
 export default function AppSidebar() {
   const { businessId, role, canManage, business, businessLogoUrl, businessLightLogoUrl, businessName } = useBusinessContext();
+  const { data: userBusinesses } = useUserBusinesses();
+  const { switchBusiness, isSwitching } = useBusinessSwitcher();
   
   // Filter items based on user role
   const visibleItems = allItems.filter(item => 
@@ -60,6 +64,10 @@ export default function AppSidebar() {
   const collapsed = state === "collapsed";
   const { user } = useUser();
   const { data: profile } = useProfile();
+  
+  // Find the business where the user is an owner
+  const ownedBusiness = userBusinesses?.find(b => b.role === 'owner');
+  const isInOwnBusiness = businessId === ownedBusiness?.id;
   
   // Warm the cache for the logo ASAP
   usePreloadImage(businessLightLogoUrl || businessLogoUrl);
@@ -146,6 +154,18 @@ export default function AppSidebar() {
                 {user?.primaryEmailAddress?.emailAddress || user?.emailAddresses?.[0]?.emailAddress || "Account"}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              {!isInOwnBusiness && ownedBusiness && (
+                <>
+                  <DropdownMenuItem 
+                    onClick={() => switchBusiness.mutate(ownedBusiness.id)}
+                    disabled={isSwitching}
+                  >
+                    <Shield className="mr-2 h-4 w-4" /> 
+                    My Business ({ownedBusiness.name})
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
               <DropdownMenuItem onClick={() => navigate('/settings')}>
                 <SettingsIcon className="mr-2 h-4 w-4" /> Settings
               </DropdownMenuItem>

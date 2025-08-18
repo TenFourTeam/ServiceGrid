@@ -1,10 +1,12 @@
 import { useAuth } from '@clerk/clerk-react';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 import { invalidationHelpers } from '@/queries/keys';
 
 export function useBusinessSwitcher() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const { getToken } = useAuth();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
 
@@ -34,8 +36,8 @@ export function useBusinessSwitcher() {
       invalidationHelpers.business(queryClient);
       queryClient.invalidateQueries({ queryKey: ['user-businesses'] });
       
-      // Force a page refresh to ensure all components update with new business context
-      window.location.reload();
+      // Navigate to calendar after switching business
+      navigate('/calendar');
     },
     onError: (error: any) => {
       console.error('[useBusinessSwitcher] Switch failed:', error);
