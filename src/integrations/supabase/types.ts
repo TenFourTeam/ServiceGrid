@@ -99,6 +99,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "business_members_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "business_members_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
@@ -890,6 +897,10 @@ export type Database = {
         Returns: boolean
       }
       current_clerk_user_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      current_user_profile_id: {
         Args: Record<PropertyKey, never>
         Returns: string
       }
