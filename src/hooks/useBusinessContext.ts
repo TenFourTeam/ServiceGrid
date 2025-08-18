@@ -1,6 +1,7 @@
 import { useAuth } from '@clerk/clerk-react';
 import { useProfile } from '@/queries/useProfile';
 import { useParams, useLocation } from 'react-router-dom';
+import { useCurrentBusiness } from '@/contexts/CurrentBusinessContext';
 
 export type BusinessUI = {
   id: string;
@@ -20,11 +21,12 @@ export function useBusinessContext() {
   const { isSignedIn, isLoaded, userId } = useAuth();
   const params = useParams();
   const location = useLocation();
+  const { currentBusinessId } = useCurrentBusiness();
   
   // Don't query profile until Clerk is fully loaded and user is authenticated
   const shouldFetchProfile = isLoaded && isSignedIn;
-  // Always use the user's current default business instead of URL params
-  const profileQuery = useProfile();
+  // Use current business ID if set, otherwise use default business
+  const profileQuery = useProfile(currentBusinessId);
   
   const business = profileQuery.data?.business as BusinessUI;
   const role = business?.role || 'owner';

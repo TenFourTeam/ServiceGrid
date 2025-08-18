@@ -4,30 +4,26 @@ import { useNavigate } from 'react-router-dom';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 import { invalidationHelpers } from '@/queries/keys';
 import { toast } from 'sonner';
+import { useCurrentBusiness } from '@/contexts/CurrentBusinessContext';
 
 export function useBusinessSwitcher() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { getToken } = useAuth();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const { setCurrentBusinessId } = useCurrentBusiness();
 
   const switchBusiness = useMutation({
     mutationFn: async (businessId: string) => {
       console.log('[useBusinessSwitcher] Switching to business:', businessId);
       
-      const { data, error } = await authApi.invoke('switch-business', {
-        method: 'POST',
-        body: { businessId },
-      });
+      // Just update the current business context - no backend call needed
+      setCurrentBusinessId(businessId);
       
-      if (error) {
-        throw new Error(error.message || 'Failed to switch business');
-      }
-      
-      return data;
+      return { success: true };
     },
     onSuccess: (data, businessId) => {
-      // Invalidate profile with user ID to force fresh data with new business context
+      // Invalidate profile queries to refetch with new business context
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       queryClient.invalidateQueries({ queryKey: ['user-businesses'] });
       
