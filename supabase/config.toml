@@ -114,3 +114,6 @@ verify_jwt = false
 
 [functions.business-members]
 verify_jwt = false
+
+[functions.jobs-crud-assign]
+verify_jwt = false
