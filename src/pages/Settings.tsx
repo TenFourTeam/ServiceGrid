@@ -1,4 +1,5 @@
 import AppLayout from '@/components/Layout/AppLayout';
+import { RequireRole } from '@/components/Auth/RequireRole';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -207,134 +208,132 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
         
-        {isOwner && (
-          <>
-            <Card>
-              <CardHeader><CardTitle>Business Name</CardTitle></CardHeader>
-              <CardContent>
-                <form onSubmit={businessNameForm.handleSubmit} className="space-y-4">
-                  <div>
-                    <Label>Business Name</Label>
-                    <Input 
-                      value={businessNameForm.businessName} 
-                      onChange={e => businessNameForm.setBusinessName(e.target.value)}
-                      placeholder="Your business name"
-                      required
-                    />
-                  </div>
-                  
-                  <div className="pt-4">
-                    <Button 
-                      type="submit"
-                      disabled={businessNameForm.isLoading || !businessNameForm.isFormValid}
-                      className="w-full"
-                    >
-                      {businessNameForm.isLoading ? 'Saving...' : 'Save Business Name'}
-                    </Button>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
+        <RequireRole role="owner" fallback={null}>
+          <Card>
+            <CardHeader><CardTitle>Business Name</CardTitle></CardHeader>
+            <CardContent>
+              <form onSubmit={businessNameForm.handleSubmit} className="space-y-4">
+                <div>
+                  <Label>Business Name</Label>
+                  <Input 
+                    value={businessNameForm.businessName} 
+                    onChange={e => businessNameForm.setBusinessName(e.target.value)}
+                    placeholder="Your business name"
+                    required
+                  />
+                </div>
+                
+                <div className="pt-4">
+                  <Button 
+                    type="submit"
+                    disabled={businessNameForm.isLoading || !businessNameForm.isFormValid}
+                    className="w-full"
+                  >
+                    {businessNameForm.isLoading ? 'Saving...' : 'Save Business Name'}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
 
-            <Card>
-              <CardHeader><CardTitle>Visual Branding</CardTitle></CardHeader>
-              <CardContent className="space-y-6">
-                  <div className="space-y-2">
-                    <Label>Dark Icon</Label>
-                    <div className="flex items-center gap-4">
-                      <div className="shrink-0 w-14 h-14 rounded-lg bg-background p-2 border border-border shadow-sm -ml-1 flex items-center justify-center overflow-hidden">
-                        <BusinessLogo size={40} src={business?.logoUrl} alt="Dark icon preview" />
-                      </div>
-                      <div className="flex-1 grid gap-2 sm:grid-cols-[1fr_auto]">
-                        <Input type="file" accept="image/png,image/svg+xml,image/webp,image/jpeg" onChange={e => setDarkFile(e.target.files?.[0] || null)} />
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="inline-flex">
-                              <Button onClick={() => handleLogoUpload('dark')} disabled={isUploadingLogo || !darkFile}>{isUploadingLogo ? 'Uploading…' : 'Upload dark icon'}</Button>
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-xs">
-                            Used across the app (sidebar, headers). Use PNG/SVG/WebP. Recommended size: 32x32.
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
+          <Card>
+            <CardHeader><CardTitle>Visual Branding</CardTitle></CardHeader>
+            <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label>Dark Icon</Label>
+                  <div className="flex items-center gap-4">
+                    <div className="shrink-0 w-14 h-14 rounded-lg bg-background p-2 border border-border shadow-sm -ml-1 flex items-center justify-center overflow-hidden">
+                      <BusinessLogo size={40} src={business?.logoUrl} alt="Dark icon preview" />
+                    </div>
+                    <div className="flex-1 grid gap-2 sm:grid-cols-[1fr_auto]">
+                      <Input type="file" accept="image/png,image/svg+xml,image/webp,image/jpeg" onChange={e => setDarkFile(e.target.files?.[0] || null)} />
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="inline-flex">
+                            <Button onClick={() => handleLogoUpload('dark')} disabled={isUploadingLogo || !darkFile}>{isUploadingLogo ? 'Uploading…' : 'Upload dark icon'}</Button>
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                          Used across the app (sidebar, headers). Use PNG/SVG/WebP. Recommended size: 32x32.
+                        </TooltipContent>
+                      </Tooltip>
                     </div>
                   </div>
+                </div>
 
-                  <div className="space-y-2">
-                    <Label>Light Icon</Label>
-                    <div className="flex items-center gap-4">
-                      <div className="shrink-0 w-14 h-14 rounded-lg bg-primary p-2 shadow-sm -ml-1 flex items-center justify-center overflow-hidden">
-                        <BusinessLogo size={40} src={business?.lightLogoUrl} alt="Light icon preview" />
-                      </div>
-                      <div className="flex-1 grid gap-2 sm:grid-cols-[1fr_auto]">
-                        <Input type="file" accept="image/png,image/svg+xml,image/webp,image/jpeg" onChange={e => setLightFile(e.target.files?.[0] || null)} />
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="inline-flex">
-                              <Button onClick={() => handleLogoUpload('light')} disabled={isUploadingLogo || !lightFile}>{isUploadingLogo ? 'Uploading…' : 'Upload light icon'}</Button>
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-xs">
-                            Used in emails and email previews. Use a white/light version. Use PNG/SVG/WebP. Recommended size: 32x32.
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
+                <div className="space-y-2">
+                  <Label>Light Icon</Label>
+                  <div className="flex items-center gap-4">
+                    <div className="shrink-0 w-14 h-14 rounded-lg bg-primary p-2 shadow-sm -ml-1 flex items-center justify-center overflow-hidden">
+                      <BusinessLogo size={40} src={business?.lightLogoUrl} alt="Light icon preview" />
+                    </div>
+                    <div className="flex-1 grid gap-2 sm:grid-cols-[1fr_auto]">
+                      <Input type="file" accept="image/png,image/svg+xml,image/webp,image/jpeg" onChange={e => setLightFile(e.target.files?.[0] || null)} />
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="inline-flex">
+                            <Button onClick={() => handleLogoUpload('light')} disabled={isUploadingLogo || !lightFile}>{isUploadingLogo ? 'Uploading…' : 'Upload light icon'}</Button>
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                          Used in emails and email previews. Use a white/light version. Use PNG/SVG/WebP. Recommended size: 32x32.
+                        </TooltipContent>
+                      </Tooltip>
                     </div>
                   </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Payouts</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ConnectBanner
-                  loading={statusLoading} 
-                  error={null} 
-                  chargesEnabled={connectStatus?.chargesEnabled} 
-                  payoutsEnabled={connectStatus?.payoutsEnabled} 
-                  detailsSubmitted={connectStatus?.detailsSubmitted} 
-                  bankLast4={null} 
-                  scheduleText={null} 
-                  onConnect={handleStripeConnect} 
-                  onRefresh={() => window.location.reload()} 
-                  onDisconnect={async () => {
-                  try {
-                    const { error } = await authApi.invoke('connect-disconnect', { 
-                      method: 'POST',
-                      toast: { success: 'Disconnected from Stripe', error: 'Failed to disconnect' }
-                    });
-                    if (!error) window.location.reload();
-                  } catch (e: any) {
-                    console.error(e);
-                  }
-                }} />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Subscription</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-sm text-muted-foreground">Status</div>
-                    <div className="text-sm">{sub?.subscribed ? `Active • ${sub?.subscription_tier || ''}` : 'Not subscribed'}</div>
-                  </div>
-                  
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button size="sm" onClick={() => startCheckout('monthly')}>Start Monthly ($50)</Button>
-                  <Button size="sm" onClick={() => startCheckout('yearly')}>Start Yearly ($504)</Button>
-                  <Button size="sm" variant="secondary" onClick={openPortal}>Manage Subscription</Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Payouts</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ConnectBanner
+                loading={statusLoading} 
+                error={null} 
+                chargesEnabled={connectStatus?.chargesEnabled} 
+                payoutsEnabled={connectStatus?.payoutsEnabled} 
+                detailsSubmitted={connectStatus?.detailsSubmitted} 
+                bankLast4={null} 
+                scheduleText={null} 
+                onConnect={handleStripeConnect} 
+                onRefresh={() => window.location.reload()} 
+                onDisconnect={async () => {
+                try {
+                  const { error } = await authApi.invoke('connect-disconnect', { 
+                    method: 'POST',
+                    toast: { success: 'Disconnected from Stripe', error: 'Failed to disconnect' }
+                  });
+                  if (!error) window.location.reload();
+                } catch (e: any) {
+                  console.error(e);
+                }
+              }} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Subscription</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm text-muted-foreground">Status</div>
+                  <div className="text-sm">{sub?.subscribed ? `Active • ${sub?.subscription_tier || ''}` : 'Not subscribed'}</div>
                 </div>
-              </CardContent>
-            </Card>
-          </>
-        )}
+                
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" onClick={() => startCheckout('monthly')}>Start Monthly ($50)</Button>
+                <Button size="sm" onClick={() => startCheckout('yearly')}>Start Yearly ($504)</Button>
+                <Button size="sm" variant="secondary" onClick={openPortal}>Manage Subscription</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </RequireRole>
 
 
       </div>
