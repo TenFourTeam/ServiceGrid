@@ -9,6 +9,7 @@ import { useMemo, useState, useEffect, useCallback } from "react";
 import { addMonths, startOfDay, addDays, format, startOfWeek, endOfWeek } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useJobsData } from "@/hooks/useJobsData";
+import { useIsMobile } from "@/hooks/use-mobile";
 type CalendarDisplayMode = 'scheduled' | 'clocked' | 'combined';
 
 export default function CalendarShell({
@@ -20,6 +21,7 @@ export default function CalendarShell({
   const [displayMode, setDisplayMode] = useState<CalendarDisplayMode>('scheduled');
   const [date, setDate] = useState<Date>(startOfDay(new Date()));
   const { data: jobs, refetch: refetchJobs } = useJobsData();
+  const isMobile = useIsMobile();
   
   const month = useMemo(() => new Date(date), [date]);
   const rangeTitle = useMemo(() => {
@@ -49,12 +51,23 @@ export default function CalendarShell({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [stepDate]);
-  return <div className="flex-1 min-h-0 flex flex-col gap-4">
-        <header className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h2 className="text-sm md:text-base font-semibold">{rangeTitle}</h2>
+  return <div className="flex-1 min-h-0 flex flex-col gap-2 md:gap-4">
+        <header className="flex flex-col gap-3 md:gap-0 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center justify-between md:gap-3">
+            <h2 className="text-lg md:text-base font-semibold">{rangeTitle}</h2>
+            {isMobile && (
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="icon" aria-label="Previous" onClick={() => stepDate(-1)}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" aria-label="Next" onClick={() => stepDate(1)}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </div>
-          <div className="flex items-center gap-2">
+          
+          <div className="flex items-center justify-between md:justify-end gap-2">
             <Select value={displayMode} onValueChange={v => setDisplayMode(v as CalendarDisplayMode)}>
               <SelectTrigger className="w-[120px] md:w-[140px]">
                 <SelectValue />
@@ -65,38 +78,41 @@ export default function CalendarShell({
                 <SelectItem value="combined">Combined</SelectItem>
               </SelectContent>
             </Select>
-            <div className="hidden md:block">
-              <Tabs value={view} onValueChange={v => setView(v as any)}>
-                <TabsList>
-                  <TabsTrigger value="day">Day</TabsTrigger>
-                  <TabsTrigger value="week">Week</TabsTrigger>
-                  <TabsTrigger value="month">Month</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-            <Button variant="outline" size="sm" className="hidden md:inline-flex" onClick={() => setDate(startOfDay(new Date()))}>
+            
+            <Tabs value={view} onValueChange={v => setView(v as any)}>
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="day" className="text-xs md:text-sm px-2 md:px-3">
+                  {isMobile ? "D" : "Day"}
+                </TabsTrigger>
+                <TabsTrigger value="week" className="text-xs md:text-sm px-2 md:px-3">
+                  {isMobile ? "W" : "Week"}
+                </TabsTrigger>
+                <TabsTrigger value="month" className="text-xs md:text-sm px-2 md:px-3">
+                  {isMobile ? "M" : "Month"}
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            
+            <Button 
+              variant="outline" 
+              size={isMobile ? "sm" : "sm"} 
+              onClick={() => setDate(startOfDay(new Date()))}
+            >
               Today
             </Button>
-            <Button variant="outline" size="icon" aria-label="Previous" onClick={() => stepDate(-1)}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="icon" aria-label="Next" onClick={() => stepDate(1)}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+            
+            {!isMobile && (
+              <>
+                <Button variant="outline" size="icon" aria-label="Previous" onClick={() => stepDate(-1)}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" aria-label="Next" onClick={() => stepDate(1)}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </>
+            )}
           </div>
         </header>
-      <div className="md:hidden flex items-center justify-between">
-        <Tabs value={view} onValueChange={v => setView(v as any)}>
-          <TabsList>
-            <TabsTrigger value="day">D</TabsTrigger>
-            <TabsTrigger value="week">W</TabsTrigger>
-            <TabsTrigger value="month">M</TabsTrigger>
-          </TabsList>
-        </Tabs>
-        <Button variant="outline" size="sm" onClick={() => setDate(startOfDay(new Date()))}>
-          Today
-        </Button>
-      </div>
 
       <div className="flex-1 min-h-0 grid gap-4 md:grid-cols-1">
         

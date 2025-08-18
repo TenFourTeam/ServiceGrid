@@ -463,25 +463,22 @@ function onDragStart(e: React.PointerEvent, job: Job) {
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
   }
-  return <div className="w-full -ml-4 md:-ml-6 w-[calc(100%+1rem)] md:w-[calc(100%+1.5rem)]">
-      <div className="flex items-center justify-end mb-3">
-        
-      </div>
+  return <div className="w-full">
       {/* Mobile-friendly scroll wrapper */}
-      <div className="md:overflow-visible overflow-x-auto -mx-2 md:mx-0">
-        <div className="px-2 md:px-0 min-w-[900px] md:min-w-0">
+      <div className="overflow-x-auto">
+        <div className="min-w-[700px] md:min-w-0 px-2 md:px-0">
           {/* Day headers */}
-          <div className="grid grid-cols-[64px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-1 mb-2">
+          <div className="grid grid-cols-[48px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] md:grid-cols-[64px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-1 mb-2">
             <div />
             {days.map(day => {
             const isToday = isSameDay(day, now);
             const dayISOString = safeToISOString(day) || day.toISOString();
-            return <div key={dayISOString} className={`${isToday ? 'bg-primary/10 text-primary' : 'bg-muted/30 text-foreground'} rounded-md px-2 py-2 text-sm font-medium`}>
-                  <div className="flex items-baseline justify-between">
-                    <span>{day.toLocaleDateString(undefined, {
+            return <div key={dayISOString} className={`${isToday ? 'bg-primary/10 text-primary' : 'bg-muted/30 text-foreground'} rounded-md px-1 md:px-2 py-2 text-xs md:text-sm font-medium`}>
+                  <div className="flex flex-col md:flex-row md:items-baseline md:justify-between">
+                    <span className="text-center md:text-left">{day.toLocaleDateString(undefined, {
                     weekday: 'short'
                   })}</span>
-                    <span>{day.toLocaleDateString(undefined, {
+                    <span className="text-center md:text-right text-xs">{day.toLocaleDateString(undefined, {
                     month: 'short',
                     day: 'numeric'
                   })}</span>
@@ -491,10 +488,10 @@ function onDragStart(e: React.PointerEvent, job: Job) {
           </div>
 
           {/* Calendar grid */}
-          <div className="grid grid-cols-[64px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-1">
+          <div className="grid grid-cols-[48px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] md:grid-cols-[64px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-1">
             <div className="text-xs text-muted-foreground">
               {Array.from({ length: 25 }, (_, i) => (START_ANCHOR_HOUR + i) % 24).map(h => (
-                <div key={h + '-' + Math.random()} className="h-16 pr-2 text-right">{h}:00</div>
+                <div key={h + '-' + Math.random()} className="h-12 md:h-16 pr-1 md:pr-2 text-right text-xs">{h}:00</div>
               ))}
             </div>
             {days.map((day, i) => {
