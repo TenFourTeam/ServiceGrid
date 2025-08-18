@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useBusinessMembersData, useBusinessMemberOperations } from "@/hooks/useBusinessMembers";
 import { usePendingInvites, useRevokeInvite, useResendInvite } from "@/hooks/useInvites";
 import { EnhancedInviteModal } from "@/components/Team/EnhancedInviteModal";
+import { useTeamOperations } from "@/hooks/useTeamOperations";
 import { TeamSearchFilter } from "@/components/Team/TeamSearchFilter";
 import { TeamMemberActions } from "@/components/Team/TeamMemberActions";
 import { UserPlus, Mail, Clock, Send, X, Users, AlertCircle, Shield } from "lucide-react";
@@ -30,6 +31,7 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
   const { removeMember } = useBusinessMemberOperations();
   const revokeInvite = useRevokeInvite(businessId || '');
   const resendInvite = useResendInvite(businessId || '');
+  const { checkUserExists, addTeamMember, isCheckingUser, isAddingMember } = useTeamOperations();
 
   // Filtered and sorted data
   const filteredMembers = useMemo(() => {
@@ -105,13 +107,42 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
 
   const handleResendInvite = async (inviteId: string, email: string) => {
     try {
-      await resendInvite.mutateAsync({ inviteId });
-      toast.success("Invitation resent", {
-        description: `Invitation for ${email} has been resent`,
+      // First check if user exists
+      const userCheck = await checkUserExists.mutateAsync({ 
+        email, 
+        businessId: businessId || '' 
       });
+
+      if (userCheck.exists && !userCheck.alreadyMember && userCheck.user) {
+        // User exists but isn't a member - add them directly
+        await addTeamMember.mutateAsync({
+          userId: userCheck.user.id,
+          businessId: businessId || '',
+          role: 'worker'
+        });
+        
+        // Revoke the invite since they're now a member
+        await revokeInvite.mutateAsync({ inviteId });
+        
+        toast.success("User added to team", {
+          description: `${email} has been added directly to your team`,
+        });
+      } else if (userCheck.alreadyMember) {
+        // Already a member - just revoke the invite
+        await revokeInvite.mutateAsync({ inviteId });
+        toast.success("Invite removed", {
+          description: `${email} is already a team member`,
+        });
+      } else {
+        // User doesn't exist - resend invite
+        await resendInvite.mutateAsync({ inviteId });
+        toast.success("Invitation resent", {
+          description: `Invitation for ${email} has been resent`,
+        });
+      }
     } catch (error: any) {
       toast.error("Error", {
-        description: error.message || "Failed to resend invitation",
+        description: error.message || "Failed to process request",
       });
     }
   };
@@ -326,11 +357,11 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
                             variant="outline"
                             size="sm"
                             onClick={() => handleResendInvite(invite.id, invite.email)}
-                            disabled={resendInvite.isPending}
+                            disabled={resendInvite.isPending || isCheckingUser || isAddingMember}
                             className="flex items-center gap-2"
                           >
                             <Send className="h-4 w-4" />
-                            Resend
+                            {isCheckingUser ? "Checking..." : isAddingMember ? "Adding..." : "Add/Resend"}
                           </Button>
                         )}
                         <Button
