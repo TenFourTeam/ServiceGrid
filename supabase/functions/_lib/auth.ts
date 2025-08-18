@@ -217,9 +217,34 @@ async function resolveUserUuid(supabase: ReturnType<typeof createClient>, clerkU
     throw new Error('Profile not found and auto-creation disabled');
   }
 
-  // Profile doesn't exist - create it automatically for new users
+  // Profile doesn't exist - try to find by email first to avoid duplicates
   console.info(`🔄 [auth] Creating profile for new Clerk user: ${clerkUserId}`);
   
+  // Check if profile exists by email (in case of migration scenarios)
+  const { data: emailProfile } = await supabase
+    .from("profiles")
+    .select("id, clerk_user_id")
+    .eq("email", email.toLowerCase())
+    .limit(1)
+    .maybeSingle();
+
+  if (emailProfile?.id) {
+    // Profile exists but lacks clerk_user_id - update it
+    if (!emailProfile.clerk_user_id) {
+      console.info(`🔄 [auth] Updating existing profile with Clerk ID: ${clerkUserId}`);
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ clerk_user_id: clerkUserId })
+        .eq("id", emailProfile.id);
+      
+      if (updateError) {
+        console.error('❌ [auth] Failed to update profile with Clerk ID:', updateError);
+      }
+    }
+    return emailProfile.id as UserUuid;
+  }
+  
+  // Create new profile
   const { data: newProfile, error: createError } = await supabase
     .from("profiles")
     .insert({
@@ -230,24 +255,32 @@ async function resolveUserUuid(supabase: ReturnType<typeof createClient>, clerkU
     .single();
 
   if (createError) {
-    // Handle race condition - another request may have created the profile
+    // Handle race condition - check again by clerk_user_id
     if (createError.code === '23505') {
-      console.info('🔄 [auth] Profile already exists, re-querying...');
-      const { data: existingProfile, error: existingError } = await supabase
+      console.info('🔄 [auth] Profile constraint violation, re-querying by Clerk ID...');
+      const { data: existingProfile } = await supabase
         .from("profiles")
         .select("id")
         .eq("clerk_user_id", clerkUserId)
         .limit(1)
         .maybeSingle();
       
-      if (existingError) throw existingError;
       if (existingProfile?.id) return existingProfile.id as UserUuid;
+      
+      // Also try by email
+      const { data: emailExistingProfile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("email", email.toLowerCase())
+        .limit(1)
+        .maybeSingle();
+        
+      if (emailExistingProfile?.id) return emailExistingProfile.id as UserUuid;
     }
     
     console.error('❌ [auth] Failed to create profile:', createError);
     throw new Error(`Failed to create user profile: ${createError.message}`);
   }
-
 
   console.info(`✅ [auth] Profile created successfully for user: ${clerkUserId}`);
   return newProfile.id as UserUuid;
