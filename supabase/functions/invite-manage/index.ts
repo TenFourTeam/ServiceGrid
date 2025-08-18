@@ -38,7 +38,7 @@ serve(async (req: Request) => {
             expires_at,
             created_at,
             invited_by,
-            profiles:invited_by (email)
+            profiles!invites_invited_by_fkey (email)
           `)
           .eq('business_id', businessId)
           .is('redeemed_at', null)
