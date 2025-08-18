@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
           job_assignments(
             user_id,
             assigned_at,
-            profiles(id, email, full_name)
+            profiles!job_assignments_user_id_fkey(id, email, full_name)
           )
         `, { count: 'exact' })
         .eq('business_id', ctx.businessId);
