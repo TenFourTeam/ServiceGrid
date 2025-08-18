@@ -22,7 +22,7 @@ serve(async (req: Request) => {
       .eq('id', userId)
       .single();
 
-    // Get all businesses the user is a member of
+    // Get businesses where user is an explicit member
     const { data: memberships, error: membershipError } = await supaAdmin
       .from('business_members')
       .select(`
@@ -39,12 +39,29 @@ serve(async (req: Request) => {
       .order('joined_at', { ascending: false });
 
     if (membershipError) {
-      console.error('Error fetching user businesses:', membershipError);
-      return json({ error: 'Failed to fetch businesses' }, { status: 500 });
+      console.error('Error fetching user business memberships:', membershipError);
+      return json({ error: 'Failed to fetch business memberships' }, { status: 500 });
     }
 
-    // Transform data
-    const businesses = memberships.map(membership => ({
+    // Get businesses where user is the owner
+    const { data: ownedBusinesses, error: ownedError } = await supaAdmin
+      .from('businesses')
+      .select(`
+        id,
+        name,
+        logo_url,
+        created_at
+      `)
+      .eq('owner_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (ownedError) {
+      console.error('Error fetching owned businesses:', ownedError);
+      return json({ error: 'Failed to fetch owned businesses' }, { status: 500 });
+    }
+
+    // Transform explicit memberships
+    const membershipBusinesses = memberships.map(membership => ({
       id: membership.businesses.id,
       name: membership.businesses.name,
       logo_url: membership.businesses.logo_url,
@@ -52,6 +69,31 @@ serve(async (req: Request) => {
       joined_at: membership.joined_at,
       is_current: membership.business_id === profile?.default_business_id
     }));
+
+    // Transform owned businesses
+    const ownerBusinesses = ownedBusinesses.map(business => ({
+      id: business.id,
+      name: business.name,
+      logo_url: business.logo_url,
+      role: 'owner' as const,
+      joined_at: business.created_at, // Use creation date as joined date for owners
+      is_current: business.id === profile?.default_business_id
+    }));
+
+    // Combine and deduplicate (prioritize owner role if user is both owner and member)
+    const businessMap = new Map();
+    
+    // Add memberships first
+    membershipBusinesses.forEach(business => {
+      businessMap.set(business.id, business);
+    });
+    
+    // Add owned businesses (will override if duplicate, ensuring owner role takes priority)
+    ownerBusinesses.forEach(business => {
+      businessMap.set(business.id, business);
+    });
+
+    const businesses = Array.from(businessMap.values());
 
     console.log(`✅ Found ${businesses.length} businesses for user`);
 
