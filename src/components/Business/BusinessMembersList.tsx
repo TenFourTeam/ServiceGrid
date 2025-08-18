@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,7 @@ interface BusinessMembersListProps {
 
 export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [userExistence, setUserExistence] = useState<Record<string, { exists: boolean; isAlreadyMember: boolean; isLoading: boolean }>>({});
   const [filters, setFilters] = useState({
     search: "",
     role: null as string | null,
@@ -31,7 +32,7 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
   const { removeMember } = useBusinessMemberOperations();
   const revokeInvite = useRevokeInvite(businessId || '');
   const resendInvite = useResendInvite(businessId || '');
-  const { checkUserExists, addTeamMember, isCheckingUser, isAddingMember } = useTeamOperations();
+  const { checkUserExists, addTeamMember } = useTeamOperations();
 
   // Filtered and sorted data
   const filteredMembers = useMemo(() => {
@@ -72,6 +73,41 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
   }, [invitesData?.invites, filters]);
+
+  // Check user existence for all pending invites
+  useEffect(() => {
+    if (filteredInvites.length > 0) {
+      filteredInvites.forEach(async (invite) => {
+        if (!userExistence[invite.email]) {
+          setUserExistence(prev => ({
+            ...prev,
+            [invite.email]: { exists: false, isAlreadyMember: false, isLoading: true }
+          }));
+
+          try {
+            const result = await checkUserExists.mutateAsync({
+              email: invite.email,
+              businessId: businessId || ''
+            });
+
+            setUserExistence(prev => ({
+              ...prev,
+              [invite.email]: {
+                exists: result.exists,
+                isAlreadyMember: result.alreadyMember,
+                isLoading: false
+              }
+            }));
+          } catch (error) {
+            setUserExistence(prev => ({
+              ...prev,
+              [invite.email]: { exists: false, isAlreadyMember: false, isLoading: false }
+            }));
+          }
+        }
+      });
+    }
+  }, [filteredInvites, businessId, checkUserExists, userExistence]);
 
   const ownerCount = members.filter(m => m.role === 'owner').length;
 
@@ -320,6 +356,16 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
             <div className="grid gap-3">
               {filteredInvites.map((invite) => {
                 const isExpired = new Date(invite.expires_at) < new Date();
+                const userStatus = userExistence[invite.email];
+                const buttonText = userStatus?.isLoading 
+                  ? "Checking..."
+                  : userStatus?.isAlreadyMember 
+                    ? "Already Member"
+                    : userStatus?.exists 
+                      ? "Add" 
+                      : "Resend";
+                const isButtonDisabled = userStatus?.isLoading || userStatus?.isAlreadyMember || resendInvite.isPending || addTeamMember.isPending;
+                
                 return (
                   <div
                     key={invite.id}
@@ -357,11 +403,11 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
                             variant="outline"
                             size="sm"
                             onClick={() => handleResendInvite(invite.id, invite.email)}
-                            disabled={resendInvite.isPending || isCheckingUser || isAddingMember}
+                            disabled={isButtonDisabled}
                             className="flex items-center gap-2"
                           >
                             <Send className="h-4 w-4" />
-                            {isCheckingUser ? "Checking..." : isAddingMember ? "Adding..." : "Add/Resend"}
+                            {buttonText}
                           </Button>
                         )}
                         <Button

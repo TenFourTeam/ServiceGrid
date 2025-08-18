@@ -1,5 +1,15 @@
 project_id = "ijudkzqfriazabiosnvb"
 
+# User and business management functions
+[functions.check-user-exists]
+verify_jwt = false
+
+[functions.add-team-member]
+verify_jwt = false
+
+[functions.user-businesses]
+verify_jwt = false
+
 [functions.complete-profile-email]
 verify_jwt = true
 
