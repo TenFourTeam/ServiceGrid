@@ -6,10 +6,12 @@ import { safeCreateDate, filterJobsWithValidDates } from "@/utils/validation";
 import JobShowModal from "@/components/Jobs/JobShowModal";
 import { JobBottomModal } from "@/components/Jobs/JobBottomModal";
 import type { Job } from "@/types";
+import { useBusinessContext } from "@/hooks/useBusinessContext";
 
 export default function DayCalendar({ date, displayMode = 'scheduled' }: { date: Date; displayMode?: 'scheduled' | 'clocked' | 'combined'; }) {
   const { data: allJobs } = useJobsData();
   const { data: customers } = useCustomersData();
+  const { role } = useBusinessContext();
   
   const dayStart = startOfDay(date);
   const dayEnd = endOfDay(date);
@@ -39,7 +41,9 @@ export default function DayCalendar({ date, displayMode = 'scheduled' }: { date:
   const [newJobOpen, setNewJobOpen] = useState(false);
 
   const handleDayDoubleClick = () => {
-    setNewJobOpen(true);
+    if (role === 'owner') {
+      setNewJobOpen(true);
+    }
   };
   
   return (

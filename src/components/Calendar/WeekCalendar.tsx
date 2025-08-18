@@ -37,7 +37,7 @@ export function WeekCalendar({
 }) {
   const { data: jobs, refetch: refetchJobs } = useJobsData();
   const { data: customers } = useCustomersData();
-  const { businessId } = useBusinessContext();
+  const { businessId, role } = useBusinessContext();
   const queryClient = useQueryClient();
   
   // Initialize automatic job status management
@@ -185,6 +185,9 @@ const minuteOfDayFromAnchorOffset = (offset: number) => {
   }
 
   function handleEmptyDoubleClick(e: React.MouseEvent<HTMLDivElement>, day: Date) {
+    // Only allow owners to create jobs
+    if (role !== 'owner') return;
+    
     const bounds = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const y = clamp(e.clientY - bounds.top, 0, bounds.height);
     const minsFromTop = y / bounds.height * TOTAL_MIN;
@@ -201,6 +204,9 @@ const minuteOfDayFromAnchorOffset = (offset: number) => {
   }
 
 function onDragStart(e: React.PointerEvent, job: Job) {
+    // Only allow owners to drag jobs
+    if (role !== 'owner') return;
+    
     e.stopPropagation();
     const currentTime = new Date();
     if (!canDragJob(job.status, currentTime, new Date(job.startsAt))) {

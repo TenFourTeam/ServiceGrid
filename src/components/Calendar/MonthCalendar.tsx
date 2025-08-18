@@ -6,6 +6,7 @@ import { safeCreateDate, safeToISOString, filterJobsWithValidDates } from "@/uti
 import JobShowModal from "@/components/Jobs/JobShowModal";
 import { JobBottomModal } from "@/components/Jobs/JobBottomModal";
 import type { Job } from "@/types";
+import { useBusinessContext } from "@/hooks/useBusinessContext";
 
 function useMonthGrid(date: Date) {
   const start = startOfWeek(startOfMonth(date), { weekStartsOn: 1 });
@@ -19,6 +20,7 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
   const { start, end, days } = useMonthGrid(date);
   const { data: allJobs } = useJobsData();
   const { data: customers } = useCustomersData();
+  const { role } = useBusinessContext();
   
   
   const jobs = useMemo(() => {
@@ -77,7 +79,12 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
               role="button"
               tabIndex={0}
               onClick={() => onDateChange(d)}
-              onDoubleClick={() => { setSelectedDate(d); setNewJobOpen(true); }}
+              onDoubleClick={() => { 
+                if (role === 'owner') {
+                  setSelectedDate(d); 
+                  setNewJobOpen(true); 
+                }
+              }}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onDateChange(d); } }}
               aria-current={isToday ? 'date' : undefined}
               className={`border p-2 text-left align-top focus:outline-none focus:ring-2 focus:ring-primary ${inMonth ? '' : 'opacity-60'} ${isToday ? 'bg-muted/40' : ''}`}

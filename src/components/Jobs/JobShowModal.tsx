@@ -29,7 +29,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
   const { data: quotes = [] } = useQuotesData();
   const { data: invoices = [] } = useInvoicesData();
   const queryClient = useQueryClient();
-  const { businessId } = useBusinessContext();
+  const { businessId, role } = useBusinessContext();
   const navigate = useNavigate();
   const [localNotes, setLocalNotes] = useState(job.notes ?? "");
   const notesTimer = useRef<number | null>(null);
@@ -289,14 +289,16 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
               ) : (
                 <>
                   <span>—</span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPickerOpen(true)}
-                    className="h-6 px-2 text-xs"
-                  >
-                    Link
-                  </Button>
+                  {role === 'owner' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPickerOpen(true)}
+                      className="h-6 px-2 text-xs"
+                    >
+                      Link
+                    </Button>
+                  )}
                 </>
               )}
             </div>
@@ -391,11 +393,13 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
             {/* Job Actions */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <ReschedulePopover job={job as Job} onDone={()=>{
-                  if (businessId) {
-                    invalidationHelpers.jobs(queryClient, businessId);
-                  }
-                }} />
+                {role === 'owner' && (
+                  <ReschedulePopover job={job as Job} onDone={()=>{
+                    if (businessId) {
+                      invalidationHelpers.jobs(queryClient, businessId);
+                    }
+                  }} />
+                )}
                 <Button 
                   variant="outline" 
                   onClick={handleNavigate}
@@ -427,48 +431,54 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                     )}
                   </>
                 )}
-                <Button 
-                  variant="outline" 
-                  onClick={handleCreateInvoice}
-                  disabled={isCreatingInvoice || (!currentQuoteId && !existingInvoice)}
-                  size="sm"
-                >
-                  {isCreatingInvoice ? 'Creating...' : existingInvoice ? 'View Invoice' : 'Create Invoice'}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={handleCompleteJob}
-                  disabled={job.status === 'Completed' || isCompletingJob}
-                  size="sm"
-                >
-                  {isCompletingJob ? 'Completing...' : job.status === 'Completed' ? 'Completed' : 'Complete'}
-                </Button>
+                {role === 'owner' && (
+                  <>
+                    <Button 
+                      variant="outline" 
+                      onClick={handleCreateInvoice}
+                      disabled={isCreatingInvoice || (!currentQuoteId && !existingInvoice)}
+                      size="sm"
+                    >
+                      {isCreatingInvoice ? 'Creating...' : existingInvoice ? 'View Invoice' : 'Create Invoice'}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={handleCompleteJob}
+                      disabled={job.status === 'Completed' || isCompletingJob}
+                      size="sm"
+                    >
+                      {isCompletingJob ? 'Completing...' : job.status === 'Completed' ? 'Completed' : 'Complete'}
+                    </Button>
+                  </>
+                )}
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant="destructive" size="sm" onClick={async () => {
-                  try {
-                    const { error } = await authApi.invoke(`jobs?id=${job.id}`, { 
-                      method: 'DELETE',
-                      toast: {
-                        success: 'Job deleted',
-                        loading: 'Deleting job...',
-                        error: 'Failed to delete job'
+              {role === 'owner' && (
+                <div className="flex items-center gap-2">
+                  <Button variant="destructive" size="sm" onClick={async () => {
+                    try {
+                      const { error } = await authApi.invoke(`jobs?id=${job.id}`, { 
+                        method: 'DELETE',
+                        toast: {
+                          success: 'Job deleted',
+                          loading: 'Deleting job...',
+                          error: 'Failed to delete job'
+                        }
+                      });
+                      
+                      if (error) {
+                        throw new Error(error.message || 'Failed to delete job');
                       }
-                    });
-                    
-                    if (error) {
-                      throw new Error(error.message || 'Failed to delete job');
+                      
+                      if (businessId) {
+                        invalidationHelpers.jobs(queryClient, businessId);
+                      }
+                      onOpenChange(false);
+                    } catch (e: any) {
+                      console.error('Failed to delete job:', e);
                     }
-                    
-                    if (businessId) {
-                      invalidationHelpers.jobs(queryClient, businessId);
-                    }
-                    onOpenChange(false);
-                  } catch (e: any) {
-                    console.error('Failed to delete job:', e);
-                  }
-                }}>Delete</Button>
-              </div>
+                  }}>Delete</Button>
+                </div>
+              )}
             </div>
           </div>
         </DrawerFooter>
