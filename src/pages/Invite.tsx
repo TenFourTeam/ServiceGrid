@@ -118,8 +118,8 @@ export default function InviteAccept() {
             <SignedOut>
               <SignInButton
                 mode="modal"
-                forceRedirectUrl={window.location.href}
-                fallbackRedirectUrl={window.location.href}
+                forceRedirectUrl={`${window.location.origin}/invite?token=${token}`}
+                fallbackRedirectUrl={`${window.location.origin}/invite?token=${token}`}
                 appearance={{ elements: { modalBackdrop: "fixed inset-0 bg-background" } }}
               >
                 <Button ref={autoOpenRef} className="sr-only">Open sign in</Button>

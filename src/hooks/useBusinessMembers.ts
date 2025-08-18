@@ -12,6 +12,7 @@ export interface BusinessMember {
   invited_at: string;
   joined_at: string | null;
   invited_by: string | null;
+  joined_via_invite: boolean;
   email?: string;
   name?: string;
 }

@@ -124,7 +124,7 @@ serve(async (req: Request) => {
       return json({ message: 'You are already a member of this business' });
     }
 
-    // Add user to business members
+    // Add user to business members with invite tracking
     const { error: memberError } = await supabase
       .from('business_members')
       .insert({
@@ -133,6 +133,7 @@ serve(async (req: Request) => {
         role: invite.role,
         invited_by: invite.invited_by,
         joined_at: new Date().toISOString(),
+        joined_via_invite: true, // Mark as joined through invite
       });
 
     if (memberError) {
