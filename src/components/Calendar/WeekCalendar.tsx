@@ -464,9 +464,9 @@ function onDragStart(e: React.PointerEvent, job: Job) {
     window.addEventListener('pointerup', onUp);
   }
   return <div className="w-full">
-      {/* Mobile-friendly scroll wrapper */}
-      <div className="overflow-x-auto">
-        <div className="min-w-[700px] md:min-w-0 px-2 md:px-0">
+      {/* Mobile-friendly responsive layout */}
+      <div className="w-full">
+        <div className="px-2 md:px-0">
           {/* Day headers */}
           <div className="grid grid-cols-[48px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] md:grid-cols-[64px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-1 mb-2">
             <div />
