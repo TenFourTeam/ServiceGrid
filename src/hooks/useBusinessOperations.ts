@@ -62,6 +62,9 @@ export function useBusinessOperations() {
       // Use centralized invalidation for business data
       invalidationHelpers.business(queryClient);
       
+      // Also invalidate profile cache since business data is included in profile response
+      invalidationHelpers.profile(queryClient);
+      
       // Force dashboard data refresh to update onboarding state
       window.dispatchEvent(new CustomEvent('business-updated'));
     },
