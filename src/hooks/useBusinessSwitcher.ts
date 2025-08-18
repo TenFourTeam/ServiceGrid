@@ -27,10 +27,10 @@ export function useBusinessSwitcher() {
       return data;
     },
     onSuccess: (data, businessId) => {
-      // Completely clear profile and business caches to force fresh data
-      queryClient.removeQueries({ queryKey: ['profile'] });
-      queryClient.removeQueries({ queryKey: ['user-businesses'] });
-      invalidationHelpers.business(queryClient);
+      // Invalidate the default business query to trigger profile refetch with new business context
+      queryClient.invalidateQueries({ queryKey: ['user', 'default-business'] });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ queryKey: ['user-businesses'] });
       
       // Show success toast with business info
       toast.success('Business switched successfully', {
