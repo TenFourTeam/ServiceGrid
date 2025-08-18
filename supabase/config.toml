@@ -81,6 +81,9 @@ verify_jwt = false
 [functions.get-profile]
 verify_jwt = false
 
+[functions.update-profile]
+verify_jwt = false
+
 [functions.customers-crud]
 verify_jwt = false
 
