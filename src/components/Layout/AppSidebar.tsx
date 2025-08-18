@@ -107,7 +107,6 @@ export default function AppSidebar() {
             <div className="font-semibold truncate">{displayBusinessName || "Business"}</div>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <span className="truncate">Contractor Console</span>
-              {role}
             </div>
           </div>
 
