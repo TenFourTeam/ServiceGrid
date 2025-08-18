@@ -40,12 +40,29 @@ Deno.serve(async (req) => {
 
       // If user is a worker, only show jobs they're assigned to
       if (userRole === 'worker') {
-        jobsQuery = jobsQuery.in('id', 
-          supabase
-            .from('job_assignments')
-            .select('job_id')
-            .eq('user_id', ctx.userId)
-        );
+        console.log('[jobs-crud] Worker role detected, fetching assigned job IDs for user:', ctx.userId);
+        
+        // First, get the job IDs that this worker is assigned to
+        const { data: assignedJobs, error: assignmentError } = await supabase
+          .from('job_assignments')
+          .select('job_id')
+          .eq('user_id', ctx.userId);
+
+        if (assignmentError) {
+          console.error('[jobs-crud] Error fetching job assignments:', assignmentError);
+          throw new Error(`Failed to fetch job assignments: ${assignmentError.message}`);
+        }
+
+        const jobIds = assignedJobs?.map(assignment => assignment.job_id) || [];
+        console.log('[jobs-crud] Found assigned job IDs:', jobIds);
+
+        if (jobIds.length === 0) {
+          console.log('[jobs-crud] No jobs assigned to worker, returning empty result');
+          return json({ jobs: [], count: 0 });
+        }
+
+        // Filter jobs to only those assigned to this worker
+        jobsQuery = jobsQuery.in('id', jobIds);
       }
 
       const { data, error, count } = await jobsQuery.order('updated_at', { ascending: false });
