@@ -61,6 +61,7 @@ export type Database = {
           invited_at: string
           invited_by: string | null
           joined_at: string | null
+          joined_via_invite: boolean
           role: Database["public"]["Enums"]["business_role"]
           updated_at: string
           user_id: string
@@ -72,6 +73,7 @@ export type Database = {
           invited_at?: string
           invited_by?: string | null
           joined_at?: string | null
+          joined_via_invite?: boolean
           role?: Database["public"]["Enums"]["business_role"]
           updated_at?: string
           user_id: string
@@ -83,6 +85,7 @@ export type Database = {
           invited_at?: string
           invited_by?: string | null
           joined_at?: string | null
+          joined_via_invite?: boolean
           role?: Database["public"]["Enums"]["business_role"]
           updated_at?: string
           user_id?: string
