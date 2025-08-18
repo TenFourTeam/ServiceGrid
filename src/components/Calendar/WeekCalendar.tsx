@@ -37,7 +37,7 @@ export function WeekCalendar({
 }) {
   const { data: jobs, refetch: refetchJobs } = useJobsData();
   const { data: customers } = useCustomersData();
-  const { businessId, role } = useBusinessContext();
+  const { businessId, userId, role } = useBusinessContext();
   const queryClient = useQueryClient();
   
   // Initialize automatic job status management
@@ -267,7 +267,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
       setConflictingJobId(conflictCheck.hasConflict ? job.id : null);
       
       // Directly update cache for real-time feedback
-      const queryKey = queryKeys.data.jobs(businessId || '');
+      const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
       queryClient.setQueryData(queryKey, (old: any) => {
         if (!old) return old;
         return {
@@ -310,7 +310,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
         toast.error(`Cannot schedule job - conflicts with: ${finalConflictCheck.conflicts.map(c => c.title).join(', ')}`);
         
         // Revert the job position
-        const queryKey = queryKeys.data.jobs(businessId || '');
+        const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
         queryClient.setQueryData(queryKey, (old: any) => {
           if (!old) return old;
           return {
@@ -344,7 +344,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
       } catch (err: any) {
         console.error(err);
         // Rollback cache on error
-        const queryKey = queryKeys.data.jobs(businessId || '');
+        const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
         queryClient.setQueryData(queryKey, (old: any) => {
           if (!old) return old;
           return {
@@ -399,7 +399,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
       latestEnd = newEnd < minEnd ? minEnd.toISOString() : newEnd.toISOString();
       
       // Directly update cache for real-time feedback
-      const queryKey = queryKeys.data.jobs(businessId || '');
+      const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
       queryClient.setQueryData(queryKey, (old: any) => {
         if (!old) return old;
         return {
@@ -436,7 +436,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
       } catch (err: any) {
         console.error(err);
         // Rollback cache on error
-        const queryKey = queryKeys.data.jobs(businessId || '');
+        const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
         queryClient.setQueryData(queryKey, (old: any) => {
           if (!old) return old;
           return {
