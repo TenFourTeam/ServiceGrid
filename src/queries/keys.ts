@@ -31,7 +31,7 @@ const queryKeys = {
   // Unified data queries - simplified architecture
   data: {
     customers: (businessId: string) => ['data', 'customers', businessId] as const,
-    jobs: (businessId: string) => ['data', 'jobs', businessId] as const,
+    jobs: (businessId: string, userId?: string) => userId ? ['data', 'jobs', businessId, userId] as const : ['data', 'jobs', businessId] as const,
     quotes: (businessId: string) => ['data', 'quotes', businessId] as const,
     invoices: (businessId: string) => ['data', 'invoices', businessId] as const,
     members: (businessId: string) => ['data', 'members', businessId] as const,

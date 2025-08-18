@@ -14,7 +14,7 @@ export interface JobAssignmentRequest {
  */
 export function useJobAssignments() {
   const queryClient = useQueryClient();
-  const { businessId } = useBusinessContext();
+  const { businessId, userId } = useBusinessContext();
   const { getToken } = useAuth();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
 
@@ -37,8 +37,8 @@ export function useJobAssignments() {
       return data;
     },
     onSuccess: () => {
-      // Invalidate jobs data to refresh the assignments
-      queryClient.invalidateQueries({ queryKey: queryKeys.data.jobs(businessId || '') });
+      // Invalidate jobs data to refresh the assignments for all users in this business
+      queryClient.invalidateQueries({ queryKey: ['data', 'jobs', businessId] });
     },
     onError: (error: any) => {
       console.error('[useJobAssignments.assignMembers] error:', error);
@@ -64,8 +64,8 @@ export function useJobAssignments() {
       return data;
     },
     onSuccess: () => {
-      // Invalidate jobs data to refresh the assignments
-      queryClient.invalidateQueries({ queryKey: queryKeys.data.jobs(businessId || '') });
+      // Invalidate jobs data to refresh the assignments for all users in this business
+      queryClient.invalidateQueries({ queryKey: ['data', 'jobs', businessId] });
     },
     onError: (error: any) => {
       console.error('[useJobAssignments.unassignMembers] error:', error);

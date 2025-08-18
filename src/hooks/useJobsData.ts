@@ -14,13 +14,13 @@ interface UseJobsDataOptions {
  * Edge Function jobs hook - unified Clerk authentication
  */
 export function useJobsData(opts?: UseJobsDataOptions) {
-  const { isAuthenticated, businessId } = useBusinessContext();
+  const { isAuthenticated, businessId, userId } = useBusinessContext();
   const { getToken } = useAuth();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const enabled = isAuthenticated && !!businessId && (opts?.enabled ?? true);
 
   const query = useQuery({
-    queryKey: queryKeys.data.jobs(businessId || ''),
+    queryKey: queryKeys.data.jobs(businessId || '', userId || ''),
     enabled,
     queryFn: async () => {
       console.info("[useJobsData] fetching jobs via edge function");
