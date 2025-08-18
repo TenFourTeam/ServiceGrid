@@ -21,12 +21,10 @@ export function useBusinessContext() {
   const params = useParams();
   const location = useLocation();
   
-  // Extract business context from URL or state
-  const contextBusinessId = params.businessId || location.state?.businessId;
-  
   // Don't query profile until Clerk is fully loaded and user is authenticated
   const shouldFetchProfile = isLoaded && isSignedIn;
-  const profileQuery = useProfile(contextBusinessId);
+  // Always use the user's current default business instead of URL params
+  const profileQuery = useProfile();
   
   const business = profileQuery.data?.business as BusinessUI;
   const role = business?.role || 'owner';

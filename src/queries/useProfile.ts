@@ -8,7 +8,7 @@ export function useProfile(businessId?: string) {
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
 
   return useQuery({
-    queryKey: businessId ? queryKeys.profile.forBusiness(businessId) : queryKeys.profile.current(),
+    queryKey: queryKeys.profile.current(),
     enabled: !!userId,
     queryFn: async () => {
       console.info('[useProfile] fetching profile via edge function', { businessId });
