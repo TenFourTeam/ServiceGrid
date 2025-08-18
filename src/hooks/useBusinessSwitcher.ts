@@ -14,9 +14,9 @@ export function useBusinessSwitcher() {
     mutationFn: async (businessId: string) => {
       console.log('[useBusinessSwitcher] Switching to business:', businessId);
       
-      const { data, error } = await authApi.invoke('update-profile', {
-        method: 'POST',
-        body: { default_business_id: businessId },
+    const { data, error } = await authApi.invoke('switch-business', {
+      method: 'POST',
+      body: { businessId },
         toast: {
           loading: 'Switching business...',
           success: 'Business switched successfully',

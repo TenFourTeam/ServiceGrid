@@ -55,6 +55,9 @@ verify_jwt = false
 [functions.business-update]
 verify_jwt = false
 
+[functions.switch-business]
+verify_jwt = false
+
 [functions.business-role]
 verify_jwt = false
 
