@@ -27,8 +27,7 @@ export function useBusinessSwitcher() {
       return data;
     },
     onSuccess: (data, businessId) => {
-      // Invalidate the default business query to trigger profile refetch with new business context
-      queryClient.invalidateQueries({ queryKey: ['user', 'default-business'] });
+      // Invalidate profile with user ID to force fresh data with new business context
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       queryClient.invalidateQueries({ queryKey: ['user-businesses'] });
       

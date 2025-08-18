@@ -2,20 +2,16 @@ import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from './keys';
 import { useAuth } from '@clerk/clerk-react';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
-import { useCurrentDefaultBusiness } from './useUserBusinesses';
 
 export function useProfile() {
   const { userId, getToken } = useAuth();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
-  
-  // Get the user's current default business ID to make query key dynamic
-  const { data: defaultBusinessId } = useCurrentDefaultBusiness();
 
   return useQuery({
-    queryKey: queryKeys.profile.byUserAndBusiness(userId || '', defaultBusinessId || undefined),
+    queryKey: queryKeys.profile.byId(userId || ''),
     enabled: !!userId,
     queryFn: async () => {
-      console.info('[useProfile] fetching profile via edge function', { defaultBusinessId });
+      console.info('[useProfile] fetching profile via edge function');
       
       const { data, error } = await authApi.invoke('get-profile', {
         method: 'GET',
