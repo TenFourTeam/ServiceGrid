@@ -34,7 +34,9 @@ serve(async (req: Request) => {
         return json({ error: 'Not authorized to manage this business' }, 403);
       }
 
-      // Get pending invites
+      console.log(`🔍 Fetching invites for business: ${businessId}`);
+      
+      // Get pending invites - simplified query without foreign key
       const { data: invites, error } = await supaAdmin
         .from('invites')
         .select(`
@@ -43,8 +45,7 @@ serve(async (req: Request) => {
           role,
           expires_at,
           created_at,
-          invited_by,
-          profiles!invites_invited_by_fkey (email)
+          invited_by
         `)
         .eq('business_id', businessId)
         .is('redeemed_at', null)
@@ -52,9 +53,12 @@ serve(async (req: Request) => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching invites:', error);
+        console.error('❌ Error fetching invites:', error);
         return json({ error: 'Failed to fetch invites' }, 500);
       }
+
+      console.log(`✅ Found ${invites?.length || 0} pending invites`);
+      console.log('📋 Invites data:', invites);
 
       return json({ invites: invites || [] });
     }
