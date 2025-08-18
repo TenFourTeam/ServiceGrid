@@ -134,7 +134,42 @@ async function resolveBusinessId(
   candidate?: string | null,
   autoCreate: boolean = true
 ): Promise<string> {
-  // Single business per user model - get user's only business via owner membership
+  // First check directly in businesses table by owner_id - this is the source of truth
+  const { data: ownedBusiness } = await supabase
+    .from("businesses")
+    .select("id")
+    .eq("owner_id", userUuid)
+    .limit(1)
+    .maybeSingle();
+
+  if (ownedBusiness?.id) {
+    // Business exists, ensure membership exists
+    const { data: membership } = await supabase
+      .from("business_members")
+      .select("id")
+      .eq("user_id", userUuid)
+      .eq("business_id", ownedBusiness.id)
+      .eq("role", "owner")
+      .maybeSingle();
+
+    if (!membership) {
+      // Create missing owner membership
+      await supabase
+        .from("business_members")
+        .upsert({
+          business_id: ownedBusiness.id,
+          user_id: userUuid,
+          role: 'owner',
+          joined_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,business_id'
+        });
+    }
+
+    return ownedBusiness.id;
+  }
+
+  // Fallback: check business_members table in case business exists but owner_id is wrong
   const { data: membership } = await supabase
     .from("business_members")
     .select("business_id")
@@ -151,54 +186,84 @@ async function resolveBusinessId(
     throw new Error('No business found and auto-creation disabled');
   }
 
-  // No business exists - create one directly with service role permissions
+  // No business exists - create one using upsert to handle race conditions
   console.info(`🔄 [auth] Creating default business for user: ${userUuid}`);
   
-  // 1. Create the business
-  const { data: newBusiness, error: businessError } = await supabase
-    .from("businesses")
-    .insert({
-      name: 'My Business',
-      owner_id: userUuid
-    })
-    .select("id")
-    .single();
+  try {
+    // Use a transaction-like approach with upsert
+    const { data: newBusiness, error: businessError } = await supabase
+      .from("businesses")
+      .upsert({
+        owner_id: userUuid,
+        name: 'My Business'
+      }, {
+        onConflict: 'owner_id',
+        ignoreDuplicates: false
+      })
+      .select("id")
+      .single();
 
-  if (businessError) {
-    console.error('❌ [auth] Failed to create business:', businessError);
-    throw new Error(`Failed to create default business: ${businessError.message}`);
+    if (businessError) {
+      // If constraint violation, try to find existing business
+      if (businessError.code === '23505') {
+        console.info('🔄 [auth] Business constraint violation, re-querying...');
+        const { data: existingBusiness } = await supabase
+          .from("businesses")
+          .select("id")
+          .eq("owner_id", userUuid)
+          .limit(1)
+          .maybeSingle();
+        
+        if (existingBusiness?.id) {
+          console.info(`✅ [auth] Found existing business after constraint violation: ${existingBusiness.id}`);
+          return existingBusiness.id;
+        }
+      }
+      
+      console.error('❌ [auth] Failed to create business:', businessError);
+      throw new Error(`Failed to create default business: ${businessError.message}`);
+    }
+
+    // Create business membership with upsert
+    await supabase
+      .from("business_members")
+      .upsert({
+        business_id: newBusiness.id,
+        user_id: userUuid,
+        role: 'owner',
+        joined_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id,business_id'
+      });
+
+    // Update profile default_business_id if not set
+    await supabase
+      .from("profiles")
+      .update({ default_business_id: newBusiness.id })
+      .eq("id", userUuid)
+      .is("default_business_id", null);
+
+    console.info(`✅ [auth] Default business created successfully: ${newBusiness.id}`);
+    return newBusiness.id;
+
+  } catch (error) {
+    console.error('❌ [auth] Unexpected error in business creation:', error);
+    
+    // Final fallback - try to find any existing business for this user
+    const { data: fallbackBusiness } = await supabase
+      .from("businesses")
+      .select("id")
+      .eq("owner_id", userUuid)
+      .limit(1)
+      .maybeSingle();
+    
+    if (fallbackBusiness?.id) {
+      console.info(`✅ [auth] Using fallback business: ${fallbackBusiness.id}`);
+      return fallbackBusiness.id;
+    }
+    
+    throw new Error(`Failed to resolve business ID: ${error}`);
   }
-
-  // 2. Create business membership
-  const { error: membershipError } = await supabase
-    .from("business_members")
-    .insert({
-      business_id: newBusiness.id,
-      user_id: userUuid,
-      role: 'owner',
-      joined_at: new Date().toISOString()
-    })
-    .select()
-    .single();
-
-  if (membershipError) {
-    console.error('❌ [auth] Failed to create business membership:', membershipError);
-    // Don't throw here - business was created successfully
-  }
-
-  // 3. Update profile default_business_id
-  const { error: profileError } = await supabase
-    .from("profiles")
-    .update({ default_business_id: newBusiness.id })
-    .eq("id", userUuid);
-
-  if (profileError) {
-    console.error('❌ [auth] Failed to update profile default_business_id:', profileError);
-    // Don't throw here - business was created successfully
-  }
-
-  console.info(`✅ [auth] Default business created successfully: ${newBusiness.id}`);
-  return newBusiness.id;
 }
 
 async function resolveUserUuid(supabase: ReturnType<typeof createClient>, clerkUserId: ClerkUserId, email: string, autoCreate: boolean = true): Promise<UserUuid> {
