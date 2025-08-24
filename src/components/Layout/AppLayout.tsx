@@ -59,11 +59,11 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
   // Mobile/Tablet Layout (< 1024px)
   if (isMobile) {
     return (
-      <div className="min-h-screen w-full flex flex-col">
+      <div className="min-h-screen w-full max-w-full overflow-x-hidden flex flex-col">
         <MobileHeader title={title} />
         <SubscriptionBanner />
-        <main className="flex-1 flex flex-col min-h-0">
-          <div className="flex-1">
+        <main className="flex-1 flex flex-col min-h-0 max-w-full overflow-x-hidden">
+          <div className="flex-1 max-w-full">
             <PageFade key={String(title)}>
               {children}
             </PageFade>
@@ -92,18 +92,18 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
   // Desktop Layout (≥ 1024px)
   return (
     <SidebarProvider>
-      <div className="min-h-screen w-full flex">
+      <div className="min-h-screen w-full max-w-full overflow-x-hidden flex">
         <AppSidebar />
-        <SidebarInset className="flex-1 flex flex-col min-h-0">
+        <SidebarInset className="flex-1 flex flex-col min-h-0 max-w-0">
           <SubscriptionBanner />
-          <div className="p-4 md:p-6 flex flex-col flex-1 min-h-0">
-          <header className="mb-4 md:mb-6">
-            <div className="flex items-center justify-between">
-              <h1 className="text-xl md:text-2xl font-bold">{title ?? 'Dashboard'}</h1>
+          <div className="p-4 md:p-6 flex flex-col flex-1 min-h-0 max-w-full overflow-x-hidden">
+          <header className="mb-4 md:mb-6 min-w-0">
+            <div className="flex items-center justify-between min-w-0">
+              <h1 className="text-xl md:text-2xl font-bold truncate min-w-0">{title ?? 'Dashboard'}</h1>
               <RoleIndicator size="default" />
             </div>
           </header>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <PageFade key={String(title)}>
               {children}
             </PageFade>

@@ -194,25 +194,27 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
   }
 
   return (
-    <Card className="p-6">
+    <Card className="p-4 sm:p-6 max-w-full overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h3 className="text-xl font-bold flex items-center gap-2">
-            <Users className="h-5 w-5" />
+      <div className="flex items-center justify-between mb-6 min-w-0 gap-4">
+        <div className="min-w-0 flex-1">
+          <h3 className="text-xl font-bold flex items-center gap-2 truncate">
+            <Users className="h-5 w-5 flex-shrink-0" />
             Team Members
           </h3>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground mt-1 truncate">
             Manage team members and pending invitations • {members.length} member{members.length !== 1 ? 's' : ''}
           </p>
         </div>
         <RequireRole role="owner" fallback={null}>
           <Button
             onClick={() => setShowInviteModal(true)}
-            className="gap-2"
+            className="gap-2 flex-shrink-0"
+            size="sm"
           >
             <UserPlus className="h-4 w-4" />
-            Invite Worker
+            <span className="hidden sm:inline">Invite Worker</span>
+            <span className="sm:hidden">Invite</span>
           </Button>
         </RequireRole>
       </div>
@@ -230,18 +232,18 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
       {/* Seat limit warning */}
       <RequireRole role="owner" fallback={null}>
         {members.length >= 5 && (
-          <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-orange-600" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-orange-800">
+          <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg overflow-hidden">
+            <div className="flex items-center gap-2 min-w-0">
+              <AlertCircle className="h-4 w-4 text-orange-600 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-orange-800 truncate">
                   Approaching seat limit
                 </p>
-                <p className="text-xs text-orange-700">
+                <p className="text-xs text-orange-700 truncate">
                   You have {members.length}/5 seats used. Consider upgrading for more team members.
                 </p>
               </div>
-              <Button variant="outline" size="sm" className="border-orange-300 text-orange-700 hover:bg-orange-100">
+              <Button variant="outline" size="sm" className="border-orange-300 text-orange-700 hover:bg-orange-100 flex-shrink-0 hidden sm:flex">
                 Upgrade Plan
               </Button>
             </div>
@@ -280,19 +282,19 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
               )}
             </div>
           ) : (
-            <div className="grid gap-3">
+            <div className="space-y-3">
               {filteredMembers.map((member) => (
                 <div
                   key={member.id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/20 transition-colors"
+                  className="flex items-start sm:items-center justify-between p-3 sm:p-4 border rounded-lg hover:bg-muted/20 transition-colors min-w-0 gap-3"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium truncate">{member.email}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                      <span className="font-medium truncate min-w-0 text-sm sm:text-base">{member.email}</span>
+                      <div className="flex items-center gap-2 flex-wrap">
                         <Badge 
                           variant={member.role === 'owner' ? 'default' : 'secondary'}
-                          className="flex items-center gap-1"
+                          className="flex items-center gap-1 text-xs"
                         >
                           {member.role === 'owner' && <Shield className="h-3 w-3" />}
                           {member.role}
@@ -303,27 +305,29 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
                           </Badge>
                         )}
                       </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        {member.joined_at ? (
-                          <span>Joined {new Date(member.joined_at).toLocaleDateString()}</span>
-                        ) : (
-                          <span className="flex items-center gap-1">
-                            <Mail className="h-3 w-3" />
-                            Invited {new Date(member.invited_at).toLocaleDateString()}
-                          </span>
-                        )}
-                        {member.name && (
-                          <span>• {member.name}</span>
-                        )}
-                      </div>
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
+                      {member.joined_at ? (
+                        <span className="truncate">Joined {new Date(member.joined_at).toLocaleDateString()}</span>
+                      ) : (
+                        <span className="flex items-center gap-1 truncate">
+                          <Mail className="h-3 w-3 flex-shrink-0" />
+                          Invited {new Date(member.invited_at).toLocaleDateString()}
+                        </span>
+                      )}
+                      {member.name && (
+                        <span className="truncate">• {member.name}</span>
+                      )}
                     </div>
                   </div>
                   
-                  <TeamMemberActions
-                    member={member}
-                    businessId={businessId}
-                    isLastOwner={member.role === 'owner' && ownerCount === 1}
-                  />
+                  <div className="flex-shrink-0">
+                    <TeamMemberActions
+                      member={member}
+                      businessId={businessId}
+                      isLastOwner={member.role === 'owner' && ownerCount === 1}
+                    />
+                  </div>
                 </div>
               ))}
             </div>
@@ -353,7 +357,7 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
               )}
             </div>
           ) : (
-            <div className="grid gap-3">
+            <div className="space-y-3">
               {filteredInvites.map((invite) => {
                 const isExpired = new Date(invite.expires_at) < new Date();
                 const userStatus = userExistence[invite.email];
@@ -369,15 +373,15 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
                 return (
                   <div
                     key={invite.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/20 transition-colors"
+                    className="flex items-start sm:items-center justify-between p-3 sm:p-4 border rounded-lg hover:bg-muted/20 transition-colors min-w-0 gap-3"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium truncate">{invite.email}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                        <span className="font-medium truncate min-w-0 text-sm sm:text-base">{invite.email}</span>
+                        <div className="flex items-center gap-2 flex-wrap">
                           <Badge 
                             variant={isExpired ? "destructive" : "outline"} 
-                            className="flex items-center gap-1"
+                            className="flex items-center gap-1 text-xs"
                           >
                             <Clock className="h-3 w-3" />
                             {isExpired ? "Expired" : "Pending"}
@@ -386,28 +390,33 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
                             {invite.role}
                           </Badge>
                         </div>
-                        <div className="text-sm text-muted-foreground">
+                      </div>
+                      <div className="text-xs sm:text-sm text-muted-foreground">
+                        <div className="truncate">
                           Sent {new Date(invite.created_at).toLocaleDateString()} • 
                           Expires {new Date(invite.expires_at).toLocaleDateString()}
-                          {invite.profiles?.email && (
-                            <span className="ml-2">• Invited by {invite.profiles.email}</span>
-                          )}
                         </div>
+                        {invite.profiles?.email && (
+                          <div className="truncate mt-1">
+                            Invited by {invite.profiles.email}
+                          </div>
+                        )}
                       </div>
                     </div>
                     
                     <RequireRole role="owner" fallback={null}>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 flex-shrink-0">
                         {!isExpired && (
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleResendInvite(invite.id, invite.email)}
                             disabled={isButtonDisabled}
-                            className="flex items-center gap-2"
+                            className="flex items-center gap-2 text-xs sm:text-sm"
                           >
-                            <Send className="h-4 w-4" />
-                            {buttonText}
+                            <Send className="h-3 w-3 sm:h-4 sm:w-4" />
+                            <span className="hidden sm:inline">{buttonText}</span>
+                            <span className="sm:hidden">{buttonText.slice(0, 6)}</span>
                           </Button>
                         )}
                         <Button
@@ -415,10 +424,11 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
                           size="sm"
                           onClick={() => handleRevokeInvite(invite.id, invite.email)}
                           disabled={revokeInvite.isPending}
-                          className="flex items-center gap-2 text-destructive hover:text-destructive"
+                          className="flex items-center gap-2 text-destructive hover:text-destructive text-xs sm:text-sm"
                         >
-                          <X className="h-4 w-4" />
-                          {isExpired ? "Remove" : "Revoke"}
+                          <X className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <span className="hidden sm:inline">{isExpired ? "Remove" : "Revoke"}</span>
+                          <span className="sm:hidden">{isExpired ? "Rem" : "Rev"}</span>
                         </Button>
                       </div>
                     </RequireRole>
