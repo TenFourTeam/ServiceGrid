@@ -15,7 +15,7 @@ export default function BusinessLogo({ src, alt = "Logo", size = 24, className }
   // Synchronously resolve a last-known logo from localStorage to avoid initial fallback blink
   let lastKnown: string | undefined;
   try {
-    const raw = localStorage.getItem('tenfour-lawn-store-v1');
+    const raw = localStorage.getItem('ServiceGrid-lawn-store-v1');
     if (raw) {
       const parsed = JSON.parse(raw);
       const data = parsed && typeof parsed === 'object' && 'version' in parsed && 'data' in parsed ? parsed.data : parsed;

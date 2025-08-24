@@ -38,11 +38,11 @@ Managing third-party involvement.
 
 - Stripe for payment processing.
 - Cloud providers under NDA.
-- List updated at tenfour.com/subprocessors.
+- List updated at ServiceGrid.com/subprocessors.
 
 ## 5. Data Subject Rights
 
 Supporting user control.
 
 - Assist with access, correction, or deletion requests.
-- Contact privacy@tenfour.com for support.
+- Contact privacy@ServiceGrid.com for support.

@@ -81,7 +81,7 @@ const tokenRefreshHandler = http.post(
     
     // Retry succeeds
     return HttpResponse.json({
-      data: { fullName: 'Alex Rivera', businessName: 'Tenfour Co', phoneE164: '+15551234567' }
+      data: { fullName: 'Alex Rivera', businessName: 'ServiceGrid Co', phoneE164: '+15551234567' }
     });
   }
 );
@@ -149,7 +149,7 @@ describe('Profile Mutation Flow', () => {
       renderWithProviders(<TestProfileForm />);
       
       await user.type(screen.getByPlaceholderText('Full Name'), 'Alex Rivera');
-      await user.type(screen.getByPlaceholderText('Business Name'), 'Tenfour Co');
+      await user.type(screen.getByPlaceholderText('Business Name'), 'ServiceGrid Co');
       await user.type(screen.getByPlaceholderText('Phone'), '5551234567');
       await user.click(screen.getByRole('button', { name: /save/i }));
       
@@ -171,7 +171,7 @@ describe('Profile Mutation Flow', () => {
       
       // Fill form
       await user.type(screen.getByPlaceholderText('Full Name'), 'Alex Rivera');
-      await user.type(screen.getByPlaceholderText('Business Name'), 'Tenfour Co');
+      await user.type(screen.getByPlaceholderText('Business Name'), 'ServiceGrid Co');
       await user.type(screen.getByPlaceholderText('Phone'), '(555) 123-4567');
       
       // Submit
@@ -205,7 +205,7 @@ describe('Profile Mutation Flow', () => {
       renderWithProviders(<TestProfileForm />);
       
       await user.type(screen.getByPlaceholderText('Full Name'), 'Alex Rivera');
-      await user.type(screen.getByPlaceholderText('Business Name'), 'Tenfour Co');
+      await user.type(screen.getByPlaceholderText('Business Name'), 'ServiceGrid Co');
       
       const submitButton = screen.getByRole('button', { name: /save/i });
       

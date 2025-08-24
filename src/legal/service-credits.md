@@ -13,7 +13,7 @@ description: Defining credits for service interruptions.
 Determining when credits apply.
 
 - Credits issued for service downtime exceeding 2 hours.
-- Reported via support@tenfourproject.com within 7 days.
+- Reported via support@ServiceGridproject.com within 7 days.
 
 ## 2. Credit Calculation
 

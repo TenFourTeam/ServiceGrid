@@ -21,7 +21,7 @@ const server = setupServer(
     return HttpResponse.json({
       data: {
         fullName: 'Alex Rivera',
-        businessName: 'Tenfour Co',
+        businessName: 'ServiceGrid Co',
         phoneE164: '+15551234567'
       }
     });
@@ -78,7 +78,7 @@ describe('Query Invalidation', () => {
       // Trigger mutation
       result.current.updateProfile.mutate({
         fullName: 'Alex Rivera',
-        businessName: 'Tenfour Co',
+        businessName: 'ServiceGrid Co',
         phoneRaw: '5551234567'
       });
       
@@ -102,7 +102,7 @@ describe('Query Invalidation', () => {
       
       result.current.updateProfile.mutate({
         fullName: 'Alex Rivera',
-        businessName: 'Tenfour Co', 
+        businessName: 'ServiceGrid Co', 
         phoneRaw: '5551234567'
       });
       
@@ -124,7 +124,7 @@ describe('Query Invalidation', () => {
       
       result.current.updateProfile.mutate({
         fullName: 'Alex Rivera',
-        businessName: 'Tenfour Co',
+        businessName: 'ServiceGrid Co',
         phoneRaw: '5551234567'
       });
       
@@ -158,7 +158,7 @@ describe('Query Invalidation', () => {
       
       result.current.updateProfile.mutate({
         fullName: 'Alex Rivera',
-        businessName: 'Tenfour Co',
+        businessName: 'ServiceGrid Co',
         phoneRaw: '5551234567'
       });
       
@@ -187,7 +187,7 @@ describe('Query Invalidation', () => {
       
       result.current.updateProfile.mutate({
         fullName: 'Alex Rivera',
-        businessName: 'Tenfour Co',
+        businessName: 'ServiceGrid Co',
         phoneRaw: '5551234567'
       });
       
@@ -217,7 +217,7 @@ describe('Query Invalidation', () => {
       
       result.current.updateProfile.mutate({
         fullName: 'Alex Rivera',
-        businessName: 'Tenfour Co',
+        businessName: 'ServiceGrid Co',
         phoneRaw: 'invalid-phone'
       });
       
@@ -244,7 +244,7 @@ describe('Query Invalidation', () => {
       
       result.current.updateProfile.mutate({
         fullName: 'Alex Rivera',
-        businessName: 'Tenfour Co',
+        businessName: 'ServiceGrid Co',
         phoneRaw: '5551234567'
       });
       

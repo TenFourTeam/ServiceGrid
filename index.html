@@ -24,7 +24,7 @@
     <script>
       (function () {
         try {
-          var raw = localStorage.getItem('tenfour-lawn-store-v1');
+          var raw = localStorage.getItem('ServiceGrid-lawn-store-v1');
           if (!raw) return;
           var parsed = JSON.parse(raw);
           var data = (parsed && typeof parsed === 'object' && 'version' in parsed && 'data' in parsed) ? parsed.data : parsed;

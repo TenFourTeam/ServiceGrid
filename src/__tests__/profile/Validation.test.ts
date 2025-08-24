@@ -6,7 +6,7 @@ describe('Profile Validation', () => {
     it('accepts valid profile data', () => {
       const validData = {
         fullName: 'Alex Rivera',
-        businessName: 'Tenfour Co',
+        businessName: 'ServiceGrid Co',
         phoneRaw: '(555) 123-4567'
       };
       
@@ -17,7 +17,7 @@ describe('Profile Validation', () => {
     it('rejects empty name', () => {
       const invalidData = {
         fullName: '',
-        businessName: 'Tenfour Co',
+        businessName: 'ServiceGrid Co',
         phoneRaw: '5551234567'
       };
       
@@ -44,7 +44,7 @@ describe('Profile Validation', () => {
     it('rejects short phone numbers', () => {
       const invalidData = {
         fullName: 'Alex Rivera',
-        businessName: 'Tenfour Co',
+        businessName: 'ServiceGrid Co',
         phoneRaw: '123'
       };
       
@@ -56,7 +56,7 @@ describe('Profile Validation', () => {
     it('allows empty phone', () => {
       const validData = {
         fullName: 'Alex Rivera',
-        businessName: 'Tenfour Co',
+        businessName: 'ServiceGrid Co',
         phoneRaw: ''
       };
       

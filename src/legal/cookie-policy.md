@@ -34,7 +34,7 @@ Describing purposes served.
 Offering control options.
 
 - Adjust settings in your browser to disable non-essential cookies.
-- Opt-out via privacy@tenfour.com.
+- Opt-out via privacy@ServiceGrid.com.
 
 ## 5. Changes to This Policy
 
