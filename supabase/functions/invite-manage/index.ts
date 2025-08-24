@@ -147,7 +147,7 @@ serve(async (req: Request) => {
           console.log('Sending invitation email to:', invite.email);
           
           const emailResponse = await resend.emails.send({
-            from: 'Lawn Flow <onboarding@resend.dev>',
+            from: Deno.env.get('RESEND_FROM_EMAIL') || 'noreply@servicegrid.app',
             to: [invite.email],
             subject: `Reminder: You're invited to join ${business.name}`,
             html: `
