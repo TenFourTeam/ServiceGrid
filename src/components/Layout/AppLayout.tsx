@@ -3,7 +3,7 @@ import { ReactNode, useEffect, useState } from 'react';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/Layout/AppSidebar';
 import MobileHeader from '@/components/Layout/MobileHeader';
-import MobileNavigation from '@/components/Layout/MobileNavigation';
+
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { PageFade } from '@/components/Motion/PageFade';
 import { SubscriptionBanner } from '@/components/Onboarding/SubscriptionBanner';
@@ -62,14 +62,13 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
       <div className="min-h-screen w-full flex flex-col">
         <MobileHeader title={title} />
         <SubscriptionBanner />
-        <main className="flex-1 flex flex-col min-h-0 pb-16">
+        <main className="flex-1 flex flex-col min-h-0">
           <div className="flex-1">
             <PageFade key={String(title)}>
               {children}
             </PageFade>
           </div>
         </main>
-        <MobileNavigation />
 
         {/* Onboarding Components */}
         <IntentPickerModal

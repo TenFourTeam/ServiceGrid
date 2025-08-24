@@ -1,7 +1,7 @@
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Menu, Settings, LogOut, Shield, FileText } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Menu, Settings, LogOut, Shield, FileText, Calendar as CalendarIcon, Receipt, Users, Wrench, Clock } from "lucide-react";
+import { useNavigate, NavLink, useLocation } from "react-router-dom";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useUserBusinesses } from "@/hooks/useUserBusinesses";
 import { useBusinessSwitcher } from "@/hooks/useBusinessSwitcher";
@@ -15,9 +15,20 @@ interface MobileHeaderProps {
   title?: string;
 }
 
+const allNavItems = [
+  { title: "Calendar", url: "/calendar", icon: CalendarIcon, workerAccess: true },
+  { title: "Timesheet", url: "/timesheet", icon: Clock, workerAccess: true },
+  { title: "Work Orders", url: "/work-orders", icon: Wrench, workerAccess: false },
+  { title: "Quotes", url: "/quotes", icon: FileText, workerAccess: false },
+  { title: "Invoices", url: "/invoices", icon: Receipt, workerAccess: false },
+  { title: "Customers", url: "/customers", icon: Users, workerAccess: false },
+  { title: "Team", url: "/team", icon: Shield, workerAccess: false },
+];
+
 export default function MobileHeader({ title }: MobileHeaderProps) {
   const navigate = useNavigate();
-  const { businessName, businessLogoUrl, businessLightLogoUrl, businessId } = useBusinessContext();
+  const location = useLocation();
+  const { businessName, businessLogoUrl, businessLightLogoUrl, businessId, role } = useBusinessContext();
   const { data: userBusinesses } = useUserBusinesses();
   const { switchBusiness, isSwitching } = useBusinessSwitcher();
   const { user } = useUser();
@@ -26,6 +37,11 @@ export default function MobileHeader({ title }: MobileHeaderProps) {
   // Find the business where the user is an owner
   const ownedBusiness = userBusinesses?.find(b => b.role === 'owner');
   const isInOwnBusiness = businessId === ownedBusiness?.id;
+
+  // Filter items based on user role
+  const visibleNavItems = allNavItems.filter(item => role === 'owner' || item.workerAccess);
+
+  const isActivePath = (path: string) => location.pathname.startsWith(path);
 
   return (
     <header className="flex items-center justify-between p-4 border-b border-border bg-background">
@@ -75,9 +91,33 @@ export default function MobileHeader({ title }: MobileHeaderProps) {
               )}
 
               <div className="space-y-2">
+                {visibleNavItems.map((item) => (
+                  <Button
+                    key={item.url}
+                    variant="ghost"
+                    className={`w-full justify-start ${
+                      isActivePath(item.url)
+                        ? "bg-accent text-accent-foreground"
+                        : "hover:bg-muted/50"
+                    }`}
+                    onClick={() => navigate(item.url)}
+                  >
+                    <item.icon className="mr-2 h-4 w-4" />
+                    {item.title}
+                  </Button>
+                ))}
+              </div>
+
+              <Separator />
+
+              <div className="space-y-2">
                 <Button
                   variant="ghost"
-                  className="w-full justify-start"
+                  className={`w-full justify-start ${
+                    location.pathname === '/settings'
+                      ? "bg-accent text-accent-foreground"
+                      : "hover:bg-muted/50"
+                  }`}
                   onClick={() => navigate('/settings')}
                 >
                   <Settings className="mr-2 h-4 w-4" />
@@ -86,7 +126,11 @@ export default function MobileHeader({ title }: MobileHeaderProps) {
 
                 <Button
                   variant="ghost"
-                  className="w-full justify-start"
+                  className={`w-full justify-start ${
+                    location.pathname === '/legal'
+                      ? "bg-accent text-accent-foreground"
+                      : "hover:bg-muted/50"
+                  }`}
                   onClick={() => navigate('/legal')}
                 >
                   <FileText className="mr-2 h-4 w-4" />
