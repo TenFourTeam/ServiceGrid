@@ -94,7 +94,7 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
     <SidebarProvider>
       <div className="min-h-screen w-full max-w-full overflow-x-hidden flex">
         <AppSidebar />
-        <SidebarInset className="flex-1 flex flex-col min-h-0 max-w-0">
+        <SidebarInset className="flex-1 flex flex-col min-h-0 max-w-full overflow-x-hidden">
           <SubscriptionBanner />
           <div className="p-4 md:p-6 flex flex-col flex-1 min-h-0 max-w-full overflow-x-hidden">
           <header className="mb-4 md:mb-6 min-w-0">
