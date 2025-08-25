@@ -10,6 +10,14 @@ import { useQueryClient } from '@tanstack/react-query';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 import { invalidationHelpers } from '@/queries/keys';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import Papa from 'papaparse';
+
+interface CustomerImport {
+  name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+}
 
 interface SimpleCSVImportProps {
   open: boolean;
@@ -34,22 +42,67 @@ export function SimpleCSVImport({ open, onOpenChange, onImportComplete }: Simple
     }
   };
 
+  const parseCSV = (file: File): Promise<CustomerImport[]> => {
+    return new Promise((resolve, reject) => {
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        transformHeader: (header: string) => {
+          // Normalize header names to match our interface
+          const normalized = header.toLowerCase().trim();
+          if (normalized.includes('name')) return 'name';
+          if (normalized.includes('email')) return 'email';
+          if (normalized.includes('phone')) return 'phone';
+          if (normalized.includes('address')) return 'address';
+          return header;
+        },
+        complete: (results) => {
+          try {
+            const customers = results.data
+              .map((row: any) => ({
+                name: row.name?.trim() || '',
+                email: row.email?.trim() || '',
+                phone: row.phone?.trim() || undefined,
+                address: row.address?.trim() || undefined,
+              }))
+              .filter((customer: CustomerImport) => 
+                customer.name && customer.email && customer.email.includes('@')
+              );
+            
+            resolve(customers);
+          } catch (err) {
+            reject(new Error('Failed to parse CSV data'));
+          }
+        },
+        error: (error) => {
+          reject(new Error(`CSV parsing error: ${error.message}`));
+        }
+      });
+    });
+  };
+
   const handleImport = async () => {
     if (!file || !businessId) return;
 
     setImporting(true);
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('businessId', businessId);
+      // Parse CSV file
+      const customers = await parseCSV(file);
+      
+      if (customers.length === 0) {
+        toast.error('No valid customers found in CSV. Please check the format.');
+        return;
+      }
 
       const { data: result, error } = await authApi.invoke('bulk-import-customers', {
         method: 'POST',
-        body: formData,
-        headers: {}, // Let browser set Content-Type for FormData
+        body: JSON.stringify({ customers }),
+        headers: {
+          'Content-Type': 'application/json'
+        },
         toast: {
           success: false, // We'll show custom success message
-          loading: 'Importing customers...',
+          loading: `Importing ${customers.length} customers...`,
           error: 'Failed to import customers. Please check your file format.'
         }
       });
@@ -58,13 +111,14 @@ export function SimpleCSVImport({ open, onOpenChange, onImportComplete }: Simple
         throw new Error(error.message || 'Import failed');
       }
 
-      toast.success(`Successfully imported ${result.count} customers`);
+      toast.success(`Successfully imported ${result.imported} customers`);
       
       invalidationHelpers.customers(queryClient, businessId);
-      onImportComplete(result.count);
+      onImportComplete(result.imported);
       resetModal();
     } catch (error) {
       console.error('Import error:', error);
+      toast.error(error instanceof Error ? error.message : 'Import failed');
     } finally {
       setImporting(false);
     }
@@ -97,6 +151,10 @@ export function SimpleCSVImport({ open, onOpenChange, onImportComplete }: Simple
             />
             <p className="text-sm text-muted-foreground">
               CSV should include columns: Name, Email, Phone (optional), Address (optional)
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Example: Name,Email,Phone,Address<br/>
+              John Doe,john@example.com,555-1234,123 Main St
             </p>
           </div>
 
