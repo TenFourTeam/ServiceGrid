@@ -27,7 +27,7 @@ export function SimpleCSVImport({ open, onOpenChange, onImportComplete }: Simple
   const { getToken } = useClerkAuth();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const queryClient = useQueryClient();
-  const { businessId } = useBusinessContext();
+  const { businessId, canManage } = useBusinessContext();
   const [file, setFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
 
@@ -114,7 +114,7 @@ export function SimpleCSVImport({ open, onOpenChange, onImportComplete }: Simple
 
       const { data: result, error } = await authApi.invoke('bulk-import-customers', {
         method: 'POST',
-        body: JSON.stringify({ customers }),
+        body: JSON.stringify({ customers, businessId }),
         headers: {
           'Content-Type': 'application/json'
         },
@@ -173,6 +173,37 @@ export function SimpleCSVImport({ open, onOpenChange, onImportComplete }: Simple
     setFile(null);
     onOpenChange(false);
   };
+
+  // Show permission denied message for non-owners
+  if (!canManage) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5" />
+              Import Customers from CSV
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">
+                Only business owners can import customers from CSV files.
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Contact your business owner for help with importing customers.
+              </p>
+            </div>
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

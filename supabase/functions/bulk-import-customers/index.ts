@@ -46,23 +46,28 @@ serve(async (req) => {
       throw new Error(`Invalid JSON format: ${parseError.message}`);
     }
 
-    const { customers }: { customers: CustomerImport[] } = parsedBody;
+    const { customers, businessId }: { customers: CustomerImport[]; businessId: string } = parsedBody;
     console.log("✅ [bulk-import] Successfully parsed customers:", customers?.length || 0);
+    console.log("✅ [bulk-import] Business ID:", businessId);
 
     if (!Array.isArray(customers) || customers.length === 0) {
       throw new Error("No customers provided for import");
     }
 
-    // Get the business for this owner
-    const { data: business, error: businessError } = await supabase
-      .from("businesses")
-      .select("id")
-      .eq("owner_id", ownerId)
-      .limit(1)
-      .maybeSingle();
+    if (!businessId) {
+      throw new Error("Business ID is required");
+    }
 
-    if (businessError) throw businessError;
-    if (!business) throw new Error("Business not found");
+    // Validate that the user can manage this business (owner-only check)
+    const { data: canManage } = await supabase.rpc('can_manage_business', {
+      p_business_id: businessId
+    });
+
+    if (!canManage) {
+      throw new Error("Permission denied. Only business owners can import customers.");
+    }
+
+    console.log("✅ [bulk-import] User has management permissions for business:", businessId);
 
     // Filter out duplicate emails if they exist
     const existingEmails = await Promise.all(
@@ -101,7 +106,7 @@ serve(async (req) => {
     const customersToInsert = uniqueCustomers.map(customer => ({
       name: customer.name.trim(),
       email: customer.email.trim(),
-      business_id: business.id,
+      business_id: businessId,
       owner_id: ownerId,
     }));
 
