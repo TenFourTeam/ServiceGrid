@@ -15,33 +15,18 @@ serve(async (req) => {
     console.log("🔍 [bulk-import] Request method:", req.method);
     console.log("🔍 [bulk-import] Content-Type:", req.headers.get("content-type"));
     
-    const { userId: ownerId, supaAdmin: supabase } = await requireCtx(req);
+    const { userId: ownerId, businessId, supaAdmin: supabase } = await requireCtx(req);
     
     // Parse JSON body
     const parsedBody = await req.json();
 
-    const { customers, businessId }: { customers: CustomerImport[]; businessId: string } = parsedBody;
+    const { customers }: { customers: CustomerImport[] } = parsedBody;
     console.log("✅ [bulk-import] Successfully parsed customers:", customers?.length || 0);
     console.log("✅ [bulk-import] Business ID:", businessId);
 
     if (!Array.isArray(customers) || customers.length === 0) {
       throw new Error("No customers provided for import");
     }
-
-    if (!businessId) {
-      throw new Error("Business ID is required");
-    }
-
-    // Validate that the user can manage this business (owner-only check)
-    const { data: canManage } = await supabase.rpc('can_manage_business', {
-      p_business_id: businessId
-    });
-
-    if (!canManage) {
-      throw new Error("Permission denied. Only business owners can import customers.");
-    }
-
-    console.log("✅ [bulk-import] User has management permissions for business:", businessId);
 
     // Filter out duplicate emails if they exist
     const existingEmails = await Promise.all(
