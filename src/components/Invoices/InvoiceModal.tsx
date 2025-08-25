@@ -133,7 +133,7 @@ export default function InvoiceModal({
       if (invoice) {
         // Update existing invoice
         await authApi.invoke('invoices-crud', {
-          method: 'PATCH',
+          method: 'PUT',
           body: { id: invoice.id, ...data },
           toast: {
             success: `Invoice ${invoice.number} updated successfully`,
@@ -242,7 +242,7 @@ export default function InvoiceModal({
 
     try {
       await authApi.invoke('invoices-crud', {
-        method: 'PATCH',
+        method: 'PUT',
         body: {
           id: invoice.id,
           status: 'Sent',
