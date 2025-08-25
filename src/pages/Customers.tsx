@@ -7,11 +7,12 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { MoreHorizontal, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
 import { CustomerBottomModal } from '@/components/Customers/CustomerBottomModal';
 import { CustomerSearchFilter } from '@/components/Customers/CustomerSearchFilter';
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useCustomersData } from '@/queries/unified';
 import { SimpleCSVImport } from '@/components/Onboarding/SimpleCSVImport';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useCustomerOperations } from '@/hooks/useCustomerOperations';
+import { toast } from "sonner";
 import CustomerErrorBoundary from '@/components/ErrorBoundaries/CustomerErrorBoundary';
 
 export default function CustomersPage() {
@@ -26,18 +27,6 @@ export default function CustomersPage() {
   const [customerToDelete, setCustomerToDelete] = useState<any>(null);
   
   const { deleteCustomer, isDeletingCustomer } = useCustomerOperations();
-  
-  // Track deletion state to close dialog when complete
-  const wasDeletingRef = useRef(false);
-  
-  useEffect(() => {
-    if (wasDeletingRef.current && !isDeletingCustomer) {
-      // Deletion just finished, close dialog
-      setDeleteDialogOpen(false);
-      setCustomerToDelete(null);
-    }
-    wasDeletingRef.current = isDeletingCustomer;
-  }, [isDeletingCustomer]);
   
   // Search and sort state
   const [searchQuery, setSearchQuery] = useState("");
@@ -128,12 +117,21 @@ export default function CustomersPage() {
       <ChevronDown className="h-4 w-4 ml-1" />;
   };
 
-  function handleDeleteCustomer() {
+  const handleDeleteCustomer = async () => {
     if (!customerToDelete) return;
     
-    console.info('[CustomersPage] Starting customer deletion:', customerToDelete.id);
-    deleteCustomer(customerToDelete.id);
-    // Dialog will close automatically when deletion completes
+    try {
+      console.info('[CustomersPage] Starting customer deletion:', customerToDelete.id);
+      await deleteCustomer.mutateAsync(customerToDelete.id);
+      toast.success("Customer deleted successfully");
+      setDeleteDialogOpen(false);
+      setCustomerToDelete(null);
+    } catch (error) {
+      console.error('[CustomersPage] Delete failed:', error);
+      toast.error("Failed to delete customer", {
+        description: error instanceof Error ? error.message : "An unexpected error occurred"
+      });
+    }
   }
 
   return (

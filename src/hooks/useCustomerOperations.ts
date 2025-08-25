@@ -15,12 +15,7 @@ export function useCustomerOperations() {
     mutationFn: async (customerId: string) => {
       const { data, error } = await authApi.invoke('customers-crud', {
         method: 'DELETE',
-        body: { id: customerId },
-        toast: {
-          success: "Customer deleted successfully",
-          loading: "Deleting customer...",
-          error: "Failed to delete customer"
-        }
+        body: { id: customerId }
       });
       
       if (error) {
@@ -38,7 +33,7 @@ export function useCustomerOperations() {
   });
 
   return {
-    deleteCustomer: deleteMutation.mutate,
+    deleteCustomer: deleteMutation,
     isDeletingCustomer: deleteMutation.isPending,
     deleteError: deleteMutation.error
   };
