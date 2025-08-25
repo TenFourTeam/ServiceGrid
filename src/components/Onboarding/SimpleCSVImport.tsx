@@ -69,29 +69,29 @@ export function SimpleCSVImport({ open, onOpenChange, onImportComplete }: Simple
     return firstName || lastName || '';
   };
 
-  const synthesizeAddress = (row: any): string => {
+  const synthesizeAddress = (row: any): string | undefined => {
     // Try direct address field first
-    if (row.address) {
-      return row.address;
+    if (row.address && row.address.trim()) {
+      return row.address.trim();
     }
     
     // Build address from components
     const parts: string[] = [];
     
     // Street address (could be address1 + address2 or just street)
-    const street1 = row.street || row.address1 || row.street_address || '';
-    const street2 = row.address2 || '';
+    const street1 = (row.street || row.address1 || row.street_address || '').trim();
+    const street2 = (row.address2 || '').trim();
     
     if (street1) parts.push(street1);
     if (street2) parts.push(street2);
     
     // City
-    const city = row.city || '';
+    const city = (row.city || '').trim();
     if (city) parts.push(city);
     
     // State and ZIP (combine these on same line)
-    const state = row.state || row.province || '';
-    const zip = row.zip || row.postal_code || row.zipcode || row.postcode || '';
+    const state = (row.state || row.province || '').trim();
+    const zip = (row.zip || row.postal_code || row.zipcode || row.postcode || '').trim();
     
     if (state && zip) {
       parts.push(`${state} ${zip}`);
@@ -101,7 +101,13 @@ export function SimpleCSVImport({ open, onOpenChange, onImportComplete }: Simple
       parts.push(zip);
     }
     
-    return parts.join(', ');
+    // Only return address if we have meaningful parts
+    if (parts.length === 0) {
+      return undefined;
+    }
+    
+    const address = parts.join(', ');
+    return address.length > 0 ? address : undefined;
   };
 
   const parseCSV = (file: File): Promise<CustomerImport[]> => {
