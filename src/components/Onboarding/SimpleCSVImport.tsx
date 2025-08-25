@@ -114,7 +114,7 @@ export function SimpleCSVImport({ open, onOpenChange, onImportComplete }: Simple
 
       const { data: result, error } = await authApi.invoke('bulk-import-customers', {
         method: 'POST',
-        body: { customers, businessId },
+        body: { customers },
         toast: {
           success: false, // We'll show custom success message
           loading: `Importing ${customers.length} customers...`,
