@@ -84,7 +84,14 @@ export function CustomerBottomModal({
 
   // Validation helper functions
   const validateEmail = (email: string): boolean => {
-    return email.trim() !== "" && EMAIL_REGEX.test(email.trim());
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) return false;
+    
+    // More comprehensive email validation
+    return EMAIL_REGEX.test(trimmedEmail) && 
+           trimmedEmail.includes('.') && 
+           trimmedEmail.split('@').length === 2 &&
+           trimmedEmail.split('@')[1].includes('.');
   };
 
   const validateName = (name: string): boolean => {
@@ -101,8 +108,15 @@ export function CustomerBottomModal({
     });
 
     if (!nameValid || !emailValid) {
-      if (!nameValid) toast.error("Name must be at least 2 characters long");
-      if (!emailValid) toast.error("Please enter a valid email address (e.g., user@example.com)");
+      // Show toast for each validation error
+      if (!nameValid) {
+        toast.error("Name must be at least 2 characters long");
+      }
+      if (!emailValid && formData.email.trim()) {
+        toast.error("Please enter a valid email address (e.g., user@example.com)");
+      } else if (!emailValid) {
+        toast.error("Email is required");
+      }
       return;
     }
 
