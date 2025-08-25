@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@clerk/clerk-react';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
-import { queryKeys } from '@/queries/keys';
+import { queryKeys, invalidationHelpers } from '@/queries/keys';
 
 
 export function useCustomerOperations() {
@@ -15,7 +15,12 @@ export function useCustomerOperations() {
     mutationFn: async (customerId: string) => {
       const { data, error } = await authApi.invoke('customers-crud', {
         method: 'DELETE',
-        body: { id: customerId }
+        body: { id: customerId },
+        toast: {
+          success: "Customer deleted successfully",
+          loading: "Deleting customer...",
+          error: "Failed to delete customer"
+        }
       });
       
       if (error) {
@@ -25,7 +30,7 @@ export function useCustomerOperations() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.data.customers(businessId || '') });
+      invalidationHelpers.customers(queryClient, businessId || '');
     },
     onError: (error: any) => {
       console.error('[useCustomerOperations] error:', error);
@@ -33,7 +38,7 @@ export function useCustomerOperations() {
   });
 
   return {
-    deleteCustomer: deleteMutation,
+    deleteCustomer: deleteMutation.mutate,
     isDeletingCustomer: deleteMutation.isPending,
     deleteError: deleteMutation.error
   };
