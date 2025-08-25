@@ -3,9 +3,7 @@ import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
 
 interface CustomerImport {
   name: string;
-  email: string;  // Now required
-  phone?: string;
-  address?: string;
+  email: string;
 }
 
 serve(async (req) => {
@@ -102,9 +100,7 @@ serve(async (req) => {
     // Prepare customers for bulk insert
     const customersToInsert = uniqueCustomers.map(customer => ({
       name: customer.name.trim(),
-      email: customer.email.trim(), // Required field
-      phone: customer.phone?.trim() || null,
-      address: customer.address?.trim() || null,
+      email: customer.email.trim(),
       business_id: business.id,
       owner_id: ownerId,
     }));
