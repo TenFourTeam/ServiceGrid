@@ -122,12 +122,10 @@ export default function CustomersPage() {
     
     try {
       await deleteCustomer.mutateAsync(customerToDelete.id);
-      toast.success("Customer deleted successfully");
       setDeleteDialogOpen(false);
       setCustomerToDelete(null);
     } catch (error) {
       console.error('[CustomersPage] Delete failed:', error);
-      toast.error("Failed to delete customer");
     }
   };
 
