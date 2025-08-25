@@ -11,6 +11,9 @@ import { useAuth } from '@clerk/clerk-react';
 import { createAuthEdgeApi } from "@/utils/authEdgeApi";
 import type { Customer } from "@/types";
 
+// Email validation regex - requires a valid email format
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 interface CustomerBottomModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -25,6 +28,12 @@ interface CustomerFormData {
   email: string;
   phone: string;
   address: string;
+}
+
+// Validation state interface
+interface ValidationState {
+  email: boolean;
+  name: boolean;
 }
 
 
@@ -45,6 +54,11 @@ export function CustomerBottomModal({
     email: "",
     address: "",
     phone: "",
+  });
+
+  const [validationErrors, setValidationErrors] = useState<ValidationState>({
+    email: false,
+    name: false,
   });
 
   // Update form data when customer prop changes
@@ -68,9 +82,27 @@ export function CustomerBottomModal({
 
   const [loading, setLoading] = useState(false);
 
+  // Validation helper functions
+  const validateEmail = (email: string): boolean => {
+    return email.trim() !== "" && EMAIL_REGEX.test(email.trim());
+  };
+
+  const validateName = (name: string): boolean => {
+    return name.trim().length >= 2;
+  };
+
   const handleSave = async () => {
-    if (!formData.name.trim() || !formData.email.trim()) {
-      toast.error("Name and email are required");
+    const nameValid = validateName(formData.name);
+    const emailValid = validateEmail(formData.email);
+    
+    setValidationErrors({
+      name: !nameValid,
+      email: !emailValid,
+    });
+
+    if (!nameValid || !emailValid) {
+      if (!nameValid) toast.error("Name must be at least 2 characters long");
+      if (!emailValid) toast.error("Please enter a valid email address (e.g., user@example.com)");
       return;
     }
 
@@ -117,7 +149,14 @@ export function CustomerBottomModal({
           
         if (error) {
           console.error("Error creating customer:", error);
-          toast.error(`Failed to create customer: ${error.message || 'Unknown error'}`);
+          // Show more specific error messages based on backend response
+          if (error.message && error.message.includes('invalid email format')) {
+            toast.error("Please enter a valid email address (e.g., user@example.com)");
+          } else if (error.message && error.message.includes('already exists')) {
+            toast.error("A customer with this email already exists");
+          } else {
+            toast.error(`Failed to create customer: ${error.message || 'Unknown error'}`);
+          }
           return;
         }
         
@@ -150,6 +189,10 @@ export function CustomerBottomModal({
         address: "",
         phone: "",
       });
+      setValidationErrors({
+        name: false,
+        email: false,
+      });
     }
     onOpenChange(newOpen);
   };
@@ -170,10 +213,19 @@ export function CustomerBottomModal({
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, name: e.target.value });
+                  if (validationErrors.name && validateName(e.target.value)) {
+                    setValidationErrors({ ...validationErrors, name: false });
+                  }
+                }}
                 placeholder="Customer name"
                 required
+                className={validationErrors.name ? "border-destructive" : ""}
               />
+              {validationErrors.name && (
+                <p className="text-sm text-destructive">Name must be at least 2 characters long</p>
+              )}
             </div>
             
             <div className="space-y-2">
@@ -182,10 +234,19 @@ export function CustomerBottomModal({
                 id="email"
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, email: e.target.value });
+                  if (validationErrors.email && validateEmail(e.target.value)) {
+                    setValidationErrors({ ...validationErrors, email: false });
+                  }
+                }}
                 placeholder="customer@example.com"
                 required
+                className={validationErrors.email ? "border-destructive" : ""}
               />
+              {validationErrors.email && (
+                <p className="text-sm text-destructive">Please enter a valid email address (e.g., user@example.com)</p>
+              )}
             </div>
             
             <div className="space-y-2">
