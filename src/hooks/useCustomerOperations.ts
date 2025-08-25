@@ -3,7 +3,7 @@ import { useAuth } from '@clerk/clerk-react';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { queryKeys } from '@/queries/keys';
-import { toast } from 'sonner';
+
 
 export function useCustomerOperations() {
   const { getToken } = useAuth();
@@ -15,7 +15,12 @@ export function useCustomerOperations() {
     mutationFn: async (customerId: string) => {
       const { data, error } = await authApi.invoke('customers-crud', {
         method: 'DELETE',
-        body: { id: customerId }
+        body: { id: customerId },
+        toast: {
+          success: "Customer deleted successfully",
+          loading: "Deleting customer...",
+          error: "Failed to delete customer"
+        }
       });
       
       if (error) {
@@ -26,10 +31,9 @@ export function useCustomerOperations() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.data.customers(businessId || '') });
-      toast.success('Customer deleted successfully');
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete customer');
+    onError: (error: any) => {
+      console.error('[useCustomerOperations] error:', error);
     }
   });
 
