@@ -15,6 +15,8 @@ import Papa from 'papaparse';
 interface CustomerImport {
   name: string;
   email: string;
+  phone?: string;
+  address?: string;
 }
 
 interface SimpleCSVImportProps {
@@ -67,6 +69,40 @@ export function SimpleCSVImport({ open, onOpenChange, onImportComplete }: Simple
     return firstName || lastName || '';
   };
 
+  const synthesizePhone = (row: any): string => {
+    // Look for various phone field names
+    const phoneFields = ['phone', 'mobile', 'cell', 'telephone', 'phone_number', 'mobile_number', 'cell_phone'];
+    for (const field of phoneFields) {
+      if (row[field]?.trim()) {
+        return row[field].trim();
+      }
+    }
+    return '';
+  };
+
+  const synthesizeAddress = (row: any): string => {
+    // Try single address field first
+    const singleAddressFields = ['address', 'street_address', 'location', 'full_address'];
+    for (const field of singleAddressFields) {
+      if (row[field]?.trim()) {
+        return row[field].trim();
+      }
+    }
+    
+    // Try to combine multiple address components
+    const street = row.street || row.street_address || row.address_line_1 || '';
+    const city = row.city || '';
+    const state = row.state || row.province || '';
+    const zip = row.zip || row.postal_code || row.zipcode || '';
+    
+    const components = [street, city, state, zip].filter(c => c?.trim());
+    if (components.length > 0) {
+      return components.join(', ');
+    }
+    
+    return '';
+  };
+
 
   const parseCSV = (file: File): Promise<CustomerImport[]> => {
     return new Promise((resolve, reject) => {
@@ -77,10 +113,17 @@ export function SimpleCSVImport({ open, onOpenChange, onImportComplete }: Simple
         complete: (results) => {
           try {
             const customers = results.data
-              .map((row: any) => ({
-                name: synthesizeName(row)?.trim() || '',
-                email: row.email?.trim() || '',
-              }))
+              .map((row: any) => {
+                const phone = synthesizePhone(row);
+                const address = synthesizeAddress(row);
+                
+                return {
+                  name: synthesizeName(row)?.trim() || '',
+                  email: row.email?.trim() || '',
+                  ...(phone && { phone }),
+                  ...(address && { address })
+                };
+              })
               .filter((customer: CustomerImport) => 
                 customer.name && customer.email && customer.email.includes('@')
               );
@@ -223,12 +266,14 @@ export function SimpleCSVImport({ open, onOpenChange, onImportComplete }: Simple
               className="cursor-pointer"
             />
             <p className="text-sm text-muted-foreground">
-              CSV should include: Name and Email (both required)
+              CSV should include: Name and Email (both required). Phone and Address are optional.
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              <strong>Required columns:</strong> Email<br/>
+              <strong>Required:</strong> Email<br/>
               <strong>Name fields:</strong> Name, Full_Name, or First_Name + Last_Name<br/>
-              <strong>Example:</strong> First_Name,Last_Name,Email
+              <strong>Phone fields:</strong> Phone, Mobile, Cell, Telephone<br/>
+              <strong>Address fields:</strong> Address, Street_Address, or Street + City + State + Zip<br/>
+              <strong>Example:</strong> First_Name,Last_Name,Email,Phone,Address
             </p>
           </div>
 

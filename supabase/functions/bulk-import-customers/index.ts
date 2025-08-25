@@ -1,9 +1,27 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
+import { parsePhoneNumber, isValidPhoneNumber } from 'https://deno.land/x/phone/mod.ts';
 
 interface CustomerImport {
   name: string;
   email: string;
+  phone?: string;
+  address?: string;
+}
+
+function normalizeToE164(phone: string, defaultCountry: string = 'US'): string {
+  if (!phone?.trim()) return '';
+  
+  try {
+    const phoneNumber = parsePhoneNumber(phone, defaultCountry as any);
+    if (phoneNumber && phoneNumber.isValid()) {
+      return phoneNumber.format('E.164');
+    }
+  } catch (e) {
+    console.warn('[phoneNormalization] Failed to parse phone:', phone, e);
+  }
+  
+  return '';
 }
 
 serve(async (req) => {
@@ -62,12 +80,29 @@ serve(async (req) => {
     }
 
     // Prepare customers for bulk insert
-    const customersToInsert = uniqueCustomers.map(customer => ({
-      name: customer.name.trim(),
-      email: customer.email.trim(),
-      business_id: businessId,
-      owner_id: ownerId,
-    }));
+    const customersToInsert = uniqueCustomers.map(customer => {
+      const customerData: any = {
+        name: customer.name.trim(),
+        email: customer.email.trim(),
+        business_id: businessId,
+        owner_id: ownerId,
+      };
+
+      // Add phone if provided and valid
+      if (customer.phone?.trim()) {
+        const normalizedPhone = normalizeToE164(customer.phone.trim());
+        if (normalizedPhone) {
+          customerData.phone = normalizedPhone;
+        }
+      }
+
+      // Add address if provided
+      if (customer.address?.trim()) {
+        customerData.address = customer.address.trim();
+      }
+
+      return customerData;
+    });
 
     // Bulk insert customers
     const { data: insertedCustomers, error: insertError } = await supabase
