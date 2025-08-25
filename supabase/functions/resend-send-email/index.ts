@@ -30,7 +30,7 @@ serve(async (req: Request): Promise<Response> => {
   const resendApiKey = Deno.env.get("RESEND_API_KEY");
   const fromEmail = Deno.env.get("RESEND_FROM_EMAIL");
   if (!resendApiKey || !fromEmail) {
-    console.error("Missing RESEND_API_KEY or RESEND_FROM_EMAIL");
+    console.error("Missing RESEND_API_KEY or RESEND_FROM_EMAIL environment variables");
     return new Response(JSON.stringify({ error: "Email sending not configured." }), {
       status: 500,
       headers: { "Content-Type": "application/json", ...getCorsHeaders(req) },
