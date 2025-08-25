@@ -4,9 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { MoreHorizontal, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
 import { CustomerBottomModal } from '@/components/Customers/CustomerBottomModal';
-import { useState, useEffect } from 'react';
+import { CustomerSearchFilter } from '@/components/Customers/CustomerSearchFilter';
+import { useState, useEffect, useMemo } from 'react';
 import { useCustomersData } from '@/queries/unified';
 import { useAuth } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -28,14 +29,52 @@ export default function CustomersPage() {
   const navigate = useNavigate();
   const { data: customers, isLoading, error } = useCustomersData();
   
-  const rows = customers || [];
-
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<any>(null);
   const [deleting, setDeleting] = useState(false);
+  
+  // Search and sort state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortConfig, setSortConfig] = useState<{
+    key: 'name' | 'email' | 'phone';
+    direction: 'asc' | 'desc';
+  } | null>(null);
+
+  // Filter and sort customers
+  const filteredAndSortedCustomers = useMemo(() => {
+    let filtered = customers || [];
+    
+    // Apply search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(customer => 
+        customer.name?.toLowerCase().includes(query) ||
+        customer.email?.toLowerCase().includes(query) ||
+        customer.phone?.toLowerCase().includes(query)
+      );
+    }
+    
+    // Apply sorting
+    if (sortConfig) {
+      filtered = [...filtered].sort((a, b) => {
+        const aValue = a[sortConfig.key] || '';
+        const bValue = b[sortConfig.key] || '';
+        
+        if (sortConfig.direction === 'asc') {
+          return aValue.localeCompare(bValue);
+        } else {
+          return bValue.localeCompare(aValue);
+        }
+      });
+    }
+    
+    return filtered;
+  }, [customers, searchQuery, sortConfig]);
+  
+  const rows = filteredAndSortedCustomers;
 
   function openNew() {
     setEditingId(null);
@@ -60,11 +99,31 @@ export default function CustomersPage() {
     }
   }, [location.search, navigate]);
 
-
   function openDeleteDialog(customer: any) {
     setCustomerToDelete(customer);
     setDeleteDialogOpen(true);
   }
+  
+  const handleSort = (key: 'name' | 'email' | 'phone') => {
+    setSortConfig(current => {
+      if (!current || current.key !== key) {
+        return { key, direction: 'asc' };
+      } else if (current.direction === 'asc') {
+        return { key, direction: 'desc' };
+      } else {
+        return null; // Clear sorting
+      }
+    });
+  };
+  
+  const getSortIcon = (key: 'name' | 'email' | 'phone') => {
+    if (!sortConfig || sortConfig.key !== key) {
+      return null;
+    }
+    return sortConfig.direction === 'asc' ? 
+      <ChevronUp className="h-4 w-4 ml-1" /> : 
+      <ChevronDown className="h-4 w-4 ml-1" />;
+  };
 
   async function deleteCustomer() {
     if (!customerToDelete) return;
@@ -115,42 +174,61 @@ export default function CustomersPage() {
             </div>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="text-muted-foreground">Loading customers…</div>
-            ) : error ? (
-              <div className="text-destructive">Error loading customers: {error.message}</div>
-            ) : (
+            <div className="space-y-4">
+              <CustomerSearchFilter
+                onSearch={setSearchQuery}
+                activeFilters={{ search: searchQuery }}
+              />
+              
+              {rows.length === 0 && searchQuery && (
+                <div className="text-center py-8">
+                  <div className="text-muted-foreground">
+                    No customers found matching "{searchQuery}"
+                  </div>
+                </div>
+              )}
+              
+              {isLoading ? (
+                <div className="text-muted-foreground">Loading customers…</div>
+              ) : error ? (
+                <div className="text-destructive">Error loading customers: {error.message}</div>
+              ) : rows.length > 0 ? (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Phone</TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted/50 select-none"
+                        onClick={() => handleSort('name')}
+                      >
+                        <div className="flex items-center">
+                          Name
+                          {getSortIcon('name')}
+                        </div>
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted/50 select-none"
+                        onClick={() => handleSort('email')}
+                      >
+                        <div className="flex items-center">
+                          Email
+                          {getSortIcon('email')}
+                        </div>
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted/50 select-none"
+                        onClick={() => handleSort('phone')}
+                      >
+                        <div className="flex items-center">
+                          Phone
+                          {getSortIcon('phone')}
+                        </div>
+                      </TableHead>
                       <TableHead>Address</TableHead>
                       <TableHead className="w-12"></TableHead>
                     </TableRow>
                   </TableHeader>
-                <TableBody>
-                  {rows.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-12">
-                        <div className="space-y-3">
-                          <div className="text-4xl">👥</div>
-                          <div className="text-lg font-medium">Add customers to get started</div>
-                          <div className="text-sm text-muted-foreground">
-                            Add them one by one or import your existing list.
-                          </div>
-                            <div className="flex gap-2 justify-center">
-                              <Button onClick={() => openNew()}>
-                                Add Customer
-                              </Button>
-                              <Button variant="outline" onClick={() => setCsvImportOpen(true)}>Import CSV</Button>
-                            </div>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    rows.map((c) => (
+                  <TableBody>
+                    {rows.map((c) => (
                       <TableRow 
                         key={c.id}
                         className="cursor-pointer hover:bg-muted/50 transition-colors"
@@ -182,11 +260,27 @@ export default function CustomersPage() {
                           </DropdownMenu>
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            )}
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : !searchQuery && customers?.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="space-y-3">
+                    <div className="text-4xl">👥</div>
+                    <div className="text-lg font-medium">Add customers to get started</div>
+                    <div className="text-sm text-muted-foreground">
+                      Add them one by one or import your existing list.
+                    </div>
+                    <div className="flex gap-2 justify-center">
+                      <Button onClick={() => openNew()}>
+                        Add Customer
+                      </Button>
+                      <Button variant="outline" onClick={() => setCsvImportOpen(true)}>Import CSV</Button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </div>
           </CardContent>
         </Card>
       </section>
