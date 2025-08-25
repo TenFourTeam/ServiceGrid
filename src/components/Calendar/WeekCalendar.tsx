@@ -174,7 +174,7 @@ const minuteOfDayFromAnchorOffset = (offset: number) => {
 
   async function createInvoiceFromJob(jobId: string) {
     try {
-      const { data, error } = await authApi.invoke('invoices', {
+      const { data, error } = await authApi.invoke('invoices-crud', {
         method: 'POST',
         body: { jobId },
         toast: {

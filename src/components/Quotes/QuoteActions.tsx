@@ -59,7 +59,7 @@ export function QuoteActions({ quote, onSendQuote }: QuoteActionsProps) {
     }
 
     try {
-      const { data: result } = await authApi.invoke('invoices', {
+      const { data: result } = await authApi.invoke('invoices-crud', {
         method: 'POST',
         body: {
           quoteId: quote.id,

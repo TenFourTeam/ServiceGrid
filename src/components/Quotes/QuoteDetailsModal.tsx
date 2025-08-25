@@ -279,7 +279,7 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
     setIsCreatingInvoice(true);
 
     try {
-      const { data: result } = await authApi.invoke('invoices', {
+      const { data: result } = await authApi.invoke('invoices-crud', {
         method: 'POST',
         body: {
           quoteId: quote.id,

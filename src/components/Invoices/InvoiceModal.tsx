@@ -132,7 +132,7 @@ export default function InvoiceModal({
 
       if (invoice) {
         // Update existing invoice
-        await authApi.invoke('invoices', {
+        await authApi.invoke('invoices-crud', {
           method: 'PATCH',
           body: { id: invoice.id, ...data },
           toast: {
@@ -143,7 +143,7 @@ export default function InvoiceModal({
         });
       } else {
         // Create new invoice
-        await authApi.invoke('invoices', {
+        await authApi.invoke('invoices-crud', {
           method: 'POST',
           body: data,
           toast: {
@@ -228,7 +228,7 @@ export default function InvoiceModal({
     if (!invoice || !businessId) return;
 
     try {
-      await authApi.invoke('invoices', {
+      await authApi.invoke('invoices-crud', {
         method: 'PATCH',
         body: {
           id: invoice.id,

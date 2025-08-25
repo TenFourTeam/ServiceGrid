@@ -95,7 +95,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
     setIsCreatingInvoice(true);
     
     try {
-      await authApi.invoke('invoices', {
+      await authApi.invoke('invoices-crud', {
         method: 'POST',
         body: { quoteId: currentQuoteId },
         toast: {
