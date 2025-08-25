@@ -12,7 +12,6 @@ import { useCustomersData } from '@/queries/unified';
 import { SimpleCSVImport } from '@/components/Onboarding/SimpleCSVImport';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useCustomerOperations } from '@/hooks/useCustomerOperations';
-import { toast } from "sonner";
 import CustomerErrorBoundary from '@/components/ErrorBoundaries/CustomerErrorBoundary';
 
 export default function CustomersPage() {
@@ -120,13 +119,12 @@ export default function CustomersPage() {
   const handleDeleteCustomer = async () => {
     if (!customerToDelete) return;
     
-    try {
-      await deleteCustomer.mutateAsync(customerToDelete.id);
-      setDeleteDialogOpen(false);
-      setCustomerToDelete(null);
-    } catch (error) {
-      console.error('[CustomersPage] Delete failed:', error);
-    }
+    deleteCustomer.mutate(customerToDelete.id, {
+      onSuccess: () => {
+        setDeleteDialogOpen(false);
+        setCustomerToDelete(null);
+      }
+    });
   };
 
   return (

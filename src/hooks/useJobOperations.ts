@@ -4,7 +4,7 @@ import { useBusinessContext } from './useBusinessContext';
 import { useLifecycleEmailIntegration } from './useLifecycleEmailIntegration';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 import { queryKeys } from '@/queries/keys';
-import { toast } from 'sonner';
+
 import type { Job } from '@/types';
 
 export function useCreateJob() {
@@ -18,7 +18,12 @@ export function useCreateJob() {
     mutationFn: async (jobData: Partial<Job>) => {
       const { data, error } = await authApi.invoke('jobs-crud', {
         method: 'POST',
-        body: jobData
+        body: jobData,
+        toast: {
+          success: 'Job created successfully!',
+          loading: 'Creating job...',
+          error: 'Failed to create job'
+        }
       });
 
       if (error) {
@@ -28,20 +33,16 @@ export function useCreateJob() {
       return data;
     },
     onSuccess: (data) => {
-      // Invalidate jobs query
       queryClient.invalidateQueries({ queryKey: queryKeys.data.jobs(businessId || '') });
       
-      // Trigger lifecycle email for first job milestone
       try {
         triggerJobScheduled();
       } catch (error) {
         console.error('[useCreateJob] Failed to trigger job milestone email:', error);
       }
-      
-      toast.success('Job created successfully!');
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create job');
+    onError: (error: any) => {
+      console.error('[useCreateJob] error:', error);
     }
   });
 }
@@ -56,7 +57,12 @@ export function useUpdateJob() {
     mutationFn: async ({ jobId, updates }: { jobId: string; updates: Partial<Job> }) => {
       const { data, error } = await authApi.invoke('jobs-crud', {
         method: 'PUT',
-        body: { id: jobId, ...updates }
+        body: { id: jobId, ...updates },
+        toast: {
+          success: 'Job updated successfully!',
+          loading: 'Updating job...',
+          error: 'Failed to update job'
+        }
       });
 
       if (error) {
@@ -66,12 +72,10 @@ export function useUpdateJob() {
       return data;
     },
     onSuccess: (data) => {
-      // Invalidate jobs query
       queryClient.invalidateQueries({ queryKey: queryKeys.data.jobs(businessId || '') });
-      toast.success('Job updated successfully!');
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update job');
+    onError: (error: any) => {
+      console.error('[useUpdateJob] error:', error);
     }
   });
 }

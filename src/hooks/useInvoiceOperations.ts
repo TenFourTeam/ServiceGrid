@@ -4,7 +4,7 @@ import { useBusinessContext } from './useBusinessContext';
 import { useLifecycleEmailIntegration } from './useLifecycleEmailIntegration';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 import { queryKeys } from '@/queries/keys';
-import { toast } from 'sonner';
+
 import type { Invoice } from './useInvoicesData';
 
 export function useCreateInvoice() {
@@ -18,7 +18,12 @@ export function useCreateInvoice() {
     mutationFn: async (invoiceData: Partial<Invoice>) => {
       const { data, error } = await authApi.invoke('invoices-crud', {
         method: 'POST',
-        body: invoiceData
+        body: invoiceData,
+        toast: {
+          success: 'Invoice created successfully!',
+          loading: 'Creating invoice...',
+          error: 'Failed to create invoice'
+        }
       });
 
       if (error) {
@@ -28,20 +33,16 @@ export function useCreateInvoice() {
       return data;
     },
     onSuccess: (data) => {
-      // Invalidate invoices query
       queryClient.invalidateQueries({ queryKey: queryKeys.data.invoices(businessId || '') });
       
-      // Trigger lifecycle email for first invoice milestone
       try {
         triggerInvoiceSent();
       } catch (error) {
         console.error('[useCreateInvoice] Failed to trigger invoice milestone email:', error);
       }
-      
-      toast.success('Invoice created successfully!');
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create invoice');
+    onError: (error: any) => {
+      console.error('[useCreateInvoice] error:', error);
     }
   });
 }
@@ -68,6 +69,11 @@ export function useSendInvoice() {
           recipientEmail,
           subject,
           message
+        },
+        toast: {
+          success: 'Invoice sent successfully!',
+          loading: 'Sending invoice...',
+          error: 'Failed to send invoice'
         }
       });
 
@@ -78,20 +84,16 @@ export function useSendInvoice() {
       return data;
     },
     onSuccess: (data) => {
-      // Invalidate invoices query
       queryClient.invalidateQueries({ queryKey: queryKeys.data.invoices(businessId || '') });
       
-      // Trigger lifecycle email for first invoice milestone
       try {
         triggerInvoiceSent();
       } catch (error) {
         console.error('[useSendInvoice] Failed to trigger invoice milestone email:', error);
       }
-      
-      toast.success('Invoice sent successfully!');
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to send invoice');
+    onError: (error: any) => {
+      console.error('[useSendInvoice] error:', error);
     }
   });
 }
@@ -106,7 +108,12 @@ export function useUpdateInvoice() {
     mutationFn: async ({ invoiceId, updates }: { invoiceId: string; updates: Partial<Invoice> }) => {
       const { data, error } = await authApi.invoke('invoices-crud', {
         method: 'PUT',
-        body: { id: invoiceId, ...updates }
+        body: { id: invoiceId, ...updates },
+        toast: {
+          success: 'Invoice updated successfully!',
+          loading: 'Updating invoice...',
+          error: 'Failed to update invoice'
+        }
       });
 
       if (error) {
@@ -116,12 +123,10 @@ export function useUpdateInvoice() {
       return data;
     },
     onSuccess: (data) => {
-      // Invalidate invoices query
       queryClient.invalidateQueries({ queryKey: queryKeys.data.invoices(businessId || '') });
-      toast.success('Invoice updated successfully!');
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update invoice');
+    onError: (error: any) => {
+      console.error('[useUpdateInvoice] error:', error);
     }
   });
 }

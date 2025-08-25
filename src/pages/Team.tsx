@@ -31,21 +31,16 @@ export default function Team() {
 
   const allBusinesses = businesses || [];
 
-  const handleSwitchBusiness = async (targetBusinessId: string) => {
-    try {
-      await switchBusiness.mutateAsync(targetBusinessId);
-    } catch (error) {
-      console.error('Failed to switch business:', error);
-    }
+  const handleSwitchBusiness = (targetBusinessId: string) => {
+    switchBusiness.mutate(targetBusinessId);
   };
 
-  const handleLeaveBusiness = async (businessIdToLeave: string) => {
-    try {
-      await leaveBusiness.mutateAsync({ businessId: businessIdToLeave });
-      setLeavingBusinessId(null);
-    } catch (error) {
-      console.error('Failed to leave business:', error);
-    }
+  const handleLeaveBusiness = (businessIdToLeave: string) => {
+    leaveBusiness.mutate({ businessId: businessIdToLeave }, {
+      onSuccess: () => {
+        setLeavingBusinessId(null);
+      }
+    });
   };
 
   return (

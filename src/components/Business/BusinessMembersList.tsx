@@ -10,7 +10,6 @@ import { useTeamOperations } from "@/hooks/useTeamOperations";
 import { TeamSearchFilter } from "@/components/Team/TeamSearchFilter";
 import { TeamMemberActions } from "@/components/Team/TeamMemberActions";
 import { UserPlus, Mail, Clock, Send, X, Users, AlertCircle, Shield } from "lucide-react";
-import { toast } from "sonner";
 import { RequireRole } from "@/components/Auth/RequireRole";
 
 interface BusinessMembersListProps {
@@ -124,62 +123,38 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
     setFilters(prev => ({ ...prev, status }));
   };
 
-  const handleRevokeInvite = async (inviteId: string, email: string) => {
+  const handleRevokeInvite = (inviteId: string, email: string) => {
     if (!confirm(`Are you sure you want to revoke the invitation for ${email}?`)) {
       return;
     }
 
-    try {
-      await revokeInvite.mutateAsync({ inviteId });
-      toast.success("Invitation revoked", {
-        description: `Invitation for ${email} has been revoked`,
-      });
-    } catch (error: any) {
-      toast.error("Error", {
-        description: error.message || "Failed to revoke invitation",
-      });
-    }
+    revokeInvite.mutate({ inviteId });
   };
 
   const handleResendInvite = async (inviteId: string, email: string) => {
     try {
-      // First check if user exists
       const userCheck = await checkUserExists.mutateAsync({ 
         email, 
         businessId: businessId || '' 
       });
 
       if (userCheck.exists && !userCheck.alreadyMember && userCheck.user) {
-        // User exists but isn't a member - add them directly
-        await addTeamMember.mutateAsync({
+        addTeamMember.mutate({
           userId: userCheck.user.id,
           businessId: businessId || '',
           role: 'worker'
-        });
-        
-        // Revoke the invite since they're now a member
-        await revokeInvite.mutateAsync({ inviteId });
-        
-        toast.success("User added to team", {
-          description: `${email} has been added directly to your team`,
+        }, {
+          onSuccess: () => {
+            revokeInvite.mutate({ inviteId });
+          }
         });
       } else if (userCheck.alreadyMember) {
-        // Already a member - just revoke the invite
-        await revokeInvite.mutateAsync({ inviteId });
-        toast.success("Invite removed", {
-          description: `${email} is already a team member`,
-        });
+        revokeInvite.mutate({ inviteId });
       } else {
-        // User doesn't exist - resend invite
-        await resendInvite.mutateAsync({ inviteId });
-        toast.success("Invitation resent", {
-          description: `Invitation for ${email} has been resent`,
-        });
+        resendInvite.mutate({ inviteId });
       }
     } catch (error: any) {
-      toast.error("Error", {
-        description: error.message || "Failed to process request",
-      });
+      console.error('[BusinessMembersList] resend error:', error);
     }
   };
 

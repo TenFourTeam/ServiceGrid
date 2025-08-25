@@ -36,15 +36,15 @@ export function JobMemberAssignments({ job }: JobMemberAssignmentsProps) {
     !assignedMembers.some(assigned => assigned.user_id === member.user_id)
   );
 
-  const handleAssign = async (member: BusinessMember) => {
-    await assignMembers.mutateAsync({
+  const handleAssign = (member: BusinessMember) => {
+    assignMembers.mutate({
       jobId: job.id,
       userIds: [member.user_id]
     });
   };
 
-  const handleUnassign = async (member: BusinessMember) => {
-    await unassignMembers.mutateAsync({
+  const handleUnassign = (member: BusinessMember) => {
+    unassignMembers.mutate({
       jobId: job.id,
       userIds: [member.user_id]
     });

@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useBusinessMemberOperations } from "@/hooks/useBusinessMembers";
-import { toast } from "sonner";
 import { UserPlus, X } from "lucide-react";
 
 interface EnhancedInviteModalProps {
@@ -35,47 +34,27 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
   };
 
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     const validEmails = emails.filter(email => email.trim() && email.includes('@'));
     if (validEmails.length === 0) {
-      toast.error("Invalid emails", {
-        description: "Please enter at least one valid email address",
-      });
       return;
     }
 
-    try {
-      const results = await Promise.allSettled(
-        validEmails.map(email => 
-          inviteWorker.mutateAsync({
-            email: email.trim(),
-          })
-        )
-      );
-
-      const successful = results.filter(result => result.status === 'fulfilled');
-      const failed = results.filter(result => result.status === 'rejected');
-
-      if (successful.length > 0) {
-        toast.success("Invitations sent", {
-          description: `Successfully sent ${successful.length} invitation email${successful.length > 1 ? 's' : ''}`,
-        });
-        handleClose();
-      }
-
-      if (failed.length > 0) {
-        toast.error("Some invitations failed", {
-          description: `${failed.length} invitation${failed.length > 1 ? 's' : ''} could not be sent`,
-        });
-      }
-
-    } catch (error) {
-      toast.error("Failed to send invitations", {
-        description: error instanceof Error ? error.message : "Unknown error",
+    // Use mutation for each email, hooks will handle toasting
+    validEmails.forEach(email => {
+      inviteWorker.mutate({
+        email: email.trim(),
+      }, {
+        onSuccess: () => {
+          // Only close on last success - simple approach
+          if (validEmails.indexOf(email) === validEmails.length - 1) {
+            handleClose();
+          }
+        }
       });
-    }
+    });
   };
 
   const handleClose = () => {
