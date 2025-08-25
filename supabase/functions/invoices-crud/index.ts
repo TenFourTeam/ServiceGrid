@@ -99,16 +99,34 @@ Deno.serve(async (req) => {
         invoiceData.due_at = dueAt;
       }
 
-      // Get next invoice number
-      const { data: numberData, error: numberError } = await supabase
-        .rpc('next_inv_number', { p_business_id: ctx.businessId });
+      // Get next invoice number - direct database operation like quotes-crud
+      const { data: businessData, error: businessError } = await supabase
+        .from('businesses')
+        .select('inv_prefix, inv_seq')
+        .eq('id', ctx.businessId)
+        .eq('owner_id', ctx.userId)
+        .single();
 
-      if (numberError) {
-        console.error('[invoices-crud] Number generation error:', numberError);
-        throw new Error(`Failed to generate invoice number: ${numberError.message}`);
+      if (businessError || !businessData) {
+        console.error('[invoices-crud] Business fetch error:', businessError);
+        throw new Error('Failed to fetch business data for invoice numbering');
       }
 
-      invoiceData.number = numberData;
+      // Increment sequence number
+      const newSeq = businessData.inv_seq + 1;
+      const { error: updateError } = await supabase
+        .from('businesses')
+        .update({ inv_seq: newSeq })
+        .eq('id', ctx.businessId)
+        .eq('owner_id', ctx.userId);
+
+      if (updateError) {
+        console.error('[invoices-crud] Sequence update error:', updateError);
+        throw new Error('Failed to update invoice sequence number');
+      }
+
+      const invoiceNumber = businessData.inv_prefix + newSeq.toString().padStart(3, '0');
+      invoiceData.number = invoiceNumber;
 
       // Create the invoice
       const { data, error } = await supabase
