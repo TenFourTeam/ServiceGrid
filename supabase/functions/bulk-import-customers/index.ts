@@ -17,34 +17,8 @@ serve(async (req) => {
     
     const { userId: ownerId, supaAdmin: supabase } = await requireCtx(req);
     
-    // Check if request has body
-    const contentLength = req.headers.get("content-length");
-    console.log("🔍 [bulk-import] Content-Length:", contentLength);
-    
-    if (!contentLength || contentLength === "0") {
-      console.error("❌ [bulk-import] Empty request body");
-      throw new Error("Request body is empty");
-    }
-
-    // Get request text first to debug
-    const requestText = await req.text();
-    console.log("🔍 [bulk-import] Request body length:", requestText.length);
-    console.log("🔍 [bulk-import] Request body preview:", requestText.substring(0, 200));
-    
-    if (!requestText || requestText.trim().length === 0) {
-      console.error("❌ [bulk-import] Request body is empty or whitespace");
-      throw new Error("Request body is empty or contains only whitespace");
-    }
-
-    // Parse JSON from text
-    let parsedBody;
-    try {
-      parsedBody = JSON.parse(requestText);
-    } catch (parseError) {
-      console.error("❌ [bulk-import] JSON parse error:", parseError);
-      console.error("❌ [bulk-import] Failed to parse body:", requestText);
-      throw new Error(`Invalid JSON format: ${parseError.message}`);
-    }
+    // Parse JSON body
+    const parsedBody = await req.json();
 
     const { customers, businessId }: { customers: CustomerImport[]; businessId: string } = parsedBody;
     console.log("✅ [bulk-import] Successfully parsed customers:", customers?.length || 0);
