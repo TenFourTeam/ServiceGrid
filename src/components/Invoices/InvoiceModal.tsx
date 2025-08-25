@@ -512,17 +512,10 @@ export default function InvoiceModal({
           Edit Invoice
         </Button>
 
-        {invoice.status === 'Draft' ? (
-          <Button onClick={() => setMode('send')}>
-            <Send className="h-4 w-4 mr-2" />
-            Send Email
-          </Button>
-        ) : (
-          <Button onClick={() => setMode('send')}>
-            <Send className="h-4 w-4 mr-2" />
-            Resend Email
-          </Button>
-        )}
+        <Button onClick={() => setMode('send')}>
+          <Eye className="h-4 w-4 mr-2" />
+          Email Preview
+        </Button>
       </>
     );
   };
