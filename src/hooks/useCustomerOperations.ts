@@ -37,9 +37,38 @@ export function useCustomerOperations() {
     }
   });
 
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (customerIds: string[]) => {
+      const { data, error } = await authApi.invoke('customers-bulk-delete', {
+        method: 'POST',
+        body: { customerIds },
+        toast: {
+          success: `Successfully deleted ${customerIds.length} customer${customerIds.length === 1 ? '' : 's'}`,
+          loading: `Deleting ${customerIds.length} customer${customerIds.length === 1 ? '' : 's'}...`,
+          error: "Failed to delete customers"
+        }
+      });
+      
+      if (error) {
+        throw new Error(error.message || 'Failed to delete customers');
+      }
+      
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.data.customers(businessId || '') });
+    },
+    onError: (error: any) => {
+      console.error('[useCustomerOperations] bulk delete error:', error);
+    }
+  });
+
   return {
     deleteCustomer: deleteMutation,
     isDeletingCustomer: deleteMutation.isPending,
-    deleteError: deleteMutation.error
+    deleteError: deleteMutation.error,
+    bulkDeleteCustomers: bulkDeleteMutation,
+    isBulkDeleting: bulkDeleteMutation.isPending,
+    bulkDeleteError: bulkDeleteMutation.error
   };
 }

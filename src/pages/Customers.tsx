@@ -13,6 +13,7 @@ import { SimpleCSVImport } from '@/components/Onboarding/SimpleCSVImport';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useCustomerOperations } from '@/hooks/useCustomerOperations';
 import CustomerErrorBoundary from '@/components/ErrorBoundaries/CustomerErrorBoundary';
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function CustomersPage() {
   const location = useLocation();
@@ -24,8 +25,10 @@ export default function CustomersPage() {
   const [csvImportOpen, setCsvImportOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<any>(null);
+  const [selectedCustomers, setSelectedCustomers] = useState<Set<string>>(new Set());
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   
-  const { deleteCustomer, isDeletingCustomer } = useCustomerOperations();
+  const { deleteCustomer, isDeletingCustomer, bulkDeleteCustomers, isBulkDeleting } = useCustomerOperations();
   
   // Search and sort state
   const [searchQuery, setSearchQuery] = useState("");
@@ -127,6 +130,34 @@ export default function CustomersPage() {
     });
   };
 
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedCustomers(new Set(filteredAndSortedCustomers.map(c => c.id)));
+    } else {
+      setSelectedCustomers(new Set());
+    }
+  };
+
+  const handleSelectCustomer = (customerId: string, checked: boolean) => {
+    const newSelected = new Set(selectedCustomers);
+    if (checked) {
+      newSelected.add(customerId);
+    } else {
+      newSelected.delete(customerId);
+    }
+    setSelectedCustomers(newSelected);
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedCustomers.size === 0) return;
+    bulkDeleteCustomers.mutate(Array.from(selectedCustomers), {
+      onSuccess: () => {
+        setSelectedCustomers(new Set());
+        setShowBulkDeleteDialog(false);
+      }
+    });
+  };
+
   return (
     <AppLayout title="Customers">
       <section className="space-y-4">
@@ -135,6 +166,16 @@ export default function CustomersPage() {
             <div className="flex items-center justify-between">
               <CardTitle>All Customers</CardTitle>
               <div className="flex gap-2">
+                {selectedCustomers.size > 0 && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setShowBulkDeleteDialog(true)}
+                    disabled={isBulkDeleting}
+                  >
+                    Delete {selectedCustomers.size} customer{selectedCustomers.size === 1 ? '' : 's'}
+                  </Button>
+                )}
                 <Button variant="outline" onClick={() => setCsvImportOpen(true)}>
                   Import CSV
                 </Button>
@@ -168,6 +209,12 @@ export default function CustomersPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-12">
+                          <Checkbox
+                            checked={selectedCustomers.size === filteredAndSortedCustomers.length && filteredAndSortedCustomers.length > 0}
+                            onCheckedChange={handleSelectAll}
+                          />
+                        </TableHead>
                         <TableHead 
                           className="cursor-pointer hover:bg-muted/50 select-none"
                           onClick={() => handleSort('name')}
@@ -206,6 +253,12 @@ export default function CustomersPage() {
                           className="cursor-pointer hover:bg-muted/50 transition-colors"
                           onClick={() => openEdit(c)}
                         >
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              checked={selectedCustomers.has(c.id)}
+                              onCheckedChange={(checked) => handleSelectCustomer(c.id, checked as boolean)}
+                            />
+                          </TableCell>
                           <TableCell>{c.name}</TableCell>
                           <TableCell>{c.email ?? ''}</TableCell>
                           <TableCell>{c.phone ?? ''}</TableCell>
@@ -224,7 +277,7 @@ export default function CustomersPage() {
                                     openDeleteDialog(c);
                                   }}
                                   className="text-destructive focus:text-destructive"
-                                  disabled={isDeletingCustomer}
+                                   disabled={isDeletingCustomer || isBulkDeleting}
                                 >
                                   <Trash2 className="h-4 w-4 mr-2" />
                                   Delete
@@ -303,6 +356,35 @@ export default function CustomersPage() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isDeletingCustomer ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Multiple Customers</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedCustomers.size} customer{selectedCustomers.size === 1 ? '' : 's'}? This action cannot be undone.
+              <div className="mt-3 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                <div className="text-sm font-medium text-destructive">
+                  ⚠️ This will also delete all related data:
+                </div>
+                <div className="text-sm text-muted-foreground mt-1">
+                  • Quotes, invoices, jobs, and payments for these customers
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isBulkDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleBulkDelete}
+              disabled={isBulkDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isBulkDeleting ? 'Deleting...' : `Delete ${selectedCustomers.size} customer${selectedCustomers.size === 1 ? '' : 's'}`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
