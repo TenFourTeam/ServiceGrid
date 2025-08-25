@@ -7,7 +7,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { MoreHorizontal, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
 import { CustomerBottomModal } from '@/components/Customers/CustomerBottomModal';
 import { CustomerSearchFilter } from '@/components/Customers/CustomerSearchFilter';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useCustomersData } from '@/queries/unified';
 import { SimpleCSVImport } from '@/components/Onboarding/SimpleCSVImport';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -25,10 +25,19 @@ export default function CustomersPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<any>(null);
   
-  const { deleteCustomer, isDeletingCustomer } = useCustomerOperations({
-    setDeleteDialogOpen,
-    setCustomerToDelete
-  });
+  const { deleteCustomer, isDeletingCustomer } = useCustomerOperations();
+  
+  // Track deletion state to close dialog when complete
+  const wasDeletingRef = useRef(false);
+  
+  useEffect(() => {
+    if (wasDeletingRef.current && !isDeletingCustomer) {
+      // Deletion just finished, close dialog
+      setDeleteDialogOpen(false);
+      setCustomerToDelete(null);
+    }
+    wasDeletingRef.current = isDeletingCustomer;
+  }, [isDeletingCustomer]);
   
   // Search and sort state
   const [searchQuery, setSearchQuery] = useState("");
@@ -124,7 +133,7 @@ export default function CustomersPage() {
     
     console.info('[CustomersPage] Starting customer deletion:', customerToDelete.id);
     deleteCustomer(customerToDelete.id);
-    // Dialog state will be managed by the mutation callbacks
+    // Dialog will close automatically when deletion completes
   }
 
   return (
