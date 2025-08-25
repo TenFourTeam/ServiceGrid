@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
 
       // Get next invoice number
       const { data: numberData, error: numberError } = await supabase
-        .rpc('next_inv_number', { p_business_id: ctx.businessId });
+        .rpc('next_inv_number', { p_business_id: ctx.businessId, p_user_id: ctx.userId });
 
       if (numberError) {
         console.error('[invoices-crud] Number generation error:', numberError);

@@ -1003,7 +1003,9 @@ export type Database = {
         Returns: string
       }
       next_inv_number: {
-        Args: { p_business_id: string }
+        Args:
+          | { p_business_id: string }
+          | { p_business_id: string; p_user_id: string }
         Returns: string
       }
       user_business_role: {
