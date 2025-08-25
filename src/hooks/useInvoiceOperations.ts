@@ -33,7 +33,25 @@ export function useCreateInvoice() {
       return data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.data.invoices(businessId || '') });
+      // Optimistic update: add the new invoice to cache immediately
+      if (data?.invoice) {
+        queryClient.setQueryData(queryKeys.data.invoices(businessId || ''), (oldData: any) => {
+          if (oldData) {
+            return {
+              ...oldData,
+              invoices: [data.invoice, ...oldData.invoices],
+              count: oldData.count + 1
+            };
+          }
+          return { invoices: [data.invoice], count: 1 };
+        });
+      }
+      
+      // Also invalidate and refetch for server confirmation
+      queryClient.invalidateQueries({ 
+        queryKey: queryKeys.data.invoices(businessId || ''),
+        refetchType: 'active'
+      });
       
       try {
         triggerInvoiceSent();
@@ -84,7 +102,10 @@ export function useSendInvoice() {
       return data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.data.invoices(businessId || '') });
+      queryClient.invalidateQueries({ 
+        queryKey: queryKeys.data.invoices(businessId || ''),
+        refetchType: 'active'
+      });
       
       try {
         triggerInvoiceSent();
@@ -123,7 +144,10 @@ export function useUpdateInvoice() {
       return data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.data.invoices(businessId || '') });
+      queryClient.invalidateQueries({ 
+        queryKey: queryKeys.data.invoices(businessId || ''),
+        refetchType: 'active'
+      });
     },
     onError: (error: any) => {
       console.error('[useUpdateInvoice] error:', error);

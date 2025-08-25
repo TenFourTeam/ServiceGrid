@@ -36,10 +36,16 @@ export default function InvoicesPage() {
     const channel = supabase
       .channel('schema-db-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, () => {
-        if (businessId) invalidationHelpers.invoices(qc, businessId);
+        if (businessId) {
+          invalidationHelpers.invoices(qc, businessId);
+          qc.refetchQueries({ queryKey: ['data', 'invoices', businessId] });
+        }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'invoice_line_items' }, () => {
-        if (businessId) invalidationHelpers.invoices(qc, businessId);
+        if (businessId) {
+          invalidationHelpers.invoices(qc, businessId);
+          qc.refetchQueries({ queryKey: ['data', 'invoices', businessId] });
+        }
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };

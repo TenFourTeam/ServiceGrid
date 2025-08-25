@@ -52,7 +52,7 @@ export function useInvoicesData(opts?: UseInvoicesDataOptions) {
       
       return { invoices: data?.invoices || [], count: data?.count || 0 };
     },
-    staleTime: 30_000,
+    staleTime: 5_000,
   });
 
   return {
