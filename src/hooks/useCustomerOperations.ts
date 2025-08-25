@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@clerk/clerk-react';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
-import { queryKeys, invalidationHelpers } from '@/queries/keys';
+import { queryKeys } from '@/queries/keys';
 
 
 export function useCustomerOperations() {
@@ -30,7 +30,7 @@ export function useCustomerOperations() {
       return data;
     },
     onSuccess: () => {
-      invalidationHelpers.customers(queryClient, businessId || '');
+      queryClient.invalidateQueries({ queryKey: queryKeys.data.customers(businessId || '') });
     },
     onError: (error: any) => {
       console.error('[useCustomerOperations] error:', error);
@@ -38,7 +38,7 @@ export function useCustomerOperations() {
   });
 
   return {
-    deleteCustomer: deleteMutation.mutate,
+    deleteCustomer: deleteMutation,
     isDeletingCustomer: deleteMutation.isPending,
     deleteError: deleteMutation.error
   };
