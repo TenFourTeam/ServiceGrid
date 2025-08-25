@@ -14,6 +14,7 @@ function badRequest(message: string, status = 400) {
 
 Deno.serve(async (req) => {
   console.log(`[customers-bulk-delete] ${req.method} request to ${req.url}`);
+  console.log(`[customers-bulk-delete] Headers:`, Object.fromEntries(req.headers.entries()));
 
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -24,6 +25,11 @@ Deno.serve(async (req) => {
   }
 
   try {
+    console.log(`[customers-bulk-delete] Starting authentication check...`);
+    const authHeader = req.headers.get('Authorization');
+    console.log(`[customers-bulk-delete] Auth header present:`, !!authHeader);
+    console.log(`[customers-bulk-delete] Auth header preview:`, authHeader?.substring(0, 20) + '...');
+    
     const ctx = await requireCtx(req);
     console.log(`[customers-bulk-delete] Authentication validated for business: ${ctx.businessId}`);
 
