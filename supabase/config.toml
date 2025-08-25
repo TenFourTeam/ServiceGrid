@@ -120,3 +120,6 @@ verify_jwt = false
 
 [functions.bulk-import-customers]
 verify_jwt = false
+
+[functions.customers-bulk-delete]
+verify_jwt = false
