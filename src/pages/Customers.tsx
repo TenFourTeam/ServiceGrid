@@ -9,32 +9,22 @@ import { CustomerBottomModal } from '@/components/Customers/CustomerBottomModal'
 import { CustomerSearchFilter } from '@/components/Customers/CustomerSearchFilter';
 import { useState, useEffect, useMemo } from 'react';
 import { useCustomersData } from '@/queries/unified';
-import { useAuth } from '@clerk/clerk-react';
-import { useQueryClient } from '@tanstack/react-query';
-import { createAuthEdgeApi } from "@/utils/authEdgeApi";
-import { toast } from 'sonner';
 import { SimpleCSVImport } from '@/components/Onboarding/SimpleCSVImport';
 import { useLocation, useNavigate } from 'react-router-dom';
-// Removed complex onboarding imports
-import { cn } from '@/lib/utils';
-import { invalidationHelpers } from '@/queries/keys';
-import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { useCustomerOperations } from '@/hooks/useCustomerOperations';
+import CustomerErrorBoundary from '@/components/ErrorBoundaries/CustomerErrorBoundary';
 
 export default function CustomersPage() {
-  const { getToken } = useAuth();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
-  const queryClient = useQueryClient();
-  const { businessId } = useBusinessContext();
   const location = useLocation();
   const navigate = useNavigate();
   const { data: customers, isLoading, error } = useCustomersData();
+  const { deleteCustomer, isDeletingCustomer } = useCustomerOperations();
   
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<any>(null);
-  const [deleting, setDeleting] = useState(false);
   
   // Search and sort state
   const [searchQuery, setSearchQuery] = useState("");
@@ -125,35 +115,13 @@ export default function CustomersPage() {
       <ChevronDown className="h-4 w-4 ml-1" />;
   };
 
-  async function deleteCustomer() {
+  function handleDeleteCustomer() {
     if (!customerToDelete) return;
     
-    setDeleting(true);
-    try {
-      const { data, error } = await authApi.invoke('customers-crud', {
-        method: 'DELETE',
-        body: { id: customerToDelete.id }
-      });
-      
-      if (error) {
-        console.error('[CustomersPage] delete customer failed:', error);
-        toast.error('Failed to delete customer');
-        return;
-      }
-      
-      toast.success('Customer deleted successfully');
-      setDeleteDialogOpen(false);
-      setCustomerToDelete(null);
-      
-      if (businessId) {
-        invalidationHelpers.customers(queryClient, businessId);
-      }
-    } catch (e: any) {
-      console.error('[CustomersPage] delete customer failed:', e);
-      toast.error(e?.message || 'Failed to delete customer');
-    } finally {
-      setDeleting(false);
-    }
+    console.info('[CustomersPage] Starting customer deletion:', customerToDelete.id);
+    deleteCustomer(customerToDelete.id);
+    setDeleteDialogOpen(false);
+    setCustomerToDelete(null);
   }
 
   return (
@@ -193,76 +161,79 @@ export default function CustomersPage() {
               ) : error ? (
                 <div className="text-destructive">Error loading customers: {error.message}</div>
               ) : rows.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead 
-                        className="cursor-pointer hover:bg-muted/50 select-none"
-                        onClick={() => handleSort('name')}
-                      >
-                        <div className="flex items-center">
-                          Name
-                          {getSortIcon('name')}
-                        </div>
-                      </TableHead>
-                      <TableHead 
-                        className="cursor-pointer hover:bg-muted/50 select-none"
-                        onClick={() => handleSort('email')}
-                      >
-                        <div className="flex items-center">
-                          Email
-                          {getSortIcon('email')}
-                        </div>
-                      </TableHead>
-                      <TableHead 
-                        className="cursor-pointer hover:bg-muted/50 select-none"
-                        onClick={() => handleSort('phone')}
-                      >
-                        <div className="flex items-center">
-                          Phone
-                          {getSortIcon('phone')}
-                        </div>
-                      </TableHead>
-                      <TableHead>Address</TableHead>
-                      <TableHead className="w-12"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {rows.map((c) => (
-                      <TableRow 
-                        key={c.id}
-                        className="cursor-pointer hover:bg-muted/50 transition-colors"
-                        onClick={() => openEdit(c)}
-                      >
-                        <TableCell>{c.name}</TableCell>
-                        <TableCell>{c.email ?? ''}</TableCell>
-                        <TableCell>{c.phone ?? ''}</TableCell>
-                        <TableCell>{c.address ?? ''}</TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                              <Button variant="ghost" size="icon">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openDeleteDialog(c);
-                                }}
-                                className="text-destructive focus:text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
+                <CustomerErrorBoundary>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead 
+                          className="cursor-pointer hover:bg-muted/50 select-none"
+                          onClick={() => handleSort('name')}
+                        >
+                          <div className="flex items-center">
+                            Name
+                            {getSortIcon('name')}
+                          </div>
+                        </TableHead>
+                        <TableHead 
+                          className="cursor-pointer hover:bg-muted/50 select-none"
+                          onClick={() => handleSort('email')}
+                        >
+                          <div className="flex items-center">
+                            Email
+                            {getSortIcon('email')}
+                          </div>
+                        </TableHead>
+                        <TableHead 
+                          className="cursor-pointer hover:bg-muted/50 select-none"
+                          onClick={() => handleSort('phone')}
+                        >
+                          <div className="flex items-center">
+                            Phone
+                            {getSortIcon('phone')}
+                          </div>
+                        </TableHead>
+                        <TableHead>Address</TableHead>
+                        <TableHead className="w-12"></TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {rows.map((c) => (
+                        <TableRow 
+                          key={c.id}
+                          className="cursor-pointer hover:bg-muted/50 transition-colors"
+                          onClick={() => openEdit(c)}
+                        >
+                          <TableCell>{c.name}</TableCell>
+                          <TableCell>{c.email ?? ''}</TableCell>
+                          <TableCell>{c.phone ?? ''}</TableCell>
+                          <TableCell>{c.address ?? ''}</TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                <Button variant="ghost" size="icon">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openDeleteDialog(c);
+                                  }}
+                                  className="text-destructive focus:text-destructive"
+                                  disabled={isDeletingCustomer}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CustomerErrorBoundary>
               ) : !searchQuery && customers?.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="space-y-3">
@@ -322,13 +293,13 @@ export default function CustomersPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeletingCustomer}>Cancel</AlertDialogCancel>
             <AlertDialogAction 
-              onClick={deleteCustomer}
-              disabled={deleting}
+              onClick={handleDeleteCustomer}
+              disabled={isDeletingCustomer}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleting ? 'Deleting...' : 'Delete'}
+              {isDeletingCustomer ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
