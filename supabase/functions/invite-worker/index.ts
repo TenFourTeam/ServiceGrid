@@ -197,7 +197,7 @@ serve(async (req: Request) => {
       });
 
       // Send invitation email directly using Resend
-      const fromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'onboarding@resend.dev';
+      const fromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'noreply@servicegrid.app';
 
       const emailResponse = await resend.emails.send({
         from: `${business.name} <${fromEmail}>`,
@@ -346,7 +346,7 @@ serve(async (req: Request) => {
     });
     
     // Send invitation email directly using Resend
-    const fromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'onboarding@resend.dev';
+    const fromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'noreply@servicegrid.app';
     
     const emailResponse = await resend.emails.send({
       from: `${business.name} <${fromEmail}>`,

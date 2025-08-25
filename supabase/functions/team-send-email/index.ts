@@ -47,7 +47,7 @@ serve(async (req: Request) => {
     }
 
     // Use RESEND_FROM_EMAIL as primary sender (matches working pattern from other functions)
-    const fromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'noreply@resend.dev';
+    const fromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'noreply@servicegrid.app';
     const fromName = business.name || 'Team';
     
     console.log('Sending team email with from:', `${fromName} <${fromEmail}>`);

@@ -78,7 +78,7 @@ serve(async (req) => {
     let receiptSent = false;
     try {
       const resendApiKey = Deno.env.get("RESEND_API_KEY");
-      const resendFrom = Deno.env.get("RESEND_FROM_EMAIL") || "noreply@example.com";
+      const resendFrom = Deno.env.get("RESEND_FROM_EMAIL") || "noreply@servicegrid.app";
 
       // Fetch invoice, customer, and business info
       const { data: inv, error: invSelErr } = await supabase

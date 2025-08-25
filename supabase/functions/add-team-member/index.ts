@@ -88,7 +88,7 @@ serve(async (req: Request) => {
     }
 
     // Send notification email
-    const fromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'noreply@resend.dev';
+    const fromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'noreply@servicegrid.app';
     const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://lovableproject.com';
 
     try {
