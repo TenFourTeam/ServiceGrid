@@ -502,11 +502,7 @@ export default function InvoiceModal({
 
     // View mode actions
     if (!invoice) {
-      return (
-        <Button variant="outline" onClick={() => onOpenChange(false)}>
-          Close
-        </Button>
-      );
+      return null;
     }
 
     return (
@@ -527,10 +523,6 @@ export default function InvoiceModal({
             Resend Email
           </Button>
         )}
-
-        <Button variant="outline" onClick={() => onOpenChange(false)}>
-          Close
-        </Button>
       </>
     );
   };
