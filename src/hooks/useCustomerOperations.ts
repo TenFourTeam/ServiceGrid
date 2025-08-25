@@ -5,7 +5,10 @@ import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { queryKeys } from '@/queries/keys';
 
 
-export function useCustomerOperations() {
+export function useCustomerOperations(dialogCallbacks?: {
+  setDeleteDialogOpen: (open: boolean) => void;
+  setCustomerToDelete: (customer: any) => void;
+}) {
   const { getToken } = useAuth();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const queryClient = useQueryClient();
@@ -31,9 +34,15 @@ export function useCustomerOperations() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.data.customers(businessId || '') });
+      // Close dialog and clear state after successful deletion
+      if (dialogCallbacks) {
+        dialogCallbacks.setDeleteDialogOpen(false);
+        dialogCallbacks.setCustomerToDelete(null);
+      }
     },
     onError: (error: any) => {
       console.error('[useCustomerOperations] error:', error);
+      // Keep dialog open on error so user can retry or cancel
     }
   });
 

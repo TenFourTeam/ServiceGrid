@@ -18,13 +18,17 @@ export default function CustomersPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { data: customers, isLoading, error } = useCustomersData();
-  const { deleteCustomer, isDeletingCustomer } = useCustomerOperations();
   
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<any>(null);
+  
+  const { deleteCustomer, isDeletingCustomer } = useCustomerOperations({
+    setDeleteDialogOpen,
+    setCustomerToDelete
+  });
   
   // Search and sort state
   const [searchQuery, setSearchQuery] = useState("");
@@ -120,8 +124,7 @@ export default function CustomersPage() {
     
     console.info('[CustomersPage] Starting customer deletion:', customerToDelete.id);
     deleteCustomer(customerToDelete.id);
-    setDeleteDialogOpen(false);
-    setCustomerToDelete(null);
+    // Dialog state will be managed by the mutation callbacks
   }
 
   return (
