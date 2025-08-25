@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Send, Eye, Edit3, CreditCard } from 'lucide-react';
+import { CalendarIcon, Send, Eye, Edit3 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { formatDate, formatMoney } from '@/utils/format';
@@ -169,7 +169,20 @@ export default function InvoiceModal({
 
     setLoading(true);
     try {
-      const finalHtml = message.trim() ? previewHtml : defaultEmailHTML;
+      // Generate payment URL using public token
+      const payUrl = invoice.publicToken 
+        ? `${window.location.origin}/invoice-pay?token=${invoice.publicToken}`
+        : undefined;
+
+      const { html: emailContent } = generateInvoiceEmail({
+        businessName: businessName || 'Your Business',
+        businessLogoUrl,
+        customerName,
+        invoice,
+        payUrl
+      });
+
+      const finalHtml = message.trim() ? `${message.replace(/\n/g, '<br>')}<hr style="border:none; border-top:1px solid #e5e7eb; margin:12px 0;">${emailContent}` : emailContent;
 
       await authApi.invoke('resend-send-email', {
         method: 'POST',
@@ -498,35 +511,26 @@ export default function InvoiceModal({
 
     return (
       <>
+        <Button variant="outline" onClick={() => setMode('edit')}>
+          <Edit3 className="h-4 w-4 mr-2" />
+          Edit Invoice
+        </Button>
+
+        {invoice.status === 'Draft' ? (
+          <Button onClick={() => setMode('send')}>
+            <Send className="h-4 w-4 mr-2" />
+            Send Email
+          </Button>
+        ) : (
+          <Button onClick={() => setMode('send')}>
+            <Send className="h-4 w-4 mr-2" />
+            Resend Email
+          </Button>
+        )}
+
         <Button variant="outline" onClick={() => onOpenChange(false)}>
           Close
         </Button>
-        
-        <Button variant="outline" onClick={() => setMode('edit')}>
-          <Edit3 className="h-4 w-4 mr-2" />
-          Edit
-        </Button>
-
-        {invoice.status === 'Draft' && (
-          <>
-            <Button variant="outline" onClick={handleMarkSent}>
-              <Eye className="h-4 w-4 mr-2" />
-              Mark Sent
-            </Button>
-            
-            <Button onClick={() => setMode('send')}>
-              <Send className="h-4 w-4 mr-2" />
-              Send
-            </Button>
-          </>
-        )}
-
-        {(invoice.status === 'Sent' || invoice.status === 'Overdue') && (
-          <Button onClick={handlePayOnline} disabled={loading}>
-            <CreditCard className="h-4 w-4 mr-2" />
-            {loading ? 'Loading...' : 'Pay Online'}
-          </Button>
-        )}
       </>
     );
   };

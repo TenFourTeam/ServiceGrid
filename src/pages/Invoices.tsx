@@ -182,43 +182,26 @@ export default function InvoicesPage() {
                 </TableHead>
                 <TableHead>
                     <button className="flex items-center gap-1" onClick={() => requestSort('status')} aria-label="Sort by status">
-                      Status{sortKey === 'status' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                       Status{sortKey === 'status' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
                     </button>
                 </TableHead>
-                <TableHead className="text-center">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {sortedInvoices.map((i)=> (
-                <TableRow key={i.id}>
+                <TableRow 
+                  key={i.id} 
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => {
+                    setSelectedInvoice(i.id);
+                    setModalMode('view');
+                  }}
+                >
                   <TableCell>{i.number}</TableCell>
                   <TableCell>{customers.find(c=>c.id===i.customerId)?.name}</TableCell>
                   <TableCell>{formatMoney(i.total)}</TableCell>
                   <TableCell>{formatDate(i.dueAt)}</TableCell>
                   <TableCell>{i.status}</TableCell>
-                  <TableCell className="text-center">
-                        <div className="flex gap-2 justify-center">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="inline-flex">
-                                <Button
-                                   variant="ghost"
-                                   size="sm"
-                                   onClick={() => {
-                                     setSelectedInvoice(i.id);
-                                     setModalMode(i.status === 'Draft' ? 'send' : 'view');
-                                   }}
-                                   aria-label={i.status === 'Draft' ? "Send invoice" : "View invoice"}
-                                 >
-                                   <Send className="h-4 w-4" />
-                                 </Button>
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent>Send Invoice</TooltipContent>
-                          </Tooltip>
-
-                        </div>
-                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
