@@ -144,9 +144,11 @@ export function SimpleCSVImport({ open, onOpenChange, onImportComplete }: Simple
       const customers = await parseCSV(file);
       
       if (customers.length === 0) {
-        toast.error('No valid customers found in CSV. Please check the format.');
+        toast.error('No valid customers found in CSV. Please check the format and ensure email addresses are valid.');
         return;
       }
+
+      console.log("Parsed customers for import:", customers);
 
       const { data: result, error } = await authApi.invoke('bulk-import-customers', {
         method: 'POST',
@@ -157,22 +159,49 @@ export function SimpleCSVImport({ open, onOpenChange, onImportComplete }: Simple
         toast: {
           success: false, // We'll show custom success message
           loading: `Importing ${customers.length} customers...`,
-          error: 'Failed to import customers. Please check your file format.'
+          error: false // We'll handle errors manually
         }
       });
 
       if (error) {
-        throw new Error(error.message || 'Import failed');
+        console.error("Import API error:", error);
+        
+        // More specific error handling
+        if (error.message?.includes('JWT') || error.message?.includes('Unauthorized') || error.status === 401) {
+          toast.error("Authentication error. Please refresh the page and try again.");
+        } else if (error.status === 403) {
+          toast.error("Permission denied. Please contact support.");
+        } else if (error.status === 500) {
+          toast.error("Server error. Please try again in a few minutes.");
+        } else {
+          toast.error(`Import failed: ${error.message || 'Unknown error occurred'}`);
+        }
+        return;
       }
 
-      toast.success(`Successfully imported ${result.imported} customers`);
-      
-      invalidationHelpers.customers(queryClient, businessId);
-      onImportComplete(result.imported);
-      resetModal();
+      if (result?.imported > 0) {
+        toast.success(`Successfully imported ${result.imported} customers`);
+        invalidationHelpers.customers(queryClient, businessId);
+        onImportComplete(result.imported);
+        resetModal();
+      } else {
+        toast.warning(result?.message || "No new customers were imported (duplicates or invalid data)");
+      }
     } catch (error) {
       console.error('Import error:', error);
-      toast.error(error instanceof Error ? error.message : 'Import failed');
+      
+      // Handle network and other errors
+      if (error instanceof Error) {
+        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+          toast.error("Network error. Please check your connection and try again.");
+        } else if (error.message.includes('CSV parsing')) {
+          toast.error("Invalid CSV format. Please check your file and try again.");
+        } else {
+          toast.error(`Import failed: ${error.message}`);
+        }
+      } else {
+        toast.error('An unexpected error occurred during import');
+      }
     } finally {
       setImporting(false);
     }
