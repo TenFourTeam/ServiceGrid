@@ -42,28 +42,82 @@ export function SimpleCSVImport({ open, onOpenChange, onImportComplete }: Simple
     }
   };
 
+  const transformHeader = (header: string): string => {
+    return header
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_|_$/g, '');
+  };
+
+  const synthesizeName = (row: any): string => {
+    // Try full_name or name first
+    if (row.full_name || row.name) {
+      return row.full_name || row.name;
+    }
+    
+    // Try first_name + last_name combinations
+    const firstName = row.first_name || row.firstname || '';
+    const lastName = row.last_name || row.lastname || '';
+    
+    if (firstName && lastName) {
+      return `${firstName} ${lastName}`.trim();
+    }
+    
+    // Return whatever we have
+    return firstName || lastName || '';
+  };
+
+  const synthesizeAddress = (row: any): string => {
+    // Try direct address field first
+    if (row.address) {
+      return row.address;
+    }
+    
+    // Build address from components
+    const parts: string[] = [];
+    
+    // Street address (could be address1 + address2 or just street)
+    const street1 = row.street || row.address1 || row.street_address || '';
+    const street2 = row.address2 || '';
+    
+    if (street1) parts.push(street1);
+    if (street2) parts.push(street2);
+    
+    // City
+    const city = row.city || '';
+    if (city) parts.push(city);
+    
+    // State and ZIP (combine these on same line)
+    const state = row.state || row.province || '';
+    const zip = row.zip || row.postal_code || row.zipcode || row.postcode || '';
+    
+    if (state && zip) {
+      parts.push(`${state} ${zip}`);
+    } else if (state) {
+      parts.push(state);
+    } else if (zip) {
+      parts.push(zip);
+    }
+    
+    return parts.join(', ');
+  };
+
   const parseCSV = (file: File): Promise<CustomerImport[]> => {
     return new Promise((resolve, reject) => {
       Papa.parse(file, {
         header: true,
         skipEmptyLines: true,
-        transformHeader: (header: string) => {
-          // Normalize header names to match our interface
-          const normalized = header.toLowerCase().trim();
-          if (normalized.includes('name')) return 'name';
-          if (normalized.includes('email')) return 'email';
-          if (normalized.includes('phone')) return 'phone';
-          if (normalized.includes('address')) return 'address';
-          return header;
-        },
+        transformHeader,
         complete: (results) => {
           try {
             const customers = results.data
               .map((row: any) => ({
-                name: row.name?.trim() || '',
+                name: synthesizeName(row)?.trim() || '',
                 email: row.email?.trim() || '',
                 phone: row.phone?.trim() || undefined,
-                address: row.address?.trim() || undefined,
+                address: synthesizeAddress(row)?.trim() || undefined,
               }))
               .filter((customer: CustomerImport) => 
                 customer.name && customer.email && customer.email.includes('@')
@@ -150,11 +204,12 @@ export function SimpleCSVImport({ open, onOpenChange, onImportComplete }: Simple
               className="cursor-pointer"
             />
             <p className="text-sm text-muted-foreground">
-              CSV should include columns: Name, Email, Phone (optional), Address (optional)
+              CSV should include: Email (required), Name fields, Phone (optional), Address fields (optional)
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              Example: Name,Email,Phone,Address<br/>
-              John Doe,john@example.com,555-1234,123 Main St
+              <strong>Name fields:</strong> Name, Full_Name, or First_Name + Last_Name<br/>
+              <strong>Address fields:</strong> Address, or Street + City + State + ZIP<br/>
+              <strong>Example:</strong> First_Name,Last_Name,Email,Phone,Street,City,State,ZIP
             </p>
           </div>
 
