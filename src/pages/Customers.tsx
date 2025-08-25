@@ -2,9 +2,8 @@ import AppLayout from '@/components/Layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { MoreHorizontal, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
+import { Trash2, ChevronUp, ChevronDown } from 'lucide-react';
 import { CustomerBottomModal } from '@/components/Customers/CustomerBottomModal';
 import { CustomerSearchFilter } from '@/components/Customers/CustomerSearchFilter';
 import { useState, useMemo, useEffect } from "react";
@@ -243,7 +242,6 @@ export default function CustomersPage() {
                           </div>
                         </TableHead>
                         <TableHead>Address</TableHead>
-                        <TableHead className="w-12"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -263,28 +261,6 @@ export default function CustomersPage() {
                           <TableCell>{c.email ?? ''}</TableCell>
                           <TableCell>{c.phone ?? ''}</TableCell>
                           <TableCell>{c.address ?? ''}</TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                <Button variant="ghost" size="icon">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    openDeleteDialog(c);
-                                  }}
-                                  className="text-destructive focus:text-destructive"
-                                   disabled={isDeletingCustomer || isBulkDeleting}
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
