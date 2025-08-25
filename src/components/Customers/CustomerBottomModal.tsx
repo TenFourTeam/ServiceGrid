@@ -14,8 +14,9 @@ import type { Customer } from "@/types";
 interface CustomerBottomModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  customer?: Customer | null;
+  customer?: any;
   onSave?: () => void;
+  onCustomerCreated?: (customer: any) => void;
 }
 
 // Form data interface for internal component state
@@ -31,7 +32,8 @@ export function CustomerBottomModal({
   open, 
   onOpenChange, 
   customer,
-  onSave 
+  onSave,
+  onCustomerCreated
 }: CustomerBottomModalProps) {
   const queryClient = useQueryClient();
   const { businessId, userId } = useBusinessContext();
@@ -120,6 +122,11 @@ export function CustomerBottomModal({
         }
         
         toast.success("Customer created successfully");
+        
+        // Call the onCustomerCreated callback with the new customer data
+        if (onCustomerCreated && data?.customer) {
+          onCustomerCreated(data.customer);
+        }
       }
       
       if (businessId) {

@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { CustomerCombobox } from '@/components/Quotes/CustomerCombobox';
 import { LineItemsEditor } from '@/components/Quotes/LineItemsEditor';
+import { CustomerBottomModal } from '@/components/Customers/CustomerBottomModal';
 import { useQuoteCalculations } from '@/hooks/useQuoteCalculations';
 import { formatCurrencyInputNoSymbol, parseCurrencyInput, sanitizeMoneyTyping } from '@/utils/format';
 import type { Customer, LineItem, Quote } from '@/types';
@@ -37,6 +38,7 @@ interface QuoteFormProps {
 }
 
 export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disabled, initialData, mode = 'create' }: QuoteFormProps) {
+  const [showCreateCustomer, setShowCreateCustomer] = useState(false);
   const [data, setData] = useState<QuoteFormData>({
     customerId: '',
     address: '',
@@ -132,6 +134,7 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
               onChange={(id) => setData(prev => ({ ...prev, customerId: id }))}
               placeholder="Select customer…"
               disabled={disabled || isReadOnly}
+              onCreateCustomer={() => setShowCreateCustomer(true)}
             />
           </div>
 
@@ -325,6 +328,16 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
           </Button>
         </div>
       )}
+      
+      {/* Inline Customer Creation Modal */}
+      <CustomerBottomModal
+        open={showCreateCustomer}
+        onOpenChange={setShowCreateCustomer}
+        onCustomerCreated={(newCustomer) => {
+          setData(prev => ({ ...prev, customerId: newCustomer.id }));
+          setShowCreateCustomer(false);
+        }}
+      />
     </div>
   );
 }

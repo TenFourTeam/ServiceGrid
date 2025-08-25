@@ -25,6 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { CustomerCombobox } from '@/components/Quotes/CustomerCombobox';
+import { CustomerBottomModal } from '@/components/Customers/CustomerBottomModal';
 import { cn } from '@/lib/utils';
 
 interface JobBottomModalProps {
@@ -56,6 +57,7 @@ export function JobBottomModal({
   const [files, setFiles] = useState<File[]>([]);
   const [jobType, setJobType] = useState<JobType>('scheduled');
   const [isCreating, setIsCreating] = useState(false);
+  const [showCreateCustomer, setShowCreateCustomer] = useState(false);
 
   const { data: customers } = useCustomersData();
   const queryClient = useQueryClient();
@@ -366,6 +368,7 @@ export function JobBottomModal({
                 const selectedCustomer = customers?.find(c => c.id === id);
                 setCustomer(selectedCustomer || null);
               }}
+              onCreateCustomer={() => setShowCreateCustomer(true)}
             />
           </div>
 
@@ -515,6 +518,16 @@ export function JobBottomModal({
           </div>
         </DrawerFooter>
       </DrawerContent>
+      
+      {/* Inline Customer Creation Modal */}
+      <CustomerBottomModal
+        open={showCreateCustomer}
+        onOpenChange={setShowCreateCustomer}
+        onCustomerCreated={(newCustomer) => {
+          setCustomer(newCustomer);
+          setShowCreateCustomer(false);
+        }}
+      />
     </Drawer>
   );
 }

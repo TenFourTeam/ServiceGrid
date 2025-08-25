@@ -12,9 +12,10 @@ interface CustomerComboboxProps {
   onChange: (id: string) => void;
   placeholder?: string;
   disabled?: boolean;
+  onCreateCustomer?: () => void;
 }
 
-export function CustomerCombobox({ customers, value, onChange, placeholder = "Select customer…", disabled }: CustomerComboboxProps) {
+export function CustomerCombobox({ customers, value, onChange, placeholder = "Select customer…", disabled, onCreateCustomer }: CustomerComboboxProps) {
   const [open, setOpen] = useState(false);
   const selected = customers.find((c) => c.id === value);
   const displayName = useMemo(() => selected?.name || placeholder, [selected, placeholder]);
@@ -29,8 +30,12 @@ export function CustomerCombobox({ customers, value, onChange, placeholder = "Se
   };
 
   const handleCreateCustomer = () => {
-    // Open customers page in new tab for customer creation
-    window.open('/customers?new=1', '_blank');
+    if (onCreateCustomer) {
+      onCreateCustomer();
+    } else {
+      // Fallback to external navigation for backwards compatibility
+      window.open('/customers?new=1', '_blank');
+    }
     setOpen(false);
   };
 
