@@ -14,8 +14,42 @@ serve(async (req) => {
   }
 
   try {
+    console.log("🔍 [bulk-import] Request method:", req.method);
+    console.log("🔍 [bulk-import] Content-Type:", req.headers.get("content-type"));
+    
     const { userId: ownerId, supaAdmin: supabase } = await requireCtx(req);
-    const { customers }: { customers: CustomerImport[] } = await req.json();
+    
+    // Check if request has body
+    const contentLength = req.headers.get("content-length");
+    console.log("🔍 [bulk-import] Content-Length:", contentLength);
+    
+    if (!contentLength || contentLength === "0") {
+      console.error("❌ [bulk-import] Empty request body");
+      throw new Error("Request body is empty");
+    }
+
+    // Get request text first to debug
+    const requestText = await req.text();
+    console.log("🔍 [bulk-import] Request body length:", requestText.length);
+    console.log("🔍 [bulk-import] Request body preview:", requestText.substring(0, 200));
+    
+    if (!requestText || requestText.trim().length === 0) {
+      console.error("❌ [bulk-import] Request body is empty or whitespace");
+      throw new Error("Request body is empty or contains only whitespace");
+    }
+
+    // Parse JSON from text
+    let parsedBody;
+    try {
+      parsedBody = JSON.parse(requestText);
+    } catch (parseError) {
+      console.error("❌ [bulk-import] JSON parse error:", parseError);
+      console.error("❌ [bulk-import] Failed to parse body:", requestText);
+      throw new Error(`Invalid JSON format: ${parseError.message}`);
+    }
+
+    const { customers }: { customers: CustomerImport[] } = parsedBody;
+    console.log("✅ [bulk-import] Successfully parsed customers:", customers?.length || 0);
 
     if (!Array.isArray(customers) || customers.length === 0) {
       throw new Error("No customers provided for import");
