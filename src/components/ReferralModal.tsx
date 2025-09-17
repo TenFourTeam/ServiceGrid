@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { Gift, Copy, Check, Users, ArrowRight, ExternalLink } from "lucide-react";
 import { 
   Drawer, 
@@ -22,37 +22,11 @@ export function ReferralModal({ open, onOpenChange }: ReferralModalProps) {
   const [copiedLink, setCopiedLink] = useState(false);
   const { data: profile } = useProfile();
   
-  // Generate referral link safely to avoid DataCloneError
-  const referralLink = `${window.location.origin}/invite/referral?ref=${profile?.profile?.id || 'user'}`;
-  
-  // Add logging for modal lifecycle
-  useEffect(() => {
-    if (open) {
-      console.log('[ReferralModal] Modal opened');
-    } else {
-      console.log('[ReferralModal] Modal closed');
-    }
-  }, [open]);
-  
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      console.log('[ReferralModal] Component unmounting');
-      setCopiedLink(false);
-    };
-  }, []);
-  
-  // Safe modal close handler with error boundary
-  const handleModalClose = useCallback((newOpen: boolean) => {
-    try {
-      console.log('[ReferralModal] Close handler called with:', newOpen);
-      onOpenChange(newOpen);
-    } catch (error) {
-      console.error('[ReferralModal] Error in close handler:', error);
-      // Fallback - force close
-      onOpenChange(false);
-    }
-  }, [onOpenChange]);
+  // Memoize referral link to prevent re-computation during cleanup
+  const referralLink = useMemo(() => 
+    `${window.location.origin}/invite/referral?ref=${profile?.profile?.id || 'user'}`, 
+    [profile?.profile?.id]
+  );
   
   const handleCopyLink = async () => {
     try {
@@ -93,7 +67,7 @@ export function ReferralModal({ open, onOpenChange }: ReferralModalProps) {
   return (
     <Drawer 
       open={open} 
-      onOpenChange={handleModalClose}
+      onOpenChange={onOpenChange}
       shouldScaleBackground={false}
     >
       <DrawerContent className="max-h-[90vh]">
@@ -167,12 +141,6 @@ export function ReferralModal({ open, onOpenChange }: ReferralModalProps) {
             </a>
           </div>
         </div>
-
-        <DrawerFooter>
-          <Button onClick={() => handleModalClose(false)} variant="outline" className="w-full">
-            Close
-          </Button>
-        </DrawerFooter>
       </DrawerContent>
     </Drawer>
   );
