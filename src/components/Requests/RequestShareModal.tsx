@@ -25,6 +25,7 @@ export function RequestShareModal({
   onOpenChange
 }: RequestShareModalProps) {
   const { business } = useBusinessContext();
+  const [activeTab, setActiveTab] = useState("share-link");
   const [embedSettings, setEmbedSettings] = useState<EmbedSettings>({
     buttonColor: "#7db00e",
     textColor: "#ffffff"
@@ -33,8 +34,7 @@ export function RequestShareModal({
   // Generate the public request form URL
   const generateShareUrl = () => {
     if (!business?.id) return "";
-    const baseUrl = window.location.origin;
-    return `${baseUrl}/request/${business.id}`;
+    return `https://servicegrid.app/request/${business.id}`;
   };
 
   // Generate the embed code
@@ -93,7 +93,7 @@ export function RequestShareModal({
         </DrawerHeader>
         
         <div className="px-4 pb-4 overflow-y-auto">
-          <Tabs defaultValue="share-link" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="share-link" className="flex items-center gap-2">
                 <Link className="h-4 w-4" />
@@ -219,15 +219,8 @@ export function RequestShareModal({
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="embed-code">Copy and paste the following code on your website:</Label>
-                  <div className="space-y-2">
-                    <Textarea
-                      id="embed-code"
-                      value={embedCode}
-                      readOnly
-                      rows={8}
-                      className="bg-muted font-mono text-sm"
-                    />
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="embed-code">Copy and paste the following code on your website:</Label>
                     <Button
                       variant="outline"
                       size="sm"
@@ -238,6 +231,13 @@ export function RequestShareModal({
                       Copy Code
                     </Button>
                   </div>
+                  <Textarea
+                    id="embed-code"
+                    value={embedCode}
+                    readOnly
+                    rows={8}
+                    className="bg-muted font-mono text-sm"
+                  />
                 </div>
               </div>
             </TabsContent>
@@ -245,24 +245,34 @@ export function RequestShareModal({
         </div>
         
         <DrawerFooter>
-          <div className="flex gap-2">
+          {activeTab === "share-link" ? (
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="flex-1"
+              className="w-full"
             >
               Cancel
             </Button>
-            <Button
-              onClick={() => {
-                toast.success("Share settings updated");
-                onOpenChange(false);
-              }}
-              className="flex-1"
-            >
-              Update
-            </Button>
-          </div>
+          ) : (
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  toast.success("Share settings updated");
+                  onOpenChange(false);
+                }}
+                className="flex-1"
+              >
+                Update
+              </Button>
+            </div>
+          )}
         </DrawerFooter>
       </DrawerContent>
     </Drawer>

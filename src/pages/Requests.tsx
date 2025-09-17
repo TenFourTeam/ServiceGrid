@@ -81,7 +81,7 @@ export default function Requests() {
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setIsShareModalOpen(true)}>
                 <Share className="h-4 w-4 mr-2" />
-                Share
+                Share Request Form
               </Button>
               <Button onClick={() => setIsCreateModalOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
