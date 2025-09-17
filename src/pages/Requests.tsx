@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Share } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import AppLayout from "@/components/Layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useRequestsData, RequestListItem } from "@/hooks/useRequestsData";
 import { RequestBottomModal } from "@/components/Requests/RequestBottomModal";
 import { RequestShowModal } from "@/components/Requests/RequestShowModal";
+import { RequestShareModal } from "@/components/Requests/RequestShareModal";
 import { RequestActions } from "@/components/Requests/RequestActions";
 import { statusOptions } from "@/validation/requests";
 
@@ -27,6 +28,7 @@ export default function Requests() {
   const [selectedRequest, setSelectedRequest] = useState<RequestListItem | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isShowModalOpen, setIsShowModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   const { data: requests = [], isLoading, error } = useRequestsData();
 
@@ -76,10 +78,16 @@ export default function Requests() {
               <h1 className="text-3xl font-bold tracking-tight">Requests</h1>
               <p className="text-muted-foreground">Manage customer service requests and assessments</p>
             </div>
-            <Button onClick={() => setIsCreateModalOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Request
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setIsShareModalOpen(true)}>
+                <Share className="h-4 w-4 mr-2" />
+                Share
+              </Button>
+              <Button onClick={() => setIsCreateModalOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                New Request
+              </Button>
+            </div>
           </div>
 
           {/* Filters */}
@@ -223,6 +231,11 @@ export default function Requests() {
         onRequestUpdated={() => {
           // Request will be automatically refreshed via query invalidation
         }}
+      />
+      
+      <RequestShareModal
+        open={isShareModalOpen}
+        onOpenChange={setIsShareModalOpen}
       />
     </div>
   );

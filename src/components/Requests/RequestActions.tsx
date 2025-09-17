@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, FileText, Wrench, Share } from 'lucide-react';
+import { MoreHorizontal, FileText, Wrench } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
@@ -64,29 +64,6 @@ export function RequestActions({ request }: RequestActionsProps) {
     }
   };
 
-  const handleShare = async () => {
-    const shareText = `Request: ${request.title}\nCustomer: ${request.customer?.name || 'Unknown'}\nService: ${request.service_details}`;
-    
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `Request: ${request.title}`,
-          text: shareText,
-        });
-      } catch (error) {
-        // User cancelled sharing or error occurred
-        console.log('Share cancelled or failed:', error);
-      }
-    } else {
-      // Fallback to copying to clipboard
-      try {
-        await navigator.clipboard.writeText(shareText);
-        toast.success('Request details copied to clipboard');
-      } catch (error) {
-        toast.error('Failed to copy request details');
-      }
-    }
-  };
 
   return (
     <DropdownMenu>
@@ -103,11 +80,6 @@ export function RequestActions({ request }: RequestActionsProps) {
         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleConvertToJob(); }} className="gap-2">
           <Wrench className="h-4 w-4" />
           Convert to Job
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleShare(); }} className="gap-2">
-          <Share className="h-4 w-4" />
-          Share
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
