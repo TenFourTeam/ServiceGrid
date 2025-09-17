@@ -38,6 +38,7 @@ export function useProfile(currentBusinessId?: string | null) {
         business: data.business ? {
           id: data.business.id,
           name: data.business.name,
+          description: data.business.description,
           phone: data.business.phone,
           replyToEmail: data.business.replyToEmail,
           taxRateDefault: data.business.taxRateDefault,
