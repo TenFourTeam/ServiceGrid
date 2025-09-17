@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Copy, Link, Code } from "lucide-react";
@@ -243,37 +243,6 @@ export function RequestShareModal({
             </TabsContent>
           </Tabs>
         </div>
-        
-        <DrawerFooter>
-          {activeTab === "share-link" ? (
-            <Button
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              className="w-full"
-            >
-              Cancel
-            </Button>
-          ) : (
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={() => {
-                  toast.success("Share settings updated");
-                  onOpenChange(false);
-                }}
-                className="flex-1"
-              >
-                Update
-              </Button>
-            </div>
-          )}
-        </DrawerFooter>
       </DrawerContent>
     </Drawer>
   );
