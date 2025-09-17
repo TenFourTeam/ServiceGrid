@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
           id, title, status, starts_at, ends_at, total, address, notes,
           job_type, photos, is_clocked_in, clock_in_time, clock_out_time,
           recurrence, created_at, updated_at,
-          customer_id, quote_id,
+          customer_id, quote_id, is_assessment, request_id,
           customers!inner(name, email, phone),
           job_assignments(
             user_id,

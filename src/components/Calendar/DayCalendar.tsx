@@ -7,6 +7,7 @@ import JobShowModal from "@/components/Jobs/JobShowModal";
 import { JobBottomModal } from "@/components/Jobs/JobBottomModal";
 import type { Job } from "@/types";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
+import { getJobStatusColors } from "@/utils/jobStatus";
 
 export default function DayCalendar({ date, displayMode = 'scheduled' }: { date: Date; displayMode?: 'scheduled' | 'clocked' | 'combined'; }) {
   const { data: allJobs } = useJobsData();
@@ -61,22 +62,21 @@ export default function DayCalendar({ date, displayMode = 'scheduled' }: { date:
             const s = safeCreateDate(j.startsAt);
             const e = safeCreateDate(j.endsAt);
             if (!s) return []; // Skip if invalid start date
-            const status = (j as Job).status;
-            const liClasses = `rounded px-3 py-2 bg-background/60 border ${status === 'Completed' ? 'border-success bg-success/5' : status === 'In Progress' ? 'border-primary' : 'border-primary/50'} ${displayMode === 'combined' ? 'opacity-60' : ''}`;
-            const dotClass = status === 'Completed' ? 'bg-success' : 'bg-primary';
+            const statusColors = getJobStatusColors((j as Job).status, (j as Job).isAssessment);
             
             blocks.push(
-              <li key={`${(j as Job).id}-scheduled`} className={`${liClasses} cursor-pointer hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary`} onClick={() => { setActiveJob(j as Job); setOpen(true); }}>
+              <li key={`${(j as Job).id}-scheduled`} className={`${statusColors.bg} ${statusColors.text} ${statusColors.border} rounded px-3 py-2 border ${displayMode === 'combined' ? 'opacity-60' : ''} cursor-pointer hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-primary`} onClick={() => { setActiveJob(j as Job); setOpen(true); }}>
                 <div className="flex items-center gap-2 text-sm font-medium">
-                  <span className={`inline-block h-2 w-2 rounded-full ${dotClass}`} aria-hidden="true" />
+                  <span className={`inline-block h-2 w-2 rounded-full ${(j as Job).isAssessment ? 'bg-status-assessment-foreground' : (j as Job).status === 'Completed' ? 'bg-success' : 'bg-primary'}`} aria-hidden="true" />
                   <span>{s.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
                   <span className="opacity-70">–</span>
                   <span>{e ? e.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'End time'}</span>
+                  {(j as Job).isAssessment && <span className="text-xs opacity-80">(Assessment)</span>}
                   {displayMode === 'combined' && <span className="text-xs opacity-60">(Scheduled)</span>}
                 </div>
                 <div className="text-sm font-medium truncate">{(j as Job).title || 'Job'}</div>
-                <div className="text-xs text-muted-foreground truncate">{(customersMap.get((j as Job).customerId) ?? 'Customer') as string}</div>
-                {(j as Job).address && <div className="text-xs text-muted-foreground">{(j as Job).address}</div>}
+                <div className="text-xs opacity-70 truncate">{(customersMap.get((j as Job).customerId) ?? 'Customer') as string}</div>
+                {(j as Job).address && <div className="text-xs opacity-70">{(j as Job).address}</div>}
               </li>
             );
           }

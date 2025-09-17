@@ -1,6 +1,15 @@
 import { JobStatus } from "@/types";
 
-export function getJobStatusColors(status: JobStatus) {
+export function getJobStatusColors(status: JobStatus, isAssessment?: boolean) {
+  // Assessment jobs get special styling regardless of status
+  if (isAssessment) {
+    return {
+      bg: 'bg-status-assessment',
+      text: 'text-status-assessment-foreground',
+      border: 'border-status-assessment/20'
+    };
+  }
+  
   switch (status) {
     case 'Scheduled':
       return {

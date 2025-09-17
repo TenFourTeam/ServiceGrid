@@ -58,6 +58,10 @@ export default {
 					DEFAULT: 'hsl(var(--status-completed))',
 					foreground: 'hsl(var(--status-completed-foreground))'
 				},
+				'status-assessment': {
+					DEFAULT: 'hsl(var(--status-assessment))',
+					foreground: 'hsl(var(--status-assessment-foreground))'
+				},
 				muted: {
 					DEFAULT: 'hsl(var(--muted))',
 					foreground: 'hsl(var(--muted-foreground))'

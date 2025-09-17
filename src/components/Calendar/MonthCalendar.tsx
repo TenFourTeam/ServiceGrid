@@ -7,6 +7,7 @@ import JobShowModal from "@/components/Jobs/JobShowModal";
 import { JobBottomModal } from "@/components/Jobs/JobBottomModal";
 import type { Job } from "@/types";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
+import { getJobStatusColors } from "@/utils/jobStatus";
 
 function useMonthGrid(date: Date) {
   const start = startOfWeek(startOfMonth(date), { weekStartsOn: 1 });
@@ -100,20 +101,22 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
                   if (displayMode === 'scheduled' || displayMode === 'combined') {
                     const t = safeCreateDate(j.startsAt);
                     if (!t) return []; // Skip if invalid date
+                    const statusColors = getJobStatusColors(j.status, j.isAssessment);
                     blocks.push(
                       <li key={`${j.id}-scheduled`} className="truncate">
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setActiveJob(j as Job); setOpen(true); }}
-                          className={`w-full truncate rounded px-2 py-1 text-xs border bg-background/60 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary ${j.status === 'Completed' ? 'border-success bg-success/5' : j.status === 'In Progress' ? 'border-primary' : 'border-primary/50'} ${displayMode === 'combined' ? 'opacity-60' : ''}`}
+                          className={`w-full truncate rounded px-2 py-1 text-xs border ${statusColors.bg} ${statusColors.text} ${statusColors.border} hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-primary ${displayMode === 'combined' ? 'opacity-60' : ''}`}
                           aria-label={`Open job ${j.title || 'Job'} at ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
                         >
-                          <span className={`mr-2 inline-block h-2 w-2 rounded-full align-middle ${j.status === 'Completed' ? 'bg-success' : 'bg-primary'}`} aria-hidden="true" />
+                          <span className={`mr-2 inline-block h-2 w-2 rounded-full align-middle ${j.isAssessment ? 'bg-status-assessment-foreground' : j.status === 'Completed' ? 'bg-success' : 'bg-primary'}`} aria-hidden="true" />
                           <span className="font-medium">
                             {t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                           </span>
                           <span className="mx-1 opacity-70">•</span>
                           <span className="truncate">{j.title || 'Job'}</span>
+                          {j.isAssessment && <span className="text-[10px] opacity-80 ml-1">(Assessment)</span>}
                           {customersMap.get(j.customerId) && (
                              <span className="opacity-70"> — {(customersMap.get(j.customerId) ?? 'Customer') as string}</span>
                           )}

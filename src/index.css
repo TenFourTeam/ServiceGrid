@@ -48,6 +48,10 @@ All colors MUST be HSL.
     --status-completed: 142.1 70.6% 45.3%; /* Green */
     --status-completed-foreground: 144 61% 96%;
     
+    /* Assessment Job semantic tokens */
+    --status-assessment: 271 100% 71%; /* Purple/Violet */
+    --status-assessment-foreground: 210 40% 98%;
+    
     /* Success semantic tokens */
     --success: 142.1 70.6% 45.3%;
     --success-foreground: 144 61% 96%;
