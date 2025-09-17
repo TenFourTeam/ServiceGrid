@@ -38,6 +38,61 @@ export function RequestActions({ request }: RequestActionsProps) {
     });
   };
 
+  // Helper function to map preferred time to specific hour
+  const getPreferredHour = (preferredTimes: string[] = []): number => {
+    const firstPreference = preferredTimes[0] || 'Any time';
+    
+    switch (firstPreference) {
+      case 'Morning (8am - 12pm)':
+        return 9; // 9:00 AM
+      case 'Afternoon (12pm - 5pm)':
+        return 13; // 1:00 PM
+      case 'Evening (5pm - 8pm)':
+        return 17; // 5:00 PM
+      case 'Any time':
+      default:
+        return 9; // Default to 9:00 AM
+    }
+  };
+
+  // Helper function to get next business day
+  const getNextBusinessDay = (): Date => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    // If tomorrow is Saturday (6) or Sunday (0), move to Monday
+    while (tomorrow.getDay() === 0 || tomorrow.getDay() === 6) {
+      tomorrow.setDate(tomorrow.getDate() + 1);
+    }
+    
+    return tomorrow;
+  };
+
+  // Helper function to calculate assessment start time
+  const calculateAssessmentStartTime = (): string => {
+    const preferredHour = getPreferredHour(request.preferred_times as string[]);
+    
+    let assessmentDate: Date;
+    
+    if (request.preferred_assessment_date) {
+      assessmentDate = new Date(request.preferred_assessment_date);
+    } else {
+      assessmentDate = getNextBusinessDay();
+    }
+    
+    // Set the time based on preferred hour
+    assessmentDate.setHours(preferredHour, 0, 0, 0);
+    
+    // Ensure the time is in the future
+    const now = new Date();
+    if (assessmentDate <= now) {
+      assessmentDate = getNextBusinessDay();
+      assessmentDate.setHours(preferredHour, 0, 0, 0);
+    }
+    
+    return assessmentDate.toISOString();
+  };
+
   const handleScheduleAssessment = async () => {
     try {
       // First create the assessment job
@@ -49,7 +104,7 @@ export function RequestActions({ request }: RequestActionsProps) {
           address: request.property_address,
           notes: `Assessment for request: ${request.title}\n\nService Details: ${request.service_details}${request.notes ? `\n\nNotes: ${request.notes}` : ''}`,
           status: 'Scheduled',
-          startsAt: request.preferred_assessment_date,
+          startsAt: calculateAssessmentStartTime(),
           isAssessment: true,
           requestId: request.id,
         },
