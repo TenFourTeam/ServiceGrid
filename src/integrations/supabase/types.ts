@@ -118,6 +118,7 @@ export type Database = {
         Row: {
           application_fee_bps: number
           created_at: string
+          description: string | null
           est_prefix: string
           est_seq: number
           id: string
@@ -140,6 +141,7 @@ export type Database = {
         Insert: {
           application_fee_bps?: number
           created_at?: string
+          description?: string | null
           est_prefix?: string
           est_seq?: number
           id?: string
@@ -162,6 +164,7 @@ export type Database = {
         Update: {
           application_fee_bps?: number
           created_at?: string
+          description?: string | null
           est_prefix?: string
           est_seq?: number
           id?: string
@@ -1025,6 +1028,7 @@ export type Database = {
         Returns: {
           application_fee_bps: number
           created_at: string
+          description: string | null
           est_prefix: string
           est_seq: number
           id: string

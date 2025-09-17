@@ -5,6 +5,7 @@ import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 
 export type BusinessUpdatePayload = {
   businessName: string;
+  description?: string;
   phone?: string;
   replyToEmail?: string;
 };
@@ -14,6 +15,7 @@ export type BusinessUpdateResponse = {
   business: {
     id: string;
     name: string;
+    description?: string;
     phone?: string;
     replyToEmail?: string;
     logoUrl?: string;
@@ -36,7 +38,8 @@ export function useBusinessOperations() {
     mutationFn: async (input: BusinessUpdatePayload) => {
       console.info('[useBusinessOperations] mutation started', { 
         payload: input,
-        hasName: !!input.businessName, 
+        hasName: !!input.businessName,
+        hasDescription: !!input.description,
         hasPhone: !!input.phone, 
         hasReplyToEmail: !!input.replyToEmail 
       });

@@ -14,7 +14,8 @@ import { useStripeConnectStatus } from '@/hooks/useStripeConnectStatus';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useLogoOperations } from '@/hooks/useLogoOperations';
 import { useSettingsForm } from '@/hooks/useSettingsForm';
-import { useBusinessNameForm } from '@/hooks/useBusinessNameForm';
+import { useBusinessDetailsForm } from '@/hooks/useBusinessDetailsForm';
+import { Textarea } from '@/components/ui/textarea';
 
 export default function SettingsPage() {
   const { business, role } = useBusinessContext();
@@ -41,8 +42,8 @@ export default function SettingsPage() {
     handleSubmit: handleProfileSubmit,
   } = useSettingsForm();
   
-  // Business name form state management
-  const businessNameForm = useBusinessNameForm();
+  // Business details form state management
+  const businessDetailsForm = useBusinessDetailsForm();
   function handleLogoUpload(kind: 'dark' | 'light') {
     const file = kind === 'dark' ? darkFile : lightFile;
     if (!file) {
@@ -210,26 +211,39 @@ export default function SettingsPage() {
         
         <RequireRole role="owner" fallback={null}>
           <Card>
-            <CardHeader><CardTitle>Business Name</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Business Details</CardTitle></CardHeader>
             <CardContent>
-              <form onSubmit={businessNameForm.handleSubmit} className="space-y-4">
+              <form onSubmit={businessDetailsForm.handleSubmit} className="space-y-4">
                 <div>
                   <Label>Business Name</Label>
                   <Input 
-                    value={businessNameForm.businessName} 
-                    onChange={e => businessNameForm.setBusinessName(e.target.value)}
+                    value={businessDetailsForm.businessName} 
+                    onChange={e => businessDetailsForm.setBusinessName(e.target.value)}
                     placeholder="Your business name"
                     required
                   />
                 </div>
                 
+                <div>
+                  <Label>Business Description</Label>
+                  <Textarea 
+                    value={businessDetailsForm.businessDescription} 
+                    onChange={e => businessDetailsForm.setBusinessDescription(e.target.value)}
+                    placeholder="Describe your business services..."
+                    rows={3}
+                  />
+                  <p className="text-sm text-muted-foreground mt-1">
+                    This replaces "Professional Lawn Care Services" in shared links and previews
+                  </p>
+                </div>
+                
                 <div className="pt-4">
                   <Button 
                     type="submit"
-                    disabled={businessNameForm.isLoading || !businessNameForm.isFormValid}
+                    disabled={businessDetailsForm.isLoading || !businessDetailsForm.isFormValid}
                     className="w-full"
                   >
-                    {businessNameForm.isLoading ? 'Saving...' : 'Save Business Name'}
+                    {businessDetailsForm.isLoading ? 'Saving...' : 'Save Business Details'}
                   </Button>
                 </div>
               </form>

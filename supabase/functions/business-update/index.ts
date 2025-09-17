@@ -3,6 +3,7 @@ import { z } from 'https://deno.land/x/zod@v3.20.2/mod.ts';
 
 const BusinessUpdateSchema = z.object({
   businessName: z.string().min(1, 'Business name is required'),
+  description: z.string().optional().or(z.literal('')).or(z.null()).transform(val => val === null ? '' : val),
   phone: z.string().nullable().optional().transform(val => val === null ? undefined : val),
   replyToEmail: z.string().email().optional().or(z.literal('')).or(z.null()).transform(val => val === null ? '' : val),
 });
@@ -33,7 +34,8 @@ Deno.serve(async (req: Request) => {
       const parsedBody = JSON.parse(body);
       input = BusinessUpdateSchema.parse(parsedBody);
       console.log('[business-update] Validated input:', { 
-        hasBusinessName: !!input.businessName, 
+        hasBusinessName: !!input.businessName,
+        hasDescription: !!input.description,
         hasPhone: !!input.phone, 
         hasReplyToEmail: !!input.replyToEmail 
       });
@@ -49,6 +51,10 @@ Deno.serve(async (req: Request) => {
       updated_at: new Date().toISOString(),
     };
 
+    if (input.description !== undefined) {
+      updateData.description = input.description?.trim() || null;
+    }
+
     if (input.phone !== undefined && input.phone !== null) {
       updateData.phone = input.phone.trim() || null;
     }
@@ -63,7 +69,7 @@ Deno.serve(async (req: Request) => {
       .from('businesses')
       .update(updateData)
       .eq('id', ctx.businessId)
-      .select('id, name, phone, reply_to_email, logo_url, light_logo_url, tax_rate_default, updated_at')
+      .select('id, name, description, phone, reply_to_email, logo_url, light_logo_url, tax_rate_default, updated_at')
       .single();
 
     if (updateError) {
@@ -78,6 +84,7 @@ Deno.serve(async (req: Request) => {
       business: {
         id: business.id,
         name: business.name,
+        description: business.description,
         phone: business.phone,
         replyToEmail: business.reply_to_email,
         logoUrl: business.logo_url,

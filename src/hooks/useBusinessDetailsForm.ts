@@ -4,20 +4,24 @@ import { useBusinessOperations } from '@/hooks/useBusinessOperations';
 import { toast } from 'sonner';
 
 /**
- * Business name form state management for Settings page
- * Handles business name updates separately from profile and branding
+ * Business details form state management for Settings page
+ * Handles business name and description updates separately from profile and branding
  */
-export function useBusinessNameForm() {
+export function useBusinessDetailsForm() {
   const { business, role } = useBusinessContext();
   const { updateBusiness, isUpdating } = useBusinessOperations();
   
-  // Form state for business name
+  // Form state for business details
   const [businessName, setBusinessName] = useState('');
+  const [businessDescription, setBusinessDescription] = useState('');
   
   // Auto-sync form state with server data
   useEffect(() => {
     if (business?.name) {
       setBusinessName(business.name);
+    }
+    if (business?.description) {
+      setBusinessDescription(business.description);
     }
   }, [business]);
   
@@ -39,11 +43,12 @@ export function useBusinessNameForm() {
     try {
       await updateBusiness.mutateAsync({
         businessName: businessName.trim(),
+        description: businessDescription.trim() || undefined,
         phone: business?.phone,
         replyToEmail: business?.replyToEmail,
       });
     } catch (error) {
-      console.error('Business name update failed:', error);
+      console.error('Business details update failed:', error);
     }
   };
   
@@ -51,6 +56,8 @@ export function useBusinessNameForm() {
     // Form state
     businessName,
     setBusinessName,
+    businessDescription,
+    setBusinessDescription,
     
     // Form status
     isFormValid,

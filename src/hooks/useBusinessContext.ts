@@ -6,6 +6,7 @@ import { useCurrentBusiness } from '@/contexts/CurrentBusinessContext';
 export type BusinessUI = {
   id: string;
   name: string;
+  description?: string;
   phone?: string;
   replyToEmail?: string;
   taxRateDefault?: number;
@@ -47,6 +48,7 @@ export function useBusinessContext() {
     business,
     businessId: business?.id,
     businessName: business?.name,
+    businessDescription: business?.description,
     businessPhone: business?.phone,
     businessReplyToEmail: business?.replyToEmail,
     businessTaxRateDefault: business?.taxRateDefault,
