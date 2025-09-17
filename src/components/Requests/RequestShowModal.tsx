@@ -8,22 +8,18 @@ import { RequestListItem } from "@/hooks/useRequestsData";
 import { useCustomersData } from "@/hooks/useCustomersData";
 import { statusOptions } from "@/validation/requests";
 import { RequestBottomModal } from "./RequestBottomModal";
-import { RequestActions } from "./RequestActions";
-
 interface RequestShowModalProps {
   request: RequestListItem | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onRequestUpdated?: () => void;
-  onRequestDeleted?: () => void;
 }
 
 export function RequestShowModal({ 
   request, 
   open, 
   onOpenChange,
-  onRequestUpdated,
-  onRequestDeleted
+  onRequestUpdated
 }: RequestShowModalProps) {
   const { data: customers = [] } = useCustomersData();
   const [showEditModal, setShowEditModal] = useState(false);
@@ -189,20 +185,12 @@ export function RequestShowModal({
           </div>
           
           <DrawerFooter>
-            <div className="flex gap-2">
-              <Button
-                onClick={() => setShowEditModal(true)}
-                className="flex-1"
-              >
-                Edit Request
-              </Button>
-              <div onClick={(e) => e.stopPropagation()}>
-                <RequestActions 
-                  request={request} 
-                  onRequestDeleted={onRequestDeleted}
-                />
-              </div>
-            </div>
+            <Button
+              onClick={() => setShowEditModal(true)}
+              className="w-full"
+            >
+              Edit Request
+            </Button>
           </DrawerFooter>
         </DrawerContent>
       </Drawer>

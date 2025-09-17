@@ -1,8 +1,6 @@
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, FileText, Wrench, Calendar, Archive, Trash } from 'lucide-react';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { MoreHorizontal, FileText, Wrench, Calendar, Archive } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
@@ -14,17 +12,15 @@ import type { RequestListItem } from '@/hooks/useRequestsData';
 
 interface RequestActionsProps {
   request: RequestListItem;
-  onRequestDeleted?: () => void;
 }
 
-export function RequestActions({ request, onRequestDeleted }: RequestActionsProps) {
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+export function RequestActions({ request }: RequestActionsProps) {
   const navigate = useNavigate();
   const { getToken } = useClerkAuth();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const { triggerJobScheduled } = useLifecycleEmailIntegration();
   const createQuote = useCreateQuote();
-  const { updateRequest, deleteRequest } = useRequestOperations();
+  const { updateRequest } = useRequestOperations();
 
   const handleConvertToQuote = () => {
     createQuote.mutate({
@@ -168,14 +164,6 @@ export function RequestActions({ request, onRequestDeleted }: RequestActionsProp
     });
   };
 
-  const handleDelete = () => {
-    setShowDeleteDialog(false);
-    deleteRequest.mutate(request.id, {
-      onSuccess: () => {
-        onRequestDeleted?.();
-      }
-    });
-  };
 
   return (
     <>
@@ -204,29 +192,8 @@ export function RequestActions({ request, onRequestDeleted }: RequestActionsProp
             <Archive className="h-4 w-4" />
             Archive
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setShowDeleteDialog(true); }} className="gap-2 text-destructive focus:text-destructive">
-            <Trash className="h-4 w-4" />
-            Delete
-          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Request</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this request? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={(e) => { e.stopPropagation(); handleDelete(); }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }
