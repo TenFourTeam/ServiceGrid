@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
+import { useCreateQuote } from '@/hooks/useQuoteOperations';
 import { useLifecycleEmailIntegration } from '@/hooks/useLifecycleEmailIntegration';
 import type { RequestListItem } from '@/hooks/useRequestsData';
 
@@ -16,35 +17,23 @@ export function RequestActions({ request }: RequestActionsProps) {
   const navigate = useNavigate();
   const { getToken } = useClerkAuth();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
-  const { triggerQuoteCreated, triggerJobScheduled } = useLifecycleEmailIntegration();
+  const { triggerJobScheduled } = useLifecycleEmailIntegration();
+  const createQuote = useCreateQuote();
 
-  const handleConvertToQuote = async () => {
-    try {
-      const { data: result } = await authApi.invoke('quotes-crud', {
-        method: 'POST',
-        body: {
-          customerId: request.customer_id,
-          address: request.property_address,
-          status: 'Draft',
-          notes_internal: `Created from request: ${request.title}\n\nService Details: ${request.service_details}${request.notes ? `\n\nNotes: ${request.notes}` : ''}`,
-          depositRequired: false,
-          taxRate: 0,
-          discount: 0,
-        },
-        toast: {
-          success: `Quote created from request successfully`,
-          loading: 'Converting request to quote...',
-          error: 'Failed to convert request to quote',
-          onSuccess: triggerQuoteCreated
-        }
-      });
-
-      if (result) {
+  const handleConvertToQuote = () => {
+    createQuote.mutate({
+      customerId: request.customer_id,
+      address: request.property_address,
+      status: 'Draft',
+      notesInternal: `Created from request: ${request.title}\n\nService Details: ${request.service_details}${request.notes ? `\n\nNotes: ${request.notes}` : ''}`,
+      depositRequired: false,
+      taxRate: 0,
+      discount: 0,
+    }, {
+      onSuccess: () => {
         navigate('/quotes');
       }
-    } catch (error) {
-      console.error('Failed to convert request to quote:', error);
-    }
+    });
   };
 
   const handleConvertToJob = async () => {
