@@ -233,7 +233,7 @@ export default function SettingsPage() {
                     rows={3}
                   />
                   <p className="text-sm text-muted-foreground mt-1">
-                    This replaces "Professional Lawn Care Services" in shared links and previews
+                    This will appear as the description when your links are shared
                   </p>
                 </div>
                 
