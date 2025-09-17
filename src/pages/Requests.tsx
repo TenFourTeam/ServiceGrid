@@ -6,6 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -44,6 +51,15 @@ export default function Requests() {
     
     return matchesSearch && matchesStatus;
   });
+
+  // Calculate counts for each status
+  const counts = {
+    All: requests.length,
+    ...statusOptions.reduce((acc, status) => {
+      acc[status.value] = requests.filter(request => request.status === status.value).length;
+      return acc;
+    }, {} as Record<string, number>)
+  };
 
   const getStatusBadge = (status: string) => {
     const statusOption = statusOptions.find(option => option.value === status);
@@ -102,24 +118,20 @@ export default function Requests() {
                 className="pl-8"
               />
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant={selectedStatus === "All" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedStatus("All")}
-              >
-                All
-              </Button>
-              {statusOptions.map((status) => (
-                <Button
-                  key={status.value}
-                  variant={selectedStatus === status.value ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSelectedStatus(status.value)}
-                >
-                  {status.label}
-                </Button>
-              ))}
+            <div className="w-48">
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All ({counts.All})</SelectItem>
+                  {statusOptions.map((status) => (
+                    <SelectItem key={status.value} value={status.value}>
+                      {status.label} ({counts[status.value]})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
