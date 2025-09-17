@@ -137,23 +137,28 @@ export default function QuotesPage() {
     }
 
     if (newQuoteParam) {
+      console.log('[Quotes] Highlighting new quote:', newQuoteParam);
       setHighlightedQuoteId(newQuoteParam);
       
-      // Scroll to the highlighted quote after a short delay to ensure the component has rendered
+      // Scroll to the highlighted quote after a longer delay to ensure data has loaded
       setTimeout(() => {
         const quoteRow = document.querySelector(`[data-quote-id="${newQuoteParam}"]`);
+        console.log('[Quotes] Found quote row for scrolling:', !!quoteRow);
         if (quoteRow) {
           quoteRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-      }, 100);
+      }, 500);
       
-      // Auto-remove highlight after animation completes
+      // Auto-remove highlight after longer duration
       setTimeout(() => {
+        console.log('[Quotes] Removing highlight');
         setHighlightedQuoteId(null);
-      }, 4000);
+      }, 6000);
       
-      // Clean up URL
-      navigate('/quotes', { replace: true });
+      // Clean up URL after a short delay
+      setTimeout(() => {
+        navigate('/quotes', { replace: true });
+      }, 1000);
     }
   }, [location.search, navigate]);
 
@@ -234,9 +239,9 @@ export default function QuotesPage() {
                   <TableRow 
                     key={quote.id}
                     data-quote-id={quote.id}
-                    className={`cursor-pointer hover:bg-muted/50 transition-all duration-300 ${
+                    className={`cursor-pointer hover:bg-muted/50 transition-all duration-500 ${
                       highlightedQuoteId === quote.id 
-                        ? 'animate-pulse bg-success/10 border-l-4 border-l-success scale-[1.02] shadow-lg' 
+                        ? 'animate-bounce bg-success/20 border-l-4 border-l-success scale-[1.03] shadow-xl ring-2 ring-success/30' 
                         : ''
                     }`}
                     onClick={() => {

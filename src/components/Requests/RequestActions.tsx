@@ -96,16 +96,16 @@ export function RequestActions({ request }: RequestActionsProps) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={handleConvertToQuote} className="gap-2">
+        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleConvertToQuote(); }} className="gap-2">
           <FileText className="h-4 w-4" />
           Convert to Quote
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleConvertToJob} className="gap-2">
+        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleConvertToJob(); }} className="gap-2">
           <Wrench className="h-4 w-4" />
           Convert to Job
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleShare} className="gap-2">
+        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleShare(); }} className="gap-2">
           <Share className="h-4 w-4" />
           Share
         </DropdownMenuItem>
