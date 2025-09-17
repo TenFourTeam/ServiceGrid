@@ -1,17 +1,15 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Gift, Copy, Check, Users, ArrowRight, ExternalLink } from "lucide-react";
 import { 
   Drawer, 
   DrawerContent, 
   DrawerHeader, 
   DrawerTitle, 
-  DrawerDescription, 
-  DrawerFooter 
+  DrawerDescription 
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { useProfile } from "@/queries/useProfile";
 
 interface ReferralModalProps {
   open: boolean;
@@ -20,30 +18,14 @@ interface ReferralModalProps {
 
 export function ReferralModal({ open, onOpenChange }: ReferralModalProps) {
   const [copiedLink, setCopiedLink] = useState(false);
-  const { data: profile } = useProfile();
   
-  // Memoize referral link to prevent re-computation during cleanup
-  const referralLink = useMemo(() => 
-    `${window.location.origin}/invite/referral?ref=${profile?.profile?.id || 'user'}`, 
-    [profile?.profile?.id]
-  );
+  const referralLink = `${window.location.origin}/invite/referral?ref=user`;
   
   const handleCopyLink = async () => {
-    try {
-      if (!navigator.clipboard) {
-        throw new Error('Clipboard API not available');
-      }
-      
-      await navigator.clipboard.writeText(referralLink);
-      setCopiedLink(true);
-      toast.success("Referral link copied to clipboard!");
-      
-      // Clear the copied state after 3 seconds
-      setTimeout(() => setCopiedLink(false), 3000);
-    } catch (error) {
-      console.error('[ReferralModal] Copy error:', error);
-      toast.error("Failed to copy link. Please try again.");
-    }
+    await navigator.clipboard.writeText(referralLink);
+    setCopiedLink(true);
+    toast.success("Referral link copied to clipboard!");
+    setTimeout(() => setCopiedLink(false), 3000);
   };
 
   const steps = [
