@@ -1,10 +1,13 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.54.0';
+import { Resend } from "npm:resend@2.0.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 interface PublicRequestData {
   business_id: string;
@@ -19,6 +22,145 @@ interface PublicRequestData {
   alternative_date?: string;
   preferred_times?: string[];
   notes?: string;
+}
+
+/**
+ * Generate branded request confirmation email
+ */
+function generateRequestConfirmationEmail(
+  businessName: string,
+  businessLogoUrl: string | null,
+  customerName: string,
+  customerEmail: string,
+  requestTitle: string,
+  serviceDetails: string,
+  preferredDate?: string,
+  preferredTimes?: string[]
+) {
+  const subject = `${businessName} • Request Confirmation`;
+  
+  const headerLeft = businessLogoUrl 
+    ? `<img src="${businessLogoUrl}" alt="${businessName} logo" style="height:32px; max-height:32px; border-radius:4px; display:block;" />`
+    : `<span style="font-weight:600; font-size:16px; color:#f8fafc;">${businessName}</span>`;
+
+  const formattedDate = preferredDate ? new Date(preferredDate).toLocaleDateString('en-US', { 
+    weekday: 'long',
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  }) : null;
+
+  const timesText = preferredTimes && preferredTimes.length > 0 
+    ? preferredTimes.join(', ') 
+    : 'Any time';
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Request Confirmation - ${businessName}</title>
+      </head>
+      <body style="margin:0; padding:0; background:#f1f5f9; font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu, Cantarell, 'Noto Sans', sans-serif;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#f1f5f9; padding:40px 20px;">
+          <tr>
+            <td align="center">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="600" style="max-width:600px; background:#ffffff; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);">
+                
+                <!-- Header -->
+                <tr>
+                  <td style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding:24px 32px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td align="left">${headerLeft}</td>
+                        <td align="right" style="color:#f8fafc; font-weight:600; font-size:14px; opacity:0.9;">Request Confirmation</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- Main Content -->
+                <tr>
+                  <td style="padding:40px 32px;">
+                    
+                    <!-- Greeting -->
+                    <div style="margin-bottom:32px;">
+                      <h1 style="margin:0 0 16px; font-size:28px; font-weight:700; color:#111827; line-height:1.2;">
+                        Thank you, ${customerName}!
+                      </h1>
+                      <p style="margin:0; font-size:16px; line-height:1.6; color:#6b7280;">
+                        We've received your service request and will get back to you soon.
+                      </p>
+                    </div>
+
+                    <!-- Request Details -->
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:24px; margin-bottom:32px;">
+                      <h2 style="margin:0 0 16px; font-size:18px; font-weight:600; color:#111827;">Your Request Details</h2>
+                      
+                      <div style="margin-bottom:16px;">
+                        <div style="font-weight:600; color:#111827; margin-bottom:4px;">Service Requested:</div>
+                        <div style="color:#374151;">${requestTitle}</div>
+                      </div>
+                      
+                      <div style="margin-bottom:16px;">
+                        <div style="font-weight:600; color:#111827; margin-bottom:4px;">Details:</div>
+                        <div style="color:#374151; line-height:1.6;">${serviceDetails}</div>
+                      </div>
+                      
+                      ${formattedDate ? `
+                        <div style="margin-bottom:16px;">
+                          <div style="font-weight:600; color:#111827; margin-bottom:4px;">Preferred Date:</div>
+                          <div style="color:#374151;">${formattedDate}</div>
+                        </div>
+                      ` : ''}
+                      
+                      <div>
+                        <div style="font-weight:600; color:#111827; margin-bottom:4px;">Preferred Time:</div>
+                        <div style="color:#374151;">${timesText}</div>
+                      </div>
+                    </div>
+
+                    <!-- What's Next -->
+                    <div style="background:#fef3c7; border:1px solid #fbbf24; border-radius:8px; padding:24px; margin-bottom:32px;">
+                      <h3 style="margin:0 0 12px; font-size:16px; font-weight:600; color:#92400e;">What happens next?</h3>
+                      <ul style="margin:0; padding-left:20px; color:#92400e; line-height:1.7;">
+                        <li style="margin-bottom:8px;">We'll review your request within 24 hours</li>
+                        <li style="margin-bottom:8px;">Our team will contact you to schedule an assessment</li>
+                        <li style="margin-bottom:8px;">We'll provide you with a detailed quote</li>
+                      </ul>
+                    </div>
+
+                    <!-- Contact Info -->
+                    <div style="border-top:1px solid #e5e7eb; padding-top:24px;">
+                      <p style="margin:0; font-size:14px; color:#6b7280; text-align:center; line-height:1.5;">
+                        Have questions? Simply reply to this email and we'll get back to you promptly.
+                      </p>
+                    </div>
+
+                  </td>
+                </tr>
+
+                <!-- Footer -->
+                <tr>
+                  <td style="background:#f8fafc; padding:24px 32px; border-top:1px solid #e5e7eb; text-align:center;">
+                    <p style="margin:0 0 8px; font-size:14px; color:#374151; font-weight:600;">
+                      ${businessName}
+                    </p>
+                    <p style="margin:0; font-size:12px; color:#6b7280;">
+                      Professional service management
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
+  `;
+
+  return { subject, html };
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -203,6 +345,44 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     console.log('Request created successfully:', request.id);
+
+    // Send confirmation email to customer
+    try {
+      const customerName = requestData.customer_name?.trim() || 
+                          requestData.customer_email.split('@')[0] || 
+                          'Valued Customer';
+                          
+      const { subject, html } = generateRequestConfirmationEmail(
+        business.name,
+        business.logo_url,
+        customerName,
+        requestData.customer_email,
+        requestData.title,
+        requestData.service_details,
+        requestData.preferred_assessment_date,
+        requestData.preferred_times
+      );
+
+      const fromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'noreply@servicegrid.app';
+      
+      console.log('Sending confirmation email to:', requestData.customer_email);
+      
+      const emailResponse = await resend.emails.send({
+        from: `${business.name} <${fromEmail}>`,
+        to: [requestData.customer_email],
+        subject,
+        html,
+      });
+
+      if (emailResponse.error) {
+        console.error('Failed to send confirmation email:', emailResponse.error);
+      } else {
+        console.log('Confirmation email sent successfully:', emailResponse.data?.id);
+      }
+    } catch (emailError) {
+      console.error('Error sending confirmation email:', emailError);
+      // Don't fail the request if email fails
+    }
 
     return new Response(JSON.stringify({ 
       success: true, 
