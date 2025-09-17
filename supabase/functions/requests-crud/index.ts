@@ -40,19 +40,12 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     if (req.method === 'GET') {
-      // Fetch requests with customer information
+      console.log('[requests-crud] Processing GET request...');
+      
+      // Simplified query first - just get requests without join
       const { data: requests, error } = await supabase
         .from('requests')
-        .select(`
-          *,
-          customer:customers(
-            id,
-            name,
-            email,
-            phone,
-            address
-          )
-        `)
+        .select('*')
         .eq('business_id', ctx.businessId)
         .order('created_at', { ascending: false });
 
@@ -62,6 +55,26 @@ Deno.serve(async (req) => {
       }
 
       console.log('[requests-crud] Fetched', requests?.length || 0, 'requests');
+      
+      // Now try to get customer data separately
+      if (requests && requests.length > 0) {
+        const customerIds = [...new Set(requests.map(r => r.customer_id))];
+        const { data: customers, error: customerError } = await supabase
+          .from('customers')
+          .select('id, name, email, phone, address')
+          .in('id', customerIds);
+          
+        if (customerError) {
+          console.error('[requests-crud] Customer fetch error:', customerError);
+        } else {
+          // Merge customer data with requests
+          const customerMap = new Map(customers?.map(c => [c.id, c]) || []);
+          requests.forEach(request => {
+            request.customer = customerMap.get(request.customer_id) || null;
+          });
+        }
+      }
+      
       return json(requests || []);
     }
 
