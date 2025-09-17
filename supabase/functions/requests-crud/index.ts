@@ -95,15 +95,22 @@ Deno.serve(async (req) => {
         alternative_date,
         preferred_times,
         status = 'New',
-        notes,
-        owner_id
+        notes
       } = body;
+
+      console.log('[requests-crud] POST - About to insert request with data:', {
+        business_id: ctx.businessId,
+        owner_id: ctx.userId,
+        customer_id,
+        title,
+        status
+      });
 
       const { data: request, error } = await supabase
         .from('requests')
         .insert({
           business_id: ctx.businessId,
-          owner_id,
+          owner_id: ctx.userId,
           customer_id,
           title,
           property_address,
@@ -114,16 +121,7 @@ Deno.serve(async (req) => {
           status,
           notes
         })
-        .select(`
-          *,
-          customer:customers(
-            id,
-            name,
-            email,
-            phone,
-            address
-          )
-        `)
+        .select('*')
         .single();
 
       if (error) {
@@ -150,16 +148,7 @@ Deno.serve(async (req) => {
         .update(updateData)
         .eq('id', id)
         .eq('business_id', ctx.businessId)
-        .select(`
-          *,
-          customer:customers(
-            id,
-            name,
-            email,
-            phone,
-            address
-          )
-        `)
+        .select('*')
         .single();
 
       if (error) {
