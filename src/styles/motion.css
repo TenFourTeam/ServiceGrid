@@ -1,51 +1,47 @@
 /* Global motion tokens and micro-interactions */
-@layer base {
-  :root {
-    /* Durations */
-    --motion-duration-fast: var(--dur-200, 200ms);
-    --motion-duration-base: var(--dur-300, 300ms);
-    --motion-duration-slow: var(--dur-500, 500ms);
-    /* Easing */
-    --motion-ease-standard: var(--ease-standard, cubic-bezier(0.4,0,0.2,1));
-    /* Depth */
-    --motion-shadow-1: var(--shadow-1);
-    --motion-shadow-2: var(--shadow-2);
-  }
+:root {
+  /* Durations */
+  --motion-duration-fast: var(--dur-200, 200ms);
+  --motion-duration-base: var(--dur-300, 300ms);
+  --motion-duration-slow: var(--dur-500, 500ms);
+  /* Easing */
+  --motion-ease-standard: var(--ease-standard, cubic-bezier(0.4,0,0.2,1));
+  /* Depth */
+  --motion-shadow-1: var(--shadow-1);
+  --motion-shadow-2: var(--shadow-2);
 }
 
-@layer utilities {
-  /* Generic interactive transition baseline */
-  .motion-interactive {
-    transition: transform var(--motion-duration-base) var(--motion-ease-standard),
-                box-shadow var(--motion-duration-base) var(--motion-ease-standard),
-                background-color var(--motion-duration-fast) var(--motion-ease-standard),
-                color var(--motion-duration-fast) var(--motion-ease-standard),
-                border-color var(--motion-duration-fast) var(--motion-ease-standard),
-                opacity var(--motion-duration-fast) var(--motion-ease-standard);
-    will-change: transform, box-shadow;
-  }
+/* Generic interactive transition baseline */
+.motion-interactive {
+  transition: transform var(--motion-duration-base) var(--motion-ease-standard),
+              box-shadow var(--motion-duration-base) var(--motion-ease-standard),
+              background-color var(--motion-duration-fast) var(--motion-ease-standard),
+              color var(--motion-duration-fast) var(--motion-ease-standard),
+              border-color var(--motion-duration-fast) var(--motion-ease-standard),
+              opacity var(--motion-duration-fast) var(--motion-ease-standard);
+  will-change: transform, box-shadow;
+}
 
-  /* Hover lift micro-interaction */
-  .motion-hover-lift:hover { transform: translateY(-2px); box-shadow: var(--motion-shadow-1); }
+/* Hover lift micro-interaction */
+.motion-hover-lift:hover { transform: translateY(-2px); box-shadow: var(--motion-shadow-1); }
 
-  /* Press (tap) feedback */
-  .motion-press { transform: scale(0.98); }
+/* Press (tap) feedback */
+.motion-press { transform: scale(0.98); }
 
-  /* Elevated card motion */
-  .motion-card { transition: transform var(--motion-duration-base) var(--motion-ease-standard), box-shadow var(--motion-duration-base) var(--motion-ease-standard); will-change: transform, box-shadow; }
-  .motion-card:hover { transform: translateY(-2px); box-shadow: var(--motion-shadow-1); }
-  .motion-card:active { transform: translateY(0); box-shadow: var(--motion-shadow-2); }
+/* Elevated card motion */
+.motion-card { transition: transform var(--motion-duration-base) var(--motion-ease-standard), box-shadow var(--motion-duration-base) var(--motion-ease-standard); will-change: transform, box-shadow; }
+.motion-card:hover { transform: translateY(-2px); box-shadow: var(--motion-shadow-1); }
+.motion-card:active { transform: translateY(0); box-shadow: var(--motion-shadow-2); }
 
-  /* Page fade-in on mount */
-  @keyframes page-fade-in {
-    0% { opacity: 0; transform: translateY(6px); }
-    100% { opacity: 1; transform: translateY(0); }
-  }
-  .page-fade { animation: page-fade-in var(--motion-duration-base) var(--motion-ease-standard); }
+/* Page fade-in on mount */
+@keyframes page-fade-in {
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.page-fade { animation: page-fade-in var(--motion-duration-base) var(--motion-ease-standard); }
 
-  @media (prefers-reduced-motion: reduce) {
-    .motion-interactive, .motion-card { transition: none !important; }
-    .motion-hover-lift:hover, .motion-press, .motion-card:hover, .motion-card:active { transform: none !important; box-shadow: none !important; }
-    .page-fade { animation: none !important; }
-  }
+@media (prefers-reduced-motion: reduce) {
+  .motion-interactive, .motion-card { transition: none !important; }
+  .motion-hover-lift:hover, .motion-press, .motion-card:hover, .motion-card:active { transform: none !important; box-shadow: none !important; }
+  .page-fade { animation: none !important; }
 }

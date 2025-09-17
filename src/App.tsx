@@ -21,6 +21,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const LandingPage = lazy(() => import("./pages/Landing"));
 const TeamPage = lazy(() => import("./pages/Team"));
 const TimesheetPage = lazy(() => import("./pages/Timesheet"));
+const ReferralPage = lazy(() => import("./pages/Referral"));
 
 const ClerkAuthPage = lazy(() => import("./pages/ClerkAuth"));
 const QuoteActionPage = lazy(() => import("./pages/QuoteAction"));
@@ -43,6 +44,7 @@ function PrefetchRoutes() {
       import("./components/Legal/LegalDocument"),
       import("./pages/Team"),
       import("./pages/Timesheet"),
+      import("./pages/Referral"),
       import("./pages/NotFound"),
       import("./pages/ClerkAuth"),
       import("./pages/QuoteAction"),
@@ -105,6 +107,7 @@ const App = () => (
                   </RequireRole>
                 } />
                 <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/referral" element={<ReferralPage />} />
                 <Route path="/legal" element={<LegalPage />} />
                 <Route path="/legal/:slug" element={<LegalDocument />} />
               </Route>

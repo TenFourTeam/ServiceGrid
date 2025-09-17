@@ -1,44 +1,40 @@
 /* Base design system utilities and a11y helpers */
-@layer base {
-  /* Focus ring */
-  :where(a, button, [tabindex], input, select, textarea):focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 3px hsl(var(--brand-500) / 0.35);
-  }
-
-  /* Visually hidden (screen-reader only) */
-  .visually-hidden {
-    position: absolute !important;
-    width: 1px !important;
-    height: 1px !important;
-    padding: 0 !important;
-    margin: -1px !important;
-    overflow: hidden !important;
-    clip: rect(0, 0, 1px, 1px) !important;
-    clip-path: inset(50%) !important;
-    border: 0 !important;
-    white-space: nowrap !important;
-  }
+/* Focus ring */
+:where(a, button, [tabindex], input, select, textarea):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px hsl(var(--brand-500) / 0.35);
 }
 
-@layer utilities {
-  /* Layout primitives */
-  .container-px { @apply px-4 sm:px-6 lg:px-8; }
-  .section { @apply py-16 md:py-24; }
-  .cluster { @apply flex flex-wrap items-center gap-3; }
-  .stack-4 > * + * { @apply mt-4; }
-  .stack-6 > * + * { @apply mt-6; }
+/* Visually hidden (screen-reader only) */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 1px, 1px) !important;
+  clip-path: inset(50%) !important;
+  border: 0 !important;
+  white-space: nowrap !important;
+}
 
-  /* Type utilities */
-  .lead { @apply text-lg text-muted-foreground; }
-  .eyebrow { @apply text-xs tracking-widest uppercase text-muted-foreground; }
+/* Layout primitives */
+.container-px { @apply px-4 sm:px-6 lg:px-8; }
+.section { @apply py-16 md:py-24; }
+.cluster { @apply flex flex-wrap items-center gap-3; }
+.stack-4 > * + * { @apply mt-4; }
+.stack-6 > * + * { @apply mt-6; }
 
-  /* Motion helpers */
-  .enter-hidden { @apply opacity-0 translate-y-4; }
-  .enter-show { @apply opacity-100 translate-y-0 transition-[opacity,transform] duration-300 ease-standard; }
+/* Type utilities */
+.lead { @apply text-lg text-muted-foreground; }
+.eyebrow { @apply text-xs tracking-widest uppercase text-muted-foreground; }
 
-  @media (prefers-reduced-motion: reduce) {
-    .enter-hidden { @apply opacity-100 translate-y-0; }
-    .enter-show { @apply transition-none; }
-  }
+/* Motion helpers */
+.enter-hidden { @apply opacity-0 translate-y-4; }
+.enter-show { @apply opacity-100 translate-y-0 transition-[opacity,transform] duration-300 ease-standard; }
+
+@media (prefers-reduced-motion: reduce) {
+  .enter-hidden { @apply opacity-100 translate-y-0; }
+  .enter-show { @apply transition-none; }
 }
