@@ -8,6 +8,7 @@ import { AuthBoundary, RequireAuth, PublicOnly, QueryClientClerkIntegration } fr
 import { RequireRole } from "@/components/Auth/RequireRole";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import LoadingScreen from "@/components/LoadingScreen";
+import { MetaUpdater } from "@/components/MetaUpdater";
 
 const CalendarPage = lazy(() => import("./pages/Calendar"));
 const WorkOrdersPage = lazy(() => import("./pages/WorkOrders"));
@@ -78,6 +79,7 @@ const App = () => (
               
               {/* Protected routes */}
               <Route element={<RequireAuth />}>
+                <MetaUpdater />
                 {/* Routes accessible to both owners and workers */}
                 <Route path="/calendar" element={<CalendarPage />} />
                 <Route path="/timesheet" element={<TimesheetPage />} />
