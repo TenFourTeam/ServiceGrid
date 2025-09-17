@@ -1,5 +1,5 @@
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -108,49 +108,55 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Send Quote</DialogTitle>
-        </DialogHeader>
-          <div className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-muted-foreground">To</label>
-                <Input value={to} onChange={(e) => setTo(e.target.value)} placeholder="customer@example.com" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-muted-foreground">Subject</label>
-                <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder={defaultSubject} />
-              </div>
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="max-h-[85vh]">
+        <DrawerHeader>
+          <DrawerTitle>Send Quote</DrawerTitle>
+        </DrawerHeader>
+        <div className="px-4 pb-4 space-y-6 overflow-y-auto flex-1">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-muted-foreground">To</label>
+              <Input value={to} onChange={(e) => setTo(e.target.value)} placeholder="customer@example.com" />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-muted-foreground">Message (optional)</label>
-              <Textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={3} placeholder="Add a short note..." />
-            </div>
-            <div className="h-px bg-border" />
-            <div className="space-y-2">
-              <div className="text-sm font-medium">Preview</div>
-              <div className="relative">
-                <div className="absolute inset-x-0 top-0 z-10 flex justify-center">
-                  <div className="mt-2 px-2 py-0.5 text-xs rounded-md bg-muted text-muted-foreground">
-                    Preview only. Links and buttons are disabled.
-                  </div>
-                </div>
-                <div
-                  className="email-preview border rounded-md p-4 pt-8 max-h-[50vh] overflow-auto bg-background"
-                  aria-label="Email preview (non-interactive)"
-                  dangerouslySetInnerHTML={{ __html: previewHtml }}
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={sending}>Cancel</Button>
-              <Button onClick={send} disabled={sending || !to || (!!quote && (quote.status === 'Sent' || quote.status === 'Approved'))}>{sending ? 'Sending…' : 'Send Email'}</Button>
+              <label className="text-sm font-medium text-muted-foreground">Subject</label>
+              <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder={defaultSubject} />
             </div>
           </div>
-      </DialogContent>
-    </Dialog>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-muted-foreground">Message (optional)</label>
+            <Textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={3} placeholder="Add a short note..." />
+          </div>
+          <div className="h-px bg-border" />
+          <div className="space-y-2">
+            <div className="text-sm font-medium">Preview</div>
+            <div className="relative">
+              <div className="absolute inset-x-0 top-0 z-10 flex justify-center">
+                <div className="mt-2 px-2 py-0.5 text-xs rounded-md bg-muted text-muted-foreground">
+                  Preview only. Links and buttons are disabled.
+                </div>
+              </div>
+              <div
+                className="email-preview border rounded-md p-4 pt-8 max-h-[40vh] overflow-auto bg-background"
+                aria-label="Email preview (non-interactive)"
+                dangerouslySetInnerHTML={{ __html: previewHtml }}
+              />
+            </div>
+          </div>
+        </div>
+        <DrawerFooter>
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={sending} className="flex-1">
+              Cancel
+            </Button>
+            <Button onClick={send} disabled={sending || !to || (!!quote && (quote.status === 'Sent' || quote.status === 'Approved'))} className="flex-1">
+              {sending ? 'Sending…' : 'Send Email'}
+            </Button>
+          </div>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 }
 
