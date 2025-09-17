@@ -197,7 +197,7 @@ export function RequestActions({ request }: RequestActionsProps) {
         </DropdownMenuItem>
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="gap-2 text-destructive focus:text-destructive">
+            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); e.stopPropagation(); }} className="gap-2 text-destructive focus:text-destructive">
               <Trash className="h-4 w-4" />
               Delete
             </DropdownMenuItem>

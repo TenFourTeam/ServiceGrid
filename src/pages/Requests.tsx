@@ -47,14 +47,18 @@ export default function Requests() {
       request.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (request.property_address?.toLowerCase().includes(searchQuery.toLowerCase()) || false);
     
-    const matchesStatus = selectedStatus === "All" || request.status === selectedStatus;
+    // For "All", exclude archived requests. For specific status, match exactly.
+    const matchesStatus = selectedStatus === "All" 
+      ? request.status !== "Archived"
+      : request.status === selectedStatus;
     
     return matchesSearch && matchesStatus;
   });
 
-  // Calculate counts for each status
+  // Calculate counts for each status (exclude archived from "All" count)
+  const nonArchivedRequests = requests.filter(request => request.status !== 'Archived');
   const counts = {
-    All: requests.length,
+    All: nonArchivedRequests.length,
     ...statusOptions.reduce((acc, status) => {
       acc[status.value] = requests.filter(request => request.status === status.value).length;
       return acc;

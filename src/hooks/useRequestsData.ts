@@ -22,7 +22,7 @@ export interface RequestListItem {
   preferred_assessment_date?: string;
   alternative_date?: string;
   preferred_times: string[];
-  status: 'New' | 'Reviewed' | 'Scheduled' | 'Completed' | 'Declined';
+  status: 'New' | 'Reviewed' | 'Scheduled' | 'Assessed' | 'Archived';
   notes?: string;
   created_at: string;
   updated_at: string;
