@@ -5,15 +5,37 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 Deno.serve(async (req) => {
+  console.log('[requests-crud] ===== Function Entry =====');
+  console.log('[requests-crud] Function is accessible and responding!');
+  console.log(`[requests-crud] ${req.method} request to ${req.url}`);
+  
   if (req.method === 'OPTIONS') {
+    console.log('[requests-crud] Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log(`[requests-crud] ${req.method} request received`);
+    console.log('[requests-crud] Starting authentication context resolution...');
     
     const ctx = await requireCtx(req);
-    console.log('[requests-crud] Context resolved:', { userId: ctx.userId, businessId: ctx.businessId });
+    console.log('[requests-crud] Raw context resolved:', JSON.stringify(ctx, null, 2));
+    
+    // Critical validation - ensure authentication context is complete
+    if (!ctx.userId || !ctx.businessId) {
+      console.error('[requests-crud] Authentication context incomplete:', { 
+        hasUserId: !!ctx.userId, 
+        hasBusinessId: !!ctx.businessId 
+      });
+      return new Response(
+        JSON.stringify({ error: 'Authentication required' }), 
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    console.log('[requests-crud] Authentication validated successfully:', {
+      userId: ctx.userId,
+      businessId: ctx.businessId
+    });
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
