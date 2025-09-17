@@ -27,6 +27,9 @@ export function RequestActions({ request }: RequestActionsProps) {
           address: request.property_address,
           status: 'Draft',
           notes_internal: `Created from request: ${request.title}\n\nService Details: ${request.service_details}${request.notes ? `\n\nNotes: ${request.notes}` : ''}`,
+          depositRequired: false,
+          taxRate: 0,
+          discount: 0,
         },
         toast: {
           success: `Quote created from request successfully`,
