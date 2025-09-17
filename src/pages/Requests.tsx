@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Plus, Search } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 import AppLayout from "@/components/Layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,18 +14,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Search, Filter, MoreHorizontal } from "lucide-react";
-import { useRequestsData, RequestListItem } from "@/hooks/useRequestsData";
-import { RequestDetailsModal } from "@/components/Requests/RequestDetailsModal";
-import { statusOptions } from "@/validation/requests";
-import { formatDistanceToNow } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useRequestsData, RequestListItem } from "@/hooks/useRequestsData";
+import { RequestBottomModal } from "@/components/Requests/RequestBottomModal";
+import { RequestShowModal } from "@/components/Requests/RequestShowModal";
+import { statusOptions } from "@/validation/requests";
 
 export default function Requests() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("All");
   const [selectedRequest, setSelectedRequest] = useState<RequestListItem | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isShowModalOpen, setIsShowModalOpen] = useState(false);
 
   const { data: requests = [], isLoading, error } = useRequestsData();
 
@@ -64,147 +66,159 @@ export default function Requests() {
   }
 
   return (
-    <AppLayout>
-      <div className="container mx-auto p-6 space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Requests</h1>
-            <p className="text-muted-foreground">Manage customer service requests and assessments</p>
-          </div>
-          <Button onClick={() => setIsCreateModalOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Request
-          </Button>
-        </div>
-
-        {/* Filters */}
-        <div className="flex gap-4 items-center">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search requests..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8"
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant={selectedStatus === "All" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setSelectedStatus("All")}
-            >
-              All
+    <div className="min-h-screen flex w-full">
+      <AppLayout>
+        <div className="container mx-auto p-6 space-y-6">
+          {/* Header */}
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Requests</h1>
+              <p className="text-muted-foreground">Manage customer service requests and assessments</p>
+            </div>
+            <Button onClick={() => setIsCreateModalOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Request
             </Button>
-            {statusOptions.map((status) => (
-              <Button
-                key={status.value}
-                variant={selectedStatus === status.value ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedStatus(status.value)}
-              >
-                {status.label}
-              </Button>
-            ))}
           </div>
-        </div>
 
-        {/* Requests Table */}
-        <Card>
-          <CardContent className="p-0">
-            {isLoading ? (
-              <div className="p-6 space-y-4">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="flex items-center space-x-4">
-                    <Skeleton className="h-4 w-32" />
-                    <Skeleton className="h-4 w-48" />
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-4 w-20" />
-                    <Skeleton className="h-4 w-16" />
-                  </div>
-                ))}
-              </div>
-            ) : filteredRequests.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground text-lg">
-                  {searchQuery || selectedStatus !== "All" 
-                    ? "No requests match your filters"
-                    : "No requests yet"
-                  }
-                </p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  {!searchQuery && selectedStatus === "All" 
-                    ? "Create your first request to get started"
-                    : "Try adjusting your search or filters"
-                  }
-                </p>
-                {!searchQuery && selectedStatus === "All" && (
-                  <Button className="mt-4" onClick={() => setIsCreateModalOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    New Request
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Client</TableHead>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Property</TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead>Requested</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredRequests.map((request) => (
-                    <TableRow
-                      key={request.id}
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => setSelectedRequest(request)}
-                    >
-                      <TableCell className="font-medium">
-                        {request.customer?.name || 'Unknown Customer'}
-                      </TableCell>
-                      <TableCell>{request.title}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {request.property_address || 'No address provided'}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {request.customer?.email || 'No email'}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(request.status)}
-                      </TableCell>
-                    </TableRow>
+          {/* Filters */}
+          <div className="flex gap-4 items-center">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search requests..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant={selectedStatus === "All" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedStatus("All")}
+              >
+                All
+              </Button>
+              {statusOptions.map((status) => (
+                <Button
+                  key={status.value}
+                  variant={selectedStatus === status.value ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedStatus(status.value)}
+                >
+                  {status.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* Requests Table */}
+          <Card>
+            <CardContent className="p-0">
+              {isLoading ? (
+                <div className="p-6 space-y-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="flex items-center space-x-4">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-4 w-48" />
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-4 w-20" />
+                      <Skeleton className="h-4 w-16" />
+                    </div>
                   ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+                </div>
+              ) : filteredRequests.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground text-lg">
+                    {searchQuery || selectedStatus !== "All" 
+                      ? "No requests match your filters"
+                      : "No requests yet"
+                    }
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {!searchQuery && selectedStatus === "All" 
+                      ? "Create your first request to get started"
+                      : "Try adjusting your search or filters"
+                    }
+                  </p>
+                  {!searchQuery && selectedStatus === "All" && (
+                    <Button className="mt-4" onClick={() => setIsCreateModalOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      New Request
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Client</TableHead>
+                      <TableHead>Title</TableHead>
+                      <TableHead>Property</TableHead>
+                      <TableHead>Contact</TableHead>
+                      <TableHead>Requested</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredRequests.map((request) => (
+                      <TableRow
+                        key={request.id}
+                        className="cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => {
+                          setSelectedRequest(request);
+                          setIsShowModalOpen(true);
+                        }}
+                      >
+                        <TableCell className="font-medium">
+                          {request.customer?.name || 'Unknown Customer'}
+                        </TableCell>
+                        <TableCell>{request.title}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {request.property_address || 'No address provided'}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {request.customer?.email || 'No email'}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
+                        </TableCell>
+                        <TableCell>
+                          {getStatusBadge(request.status)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </AppLayout>
 
-        {/* Modals */}
-        {selectedRequest && (
-          <RequestDetailsModal
-            request={selectedRequest}
-            open={!!selectedRequest}
-            onClose={() => setSelectedRequest(null)}
-          />
-        )}
-        
-        {isCreateModalOpen && (
-          <RequestDetailsModal
-            open={isCreateModalOpen}
-            onClose={() => setIsCreateModalOpen(false)}
-          />
-        )}
-      </div>
-    </AppLayout>
+      {/* Modals */}
+      <RequestBottomModal
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+        onRequestCreated={() => {
+          // Request will be automatically refreshed via query invalidation
+        }}
+      />
+      
+      <RequestShowModal
+        request={selectedRequest}
+        open={isShowModalOpen}
+        onOpenChange={(open) => {
+          setIsShowModalOpen(open);
+          if (!open) {
+            setSelectedRequest(null);
+          }
+        }}
+        onRequestUpdated={() => {
+          // Request will be automatically refreshed via query invalidation
+        }}
+      />
+    </div>
   );
 }

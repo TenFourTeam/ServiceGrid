@@ -36,6 +36,7 @@ const queryKeys = {
     jobs: (businessId: string, userId?: string) => userId ? ['data', 'jobs', businessId, userId] as const : ['data', 'jobs', businessId] as const,
     quotes: (businessId: string) => ['data', 'quotes', businessId] as const,
     invoices: (businessId: string) => ['data', 'invoices', businessId] as const,
+    requests: (businessId: string) => ['data', 'requests', businessId] as const,
     members: (businessId: string) => ['data', 'members', businessId] as const,
     timesheet: (businessId: string) => ['data', 'timesheet', businessId] as const,
   },
@@ -46,6 +47,7 @@ const queryKeys = {
     jobs: (businessId: string) => ['counts', 'jobs', businessId] as const,
     quotes: (businessId: string) => ['counts', 'quotes', businessId] as const,
     invoices: (businessId: string) => ['counts', 'invoices', businessId] as const,
+    requests: (businessId: string) => ['counts', 'requests', businessId] as const,
   },
   
   // Billing and subscription
@@ -108,6 +110,12 @@ const invalidationHelpers = {
     queryClient.invalidateQueries({ queryKey: queryKeys.data.jobs(businessId) });
   },
   
+  requests: (queryClient: any, businessId: string) => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.counts.requests(businessId) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.data.requests(businessId) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary() });
+  },
+  
   timesheet: (queryClient: any, businessId: string) => {
     queryClient.invalidateQueries({ queryKey: queryKeys.data.timesheet(businessId) });
   },
@@ -129,6 +137,7 @@ const invalidationHelpers = {
     invalidationHelpers.jobs(queryClient, businessId);
     invalidationHelpers.quotes(queryClient, businessId);
     invalidationHelpers.invoices(queryClient, businessId);
+    invalidationHelpers.requests(queryClient, businessId);
     invalidationHelpers.team(queryClient, businessId);
     invalidationHelpers.billing(queryClient, businessId, userId);
   }
