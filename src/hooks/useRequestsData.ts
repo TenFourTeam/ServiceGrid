@@ -49,8 +49,20 @@ export function useRequestsData() {
         throw new Error(error.message || 'Failed to fetch requests');
       }
 
-      console.info("[useRequestsData] fetched", data?.data?.length || 0, "requests");
-      return (data?.data || []) as RequestListItem[];
+      console.info("[useRequestsData] raw response:", data);
+      console.info("[useRequestsData] data structure:", {
+        hasData: !!data,
+        hasDataProperty: !!(data?.data),
+        dataLength: data?.length || 0,
+        dataData: data?.data?.length || 0,
+        isArray: Array.isArray(data),
+        isDataArray: Array.isArray(data?.data)
+      });
+
+      // The backend returns requests directly, not wrapped in a data property
+      const requests = Array.isArray(data) ? data : (data?.data || []);
+      console.info("[useRequestsData] final requests:", requests);
+      return requests as RequestListItem[];
     },
     enabled,
     staleTime: 1000 * 60, // 1 minute

@@ -29,8 +29,9 @@ export default function Requests() {
 
   // Filter requests based on search query and status
   const filteredRequests = requests.filter((request) => {
+    const customerName = request.customer?.name || '';
     const matchesSearch = 
-      request.customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       request.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (request.property_address?.toLowerCase().includes(searchQuery.toLowerCase()) || false);
     
@@ -165,14 +166,14 @@ export default function Requests() {
                       onClick={() => setSelectedRequest(request)}
                     >
                       <TableCell className="font-medium">
-                        {request.customer.name}
+                        {request.customer?.name || 'Unknown Customer'}
                       </TableCell>
                       <TableCell>{request.title}</TableCell>
                       <TableCell className="text-muted-foreground">
                         {request.property_address || 'No address provided'}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {request.customer.email}
+                        {request.customer?.email || 'No email'}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}

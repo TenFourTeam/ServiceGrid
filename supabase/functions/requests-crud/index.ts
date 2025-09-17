@@ -55,26 +55,36 @@ Deno.serve(async (req) => {
       }
 
       console.log('[requests-crud] Fetched', requests?.length || 0, 'requests');
+      console.log('[requests-crud] Raw requests data:', requests);
       
       // Now try to get customer data separately
       if (requests && requests.length > 0) {
         const customerIds = [...new Set(requests.map(r => r.customer_id))];
+        console.log('[requests-crud] Customer IDs to fetch:', customerIds);
+        
         const { data: customers, error: customerError } = await supabase
           .from('customers')
           .select('id, name, email, phone, address')
           .in('id', customerIds);
+          
+        console.log('[requests-crud] Fetched customers:', customers);
           
         if (customerError) {
           console.error('[requests-crud] Customer fetch error:', customerError);
         } else {
           // Merge customer data with requests
           const customerMap = new Map(customers?.map(c => [c.id, c]) || []);
+          console.log('[requests-crud] Customer map:', Object.fromEntries(customerMap));
+          
           requests.forEach(request => {
-            request.customer = customerMap.get(request.customer_id) || null;
+            const customer = customerMap.get(request.customer_id);
+            request.customer = customer || null;
+            console.log(`[requests-crud] Request ${request.id} customer:`, customer);
           });
         }
       }
       
+      console.log('[requests-crud] Final requests with customers:', requests);
       return json(requests || []);
     }
 
