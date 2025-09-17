@@ -2,6 +2,7 @@ import React from "react";
 import { Navigate, useLocation, Outlet } from "react-router-dom";
 import { useAuth } from "@clerk/clerk-react";
 import LoadingScreen from "@/components/LoadingScreen";
+import { MetaUpdater } from "@/components/MetaUpdater";
 
 interface AuthBoundaryProps {
   children: React.ReactNode;
@@ -45,6 +46,7 @@ export function AuthBoundary({
 export function RequireAuth() {
   return (
     <AuthBoundary requireAuth>
+      <MetaUpdater />
       <Outlet />
     </AuthBoundary>
   );

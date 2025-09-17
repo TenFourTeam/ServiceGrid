@@ -79,7 +79,6 @@ const App = () => (
               
               {/* Protected routes */}
               <Route element={<RequireAuth />}>
-                <MetaUpdater />
                 {/* Routes accessible to both owners and workers */}
                 <Route path="/calendar" element={<CalendarPage />} />
                 <Route path="/timesheet" element={<TimesheetPage />} />
