@@ -4,7 +4,7 @@ import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useUserBusinesses } from "@/hooks/useUserBusinesses";
 import { useBusinessSwitcher } from "@/hooks/useBusinessSwitcher";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarTrigger, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
-import { Calendar as CalendarIcon, FileText, Receipt, Users, Wrench, User as UserIcon, Settings as SettingsIcon, LifeBuoy, LogOut, Shield, Clock, UserPlus } from "lucide-react";
+import { Calendar as CalendarIcon, FileText, Receipt, Users, Wrench, User as UserIcon, Settings as SettingsIcon, LifeBuoy, LogOut, Shield, Clock, UserPlus, ClipboardList } from "lucide-react";
 import BusinessLogo from "@/components/BusinessLogo";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useClerk, useUser } from "@clerk/clerk-react";
@@ -40,6 +40,11 @@ const allItems = [{
   title: "Customers",
   url: "/customers",
   icon: Users,
+  workerAccess: false
+}, {
+  title: "Requests",
+  url: "/requests",
+  icon: ClipboardList,
   workerAccess: false
 }, {
   title: "Team",

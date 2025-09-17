@@ -870,6 +870,57 @@ export type Database = {
           },
         ]
       }
+      requests: {
+        Row: {
+          alternative_date: string | null
+          business_id: string
+          created_at: string
+          customer_id: string
+          id: string
+          notes: string | null
+          owner_id: string
+          preferred_assessment_date: string | null
+          preferred_times: Json | null
+          property_address: string | null
+          service_details: string
+          status: Database["public"]["Enums"]["request_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          alternative_date?: string | null
+          business_id: string
+          created_at?: string
+          customer_id: string
+          id?: string
+          notes?: string | null
+          owner_id: string
+          preferred_assessment_date?: string | null
+          preferred_times?: Json | null
+          property_address?: string | null
+          service_details: string
+          status?: Database["public"]["Enums"]["request_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          alternative_date?: string | null
+          business_id?: string
+          created_at?: string
+          customer_id?: string
+          id?: string
+          notes?: string | null
+          owner_id?: string
+          preferred_assessment_date?: string | null
+          preferred_times?: Json | null
+          property_address?: string | null
+          service_details?: string
+          status?: Database["public"]["Enums"]["request_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       subscribers: {
         Row: {
           created_at: string
@@ -1033,6 +1084,12 @@ export type Database = {
         | "Approved"
         | "Declined"
         | "Edits Requested"
+      request_status:
+        | "New"
+        | "Reviewed"
+        | "Scheduled"
+        | "Completed"
+        | "Declined"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1181,6 +1238,7 @@ export const Constants = {
         "Declined",
         "Edits Requested",
       ],
+      request_status: ["New", "Reviewed", "Scheduled", "Completed", "Declined"],
     },
   },
 } as const

@@ -12,6 +12,7 @@ import LoadingScreen from "@/components/LoadingScreen";
 const CalendarPage = lazy(() => import("./pages/Calendar"));
 const WorkOrdersPage = lazy(() => import("./pages/WorkOrders"));
 const QuotesPage = lazy(() => import("./pages/Quotes"));
+const RequestsPage = lazy(() => import("./pages/Requests"));
 const InvoicesPage = lazy(() => import("./pages/Invoices"));
 const CustomersPage = lazy(() => import("./pages/Customers"));
 const SettingsPage = lazy(() => import("./pages/Settings"));
@@ -37,6 +38,7 @@ function PrefetchRoutes() {
       import("./pages/Calendar"),
       import("./pages/WorkOrders"),
       import("./pages/Quotes"),
+      import("./pages/Requests"),
       import("./pages/Invoices"),
       import("./pages/Customers"),
       import("./pages/Settings"),
@@ -104,6 +106,11 @@ const App = () => (
                 <Route path="/customers" element={
                   <RequireRole role="owner">
                     <CustomersPage />
+                  </RequireRole>
+                } />
+                <Route path="/requests" element={
+                  <RequireRole role="owner">
+                    <RequestsPage />
                   </RequireRole>
                 } />
                 <Route path="/settings" element={<SettingsPage />} />
