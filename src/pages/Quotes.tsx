@@ -53,6 +53,7 @@ export default function QuotesPage() {
   const [sendQuoteItem, setSendQuoteItem] = useState<Quote | null>(null);
   const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(null);
   const [detailsModalMode, setDetailsModalMode] = useState<'create' | 'view' | 'edit'>('view');
+  const [highlightedQuoteId, setHighlightedQuoteId] = useState<string | null>(null);
 
   const handleSendQuote = async (quoteListItem: QuoteListItem) => {
     // Convert QuoteListItem to full Quote by fetching from API
@@ -117,6 +118,7 @@ export default function QuotesPage() {
     const params = new URLSearchParams(location.search || '');
     const newParam = params.get('new');
     const highlightParam = params.get('highlight');
+    const newQuoteParam = params.get('newQuote');
     
     if (newParam && (newParam === '1' || newParam.toLowerCase() === 'true')) {
       setCreateModalOpen(true);
@@ -132,6 +134,26 @@ export default function QuotesPage() {
       newParams.delete('highlight');
       const newSearch = newParams.toString();
       navigate(`/quotes${newSearch ? `?${newSearch}` : ''}`, { replace: true });
+    }
+
+    if (newQuoteParam) {
+      setHighlightedQuoteId(newQuoteParam);
+      
+      // Scroll to the highlighted quote after a short delay to ensure the component has rendered
+      setTimeout(() => {
+        const quoteRow = document.querySelector(`[data-quote-id="${newQuoteParam}"]`);
+        if (quoteRow) {
+          quoteRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+      
+      // Auto-remove highlight after animation completes
+      setTimeout(() => {
+        setHighlightedQuoteId(null);
+      }, 4000);
+      
+      // Clean up URL
+      navigate('/quotes', { replace: true });
     }
   }, [location.search, navigate]);
 
@@ -210,8 +232,13 @@ export default function QuotesPage() {
                 ) : (
                   sortedQuotes.map((quote) => (
                   <TableRow 
-                    key={quote.id} 
-                    className="cursor-pointer hover:bg-muted/50"
+                    key={quote.id}
+                    data-quote-id={quote.id}
+                    className={`cursor-pointer hover:bg-muted/50 transition-all duration-300 ${
+                      highlightedQuoteId === quote.id 
+                        ? 'animate-pulse bg-success/10 border-l-4 border-l-success scale-[1.02] shadow-lg' 
+                        : ''
+                    }`}
                     onClick={() => {
                       setSelectedQuoteId(quote.id);
                       setDetailsModalMode('view');

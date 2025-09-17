@@ -30,8 +30,8 @@ export function RequestActions({ request }: RequestActionsProps) {
       taxRate: 0,
       discount: 0,
     }, {
-      onSuccess: () => {
-        navigate('/quotes');
+      onSuccess: (data) => {
+        navigate(`/quotes?newQuote=${data.id}`);
       }
     });
   };
