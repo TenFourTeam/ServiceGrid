@@ -8,11 +8,16 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { supaAdmin, businessId } = await requireCtx(req);
+    const ctx = await requireCtx(req);
+    
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     if (req.method === 'GET') {
       // Fetch requests with customer information
-      const { data: requests, error } = await supaAdmin
+      const { data: requests, error } = await supabase
         .from('requests')
         .select(`
           *,
@@ -24,7 +29,7 @@ Deno.serve(async (req) => {
             address
           )
         `)
-        .eq('business_id', businessId)
+        .eq('business_id', ctx.businessId)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -50,10 +55,10 @@ Deno.serve(async (req) => {
         owner_id
       } = body;
 
-      const { data: request, error } = await supaAdmin
+      const { data: request, error } = await supabase
         .from('requests')
         .insert({
-          business_id: businessId,
+          business_id: ctx.businessId,
           owner_id,
           customer_id,
           title,
@@ -89,11 +94,11 @@ Deno.serve(async (req) => {
       const body = await req.json();
       const { id, ...updateData } = body;
 
-      const { data: request, error } = await supaAdmin
+      const { data: request, error } = await supabase
         .from('requests')
         .update(updateData)
         .eq('id', id)
-        .eq('business_id', businessId)
+        .eq('business_id', ctx.businessId)
         .select(`
           *,
           customer:customers(
@@ -122,11 +127,11 @@ Deno.serve(async (req) => {
         return json({ error: 'Request ID is required' }, { status: 400 });
       }
 
-      const { error } = await supaAdmin
+      const { error } = await supabase
         .from('requests')
         .delete()
         .eq('id', id)
-        .eq('business_id', businessId);
+        .eq('business_id', ctx.businessId);
 
       if (error) {
         console.error('Error deleting request:', error);
