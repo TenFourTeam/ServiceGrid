@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Gift, Copy, Check, Users, ArrowRight, ExternalLink } from "lucide-react";
 import { 
   Drawer, 
@@ -22,17 +22,54 @@ export function ReferralModal({ open, onOpenChange }: ReferralModalProps) {
   const [copiedLink, setCopiedLink] = useState(false);
   const { data: profile } = useProfile();
   
-  // Generate referral link - using user ID for now
-  const referralLink = `${window.location.origin}/invite/referral?ref=${profile?.profile?.id || 'user'}`;
+  // Generate referral link safely to avoid DataCloneError
+  const referralLink = `${location.origin}/invite/referral?ref=${profile?.profile?.id || 'user'}`;
+  
+  // Add logging for modal lifecycle
+  useEffect(() => {
+    if (open) {
+      console.log('[ReferralModal] Modal opened');
+    } else {
+      console.log('[ReferralModal] Modal closed');
+    }
+  }, [open]);
+  
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      console.log('[ReferralModal] Component unmounting');
+      setCopiedLink(false);
+    };
+  }, []);
+  
+  // Safe modal close handler with error boundary
+  const handleModalClose = useCallback((newOpen: boolean) => {
+    try {
+      console.log('[ReferralModal] Close handler called with:', newOpen);
+      onOpenChange(newOpen);
+    } catch (error) {
+      console.error('[ReferralModal] Error in close handler:', error);
+      // Fallback - force close
+      onOpenChange(false);
+    }
+  }, [onOpenChange]);
   
   const handleCopyLink = async () => {
     try {
+      if (!navigator.clipboard) {
+        throw new Error('Clipboard API not available');
+      }
+      
       await navigator.clipboard.writeText(referralLink);
       setCopiedLink(true);
       toast.success("Referral link copied to clipboard!");
-      setTimeout(() => setCopiedLink(false), 3000);
+      
+      // Clear the copied state after 3 seconds
+      const timeoutId = setTimeout(() => setCopiedLink(false), 3000);
+      return () => clearTimeout(timeoutId);
     } catch (error) {
-      toast.error("Failed to copy link");
+      console.error('[ReferralModal] Copy error:', error);
+      toast.error("Failed to copy link. Please try again.");
     }
   };
 
@@ -55,7 +92,11 @@ export function ReferralModal({ open, onOpenChange }: ReferralModalProps) {
   ];
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
+    <Drawer 
+      open={open} 
+      onOpenChange={handleModalClose}
+      shouldScaleBackground={false}
+    >
       <DrawerContent className="max-h-[90vh]">
         <DrawerHeader className="text-center pb-4">
           <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary flex items-center justify-center">
@@ -121,7 +162,7 @@ export function ReferralModal({ open, onOpenChange }: ReferralModalProps) {
             <a 
               href="/legal" 
               className="text-primary hover:underline inline-flex items-center gap-1"
-              onClick={() => onOpenChange(false)}
+              onClick={() => handleModalClose(false)}
             >
               Terms & Conditions
               <ExternalLink className="h-3 w-3" />
@@ -130,7 +171,7 @@ export function ReferralModal({ open, onOpenChange }: ReferralModalProps) {
         </div>
 
         <DrawerFooter>
-          <Button onClick={() => onOpenChange(false)} variant="outline" className="w-full">
+          <Button onClick={() => handleModalClose(false)} variant="outline" className="w-full">
             Close
           </Button>
         </DrawerFooter>

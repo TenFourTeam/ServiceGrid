@@ -13,6 +13,7 @@ import { usePreloadImage } from "@/hooks/usePreloadImage";
 import { useProfile } from "@/queries/useProfile";
 import { SignOutButton } from "@/components/Auth/SignOutButton";
 import { ReferralModal } from "@/components/ReferralModal";
+import ReferralModalErrorBoundary from "@/components/ErrorBoundaries/ReferralModalErrorBoundary";
 const allItems = [{
   title: "Calendar",
   url: "/calendar",
@@ -182,9 +183,11 @@ export default function AppSidebar() {
         </div>
       </SidebarFooter>
 
-      <ReferralModal 
-        open={showReferralModal} 
-        onOpenChange={setShowReferralModal} 
-      />
+      <ReferralModalErrorBoundary>
+        <ReferralModal 
+          open={showReferralModal} 
+          onOpenChange={setShowReferralModal} 
+        />
+      </ReferralModalErrorBoundary>
     </Sidebar>;
 }
