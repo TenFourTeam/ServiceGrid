@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useBusinessContext } from './useBusinessContext';
+import { useAuth } from '@clerk/clerk-react';
+import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 import { toast } from 'sonner';
 import { RequestListItem } from './useRequestsData';
 
@@ -33,10 +34,12 @@ interface UpdateRequestData {
 export function useRequestOperations() {
   const queryClient = useQueryClient();
   const { businessId } = useBusinessContext();
+  const { getToken } = useAuth();
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
 
   const createRequest = useMutation({
     mutationFn: async (data: CreateRequestData): Promise<RequestListItem> => {
-      const { data: result, error } = await supabase.functions.invoke('requests-crud', {
+      const { data: result, error } = await authApi.invoke('requests-crud', {
         method: 'POST',
         body: data,
       });
@@ -56,7 +59,7 @@ export function useRequestOperations() {
 
   const updateRequest = useMutation({
     mutationFn: async (data: UpdateRequestData): Promise<RequestListItem> => {
-      const { data: result, error } = await supabase.functions.invoke('requests-crud', {
+      const { data: result, error } = await authApi.invoke('requests-crud', {
         method: 'PUT',
         body: data,
       });
@@ -76,9 +79,9 @@ export function useRequestOperations() {
 
   const deleteRequest = useMutation({
     mutationFn: async (id: string): Promise<void> => {
-      const { error } = await supabase.functions.invoke('requests-crud', {
+      const { error } = await authApi.invoke('requests-crud', {
         method: 'DELETE',
-        body: null,
+        body: { id },
       });
 
       if (error) throw new Error(error.message || 'Failed to delete request');

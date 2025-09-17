@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useBusinessContext } from './useBusinessContext';
+import { useAuth } from '@clerk/clerk-react';
+import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 
 export interface RequestCustomer {
   id: string;
@@ -29,25 +30,29 @@ export interface RequestListItem {
 }
 
 export function useRequestsData() {
-  const { businessId, isLoadingBusiness } = useBusinessContext();
+  const { isAuthenticated, businessId } = useBusinessContext();
+  const { getToken } = useAuth();
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const enabled = isAuthenticated && !!businessId;
 
   return useQuery({
     queryKey: ['requests', businessId],
     queryFn: async () => {
-      if (!businessId) return [];
-
-      const { data, error } = await supabase.functions.invoke('requests-crud', {
+      console.info("[useRequestsData] fetching requests via edge function");
+      
+      const { data, error } = await authApi.invoke('requests-crud', {
         method: 'GET'
       });
 
       if (error) {
-        console.error('Error fetching requests:', error);
+        console.error("[useRequestsData] error:", error);
         throw new Error(error.message || 'Failed to fetch requests');
       }
 
+      console.info("[useRequestsData] fetched", data?.data?.length || 0, "requests");
       return (data?.data || []) as RequestListItem[];
     },
-    enabled: !isLoadingBusiness && !!businessId,
+    enabled,
     staleTime: 1000 * 60, // 1 minute
   });
 }
