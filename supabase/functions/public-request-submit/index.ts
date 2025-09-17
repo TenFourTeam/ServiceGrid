@@ -152,6 +152,20 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Create the request
     console.log('Creating request for customer:', customerId);
+    console.log('Request data being inserted:', {
+      business_id: requestData.business_id,
+      owner_id: business.owner_id,
+      customer_id: customerId,
+      title: requestData.title,
+      property_address: requestData.property_address || null,
+      service_details: requestData.service_details,
+      preferred_assessment_date: requestData.preferred_assessment_date || null,
+      alternative_date: requestData.alternative_date || null,
+      preferred_times: requestData.preferred_times || [],
+      status: 'New',
+      notes: requestData.notes || null,
+    });
+    
     const { data: request, error: requestError } = await supabase
       .from('requests')
       .insert({
@@ -172,8 +186,18 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (requestError) {
       console.error('Error creating request:', requestError);
-      return new Response(JSON.stringify({ error: 'Failed to create request' }), {
-        status: 500,
+      console.error('Request error details:', {
+        message: requestError.message,
+        code: requestError.code,
+        details: requestError.details,
+        hint: requestError.hint
+      });
+      return new Response(JSON.stringify({ 
+        error: 'Failed to create request',
+        details: requestError.message,
+        code: requestError.code 
+      }), {
+        status: 400,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       });
     }
@@ -197,9 +221,18 @@ const handler = async (req: Request): Promise<Response> => {
 
   } catch (error: any) {
     console.error('Error in public-request-submit function:', error);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+      stack: error.stack
+    });
+    
     return new Response(JSON.stringify({ 
       error: 'Internal server error',
-      details: error.message 
+      details: error.message,
+      code: error.code
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
