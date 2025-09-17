@@ -1,19 +1,19 @@
 /* Global motion tokens and micro-interactions */
-
-/* Motion tokens in root scope since they're imported after @tailwind base */
-:root {
-  /* Durations */
-  --motion-duration-fast: var(--dur-200, 200ms);
-  --motion-duration-base: var(--dur-300, 300ms);
-  --motion-duration-slow: var(--dur-500, 500ms);
-  /* Easing */
-  --motion-ease-standard: var(--ease-standard, cubic-bezier(0.4,0,0.2,1));
-  /* Depth */
-  --motion-shadow-1: var(--shadow-1);
-  --motion-shadow-2: var(--shadow-2);
+@layer base {
+  :root {
+    /* Durations */
+    --motion-duration-fast: var(--dur-200, 200ms);
+    --motion-duration-base: var(--dur-300, 300ms);
+    --motion-duration-slow: var(--dur-500, 500ms);
+    /* Easing */
+    --motion-ease-standard: var(--ease-standard, cubic-bezier(0.4,0,0.2,1));
+    /* Depth */
+    --motion-shadow-1: var(--shadow-1);
+    --motion-shadow-2: var(--shadow-2);
+  }
 }
 
-/* Motion utilities */
+@layer utilities {
   /* Generic interactive transition baseline */
   .motion-interactive {
     transition: transform var(--motion-duration-base) var(--motion-ease-standard),
@@ -43,8 +43,9 @@
   }
   .page-fade { animation: page-fade-in var(--motion-duration-base) var(--motion-ease-standard); }
 
-@media (prefers-reduced-motion: reduce) {
-  .motion-interactive, .motion-card { transition: none !important; }
-  .motion-hover-lift:hover, .motion-press, .motion-card:hover, .motion-card:active { transform: none !important; box-shadow: none !important; }
-  .page-fade { animation: none !important; }
+  @media (prefers-reduced-motion: reduce) {
+    .motion-interactive, .motion-card { transition: none !important; }
+    .motion-hover-lift:hover, .motion-press, .motion-card:hover, .motion-card:active { transform: none !important; box-shadow: none !important; }
+    .page-fade { animation: none !important; }
+  }
 }
