@@ -1,18 +1,20 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders, json, requireCtx } from '../_lib/auth.ts';
 
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const ctx = await requireCtx(req);
+    console.log(`[requests-crud] ${req.method} request received`);
     
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const ctx = await requireCtx(req);
+    console.log('[requests-crud] Context resolved:', { userId: ctx.userId, businessId: ctx.businessId });
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     if (req.method === 'GET') {
@@ -33,15 +35,22 @@ Deno.serve(async (req) => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching requests:', error);
-        return json({ error: error.message }, { status: 400 });
+        console.error('[requests-crud] GET error:', error);
+        throw new Error(`Failed to fetch requests: ${error.message}`);
       }
 
-      return json({ data: requests });
+      console.log('[requests-crud] Fetched', requests?.length || 0, 'requests');
+      return json(requests || []);
     }
 
     if (req.method === 'POST') {
-      const body = await req.json();
+      let body;
+      try {
+        body = await req.json();
+      } catch (e) {
+        console.error('[requests-crud] POST JSON parse error:', e);
+        return json({ error: 'Invalid JSON in request body' }, { status: 400 });
+      }
       const {
         customer_id,
         title,
@@ -83,15 +92,22 @@ Deno.serve(async (req) => {
         .single();
 
       if (error) {
-        console.error('Error creating request:', error);
-        return json({ error: error.message }, { status: 400 });
+        console.error('[requests-crud] POST error:', error);
+        throw new Error(`Failed to create request: ${error.message}`);
       }
 
-      return json({ data: request });
+      console.log('[requests-crud] Created request:', request.id);
+      return json(request);
     }
 
     if (req.method === 'PUT') {
-      const body = await req.json();
+      let body;
+      try {
+        body = await req.json();
+      } catch (e) {
+        console.error('[requests-crud] PUT JSON parse error:', e);
+        return json({ error: 'Invalid JSON in request body' }, { status: 400 });
+      }
       const { id, ...updateData } = body;
 
       const { data: request, error } = await supabase
@@ -112,15 +128,22 @@ Deno.serve(async (req) => {
         .single();
 
       if (error) {
-        console.error('Error updating request:', error);
-        return json({ error: error.message }, { status: 400 });
+        console.error('[requests-crud] PUT error:', error);
+        throw new Error(`Failed to update request: ${error.message}`);
       }
 
-      return json({ data: request });
+      console.log('[requests-crud] Updated request:', request.id);
+      return json(request);
     }
 
     if (req.method === 'DELETE') {
-      const body = await req.json();
+      let body;
+      try {
+        body = await req.json();
+      } catch (e) {
+        console.error('[requests-crud] DELETE JSON parse error:', e);
+        return json({ error: 'Invalid JSON in request body' }, { status: 400 });
+      }
       const { id } = body;
 
       if (!id) {
@@ -134,17 +157,18 @@ Deno.serve(async (req) => {
         .eq('business_id', ctx.businessId);
 
       if (error) {
-        console.error('Error deleting request:', error);
-        return json({ error: error.message }, { status: 400 });
+        console.error('[requests-crud] DELETE error:', error);
+        throw new Error(`Failed to delete request: ${error.message}`);
       }
 
+      console.log('[requests-crud] Deleted request:', id);
       return json({ success: true });
     }
 
     return json({ error: 'Method not allowed' }, { status: 405 });
 
   } catch (error) {
-    console.error('Unexpected error in requests-crud:', error);
+    console.error('[requests-crud] Unexpected error:', error);
     return json({ error: 'Internal server error' }, { status: 500 });
   }
 });
