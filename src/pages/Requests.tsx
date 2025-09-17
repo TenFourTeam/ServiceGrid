@@ -215,7 +215,15 @@ export default function Requests() {
                           {getStatusBadge(request.status)}
                         </TableCell>
                         <TableCell>
-                          <RequestActions request={request} />
+                          <RequestActions 
+                            request={request} 
+                            onRequestDeleted={() => {
+                              if (selectedRequest?.id === request.id) {
+                                setIsShowModalOpen(false);
+                                setSelectedRequest(null);
+                              }
+                            }}
+                          />
                         </TableCell>
                       </TableRow>
                     ))}
@@ -247,6 +255,10 @@ export default function Requests() {
         }}
         onRequestUpdated={() => {
           // Request will be automatically refreshed via query invalidation
+        }}
+        onRequestDeleted={() => {
+          setIsShowModalOpen(false);
+          setSelectedRequest(null);
         }}
       />
       

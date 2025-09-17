@@ -14,9 +14,10 @@ import type { RequestListItem } from '@/hooks/useRequestsData';
 
 interface RequestActionsProps {
   request: RequestListItem;
+  onRequestDeleted?: () => void;
 }
 
-export function RequestActions({ request }: RequestActionsProps) {
+export function RequestActions({ request, onRequestDeleted }: RequestActionsProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const navigate = useNavigate();
   const { getToken } = useClerkAuth();
@@ -169,7 +170,11 @@ export function RequestActions({ request }: RequestActionsProps) {
 
   const handleDelete = () => {
     setShowDeleteDialog(false);
-    deleteRequest.mutate(request.id);
+    deleteRequest.mutate(request.id, {
+      onSuccess: () => {
+        onRequestDeleted?.();
+      }
+    });
   };
 
   return (
