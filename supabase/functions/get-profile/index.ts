@@ -79,6 +79,7 @@ Deno.serve(async (req) => {
           .select(`
             id,
             name,
+            description,
             phone,
             reply_to_email,
             tax_rate_default,
@@ -94,6 +95,7 @@ Deno.serve(async (req) => {
           business = {
             id: businessData.id,
             name: businessData.name,
+            description: businessData.description,
             phone: businessData.phone,
             replyToEmail: businessData.reply_to_email,
             taxRateDefault: businessData.tax_rate_default,
