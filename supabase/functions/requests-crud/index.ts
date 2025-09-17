@@ -1,8 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders, json, requireCtx } from '../_lib/auth.ts';
-
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -15,11 +11,9 @@ Deno.serve(async (req) => {
     const ctx = await requireCtx(req);
     console.log('[requests-crud] Context resolved:', { userId: ctx.userId, businessId: ctx.businessId });
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
     if (req.method === 'GET') {
       // Fetch requests with customer information
-      const { data: requests, error } = await supabase
+      const { data: requests, error } = await ctx.supaAdmin
         .from('requests')
         .select(`
           *,
@@ -64,7 +58,7 @@ Deno.serve(async (req) => {
         owner_id
       } = body;
 
-      const { data: request, error } = await supabase
+      const { data: request, error } = await ctx.supaAdmin
         .from('requests')
         .insert({
           business_id: ctx.businessId,
@@ -110,7 +104,7 @@ Deno.serve(async (req) => {
       }
       const { id, ...updateData } = body;
 
-      const { data: request, error } = await supabase
+      const { data: request, error } = await ctx.supaAdmin
         .from('requests')
         .update(updateData)
         .eq('id', id)
@@ -150,7 +144,7 @@ Deno.serve(async (req) => {
         return json({ error: 'Request ID is required' }, { status: 400 });
       }
 
-      const { error } = await supabase
+      const { error } = await ctx.supaAdmin
         .from('requests')
         .delete()
         .eq('id', id)
