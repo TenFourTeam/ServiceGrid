@@ -34,7 +34,7 @@ export function RequestShareModal({
   // Generate the public request form URL
   const generateShareUrl = () => {
     if (!business?.id) return "";
-    return `${window.location.origin}/request/${business.id}`;
+    return `https://servicegrid.app/request/${business.id}`;
   };
 
   // Generate the embed code with full iframe
@@ -58,7 +58,7 @@ export function RequestShareModal({
 <script>
   // Auto-resize iframe based on content (optional)
   window.addEventListener('message', function(e) {
-    if (e.origin !== '${window.location.origin}') return;
+    if (e.origin !== 'https://servicegrid.app') return;
     if (e.data.type === 'resize' && e.data.frameId === '${iframeId}') {
       var iframe = document.getElementById('${iframeId}');
       if (iframe) {

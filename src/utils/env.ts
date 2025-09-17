@@ -33,7 +33,7 @@ export function getAppUrl(): string {
   if (typeof window !== 'undefined') {
     return window.location.origin;
   }
-  return import.meta.env.VITE_APP_URL || 'https://app.servicegrid.ai';
+  return import.meta.env.VITE_APP_URL || 'https://servicegrid.app';
 }
 
 /**
