@@ -4,6 +4,7 @@ import { useAuth } from '@clerk/clerk-react';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 import { toast } from 'sonner';
 import { RequestListItem } from './useRequestsData';
+import { invalidationHelpers } from '@/queries/keys';
 
 interface CreateRequestData {
   customer_id: string;
@@ -48,7 +49,7 @@ export function useRequestOperations() {
       return result.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['requests', businessId] });
+      invalidationHelpers.requests(queryClient, businessId!);
       toast.success('Request created successfully');
     },
     onError: (error) => {
@@ -68,7 +69,7 @@ export function useRequestOperations() {
       return result.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['requests', businessId] });
+      invalidationHelpers.requests(queryClient, businessId!);
       toast.success('Request updated successfully');
     },
     onError: (error) => {
@@ -87,7 +88,7 @@ export function useRequestOperations() {
       if (error) throw new Error(error.message || 'Failed to delete request');
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['requests', businessId] });
+      invalidationHelpers.requests(queryClient, businessId!);
       toast.success('Request deleted successfully');
     },
     onError: (error) => {

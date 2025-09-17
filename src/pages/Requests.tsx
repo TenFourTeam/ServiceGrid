@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Plus, Search, Share } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import AppLayout from "@/components/Layout/AppLayout";
@@ -36,11 +36,42 @@ export default function Requests() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isShowModalOpen, setIsShowModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  
+  // Sorting state
+  const [sortKey, setSortKey] = useState<'customer' | 'title' | 'property' | 'status' | 'created'>('created');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
-  const { data: requests = [], isLoading, error } = useRequestsData();
+  const { data: requestsResponse, isLoading, error } = useRequestsData();
+  const requests = requestsResponse?.data || [];
+
+  // Sorting logic
+  function handleSort(key: 'customer' | 'title' | 'property' | 'status' | 'created') {
+    setSortKey((prev) => {
+      if (prev === key) {
+        setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+        return prev;
+      }
+      setSortDir(key === 'created' ? 'desc' : 'asc'); // Default created to desc (newest first)
+      return key;
+    });
+  }
+
+  const sortedRequests = useMemo(() => {
+    const arr = [...requests];
+    const baseCompare = (a: RequestListItem, b: RequestListItem) => {
+      if (sortKey === 'customer') return (a.customer?.name || '').localeCompare(b.customer?.name || '');
+      if (sortKey === 'title') return a.title.localeCompare(b.title);
+      if (sortKey === 'property') return (a.property_address || '').localeCompare(b.property_address || '');
+      if (sortKey === 'status') return a.status.localeCompare(b.status);
+      if (sortKey === 'created') return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      return 0;
+    };
+    arr.sort((a, b) => (sortDir === 'asc' ? baseCompare(a, b) : -baseCompare(a, b)));
+    return arr;
+  }, [requests, sortKey, sortDir]);
 
   // Filter requests based on search query and status
-  const filteredRequests = requests.filter((request) => {
+  const filteredRequests = sortedRequests.filter((request) => {
     const customerName = request.customer?.name || '';
     const matchesSearch = 
       customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -176,15 +207,35 @@ export default function Requests() {
                   )}
                 </div>
               ) : (
-                <Table>
+                  <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Customers</TableHead>
-                      <TableHead>Title</TableHead>
-                      <TableHead>Property</TableHead>
+                      <TableHead>
+                        <button className="flex items-center gap-1" onClick={() => handleSort('customer')} aria-label="Sort by customer">
+                          Customers{sortKey === 'customer' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                        </button>
+                      </TableHead>
+                      <TableHead>
+                        <button className="flex items-center gap-1" onClick={() => handleSort('title')} aria-label="Sort by title">
+                          Title{sortKey === 'title' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                        </button>
+                      </TableHead>
+                      <TableHead>
+                        <button className="flex items-center gap-1" onClick={() => handleSort('property')} aria-label="Sort by property">
+                          Property{sortKey === 'property' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                        </button>
+                      </TableHead>
                       <TableHead>Contact</TableHead>
-                      <TableHead>Requested</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead>
+                        <button className="flex items-center gap-1" onClick={() => handleSort('created')} aria-label="Sort by requested date">
+                          Requested{sortKey === 'created' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                        </button>
+                      </TableHead>
+                      <TableHead>
+                        <button className="flex items-center gap-1" onClick={() => handleSort('status')} aria-label="Sort by status">
+                          Status{sortKey === 'status' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                        </button>
+                      </TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>

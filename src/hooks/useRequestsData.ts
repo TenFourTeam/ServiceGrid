@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useBusinessContext } from './useBusinessContext';
 import { useAuth } from '@clerk/clerk-react';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
+import { queryKeys } from '@/queries/keys';
 
 export interface RequestCustomer {
   id: string;
@@ -36,7 +37,7 @@ export function useRequestsData() {
   const enabled = isAuthenticated && !!businessId;
 
   return useQuery({
-    queryKey: ['requests', businessId],
+    queryKey: queryKeys.data.requests(businessId!),
     queryFn: async () => {
       console.info("[useRequestsData] fetching requests via edge function");
       
@@ -62,9 +63,14 @@ export function useRequestsData() {
       // The backend returns requests directly, not wrapped in a data property
       const requests = Array.isArray(data) ? data : (data?.data || []);
       console.info("[useRequestsData] final requests:", requests);
-      return requests as RequestListItem[];
+      
+      // Return structured data to match unified pattern
+      return {
+        data: requests as RequestListItem[],
+        count: requests.length
+      };
     },
     enabled,
-    staleTime: 1000 * 60, // 1 minute
+    staleTime: 1000 * 30, // 30 seconds (same as quotes)
   });
 }
