@@ -17,7 +17,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // Default fallback values
 const DEFAULT_BUSINESS = {
   name: "ServiceGrid",
-  description: "Professional lawn care management software for service businesses. Streamline scheduling, invoicing, and customer management."
+  description: "Professional software for service businesses. Streamline scheduling, invoicing, and customer management."
 };
 
 async function getPrimaryBusiness() {
