@@ -168,6 +168,7 @@ export function RequestActions({ request }: RequestActionsProps) {
   };
 
   const handleDelete = () => {
+    setShowDeleteDialog(false);
     deleteRequest.mutate(request.id);
   };
 
