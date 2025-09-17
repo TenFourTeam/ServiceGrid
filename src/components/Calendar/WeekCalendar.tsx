@@ -534,9 +534,12 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                         const startsAt = safeCreateDate(j.startsAt);
                         const endsAt = safeCreateDate(j.endsAt);
                         
-                        if (!startsAt || !endsAt) return; // Skip jobs with invalid dates
+                        if (!startsAt) return; // Only require valid start time
+                        
+                        // Use default 1-hour duration if endsAt is null
+                        const effectiveEndsAt = endsAt || new Date(startsAt.getTime() + 60 * 60 * 1000);
                         const start = minutesFromAnchor(startsAt);
-                        const dur = endsAt.getTime() - startsAt.getTime();
+                        const dur = effectiveEndsAt.getTime() - startsAt.getTime();
                         const durMins = dur / (1000 * 60);
                         const height = durMins / TOTAL_MIN * 100;
                         const top = start / TOTAL_MIN * 100;
@@ -547,7 +550,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                         const statusColors = getJobStatusColors(j.status, j.isAssessment);
                         const currentTime = new Date();
                         const canDrag = canDragJob(j.status, currentTime, startsAt);
-                        const canResize = canResizeJob(j.status, currentTime, startsAt, endsAt);
+                        const canResize = canResizeJob(j.status, currentTime, startsAt, effectiveEndsAt);
                         
                         blocks.push(<div
                           key={`${j.id}-scheduled`}
