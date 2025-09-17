@@ -75,14 +75,14 @@ export default function Requests() {
           {/* Header */}
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <CardTitle>All Requests</CardTitle>
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => setIsShareModalOpen(true)}>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button variant="outline" onClick={() => setIsShareModalOpen(true)} className="w-full sm:w-auto">
                     <Share className="h-4 w-4 mr-2" />
                     Share Request Form
                   </Button>
-                  <Button onClick={() => setIsCreateModalOpen(true)}>
+                  <Button onClick={() => setIsCreateModalOpen(true)} className="w-full sm:w-auto">
                     <Plus className="h-4 w-4 mr-2" />
                     New Request
                   </Button>
