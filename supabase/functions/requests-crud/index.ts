@@ -114,16 +114,7 @@ Deno.serve(async (req) => {
           status,
           notes
         })
-        .select(`
-          *,
-          customer:customers(
-            id,
-            name,
-            email,
-            phone,
-            address
-          )
-        `)
+        .select('*')
         .single();
 
       if (error) {
