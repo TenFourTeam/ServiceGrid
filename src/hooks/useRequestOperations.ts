@@ -13,7 +13,7 @@ interface CreateRequestData {
   preferred_assessment_date?: string;
   alternative_date?: string;
   preferred_times?: string[];
-  status?: 'New' | 'Reviewed' | 'Scheduled' | 'Completed' | 'Declined';
+  status?: 'New' | 'Reviewed' | 'Scheduled' | 'Assessed' | 'Declined';
   notes?: string;
   owner_id: string;
 }
@@ -27,7 +27,7 @@ interface UpdateRequestData {
   preferred_assessment_date?: string;
   alternative_date?: string;
   preferred_times?: string[];
-  status?: 'New' | 'Reviewed' | 'Scheduled' | 'Completed' | 'Declined';
+  status?: 'New' | 'Reviewed' | 'Scheduled' | 'Assessed' | 'Declined';
   notes?: string;
 }
 

@@ -474,6 +474,7 @@ export type Database = {
           customer_id: string
           ends_at: string | null
           id: string
+          is_assessment: boolean | null
           is_clocked_in: boolean | null
           job_type: Database["public"]["Enums"]["job_type"] | null
           notes: string | null
@@ -481,6 +482,7 @@ export type Database = {
           photos: Json
           quote_id: string | null
           recurrence: string | null
+          request_id: string | null
           starts_at: string | null
           status: Database["public"]["Enums"]["job_status"]
           title: string | null
@@ -496,6 +498,7 @@ export type Database = {
           customer_id: string
           ends_at?: string | null
           id?: string
+          is_assessment?: boolean | null
           is_clocked_in?: boolean | null
           job_type?: Database["public"]["Enums"]["job_type"] | null
           notes?: string | null
@@ -503,6 +506,7 @@ export type Database = {
           photos?: Json
           quote_id?: string | null
           recurrence?: string | null
+          request_id?: string | null
           starts_at?: string | null
           status?: Database["public"]["Enums"]["job_status"]
           title?: string | null
@@ -518,6 +522,7 @@ export type Database = {
           customer_id?: string
           ends_at?: string | null
           id?: string
+          is_assessment?: boolean | null
           is_clocked_in?: boolean | null
           job_type?: Database["public"]["Enums"]["job_type"] | null
           notes?: string | null
@@ -525,6 +530,7 @@ export type Database = {
           photos?: Json
           quote_id?: string | null
           recurrence?: string | null
+          request_id?: string | null
           starts_at?: string | null
           status?: Database["public"]["Enums"]["job_status"]
           title?: string | null
@@ -551,6 +557,13 @@ export type Database = {
             columns: ["quote_id"]
             isOneToOne: false
             referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jobs_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
             referencedColumns: ["id"]
           },
         ]
@@ -1090,6 +1103,7 @@ export type Database = {
         | "Scheduled"
         | "Completed"
         | "Declined"
+        | "Assessed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1238,7 +1252,14 @@ export const Constants = {
         "Declined",
         "Edits Requested",
       ],
-      request_status: ["New", "Reviewed", "Scheduled", "Completed", "Declined"],
+      request_status: [
+        "New",
+        "Reviewed",
+        "Scheduled",
+        "Completed",
+        "Declined",
+        "Assessed",
+      ],
     },
   },
 } as const

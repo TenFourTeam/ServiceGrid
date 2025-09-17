@@ -8,7 +8,7 @@ export const requestSchema = z.object({
   preferred_assessment_date: z.string().optional(),
   alternative_date: z.string().optional(),
   preferred_times: z.array(z.string()).optional().default([]),
-  status: z.enum(['New', 'Reviewed', 'Scheduled', 'Completed', 'Declined']).optional().default('New'),
+  status: z.enum(['New', 'Reviewed', 'Scheduled', 'Assessed', 'Declined']).optional().default('New'),
   notes: z.string().optional(),
 });
 
@@ -23,8 +23,7 @@ export const preferredTimeOptions = [
 
 export const statusOptions = [
   { value: 'New', label: 'New', color: 'bg-blue-100 text-blue-800' },
-  { value: 'Reviewed', label: 'Reviewed', color: 'bg-yellow-100 text-yellow-800' },
   { value: 'Scheduled', label: 'Scheduled', color: 'bg-green-100 text-green-800' },
-  { value: 'Completed', label: 'Completed', color: 'bg-gray-100 text-gray-800' },
+  { value: 'Assessed', label: 'Assessed', color: 'bg-gray-100 text-gray-800' },
   { value: 'Declined', label: 'Declined', color: 'bg-red-100 text-red-800' },
 ] as const;

@@ -91,6 +91,8 @@ Deno.serve(async (req) => {
         updatedAt: job.updated_at,
         customerId: job.customer_id,
         quoteId: job.quote_id,
+        isAssessment: job.is_assessment,
+        requestId: job.request_id,
         customerName: job.customers?.name,
         customerEmail: job.customers?.email,
         customerPhone: job.customers?.phone,
@@ -124,7 +126,7 @@ Deno.serve(async (req) => {
         return json({ error: 'Invalid JSON in request body' }, { status: 400 });
       }
       
-      const { title, customerId, status, startsAt, endsAt, address, notes, jobType, quoteId } = body;
+      const { title, customerId, status, startsAt, endsAt, address, notes, jobType, quoteId, isAssessment, requestId } = body;
 
       const { data, error } = await supabase
         .from('jobs')
@@ -139,7 +141,9 @@ Deno.serve(async (req) => {
           address,
           notes,
           job_type: jobType || 'scheduled',
-          quote_id: quoteId
+          quote_id: quoteId,
+          is_assessment: isAssessment || false,
+          request_id: requestId
         }])
         .select()
         .single();
@@ -171,6 +175,8 @@ Deno.serve(async (req) => {
         updatedAt: data.updated_at,
         customerId: data.customer_id,
         quoteId: data.quote_id,
+        isAssessment: data.is_assessment,
+        requestId: data.request_id,
       };
       
       return json({ job: transformedJob });
@@ -188,7 +194,7 @@ Deno.serve(async (req) => {
         return json({ error: 'Invalid JSON in request body' }, { status: 400 });
       }
       
-      const { id, title, status, startsAt, endsAt, address, notes, photos, isClockedIn, clockInTime, clockOutTime } = body;
+      const { id, title, status, startsAt, endsAt, address, notes, photos, isClockedIn, clockInTime, clockOutTime, isAssessment, requestId } = body;
 
       const updateData: any = {};
       if (title !== undefined) updateData.title = title;
@@ -201,6 +207,8 @@ Deno.serve(async (req) => {
       if (isClockedIn !== undefined) updateData.is_clocked_in = isClockedIn;
       if (clockInTime !== undefined) updateData.clock_in_time = clockInTime;
       if (clockOutTime !== undefined) updateData.clock_out_time = clockOutTime;
+      if (isAssessment !== undefined) updateData.is_assessment = isAssessment;
+      if (requestId !== undefined) updateData.request_id = requestId;
 
       const { data, error } = await supabase
         .from('jobs')

@@ -121,6 +121,8 @@ export interface Job {
   clockOutTime?: ISODate | null;
   isClockedIn: boolean;
   assignedMembers?: BusinessMember[]; // NEW: assigned team members
+  isAssessment?: boolean; // NEW: marks if this is an assessment job
+  requestId?: string; // NEW: links back to the originating request
   createdAt: ISODate;
   updatedAt: ISODate;
 }
