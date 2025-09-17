@@ -120,37 +120,6 @@ export default function ReferralPage() {
           </CardContent>
         </Card>
 
-        {/* Benefits */}
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle>Benefits</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <h4 className="font-medium text-primary">For You</h4>
-                <ul className="space-y-1 text-sm text-muted-foreground">
-                  <li>• Get 1 month free when your referral subscribes</li>
-                  <li>• Help grow the contractor community</li>
-                  <li>• No limit on referrals</li>
-                </ul>
-              </div>
-              <div className="space-y-2">
-                <h4 className="font-medium text-primary">For Your Friend</h4>
-                <ul className="space-y-1 text-sm text-muted-foreground">
-                  <li>• Get 1 month free on their subscription</li>
-                  <li>• Access to all ServiceGrid features</li>
-                  <li>• Join a community of contractors</li>
-                </ul>
-              </div>
-            </div>
-            <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-              <p className="text-xs text-muted-foreground">
-                Terms and conditions apply. Free months are applied as credits to active subscriptions.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </AppLayout>
   );
