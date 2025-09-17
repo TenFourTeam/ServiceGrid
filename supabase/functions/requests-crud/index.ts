@@ -115,8 +115,8 @@ Deno.serve(async (req) => {
     }
 
     if (req.method === 'DELETE') {
-      const url = new URL(req.url);
-      const id = url.searchParams.get('id');
+      const body = await req.json();
+      const { id } = body;
 
       if (!id) {
         return json({ error: 'Request ID is required' }, { status: 400 });
