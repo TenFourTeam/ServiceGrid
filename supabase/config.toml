@@ -123,3 +123,15 @@ verify_jwt = false
 
 [functions.customers-bulk-delete]
 verify_jwt = false
+
+[functions.requests-crud]
+verify_jwt = false
+
+[functions.audit-logs-crud]
+verify_jwt = false
+
+[functions.invite-manage]
+verify_jwt = false
+
+[functions.public-request-submit]
+verify_jwt = false

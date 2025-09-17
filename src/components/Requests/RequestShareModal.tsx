@@ -34,36 +34,39 @@ export function RequestShareModal({
   // Generate the public request form URL
   const generateShareUrl = () => {
     if (!business?.id) return "";
-    return `https://servicegrid.app/request/${business.id}`;
+    return `${window.location.origin}/request/${business.id}`;
   };
 
-  // Generate the embed code
+  // Generate the embed code with full iframe
   const generateEmbedCode = () => {
     const shareUrl = generateShareUrl();
     if (!shareUrl) return "";
+    const iframeId = `request-form-${business.id}`;
     
-    return `<div id="request-form-embed">
-  <button 
-    onclick="window.open('${shareUrl}', '_blank')" 
-    style="
-      background-color: ${embedSettings.buttonColor};
-      color: ${embedSettings.textColor};
-      border: none;
-      padding: 12px 24px;
-      border-radius: 6px;
-      font-size: 16px;
-      font-weight: 500;
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-block;
-      transition: opacity 0.2s;
-    "
-    onmouseover="this.style.opacity='0.9'"
-    onmouseout="this.style.opacity='1'"
-  >
-    Submit Request
-  </button>
-</div>`;
+    return `<!-- Service Request Form Embed -->
+<div style="width: 100%; max-width: 800px; margin: 0 auto;">
+  <iframe 
+    id="${iframeId}"
+    src="${shareUrl}" 
+    style="width: 100%; height: 800px; border: none; border-radius: 8px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);"
+    title="Service Request Form"
+    scrolling="yes"
+    frameborder="0">
+  </iframe>
+</div>
+
+<script>
+  // Auto-resize iframe based on content (optional)
+  window.addEventListener('message', function(e) {
+    if (e.origin !== '${window.location.origin}') return;
+    if (e.data.type === 'resize' && e.data.frameId === '${iframeId}') {
+      var iframe = document.getElementById('${iframeId}');
+      if (iframe) {
+        iframe.style.height = e.data.height + 'px';
+      }
+    }
+  });
+</script>`;
   };
 
   const copyToClipboard = async (text: string, successMessage: string) => {
@@ -138,8 +141,8 @@ export function RequestShareModal({
             <TabsContent value="embed-form" className="space-y-4">
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Add the full form to any page on your website. This is a good option if your website is set up on Wix, 
-                  GoDaddy Sites, Website.com, or Weebly.
+                  Embed the complete request form on your website. This creates a full iframe with the entire form, 
+                  making it easy for customers to submit requests directly from your site.
                 </p>
                 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -31,6 +31,7 @@ const PaymentSuccessPage = lazy(() => import("./pages/PaymentSuccess"));
 const PaymentCanceledPage = lazy(() => import("./pages/PaymentCanceled"));
 const InvoicePayPage = lazy(() => import("./pages/InvoicePay"));
 const InvitePage = lazy(() => import("./pages/Invite"));
+const PublicRequestFormPage = lazy(() => import("./pages/PublicRequestForm"));
 
 function PrefetchRoutes() {
   useEffect(() => {
@@ -55,6 +56,7 @@ function PrefetchRoutes() {
       import("./pages/PaymentCanceled"),
       import("./pages/InvoicePay"),
       import("./pages/Invite"),
+      import("./pages/PublicRequestForm"),
     ]);
   }, []);
   return null;
@@ -127,6 +129,7 @@ const App = () => (
               <Route path="/payment-canceled" element={<PaymentCanceledPage />} />
               <Route path="/invoice-pay" element={<InvoicePayPage />} />
               <Route path="/invite" element={<InvitePage />} />
+              <Route path="/request/:businessId" element={<PublicRequestFormPage />} />
               
               <Route path="*" element={<NotFound />} />
             </Routes>
