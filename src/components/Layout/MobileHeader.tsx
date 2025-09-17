@@ -1,6 +1,6 @@
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Menu, Settings, LogOut, Shield, FileText, Calendar as CalendarIcon, Receipt, Users, Wrench, Clock, ClipboardList } from "lucide-react";
+import { Menu, Settings, LogOut, Shield, FileText, Calendar as CalendarIcon, Receipt, Users, Wrench, Clock, ClipboardList, UserPlus } from "lucide-react";
 import { useNavigate, NavLink, useLocation } from "react-router-dom";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useUserBusinesses } from "@/hooks/useUserBusinesses";
@@ -136,6 +136,19 @@ export default function MobileHeader({ title }: MobileHeaderProps) {
                 >
                   <FileText className="mr-2 h-4 w-4" />
                   Terms & Services
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  className={`w-full justify-start ${
+                    location.pathname === '/referral'
+                      ? "bg-accent text-accent-foreground"
+                      : "hover:bg-muted/50"
+                  }`}
+                  onClick={() => navigate('/referral')}
+                >
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Refer A Friend
                 </Button>
               </div>
             </div>
