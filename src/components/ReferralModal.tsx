@@ -28,6 +28,13 @@ export function ReferralModal({ open, onOpenChange }: ReferralModalProps) {
     setTimeout(() => setCopiedLink(false), 3000);
   };
 
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      setCopiedLink(false);
+    }
+    onOpenChange(newOpen);
+  };
+
   const steps = [
     {
       icon: Users,
@@ -49,7 +56,7 @@ export function ReferralModal({ open, onOpenChange }: ReferralModalProps) {
   return (
     <Drawer 
       open={open} 
-      onOpenChange={onOpenChange}
+      onOpenChange={handleOpenChange}
       shouldScaleBackground={false}
     >
       <DrawerContent className="max-h-[90vh]">
