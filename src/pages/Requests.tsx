@@ -38,14 +38,14 @@ export default function Requests() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   
   // Sorting state
-  const [sortKey, setSortKey] = useState<'customer' | 'title' | 'property' | 'status' | 'created'>('created');
+  const [sortKey, setSortKey] = useState<'customer' | 'title' | 'property' | 'contact' | 'status' | 'created'>('created');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
   const { data: requestsResponse, isLoading, error } = useRequestsData();
   const requests = requestsResponse?.data || [];
 
   // Sorting logic
-  function handleSort(key: 'customer' | 'title' | 'property' | 'status' | 'created') {
+  function handleSort(key: 'customer' | 'title' | 'property' | 'contact' | 'status' | 'created') {
     setSortKey((prev) => {
       if (prev === key) {
         setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
@@ -62,6 +62,7 @@ export default function Requests() {
       if (sortKey === 'customer') return (a.customer?.name || '').localeCompare(b.customer?.name || '');
       if (sortKey === 'title') return a.title.localeCompare(b.title);
       if (sortKey === 'property') return (a.property_address || '').localeCompare(b.property_address || '');
+      if (sortKey === 'contact') return (a.customer?.email || '').localeCompare(b.customer?.email || '');
       if (sortKey === 'status') return a.status.localeCompare(b.status);
       if (sortKey === 'created') return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       return 0;
@@ -225,7 +226,11 @@ export default function Requests() {
                           Property{sortKey === 'property' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
                         </button>
                       </TableHead>
-                      <TableHead>Contact</TableHead>
+                      <TableHead>
+                        <button className="flex items-center gap-1" onClick={() => handleSort('contact')} aria-label="Sort by contact">
+                          Contact{sortKey === 'contact' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                        </button>
+                      </TableHead>
                       <TableHead>
                         <button className="flex items-center gap-1" onClick={() => handleSort('created')} aria-label="Sort by requested date">
                           Requested{sortKey === 'created' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
