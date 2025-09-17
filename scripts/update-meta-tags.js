@@ -77,8 +77,10 @@ async function main() {
   const { template, outputPath } = updateMetaTags();
   
   // Create the final title and description
-  const title = `${business.name} - Professional Lawn Care Management`;
-  const description = business.description;
+  const title = business.description 
+    ? `${business.name} - ${business.description}`
+    : `${business.name} - Professional Service Management`;
+  const description = business.description || 'Professional service management software. Streamline scheduling, invoicing, and customer management.';
   
   console.log('[update-meta-tags] Replacing placeholders with:', { title, description });
   
