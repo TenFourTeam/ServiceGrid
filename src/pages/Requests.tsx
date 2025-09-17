@@ -153,7 +153,7 @@ export default function Requests() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Client</TableHead>
+                      <TableHead>Customers</TableHead>
                       <TableHead>Title</TableHead>
                       <TableHead>Property</TableHead>
                       <TableHead>Contact</TableHead>

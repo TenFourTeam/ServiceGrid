@@ -1,6 +1,6 @@
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Menu, Settings, LogOut, Shield, FileText, Calendar as CalendarIcon, Receipt, Users, Wrench, Clock } from "lucide-react";
+import { Menu, Settings, LogOut, Shield, FileText, Calendar as CalendarIcon, Receipt, Users, Wrench, Clock, ClipboardList } from "lucide-react";
 import { useNavigate, NavLink, useLocation } from "react-router-dom";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useUserBusinesses } from "@/hooks/useUserBusinesses";
@@ -18,6 +18,7 @@ interface MobileHeaderProps {
 const allNavItems = [
   { title: "Calendar", url: "/calendar", icon: CalendarIcon, workerAccess: true },
   { title: "Timesheet", url: "/timesheet", icon: Clock, workerAccess: true },
+  { title: "Requests", url: "/requests", icon: ClipboardList, workerAccess: false },
   { title: "Work Orders", url: "/work-orders", icon: Wrench, workerAccess: false },
   { title: "Quotes", url: "/quotes", icon: FileText, workerAccess: false },
   { title: "Invoices", url: "/invoices", icon: Receipt, workerAccess: false },

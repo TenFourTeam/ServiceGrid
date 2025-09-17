@@ -22,6 +22,11 @@ const allItems = [{
   icon: Clock,
   workerAccess: true
 }, {
+  title: "Requests",
+  url: "/requests",
+  icon: ClipboardList,
+  workerAccess: false
+}, {
   title: "Work Orders",
   url: "/work-orders",
   icon: Wrench,
@@ -40,11 +45,6 @@ const allItems = [{
   title: "Customers",
   url: "/customers",
   icon: Users,
-  workerAccess: false
-}, {
-  title: "Requests",
-  url: "/requests",
-  icon: ClipboardList,
   workerAccess: false
 }, {
   title: "Team",
