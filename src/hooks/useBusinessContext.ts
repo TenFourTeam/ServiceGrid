@@ -2,6 +2,8 @@ import { useAuth } from '@clerk/clerk-react';
 import { useProfile } from '@/queries/useProfile';
 import { useParams, useLocation } from 'react-router-dom';
 import { useCurrentBusiness } from '@/contexts/CurrentBusinessContext';
+import { useEffect } from 'react';
+import { updateBusinessMeta } from '@/utils/metaUpdater';
 
 export type BusinessUI = {
   id: string;
@@ -37,6 +39,16 @@ export function useBusinessContext() {
   
   // Coordinated loading state - don't show as loading if Clerk isn't ready
   const isLoadingBusiness = !isLoaded || (shouldFetchProfile && profileQuery.isLoading);
+  
+  // Update meta tags when business data changes
+  useEffect(() => {
+    if (business?.name) {
+      updateBusinessMeta({
+        name: business.name,
+        description: business.description
+      });
+    }
+  }, [business?.name, business?.description]);
   
   return {
     // Authentication state
