@@ -17,11 +17,11 @@ export function useBusinessDetailsForm() {
   
   // Auto-sync form state with server data
   useEffect(() => {
-    if (business?.name) {
+    if (business?.name !== undefined) {
       setBusinessName(business.name);
     }
-    if (business?.description) {
-      setBusinessDescription(business.description);
+    if (business?.description !== undefined) {
+      setBusinessDescription(business.description || '');
     }
   }, [business]);
   
