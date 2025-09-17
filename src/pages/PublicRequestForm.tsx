@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,10 +26,8 @@ export default function PublicRequestForm() {
   const { businessId } = useParams<{ businessId: string }>();
   const navigate = useNavigate();
   
-  // Business data
+  // Business data (populated after submission)
   const [business, setBusiness] = useState<Business | null>(null);
-  const [businessLoading, setBusinessLoading] = useState(true);
-  const [businessError, setBusinessError] = useState<string | null>(null);
   
   // Form state
   const [customerName, setCustomerName] = useState("");
@@ -46,39 +44,6 @@ export default function PublicRequestForm() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  // Load business data
-  useEffect(() => {
-    const loadBusiness = async () => {
-      if (!businessId) {
-        setBusinessError("Invalid business ID");
-        setBusinessLoading(false);
-        return;
-      }
-
-      try {
-        const { data, error } = await supabase
-          .from('businesses')
-          .select('id, name, logo_url, light_logo_url')
-          .eq('id', businessId)
-          .single();
-
-        if (error) {
-          console.error('Error loading business:', error);
-          setBusinessError("Business not found");
-        } else {
-          setBusiness(data);
-        }
-      } catch (error) {
-        console.error('Error loading business:', error);
-        setBusinessError("Failed to load business information");
-      } finally {
-        setBusinessLoading(false);
-      }
-    };
-
-    loadBusiness();
-  }, [businessId]);
-
   const handleTimeToggle = (time: string) => {
     setPreferredTimes(prev => 
       prev.includes(time) 
@@ -91,11 +56,6 @@ export default function PublicRequestForm() {
     e.preventDefault();
     
     // Validation
-    if (!customerName.trim()) {
-      toast.error("Name is required");
-      return;
-    }
-    
     if (!customerEmail.trim()) {
       toast.error("Email is required");
       return;
@@ -111,11 +71,16 @@ export default function PublicRequestForm() {
       return;
     }
 
+    if (!businessId) {
+      toast.error("Invalid business ID");
+      return;
+    }
+
     setLoading(true);
     try {
       const requestData = {
         business_id: businessId,
-        customer_name: customerName.trim(),
+        customer_name: customerName.trim() || null,
         customer_email: customerEmail.trim(),
         customer_phone: customerPhone.trim() || null,
         customer_address: customerAddress.trim() || null,
@@ -138,6 +103,11 @@ export default function PublicRequestForm() {
         return;
       }
       
+      // Set business data from response
+      if (data?.business) {
+        setBusiness(data.business);
+      }
+      
       setSuccess(true);
       toast.success("Request submitted successfully! We'll get back to you soon.");
     } catch (error) {
@@ -148,36 +118,6 @@ export default function PublicRequestForm() {
     }
   };
 
-  if (businessLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (businessError || !business) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6 text-center">
-            <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h1 className="text-xl font-semibold mb-2">Business Not Found</h1>
-            <p className="text-muted-foreground mb-4">
-              {businessError || "The requested business could not be found."}
-            </p>
-            <Button onClick={() => navigate('/')} variant="outline">
-              Go Home
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   if (success) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -186,7 +126,7 @@ export default function PublicRequestForm() {
             <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
             <h1 className="text-xl font-semibold mb-2">Request Submitted!</h1>
             <p className="text-muted-foreground mb-4">
-              Thank you for your request. {business.name} will review it and get back to you soon.
+              Thank you for your request. {business?.name ? `${business.name} will` : 'The business will'} review it and get back to you soon.
             </p>
             <Button onClick={() => window.location.reload()} variant="outline">
               Submit Another Request
@@ -202,16 +142,9 @@ export default function PublicRequestForm() {
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         {/* Header */}
         <div className="text-center mb-8">
-          {(business.logo_url || business.light_logo_url) && (
-            <img 
-              src={business.light_logo_url || business.logo_url} 
-              alt={`${business.name} logo`}
-              className="h-16 mx-auto mb-4"
-            />
-          )}
           <h1 className="text-3xl font-bold mb-2">Request Service</h1>
           <p className="text-muted-foreground">
-            Submit a service request to {business.name}
+            Submit your service request below
           </p>
         </div>
 
@@ -227,13 +160,12 @@ export default function PublicRequestForm() {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="customer_name">Name *</Label>
+                    <Label htmlFor="customer_name">Name</Label>
                     <Input
                       id="customer_name"
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
-                      placeholder="Your full name"
-                      required
+                      placeholder="Your full name (optional)"
                     />
                   </div>
                   

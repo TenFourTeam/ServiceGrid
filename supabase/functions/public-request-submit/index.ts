@@ -8,7 +8,7 @@ const corsHeaders = {
 
 interface PublicRequestData {
   business_id: string;
-  customer_name: string;
+  customer_name?: string | null;
   customer_email: string;
   customer_phone?: string;
   customer_address?: string;
@@ -54,7 +54,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    if (!requestData.customer_name || !requestData.customer_email || !requestData.title || !requestData.service_details) {
+    if (!requestData.customer_email || !requestData.title || !requestData.service_details) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -65,7 +65,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('Checking if business exists:', requestData.business_id);
     const { data: business, error: businessError } = await supabase
       .from('businesses')
-      .select('id, name, owner_id')
+      .select('id, name, owner_id, logo_url, light_logo_url')
       .eq('id', requestData.business_id)
       .single();
 
@@ -96,8 +96,8 @@ const handler = async (req: Request): Promise<Response> => {
       
       // Update customer information if provided
       const updateData: any = {};
-      if (requestData.customer_name && requestData.customer_name !== existingCustomer.name) {
-        updateData.name = requestData.customer_name;
+      if (requestData.customer_name && requestData.customer_name.trim() && requestData.customer_name !== existingCustomer.name) {
+        updateData.name = requestData.customer_name.trim();
       }
       if (requestData.customer_phone && requestData.customer_phone !== existingCustomer.phone) {
         updateData.phone = requestData.customer_phone;
@@ -120,13 +120,17 @@ const handler = async (req: Request): Promise<Response> => {
       }
     } else {
       console.log('Creating new customer');
-      // Create new customer
+      // Create new customer with fallback name
+      const customerName = requestData.customer_name?.trim() || 
+                          requestData.customer_email.split('@')[0] || 
+                          'Anonymous Customer';
+      
       const { data: newCustomer, error: customerError } = await supabase
         .from('customers')
         .insert({
           business_id: requestData.business_id,
           owner_id: business.owner_id,
-          name: requestData.customer_name,
+          name: customerName,
           email: requestData.customer_email,
           phone: requestData.customer_phone || null,
           address: requestData.customer_address || null,
@@ -179,7 +183,13 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(JSON.stringify({ 
       success: true, 
       request_id: request.id,
-      message: 'Request submitted successfully' 
+      message: 'Request submitted successfully',
+      business: {
+        id: business.id,
+        name: business.name,
+        logo_url: business.logo_url,
+        light_logo_url: business.light_logo_url
+      }
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
