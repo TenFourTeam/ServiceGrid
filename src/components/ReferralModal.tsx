@@ -23,7 +23,7 @@ export function ReferralModal({ open, onOpenChange }: ReferralModalProps) {
   const { data: profile } = useProfile();
   
   // Generate referral link safely to avoid DataCloneError
-  const referralLink = `${location.origin}/invite/referral?ref=${profile?.profile?.id || 'user'}`;
+  const referralLink = `${window.location.origin}/invite/referral?ref=${profile?.profile?.id || 'user'}`;
   
   // Add logging for modal lifecycle
   useEffect(() => {
@@ -65,8 +65,7 @@ export function ReferralModal({ open, onOpenChange }: ReferralModalProps) {
       toast.success("Referral link copied to clipboard!");
       
       // Clear the copied state after 3 seconds
-      const timeoutId = setTimeout(() => setCopiedLink(false), 3000);
-      return () => clearTimeout(timeoutId);
+      setTimeout(() => setCopiedLink(false), 3000);
     } catch (error) {
       console.error('[ReferralModal] Copy error:', error);
       toast.error("Failed to copy link. Please try again.");
@@ -162,7 +161,6 @@ export function ReferralModal({ open, onOpenChange }: ReferralModalProps) {
             <a 
               href="/legal" 
               className="text-primary hover:underline inline-flex items-center gap-1"
-              onClick={() => handleModalClose(false)}
             >
               Terms & Conditions
               <ExternalLink className="h-3 w-3" />
