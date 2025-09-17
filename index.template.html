@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{BUSINESS_TITLE}}</title>
+    <meta name="description" content="{{BUSINESS_DESCRIPTION}}" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta name="author" content="{{BUSINESS_NAME}}" />
+    
+    <!-- Favicon -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+
+    <meta property="og:title" content="{{BUSINESS_TITLE}}" />
+    <meta property="og:description" content="{{BUSINESS_DESCRIPTION}}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/favicon.svg" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="/favicon.svg" />
+    <link rel="preload" as="image" href="/images/a86a00c8-341b-4bbd-b9b5-8b15c1bd5227-removebg-preview%20(1).png" fetchpriority="high" imagesizes="(max-width: 768px) 96px, 128px" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600&display=swap" rel="stylesheet">
+
+    <script>
+      (function () {
+        try {
+          var raw = localStorage.getItem('ServiceGrid-lawn-store-v1');
+          if (!raw) return;
+          var parsed = JSON.parse(raw);
+          var data = (parsed && typeof parsed === 'object' && 'version' in parsed && 'data' in parsed) ? parsed.data : parsed;
+          var business = data && data.business;
+          
+          // Handle logo preloading
+          var logo = business && (business.lightLogoUrl || business.logoUrl);
+          if (logo && typeof logo === 'string') {
+            // Preconnect to the logo origin
+            try {
+              var u = new URL(logo);
+              var pre = document.createElement('link');
+              pre.rel = 'preconnect';
+              pre.href = u.origin;
+              pre.crossOrigin = 'anonymous';
+              document.head.appendChild(pre);
+            } catch (e) {}
+
+            // Preload the last-known logo so it renders instantly on first paint
+            var link = document.createElement('link');
+            link.rel = 'preload';
+            link.as = 'image';
+            link.href = logo;
+            document.head.appendChild(link);
+          }
+
+          // Handle meta tag updates
+          if (business && business.name) {
+            var name = business.name;
+            var description = business.description;
+            
+            // Update document title
+            var title = description 
+              ? name + ' - ' + description
+              : name + ' - Professional Service Management';
+            document.title = title;
+
+            // Update meta description
+            var metaDescription = description || 
+              'Professional service management software. Streamline scheduling, invoicing, and customer management.';
+            
+            var metaDescElement = document.querySelector('meta[name="description"]');
+            if (metaDescElement) {
+              metaDescElement.setAttribute('content', metaDescription);
+            }
+
+            // Update OpenGraph title
+            var ogTitle = document.querySelector('meta[property="og:title"]');
+            if (ogTitle) {
+              ogTitle.setAttribute('content', title);
+            }
+
+            // Update OpenGraph description
+            var ogDescription = document.querySelector('meta[property="og:description"]');
+            if (ogDescription) {
+              ogDescription.setAttribute('content', metaDescription);
+            }
+
+            // Update Twitter title (create if doesn't exist)
+            var twitterTitle = document.querySelector('meta[name="twitter:title"]');
+            if (twitterTitle) {
+              twitterTitle.setAttribute('content', title);
+            } else {
+              twitterTitle = document.createElement('meta');
+              twitterTitle.setAttribute('name', 'twitter:title');
+              twitterTitle.setAttribute('content', title);
+              document.head.appendChild(twitterTitle);
+            }
+
+            // Update Twitter description (create if doesn't exist)
+            var twitterDescription = document.querySelector('meta[name="twitter:description"]');
+            if (twitterDescription) {
+              twitterDescription.setAttribute('content', metaDescription);
+            } else {
+              twitterDescription = document.createElement('meta');
+              twitterDescription.setAttribute('name', 'twitter:description');
+              twitterDescription.setAttribute('content', metaDescription);
+              document.head.appendChild(twitterDescription);
+            }
+          }
+        } catch (e) {
+          // swallow
+        }
+      })();
+    </script>
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

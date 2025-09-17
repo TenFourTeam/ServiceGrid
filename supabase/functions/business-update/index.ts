@@ -79,6 +79,24 @@ Deno.serve(async (req: Request) => {
 
     console.log('[business-update] Business updated successfully:', business?.id);
 
+    // Trigger rebuild for meta tag updates
+    try {
+      const deployHookUrl = Deno.env.get('VERCEL_DEPLOY_HOOK');
+      if (deployHookUrl) {
+        console.log('[business-update] Triggering rebuild via deploy hook...');
+        const response = await fetch(deployHookUrl, { method: 'POST' });
+        if (response.ok) {
+          console.log('[business-update] Rebuild triggered successfully');
+        } else {
+          console.warn('[business-update] Failed to trigger rebuild:', response.status);
+        }
+      } else {
+        console.log('[business-update] No deploy hook configured, skipping rebuild');
+      }
+    } catch (rebuildError) {
+      console.warn('[business-update] Error triggering rebuild:', rebuildError);
+    }
+
     return json({
       success: true,
       business: {
