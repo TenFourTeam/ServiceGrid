@@ -58,7 +58,7 @@ export function ReferralModal({ open, onOpenChange }: ReferralModalProps) {
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="max-h-[90vh]">
         <DrawerHeader className="text-center pb-4">
-          <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center">
+          <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary flex items-center justify-center">
             <Gift className="h-8 w-8 text-white" />
           </div>
           <DrawerTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
