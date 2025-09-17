@@ -1,5 +1,9 @@
 project_id = "ijudkzqfriazabiosnvb"
 
+# Business page serving for link previews
+[functions.serve-business-page]
+verify_jwt = false
+
 # User and business management functions
 [functions.check-user-exists]
 verify_jwt = false
