@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRequestsData, RequestListItem } from "@/hooks/useRequestsData";
 import { RequestBottomModal } from "@/components/Requests/RequestBottomModal";
@@ -70,25 +70,26 @@ export default function Requests() {
 
   return (
     <div className="min-h-screen flex w-full">
-      <AppLayout>
+      <AppLayout title="Requests">
         <div className="container mx-auto p-6 space-y-6">
           {/* Header */}
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">Requests</h1>
-              <p className="text-muted-foreground">Manage customer service requests and assessments</p>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setIsShareModalOpen(true)}>
-                <Share className="h-4 w-4 mr-2" />
-                Share Request Form
-              </Button>
-              <Button onClick={() => setIsCreateModalOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                New Request
-              </Button>
-            </div>
-          </div>
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>All Requests</CardTitle>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => setIsShareModalOpen(true)}>
+                    <Share className="h-4 w-4 mr-2" />
+                    Share Request Form
+                  </Button>
+                  <Button onClick={() => setIsCreateModalOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    New Request
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
 
           {/* Filters */}
           <div className="flex gap-4 items-center">
