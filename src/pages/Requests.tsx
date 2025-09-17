@@ -18,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useRequestsData, RequestListItem } from "@/hooks/useRequestsData";
 import { RequestBottomModal } from "@/components/Requests/RequestBottomModal";
 import { RequestShowModal } from "@/components/Requests/RequestShowModal";
+import { RequestActions } from "@/components/Requests/RequestActions";
 import { statusOptions } from "@/validation/requests";
 
 export default function Requests() {
@@ -159,6 +160,7 @@ export default function Requests() {
                       <TableHead>Contact</TableHead>
                       <TableHead>Requested</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -186,6 +188,9 @@ export default function Requests() {
                         </TableCell>
                         <TableCell>
                           {getStatusBadge(request.status)}
+                        </TableCell>
+                        <TableCell>
+                          <RequestActions request={request} />
                         </TableCell>
                       </TableRow>
                     ))}

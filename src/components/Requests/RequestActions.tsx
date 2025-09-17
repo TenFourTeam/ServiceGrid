@@ -1,0 +1,123 @@
+import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { MoreHorizontal, FileText, Wrench, Share } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import { createAuthEdgeApi } from '@/utils/authEdgeApi';
+import { useAuth as useClerkAuth } from '@clerk/clerk-react';
+import { useLifecycleEmailIntegration } from '@/hooks/useLifecycleEmailIntegration';
+import type { RequestListItem } from '@/hooks/useRequestsData';
+
+interface RequestActionsProps {
+  request: RequestListItem;
+}
+
+export function RequestActions({ request }: RequestActionsProps) {
+  const navigate = useNavigate();
+  const { getToken } = useClerkAuth();
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const { triggerQuoteCreated, triggerJobScheduled } = useLifecycleEmailIntegration();
+
+  const handleConvertToQuote = async () => {
+    try {
+      const { data: result } = await authApi.invoke('quotes-crud', {
+        method: 'POST',
+        body: {
+          customerId: request.customer_id,
+          address: request.property_address,
+          status: 'Draft',
+          notes_internal: `Created from request: ${request.title}\n\nService Details: ${request.service_details}${request.notes ? `\n\nNotes: ${request.notes}` : ''}`,
+        },
+        toast: {
+          success: `Quote created from request successfully`,
+          loading: 'Converting request to quote...',
+          error: 'Failed to convert request to quote',
+          onSuccess: triggerQuoteCreated
+        }
+      });
+
+      if (result) {
+        navigate('/quotes');
+      }
+    } catch (error) {
+      console.error('Failed to convert request to quote:', error);
+    }
+  };
+
+  const handleConvertToJob = async () => {
+    try {
+      const { data: result } = await authApi.invoke('jobs-crud', {
+        method: 'POST',
+        body: {
+          customerId: request.customer_id,
+          title: request.title,
+          address: request.property_address,
+          notes: `Created from request: ${request.title}\n\nService Details: ${request.service_details}${request.notes ? `\n\nNotes: ${request.notes}` : ''}`,
+          status: 'Scheduled',
+          startsAt: request.preferred_assessment_date,
+        },
+        toast: {
+          success: `Job created from request successfully`,
+          loading: 'Converting request to job...',
+          error: 'Failed to convert request to job',
+          onSuccess: triggerJobScheduled
+        }
+      });
+
+      if (result) {
+        navigate('/work-orders');
+      }
+    } catch (error) {
+      console.error('Failed to convert request to job:', error);
+    }
+  };
+
+  const handleShare = async () => {
+    const shareText = `Request: ${request.title}\nCustomer: ${request.customer?.name || 'Unknown'}\nService: ${request.service_details}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Request: ${request.title}`,
+          text: shareText,
+        });
+      } catch (error) {
+        // User cancelled sharing or error occurred
+        console.log('Share cancelled or failed:', error);
+      }
+    } else {
+      // Fallback to copying to clipboard
+      try {
+        await navigator.clipboard.writeText(shareText);
+        toast.success('Request details copied to clipboard');
+      } catch (error) {
+        toast.error('Failed to copy request details');
+      }
+    }
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={handleConvertToQuote} className="gap-2">
+          <FileText className="h-4 w-4" />
+          Convert to Quote
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleConvertToJob} className="gap-2">
+          <Wrench className="h-4 w-4" />
+          Convert to Job
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={handleShare} className="gap-2">
+          <Share className="h-4 w-4" />
+          Share
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
