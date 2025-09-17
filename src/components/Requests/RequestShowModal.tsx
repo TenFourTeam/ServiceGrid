@@ -186,21 +186,12 @@ export function RequestShowModal({
           </div>
           
           <DrawerFooter>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                className="flex-1"
-              >
-                Close
-              </Button>
-              <Button
-                onClick={() => setShowEditModal(true)}
-                className="flex-1"
-              >
-                Edit Request
-              </Button>
-            </div>
+            <Button
+              onClick={() => setShowEditModal(true)}
+              className="w-full"
+            >
+              Edit Request
+            </Button>
           </DrawerFooter>
         </DrawerContent>
       </Drawer>

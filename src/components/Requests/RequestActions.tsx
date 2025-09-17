@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, FileText, Wrench, Calendar } from 'lucide-react';
+import { MoreHorizontal, FileText, Wrench, Calendar, Archive, Trash } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
@@ -20,7 +21,7 @@ export function RequestActions({ request }: RequestActionsProps) {
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const { triggerJobScheduled } = useLifecycleEmailIntegration();
   const createQuote = useCreateQuote();
-  const { updateRequest } = useRequestOperations();
+  const { updateRequest, deleteRequest } = useRequestOperations();
 
   const handleConvertToQuote = () => {
     createQuote.mutate({
@@ -157,6 +158,16 @@ export function RequestActions({ request }: RequestActionsProps) {
     }
   };
 
+  const handleArchive = () => {
+    updateRequest.mutate({
+      id: request.id,
+      status: 'Archived'
+    });
+  };
+
+  const handleDelete = () => {
+    deleteRequest.mutate(request.id);
+  };
 
   return (
     <DropdownMenu>
@@ -179,6 +190,33 @@ export function RequestActions({ request }: RequestActionsProps) {
           <Wrench className="h-4 w-4" />
           Convert to Job
         </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleArchive(); }} className="gap-2">
+          <Archive className="h-4 w-4" />
+          Archive
+        </DropdownMenuItem>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="gap-2 text-destructive focus:text-destructive">
+              <Trash className="h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Request</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this request? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DropdownMenuContent>
     </DropdownMenu>
   );
