@@ -24,77 +24,55 @@ function ErrorScreen({ message }: { message: string }) {
 }
 
 // Global state to prevent multiple concurrent fetches
-let keyPromise: Promise<string> | null = null;
-let cachedKey: string | null = null;
+let clerkKeyCache: string | null = null;
 
 function Boot() {
-  const [key, setKey] = useState<string | null>(cachedKey);
+  const [key, setKey] = useState<string | null>(clerkKeyCache);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(!cachedKey);
+  const [isLoading, setIsLoading] = useState(!clerkKeyCache);
 
   useEffect(() => {
+    // If we already have a cached key, don't fetch again
+    if (clerkKeyCache) {
+      return;
+    }
+
     let isMounted = true;
     
-    // If we already have a cached key, use it immediately
-    if (cachedKey) {
-      setKey(cachedKey);
-      setIsLoading(false);
-      return;
-    }
-
-    // If there's already a fetch in progress, wait for it
-    if (keyPromise) {
-      keyPromise
-        .then((fetchedKey) => {
-          if (isMounted) {
-            cachedKey = fetchedKey;
-            setKey(fetchedKey);
-            setIsLoading(false);
-          }
-        })
-        .catch((e) => {
-          if (isMounted) {
-            setError(e.message || 'Failed to load Clerk key');
-            setIsLoading(false);
-          }
-        });
-      return;
-    }
-
-    // Start a new fetch
-    keyPromise = fetch('https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/clerk-publishable-key')
-      .then(async (res) => {
+    const fetchClerkKey = async () => {
+      try {
+        const res = await fetch('https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/clerk-publishable-key');
+        
         if (!res.ok) {
           let msg = 'Failed to load Clerk key';
-          try { const j = await res.json(); if (j?.error) msg = j.error; } catch {}
+          try { 
+            const j = await res.json(); 
+            if (j?.error) msg = j.error; 
+          } catch {}
           throw new Error(msg);
         }
-        return res.json();
-      })
-      .then((data) => {
+        
+        const data = await res.json();
         const fetchedKey = data.publishableKey;
+        
         if (!fetchedKey) {
           throw new Error('Missing authentication configuration');
         }
-        return fetchedKey;
-      });
-
-    keyPromise
-      .then((fetchedKey) => {
+        
         if (isMounted) {
-          cachedKey = fetchedKey;
+          clerkKeyCache = fetchedKey;
           setKey(fetchedKey);
           setIsLoading(false);
         }
-      })
-      .catch((e) => {
+      } catch (e: any) {
         if (isMounted) {
           setError(e.message || 'Failed to load Clerk key');
           setIsLoading(false);
         }
-        // Reset promise on error so retries can happen
-        keyPromise = null;
-      });
+      }
+    };
+
+    fetchClerkKey();
 
     return () => {
       isMounted = false;
@@ -113,7 +91,7 @@ function Boot() {
     return <ErrorScreen message="Missing authentication configuration" />;
   }
 
-  return <App clerkKey={key} />;
+  return <App key={key} clerkKey={key} />;
 }
 
 const root = document.getElementById('root')!;
