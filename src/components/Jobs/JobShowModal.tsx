@@ -331,11 +331,11 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent>
+      <DrawerContent className="max-h-[85vh]">
         <DrawerHeader>
           <DrawerTitle>{t('workOrders.modal.title')}</DrawerTitle>
         </DrawerHeader>
-        <div className="px-4 space-y-4">
+        <div className="px-4 space-y-4 overflow-y-auto">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <div className="text-sm text-muted-foreground">{t('workOrders.modal.customer')}</div>
