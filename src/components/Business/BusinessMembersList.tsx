@@ -1,8 +1,11 @@
 import { useState, useMemo, useEffect } from "react";
-import { Card } from "@/components/ui/card";
+import { useNavigate } from "react-router-dom";
+import { format, parseISO } from "date-fns";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useBusinessMembersData, useBusinessMemberOperations } from "@/hooks/useBusinessMembers";
 import { usePendingInvites, useRevokeInvite, useResendInvite } from "@/hooks/useInvites";
 import { EnhancedInviteModal } from "@/components/Team/EnhancedInviteModal";
@@ -17,6 +20,8 @@ interface BusinessMembersListProps {
 }
 
 export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
+  const { role } = useBusinessContext();
+  const navigate = useNavigate();
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [userExistence, setUserExistence] = useState<Record<string, { exists: boolean; isAlreadyMember: boolean; isLoading: boolean }>>({});
   const [filters, setFilters] = useState({
@@ -261,7 +266,14 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
               {filteredMembers.map((member) => (
                 <div
                   key={member.id}
-                  className="flex items-start sm:items-center justify-between p-3 sm:p-4 border rounded-lg hover:bg-muted/20 transition-colors min-w-0 gap-3"
+                  className={`flex items-start sm:items-center justify-between p-3 sm:p-4 border rounded-lg transition-colors min-w-0 gap-3 ${
+                    role === 'owner' && member.user_id ? 'cursor-pointer hover:bg-muted/50' : 'hover:bg-muted/20'
+                  }`}
+                  onClick={() => {
+                    if (role === 'owner' && member.user_id) {
+                      navigate(`/team/member/${member.user_id}`);
+                    }
+                  }}
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
@@ -292,6 +304,9 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
                       )}
                       {member.name && (
                         <span className="truncate">• {member.name}</span>
+                      )}
+                      {role === 'owner' && member.user_id && (
+                        <span className="text-primary">• Click to view timesheet</span>
                       )}
                     </div>
                   </div>

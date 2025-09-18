@@ -22,6 +22,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const LandingPage = lazy(() => import("./pages/Landing"));
 const TeamPage = lazy(() => import("./pages/Team"));
 const TimesheetPage = lazy(() => import("./pages/Timesheet"));
+const MemberTimesheetPage = lazy(() => import("./pages/MemberTimesheet"));
 const ReferralPage = lazy(() => import("./pages/Referral"));
 
 const ClerkAuthPage = lazy(() => import("./pages/ClerkAuth"));
@@ -86,6 +87,11 @@ const App = () => (
                 <Route path="/team" element={
                   <RequireRole role="owner">
                     <TeamPage />
+                  </RequireRole>
+                } />
+                <Route path="/team/member/:userId" element={
+                  <RequireRole role="owner">
+                    <MemberTimesheetPage />
                   </RequireRole>
                 } />
                 

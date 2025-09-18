@@ -18,11 +18,57 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     if (req.method === 'GET') {
+      const url = new URL(req.url);
+      const targetUserId = url.searchParams.get('userId');
+      
+      let queryUserId = ctx.userId;
+      let memberInfo = null;
+      
+      // If requesting another user's timesheet, verify the requester is an owner
+      if (targetUserId && targetUserId !== ctx.userId) {
+        const { data: memberData, error: roleError } = await supabase
+          .from('business_members')
+          .select('role')
+          .eq('business_id', ctx.businessId)
+          .eq('user_id', ctx.userId)
+          .single();
+        
+        if (roleError || !memberData || memberData.role !== 'owner') {
+          throw new Error('Only business owners can view other members\' timesheets');
+        }
+        
+        // Get the target user's info
+        const { data: userInfo, error: userError } = await supabase
+          .from('profiles')
+          .select('id, email, full_name')
+          .eq('id', targetUserId)
+          .single();
+          
+        if (userError || !userInfo) {
+          throw new Error('Target user not found');
+        }
+        
+        // Verify the target user is a member of this business
+        const { data: targetMemberData, error: targetMemberError } = await supabase
+          .from('business_members')
+          .select('user_id')
+          .eq('business_id', ctx.businessId)
+          .eq('user_id', targetUserId)
+          .single();
+          
+        if (targetMemberError || !targetMemberData) {
+          throw new Error('Target user is not a member of this business');
+        }
+        
+        queryUserId = targetUserId;
+        memberInfo = userInfo;
+      }
+
       const { data, error } = await supabase
         .from('timesheet_entries')
         .select('*')
         .eq('business_id', ctx.businessId)
-        .eq('user_id', ctx.userId)
+        .eq('user_id', queryUserId)
         .order('clock_in_time', { ascending: false });
 
       if (error) {
@@ -30,8 +76,8 @@ Deno.serve(async (req) => {
         throw new Error(`Failed to fetch timesheet entries: ${error.message}`);
       }
 
-      console.log('[timesheet-crud] Fetched', data?.length || 0, 'timesheet entries');
-      return json({ entries: data || [] });
+      console.log('[timesheet-crud] Fetched', data?.length || 0, 'timesheet entries for user:', queryUserId);
+      return json({ entries: data || [], memberInfo });
     }
 
     if (req.method === 'POST') {
