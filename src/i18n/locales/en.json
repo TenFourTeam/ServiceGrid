@@ -455,7 +455,9 @@
     },
     "form": {
       "customer": "Customer",
+      "selectCustomer": "Select a customer",
       "serviceAddress": "Service Address",
+      "serviceAddressPlaceholder": "Enter service address",
       "lineItems": "Line Items",
       "taxRate": "Tax Rate (%)",
       "discount": "Discount ($)",
@@ -485,7 +487,10 @@
         "total": "Total:"
       },
       "terms": "Terms & Conditions",
+      "termsPlaceholder": "Enter terms and conditions...",
       "internalNotes": "Internal Notes",
+      "internalNotesPlaceholder": "Internal notes (not visible to customer)...",  
+      "cancel": "Cancel",
       "createQuote": "Create Quote",
       "updateQuote": "Update Quote"
     },

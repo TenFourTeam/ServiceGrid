@@ -455,7 +455,9 @@
     },
     "form": {
       "customer": "Cliente",
+      "selectCustomer": "Seleccionar un cliente",
       "serviceAddress": "Dirección del Servicio",
+      "serviceAddressPlaceholder": "Ingresar dirección del servicio",
       "lineItems": "Elementos de Línea",
       "taxRate": "Tasa de Impuesto (%)",
       "discount": "Descuento ($)",
@@ -485,7 +487,10 @@
         "total": "Total:"
       },
       "terms": "Términos y Condiciones",
+      "termsPlaceholder": "Ingresar términos y condiciones...",
       "internalNotes": "Notas Internas",
+      "internalNotesPlaceholder": "Notas internas (no visibles para el cliente)...",
+      "cancel": "Cancelar",
       "createQuote": "Crear Cotización",
       "updateQuote": "Actualizar Cotización"
     },

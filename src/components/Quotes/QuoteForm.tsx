@@ -205,7 +205,7 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>{t('quotes.form.paymentTerms')}</Label>
+                <Label>{t('quotes.form.paymentTerms.label')}</Label>
                 <Select
                   value={data.paymentTerms}
                   onValueChange={(value) => setData(prev => ({ ...prev, paymentTerms: value as any }))}
@@ -224,7 +224,7 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
               </div>
 
               <div className="space-y-2">
-                <Label>{t('quotes.form.frequency')}</Label>
+                <Label>{t('quotes.form.frequency.label')}</Label>
                 <Select
                   value={data.frequency}
                   onValueChange={(value) => setData(prev => ({ ...prev, frequency: value as any }))}
