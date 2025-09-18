@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Clock, CalendarDays, Edit } from "lucide-react";
+import { ArrowLeft, Clock, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -144,7 +144,12 @@ export default function MemberTimesheet() {
                 {entries?.map((entry) => (
                   <div
                     key={entry.id}
-                    className="flex items-center justify-between p-4 border rounded-lg bg-card"
+                    className={`flex items-center justify-between p-4 border rounded-lg bg-card transition-colors ${
+                      role === 'owner' 
+                        ? 'cursor-pointer hover:bg-muted/50' 
+                        : ''
+                    }`}
+                    onClick={role === 'owner' ? () => setEditingEntry(entry) : undefined}
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
@@ -168,22 +173,10 @@ export default function MemberTimesheet() {
                         </div>
                       )}
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="text-right">
-                        <div className="font-medium">
-                          {calculateDuration(entry.clock_in_time, entry.clock_out_time)}
-                        </div>
+                    <div className="text-right">
+                      <div className="font-medium">
+                        {calculateDuration(entry.clock_in_time, entry.clock_out_time)}
                       </div>
-                      {role === 'owner' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setEditingEntry(entry)}
-                          className="flex items-center gap-1"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      )}
                     </div>
                   </div>
                 ))}
