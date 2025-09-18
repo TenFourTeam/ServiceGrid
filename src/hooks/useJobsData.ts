@@ -1,8 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
-import { queryKeys } from "@/queries/keys";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys, invalidationHelpers } from "@/queries/keys";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useAuth } from '@clerk/clerk-react';
 import { createAuthEdgeApi } from "@/utils/authEdgeApi";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from 'react';
 
 import type { Job } from '@/types';
 
@@ -18,6 +20,7 @@ export function useJobsData(opts?: UseJobsDataOptions) {
   const { getToken } = useAuth();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const enabled = isAuthenticated && !!businessId && (opts?.enabled ?? true);
+  const queryClient = useQueryClient();
 
   const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
   console.log("[useJobsData] DEBUG - Query setup:", {
@@ -65,6 +68,38 @@ export function useJobsData(opts?: UseJobsDataOptions) {
     },
     refetchOnWindowFocus: true, // Get fresh data when user returns to tab
   });
+
+  // Realtime subscription for instant updates
+  useEffect(() => {
+    if (!isAuthenticated || !businessId) return;
+
+    console.log("[useJobsData] Setting up realtime subscription for businessId:", businessId);
+    
+    const channel = supabase
+      .channel('jobs-realtime')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'jobs' 
+      }, (payload) => {
+        console.log("[useJobsData] Realtime jobs change:", payload);
+        invalidationHelpers.jobs(queryClient, businessId);
+      })
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'job_assignments' 
+      }, (payload) => {
+        console.log("[useJobsData] Realtime job_assignments change:", payload);
+        invalidationHelpers.jobs(queryClient, businessId);
+      })
+      .subscribe();
+
+    return () => {
+      console.log("[useJobsData] Cleaning up realtime subscription");
+      supabase.removeChannel(channel);
+    };
+  }, [isAuthenticated, businessId, queryClient]);
 
   return {
     data: query.data?.jobs ?? [],
