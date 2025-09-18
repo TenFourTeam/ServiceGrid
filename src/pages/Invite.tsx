@@ -200,12 +200,7 @@ export default function InviteAccept() {
               <Button variant="outline" onClick={() => navigate('/')} className="flex-1">
                 Go to Home
               </Button>
-              <Button onClick={() => {
-                // Allow React to finish cleanup before refreshing
-                setTimeout(() => {
-                  window.location.reload();
-                }, 100);
-              }} className="flex-1">
+              <Button onClick={() => window.location.reload()} className="flex-1">
                 Try Again
               </Button>
             </div>

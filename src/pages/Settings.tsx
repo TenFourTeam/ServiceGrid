@@ -336,24 +336,14 @@ export default function SettingsPage() {
                 bankLast4={null} 
                 scheduleText={null} 
                 onConnect={handleStripeConnect} 
-                onRefresh={() => {
-                  // Allow React to finish cleanup before refreshing
-                  setTimeout(() => {
-                    window.location.reload();
-                  }, 100);
-                }}
+                onRefresh={() => window.location.reload()} 
                 onDisconnect={async () => {
                 try {
                   const { error } = await authApi.invoke('connect-disconnect', { 
                     method: 'POST',
                     toast: { success: 'Disconnected from Stripe', error: 'Failed to disconnect' }
                   });
-                  if (!error) {
-                    // Allow React to finish cleanup before refreshing
-                    setTimeout(() => {
-                      window.location.reload();
-                    }, 100);
-                  }
+                  if (!error) window.location.reload();
                 } catch (e: any) {
                   console.error(e);
                 }

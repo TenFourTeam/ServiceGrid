@@ -69,18 +69,16 @@ interface AppProps {
 
 // Memoized App component to prevent unnecessary re-renders
 const App = React.memo(({ clerkKey }: AppProps) => {
-  const mountedRef = React.useRef(false);
+  // Add a unique instance ID to help debug multiple instances
+  const instanceId = React.useRef(Math.random().toString(36).substring(7));
   
   React.useEffect(() => {
-    if (mountedRef.current) {
-      console.warn('[App] Component remounting detected');
-    }
-    mountedRef.current = true;
+    console.log(`[App] Mounting ClerkProvider instance: ${instanceId.current} with key: ${clerkKey.substring(0, 10)}...`);
     
     return () => {
-      mountedRef.current = false;
+      console.log(`[App] Unmounting ClerkProvider instance: ${instanceId.current}`);
     };
-  }, []);
+  }, [clerkKey]);
 
   return (
     <ClerkProvider 

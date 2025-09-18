@@ -191,12 +191,7 @@ export default function PublicRequestForm() {
             <p className="text-muted-foreground mb-4">
               Thank you for your request. {business?.name ? `${business.name} will` : 'The business will'} review it and get back to you soon.
             </p>
-            <Button onClick={() => {
-              // Allow React to finish cleanup before refreshing
-              setTimeout(() => {
-                window.location.reload();
-              }, 100);
-            }} variant="outline">
+            <Button onClick={() => window.location.reload()} variant="outline">
               Submit Another Request
             </Button>
           </CardContent>
