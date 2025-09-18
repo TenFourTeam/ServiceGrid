@@ -103,10 +103,10 @@ export function useLegalDocument(slug: string): LegalDocument {
 
 export function useLegalDocuments() {
   const documents = [
-    { slug: 'tos', title: 'ServiceGrid Terms of Service', icon: 'FileText' },
-    { slug: 'cookies', title: 'Cookie Policy', icon: 'Cookie' },
-    { slug: 'credits', title: 'Service Credit Terms', icon: 'BadgeDollarSign' },
-    { slug: 'dpa', title: 'Data Processing Addendum', icon: 'Shield' }
+    { slug: 'tos', icon: 'FileText' },
+    { slug: 'cookies', icon: 'Cookie' },
+    { slug: 'credits', icon: 'BadgeDollarSign' },
+    { slug: 'dpa', icon: 'Shield' }
   ];
 
   return documents;

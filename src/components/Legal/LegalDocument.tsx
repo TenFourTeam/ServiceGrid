@@ -6,15 +6,17 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useLegalDocument } from '@/hooks/useLegalDocument';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function LegalDocument() {
   const { slug } = useParams<{ slug: string }>();
   const { businessName } = useBusinessContext();
+  const { t, language } = useLanguage();
   const { frontmatter, content, isLoading, error } = useLegalDocument(slug || '');
 
   useEffect(() => {
     if (!isLoading && frontmatter.title) {
-      const title = `${businessName ? businessName + ' — ' : ''}${frontmatter.title}`;
+      const title = `${businessName ? businessName + ' — ' : ''}${slug ? t(`legal.documents.${slug}`) : frontmatter.title}`;
       document.title = title;
 
       const desc = frontmatter.description;
@@ -34,11 +36,11 @@ export default function LegalDocument() {
       }
       canonical.setAttribute('href', window.location.href);
     }
-  }, [businessName, frontmatter.title, frontmatter.description, isLoading]);
+  }, [businessName, frontmatter.title, frontmatter.description, isLoading, slug, t]);
 
   if (isLoading) {
     return (
-      <AppLayout title="Loading...">
+      <AppLayout title={t('legal.document.loading')}>
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-muted rounded w-1/3"></div>
           <div className="h-4 bg-muted rounded w-1/4"></div>
@@ -54,15 +56,15 @@ export default function LegalDocument() {
 
   if (error) {
     return (
-      <AppLayout title="Error">
+      <AppLayout title={t('legal.document.error')}>
         <Card>
           <CardContent className="pt-6">
-            <h1 className="text-xl font-semibold text-destructive mb-2">Document Not Found</h1>
+            <h1 className="text-xl font-semibold text-destructive mb-2">{t('legal.document.notFound')}</h1>
             <p className="text-muted-foreground mb-4">{error}</p>
             <Button asChild variant="outline">
               <Link to="/legal">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Legal Overview
+                {t('legal.document.backToOverview')}
               </Link>
             </Button>
           </CardContent>
@@ -150,17 +152,19 @@ export default function LegalDocument() {
   };
 
   return (
-    <AppLayout title={frontmatter.title}>
+    <AppLayout title={slug ? t(`legal.documents.${slug}`) : frontmatter.title}>
       <header className="mb-6">
         <Button asChild variant="ghost" size="sm" className="mb-4">
           <Link to="/legal">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Legal Overview
+            {t('legal.document.backToOverview')}
           </Link>
         </Button>
-        <h1 className="text-2xl font-semibold tracking-tight">{frontmatter.title}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {slug ? t(`legal.documents.${slug}`) : frontmatter.title}
+        </h1>
         <p className="text-xs text-muted-foreground mt-1">
-          Last Updated: {new Date(frontmatter.lastUpdated).toLocaleDateString('en-US', { 
+          {t('legal.document.lastUpdated')} {new Date(frontmatter.lastUpdated).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', { 
             year: 'numeric', 
             month: 'long', 
             day: 'numeric' 

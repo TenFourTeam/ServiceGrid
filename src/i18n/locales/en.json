@@ -649,5 +649,24 @@
         "noInvitesDescription": "Invite workers to see pending invitations here"
       }
     }
+  },
+  "legal": {
+    "title": "Terms & Services",
+    "description": "Review the policies that govern your use of our services.",
+    "metaDescription": "Read our Terms of Service, Cookie Policy, Service Credit Terms, and Data Processing Addendum.",
+    "overview": "Legal overview",
+    "documents": {
+      "tos": "ServiceGrid Terms of Service",
+      "cookies": "Cookie Policy",
+      "credits": "Service Credit Terms",
+      "dpa": "Data Processing Addendum"
+    },
+    "document": {
+      "loading": "Loading...",
+      "error": "Error",
+      "notFound": "Document Not Found",
+      "backToOverview": "Back to Legal Overview",
+      "lastUpdated": "Last Updated:"
+    }
   }
 }

@@ -649,5 +649,24 @@
         "noInvitesDescription": "Invita trabajadores para ver invitaciones pendientes aquí"
       }
     }
+  },
+  "legal": {
+    "title": "Términos y Servicios",
+    "description": "Revisa las políticas que rigen el uso de nuestros servicios.",
+    "metaDescription": "Lee nuestros Términos de Servicio, Política de Cookies, Términos de Crédito de Servicio y Adenda de Procesamiento de Datos.",
+    "overview": "Resumen legal",
+    "documents": {
+      "tos": "Términos de Servicio de ServiceGrid",
+      "cookies": "Política de Cookies",
+      "credits": "Términos de Crédito de Servicio",
+      "dpa": "Adenda de Procesamiento de Datos"
+    },
+    "document": {
+      "loading": "Cargando...",
+      "error": "Error",
+      "notFound": "Documento No Encontrado",
+      "backToOverview": "Volver al Resumen Legal",
+      "lastUpdated": "Última Actualización:"
+    }
   }
 }
