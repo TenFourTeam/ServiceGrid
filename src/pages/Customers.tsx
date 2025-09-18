@@ -192,29 +192,31 @@ export default function CustomersPage() {
         <Card>
           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <CardTitle>All Customers</CardTitle>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               {selectedCustomers.size > 0 && (
                 <Button
                   variant="destructive"
                   size="sm"
                   onClick={() => setShowBulkDeleteDialog(true)}
                   disabled={isBulkDeleting}
+                  className="w-full sm:w-auto"
                 >
                   Delete {selectedCustomers.size} customer{selectedCustomers.size === 1 ? '' : 's'}
                 </Button>
               )}
-              <Button variant="outline" onClick={() => setCsvImportOpen(true)}>
+              <Button variant="outline" onClick={() => setCsvImportOpen(true)} className="w-full sm:w-auto">
                 Import CSV
               </Button>
               <Button 
                 variant="outline" 
                 onClick={handleExportCSV}
                 disabled={filteredAndSortedCustomers.length === 0}
+                className="w-full sm:w-auto"
               >
                 <Download className="h-4 w-4 mr-2" />
                 Export CSV
               </Button>
-              <Button onClick={() => openNew()}>
+              <Button onClick={() => openNew()} className="w-full sm:w-auto">
                 New Customer
               </Button>
             </div>

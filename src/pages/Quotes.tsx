@@ -170,12 +170,12 @@ export default function QuotesPage() {
           <Card>
           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <CardTitle>All Quotes</CardTitle>
-            <div>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <Button onClick={() => {
                 setCreateModalOpen(true);
                 setDetailsModalMode('create');
                 setSelectedQuoteId(null);
-              }} data-onb="new-quote-button">
+              }} data-onb="new-quote-button" className="w-full sm:w-auto">
                 Create Quote
               </Button>
             </div>
