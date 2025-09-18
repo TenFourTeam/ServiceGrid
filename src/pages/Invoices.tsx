@@ -5,13 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatDate, formatMoney } from '@/utils/format';
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import InvoiceModal from '@/components/Invoices/InvoiceModal';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { Send } from 'lucide-react';
+import { Send, Download } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
+import Papa from 'papaparse';
+import { useInvoicePayments } from '@/hooks/useInvoicePayments';
 import { supabase } from '@/integrations/supabase/client';
 import { invalidationHelpers } from '@/queries/keys';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
@@ -131,6 +134,38 @@ export default function InvoicesPage() {
     }
   };
 
+  const handleExportCSV = async () => {
+    if (sortedInvoices.length === 0) return;
+
+    const csvData = sortedInvoices.map(invoice => {
+      const customer = customers.find(c => c.id === invoice.customerId);
+      return {
+        'Invoice Number': invoice.number,
+        'Customer Name': customer?.name || 'Unknown',
+        'Customer Email': customer?.email || '',
+        'Amount': formatMoney(invoice.total),
+        'Status': invoice.status,
+        'Issued Date': formatDate(invoice.createdAt),
+        'Due Date': formatDate(invoice.dueAt),
+        'Paid Date': invoice.status === 'Paid' ? formatDate(invoice.paidAt) : '',
+        'Subtotal': formatMoney(invoice.subtotal),
+        'Tax Rate': `${invoice.taxRate}%`,
+        'Discount': formatMoney(invoice.discount),
+      };
+    });
+
+    const csv = Papa.unparse(csvData);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `invoices-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
 
   return (
     <AppLayout title="Invoices">
@@ -145,18 +180,26 @@ export default function InvoicesPage() {
                 onChange={(e)=>setQ(e.target.value)}
                 className="w-48 sm:w-64"
               />
-              <div className="flex gap-1">
-                {(['All','Draft','Sent','Paid','Overdue'] as const).map(s => (
-                  <Button
-                    key={s}
-                    variant={status===s ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={()=>setStatus(s)}
-                  >
-                    {s}
-                  </Button>
-                ))}
-              </div>
+              <Select value={status} onValueChange={(value: any) => setStatus(value)}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All</SelectItem>
+                  <SelectItem value="Draft">Draft</SelectItem>
+                  <SelectItem value="Sent">Sent</SelectItem>
+                  <SelectItem value="Paid">Paid</SelectItem>
+                  <SelectItem value="Overdue">Overdue</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportCSV}
+                disabled={sortedInvoices.length === 0}
+              >
+                Export CSV
+              </Button>
             </div>
           </div>
         </CardHeader>

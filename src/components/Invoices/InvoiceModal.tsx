@@ -14,6 +14,7 @@ import { formatDate, formatMoney, formatCurrencyInputNoSymbol, parseCurrencyInpu
 import { useCustomersData } from '@/queries/unified';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useRecordPayment } from '@/hooks/useInvoiceOperations';
+import { useInvoicePayments } from '@/hooks/useInvoicePayments';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -48,6 +49,11 @@ export default function InvoiceModal({
 
   const [mode, setMode] = useState(initialMode);
   const [loading, setLoading] = useState(false);
+  
+  const { data: payments = [] } = useInvoicePayments({ 
+    invoiceId: invoice?.id,
+    enabled: !!invoice && mode === 'view' 
+  });
   
   // Form state
   const [customerId, setCustomerId] = useState('');
@@ -588,6 +594,29 @@ export default function InvoiceModal({
             </div>
           )}
         </div>
+
+        {/* Payment Information Section */}
+        {payments.length > 0 && (
+          <div className="pt-2 border-t">
+            <div className="text-sm font-medium mb-2">Payment Details</div>
+            {payments.map((payment, index) => (
+              <div key={payment.id} className="bg-muted/30 rounded-md p-3 mb-2 last:mb-0">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Payment {index + 1}</span>
+                  <span className="font-medium">{formatMoney(payment.amount)}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm mt-1">
+                  <span className="text-muted-foreground">Method</span>
+                  <span>{payment.method}{payment.last4 ? ` ****${payment.last4}` : ''}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm mt-1">
+                  <span className="text-muted-foreground">Date</span>
+                  <span>{formatDate(payment.receivedAt)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   };

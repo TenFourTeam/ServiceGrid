@@ -36,6 +36,7 @@ const queryKeys = {
     jobs: (businessId: string, userId?: string) => userId ? ['data', 'jobs', businessId, userId] as const : ['data', 'jobs', businessId] as const,
     quotes: (businessId: string) => ['data', 'quotes', businessId] as const,
     invoices: (businessId: string) => ['data', 'invoices', businessId] as const,
+    payments: (invoiceId: string) => ['data', 'payments', invoiceId] as const,
     requests: (businessId: string) => ['data', 'requests', businessId] as const,
     members: (businessId: string) => ['data', 'members', businessId] as const,
     timesheet: (businessId: string) => ['data', 'timesheet', businessId] as const,
