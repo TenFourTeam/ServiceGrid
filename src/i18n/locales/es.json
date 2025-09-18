@@ -235,18 +235,20 @@
       "title": "Compartir Formulario de Solicitud",
       "shareLink": "Compartir Enlace",
       "embedForm": "Incrustar Formulario",
-      "description": "Comparte este enlace con clientes para recopilar solicitudes de servicio:",
-      "copyLink": "Copiar Enlace",
-      "linkCopied": "¡Enlace copiado al portapapeles!",
-      "embed": {
-        "description": "Personaliza e incrusta este formulario en tu sitio web:",
-        "buttonColor": "Color del Botón",
-        "textColor": "Color del Texto",
-        "preview": "Vista Previa",
-        "embedCode": "Código de Incrustación",
-        "copyCode": "Copiar Código",
-        "codeCopied": "¡Código de incrustación copiado al portapapeles!"
-      }
+      "shareDescription": "Comparte el enlace de tu formulario de solicitud público. Este enlace funcionará en cualquier lugar — incluyendo redes sociales, correo electrónico o mensajes de texto.",
+      "requestFormUrl": "URL del Formulario de Solicitud",
+      "copyUrl": "Copiar URL",
+      "embedDescription": "Incrusta el formulario completo de solicitud en tu sitio web. Esto crea un iframe completo con todo el formulario, facilitando que los clientes envíen solicitudes directamente desde tu sitio.",
+      "customizeAppearance": "Personalizar apariencia del botón",
+      "buttonPreview": "Vista previa del botón",
+      "submitRequest": "Enviar Solicitud",
+      "embedInstructions": "Copia y pega el siguiente código en tu sitio web:",
+      "buttonColor": "Color del botón",
+      "textColor": "Color del texto",
+      "copyCode": "Copiar Código",
+      "clipboardError": "Error al copiar al portapapeles",
+      "urlCopied": "URL copiada al portapapeles",
+      "codeCopied": "Código copiado al portapapeles"
     }
   },
   "jobs": {

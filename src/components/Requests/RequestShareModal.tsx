@@ -76,7 +76,7 @@ export function RequestShareModal({
       await navigator.clipboard.writeText(text);
       toast.success(successMessage);
     } catch (error) {
-      toast.error("Failed to copy to clipboard");
+      toast.error(t('requests.share.clipboardError'));
     }
   };
 
@@ -102,23 +102,22 @@ export function RequestShareModal({
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="share-link" className="flex items-center gap-2">
                 <Link className="h-4 w-4" />
-                Share Link
+                {t('requests.share.shareLink')}
               </TabsTrigger>
               <TabsTrigger value="embed-form" className="flex items-center gap-2">
                 <Code className="h-4 w-4" />
-                Embed Form
+                {t('requests.share.embedForm')}
               </TabsTrigger>
             </TabsList>
             
             <TabsContent value="share-link" className="space-y-4">
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">
-                  Share your public <span className="text-primary font-medium">client hub</span> request form link. 
-                  This link will work anywhere — including on social media, through email, or text messages.
+                  {t('requests.share.shareDescription')}
                 </p>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="share-url">Request Form URL</Label>
+                  <Label htmlFor="share-url">{t('requests.share.requestFormUrl')}</Label>
                   <div className="flex gap-2">
                     <Input
                       id="share-url"
@@ -129,11 +128,11 @@ export function RequestShareModal({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => copyToClipboard(shareUrl, "URL copied to clipboard")}
+                      onClick={() => copyToClipboard(shareUrl, t('requests.share.urlCopied'))}
                       className="shrink-0"
                     >
                       <Copy className="h-4 w-4 mr-1" />
-                      Copy URL
+                      {t('requests.share.copyUrl')}
                     </Button>
                   </div>
                 </div>
@@ -143,17 +142,16 @@ export function RequestShareModal({
             <TabsContent value="embed-form" className="space-y-4">
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Embed the complete request form on your website. This creates a full iframe with the entire form, 
-                  making it easy for customers to submit requests directly from your site.
+                  {t('requests.share.embedDescription')}
                 </p>
                 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div className="space-y-4">
-                    <h4 className="text-sm font-medium">Customize button appearance</h4>
+                    <h4 className="text-sm font-medium">{t('requests.share.customizeAppearance')}</h4>
                     
                     <div className="space-y-3">
                       <div className="space-y-2">
-                        <Label htmlFor="button-color">Button color</Label>
+                        <Label htmlFor="button-color">{t('requests.share.buttonColor')}</Label>
                         <div className="flex gap-2 items-center">
                           <div 
                             className="w-8 h-8 rounded border border-border cursor-pointer"
@@ -177,7 +175,7 @@ export function RequestShareModal({
                       </div>
                       
                       <div className="space-y-2">
-                        <Label htmlFor="text-color">Text color</Label>
+                        <Label htmlFor="text-color">{t('requests.share.textColor')}</Label>
                         <div className="flex gap-2 items-center">
                           <div 
                             className="w-8 h-8 rounded border border-border cursor-pointer"
@@ -203,7 +201,7 @@ export function RequestShareModal({
                   </div>
                   
                   <div className="space-y-4">
-                    <h4 className="text-sm font-medium">Button preview</h4>
+                    <h4 className="text-sm font-medium">{t('requests.share.buttonPreview')}</h4>
                     <Card className="p-6 flex items-center justify-center min-h-[120px] bg-muted/50">
                       <button
                         style={{
@@ -217,7 +215,7 @@ export function RequestShareModal({
                           cursor: 'pointer'
                         }}
                       >
-                        Submit Request
+                        {t('requests.share.submitRequest')}
                       </button>
                     </Card>
                   </div>
@@ -225,15 +223,15 @@ export function RequestShareModal({
                 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="embed-code">Copy and paste the following code on your website:</Label>
+                    <Label htmlFor="embed-code">{t('requests.share.embedInstructions')}</Label>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => copyToClipboard(embedCode, "Embed code copied to clipboard")}
+                      onClick={() => copyToClipboard(embedCode, t('requests.share.codeCopied'))}
                       className="w-fit"
                     >
                       <Copy className="h-4 w-4 mr-1" />
-                      Copy Code
+                      {t('requests.share.copyCode')}
                     </Button>
                   </div>
                   <Textarea

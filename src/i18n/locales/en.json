@@ -234,19 +234,21 @@
     "share": {
       "title": "Share Request Form",
       "shareLink": "Share Link",
-      "embedForm": "Embed Form", 
-      "description": "Share this link with customers to collect service requests:",
-      "copyLink": "Copy Link",
-      "linkCopied": "Link copied to clipboard!",
-      "embed": {
-        "description": "Customize and embed this form on your website:",
-        "buttonColor": "Button Color",
-        "textColor": "Text Color",
-        "preview": "Preview",
-        "embedCode": "Embed Code",
-        "copyCode": "Copy Code",
-        "codeCopied": "Embed code copied to clipboard!"
-      }
+      "embedForm": "Embed Form",
+      "shareDescription": "Share your public client hub request form link. This link will work anywhere — including on social media, through email, or text messages.",
+      "requestFormUrl": "Request Form URL",
+      "copyUrl": "Copy URL",
+      "embedDescription": "Embed the complete request form on your website. This creates a full iframe with the entire form, making it easy for customers to submit requests directly from your site.",
+      "customizeAppearance": "Customize button appearance",
+      "buttonPreview": "Button preview",
+      "submitRequest": "Submit Request",
+      "embedInstructions": "Copy and paste the following code on your website:",
+      "buttonColor": "Button color",
+      "textColor": "Text color",
+      "copyCode": "Copy Code",
+      "clipboardError": "Failed to copy to clipboard",
+      "urlCopied": "URL copied to clipboard",
+      "codeCopied": "Embed code copied to clipboard"
     }
   },
   "jobs": {
