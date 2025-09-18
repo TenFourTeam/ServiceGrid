@@ -68,7 +68,7 @@ interface AppProps {
 }
 
 const App = ({ clerkKey }: AppProps) => (
-  <ClerkProvider publishableKey={clerkKey}>
+  <ClerkProvider publishableKey={clerkKey} key={clerkKey}>
     <BrowserRouter>
       <ClerkLoaded>
         <AppProviders>
