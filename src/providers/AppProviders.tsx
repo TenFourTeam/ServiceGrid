@@ -35,12 +35,10 @@ export function AppProviders({ children }: AppProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <CurrentBusinessProvider>
-        <LanguageProvider>
-          <TooltipProvider delayDuration={100}>
-            <ConsolidatedToaster />
-            {children}
-          </TooltipProvider>
-        </LanguageProvider>
+        <TooltipProvider delayDuration={100}>
+          <ConsolidatedToaster />
+          {children}
+        </TooltipProvider>
       </CurrentBusinessProvider>
     </QueryClientProvider>
   );

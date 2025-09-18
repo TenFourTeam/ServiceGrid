@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect } from "react";
+import React, { Suspense, lazy, useEffect, useMemo } from "react";
 import { Routes, Route } from "react-router-dom";
 import { BrowserRouter } from "react-router-dom";
 import { ClerkProvider, ClerkLoaded, ClerkLoading } from "@clerk/clerk-react";
@@ -71,7 +71,7 @@ const App = ({ clerkKey }: AppProps) => {
   console.log('[App] Rendering with clerkKey:', clerkKey ? 'present' : 'missing');
   
   return (
-    <ClerkProvider publishableKey={clerkKey} key={clerkKey}>
+    <ClerkProvider publishableKey={clerkKey}>
       <BrowserRouter>
         <ClerkLoaded>
           <AppProviders>
