@@ -31,11 +31,10 @@ export function RequestShareModal({
     textColor: "#ffffff"
   });
 
-  // Generate the public request form URL with cache busting
+  // Generate the public request form URL
   const generateShareUrl = () => {
     if (!business?.id) return "";
-    const timestamp = Math.floor(Date.now() / 1000); // Current timestamp
-    return `https://servicegrid.app/request/${business.id}?cb=${timestamp}`;
+    return `https://servicegrid.app/request/${business.id}`;
   };
 
   // Generate the embed code with full iframe

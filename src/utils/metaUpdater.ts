@@ -1,9 +1,7 @@
 /**
  * Lightweight meta tag management utility
  * Similar pattern to BusinessLogo - reads from localStorage with props override
- * Enhanced with cache busting for social media link previews
  */
-import { getCurrentCacheBuster, appendCacheBusterToImageUrl } from './shareUtils';
 
 export interface BusinessMetaData {
   name?: string;
@@ -12,8 +10,6 @@ export interface BusinessMetaData {
 }
 
 export function updateBusinessMeta(businessData?: BusinessMetaData) {
-  // Check for cache buster in URL - if present, force meta tag refresh
-  const cacheBuster = getCurrentCacheBuster();
   
   // Try to get business data from localStorage (same pattern as BusinessLogo)
   let cachedBusiness: BusinessMetaData | undefined;
@@ -97,35 +93,28 @@ export function updateBusinessMeta(businessData?: BusinessMetaData) {
     document.head.appendChild(twitterDescription);
   }
 
-  // Add cache-busted Open Graph and Twitter images if logo is available
+  // Add Open Graph and Twitter images if logo is available
   if (logoUrl) {
-    const cacheBustedLogo = appendCacheBusterToImageUrl(logoUrl);
-    
     // Update Open Graph image
     let ogImage = document.querySelector('meta[property="og:image"]');
     if (ogImage) {
-      ogImage.setAttribute('content', cacheBustedLogo);
+      ogImage.setAttribute('content', logoUrl);
     } else {
       ogImage = document.createElement('meta');
       ogImage.setAttribute('property', 'og:image');
-      ogImage.setAttribute('content', cacheBustedLogo);
+      ogImage.setAttribute('content', logoUrl);
       document.head.appendChild(ogImage);
     }
 
     // Update Twitter image
     let twitterImage = document.querySelector('meta[name="twitter:image"]');
     if (twitterImage) {
-      twitterImage.setAttribute('content', cacheBustedLogo);
+      twitterImage.setAttribute('content', logoUrl);
     } else {
       twitterImage = document.createElement('meta');
       twitterImage.setAttribute('name', 'twitter:image');
-      twitterImage.setAttribute('content', cacheBustedLogo);
+      twitterImage.setAttribute('content', logoUrl);
       document.head.appendChild(twitterImage);
     }
-  }
-
-  // Log cache busting activity for debugging
-  if (cacheBuster) {
-    console.log('[MetaUpdater] Cache buster detected:', cacheBuster, 'Meta tags refreshed for:', name);
   }
 }
