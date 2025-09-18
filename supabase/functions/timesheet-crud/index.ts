@@ -24,17 +24,20 @@ Deno.serve(async (req) => {
       let queryUserId = ctx.userId;
       let memberInfo = null;
       
-      // If requesting another user's timesheet, verify the requester is an owner
-      if (targetUserId && targetUserId !== ctx.userId) {
-        const { data: memberData, error: roleError } = await supabase
-          .from('business_members')
-          .select('role')
-          .eq('business_id', ctx.businessId)
-          .eq('user_id', ctx.userId)
-          .single();
-        
-        if (roleError || !memberData || memberData.role !== 'owner') {
-          throw new Error('Only business owners can view other members\' timesheets');
+      // If requesting a specific user's timesheet
+      if (targetUserId) {
+        // If viewing another user's timesheet, verify the requester is an owner
+        if (targetUserId !== ctx.userId) {
+          const { data: memberData, error: roleError } = await supabase
+            .from('business_members')
+            .select('role')
+            .eq('business_id', ctx.businessId)
+            .eq('user_id', ctx.userId)
+            .single();
+          
+          if (roleError || !memberData || memberData.role !== 'owner') {
+            throw new Error('Only business owners can view other members\' timesheets');
+          }
         }
         
         // Get the target user's info
