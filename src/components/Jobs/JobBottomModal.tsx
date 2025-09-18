@@ -31,6 +31,8 @@ import { cn } from '@/lib/utils';
 interface JobBottomModalProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  mode?: 'full' | 'peek';
+  onModeChange?: (mode: 'full' | 'peek') => void;
   initialDate?: Date;
   initialStartTime?: string;
   initialEndTime?: string;
@@ -40,6 +42,8 @@ interface JobBottomModalProps {
 export function JobBottomModal({ 
   open = false, 
   onOpenChange,
+  mode = 'full',
+  onModeChange,
   initialDate,
   initialStartTime,
   initialEndTime,
@@ -328,6 +332,56 @@ export function JobBottomModal({
   const removeFile = (index: number) => {
     setFiles(prev => prev.filter((_, i) => i !== index));
   };
+
+  const handlePeekClick = () => {
+    if (mode === 'peek') {
+      onModeChange?.('full');
+    }
+  };
+
+  const formatTimeRange = () => {
+    if (!startTime || !endTime || !date) return '';
+    const start = new Date(`2000-01-01T${startTime}:00`);
+    const end = new Date(`2000-01-01T${endTime}:00`);
+    
+    const startStr = start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    const endStr = end.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    const diffHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+    
+    return `${startStr} → ${endStr} ${diffHours}hr`;
+  };
+
+  const formatDate = () => {
+    if (!date) return '';
+    return date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+  };
+
+  if (mode === 'peek') {
+    return (
+      <Drawer open={open} onOpenChange={onOpenChange}>
+        <DrawerContent className="h-[120px]" onClick={handlePeekClick}>
+          <div className="flex-1 p-4 cursor-pointer hover:bg-muted/50 transition-colors">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <h3 className="text-sm font-medium text-muted-foreground">Event</h3>
+                <Input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Title"
+                  className="text-base border-none p-0 h-auto focus-visible:ring-0"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+              <div className="text-right text-sm text-muted-foreground">
+                <div>{formatTimeRange()}</div>
+                <div>{formatDate()}</div>
+              </div>
+            </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>

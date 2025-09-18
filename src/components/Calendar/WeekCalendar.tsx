@@ -55,6 +55,8 @@ export function WeekCalendar({
   
   const [newJobOpen, setNewJobOpen] = useState(false);
   const [pendingSlot, setPendingSlot] = useState<{ start: Date; end: Date } | null>(null);
+  const [previewSlot, setPreviewSlot] = useState<{ start: Date; end: Date; day: string } | null>(null);
+  const [modalState, setModalState] = useState<'closed' | 'peek' | 'full'>('closed');
   const notesTimer = useRef<number | null>(null);
   const [highlightJobId, setHighlightJobId] = useState<string | null>(null);
   // Visual feedback state only
@@ -252,7 +254,15 @@ const minuteOfDayFromAnchorOffset = (offset: number) => {
     start.setMinutes(minuteOfDay);
 
     const end = new Date(start.getTime() + 60 * 60 * 1000); // default 60m
+    
+    // Set preview slot and peek modal state
+    setPreviewSlot({ 
+      start, 
+      end, 
+      day: dayKey(day) 
+    });
     setPendingSlot({ start, end });
+    setModalState('peek');
     setNewJobOpen(true);
   }
 
@@ -581,6 +591,35 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                   const renderJobBlocks = () => {
                     const blocks: JSX.Element[] = [];
                     
+                    // Render preview outline if this is the target day
+                    if (previewSlot && previewSlot.day === dayKey(day)) {
+                      const previewStartMins = minutesFromAnchor(previewSlot.start);
+                      const previewDurMins = (previewSlot.end.getTime() - previewSlot.start.getTime()) / (1000 * 60);
+                      const previewHeight = previewDurMins / TOTAL_MIN * 100;
+                      const previewTop = previewStartMins / TOTAL_MIN * 100;
+                      
+                      blocks.push(
+                        <div
+                          key="preview-outline"
+                          className="absolute left-2 right-2 rounded-md border-2 border-dashed border-blue-400 bg-blue-50/80 select-none transition-all"
+                          style={{
+                            top: `${previewTop}%`,
+                            height: `${Math.max(previewHeight, 4)}%`,
+                            zIndex: 5
+                          }}
+                        >
+                          <div className="flex items-center justify-center h-full">
+                            <div className="text-blue-600 text-xs font-medium">
+                              {previewSlot.start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} — 1hr
+                            </div>
+                          </div>
+                          {/* Resize handles */}
+                          <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-blue-400 rounded-full"></div>
+                          <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-blue-400 rounded-full"></div>
+                        </div>
+                      );
+                    }
+                    
                     dayJobs[dayKey(day)]?.forEach(j => {
                       // Scheduled time block (always shown in 'scheduled' and 'combined' modes)
                       if (displayMode === 'scheduled' || displayMode === 'combined') {
@@ -720,9 +759,17 @@ function onDragStart(e: React.PointerEvent, job: Job) {
 
       <JobBottomModal
         open={newJobOpen}
+        mode={modalState === 'peek' ? 'peek' : 'full'}
         onOpenChange={(open) => { 
           setNewJobOpen(open); 
-          if (!open) setPendingSlot(null); 
+          if (!open) {
+            setPendingSlot(null);
+            setPreviewSlot(null);
+            setModalState('closed');
+          }
+        }}
+        onModeChange={(mode) => {
+          setModalState(mode === 'peek' ? 'peek' : 'full');
         }}
         initialDate={pendingSlot?.start}
         initialStartTime={pendingSlot?.start ? `${pendingSlot.start.getHours().toString().padStart(2, '0')}:${pendingSlot.start.getMinutes().toString().padStart(2, '0')}` : undefined}
@@ -730,6 +777,8 @@ function onDragStart(e: React.PointerEvent, job: Job) {
         onJobCreated={() => {
           setNewJobOpen(false);
           setPendingSlot(null);
+          setPreviewSlot(null);
+          setModalState('closed');
         }}
       />
     </div>;
