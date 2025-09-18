@@ -395,5 +395,116 @@
       "pickDate": "Seleccionar fecha",
       "minutes": "min"
     }
+  },
+  "quotes": {
+    "title": "Cotizaciones",
+    "cardTitle": "Todas las Cotizaciones",
+    "createQuote": "Crear Cotización",
+    "createFirstQuote": "Crea Tu Primera Cotización",
+    "table": {
+      "number": "Número",
+      "customer": "Cliente",
+      "total": "Total",
+      "status": "Estado",
+      "actions": "Acciones"
+    },
+    "status": {
+      "draft": "Borrador",
+      "sent": "Enviado",
+      "viewed": "Visto",
+      "approved": "Aprobado",
+      "declined": "Rechazado",
+      "editsrequested": "Ediciones Solicitadas"
+    },
+    "emptyStates": {
+      "ready": "¿Listo para crear tu primera cotización?",
+      "description": "Envía cotizaciones profesionales a los clientes y conviértelas en trabajos cuando sean aprobadas. Cobra más rápido con el procesamiento de pagos integrado.",
+      "addCustomerFirst": "Agrega Primero un Cliente",
+      "addCustomerDescription": "Necesitarás agregar al menos un cliente antes de poder crear cotizaciones."
+    },
+    "actions": {
+      "sendQuote": "Enviar Cotización",
+      "convertToJob": "Convertir a Trabajo",
+      "createInvoice": "Crear Factura",
+      "editQuote": "Editar Cotización"
+    },
+    "messages": {
+      "linkCopied": "Enlace de cotización copiado al portapapeles",
+      "cannotConvertDraft": "No se pueden convertir cotizaciones en borrador a trabajos. Envía la cotización primero.",
+      "cannotCreateInvoiceDraft": "No se puede crear factura de cotizaciones en borrador. Envía la cotización primero.",
+      "convertingToJob": "Convirtiendo...",
+      "creatingInvoice": "Creando..."
+    },
+    "modal": {
+      "create": "Crear Cotización",
+      "edit": "Editar Cotización",
+      "quote": "Cotización",
+      "customer": "Cliente",
+      "total": "Total",
+      "created": "Creado",
+      "sent": "Enviado",
+      "sendQuote": "Enviar Cotización",
+      "to": "Para",
+      "subject": "Asunto",
+      "message": "Mensaje (opcional)",
+      "preview": "Solo vista previa. Los enlaces y botones están deshabilitados.",
+      "cancel": "Cancelar",
+      "sendEmail": "Enviar Correo",
+      "sending": "Enviando...",
+      "emailValidation": "Por favor ingresa una dirección de correo válida"
+    },
+    "form": {
+      "customer": "Cliente",
+      "serviceAddress": "Dirección del Servicio",
+      "lineItems": "Elementos de Línea",
+      "taxRate": "Tasa de Impuesto (%)",
+      "discount": "Descuento ($)",
+      "paymentTerms": {
+        "label": "Términos de Pago",
+        "dueOnReceipt": "Vencimiento al recibo",
+        "net15": "Neto 15",
+        "net30": "Neto 30",
+        "net60": "Neto 60"
+      },
+      "frequency": {
+        "label": "Frecuencia",
+        "oneOff": "Único",
+        "biMonthly": "Bimestral",
+        "monthly": "Mensual",
+        "biYearly": "Semestral",
+        "yearly": "Anual"
+      },
+      "deposit": {
+        "required": "Depósito Requerido",
+        "percentage": "Porcentaje de depósito"
+      },
+      "summary": {
+        "subtotal": "Subtotal:",
+        "tax": "Impuesto:",
+        "discount": "Descuento:",
+        "total": "Total:"
+      },
+      "terms": "Términos y Condiciones",
+      "internalNotes": "Notas Internas",
+      "createQuote": "Crear Cotización",
+      "updateQuote": "Actualizar Cotización"
+    },
+    "lineItems": {
+      "title": "Elementos de Línea",
+      "addItem": "Agregar Elemento",
+      "emptyState": "Aún no hay elementos de línea. Haz clic en 'Agregar Elemento' para comenzar.",
+      "item": "Elemento",
+      "amount": "Monto",
+      "name": "Nombre",
+      "namePlaceholder": "Nombre del servicio o elemento",
+      "amountPlaceholder": "0.00",
+      "removeItem": "Eliminar elemento de línea"
+    },
+    "customerCombobox": {
+      "placeholder": "Seleccionar cliente...",
+      "searchPlaceholder": "Buscar por nombre o correo...",
+      "noCustomer": "No se encontró cliente.",
+      "addNewCustomer": "Agregar nuevo cliente"
+    }
   }
 }

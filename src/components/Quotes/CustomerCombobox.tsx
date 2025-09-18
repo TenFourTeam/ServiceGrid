@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Check, ChevronsUpDown, ExternalLink, User } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import type { Customer } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -15,10 +16,11 @@ interface CustomerComboboxProps {
   onCreateCustomer?: () => void;
 }
 
-export function CustomerCombobox({ customers, value, onChange, placeholder = "Select customer…", disabled, onCreateCustomer }: CustomerComboboxProps) {
+export function CustomerCombobox({ customers, value, onChange, placeholder, disabled, onCreateCustomer }: CustomerComboboxProps) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const selected = customers.find((c) => c.id === value);
-  const displayName = useMemo(() => selected?.name || placeholder, [selected, placeholder]);
+  const displayName = useMemo(() => selected?.name || placeholder || t('quotes.customerCombobox.placeholder'), [selected, placeholder, t]);
 
   // Helper to check if multiple customers have the same name
   const getCustomerDisplayName = (customer: Customer) => {
@@ -66,13 +68,13 @@ export function CustomerCombobox({ customers, value, onChange, placeholder = "Se
           return (customer.name.toLowerCase().includes(searchLower) || 
                   customer.email.toLowerCase().includes(searchLower)) ? 1 : 0;
         }}>
-          <CommandInput placeholder="Search by name or email…" />
+          <CommandInput placeholder={t('quotes.customerCombobox.searchPlaceholder')} />
           <CommandList className="max-h-64 overflow-auto">
-            <CommandEmpty>No customer found.</CommandEmpty>
+            <CommandEmpty>{t('quotes.customerCombobox.noCustomer')}</CommandEmpty>
             <CommandGroup>
               <CommandItem value="__create_new__" onSelect={handleCreateCustomer} className="cursor-pointer">
                 <ExternalLink className="mr-2 h-4 w-4" />
-                <span>Add new customer</span>
+                <span>{t('quotes.customerCombobox.addNewCustomer')}</span>
               </CommandItem>
             </CommandGroup>
             <CommandGroup>

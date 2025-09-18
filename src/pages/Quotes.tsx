@@ -20,6 +20,7 @@ import { Receipt, Users } from 'lucide-react';
 import { QuoteActions } from '@/components/Quotes/QuoteActions';
 import { QuoteDetailsModal } from '@/components/Quotes/QuoteDetailsModal';
 import QuoteErrorBoundary from '@/components/ErrorBoundaries/QuoteErrorBoundary';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 import { useOnboardingActions } from '@/onboarding/hooks';
 
@@ -40,6 +41,7 @@ const statusColors: Record<QuoteStatus, string> = {
 
 
 export default function QuotesPage() {
+  const { t } = useLanguage();
   const { isSignedIn, getToken } = useClerkAuth();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const { businessTaxRateDefault } = useBusinessContext();
@@ -112,7 +114,7 @@ export default function QuotesPage() {
   function copyPublicLink(quote: QuoteListItem) {
     const url = `${window.location.origin}/quote/${quote.publicToken}`;
     navigator.clipboard.writeText(url);
-    toast.success('Quote link copied to clipboard');
+    toast.success(t('quotes.messages.linkCopied'));
   }
 
   useEffect(() => {
@@ -182,12 +184,12 @@ export default function QuotesPage() {
               <div className="text-sm text-muted-foreground">{formatCurrency(quote.total)}</div>
             </div>
             <div className="text-sm text-muted-foreground truncate">
-              Customer: {getCustomerName(quote.customerId)}
+              {t('quotes.modal.customer')}: {getCustomerName(quote.customerId)}
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
             <Badge className={statusColors[quote.status]}>
-              {quote.status}
+              {t(`quotes.status.${quote.status.toLowerCase().replace(/\s+/g, '')}`)}
             </Badge>
           </div>
         </div>
@@ -199,19 +201,19 @@ export default function QuotesPage() {
 
 
   return (
-    <AppLayout title="Quotes">
+    <AppLayout title={t('quotes.title')}>
       <QuoteErrorBoundary>
         <section>
           <Card>
           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <CardTitle>All Quotes</CardTitle>
+            <CardTitle>{t('quotes.cardTitle')}</CardTitle>
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <Button onClick={() => {
                 setCreateModalOpen(true);
                 setDetailsModalMode('create');
                 setSelectedQuoteId(null);
               }} data-onb="new-quote-button" className="w-full sm:w-auto">
-                Create Quote
+                {t('quotes.createQuote')}
               </Button>
             </div>
           </CardHeader>
@@ -225,8 +227,8 @@ export default function QuotesPage() {
                       <Receipt className="h-8 w-8 text-muted-foreground" />
                     </div>
                     <div className="space-y-2 max-w-md">
-                      <h3 className="text-xl font-semibold">Ready to create your first quote?</h3>
-                      <p className="text-muted-foreground">Send professional quotes to customers and convert them to jobs when approved. Get paid faster with integrated payment processing.</p>
+                      <h3 className="text-xl font-semibold">{t('quotes.emptyStates.ready')}</h3>
+                      <p className="text-muted-foreground">{t('quotes.emptyStates.description')}</p>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2">
                       <Button onClick={() => {
@@ -235,11 +237,11 @@ export default function QuotesPage() {
                         setSelectedQuoteId(null);
                       }} className="gap-2">
                         <Receipt className="h-4 w-4" />
-                        Create Your First Quote
+                        {t('quotes.createFirstQuote')}
                       </Button>
                       <Button variant="outline" onClick={onboarding.openAddCustomer} size="sm" className="gap-1">
                         <Users className="h-3 w-3" />
-                        Add Customer First
+                        {t('quotes.emptyStates.addCustomerFirst')}
                       </Button>
                     </div>
                   </div>
@@ -263,25 +265,25 @@ export default function QuotesPage() {
                   <TableRow>
                     <TableHead>
                       <button className="flex items-center gap-1" onClick={() => handleSort('number')} aria-label="Sort by number">
-                        Number{sortKey === 'number' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                        {t('quotes.table.number')}{sortKey === 'number' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
                       </button>
                     </TableHead>
                     <TableHead>
                       <button className="flex items-center gap-1" onClick={() => handleSort('customer')} aria-label="Sort by customer">
-                        Customer{sortKey === 'customer' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                        {t('quotes.table.customer')}{sortKey === 'customer' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
                       </button>
                     </TableHead>
                     <TableHead>
                       <button className="flex items-center gap-1" onClick={() => handleSort('total')} aria-label="Sort by total">
-                        Total{sortKey === 'total' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                        {t('quotes.table.total')}{sortKey === 'total' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
                       </button>
                     </TableHead>
                     <TableHead>
                       <button className="flex items-center gap-1" onClick={() => handleSort('status')} aria-label="Sort by status">
-                        Status{sortKey === 'status' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                        {t('quotes.table.status')}{sortKey === 'status' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
                       </button>
                     </TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>{t('quotes.table.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -293,8 +295,8 @@ export default function QuotesPage() {
                             <Receipt className="h-8 w-8 text-muted-foreground" />
                           </div>
                           <div className="space-y-2 max-w-md">
-                            <h3 className="text-xl font-semibold">Ready to create your first quote?</h3>
-                            <p className="text-muted-foreground">Send professional quotes to customers and convert them to jobs when approved. Get paid faster with integrated payment processing.</p>
+                            <h3 className="text-xl font-semibold">{t('quotes.emptyStates.ready')}</h3>
+                            <p className="text-muted-foreground">{t('quotes.emptyStates.description')}</p>
                           </div>
                           <div className="flex flex-col sm:flex-row gap-2">
                             <Button onClick={() => {
@@ -303,11 +305,11 @@ export default function QuotesPage() {
                               setSelectedQuoteId(null);
                             }} className="gap-2">
                               <Receipt className="h-4 w-4" />
-                              Create Your First Quote
+                              {t('quotes.createFirstQuote')}
                             </Button>
                             <Button variant="outline" onClick={onboarding.openAddCustomer} size="sm" className="gap-1">
                               <Users className="h-3 w-3" />
-                              Add Customer First
+                              {t('quotes.emptyStates.addCustomerFirst')}
                             </Button>
                           </div>
                         </div>
@@ -333,7 +335,7 @@ export default function QuotesPage() {
                         <TableCell>{formatCurrency(quote.total)}</TableCell>
                         <TableCell>
                           <Badge className={statusColors[quote.status]}>
-                            {quote.status}
+                            {t(`quotes.status.${quote.status.toLowerCase().replace(/\s+/g, '')}`)}
                           </Badge>
                         </TableCell>
                         <TableCell onClick={(e) => e.stopPropagation()}>

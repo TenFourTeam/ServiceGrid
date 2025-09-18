@@ -14,6 +14,7 @@ import { queryKeys } from '@/queries/keys';
 import LoadingScreen from '@/components/LoadingScreen';
 import { QuoteForm } from '@/components/Quotes/QuoteForm';
 import { useLifecycleEmailIntegration } from '@/hooks/useLifecycleEmailIntegration';
+import { useLanguage } from '@/contexts/LanguageContext';
 import type { Quote, QuoteListItem, QuoteStatus, Customer } from '@/types';
 
 const statusColors: Record<QuoteStatus, string> = {
@@ -35,6 +36,7 @@ interface QuoteDetailsModalProps {
 }
 
 export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mode = 'view', defaultTaxRate = 0.1 }: QuoteDetailsModalProps) {
+  const { t } = useLanguage();
   const { data: customers = [] } = useCustomersData();
   const { businessId } = useBusinessContext();
   const queryClient = useQueryClient();
@@ -234,7 +236,7 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
     if (!quote) return;
     
     if (quote.status === 'Draft') {
-      toast.error('Cannot convert draft quotes to jobs. Send the quote first.');
+      toast.error(t('quotes.messages.cannotConvertDraft'));
       return;
     }
 
@@ -272,7 +274,7 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
     if (!quote) return;
 
     if (quote.status === 'Draft') {
-      toast.error('Cannot create invoice from draft quotes. Send the quote first.');
+      toast.error(t('quotes.messages.cannotCreateInvoiceDraft'));
       return;
     }
 
@@ -320,9 +322,9 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
   };
 
   const getModalTitle = () => {
-    if (currentMode === 'create') return 'Create Quote';
-    if (currentMode === 'edit') return `Edit Quote ${quote?.number || ''}`;
-    return `Quote ${quote?.number || ''}`;
+    if (currentMode === 'create') return t('quotes.modal.create');
+    if (currentMode === 'edit') return `${t('quotes.modal.edit')} ${quote?.number || ''}`;
+    return `${t('quotes.modal.quote')} ${quote?.number || ''}`;
   };
 
   if (loading) {
@@ -345,7 +347,7 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
             <span>{getModalTitle()}</span>
             {quote && currentMode === 'view' && (
               <Badge className={statusColors[quote.status]}>
-                {quote.status}
+                {t(`quotes.status.${quote.status.toLowerCase().replace(/\s+/g, '')}`)}
               </Badge>
             )}
           </DrawerTitle>
@@ -371,23 +373,23 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
           {currentMode === 'view' && quote && (
             <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
-                <div className="text-sm text-muted-foreground">Customer</div>
+                <div className="text-sm text-muted-foreground">{t('quotes.modal.customer')}</div>
                 <div className="font-medium">{customerName}</div>
                 {customerEmail && (
                   <div className="text-sm text-muted-foreground">{customerEmail}</div>
                 )}
               </div>
               <div>
-                <div className="text-sm text-muted-foreground">Total</div>
+                <div className="text-sm text-muted-foreground">{t('quotes.modal.total')}</div>
                 <div className="font-medium text-lg">{formatMoney(quote.total)}</div>
               </div>
               <div>
-                <div className="text-sm text-muted-foreground">Created</div>
+                <div className="text-sm text-muted-foreground">{t('quotes.modal.created')}</div>
                 <div>{formatDate(quote.createdAt)}</div>
               </div>
               {quote.sentAt && (
                 <div>
-                  <div className="text-sm text-muted-foreground">Sent</div>
+                  <div className="text-sm text-muted-foreground">{t('quotes.modal.sent')}</div>
                   <div>{formatDate(quote.sentAt)}</div>
                 </div>
               )}
@@ -404,28 +406,28 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
                     variant="outline" 
                     onClick={() => setCurrentMode('edit')}
                   >
-                    Edit Quote
+                    {t('quotes.actions.editQuote')}
                   </Button>
                 )}
                 <Button 
                   variant="outline" 
                   onClick={() => onSendQuote?.(quote)}
                 >
-                  Send Quote
+                  {t('quotes.actions.sendQuote')}
                 </Button>
                 <Button 
                   variant="outline" 
                   onClick={handleConvertToJob}
                   disabled={isConvertingToJob}
                 >
-                  {isConvertingToJob ? 'Converting...' : 'Convert to Job'}
+                  {isConvertingToJob ? t('quotes.messages.convertingToJob') : t('quotes.actions.convertToJob')}
                 </Button>
                 <Button 
                   variant="outline" 
                   onClick={handleCreateInvoice}
                   disabled={isCreatingInvoice}
                 >
-                  {isCreatingInvoice ? 'Creating...' : 'Create Invoice'}
+                  {isCreatingInvoice ? t('quotes.messages.creatingInvoice') : t('quotes.actions.createInvoice')}
                 </Button>
               </>
             )}

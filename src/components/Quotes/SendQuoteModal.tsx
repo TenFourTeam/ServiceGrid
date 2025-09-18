@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useMemo, useState, useEffect } from "react";
 import { useCustomersData } from "@/queries/unified";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import type { Quote } from "@/types";
 import { generateQuoteEmail, generateQuoteSubject } from "@/utils/quoteEmailTemplates";
 import { combineMessageWithEmail } from "@/utils/emailTemplateEngine";
@@ -24,6 +25,7 @@ export interface SendQuoteModalProps {
 }
 
 export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, customerName }: SendQuoteModalProps) {
+  const { t } = useLanguage();
   const { business, businessName, businessLogoUrl, businessLightLogoUrl, businessId } = useBusinessContext();
   const { data: customers = [] } = useCustomersData();
   const queryClient = useQueryClient();
@@ -72,7 +74,7 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!to || !emailRegex.test(to)) {
-      toast.error("Please enter a valid email address.");
+      toast.error(t('quotes.modal.emailValidation'));
       return;
     }
     setSending(true);
@@ -111,21 +113,21 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="max-h-[85vh]">
         <DrawerHeader>
-          <DrawerTitle>Send Quote</DrawerTitle>
+          <DrawerTitle>{t('quotes.modal.sendQuote')}</DrawerTitle>
         </DrawerHeader>
         <div className="px-4 pb-4 space-y-6 overflow-y-auto flex-1">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-muted-foreground">To</label>
+              <label className="text-sm font-medium text-muted-foreground">{t('quotes.modal.to')}</label>
               <Input value={to} onChange={(e) => setTo(e.target.value)} placeholder="customer@example.com" />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-muted-foreground">Subject</label>
+              <label className="text-sm font-medium text-muted-foreground">{t('quotes.modal.subject')}</label>
               <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder={defaultSubject} />
             </div>
           </div>
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-muted-foreground">Message (optional)</label>
+            <label className="text-sm font-medium text-muted-foreground">{t('quotes.modal.message')}</label>
             <Textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={3} placeholder="Add a short note..." />
           </div>
           <div className="h-px bg-border" />
@@ -134,7 +136,7 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
             <div className="relative">
               <div className="absolute inset-x-0 top-0 z-10 flex justify-center">
                 <div className="mt-2 px-2 py-0.5 text-xs rounded-md bg-muted text-muted-foreground">
-                  Preview only. Links and buttons are disabled.
+                  {t('quotes.modal.preview')}
                 </div>
               </div>
               <div
@@ -148,10 +150,10 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
         <DrawerFooter>
           <div className="flex gap-2">
             <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={sending} className="flex-1">
-              Cancel
+              {t('quotes.modal.cancel')}
             </Button>
             <Button onClick={send} disabled={sending || !to || (!!quote && (quote.status === 'Sent' || quote.status === 'Approved'))} className="flex-1">
-              {sending ? 'Sending…' : 'Send Email'}
+              {sending ? t('quotes.modal.sending') : t('quotes.modal.sendEmail')}
             </Button>
           </div>
         </DrawerFooter>

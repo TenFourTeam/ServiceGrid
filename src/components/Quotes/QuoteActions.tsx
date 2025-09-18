@@ -9,6 +9,7 @@ import { useLifecycleEmailIntegration } from '@/hooks/useLifecycleEmailIntegrati
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/queries/keys';
+import { useLanguage } from '@/contexts/LanguageContext';
 import type { QuoteListItem } from '@/types';
 
 interface QuoteActionsProps {
@@ -17,6 +18,7 @@ interface QuoteActionsProps {
 }
 
 export function QuoteActions({ quote, onSendQuote }: QuoteActionsProps) {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { getToken } = useClerkAuth();
   const { businessId } = useBusinessContext();
@@ -27,7 +29,7 @@ export function QuoteActions({ quote, onSendQuote }: QuoteActionsProps) {
 
   const handleConvertToJob = async () => {
     if (quote.status === 'Draft') {
-      toast.error('Cannot convert draft quotes to jobs. Send the quote first.');
+      toast.error(t('quotes.messages.cannotConvertDraft'));
       return;
     }
 
@@ -59,7 +61,7 @@ export function QuoteActions({ quote, onSendQuote }: QuoteActionsProps) {
 
   const handleCreateInvoice = async () => {
     if (quote.status === 'Draft') {
-      toast.error('Cannot create invoice from draft quotes. Send the quote first.');
+      toast.error(t('quotes.messages.cannotCreateInvoiceDraft'));
       return;
     }
 
@@ -112,16 +114,16 @@ export function QuoteActions({ quote, onSendQuote }: QuoteActionsProps) {
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={() => onSendQuote(quote)} className="gap-2">
           <Send className="h-4 w-4" />
-          Send Quote
+          {t('quotes.actions.sendQuote')}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleConvertToJob} className="gap-2">
           <FileText className="h-4 w-4" />
-          Convert to Job
+          {t('quotes.actions.convertToJob')}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={handleCreateInvoice} className="gap-2">
           <Receipt className="h-4 w-4" />
-          Create Invoice
+          {t('quotes.actions.createInvoice')}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

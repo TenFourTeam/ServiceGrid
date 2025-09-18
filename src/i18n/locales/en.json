@@ -395,5 +395,116 @@
       "pickDate": "Pick a date",
       "minutes": "min"
     }
+  },
+  "quotes": {
+    "title": "Quotes",
+    "cardTitle": "All Quotes",
+    "createQuote": "Create Quote",
+    "createFirstQuote": "Create Your First Quote",
+    "table": {
+      "number": "Number",
+      "customer": "Customer",
+      "total": "Total",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "draft": "Draft",
+      "sent": "Sent",
+      "viewed": "Viewed",
+      "approved": "Approved",
+      "declined": "Declined",
+      "editsrequested": "Edits Requested"
+    },
+    "emptyStates": {
+      "ready": "Ready to create your first quote?",
+      "description": "Send professional quotes to customers and convert them to jobs when approved. Get paid faster with integrated payment processing.",
+      "addCustomerFirst": "Add Customer First",
+      "addCustomerDescription": "You'll need to add at least one customer before you can create quotes."
+    },
+    "actions": {
+      "sendQuote": "Send Quote",
+      "convertToJob": "Convert to Job",
+      "createInvoice": "Create Invoice",
+      "editQuote": "Edit Quote"
+    },
+    "messages": {
+      "linkCopied": "Quote link copied to clipboard",
+      "cannotConvertDraft": "Cannot convert draft quotes to jobs. Send the quote first.",
+      "cannotCreateInvoiceDraft": "Cannot create invoice from draft quotes. Send the quote first.",
+      "convertingToJob": "Converting...",
+      "creatingInvoice": "Creating..."
+    },
+    "modal": {
+      "create": "Create Quote",
+      "edit": "Edit Quote",
+      "quote": "Quote",
+      "customer": "Customer",
+      "total": "Total",
+      "created": "Created",
+      "sent": "Sent",
+      "sendQuote": "Send Quote",
+      "to": "To",
+      "subject": "Subject",
+      "message": "Message (optional)",
+      "preview": "Preview only. Links and buttons are disabled.",
+      "cancel": "Cancel",
+      "sendEmail": "Send Email",
+      "sending": "Sending...",
+      "emailValidation": "Please enter a valid email address"
+    },
+    "form": {
+      "customer": "Customer",
+      "serviceAddress": "Service Address",
+      "lineItems": "Line Items",
+      "taxRate": "Tax Rate (%)",
+      "discount": "Discount ($)",
+      "paymentTerms": {
+        "label": "Payment Terms",
+        "dueOnReceipt": "Due on receipt",
+        "net15": "Net 15",
+        "net30": "Net 30", 
+        "net60": "Net 60"
+      },
+      "frequency": {
+        "label": "Frequency",
+        "oneOff": "One-off",
+        "biMonthly": "Bi-monthly",
+        "monthly": "Monthly",
+        "biYearly": "Bi-yearly",
+        "yearly": "Yearly"
+      },
+      "deposit": {
+        "required": "Deposit Required",
+        "percentage": "Deposit percentage"
+      },
+      "summary": {
+        "subtotal": "Subtotal:",
+        "tax": "Tax:",
+        "discount": "Discount:",
+        "total": "Total:"
+      },
+      "terms": "Terms & Conditions",
+      "internalNotes": "Internal Notes",
+      "createQuote": "Create Quote",
+      "updateQuote": "Update Quote"
+    },
+    "lineItems": {
+      "title": "Line Items",
+      "addItem": "Add Item",
+      "emptyState": "No line items yet. Click 'Add Item' to get started.",
+      "item": "Item",
+      "amount": "Amount",
+      "name": "Name",
+      "namePlaceholder": "Service or item name",
+      "amountPlaceholder": "0.00",
+      "removeItem": "Remove line item"
+    },
+    "customerCombobox": {
+      "placeholder": "Select customer...",
+      "searchPlaceholder": "Search by name or email...",
+      "noCustomer": "No customer found.",
+      "addNewCustomer": "Add new customer"
+    }
   }
 }
