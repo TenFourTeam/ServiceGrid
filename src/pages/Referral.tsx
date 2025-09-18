@@ -6,9 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { UserPlus, Share, Gift, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function ReferralPage() {
   const { user } = useUser();
+  const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
   
   const referralLink = `${window.location.origin}/invite/referral?ref=${user?.id || 'user'}`;
@@ -17,7 +19,7 @@ export default function ReferralPage() {
     try {
       await navigator.clipboard.writeText(referralLink);
       setCopied(true);
-      toast.success('Referral link copied to clipboard!');
+      toast.success(t('referral.messages.linkCopied'));
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       // Fallback for browsers without clipboard API
@@ -28,13 +30,13 @@ export default function ReferralPage() {
       document.execCommand('copy');
       document.body.removeChild(textArea);
       setCopied(true);
-      toast.success('Referral link copied to clipboard!');
+      toast.success(t('referral.messages.linkCopied'));
       setTimeout(() => setCopied(false), 2000);
     }
   };
 
   return (
-    <AppLayout title="Refer A Friend">
+    <AppLayout title={t('referral.title')}>
       <div className="grid md:grid-cols-2 gap-6">
         {/* Hero Card */}
         <Card className="md:col-span-2 bg-gradient-to-br from-primary/10 via-primary/5 to-background border-primary/20">
@@ -43,10 +45,10 @@ export default function ReferralPage() {
               <UserPlus className="h-8 w-8 text-primary-foreground" />
             </div>
             <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-              Give a month, get a month free
+              {t('referral.hero.mainTitle')}
             </CardTitle>
             <p className="text-muted-foreground mt-2">
-              Help fellow contractors discover ServiceGrid and you'll both get 1 month free
+              {t('referral.hero.subtitle')}
             </p>
           </CardHeader>
         </Card>
@@ -54,7 +56,7 @@ export default function ReferralPage() {
         {/* How It Works */}
         <Card>
           <CardHeader>
-            <CardTitle>How It Works</CardTitle>
+            <CardTitle>{t('referral.howItWorks.title')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-start gap-3">
@@ -62,8 +64,8 @@ export default function ReferralPage() {
                 <Share className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <h4 className="font-medium">Share your link</h4>
-                <p className="text-sm text-muted-foreground">Send your referral link to contractor friends</p>
+                <h4 className="font-medium">{t('referral.howItWorks.steps.share.title')}</h4>
+                <p className="text-sm text-muted-foreground">{t('referral.howItWorks.steps.share.description')}</p>
               </div>
             </div>
             
@@ -72,8 +74,8 @@ export default function ReferralPage() {
                 <UserPlus className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <h4 className="font-medium">Friend signs up</h4>
-                <p className="text-sm text-muted-foreground">They create an account and subscribe to a paid plan</p>
+                <h4 className="font-medium">{t('referral.howItWorks.steps.signup.title')}</h4>
+                <p className="text-sm text-muted-foreground">{t('referral.howItWorks.steps.signup.description')}</p>
               </div>
             </div>
             
@@ -82,8 +84,8 @@ export default function ReferralPage() {
                 <Gift className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <h4 className="font-medium">Both get 1 month free</h4>
-                <p className="text-sm text-muted-foreground">You both receive a free month on your subscriptions</p>
+                <h4 className="font-medium">{t('referral.howItWorks.steps.reward.title')}</h4>
+                <p className="text-sm text-muted-foreground">{t('referral.howItWorks.steps.reward.description')}</p>
               </div>
             </div>
           </CardContent>
@@ -92,7 +94,7 @@ export default function ReferralPage() {
         {/* Referral Link */}
         <Card>
           <CardHeader>
-            <CardTitle>Your Referral Link</CardTitle>
+            <CardTitle>{t('referral.referralLink.title')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex gap-2">
@@ -115,7 +117,7 @@ export default function ReferralPage() {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Share this link with contractors who could benefit from ServiceGrid
+              {t('referral.referralLink.description')}
             </p>
           </CardContent>
         </Card>

@@ -668,5 +668,36 @@
       "backToOverview": "Volver al Resumen Legal",
       "lastUpdated": "Última Actualización:"
     }
+  },
+  "referral": {
+    "title": "Recomienda un Amigo",
+    "hero": {
+      "mainTitle": "Regala un mes, obtén un mes gratis",
+      "subtitle": "Ayuda a otros contratistas a descubrir ServiceGrid y ambos obtendrán 1 mes gratis"
+    },
+    "howItWorks": {
+      "title": "Cómo Funciona",
+      "steps": {
+        "share": {
+          "title": "Comparte tu enlace",
+          "description": "Envía tu enlace de referido a amigos contratistas"
+        },
+        "signup": {
+          "title": "El amigo se registra",
+          "description": "Crea una cuenta y se suscribe a un plan de pago"
+        },
+        "reward": {
+          "title": "Ambos obtienen 1 mes gratis",
+          "description": "Ambos reciben un mes gratis en sus suscripciones"
+        }
+      }
+    },
+    "referralLink": {
+      "title": "Tu Enlace de Referido",
+      "description": "Comparte este enlace con contratistas que puedan beneficiarse de ServiceGrid"
+    },
+    "messages": {
+      "linkCopied": "¡Enlace de referido copiado al portapapeles!"
+    }
   }
 }

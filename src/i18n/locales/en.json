@@ -668,5 +668,36 @@
       "backToOverview": "Back to Legal Overview",
       "lastUpdated": "Last Updated:"
     }
+  },
+  "referral": {
+    "title": "Refer A Friend",
+    "hero": {
+      "mainTitle": "Give a month, get a month free",
+      "subtitle": "Help fellow contractors discover ServiceGrid and you'll both get 1 month free"
+    },
+    "howItWorks": {
+      "title": "How It Works",
+      "steps": {
+        "share": {
+          "title": "Share your link",
+          "description": "Send your referral link to contractor friends"
+        },
+        "signup": {
+          "title": "Friend signs up",
+          "description": "They create an account and subscribe to a paid plan"
+        },
+        "reward": {
+          "title": "Both get 1 month free",
+          "description": "You both receive a free month on your subscriptions"
+        }
+      }
+    },
+    "referralLink": {
+      "title": "Your Referral Link",
+      "description": "Share this link with contractors who could benefit from ServiceGrid"
+    },
+    "messages": {
+      "linkCopied": "Referral link copied to clipboard!"
+    }
   }
 }
