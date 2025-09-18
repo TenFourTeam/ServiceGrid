@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import './index.css';
@@ -23,21 +23,37 @@ function ErrorScreen({ message }: { message: string }) {
   return <div style={{ padding: 24 }}>Auth configuration error: {message}</div>;
 }
 
-// Global state to prevent multiple concurrent fetches
+// Global state to prevent multiple concurrent fetches and multiple App instances
 let clerkKeyCache: string | null = null;
+let isInitializing = false;
+let appInstanceRef: React.ComponentType<{ clerkKey: string }> | null = null;
 
 function Boot() {
   const [key, setKey] = useState<string | null>(clerkKeyCache);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(!clerkKeyCache);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
-    // If we already have a cached key, don't fetch again
-    if (clerkKeyCache) {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    // If we already have a cached key and we're mounted, use it immediately
+    if (clerkKeyCache && mountedRef.current) {
+      setKey(clerkKeyCache);
+      setIsLoading(false);
       return;
     }
 
-    let isMounted = true;
+    // If we're already initializing, don't start another fetch
+    if (isInitializing) {
+      return;
+    }
+
+    isInitializing = true;
     
     const fetchClerkKey = async () => {
       try {
@@ -59,24 +75,22 @@ function Boot() {
           throw new Error('Missing authentication configuration');
         }
         
-        if (isMounted) {
+        if (mountedRef.current) {
           clerkKeyCache = fetchedKey;
           setKey(fetchedKey);
           setIsLoading(false);
         }
       } catch (e: any) {
-        if (isMounted) {
+        if (mountedRef.current) {
           setError(e.message || 'Failed to load Clerk key');
           setIsLoading(false);
         }
+      } finally {
+        isInitializing = false;
       }
     };
 
     fetchClerkKey();
-
-    return () => {
-      isMounted = false;
-    };
   }, []);
 
   if (isLoading) {
@@ -91,7 +105,13 @@ function Boot() {
     return <ErrorScreen message="Missing authentication configuration" />;
   }
 
-  return <App clerkKey={key} />;
+  // Ensure we only create one App instance
+  if (!appInstanceRef) {
+    appInstanceRef = App;
+  }
+
+  const AppComponent = appInstanceRef;
+  return <AppComponent clerkKey={key} />;
 }
 
 const root = document.getElementById('root')!;
