@@ -27,7 +27,7 @@ export default function InvoicesPage() {
   const [status, setStatus] = useState<'All' | 'Draft' | 'Sent' | 'Paid' | 'Overdue'>('All');
   const [selectedInvoice, setSelectedInvoice] = useState<string | null>(null);
   const [modalMode, setModalMode] = useState<'view' | 'edit' | 'send' | 'create'>('view');
-  const [sortKey, setSortKey] = useState<'number' | 'customer' | 'amount' | 'due' | 'status'>('number');
+  const [sortKey, setSortKey] = useState<'number' | 'issued' | 'customer' | 'amount' | 'due' | 'status'>('number');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const qc = useQueryClient();
   
@@ -91,6 +91,10 @@ export default function InvoicesPage() {
         case 'number':
           va = a.number || '';
           vb = b.number || '';
+          break;
+        case 'issued':
+          va = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          vb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
           break;
         case 'customer':
           va = customers.find(c => c.id === a.customerId)?.name || '';
@@ -166,6 +170,11 @@ export default function InvoicesPage() {
                     </button>
                 </TableHead>
                 <TableHead>
+                    <button className="flex items-center gap-1" onClick={() => requestSort('issued')} aria-label="Sort by issued date">
+                      Issued{sortKey === 'issued' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                    </button>
+                </TableHead>
+                <TableHead>
                     <button className="flex items-center gap-1" onClick={() => requestSort('customer')} aria-label="Sort by customer">
                       Customer{sortKey === 'customer' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
                     </button>
@@ -198,6 +207,7 @@ export default function InvoicesPage() {
                   }}
                 >
                   <TableCell>{i.number}</TableCell>
+                  <TableCell>{formatDate(i.createdAt)}</TableCell>
                   <TableCell>{customers.find(c=>c.id===i.customerId)?.name}</TableCell>
                   <TableCell>{formatMoney(i.total)}</TableCell>
                   <TableCell>{formatDate(i.dueAt)}</TableCell>
