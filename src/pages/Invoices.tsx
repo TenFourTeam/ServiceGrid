@@ -18,6 +18,7 @@ import { useInvoicePayments } from '@/hooks/useInvoicePayments';
 import { supabase } from '@/integrations/supabase/client';
 import { invalidationHelpers } from '@/queries/keys';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 
 
 export default function InvoicesPage() {
@@ -63,7 +64,7 @@ export default function InvoicesPage() {
       customerId: row.customerId,
       jobId: row.jobId || undefined,
       lineItems: [] as any[],
-      taxRate: row.taxRate,
+      taxRate: row.taxRate ?? 0,
       discount: row.discount,
       subtotal: row.subtotal,
       total: row.total,
@@ -137,19 +138,53 @@ export default function InvoicesPage() {
   const handleExportCSV = async () => {
     if (sortedInvoices.length === 0) return;
 
+    // We need auth context for the API calls
+    const { getToken } = useClerkAuth();
+    const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+
+    // Fetch payment data for all paid invoices
+    const paymentPromises = sortedInvoices
+      .filter(invoice => invoice.status === 'Paid')
+      .map(async invoice => {
+        try {
+          const { data } = await authApi.invoke('invoices-crud', {
+            method: 'GET',
+            queryParams: { 
+              action: 'get_payments',
+              invoiceId: invoice.id 
+            }
+          });
+          return { invoiceId: invoice.id, payments: data?.payments || [] };
+        } catch (error) {
+          console.error('Error fetching payments for invoice', invoice.id, error);
+          return { invoiceId: invoice.id, payments: [] };
+        }
+      });
+
+    const paymentResults = await Promise.all(paymentPromises);
+    const paymentsMap = paymentResults.reduce((acc, result) => {
+      acc[result.invoiceId] = result.payments;
+      return acc;
+    }, {} as Record<string, any[]>);
+
     const csvData = sortedInvoices.map(invoice => {
       const customer = customers.find(c => c.id === invoice.customerId);
+      const payments = paymentsMap[invoice.id] || [];
+      const mostRecentPayment = payments.length > 0 ? payments[0] : null;
+      const paymentType = mostRecentPayment ? mostRecentPayment.method : 'N/A';
+
       return {
         'Invoice Number': invoice.number,
         'Customer Name': customer?.name || 'Unknown',
         'Customer Email': customer?.email || '',
         'Amount': formatMoney(invoice.total),
         'Status': invoice.status,
+        'Payment Type': paymentType,
         'Issued Date': formatDate(invoice.createdAt),
         'Due Date': formatDate(invoice.dueAt),
         'Paid Date': invoice.status === 'Paid' ? formatDate(invoice.paidAt) : '',
         'Subtotal': formatMoney(invoice.subtotal),
-        'Tax Rate': `${invoice.taxRate}%`,
+        'Tax Rate': `${invoice.taxRate ?? 0}%`,
         'Discount': formatMoney(invoice.discount),
       };
     });
