@@ -170,11 +170,6 @@ export default function InvoicesPage() {
                     </button>
                 </TableHead>
                 <TableHead>
-                    <button className="flex items-center gap-1" onClick={() => requestSort('issued')} aria-label="Sort by issued date">
-                      Issued{sortKey === 'issued' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
-                    </button>
-                </TableHead>
-                <TableHead>
                     <button className="flex items-center gap-1" onClick={() => requestSort('customer')} aria-label="Sort by customer">
                       Customer{sortKey === 'customer' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
                     </button>
@@ -182,6 +177,11 @@ export default function InvoicesPage() {
                 <TableHead>
                     <button className="flex items-center gap-1" onClick={() => requestSort('amount')} aria-label="Sort by amount">
                       Amount{sortKey === 'amount' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                    </button>
+                </TableHead>
+                <TableHead>
+                    <button className="flex items-center gap-1" onClick={() => requestSort('issued')} aria-label="Sort by issued date">
+                      Issued{sortKey === 'issued' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
                     </button>
                 </TableHead>
                 <TableHead>
@@ -207,9 +207,9 @@ export default function InvoicesPage() {
                   }}
                 >
                   <TableCell>{i.number}</TableCell>
-                  <TableCell>{formatDate(i.createdAt)}</TableCell>
                   <TableCell>{customers.find(c=>c.id===i.customerId)?.name}</TableCell>
                   <TableCell>{formatMoney(i.total)}</TableCell>
+                  <TableCell>{formatDate(i.createdAt)}</TableCell>
                   <TableCell>{formatDate(i.dueAt)}</TableCell>
                   <TableCell>{i.status}</TableCell>
                 </TableRow>
