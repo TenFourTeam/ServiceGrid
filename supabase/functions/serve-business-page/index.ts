@@ -12,30 +12,53 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Extract business ID from URL path like /b/{businessId}
-    const url = new URL(req.url);
-    const pathSegments = url.pathname.split('/').filter(Boolean);
-    
-    if (pathSegments.length < 2 || pathSegments[0] !== 'b') {
-      return new Response('Invalid URL format. Expected /b/{businessId}', { 
-        status: 400,
-        headers: corsHeaders 
-      });
-    }
-
-    const businessId = pathSegments[1];
-
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Fetch business data
-    const { data: business, error } = await supabase
-      .from('businesses')
-      .select('name, description, logo_url, light_logo_url')
-      .eq('id', businessId)
-      .single();
+    const url = new URL(req.url);
+    let business = null;
+    let error = null;
+
+    // Try subdomain-based routing first
+    const host = req.headers.get('host') || url.hostname;
+    const subdomain = host.split('.')[0];
+    
+    // Skip common subdomains and main domain
+    if (subdomain && subdomain !== 'www' && subdomain !== 'api' && !subdomain.includes('localhost') && !subdomain.includes('vercel') && !subdomain.includes('ngrok')) {
+      console.log('Attempting subdomain lookup for:', subdomain);
+      
+      const { data: subdomainBusiness, error: subdomainError } = await supabase
+        .from('businesses')
+        .select('name, description, logo_url, light_logo_url')
+        .eq('slug', subdomain)
+        .single();
+      
+      if (subdomainBusiness && !subdomainError) {
+        business = subdomainBusiness;
+        console.log('Found business via subdomain:', business.name);
+      }
+    }
+
+    // Fallback to path-based routing if subdomain lookup failed
+    if (!business) {
+      const pathSegments = url.pathname.split('/').filter(Boolean);
+      
+      if (pathSegments.length >= 2 && pathSegments[0] === 'b') {
+        const businessId = pathSegments[1];
+        console.log('Attempting path-based lookup for:', businessId);
+        
+        const { data: pathBusiness, error: pathError } = await supabase
+          .from('businesses')
+          .select('name, description, logo_url, light_logo_url')
+          .eq('id', businessId)
+          .single();
+          
+        business = pathBusiness;
+        error = pathError;
+      }
+    }
 
     if (error || !business) {
       console.error('Business not found:', error);

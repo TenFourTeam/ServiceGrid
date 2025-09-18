@@ -28,8 +28,10 @@ import { RequestShowModal } from "@/components/Requests/RequestShowModal";
 import { RequestShareModal } from "@/components/Requests/RequestShareModal";
 import { RequestActions } from "@/components/Requests/RequestActions";
 import { statusOptions } from "@/validation/requests";
+import { useBusinessContext } from "@/hooks/useBusinessContext";
 
 export default function Requests() {
+  const { business } = useBusinessContext();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("All");
   const [selectedRequest, setSelectedRequest] = useState<RequestListItem | null>(null);
@@ -309,6 +311,8 @@ export default function Requests() {
       <RequestShareModal
         open={isShareModalOpen}
         onOpenChange={setIsShareModalOpen}
+        businessSlug={business?.slug}
+        businessName={business?.name}
       />
     </div>
   );

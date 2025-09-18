@@ -10,9 +10,13 @@ import { Copy, Link, Code } from "lucide-react";
 import { toast } from "sonner";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 
+import { generateBusinessSubdomainUrl } from '@/utils/subdomainUtils';
+
 interface RequestShareModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  businessSlug?: string;
+  businessName?: string;
 }
 
 interface EmbedSettings {
@@ -22,7 +26,9 @@ interface EmbedSettings {
 
 export function RequestShareModal({ 
   open, 
-  onOpenChange
+  onOpenChange,
+  businessSlug,
+  businessName
 }: RequestShareModalProps) {
   const { business } = useBusinessContext();
   const [activeTab, setActiveTab] = useState("share-link");
@@ -31,18 +37,20 @@ export function RequestShareModal({
     textColor: "#ffffff"
   });
 
-  // Generate the public request form URL with cache busting
+  const currentBusinessSlug = businessSlug || business?.slug;
+  const currentBusinessName = businessName || business?.name;
+
+  // Generate the public request form URL using subdomain or fallback
   const generateShareUrl = () => {
-    if (!business?.id) return "";
-    const timestamp = Math.floor(Date.now() / 1000); // Current timestamp
-    return `https://servicegrid.app/request/${business.id}?cb=${timestamp}`;
+    if (!currentBusinessSlug) return "";
+    return generateBusinessSubdomainUrl(currentBusinessSlug) + '/request';
   };
 
   // Generate the embed code with full iframe
   const generateEmbedCode = () => {
     const shareUrl = generateShareUrl();
-    if (!shareUrl) return "";
-    const iframeId = `request-form-${business.id}`;
+    if (!shareUrl || !currentBusinessSlug) return "";
+    const iframeId = `request-form-${currentBusinessSlug}`;
     
     return `<!-- Service Request Form Embed -->
 <div style="width: 100%; max-width: 800px; margin: 0 auto;">
@@ -59,7 +67,7 @@ export function RequestShareModal({
 <script>
   // Auto-resize iframe based on content (optional)
   window.addEventListener('message', function(e) {
-    if (e.origin !== 'https://servicegrid.app') return;
+    if (e.origin !== '${new URL(shareUrl).origin}') return;
     if (e.data.type === 'resize' && e.data.frameId === '${iframeId}') {
       var iframe = document.getElementById('${iframeId}');
       if (iframe) {
@@ -216,7 +224,7 @@ export function RequestShareModal({
                           cursor: 'pointer'
                         }}
                       >
-                        Submit Request
+                        {currentBusinessName ? `Request ${currentBusinessName} Service` : 'Submit Request'}
                       </button>
                     </Card>
                   </div>

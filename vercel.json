@@ -1,6 +1,16 @@
 {
   "rewrites": [
     {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "(?<subdomain>[^.]+)\\..*"
+        }
+      ],
+      "destination": "/api/serve-business-page"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
