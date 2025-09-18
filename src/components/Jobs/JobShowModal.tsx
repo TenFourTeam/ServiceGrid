@@ -87,6 +87,42 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
       return;
     }
     
+    // For time_and_materials jobs, allow direct invoice creation without quote
+    if (job.jobType === 'time_and_materials') {
+      setIsCreatingInvoice(true);
+      
+      try {
+        await authApi.invoke('invoices-crud', {
+          method: 'POST',
+          body: { 
+            customerId: job.customerId,
+            jobId: job.id,
+            total: job.total || 0,
+            subtotal: job.total || 0,
+            taxRate: 0,
+            discount: 0
+          },
+          toast: {
+            success: 'Invoice created successfully',
+            loading: 'Creating invoice...',
+            error: 'Failed to create invoice'
+          }
+        });
+        
+        if (businessId) {
+          invalidationHelpers.jobs(queryClient, businessId);
+        }
+        
+        navigate('/invoices');
+      } catch (e: any) {
+        console.error('Invoice creation failed:', e);
+      } finally {
+        setIsCreatingInvoice(false);
+      }
+      return;
+    }
+    
+    // For scheduled jobs, require a quote
     if (!currentQuoteId) { 
       setPickerOpen(true); 
       return; 
@@ -440,7 +476,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                     <Button 
                       variant="outline" 
                       onClick={handleCreateInvoice}
-                      disabled={isCreatingInvoice || (!currentQuoteId && !existingInvoice)}
+                      disabled={isCreatingInvoice || (job.jobType === 'scheduled' && !currentQuoteId && !existingInvoice)}
                       size="sm"
                     >
                       {isCreatingInvoice ? 'Creating...' : existingInvoice ? 'View Invoice' : 'Create Invoice'}
