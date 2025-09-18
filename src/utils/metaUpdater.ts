@@ -1,13 +1,20 @@
 /**
  * Lightweight meta tag management utility
  * Similar pattern to BusinessLogo - reads from localStorage with props override
+ * Enhanced with cache busting for social media link previews
  */
+import { getCurrentCacheBuster, appendCacheBusterToImageUrl } from './shareUtils';
+
 export interface BusinessMetaData {
   name?: string;
   description?: string;
+  logoUrl?: string;
 }
 
 export function updateBusinessMeta(businessData?: BusinessMetaData) {
+  // Check for cache buster in URL - if present, force meta tag refresh
+  const cacheBuster = getCurrentCacheBuster();
+  
   // Try to get business data from localStorage (same pattern as BusinessLogo)
   let cachedBusiness: BusinessMetaData | undefined;
   try {
@@ -19,7 +26,8 @@ export function updateBusinessMeta(businessData?: BusinessMetaData) {
       if (business) {
         cachedBusiness = {
           name: business.name,
-          description: business.description
+          description: business.description,
+          logoUrl: business.logo_url || business.light_logo_url
         };
       }
     }
@@ -30,6 +38,7 @@ export function updateBusinessMeta(businessData?: BusinessMetaData) {
   // Use props override if provided, otherwise fall back to cached data
   const name = businessData?.name || cachedBusiness?.name;
   const description = businessData?.description || cachedBusiness?.description;
+  const logoUrl = businessData?.logoUrl || cachedBusiness?.logoUrl;
 
   if (!name) return; // No business name available
 
@@ -86,5 +95,37 @@ export function updateBusinessMeta(businessData?: BusinessMetaData) {
     twitterDescription.setAttribute('name', 'twitter:description');
     twitterDescription.setAttribute('content', metaDescription);
     document.head.appendChild(twitterDescription);
+  }
+
+  // Add cache-busted Open Graph and Twitter images if logo is available
+  if (logoUrl) {
+    const cacheBustedLogo = appendCacheBusterToImageUrl(logoUrl);
+    
+    // Update Open Graph image
+    let ogImage = document.querySelector('meta[property="og:image"]');
+    if (ogImage) {
+      ogImage.setAttribute('content', cacheBustedLogo);
+    } else {
+      ogImage = document.createElement('meta');
+      ogImage.setAttribute('property', 'og:image');
+      ogImage.setAttribute('content', cacheBustedLogo);
+      document.head.appendChild(ogImage);
+    }
+
+    // Update Twitter image
+    let twitterImage = document.querySelector('meta[name="twitter:image"]');
+    if (twitterImage) {
+      twitterImage.setAttribute('content', cacheBustedLogo);
+    } else {
+      twitterImage = document.createElement('meta');
+      twitterImage.setAttribute('name', 'twitter:image');
+      twitterImage.setAttribute('content', cacheBustedLogo);
+      document.head.appendChild(twitterImage);
+    }
+  }
+
+  // Log cache busting activity for debugging
+  if (cacheBuster) {
+    console.log('[MetaUpdater] Cache buster detected:', cacheBuster, 'Meta tags refreshed for:', name);
   }
 }

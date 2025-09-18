@@ -4,6 +4,7 @@ import { useParams, useLocation } from 'react-router-dom';
 import { useCurrentBusiness } from '@/contexts/CurrentBusinessContext';
 import { useEffect } from 'react';
 import { updateBusinessMeta } from '@/utils/metaUpdater';
+import { hasCacheBuster } from '@/utils/shareUtils';
 
 export type BusinessUI = {
   id: string;
@@ -40,15 +41,16 @@ export function useBusinessContext() {
   // Coordinated loading state - don't show as loading if Clerk isn't ready
   const isLoadingBusiness = !isLoaded || (shouldFetchProfile && profileQuery.isLoading);
   
-  // Update meta tags when business data changes
+  // Update meta tags when business data changes (enhanced for cache busting)
   useEffect(() => {
     if (business?.name) {
       updateBusinessMeta({
         name: business.name,
-        description: business.description
+        description: business.description,
+        logoUrl: business.logoUrl || business.lightLogoUrl
       });
     }
-  }, [business?.name, business?.description]);
+  }, [business?.name, business?.description, business?.logoUrl, business?.lightLogoUrl, hasCacheBuster()]);
   
   return {
     // Authentication state
