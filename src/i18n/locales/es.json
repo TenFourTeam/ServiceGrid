@@ -65,5 +65,83 @@
   "auth": {
     "signOut": "Cerrar Sesión",
     "signIn": "Iniciar Sesión"
+  },
+  "calendar": {
+    "displayModes": {
+      "scheduled": "Programado",
+      "scheduledShort": "Prog",
+      "clocked": "Reloj",
+      "clockedShort": "Reloj",
+      "combined": "Combinado",
+      "combinedShort": "Ambos"
+    },
+    "views": {
+      "day": "Día",
+      "dayShort": "D",
+      "week": "Semana",
+      "weekShort": "S",
+      "month": "Mes",
+      "monthShort": "M"
+    },
+    "navigation": {
+      "today": "Hoy",
+      "now": "Ahora",
+      "previous": "Anterior",
+      "next": "Siguiente"
+    }
+  },
+  "jobs": {
+    "createTitle": "Crear Nuevo Trabajo",
+    "eventTitle": "Evento",
+    "form": {
+      "jobType": "Tipo de Trabajo",
+      "title": "Título (Opcional)",
+      "titlePlaceholder": "Título del trabajo",
+      "customer": "Cliente *",
+      "address": "Dirección",
+      "addressPlaceholder": "Dirección del trabajo",
+      "date": "Fecha *",
+      "pickDate": "Seleccionar fecha",
+      "startTime": "Hora de Inicio",
+      "duration": "Duración (horas)",
+      "amount": "Monto ($)",
+      "amountPlaceholder": "0.00",
+      "notes": "Notas",
+      "notesPlaceholder": "Notas del trabajo...",
+      "photos": "Fotos"
+    },
+    "types": {
+      "scheduled": "Programado",
+      "timeAndMaterials": "Tiempo y Materiales",
+      "selectType": "Seleccionar tipo de trabajo"
+    },
+    "durations": {
+      "30min": "30 minutos",
+      "1hour": "1 hora",
+      "1.5hours": "1.5 horas",
+      "2hours": "2 horas",
+      "3hours": "3 horas",
+      "4hours": "4 horas",
+      "6hours": "6 horas",
+      "8hours": "8 horas",
+      "selectDuration": "Seleccionar duración"
+    },
+    "actions": {
+      "cancel": "Cancelar",
+      "remove": "Eliminar",
+      "createSchedule": "Crear y Programar",
+      "creating": "Creando..."
+    },
+    "messages": {
+      "selectCustomer": "Por favor selecciona un cliente",
+      "selectValidDate": "Por favor selecciona una fecha válida",
+      "invalidStartTime": "Hora de inicio inválida",
+      "invalidEndTime": "Hora de fin inválida",
+      "invalidDateTime": "Fecha u hora inválidas",
+      "businessNotAvailable": "Contexto de negocio no disponible",
+      "createSuccess": "Trabajo creado exitosamente",
+      "createFailed": "Error al crear el trabajo",
+      "photoUploadFailed": "Trabajo creado pero falló la subida de fotos"
+    }
   }
 }

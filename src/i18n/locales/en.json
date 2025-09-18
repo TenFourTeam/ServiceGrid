@@ -65,5 +65,83 @@
   "auth": {
     "signOut": "Sign Out",
     "signIn": "Sign In"
+  },
+  "calendar": {
+    "displayModes": {
+      "scheduled": "Scheduled",
+      "scheduledShort": "Sched",
+      "clocked": "Clocked",
+      "clockedShort": "Clock",
+      "combined": "Combined",
+      "combinedShort": "Both"
+    },
+    "views": {
+      "day": "Day",
+      "dayShort": "D",
+      "week": "Week",
+      "weekShort": "W",
+      "month": "Month",
+      "monthShort": "M"
+    },
+    "navigation": {
+      "today": "Today",
+      "now": "Now",
+      "previous": "Previous",
+      "next": "Next"
+    }
+  },
+  "jobs": {
+    "createTitle": "Create New Job",
+    "eventTitle": "Event",
+    "form": {
+      "jobType": "Job Type",
+      "title": "Title (Optional)",
+      "titlePlaceholder": "Job title",
+      "customer": "Customer *",
+      "address": "Address",
+      "addressPlaceholder": "Job address",
+      "date": "Date *",
+      "pickDate": "Pick a date",
+      "startTime": "Start Time",
+      "duration": "Duration (hours)",
+      "amount": "Amount ($)",
+      "amountPlaceholder": "0.00",
+      "notes": "Notes",
+      "notesPlaceholder": "Job notes...",
+      "photos": "Photos"
+    },
+    "types": {
+      "scheduled": "Scheduled",
+      "timeAndMaterials": "Time & Materials",
+      "selectType": "Select job type"
+    },
+    "durations": {
+      "30min": "30 minutes",
+      "1hour": "1 hour",
+      "1.5hours": "1.5 hours",
+      "2hours": "2 hours",
+      "3hours": "3 hours",
+      "4hours": "4 hours",
+      "6hours": "6 hours",
+      "8hours": "8 hours",
+      "selectDuration": "Select duration"
+    },
+    "actions": {
+      "cancel": "Cancel",
+      "remove": "Remove",
+      "createSchedule": "Create & Schedule",
+      "creating": "Creating..."
+    },
+    "messages": {
+      "selectCustomer": "Please select a customer",
+      "selectValidDate": "Please select a valid date",
+      "invalidStartTime": "Invalid start time",
+      "invalidEndTime": "Invalid end time",
+      "invalidDateTime": "Invalid date or time values",
+      "businessNotAvailable": "Business context not available",
+      "createSuccess": "Job created successfully",
+      "createFailed": "Failed to create job",
+      "photoUploadFailed": "Job created but photo upload failed"
+    }
   }
 }

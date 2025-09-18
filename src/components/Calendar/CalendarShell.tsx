@@ -11,6 +11,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useJobsData } from "@/hooks/useJobsData";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useIsPhone } from "@/hooks/use-phone";
+import { useLanguage } from "@/contexts/LanguageContext";
 type CalendarDisplayMode = 'scheduled' | 'clocked' | 'combined';
 
 export default function CalendarShell({
@@ -24,6 +25,7 @@ export default function CalendarShell({
   const { data: jobs, refetch: refetchJobs } = useJobsData();
   const isMobile = useIsMobile();
   const isPhone = useIsPhone();
+  const { t } = useLanguage();
   
   const month = useMemo(() => new Date(date), [date]);
   const rangeTitle = useMemo(() => {
@@ -73,20 +75,20 @@ export default function CalendarShell({
                 <Button 
                   variant="secondary" 
                   size={isPhone ? "touch" : "sm"} 
-                  aria-label="Previous" 
+                  aria-label={t('calendar.navigation.previous')} 
                   onClick={() => stepDate(-1)}
                 >
                   <ChevronLeft className="h-4 w-4" />
-                  {isPhone && <span className="sr-only">Previous</span>}
+                  {isPhone && <span className="sr-only">{t('calendar.navigation.previous')}</span>}
                 </Button>
                 <Button 
                   variant="secondary" 
                   size={isPhone ? "touch" : "sm"} 
-                  aria-label="Next" 
+                  aria-label={t('calendar.navigation.next')} 
                   onClick={() => stepDate(1)}
                 >
                   <ChevronRight className="h-4 w-4" />
-                  {isPhone && <span className="sr-only">Next</span>}
+                  {isPhone && <span className="sr-only">{t('calendar.navigation.next')}</span>}
                 </Button>
               </div>
             )}
@@ -99,13 +101,13 @@ export default function CalendarShell({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="scheduled">
-                  {isPhone ? "Sched" : "Scheduled"}
+                  {isPhone ? t('calendar.displayModes.scheduledShort') : t('calendar.displayModes.scheduled')}
                 </SelectItem>
                 <SelectItem value="clocked">
-                  {isPhone ? "Clock" : "Clocked"}
+                  {isPhone ? t('calendar.displayModes.clockedShort') : t('calendar.displayModes.clocked')}
                 </SelectItem>
                 <SelectItem value="combined">
-                  {isPhone ? "Both" : "Combined"}
+                  {isPhone ? t('calendar.displayModes.combinedShort') : t('calendar.displayModes.combined')}
                 </SelectItem>
               </SelectContent>
             </Select>
@@ -116,19 +118,19 @@ export default function CalendarShell({
                   value="day" 
                   className={`${isPhone ? 'text-xs px-1' : 'text-xs md:text-sm px-2 md:px-3'}`}
                 >
-                  {isMobile ? "D" : "Day"}
+                  {isMobile ? t('calendar.views.dayShort') : t('calendar.views.day')}
                 </TabsTrigger>
                 <TabsTrigger 
                   value="week" 
                   className={`${isPhone ? 'text-xs px-1' : 'text-xs md:text-sm px-2 md:px-3'}`}
                 >
-                  {isMobile ? "W" : "Week"}
+                  {isMobile ? t('calendar.views.weekShort') : t('calendar.views.week')}
                 </TabsTrigger>
                 <TabsTrigger 
                   value="month" 
                   className={`${isPhone ? 'text-xs px-1' : 'text-xs md:text-sm px-2 md:px-3'}`}
                 >
-                  {isMobile ? "M" : "Month"}
+                  {isMobile ? t('calendar.views.monthShort') : t('calendar.views.month')}
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -139,15 +141,15 @@ export default function CalendarShell({
               onClick={() => setDate(startOfDay(new Date()))}
               className={isPhone ? "px-3" : ""}
             >
-              {isPhone ? "Now" : "Today"}
+              {isPhone ? t('calendar.navigation.now') : t('calendar.navigation.today')}
             </Button>
             
             {!isMobile && (
               <>
-                <Button variant="secondary" size="sm" aria-label="Previous" onClick={() => stepDate(-1)}>
+                <Button variant="secondary" size="sm" aria-label={t('calendar.navigation.previous')} onClick={() => stepDate(-1)}>
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <Button variant="secondary" size="sm" aria-label="Next" onClick={() => stepDate(1)}>
+                <Button variant="secondary" size="sm" aria-label={t('calendar.navigation.next')} onClick={() => stepDate(1)}>
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </>

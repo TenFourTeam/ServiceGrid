@@ -9,6 +9,7 @@ import { useAuth } from '@clerk/clerk-react';
 import { createAuthEdgeApi } from "@/utils/authEdgeApi";
 import { queryKeys } from '@/queries/keys';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { 
   Drawer,
   DrawerContent,
@@ -68,6 +69,7 @@ export function JobBottomModal({
   const { getToken } = useAuth();
   const { businessId, userId } = useBusinessContext();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const { t } = useLanguage();
 
   // Reset state when modal closes
   useEffect(() => {
@@ -119,7 +121,7 @@ export function JobBottomModal({
 
   const onCreate = async () => {
     if (!customer) {
-      toast.error("Please select a customer");
+      toast.error(t('jobs.messages.selectCustomer'));
       return;
     }
 
@@ -127,12 +129,12 @@ export function JobBottomModal({
     const validDate = date && !isNaN(date.getTime()) ? date : new Date();
     
     if (!validDate) {
-      toast.error("Please select a valid date");
+      toast.error(t('jobs.messages.selectValidDate'));
       return;
     }
 
     if (!businessId) {
-      toast.error("Business context not available");
+      toast.error(t('jobs.messages.businessNotAvailable'));
       return;
     }
 
@@ -144,7 +146,7 @@ export function JobBottomModal({
     
     // Validate time parsing
     if (isNaN(startHour) || isNaN(startMinute)) {
-      toast.error("Invalid start time");
+      toast.error(t('jobs.messages.invalidStartTime'));
       setIsCreating(false);
       return;
     }
@@ -156,7 +158,7 @@ export function JobBottomModal({
     
     // Validate time parsing
     if (isNaN(endHour) || isNaN(endMinute)) {
-      toast.error("Invalid end time");
+      toast.error(t('jobs.messages.invalidEndTime'));
       setIsCreating(false);
       return;
     }
@@ -165,7 +167,7 @@ export function JobBottomModal({
 
     // Validate that we have valid dates
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      toast.error("Invalid date or time values");
+      toast.error(t('jobs.messages.invalidDateTime'));
       setIsCreating(false);
       return;
     }
@@ -252,7 +254,7 @@ export function JobBottomModal({
         uploadPhotosAsync(createdJob.id);
       }
 
-      toast.success("Job created successfully");
+      toast.success(t('jobs.messages.createSuccess'));
 
     } catch (error) {
       console.error('Error creating job:', error);
@@ -262,7 +264,7 @@ export function JobBottomModal({
         queryClient.setQueryData(jobsQueryKey, previousData);
       }
       
-      toast.error("Failed to create job");
+      toast.error(t('jobs.messages.createFailed'));
     } finally {
       setIsCreating(false);
     }
@@ -320,7 +322,7 @@ export function JobBottomModal({
       }
     } catch (error) {
       console.error('Error uploading photos:', error);
-      toast.error("Job created but photo upload failed");
+      toast.error(t('jobs.messages.photoUploadFailed'));
     }
   };
 
@@ -363,11 +365,11 @@ export function JobBottomModal({
           <div className="flex-1 p-4 cursor-pointer hover:bg-muted/50 transition-colors">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <h3 className="text-sm font-medium text-muted-foreground">Event</h3>
+                <h3 className="text-sm font-medium text-muted-foreground">{t('jobs.eventTitle')}</h3>
                 <Input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Title"
+                  placeholder={t('jobs.form.titlePlaceholder')}
                   className="text-base border-none p-0 h-auto focus-visible:ring-0"
                   onClick={(e) => e.stopPropagation()}
                 />
@@ -387,38 +389,38 @@ export function JobBottomModal({
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="max-h-[90vh]">
         <DrawerHeader>
-          <DrawerTitle>Create New Job</DrawerTitle>
+          <DrawerTitle>{t('jobs.createTitle')}</DrawerTitle>
         </DrawerHeader>
 
         <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-4">
           {/* Job Type */}
           <div className="space-y-2">
-            <Label htmlFor="jobType">Job Type</Label>
+            <Label htmlFor="jobType">{t('jobs.form.jobType')}</Label>
             <Select value={jobType} onValueChange={(value: JobType) => setJobType(value)}>
               <SelectTrigger>
-                <SelectValue placeholder="Select job type" />
+                <SelectValue placeholder={t('jobs.types.selectType')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="scheduled">Scheduled</SelectItem>
-                <SelectItem value="time_and_materials">Time & Materials</SelectItem>
+                <SelectItem value="scheduled">{t('jobs.types.scheduled')}</SelectItem>
+                <SelectItem value="time_and_materials">{t('jobs.types.timeAndMaterials')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {/* Title */}
           <div className="space-y-2">
-            <Label htmlFor="title">Title (Optional)</Label>
+            <Label htmlFor="title">{t('jobs.form.title')}</Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Job title"
+              placeholder={t('jobs.form.titlePlaceholder')}
             />
           </div>
 
           {/* Customer */}
           <div className="space-y-2">
-            <Label>Customer *</Label>
+            <Label>{t('jobs.form.customer')}</Label>
             <CustomerCombobox
               customers={customers || []}
               value={customer?.id || ""}
@@ -432,18 +434,18 @@ export function JobBottomModal({
 
           {/* Address */}
           <div className="space-y-2">
-            <Label htmlFor="address">Address</Label>
+            <Label htmlFor="address">{t('jobs.form.address')}</Label>
             <Input
               id="address"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              placeholder={customer?.address || "Job address"}
+              placeholder={customer?.address || t('jobs.form.addressPlaceholder')}
             />
           </div>
 
           {/* Date */}
           <div className="space-y-2">
-            <Label>Date *</Label>
+            <Label>{t('jobs.form.date')}</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -454,7 +456,7 @@ export function JobBottomModal({
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "PPP") : <span>Pick a date</span>}
+                  {date ? format(date, "PPP") : <span>{t('jobs.form.pickDate')}</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -471,7 +473,7 @@ export function JobBottomModal({
 
           {/* Start Time */}
           <div className="space-y-2">
-            <Label htmlFor="startTime">Start Time</Label>
+            <Label htmlFor="startTime">{t('jobs.form.startTime')}</Label>
             <Input
               id="startTime"
               type="time"
@@ -482,27 +484,27 @@ export function JobBottomModal({
 
           {/* Duration */}
           <div className="space-y-2">
-            <Label htmlFor="duration">Duration (hours)</Label>
+            <Label htmlFor="duration">{t('jobs.form.duration')}</Label>
             <Select value={duration} onValueChange={setDuration}>
               <SelectTrigger>
-                <SelectValue placeholder="Select duration" />
+                <SelectValue placeholder={t('jobs.durations.selectDuration')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="0.5">30 minutes</SelectItem>
-                <SelectItem value="1">1 hour</SelectItem>
-                <SelectItem value="1.5">1.5 hours</SelectItem>
-                <SelectItem value="2">2 hours</SelectItem>
-                <SelectItem value="3">3 hours</SelectItem>
-                <SelectItem value="4">4 hours</SelectItem>
-                <SelectItem value="6">6 hours</SelectItem>
-                <SelectItem value="8">8 hours</SelectItem>
+                <SelectItem value="0.5">{t('jobs.durations.30min')}</SelectItem>
+                <SelectItem value="1">{t('jobs.durations.1hour')}</SelectItem>
+                <SelectItem value="1.5">{t('jobs.durations.1.5hours')}</SelectItem>
+                <SelectItem value="2">{t('jobs.durations.2hours')}</SelectItem>
+                <SelectItem value="3">{t('jobs.durations.3hours')}</SelectItem>
+                <SelectItem value="4">{t('jobs.durations.4hours')}</SelectItem>
+                <SelectItem value="6">{t('jobs.durations.6hours')}</SelectItem>
+                <SelectItem value="8">{t('jobs.durations.8hours')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {/* Amount */}
           <div className="space-y-2">
-            <Label htmlFor="amount">Amount ($)</Label>
+            <Label htmlFor="amount">{t('jobs.form.amount')}</Label>
             <Input
               id="amount"
               type="number"
@@ -510,25 +512,25 @@ export function JobBottomModal({
               min="0"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              placeholder="0.00"
+              placeholder={t('jobs.form.amountPlaceholder')}
             />
           </div>
 
           {/* Notes */}
           <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
+            <Label htmlFor="notes">{t('jobs.form.notes')}</Label>
             <Textarea
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Job notes..."
+              placeholder={t('jobs.form.notesPlaceholder')}
               rows={3}
             />
           </div>
 
           {/* Photo Upload */}
           <div className="space-y-2">
-            <Label htmlFor="photos">Photos</Label>
+            <Label htmlFor="photos">{t('jobs.form.photos')}</Label>
             <div className="space-y-2">
               <Input
                 id="photos"
@@ -549,7 +551,7 @@ export function JobBottomModal({
                         size="sm"
                         onClick={() => removeFile(index)}
                       >
-                        Remove
+                        {t('jobs.actions.remove')}
                       </Button>
                     </div>
                   ))}
@@ -563,7 +565,7 @@ export function JobBottomModal({
           <div className="flex gap-2">
             <DrawerClose asChild>
               <Button variant="outline" className="flex-1">
-                Cancel
+                {t('jobs.actions.cancel')}
               </Button>
             </DrawerClose>
             <Button 
@@ -571,7 +573,7 @@ export function JobBottomModal({
               disabled={isCreating || !customer || !date}
               className="flex-1"
             >
-              {isCreating ? "Creating..." : "Create & Schedule"}
+              {isCreating ? t('jobs.actions.creating') : t('jobs.actions.createSchedule')}
             </Button>
           </div>
         </DrawerFooter>
