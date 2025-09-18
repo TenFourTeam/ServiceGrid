@@ -3,11 +3,11 @@ import { Calendar as CalendarIcon, Clock, Users, Settings } from "lucide-react";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 
+// Core navigation items for bottom tab bar - matching desktop sidebar order
 const getNavItems = (t: (key: string) => string) => [
   { title: t('navigation.calendar'), url: "/calendar", icon: CalendarIcon, workerAccess: true },
   { title: t('navigation.timesheet'), url: "/timesheet", icon: Clock, workerAccess: true },
   { title: t('navigation.team'), url: "/team", icon: Users, workerAccess: false },
-  { title: t('navigation.settings'), url: "/settings", icon: Settings, workerAccess: true },
 ];
 
 export default function MobileNavigation() {

@@ -15,15 +15,20 @@ interface MobileHeaderProps {
   title?: string;
 }
 
-const allNavItems = [
+// Core navigation items (Group 1)
+const coreNavItems = [
   { title: "Calendar", url: "/calendar", icon: CalendarIcon, workerAccess: true },
   { title: "Timesheet", url: "/timesheet", icon: Clock, workerAccess: true },
-  { title: "Requests", url: "/requests", icon: ClipboardList, workerAccess: false },
-  { title: "Work Orders", url: "/work-orders", icon: Wrench, workerAccess: false },
-  { title: "Quotes", url: "/quotes", icon: FileText, workerAccess: false },
-  { title: "Invoices", url: "/invoices", icon: Receipt, workerAccess: false },
-  { title: "Customers", url: "/customers", icon: Users, workerAccess: false },
   { title: "Team", url: "/team", icon: Shield, workerAccess: false },
+];
+
+// Business navigation items (Group 2)
+const businessNavItems = [
+  { title: "Requests", url: "/requests", icon: ClipboardList, workerAccess: false },
+  { title: "Customers", url: "/customers", icon: Users, workerAccess: false },
+  { title: "Quotes", url: "/quotes", icon: FileText, workerAccess: false },
+  { title: "Work Orders", url: "/work-orders", icon: Wrench, workerAccess: false },
+  { title: "Invoices", url: "/invoices", icon: Receipt, workerAccess: false },
 ];
 
 export default function MobileHeader({ title }: MobileHeaderProps) {
@@ -40,7 +45,8 @@ export default function MobileHeader({ title }: MobileHeaderProps) {
   const isInOwnBusiness = businessId === ownedBusiness?.id;
 
   // Filter items based on user role
-  const visibleNavItems = allNavItems.filter(item => role === 'owner' || item.workerAccess);
+  const visibleCoreItems = coreNavItems.filter(item => role === 'owner' || item.workerAccess);
+  const visibleBusinessItems = businessNavItems.filter(item => role === 'owner' || item.workerAccess);
 
   const isActivePath = (path: string) => location.pathname.startsWith(path);
 
@@ -91,8 +97,9 @@ export default function MobileHeader({ title }: MobileHeaderProps) {
                 </>
               )}
 
+              {/* Core Navigation - Group 1 */}
               <div className="space-y-2">
-                {visibleNavItems.map((item) => (
+                {visibleCoreItems.map((item) => (
                   <Button
                     key={item.url}
                     variant="ghost"
@@ -108,6 +115,31 @@ export default function MobileHeader({ title }: MobileHeaderProps) {
                   </Button>
                 ))}
               </div>
+
+              {visibleBusinessItems.length > 0 && (
+                <>
+                  <Separator />
+                  
+                  {/* Business Navigation - Group 2 */}
+                  <div className="space-y-2">
+                    {visibleBusinessItems.map((item) => (
+                      <Button
+                        key={item.url}
+                        variant="ghost"
+                        className={`w-full justify-start ${
+                          isActivePath(item.url)
+                            ? "bg-accent text-accent-foreground"
+                            : "hover:bg-muted/50"
+                        }`}
+                        onClick={() => navigate(item.url)}
+                      >
+                        <item.icon className="mr-2 h-4 w-4" />
+                        {item.title}
+                      </Button>
+                    ))}
+                  </div>
+                </>
+              )}
 
               <Separator />
 
