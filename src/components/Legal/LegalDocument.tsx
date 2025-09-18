@@ -12,7 +12,7 @@ export default function LegalDocument() {
   const { slug } = useParams<{ slug: string }>();
   const { businessName } = useBusinessContext();
   const { t, language } = useLanguage();
-  const { frontmatter, content, isLoading, error } = useLegalDocument(slug || '');
+  const { frontmatter, content, isLoading, error } = useLegalDocument(slug || '', language);
 
   useEffect(() => {
     if (!isLoading && frontmatter.title) {

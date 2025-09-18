@@ -39,7 +39,7 @@ const parseFrontmatter = (markdown: string): { frontmatter: LegalDocumentFrontma
   };
 };
 
-export function useLegalDocument(slug: string): LegalDocument {
+export function useLegalDocument(slug: string, language: string = 'en'): LegalDocument {
   const [document, setDocument] = useState<LegalDocument>({
     frontmatter: {
       title: '',
@@ -70,7 +70,18 @@ export function useLegalDocument(slug: string): LegalDocument {
           throw new Error(`Legal document not found: ${slug}`);
         }
 
-        const response = await fetch(`/src/legal/${fileName}`);
+        // Try to load language-specific version first, fallback to English
+        let response;
+        try {
+          response = await fetch(`/src/legal/${language}/${fileName}`);
+          if (!response.ok && language !== 'en') {
+            // Fallback to English if language-specific version not found
+            response = await fetch(`/src/legal/en/${fileName}`);
+          }
+        } catch {
+          // Fallback to English if language-specific version fails
+          response = await fetch(`/src/legal/en/${fileName}`);
+        }
         if (!response.ok) {
           throw new Error(`Failed to load document: ${response.statusText}`);
         }
@@ -96,7 +107,7 @@ export function useLegalDocument(slug: string): LegalDocument {
     if (slug) {
       loadDocument();
     }
-  }, [slug]);
+  }, [slug, language]);
 
   return document;
 }
