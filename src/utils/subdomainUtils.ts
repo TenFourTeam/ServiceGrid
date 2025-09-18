@@ -2,25 +2,23 @@
  * Utility functions for subdomain-based business URLs
  */
 
+import { getAppUrl, isDevelopment } from './env';
+
 export function generateBusinessSubdomainUrl(businessSlug: string, baseUrl?: string): string {
-  if (!businessSlug) return window.location.origin;
+  if (!businessSlug) return getAppUrl();
   
-  const currentUrl = new URL(baseUrl || window.location.origin);
+  // Use provided baseUrl or determine based on environment
+  const targetUrl = baseUrl || getAppUrl();
+  const currentUrl = new URL(targetUrl);
   const hostname = currentUrl.hostname;
   
   // Handle localhost development
-  if (hostname.includes('localhost') || hostname.includes('127.0.0.1')) {
+  if (isDevelopment() && (hostname.includes('localhost') || hostname.includes('127.0.0.1'))) {
     return `${currentUrl.protocol}//${hostname}:${currentUrl.port}/b/${businessSlug}`;
   }
   
-  // Production: use subdomain
-  const parts = hostname.split('.');
-  if (parts.length >= 2) {
-    const domain = parts.slice(-2).join('.');
-    return `${currentUrl.protocol}//${businessSlug}.${domain}`;
-  }
-  
-  return `${currentUrl.protocol}//${businessSlug}.${hostname}`;
+  // Production: use subdomain with servicegrid.app
+  return `https://${businessSlug}.servicegrid.app`;
 }
 
 export function getCurrentBusinessSlug(): string | null {
