@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Crown, Users } from "lucide-react";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface RoleIndicatorProps {
   size?: "sm" | "default" | "lg";
@@ -10,6 +11,7 @@ interface RoleIndicatorProps {
 
 export function RoleIndicator({ size = "default", showText = true, className = "" }: RoleIndicatorProps) {
   const { role, businessName } = useBusinessContext();
+  const { t } = useLanguage();
 
   if (!role) return null;
 
@@ -29,7 +31,7 @@ export function RoleIndicator({ size = "default", showText = true, className = "
       )}
       {showText && (
         <span className="font-medium">
-          {isOwner ? 'Owner' : 'Worker'}
+          {isOwner ? t('roles.owner') : t('roles.worker')}
           {businessName && ` • ${businessName}`}
         </span>
       )}

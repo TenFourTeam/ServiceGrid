@@ -699,5 +699,9 @@
     "messages": {
       "linkCopied": "Referral link copied to clipboard!"
     }
+  },
+  "roles": {
+    "owner": "Owner",
+    "worker": "Worker"
   }
 }
