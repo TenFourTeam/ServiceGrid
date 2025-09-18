@@ -512,6 +512,51 @@
       "addNewCustomer": "Agregar nuevo cliente"
     }
   },
+  "customers": {
+    "title": "Clientes",
+    "cardTitle": "Todos los Clientes",
+    "newCustomer": "Nuevo Cliente",
+    "addCustomer": "Agregar Cliente",
+    "importCsv": "Importar CSV",
+    "exportCsv": "Exportar CSV",
+    "table": {
+      "name": "Nombre",
+      "email": "Correo Electrónico",
+      "phone": "Teléfono",
+      "address": "Dirección"
+    },
+    "actions": {
+      "delete": "Eliminar",
+      "deleteMultiple": "Eliminar {count} cliente{plural}"
+    },
+    "emptyStates": {
+      "title": "Agrega clientes para comenzar",
+      "description": "Agrégalos uno por uno o importa tu lista existente.",
+      "noResults": "No se encontraron clientes que coincidan con \"{query}\""
+    },
+    "loading": "Cargando clientes…",
+    "error": "Error al cargar clientes: {message}",
+    "deleteDialog": {
+      "title": "Eliminar Cliente",
+      "bulkTitle": "Eliminar Múltiples Clientes",
+      "description": "¿Estás seguro de que quieres eliminar a \"{name}\"? Esta acción no se puede deshacer.",
+      "bulkDescription": "¿Estás seguro de que quieres eliminar {count} cliente{plural}? Esta acción no se puede deshacer.",
+      "warningTitle": "⚠️ Esto también eliminará:",
+      "warningBulkTitle": "⚠️ Esto también eliminará todos los datos relacionados:",
+      "warningItems": [
+        "Todas las cotizaciones creadas para este cliente",
+        "Todas las facturas creadas para este cliente",
+        "Todos los trabajos programados para este cliente",
+        "Todos los elementos de línea y pagos relacionados"
+      ],
+      "warningBulkItems": [
+        "Cotizaciones, facturas, trabajos y pagos para estos clientes"
+      ],
+      "cancel": "Cancelar",
+      "confirm": "Eliminar",
+      "deleting": "Eliminando..."
+    }
+  },
   "invoices": {
     "title": "Todas las Facturas",
     "searchPlaceholder": "Buscar número o cliente…",

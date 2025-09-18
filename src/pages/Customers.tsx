@@ -16,11 +16,13 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useCustomerOperations } from '@/hooks/useCustomerOperations';
 import CustomerErrorBoundary from '@/components/ErrorBoundaries/CustomerErrorBoundary';
 import { Checkbox } from "@/components/ui/checkbox";
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function CustomersPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { data: customers, isLoading, error } = useCustomersData();
+  const { t } = useLanguage();
   
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -164,10 +166,10 @@ export default function CustomersPage() {
     if (filteredAndSortedCustomers.length === 0) return;
 
     const csvData = filteredAndSortedCustomers.map(customer => ({
-      'Customer Name': customer.name || '',
-      'Email': customer.email || '',
-      'Phone': customer.phone || '',
-      'Address': customer.address || '',
+      [t('customers.table.name')]: customer.name || '',
+      [t('customers.table.email')]: customer.email || '',
+      [t('customers.table.phone')]: customer.phone || '',
+      [t('customers.table.address')]: customer.address || '',
       'Notes': customer.notes || '',
       'Created Date': formatDate(customer.created_at)
     }));
@@ -219,11 +221,11 @@ export default function CustomersPage() {
   const isMobile = useIsMobile();
 
   return (
-    <AppLayout title="Customers">
+    <AppLayout title={t('customers.title')}>
       <section className="space-y-4">
         <Card>
           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <CardTitle>All Customers</CardTitle>
+            <CardTitle>{t('customers.cardTitle')}</CardTitle>
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               {selectedCustomers.size > 0 && (
                 <Button
@@ -233,11 +235,14 @@ export default function CustomersPage() {
                   disabled={isBulkDeleting}
                   className="w-full sm:w-auto"
                 >
-                  Delete {selectedCustomers.size} customer{selectedCustomers.size === 1 ? '' : 's'}
+                  {t('customers.actions.deleteMultiple', { 
+                    count: selectedCustomers.size, 
+                    plural: selectedCustomers.size === 1 ? '' : 's' 
+                  })}
                 </Button>
               )}
               <Button variant="outline" onClick={() => setCsvImportOpen(true)} className="w-full sm:w-auto">
-                Import CSV
+                {t('customers.importCsv')}
               </Button>
               <Button 
                 variant="outline" 
@@ -246,10 +251,10 @@ export default function CustomersPage() {
                 className="w-full sm:w-auto"
               >
                 <Download className="h-4 w-4 mr-2" />
-                Export CSV
+                {t('customers.exportCsv')}
               </Button>
               <Button onClick={() => openNew()} className="w-full sm:w-auto">
-                New Customer
+                {t('customers.newCustomer')}
               </Button>
             </div>
           </CardHeader>
@@ -263,15 +268,15 @@ export default function CustomersPage() {
               {rows.length === 0 && searchQuery && (
                 <div className="text-center py-8">
                   <div className="text-muted-foreground">
-                    No customers found matching "{searchQuery}"
+                    {t('customers.emptyStates.noResults', { query: searchQuery })}
                   </div>
                 </div>
               )}
               
               {isLoading ? (
-                <div className="text-muted-foreground">Loading customers…</div>
+                <div className="text-muted-foreground">{t('customers.loading')}</div>
               ) : error ? (
-                <div className="text-destructive">Error loading customers: {error.message}</div>
+                <div className="text-destructive">{t('customers.error', { message: error.message })}</div>
               ) : rows.length > 0 ? (
                 <CustomerErrorBoundary>
                   {isMobile ? (
@@ -303,7 +308,7 @@ export default function CustomersPage() {
                             onClick={() => handleSort('name')}
                           >
                             <div className="flex items-center">
-                              Name
+                              {t('customers.table.name')}
                               {getSortIcon('name')}
                             </div>
                           </TableHead>
@@ -312,7 +317,7 @@ export default function CustomersPage() {
                             onClick={() => handleSort('email')}
                           >
                             <div className="flex items-center">
-                              Email
+                              {t('customers.table.email')}
                               {getSortIcon('email')}
                             </div>
                           </TableHead>
@@ -321,11 +326,11 @@ export default function CustomersPage() {
                             onClick={() => handleSort('phone')}
                           >
                             <div className="flex items-center">
-                              Phone
+                              {t('customers.table.phone')}
                               {getSortIcon('phone')}
                             </div>
                           </TableHead>
-                          <TableHead>Address</TableHead>
+                          <TableHead>{t('customers.table.address')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -355,15 +360,17 @@ export default function CustomersPage() {
                 <div className="text-center py-12">
                   <div className="space-y-3">
                     <div className="text-4xl">👥</div>
-                    <div className="text-lg font-medium">Add customers to get started</div>
+                    <div className="text-lg font-medium">{t('customers.emptyStates.title')}</div>
                     <div className="text-sm text-muted-foreground">
-                      Add them one by one or import your existing list.
+                      {t('customers.emptyStates.description')}
                     </div>
                     <div className="flex gap-2 justify-center">
                       <Button onClick={() => openNew()}>
-                        Add Customer
+                        {t('customers.addCustomer')}
                       </Button>
-                      <Button variant="outline" onClick={() => setCsvImportOpen(true)}>Import CSV</Button>
+                      <Button variant="outline" onClick={() => setCsvImportOpen(true)}>
+                        {t('customers.importCsv')}
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -390,33 +397,35 @@ export default function CustomersPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Customer</AlertDialogTitle>
+            <AlertDialogTitle>{t('customers.deleteDialog.title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{customerToDelete?.name}"? This action cannot be undone.
+              {t('customers.deleteDialog.description', { name: customerToDelete?.name })}
               <div className="mt-3 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
                 <div className="text-sm font-medium text-destructive">
-                  ⚠️ This will also delete:
+                  {t('customers.deleteDialog.warningTitle')}
                 </div>
                 <div className="text-sm text-muted-foreground mt-1">
-                  • All quotes created for this customer
+                  • {t('customers.deleteDialog.warningItems.0')}
                   <br />
-                  • All invoices created for this customer
+                  • {t('customers.deleteDialog.warningItems.1')}
                   <br />
-                  • All jobs scheduled for this customer
+                  • {t('customers.deleteDialog.warningItems.2')}
                   <br />
-                  • All related line items and payments
+                  • {t('customers.deleteDialog.warningItems.3')}
                 </div>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeletingCustomer}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeletingCustomer}>
+              {t('customers.deleteDialog.cancel')}
+            </AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDeleteCustomer}
               disabled={isDeletingCustomer}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isDeletingCustomer ? 'Deleting...' : 'Delete'}
+              {isDeletingCustomer ? t('customers.deleteDialog.deleting') : t('customers.deleteDialog.confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -425,27 +434,32 @@ export default function CustomersPage() {
       <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Multiple Customers</AlertDialogTitle>
+            <AlertDialogTitle>{t('customers.deleteDialog.bulkTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete {selectedCustomers.size} customer{selectedCustomers.size === 1 ? '' : 's'}? This action cannot be undone.
+              {t('customers.deleteDialog.bulkDescription', { 
+                count: selectedCustomers.size, 
+                plural: selectedCustomers.size === 1 ? '' : 's' 
+              })}
               <div className="mt-3 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
                 <div className="text-sm font-medium text-destructive">
-                  ⚠️ This will also delete all related data:
+                  {t('customers.deleteDialog.warningBulkTitle')}
                 </div>
                 <div className="text-sm text-muted-foreground mt-1">
-                  • Quotes, invoices, jobs, and payments for these customers
+                  • {t('customers.deleteDialog.warningBulkItems.0')}
                 </div>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isBulkDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isBulkDeleting}>
+              {t('customers.deleteDialog.cancel')}
+            </AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleBulkDelete}
               disabled={isBulkDeleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isBulkDeleting ? 'Deleting...' : `Delete ${selectedCustomers.size} customer${selectedCustomers.size === 1 ? '' : 's'}`}
+              {isBulkDeleting ? t('customers.deleteDialog.deleting') : t('customers.deleteDialog.confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -512,6 +512,51 @@
       "addNewCustomer": "Add new customer"
     }
   },
+  "customers": {
+    "title": "Customers",
+    "cardTitle": "All Customers",
+    "newCustomer": "New Customer",
+    "addCustomer": "Add Customer",
+    "importCsv": "Import CSV",
+    "exportCsv": "Export CSV",
+    "table": {
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "address": "Address"
+    },
+    "actions": {
+      "delete": "Delete",
+      "deleteMultiple": "Delete {count} customer{plural}"
+    },
+    "emptyStates": {
+      "title": "Add customers to get started",
+      "description": "Add them one by one or import your existing list.",
+      "noResults": "No customers found matching \"{query}\""
+    },
+    "loading": "Loading customers…",
+    "error": "Error loading customers: {message}",
+    "deleteDialog": {
+      "title": "Delete Customer",
+      "bulkTitle": "Delete Multiple Customers",
+      "description": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
+      "bulkDescription": "Are you sure you want to delete {count} customer{plural}? This action cannot be undone.",
+      "warningTitle": "⚠️ This will also delete:",
+      "warningBulkTitle": "⚠️ This will also delete all related data:",
+      "warningItems": [
+        "All quotes created for this customer",
+        "All invoices created for this customer",
+        "All jobs scheduled for this customer",
+        "All related line items and payments"
+      ],
+      "warningBulkItems": [
+        "Quotes, invoices, jobs, and payments for these customers"
+      ],
+      "cancel": "Cancel",
+      "confirm": "Delete",
+      "deleting": "Deleting..."
+    }
+  },
   "invoices": {
     "title": "All Invoices",
     "searchPlaceholder": "Search number or customer…",
