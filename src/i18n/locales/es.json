@@ -1,0 +1,62 @@
+{
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito"
+  },
+  "settings": {
+    "title": "Configuración",
+    "profile": {
+      "title": "Perfil",
+      "name": "Nombre",
+      "phone": "Teléfono",
+      "namePlaceholder": "Ingresa tu nombre completo",
+      "phonePlaceholder": "Ingresa tu número de teléfono"
+    },
+    "business": {
+      "title": "Detalles del Negocio",
+      "name": "Nombre del Negocio",
+      "description": "Descripción",
+      "namePlaceholder": "Ingresa el nombre del negocio",
+      "descriptionPlaceholder": "Describe tu negocio"
+    },
+    "language": {
+      "title": "Idioma",
+      "description": "Elige tu idioma preferido",
+      "english": "English",
+      "spanish": "Español"
+    },
+    "branding": {
+      "title": "Marca Visual",
+      "lightLogo": "Logo Claro",
+      "darkLogo": "Logo Oscuro",
+      "uploadLogo": "Subir Logo"
+    },
+    "subscription": {
+      "title": "Suscripción y Pagos",
+      "monthly": "Plan Mensual",
+      "yearly": "Plan Anual",
+      "manageSubscription": "Administrar Suscripción",
+      "connectStripe": "Conectar Stripe"
+    }
+  },
+  "navigation": {
+    "calendar": "Calendario",
+    "timesheet": "Hoja de Tiempo",
+    "team": "Equipo",
+    "settings": "Configuración",
+    "customers": "Clientes",
+    "quotes": "Cotizaciones",
+    "invoices": "Facturas",
+    "requests": "Solicitudes",
+    "workOrders": "Órdenes de Trabajo"
+  },
+  "auth": {
+    "signOut": "Cerrar Sesión",
+    "signIn": "Iniciar Sesión"
+  }
+}

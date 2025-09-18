@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { ClerkProvider } from '@clerk/clerk-react';
 import App from './App';
 import './index.css';
+import './i18n/config';
 
 function Boot() {
   const [key, setKey] = useState<string | null>(null);

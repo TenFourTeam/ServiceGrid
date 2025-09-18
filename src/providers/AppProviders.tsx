@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ConsolidatedToaster } from '@/components/ui/toaster';
 import { CurrentBusinessProvider } from '@/contexts/CurrentBusinessContext';
+import { LanguageProvider } from '@/contexts/LanguageContext';
 
 // Simple query client with basic defaults
 const queryClient = new QueryClient({
@@ -34,10 +35,12 @@ export function AppProviders({ children }: AppProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <CurrentBusinessProvider>
-        <TooltipProvider delayDuration={100}>
-          <ConsolidatedToaster />
-          {children}
-        </TooltipProvider>
+        <LanguageProvider>
+          <TooltipProvider delayDuration={100}>
+            <ConsolidatedToaster />
+            {children}
+          </TooltipProvider>
+        </LanguageProvider>
       </CurrentBusinessProvider>
     </QueryClientProvider>
   );

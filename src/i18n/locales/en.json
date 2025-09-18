@@ -1,0 +1,62 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success"
+  },
+  "settings": {
+    "title": "Settings",
+    "profile": {
+      "title": "Profile",
+      "name": "Name",
+      "phone": "Phone",
+      "namePlaceholder": "Enter your full name",
+      "phonePlaceholder": "Enter your phone number"
+    },
+    "business": {
+      "title": "Business Details",
+      "name": "Business Name",
+      "description": "Description",
+      "namePlaceholder": "Enter business name",
+      "descriptionPlaceholder": "Describe your business"
+    },
+    "language": {
+      "title": "Language",
+      "description": "Choose your preferred language",
+      "english": "English",
+      "spanish": "Español"
+    },
+    "branding": {
+      "title": "Visual Branding",
+      "lightLogo": "Light Logo",
+      "darkLogo": "Dark Logo",
+      "uploadLogo": "Upload Logo"
+    },
+    "subscription": {
+      "title": "Subscription & Payouts",
+      "monthly": "Monthly Plan",
+      "yearly": "Yearly Plan",
+      "manageSubscription": "Manage Subscription",
+      "connectStripe": "Connect Stripe"
+    }
+  },
+  "navigation": {
+    "calendar": "Calendar",
+    "timesheet": "Timesheet",
+    "team": "Team",
+    "settings": "Settings",
+    "customers": "Customers",
+    "quotes": "Quotes",
+    "invoices": "Invoices",
+    "requests": "Requests",
+    "workOrders": "Work Orders"
+  },
+  "auth": {
+    "signOut": "Sign Out",
+    "signIn": "Sign In"
+  }
+}

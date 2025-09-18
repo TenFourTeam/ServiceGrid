@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import BusinessLogo from '@/components/BusinessLogo';
 import { useState, useEffect } from 'react';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
@@ -15,11 +16,13 @@ import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useLogoOperations } from '@/hooks/useLogoOperations';
 import { useSettingsForm } from '@/hooks/useSettingsForm';
 import { useBusinessDetailsForm } from '@/hooks/useBusinessDetailsForm';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Textarea } from '@/components/ui/textarea';
 
 export default function SettingsPage() {
   const { business, role } = useBusinessContext();
   const { isSignedIn, getToken } = useClerkAuth();
+  const { t, language, setLanguage } = useLanguage();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const [darkFile, setDarkFile] = useState<File | null>(null);
   const [lightFile, setLightFile] = useState<File | null>(null);
@@ -153,23 +156,23 @@ export default function SettingsPage() {
     })();
   }, [isSignedIn]);
   const isOwner = role === 'owner';
-  const pageTitle = isOwner ? "Settings" : "Profile";
+  const pageTitle = isOwner ? t('settings.title') : t('settings.profile.title');
   
   return <AppLayout title={pageTitle}>
       <div className="grid md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Profile</CardTitle>
+            <CardTitle>{t('settings.profile.title')}</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleProfileSubmit} className="space-y-4">
               <div>
-                <Label>Your Name</Label>
+                <Label>{t('settings.profile.name')}</Label>
                 <div className="space-y-2">
                   <Input 
                     value={userName} 
                     onChange={e => setUserName(e.target.value)} 
-                    placeholder="Your full name" 
+                    placeholder={t('settings.profile.namePlaceholder')} 
                     required
                   />
                   {shouldShowUserNameSuggestion && (
@@ -186,11 +189,11 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div>
-                <Label>Phone Number</Label>
+                <Label>{t('settings.profile.phone')}</Label>
                 <Input 
                   value={userPhone}
                   onChange={e => setUserPhone(e.target.value)}
-                  placeholder="(555) 123-4567"
+                  placeholder={t('settings.profile.phonePlaceholder')}
                   type="tel"
                   required
                 />
@@ -202,34 +205,54 @@ export default function SettingsPage() {
                   disabled={isProfileLoading || !isProfileValid}
                   className="w-full"
                 >
-                  {isProfileLoading ? 'Saving...' : 'Save Profile'}
+                  {isProfileLoading ? t('common.loading') : t('common.save') + ' ' + t('settings.profile.title')}
                 </Button>
               </div>
             </form>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('settings.language.title')}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label>{t('settings.language.description')}</Label>
+              <Select value={language} onValueChange={setLanguage}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="en">{t('settings.language.english')}</SelectItem>
+                  <SelectItem value="es">{t('settings.language.spanish')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
         
         <RequireRole role="owner" fallback={null}>
           <Card>
-            <CardHeader><CardTitle>Business Details</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t('settings.business.title')}</CardTitle></CardHeader>
             <CardContent>
               <form onSubmit={businessDetailsForm.handleSubmit} className="space-y-4">
                 <div>
-                  <Label>Business Name</Label>
+                  <Label>{t('settings.business.name')}</Label>
                   <Input 
                     value={businessDetailsForm.businessName} 
                     onChange={e => businessDetailsForm.setBusinessName(e.target.value)}
-                    placeholder="Your business name"
+                    placeholder={t('settings.business.namePlaceholder')}
                     required
                   />
                 </div>
                 
                 <div>
-                  <Label>Business Description</Label>
+                  <Label>{t('settings.business.description')}</Label>
                   <Textarea 
                     value={businessDetailsForm.businessDescription} 
                     onChange={e => businessDetailsForm.setBusinessDescription(e.target.value)}
-                    placeholder="Describe your business services..."
+                    placeholder={t('settings.business.descriptionPlaceholder')}
                     rows={3}
                   />
                   <p className="text-sm text-muted-foreground mt-1">
@@ -243,7 +266,7 @@ export default function SettingsPage() {
                     disabled={businessDetailsForm.isLoading || !businessDetailsForm.isFormValid}
                     className="w-full"
                   >
-                    {businessDetailsForm.isLoading ? 'Saving...' : 'Save Business Details'}
+                    {businessDetailsForm.isLoading ? t('common.loading') : t('common.save') + ' ' + t('settings.business.title')}
                   </Button>
                 </div>
               </form>
@@ -251,10 +274,10 @@ export default function SettingsPage() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle>Visual Branding</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t('settings.branding.title')}</CardTitle></CardHeader>
             <CardContent className="space-y-6">
                 <div className="space-y-2">
-                  <Label>Dark Icon</Label>
+                  <Label>{t('settings.branding.darkLogo')}</Label>
                   <div className="flex items-center gap-4">
                     <div className="shrink-0 w-14 h-14 rounded-lg bg-background p-2 border border-border shadow-sm -ml-1 flex items-center justify-center overflow-hidden">
                       <BusinessLogo size={40} src={business?.logoUrl} alt="Dark icon preview" />
@@ -264,7 +287,7 @@ export default function SettingsPage() {
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <span className="inline-flex">
-                            <Button onClick={() => handleLogoUpload('dark')} disabled={isUploadingLogo || !darkFile}>{isUploadingLogo ? 'Uploading…' : 'Upload dark icon'}</Button>
+                            <Button onClick={() => handleLogoUpload('dark')} disabled={isUploadingLogo || !darkFile}>{isUploadingLogo ? t('common.loading') : t('settings.branding.uploadLogo')}</Button>
                           </span>
                         </TooltipTrigger>
                         <TooltipContent side="top" className="max-w-xs">
@@ -276,7 +299,7 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Light Icon</Label>
+                  <Label>{t('settings.branding.lightLogo')}</Label>
                   <div className="flex items-center gap-4">
                     <div className="shrink-0 w-14 h-14 rounded-lg bg-primary p-2 shadow-sm -ml-1 flex items-center justify-center overflow-hidden">
                       <BusinessLogo size={40} src={business?.lightLogoUrl} alt="Light icon preview" />
@@ -286,7 +309,7 @@ export default function SettingsPage() {
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <span className="inline-flex">
-                            <Button onClick={() => handleLogoUpload('light')} disabled={isUploadingLogo || !lightFile}>{isUploadingLogo ? 'Uploading…' : 'Upload light icon'}</Button>
+                            <Button onClick={() => handleLogoUpload('light')} disabled={isUploadingLogo || !lightFile}>{isUploadingLogo ? t('common.loading') : t('settings.branding.uploadLogo')}</Button>
                           </span>
                         </TooltipTrigger>
                         <TooltipContent side="top" className="max-w-xs">
