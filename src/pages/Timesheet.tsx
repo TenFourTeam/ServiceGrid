@@ -26,6 +26,7 @@ export default function Timesheet() {
   } = useTimesheet();
   
   const [notes, setNotes] = useState('');
+  const [editingEntry, setEditingEntry] = useState<string | null>(null);
 
   const handleClockIn = () => {
     clockIn({ notes: notes.trim() || undefined });
@@ -165,7 +166,12 @@ export default function Timesheet() {
                 {entries.slice(0, 10).map((entry) => (
                   <div
                     key={entry.id}
-                    className="flex items-center justify-between p-3 border rounded-lg"
+                    className={`flex items-center justify-between p-3 border rounded-lg transition-colors ${
+                      role === 'owner' 
+                        ? 'cursor-pointer hover:bg-muted/50' 
+                        : ''
+                    }`}
+                    onClick={role === 'owner' ? () => setEditingEntry(entry.id) : undefined}
                   >
                     <div className="space-y-1 flex-1">
                       <div className="flex items-center gap-2">
@@ -197,13 +203,6 @@ export default function Timesheet() {
                           {calculateDuration(entry.clock_in_time, entry.clock_out_time)}
                         </span>
                       </div>
-                      {role === 'owner' && (
-                        <TimesheetEntryEdit
-                          entry={entry}
-                          onEdit={editEntry}
-                          isEditing={isEditingEntry}
-                        />
-                      )}
                     </div>
                   </div>
                 ))}
@@ -212,6 +211,17 @@ export default function Timesheet() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Edit Drawer */}
+      {editingEntry && (
+        <TimesheetEntryEdit
+          entry={entries.find(e => e.id === editingEntry)!}
+          onEdit={editEntry}
+          isEditing={isEditingEntry}
+          open={!!editingEntry}
+          onOpenChange={(open) => !open && setEditingEntry(null)}
+        />
+      )}
     </AppLayout>
   );
 }

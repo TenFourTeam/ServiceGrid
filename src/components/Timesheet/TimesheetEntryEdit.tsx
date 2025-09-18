@@ -4,8 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Edit2 } from 'lucide-react';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { TimesheetEntry } from '@/hooks/useTimesheet';
 
 interface TimesheetEntryEditProps {
@@ -17,10 +16,11 @@ interface TimesheetEntryEditProps {
     notes?: string;
   }) => void;
   isEditing: boolean;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export function TimesheetEntryEdit({ entry, onEdit, isEditing }: TimesheetEntryEditProps) {
-  const [open, setOpen] = useState(false);
+export function TimesheetEntryEdit({ entry, onEdit, isEditing, open, onOpenChange }: TimesheetEntryEditProps) {
   const [clockInTime, setClockInTime] = useState(
     format(new Date(entry.clock_in_time), "yyyy-MM-dd'T'HH:mm")
   );
@@ -36,21 +36,16 @@ export function TimesheetEntryEdit({ entry, onEdit, isEditing }: TimesheetEntryE
       clockOutTime: clockOutTime ? new Date(clockOutTime).toISOString() : undefined,
       notes: notes.trim() || undefined,
     });
-    setOpen(false);
+    onOpenChange(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" disabled={isEditing}>
-          <Edit2 className="h-4 w-4" />
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Edit Timesheet Entry</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent>
+        <DrawerHeader>
+          <DrawerTitle>Edit Timesheet Entry</DrawerTitle>
+        </DrawerHeader>
+        <div className="px-4 pb-4 space-y-4">
           <div>
             <Label htmlFor="clock-in-time">Clock In Time</Label>
             <Input
@@ -80,7 +75,7 @@ export function TimesheetEntryEdit({ entry, onEdit, isEditing }: TimesheetEntryE
             />
           </div>
           <div className="flex gap-2 justify-end">
-            <Button variant="outline" onClick={() => setOpen(false)}>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
             <Button onClick={handleSubmit} disabled={isEditing}>
@@ -88,7 +83,7 @@ export function TimesheetEntryEdit({ entry, onEdit, isEditing }: TimesheetEntryE
             </Button>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </DrawerContent>
+    </Drawer>
   );
 }
