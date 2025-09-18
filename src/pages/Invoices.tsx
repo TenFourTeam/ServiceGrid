@@ -206,37 +206,36 @@ export default function InvoicesPage() {
   return (
     <AppLayout title="Invoices">
       <Card>
-        <CardHeader>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <CardTitle>All Invoices</CardTitle>
-            <div className="flex items-center gap-2">
-              <Input
-                placeholder="Search number or customer…"
-                value={q}
-                onChange={(e)=>setQ(e.target.value)}
-                className="w-48 sm:w-64"
-              />
-              <Select value={status} onValueChange={(value: any) => setStatus(value)}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="All">All</SelectItem>
-                  <SelectItem value="Draft">Draft</SelectItem>
-                  <SelectItem value="Sent">Sent</SelectItem>
-                  <SelectItem value="Paid">Paid</SelectItem>
-                  <SelectItem value="Overdue">Overdue</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportCSV}
-                disabled={sortedInvoices.length === 0}
-              >
-                Export CSV
-              </Button>
-            </div>
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <CardTitle>All Invoices</CardTitle>
+          <div className="flex flex-col sm:flex-row items-center gap-2">
+            <Input
+              placeholder="Search number or customer…"
+              value={q}
+              onChange={(e)=>setQ(e.target.value)}
+              className="w-full sm:w-48"
+            />
+            <Select value={status} onValueChange={(value: any) => setStatus(value)}>
+              <SelectTrigger className="w-full sm:w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">All</SelectItem>
+                <SelectItem value="Draft">Draft</SelectItem>
+                <SelectItem value="Sent">Sent</SelectItem>
+                <SelectItem value="Paid">Paid</SelectItem>
+                <SelectItem value="Overdue">Overdue</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportCSV}
+              disabled={sortedInvoices.length === 0}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export CSV
+            </Button>
           </div>
         </CardHeader>
         <CardContent>

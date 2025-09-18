@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useRef } from 'react';
 import AppLayout from '@/components/Layout/AppLayout';
 import { useJobsData, useCustomersData, useInvoicesData } from '@/queries/unified';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { formatDateTime, formatMoney } from '@/utils/format';
@@ -197,12 +197,30 @@ export default function WorkOrdersPage() {
 
   return (
     <AppLayout title="Work Orders">
-      <section aria-label="work-orders" className="space-y-3">
-        <div className="sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b py-2">
-          <div className="flex items-center gap-2 overflow-x-auto">
-            <div className="flex items-center gap-2">
-              <Input value={q} onChange={(e)=>setQ(e.target.value)} placeholder="Search customer or address" className="h-9 w-48" />
-              <select value={sort} onChange={(e)=>setSort(e.target.value as any)} className="h-9 rounded-md border bg-background px-2 text-sm">
+      <section aria-label="work-orders" className="space-y-4">
+        <Card>
+          <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <CardTitle>All Work Orders</CardTitle>
+            <div>
+              <Button onClick={() => setCreateJobOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                New Job
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col sm:flex-row items-center gap-4 mb-4">
+              <Input 
+                value={q} 
+                onChange={(e)=>setQ(e.target.value)} 
+                placeholder="Search customer or address" 
+                className="w-full sm:flex-1" 
+              />
+              <select 
+                value={sort} 
+                onChange={(e)=>setSort(e.target.value as any)} 
+                className="w-full sm:w-auto rounded-md border bg-background px-3 py-2 text-sm"
+              >
                 <option value="all">All ({counts.all})</option>
                 <option value="unscheduled">Unscheduled ({counts.unscheduled})</option>
                 <option value="today">Today ({counts.today})</option>
@@ -210,12 +228,8 @@ export default function WorkOrdersPage() {
                 <option value="completed">Completed ({counts.completed})</option>
               </select>
             </div>
-            <Button onClick={() => setCreateJobOpen(true)} className="ml-auto h-9">
-              <Plus className="h-4 w-4 mr-2" />
-              New Job
-            </Button>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
         {error && (
           <Alert variant="destructive">

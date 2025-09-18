@@ -168,15 +168,17 @@ export default function QuotesPage() {
       <QuoteErrorBoundary>
         <section>
           <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <CardTitle>All Quotes</CardTitle>
-            <Button onClick={() => {
-              setCreateModalOpen(true);
-              setDetailsModalMode('create');
-              setSelectedQuoteId(null);
-            }} data-onb="new-quote-button">
-              Create Quote
-            </Button>
+            <div>
+              <Button onClick={() => {
+                setCreateModalOpen(true);
+                setDetailsModalMode('create');
+                setSelectedQuoteId(null);
+              }} data-onb="new-quote-button">
+                Create Quote
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <Table>

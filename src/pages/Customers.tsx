@@ -190,35 +190,33 @@ export default function CustomersPage() {
     <AppLayout title="Customers">
       <section className="space-y-4">
         <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>All Customers</CardTitle>
-              <div className="flex gap-2">
-                {selectedCustomers.size > 0 && (
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => setShowBulkDeleteDialog(true)}
-                    disabled={isBulkDeleting}
-                  >
-                    Delete {selectedCustomers.size} customer{selectedCustomers.size === 1 ? '' : 's'}
-                  </Button>
-                )}
-                <Button variant="outline" onClick={() => setCsvImportOpen(true)}>
-                  Import CSV
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={handleExportCSV}
-                  disabled={filteredAndSortedCustomers.length === 0}
+          <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <CardTitle>All Customers</CardTitle>
+            <div className="flex gap-2">
+              {selectedCustomers.size > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setShowBulkDeleteDialog(true)}
+                  disabled={isBulkDeleting}
                 >
-                  <Download className="h-4 w-4 mr-2" />
-                  Export CSV
+                  Delete {selectedCustomers.size} customer{selectedCustomers.size === 1 ? '' : 's'}
                 </Button>
-                <Button onClick={() => openNew()}>
-                  New Customer
-                </Button>
-              </div>
+              )}
+              <Button variant="outline" onClick={() => setCsvImportOpen(true)}>
+                Import CSV
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={handleExportCSV}
+                disabled={filteredAndSortedCustomers.length === 0}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export CSV
+              </Button>
+              <Button onClick={() => openNew()}>
+                New Customer
+              </Button>
             </div>
           </CardHeader>
           <CardContent>
