@@ -12,7 +12,7 @@ import { usePreloadImage } from "@/hooks/usePreloadImage";
 import { useProfile } from "@/queries/useProfile";
 import { SignOutButton } from "@/components/Auth/SignOutButton";
 import { useLanguage } from "@/contexts/LanguageContext";
-const getNavItems = (t: (key: string) => string) => [{
+const getCoreNavItems = (t: (key: string) => string) => [{
   title: t('navigation.calendar'),
   url: "/calendar",
   icon: CalendarIcon,
@@ -23,24 +23,16 @@ const getNavItems = (t: (key: string) => string) => [{
   icon: Clock,
   workerAccess: true
 }, {
+  title: t('navigation.team'),
+  url: "/team",
+  icon: Shield,
+  workerAccess: false
+}];
+
+const getBusinessNavItems = (t: (key: string) => string) => [{
   title: t('navigation.requests'),
   url: "/requests",
   icon: ClipboardList,
-  workerAccess: false
-}, {
-  title: t('navigation.workOrders'),
-  url: "/work-orders",
-  icon: Wrench,
-  workerAccess: false
-}, {
-  title: t('navigation.quotes'),
-  url: "/quotes",
-  icon: FileText,
-  workerAccess: false
-}, {
-  title: t('navigation.invoices'),
-  url: "/invoices",
-  icon: Receipt,
   workerAccess: false
 }, {
   title: t('navigation.customers'),
@@ -48,9 +40,19 @@ const getNavItems = (t: (key: string) => string) => [{
   icon: Users,
   workerAccess: false
 }, {
-  title: t('navigation.team'),
-  url: "/team",
-  icon: Shield,
+  title: t('navigation.quotes'),
+  url: "/quotes",
+  icon: FileText,
+  workerAccess: false
+}, {
+  title: t('navigation.workOrders'),
+  url: "/work-orders",
+  icon: Wrench,
+  workerAccess: false
+}, {
+  title: t('navigation.invoices'),
+  url: "/invoices",
+  icon: Receipt,
   workerAccess: false
 }];
 export default function AppSidebar() {
@@ -89,8 +91,10 @@ export default function AppSidebar() {
   const { t } = useLanguage();
 
   // Get translated nav items and filter based on user role
-  const allItems = getNavItems(t);
-  const visibleItems = allItems.filter(item => role === 'owner' || item.workerAccess);
+  const coreItems = getCoreNavItems(t);
+  const businessItems = getBusinessNavItems(t);
+  const visibleCoreItems = coreItems.filter(item => role === 'owner' || item.workerAccess);
+  const visibleBusinessItems = businessItems.filter(item => role === 'owner' || item.workerAccess);
 
   // Find the business where the user is an owner
   const ownedBusiness = userBusinesses?.find(b => b.role === 'owner');
@@ -128,10 +132,10 @@ export default function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>{t('sidebar.navigation')}</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('sidebar.coreFeatures')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {visibleItems.map(item => <SidebarMenuItem key={item.url}>
+              {visibleCoreItems.map(item => <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton asChild isActive={isActivePath(item.url)}>
                     <NavLink to={item.url} end className={({
                   isActive
@@ -144,6 +148,26 @@ export default function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {visibleBusinessItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>{t('sidebar.businessManagement')}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {visibleBusinessItems.map(item => <SidebarMenuItem key={item.url}>
+                    <SidebarMenuButton asChild isActive={isActivePath(item.url)}>
+                      <NavLink to={item.url} end className={({
+                    isActive
+                  }) => isActive ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"}>
+                        <item.icon className="mr-2 h-4 w-4" />
+                        <span className="truncate">{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>)}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter>
