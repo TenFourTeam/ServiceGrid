@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
         return json({ error: 'Invalid JSON in request body' }, { status: 400 });
       }
       
-      const { title, customerId, status, startsAt, endsAt, address, notes, jobType, quoteId, isAssessment, requestId } = body;
+      const { title, customerId, status, startsAt, endsAt, address, notes, jobType, quoteId, isAssessment, requestId, photos } = body;
 
       const { data, error } = await supabase
         .from('jobs')
@@ -143,7 +143,8 @@ Deno.serve(async (req) => {
           job_type: jobType || 'scheduled',
           quote_id: quoteId,
           is_assessment: isAssessment || false,
-          request_id: requestId
+          request_id: requestId,
+          photos: photos || []
         }])
         .select()
         .single();
