@@ -210,6 +210,12 @@ Deno.serve(async (req) => {
       if (isAssessment !== undefined) updateData.is_assessment = isAssessment;
       if (requestId !== undefined) updateData.request_id = requestId;
 
+      // Auto-set ends_at for completed jobs if not provided
+      if (status === 'Completed' && endsAt === undefined) {
+        updateData.ends_at = new Date().toISOString();
+        console.log('[jobs-crud] Auto-setting ends_at for completed job:', updateData.ends_at);
+      }
+
       const { data, error } = await supabase
         .from('jobs')
         .update(updateData)
