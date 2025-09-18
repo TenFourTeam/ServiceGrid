@@ -19,6 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { invalidationHelpers } from '@/queries/keys';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
+import { useAuth } from '@clerk/clerk-react';
 
 
 export default function InvoicesPage() {
@@ -139,7 +140,7 @@ export default function InvoicesPage() {
     if (sortedInvoices.length === 0) return;
 
     // We need auth context for the API calls
-    const { getToken } = useClerkAuth();
+    const { getToken } = useAuth();
     const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
 
     // Fetch payment data for all paid invoices

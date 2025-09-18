@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { formatDistance, format, differenceInMinutes } from 'date-fns';
+import { TimesheetEntryEdit } from '@/components/Timesheet/TimesheetEntryEdit';
 
 export default function Timesheet() {
   const { 
@@ -15,10 +16,13 @@ export default function Timesheet() {
     isLoading, 
     isClockedIn, 
     activeEntry, 
+    role,
     clockIn, 
     clockOut, 
+    editEntry,
     isClockingIn, 
-    isClockingOut 
+    isClockingOut,
+    isEditingEntry
   } = useTimesheet();
   
   const [notes, setNotes] = useState('');
@@ -163,7 +167,7 @@ export default function Timesheet() {
                     key={entry.id}
                     className="flex items-center justify-between p-3 border rounded-lg"
                   >
-                    <div className="space-y-1">
+                    <div className="space-y-1 flex-1">
                       <div className="flex items-center gap-2">
                         <span className="font-medium">
                           {format(new Date(entry.clock_in_time), 'MMM d, yyyy')}
@@ -187,10 +191,19 @@ export default function Timesheet() {
                         </p>
                       )}
                     </div>
-                    <div className="text-right">
-                      <span className="font-semibold">
-                        {calculateDuration(entry.clock_in_time, entry.clock_out_time)}
-                      </span>
+                    <div className="flex items-center gap-2">
+                      <div className="text-right">
+                        <span className="font-semibold">
+                          {calculateDuration(entry.clock_in_time, entry.clock_out_time)}
+                        </span>
+                      </div>
+                      {role === 'owner' && (
+                        <TimesheetEntryEdit
+                          entry={entry}
+                          onEdit={editEntry}
+                          isEditing={isEditingEntry}
+                        />
+                      )}
                     </div>
                   </div>
                 ))}

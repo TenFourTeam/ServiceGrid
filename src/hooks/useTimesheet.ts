@@ -17,7 +17,7 @@ export interface TimesheetEntry {
 }
 
 export function useTimesheet() {
-  const { businessId } = useBusinessContext();
+  const { businessId, role } = useBusinessContext();
   const queryClient = useQueryClient();
   const { getToken } = useAuth();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
@@ -74,7 +74,7 @@ export function useTimesheet() {
     mutationFn: async ({ entryId, notes }: { entryId: string; notes?: string }) => {
       const { data, error } = await authApi.invoke('timesheet-crud', {
         method: 'PUT',
-        body: { entryId, notes }
+        body: { entryId, notes, action: 'clock_out' }
       });
 
       if (error) throw new Error(error.message || 'Failed to clock out');
@@ -90,14 +90,48 @@ export function useTimesheet() {
     },
   });
 
+  // Edit entry mutation (owners only)
+  const editEntryMutation = useMutation({
+    mutationFn: async ({ 
+      entryId, 
+      clockInTime, 
+      clockOutTime, 
+      notes 
+    }: { 
+      entryId: string; 
+      clockInTime?: string; 
+      clockOutTime?: string; 
+      notes?: string; 
+    }) => {
+      const { data, error } = await authApi.invoke('timesheet-crud', {
+        method: 'PUT',
+        body: { entryId, clockInTime, clockOutTime, notes, action: 'edit' }
+      });
+
+      if (error) throw new Error(error.message || 'Failed to edit entry');
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.data.timesheet(businessId || '') });
+      toast.success('Entry updated successfully');
+    },
+    onError: (error: any) => {
+      console.error('Edit entry error:', error);
+      toast.error(error.message || 'Failed to edit entry');
+    },
+  });
+
   return {
     entries,
     isLoading,
     isClockedIn,
     activeEntry,
+    role,
     clockIn: clockInMutation.mutate,
     clockOut: clockOutMutation.mutate,
+    editEntry: editEntryMutation.mutate,
     isClockingIn: clockInMutation.isPending,
     isClockingOut: clockOutMutation.isPending,
+    isEditingEntry: editEntryMutation.isPending,
   };
 }
