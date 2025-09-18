@@ -67,19 +67,8 @@ interface AppProps {
   clerkKey: string;
 }
 
-// Memoized App component to prevent unnecessary re-renders
-const App = React.memo(({ clerkKey }: AppProps) => {
-  // Add a unique instance ID to help debug multiple instances
-  const instanceId = React.useRef(Math.random().toString(36).substring(7));
-  
-  React.useEffect(() => {
-    console.log(`[App] Mounting ClerkProvider instance: ${instanceId.current} with key: ${clerkKey.substring(0, 10)}...`);
-    
-    return () => {
-      console.log(`[App] Unmounting ClerkProvider instance: ${instanceId.current}`);
-    };
-  }, [clerkKey]);
-
+// App component 
+function App({ clerkKey }: AppProps) {
   return (
     <ClerkProvider 
       publishableKey={clerkKey}
@@ -169,6 +158,6 @@ const App = React.memo(({ clerkKey }: AppProps) => {
       </BrowserRouter>
     </ClerkProvider>
   );
-});
+}
 
 export default App;
