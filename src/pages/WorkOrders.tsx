@@ -24,7 +24,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import ReschedulePopover from '@/components/WorkOrders/ReschedulePopover';
 import JobShowModal from '@/components/Jobs/JobShowModal';
+import { JobBottomModal } from '@/components/Jobs/JobBottomModal';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Plus } from 'lucide-react';
 
 function useFilteredJobs() {
   const { data: jobs = [] } = useJobsData();
@@ -187,6 +189,7 @@ export default function WorkOrdersPage() {
   const navigate = useNavigate();
   const lastSyncKeyRef = useRef<string | null>(null);
   const [activeJob, setActiveJob] = useState<Job | null>(null);
+  const [createJobOpen, setCreateJobOpen] = useState(false);
   const isMobile = useIsMobile();
 
   // Jobs data is now loaded from dashboard data in AppLayout
@@ -207,6 +210,10 @@ export default function WorkOrdersPage() {
                 <option value="completed">Completed ({counts.completed})</option>
               </select>
             </div>
+            <Button onClick={() => setCreateJobOpen(true)} className="ml-auto h-9">
+              <Plus className="h-4 w-4 mr-2" />
+              New Job
+            </Button>
           </div>
         </div>
 
@@ -350,6 +357,11 @@ export default function WorkOrdersPage() {
             } as any}
           />
         )}
+        <JobBottomModal
+          open={createJobOpen}
+          onOpenChange={setCreateJobOpen}
+          onJobCreated={() => setCreateJobOpen(false)}
+        />
       </section>
     </AppLayout>
   );
