@@ -63,8 +63,7 @@ export function useJobsData(opts?: UseJobsDataOptions) {
       
       return { jobs: data?.jobs || [], count: data?.count || 0 };
     },
-    staleTime: 0, // Force fresh fetch
-    gcTime: 0, // Don't cache
+    refetchOnWindowFocus: true, // Get fresh data when user returns to tab
   });
 
   return {
