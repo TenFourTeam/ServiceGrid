@@ -29,6 +29,8 @@ function Boot() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+    
     fetch('https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/clerk-publishable-key')
       .then(async (res) => {
         if (!res.ok) {
@@ -38,9 +40,25 @@ function Boot() {
         }
         return res.json();
       })
-      .then((data) => setKey(data.publishableKey || null))
-      .catch((e) => setError(e.message || 'Failed to load Clerk key'))
-      .finally(() => setIsLoading(false));
+      .then((data) => {
+        if (isMounted) {
+          setKey(data.publishableKey || null);
+        }
+      })
+      .catch((e) => {
+        if (isMounted) {
+          setError(e.message || 'Failed to load Clerk key');
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   if (isLoading) {
