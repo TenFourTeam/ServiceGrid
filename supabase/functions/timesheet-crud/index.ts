@@ -87,11 +87,14 @@ Deno.serve(async (req) => {
         const { clockInTime, clockOutTime, notes: editNotes, targetUserId } = body;
         
         // Check if user is owner
-        const { data: roleData } = await supabase.rpc('user_business_role', { 
-          p_business_id: ctx.businessId 
-        });
+        const { data: memberData, error: roleError } = await supabase
+          .from('business_members')
+          .select('role')
+          .eq('business_id', ctx.businessId)
+          .eq('user_id', ctx.userId)
+          .single();
         
-        if (roleData !== 'owner') {
+        if (roleError || !memberData || memberData.role !== 'owner') {
           throw new Error('Only business owners can edit timesheet entries');
         }
 
