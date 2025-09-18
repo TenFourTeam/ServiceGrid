@@ -617,39 +617,32 @@ export default function InvoiceModal({
               <span>{formatDate(invoice.paidAt)}</span>
             </div>
           )}
-        </div>
 
-        {/* Work Order Section */}
-        {relatedJob && (
-          <div className="pt-2 border-t">
-            <div className="text-sm font-medium mb-2">Related Work Order</div>
-            <div className="bg-muted/30 rounded-md p-3">
-              <div className="flex items-center justify-between text-sm mb-2">
-                <span className="font-medium">{relatedJob.title || 'Work Order'}</span>
-                <Badge variant={relatedJob.status === 'Completed' ? 'default' : 'secondary'}>
-                  {relatedJob.status}
-                </Badge>
-              </div>
-              
-              {relatedJob.starts_at && (
-                <div className="flex items-center justify-between text-sm mt-1">
-                  <span className="text-muted-foreground">Scheduled</span>
-                  <span>{formatDate(relatedJob.starts_at)}</span>
-                </div>
+          {/* Work Order */}
+          <div className="flex items-center justify-between text-sm mt-1">
+            <span className="text-muted-foreground">Work Order</span>
+            <div className="flex items-center gap-2">
+              {relatedJob ? (
+                <>
+                  <span className="text-sm">{relatedJob.title || 'Work Order'}</span>
+                  <Badge variant={relatedJob.status === 'Completed' ? 'default' : 'secondary'} className="text-xs">
+                    {relatedJob.status}
+                  </Badge>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-6 px-2 text-xs"
+                    onClick={() => setShowJobModal(true)}
+                  >
+                    View
+                  </Button>
+                </>
+              ) : (
+                <span>—</span>
               )}
-              
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full mt-3"
-                onClick={() => setShowJobModal(true)}
-              >
-                <Briefcase className="h-4 w-4 mr-2" />
-                View Work Order Details
-              </Button>
             </div>
           </div>
-        )}
+        </div>
 
         {/* Payment Information Section */}
         {payments.length > 0 && (
@@ -728,7 +721,7 @@ export default function InvoiceModal({
       return null;
     }
 
-    const canMarkAsPaid = invoice.status === 'Draft' || invoice.status === 'Sent';
+    const canMarkAsPaid = invoice.status !== 'Paid';
 
     return (
       <>
