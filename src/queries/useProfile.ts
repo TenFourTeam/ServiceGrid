@@ -44,6 +44,7 @@ export function useProfile(currentBusinessId?: string | null) {
           taxRateDefault: data.business.taxRateDefault,
           logoUrl: data.business.logoUrl,
           lightLogoUrl: data.business.lightLogoUrl,
+          slug: data.business.slug,
           role: data.business.role
         } : null
       };
