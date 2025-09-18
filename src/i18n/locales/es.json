@@ -55,6 +55,13 @@
     "requests": "Solicitudes",
     "workOrders": "Órdenes de Trabajo"
   },
+  "sidebar": {
+    "navigation": "Navegación",
+    "subtitle": "Consola de Contratista",
+    "myBusiness": "Mi Negocio", 
+    "termsServices": "Términos y Servicios",
+    "referFriend": "Referir un Amigo"
+  },
   "auth": {
     "signOut": "Cerrar Sesión",
     "signIn": "Iniciar Sesión"

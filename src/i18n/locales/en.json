@@ -55,6 +55,13 @@
     "requests": "Requests",
     "workOrders": "Work Orders"
   },
+  "sidebar": {
+    "navigation": "Navigation",
+    "subtitle": "Contractor Console", 
+    "myBusiness": "My Business",
+    "termsServices": "Terms & Services",
+    "referFriend": "Refer A Friend"
+  },
   "auth": {
     "signOut": "Sign Out",
     "signIn": "Sign In"

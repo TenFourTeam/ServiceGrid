@@ -221,7 +221,7 @@ export default function SettingsPage() {
               <Label>{t('settings.language.description')}</Label>
               <Select value={language} onValueChange={setLanguage}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder={t('settings.language.english')} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="en">{t('settings.language.english')}</SelectItem>

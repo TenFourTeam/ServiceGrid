@@ -11,43 +11,44 @@ import { useClerk, useUser } from "@clerk/clerk-react";
 import { usePreloadImage } from "@/hooks/usePreloadImage";
 import { useProfile } from "@/queries/useProfile";
 import { SignOutButton } from "@/components/Auth/SignOutButton";
-const allItems = [{
-  title: "Calendar",
+import { useLanguage } from "@/contexts/LanguageContext";
+const getNavItems = (t: (key: string) => string) => [{
+  title: t('navigation.calendar'),
   url: "/calendar",
   icon: CalendarIcon,
   workerAccess: true
 }, {
-  title: "Timesheet",
+  title: t('navigation.timesheet'),
   url: "/timesheet",
   icon: Clock,
   workerAccess: true
 }, {
-  title: "Requests",
+  title: t('navigation.requests'),
   url: "/requests",
   icon: ClipboardList,
   workerAccess: false
 }, {
-  title: "Work Orders",
+  title: t('navigation.workOrders'),
   url: "/work-orders",
   icon: Wrench,
   workerAccess: false
 }, {
-  title: "Quotes",
+  title: t('navigation.quotes'),
   url: "/quotes",
   icon: FileText,
   workerAccess: false
 }, {
-  title: "Invoices",
+  title: t('navigation.invoices'),
   url: "/invoices",
   icon: Receipt,
   workerAccess: false
 }, {
-  title: "Customers",
+  title: t('navigation.customers'),
   url: "/customers",
   icon: Users,
   workerAccess: false
 }, {
-  title: "Team",
+  title: t('navigation.team'),
   url: "/team",
   icon: Shield,
   workerAccess: false
@@ -70,8 +71,6 @@ export default function AppSidebar() {
     isSwitching
   } = useBusinessSwitcher();
 
-  // Filter items based on user role
-  const visibleItems = allItems.filter(item => role === 'owner' || item.workerAccess);
   const location = useLocation();
   const navigate = useNavigate();
   const {
@@ -87,6 +86,11 @@ export default function AppSidebar() {
   const {
     data: profile
   } = useProfile();
+  const { t } = useLanguage();
+
+  // Get translated nav items and filter based on user role
+  const allItems = getNavItems(t);
+  const visibleItems = allItems.filter(item => role === 'owner' || item.workerAccess);
 
   // Find the business where the user is an owner
   const ownedBusiness = userBusinesses?.find(b => b.role === 'owner');
@@ -111,7 +115,7 @@ export default function AppSidebar() {
           <div className="min-w-0 pl-1 group-data-[collapsible=icon]:hidden">
             <div className="font-semibold truncate">{displayBusinessName || "Business"}</div>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="truncate">Contractor Console</span>
+              <span className="truncate">{t('sidebar.subtitle')}</span>
             </div>
           </div>
 
@@ -124,7 +128,7 @@ export default function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('sidebar.navigation')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {visibleItems.map(item => <SidebarMenuItem key={item.url}>
@@ -159,18 +163,18 @@ export default function AppSidebar() {
               {!isInOwnBusiness && ownedBusiness && <>
                   <DropdownMenuItem onClick={() => switchBusiness.mutate(ownedBusiness.id)} disabled={isSwitching}>
                     <Shield className="mr-2 h-4 w-4" /> 
-                    My Business ({ownedBusiness.name})
+                    {t('sidebar.myBusiness')} ({ownedBusiness.name})
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                 </>}
               <DropdownMenuItem onClick={() => navigate('/settings')}>
-                <SettingsIcon className="mr-2 h-4 w-4" /> Settings
+                <SettingsIcon className="mr-2 h-4 w-4" /> {t('navigation.settings')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate('/legal')}>
-                <FileText className="mr-2 h-4 w-4" /> Terms & Services
+                <FileText className="mr-2 h-4 w-4" /> {t('sidebar.termsServices')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate('/referral')}>
-                <UserPlus className="mr-2 h-4 w-4" /> Refer A Friend
+                <UserPlus className="mr-2 h-4 w-4" /> {t('sidebar.referFriend')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <div className="px-2 py-1">

@@ -16,17 +16,24 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     i18n.changeLanguage(lang);
   };
 
+  // Normalize language to just 'en' or 'es' 
+  const normalizedLanguage = i18n.language.startsWith('en') ? 'en' : 
+                            i18n.language.startsWith('es') ? 'es' : 'en';
+
   useEffect(() => {
     // Set initial language from localStorage or browser preference
     const savedLanguage = localStorage.getItem('i18nextLng');
     if (savedLanguage && ['en', 'es'].includes(savedLanguage)) {
       i18n.changeLanguage(savedLanguage);
+    } else {
+      // Default to English if no valid language found
+      i18n.changeLanguage('en');
     }
   }, [i18n]);
 
   return (
     <LanguageContext.Provider value={{
-      language: i18n.language,
+      language: normalizedLanguage,
       setLanguage,
       t,
     }}>
