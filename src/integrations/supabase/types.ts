@@ -131,6 +131,7 @@ export type Database = {
           owner_id: string
           phone: string | null
           reply_to_email: string | null
+          slug: string | null
           stripe_account_id: string | null
           stripe_charges_enabled: boolean
           stripe_details_submitted: boolean
@@ -154,6 +155,7 @@ export type Database = {
           owner_id: string
           phone?: string | null
           reply_to_email?: string | null
+          slug?: string | null
           stripe_account_id?: string | null
           stripe_charges_enabled?: boolean
           stripe_details_submitted?: boolean
@@ -177,6 +179,7 @@ export type Database = {
           owner_id?: string
           phone?: string | null
           reply_to_email?: string | null
+          slug?: string | null
           stripe_account_id?: string | null
           stripe_charges_enabled?: boolean
           stripe_details_submitted?: boolean
@@ -1041,6 +1044,7 @@ export type Database = {
           owner_id: string
           phone: string | null
           reply_to_email: string | null
+          slug: string | null
           stripe_account_id: string | null
           stripe_charges_enabled: boolean
           stripe_details_submitted: boolean
@@ -1048,6 +1052,10 @@ export type Database = {
           tax_rate_default: number
           updated_at: string
         }
+      }
+      generate_slug: {
+        Args: { input_text: string }
+        Returns: string
       }
       is_business_member: {
         Args: { p_business_id: string }
