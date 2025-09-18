@@ -274,7 +274,7 @@ export function JobBottomModal({
 
         const { data, error } = await authApi.invoke('upload-job-photo', {
           method: 'POST',
-          body: { file: file, jobId: jobId }
+          body: formData
         });
 
         if (error) {
