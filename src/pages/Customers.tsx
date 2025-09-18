@@ -3,7 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Trash2, ChevronUp, ChevronDown } from 'lucide-react';
+import { Trash2, ChevronUp, ChevronDown, Download } from 'lucide-react';
+import Papa from 'papaparse';
+import { formatDate } from '@/utils/format';
 import { CustomerBottomModal } from '@/components/Customers/CustomerBottomModal';
 import { CustomerSearchFilter } from '@/components/Customers/CustomerSearchFilter';
 import { useState, useMemo, useEffect } from "react";
@@ -157,6 +159,33 @@ export default function CustomersPage() {
     });
   };
 
+  const handleExportCSV = () => {
+    if (filteredAndSortedCustomers.length === 0) return;
+
+    const csvData = filteredAndSortedCustomers.map(customer => ({
+      'Customer Name': customer.name || '',
+      'Email': customer.email || '',
+      'Phone': customer.phone || '',
+      'Address': customer.address || '',
+      'Notes': customer.notes || '',
+      'Created Date': formatDate(customer.created_at)
+    }));
+
+    const csv = Papa.unparse(csvData);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `customers-${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
   return (
     <AppLayout title="Customers">
       <section className="space-y-4">
@@ -177,6 +206,14 @@ export default function CustomersPage() {
                 )}
                 <Button variant="outline" onClick={() => setCsvImportOpen(true)}>
                   Import CSV
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleExportCSV}
+                  disabled={filteredAndSortedCustomers.length === 0}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Export CSV
                 </Button>
                 <Button onClick={() => openNew()}>
                   New Customer
