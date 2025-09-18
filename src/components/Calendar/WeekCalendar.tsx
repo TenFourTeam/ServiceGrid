@@ -206,7 +206,7 @@ const minuteOfDayFromAnchorOffset = (offset: number) => {
     }
   }
 
-  function handleEmptyDoubleClick(e: React.MouseEvent<HTMLDivElement>, day: Date) {
+  function handleEmptyClick(e: React.MouseEvent<HTMLDivElement>, day: Date) {
     // Only allow owners to create jobs
     if (role !== 'owner') return;
     
@@ -515,7 +515,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                 key={dayISOString}
                 className="border rounded-md p-2 relative overflow-hidden"
                 ref={(el) => { if (el) dayRefs.current[i] = el; }}
-                onDoubleClick={(e) => handleEmptyDoubleClick(e, day)}
+                onClick={(e) => handleEmptyClick(e, day)}
               >
                 {/* Weekend shading */}
                 {(day.getDay() === 0 || day.getDay() === 6) && <div className="absolute inset-0 bg-muted/20 pointer-events-none" />}

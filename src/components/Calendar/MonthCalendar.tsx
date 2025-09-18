@@ -79,8 +79,8 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
               key={key}
               role="button"
               tabIndex={0}
-              onClick={() => onDateChange(d)}
-              onDoubleClick={() => { 
+              onClick={() => {
+                onDateChange(d);
                 if (role === 'owner') {
                   setSelectedDate(d); 
                   setNewJobOpen(true); 

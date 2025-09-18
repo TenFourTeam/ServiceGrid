@@ -41,14 +41,14 @@ export default function DayCalendar({ date, displayMode = 'scheduled' }: { date:
   const [open, setOpen] = useState(false);
   const [newJobOpen, setNewJobOpen] = useState(false);
 
-  const handleDayDoubleClick = () => {
+  const handleDayClick = () => {
     if (role === 'owner') {
       setNewJobOpen(true);
     }
   };
   
   return (
-    <section className="rounded-lg border p-3" onDoubleClick={handleDayDoubleClick}>
+    <section className="rounded-lg border p-3" onClick={handleDayClick}>
       <h2 className="sr-only">Day view</h2>
       {jobs.length === 0 && (
         <p className="text-sm opacity-70">No jobs scheduled for this day.</p>
