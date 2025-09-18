@@ -42,8 +42,10 @@ export function useBusinessLeaving() {
       queryClient.invalidateQueries({ queryKey: ['user-businesses'] });
       queryClient.invalidateQueries({ queryKey: ['business-members'] });
       
-      // Force a page refresh to ensure all components update
-      window.location.reload();
+      // Allow React to finish cleanup before refreshing
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
     },
   });
 
