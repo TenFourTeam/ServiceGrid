@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,6 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { preferredTimeOptions } from "@/validation/requests";
 import { supabase } from "@/integrations/supabase/client";
-import { getCurrentBusinessSlug } from "@/utils/subdomainUtils";
 
 interface Business {
   id: string;
@@ -29,8 +28,6 @@ export default function PublicRequestForm() {
   
   // Business data (populated after submission)
   const [business, setBusiness] = useState<Business | null>(null);
-  const [resolvedBusinessId, setResolvedBusinessId] = useState<string | null>(null);
-  const [businessLoading, setBusinessLoading] = useState(true);
   
   // Form state
   const [customerName, setCustomerName] = useState("");
@@ -46,51 +43,6 @@ export default function PublicRequestForm() {
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-
-  // Resolve business ID from either URL param or subdomain
-  useEffect(() => {
-    const resolveBusinessId = async () => {
-      setBusinessLoading(true);
-      
-      // If we have businessId from URL params, use it
-      if (businessId) {
-        setResolvedBusinessId(businessId);
-        setBusinessLoading(false);
-        return;
-      }
-      
-      // Otherwise, try to get business from subdomain
-      const businessSlug = getCurrentBusinessSlug();
-      if (businessSlug) {
-        try {
-          // Fetch business by slug
-          const { data, error } = await supabase
-            .from('businesses')
-            .select('id, name, logo_url, light_logo_url')
-            .eq('slug', businessSlug)
-            .single();
-          
-          if (error) throw error;
-          
-          if (data) {
-            setResolvedBusinessId(data.id);
-            setBusiness(data);
-          } else {
-            toast.error("Business not found");
-          }
-        } catch (error) {
-          console.error("Error fetching business by slug:", error);
-          toast.error("Failed to load business information");
-        }
-      } else {
-        toast.error("No business specified");
-      }
-      
-      setBusinessLoading(false);
-    };
-    
-    resolveBusinessId();
-  }, [businessId]);
 
   const handleTimeToggle = (time: string) => {
     setPreferredTimes(prev => 
@@ -119,7 +71,7 @@ export default function PublicRequestForm() {
       return;
     }
 
-    if (!resolvedBusinessId) {
+    if (!businessId) {
       toast.error("Invalid business ID");
       return;
     }
@@ -127,7 +79,7 @@ export default function PublicRequestForm() {
     setLoading(true);
     try {
       const requestData = {
-        business_id: resolvedBusinessId,
+        business_id: businessId,
         customer_name: customerName.trim() || null,
         customer_email: customerEmail.trim(),
         customer_phone: customerPhone.trim() || null,
@@ -179,36 +131,6 @@ export default function PublicRequestForm() {
             <Button onClick={() => window.location.reload()} variant="outline">
               Submit Another Request
             </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Show loading state while resolving business
-  if (businessLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6 text-center">
-            <div className="text-muted-foreground">Loading...</div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Show error if no business could be resolved
-  if (!resolvedBusinessId) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6 text-center">
-            <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h1 className="text-xl font-semibold mb-2">Business Not Found</h1>
-            <p className="text-muted-foreground">
-              The requested business could not be found.
-            </p>
           </CardContent>
         </Card>
       </div>

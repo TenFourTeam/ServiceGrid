@@ -13,7 +13,6 @@ export type BusinessUI = {
   phone?: string;
   replyToEmail?: string;
   taxRateDefault?: number;
-  slug?: string;
   role?: 'owner' | 'worker';
   [key: string]: any;
 };
@@ -67,7 +66,6 @@ export function useBusinessContext() {
     businessPhone: business?.phone,
     businessReplyToEmail: business?.replyToEmail,
     businessTaxRateDefault: business?.taxRateDefault,
-    businessSlug: business?.slug,
     businessLogoUrl: business?.logoUrl,
     businessLightLogoUrl: business?.lightLogoUrl,
     

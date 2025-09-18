@@ -84,8 +84,7 @@ Deno.serve(async (req) => {
             reply_to_email,
             tax_rate_default,
             logo_url,
-            light_logo_url,
-            slug
+            light_logo_url
           `)
           .eq('id', targetBusinessId)
           .single();
@@ -102,7 +101,6 @@ Deno.serve(async (req) => {
             taxRateDefault: businessData.tax_rate_default,
             logoUrl: businessData.logo_url,
             lightLogoUrl: businessData.light_logo_url,
-            slug: businessData.slug,
             role: memberData.role
           };
 
