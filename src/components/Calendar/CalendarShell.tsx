@@ -1,5 +1,5 @@
 import { Calendar } from "@/components/ui/calendar";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/Button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { WeekCalendar } from "@/components/Calendar/WeekCalendar";
@@ -69,23 +69,21 @@ export default function CalendarShell({
               {rangeTitle}
             </h2>
             {isMobile && (
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
                 <Button 
-                  variant="outline" 
-                  size={isPhone ? "sm" : "icon"} 
+                  variant="secondary" 
+                  size={isPhone ? "touch" : "sm"} 
                   aria-label="Previous" 
                   onClick={() => stepDate(-1)}
-                  className={isPhone ? "px-2" : ""}
                 >
                   <ChevronLeft className="h-4 w-4" />
                   {isPhone && <span className="sr-only">Previous</span>}
                 </Button>
                 <Button 
-                  variant="outline" 
-                  size={isPhone ? "sm" : "icon"} 
+                  variant="secondary" 
+                  size={isPhone ? "touch" : "sm"} 
                   aria-label="Next" 
                   onClick={() => stepDate(1)}
-                  className={isPhone ? "px-2" : ""}
                 >
                   <ChevronRight className="h-4 w-4" />
                   {isPhone && <span className="sr-only">Next</span>}
@@ -94,7 +92,7 @@ export default function CalendarShell({
             )}
           </div>
           
-          <div className={`flex items-center justify-between md:justify-end ${isPhone ? 'gap-1' : 'gap-2'}`}>
+          <div className={`flex items-center justify-between md:justify-end ${isPhone ? 'gap-2' : 'gap-2'}`}>
             <Select value={displayMode} onValueChange={v => setDisplayMode(v as CalendarDisplayMode)}>
               <SelectTrigger className={isPhone ? "w-[100px] text-xs" : "w-[120px] md:w-[140px]"}>
                 <SelectValue />
@@ -136,20 +134,20 @@ export default function CalendarShell({
             </Tabs>
             
             <Button 
-              variant="outline" 
-              size={isPhone ? "sm" : "sm"} 
+              variant="secondary" 
+              size={isPhone ? "md" : "sm"} 
               onClick={() => setDate(startOfDay(new Date()))}
-              className={isPhone ? "px-2 text-xs" : ""}
+              className={isPhone ? "px-3" : ""}
             >
               {isPhone ? "Now" : "Today"}
             </Button>
             
             {!isMobile && (
               <>
-                <Button variant="outline" size="icon" aria-label="Previous" onClick={() => stepDate(-1)}>
+                <Button variant="secondary" size="sm" aria-label="Previous" onClick={() => stepDate(-1)}>
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" size="icon" aria-label="Next" onClick={() => stepDate(1)}>
+                <Button variant="secondary" size="sm" aria-label="Next" onClick={() => stepDate(1)}>
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </>

@@ -63,7 +63,7 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
         <MobileHeader title={title} />
         <SubscriptionBanner />
         <main className="flex-1 flex flex-col min-h-0 max-w-full overflow-x-hidden">
-          <div className="flex-1 max-w-full">
+          <div className="flex-1 max-w-full px-4">
             <PageFade key={String(title)}>
               {children}
             </PageFade>

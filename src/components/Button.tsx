@@ -17,6 +17,7 @@ const buttonStyles = cva(
         sm: "h-9 px-3 rounded-md",
         md: "h-10 px-4 py-2",
         lg: "h-11 px-6",
+        touch: "h-11 w-11 px-0",
       },
       full: {
         true: "w-full",
