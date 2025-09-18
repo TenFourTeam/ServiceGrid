@@ -90,6 +90,45 @@
       "next": "Siguiente"
     }
   },
+  "timesheet": {
+    "title": "Hoja de Tiempo",
+    "currentStatus": "Estado Actual",
+    "todaysSummary": "Resumen de Hoy",
+    "recentEntries": "Entradas Recientes",
+    "status": {
+      "clockedIn": "Entrada Registrada",
+      "clockedOut": "Salida Registrada",
+      "active": "Activo",
+      "inactive": "Inactivo",
+      "inProgress": "En Progreso"
+    },
+    "actions": {
+      "clockIn": "Registrar Entrada",
+      "clockOut": "Registrar Salida",
+      "clockingIn": "Registrando Entrada...",
+      "clockingOut": "Registrando Salida..."
+    },
+    "form": {
+      "notesOptional": "Notas (opcional)",
+      "notesPlaceholder": "Agrega notas sobre tu sesión de trabajo..."
+    },
+    "summary": {
+      "totalHoursWorked": "Total de Horas Trabajadas:",
+      "since": "Desde"
+    },
+    "loading": "Cargando entradas...",
+    "noEntries": "Aún no hay entradas de tiempo.",
+    "edit": {
+      "title": "Editar Entrada de Tiempo",
+      "clockInTime": "Hora de Entrada",
+      "clockOutTime": "Hora de Salida",
+      "notes": "Notas",
+      "notesPlaceholder": "Notas opcionales sobre esta entrada...",
+      "cancel": "Cancelar",
+      "saveChanges": "Guardar Cambios",
+      "saving": "Guardando..."
+    }
+  },
   "jobs": {
     "createTitle": "Crear Nuevo Trabajo",
     "eventTitle": "Evento",

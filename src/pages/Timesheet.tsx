@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Clock, Play, Square, ClipboardList } from 'lucide-react';
 import { useTimesheet } from '@/hooks/useTimesheet';
+import { useLanguage } from '@/contexts/LanguageContext';
 import AppLayout from '@/components/Layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +12,7 @@ import { formatDistance, format, differenceInMinutes } from 'date-fns';
 import { TimesheetEntryEdit } from '@/components/Timesheet/TimesheetEntryEdit';
 
 export default function Timesheet() {
+  const { t } = useLanguage();
   const { 
     entries, 
     isLoading, 
@@ -68,39 +70,39 @@ export default function Timesheet() {
   const totalHoursTodayFormatted = `${Math.floor(totalHoursToday / 60)}h ${totalHoursToday % 60}m`;
 
   return (
-    <AppLayout title="Timesheet">
+    <AppLayout title={t('timesheet.title')}>
       <div className="space-y-6 max-w-4xl">
         {/* Current Status */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5" />
-              Current Status
+              {t('timesheet.currentStatus')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-2xl font-bold">
-                  {isClockedIn ? 'Clocked In' : 'Clocked Out'}
+                  {isClockedIn ? t('timesheet.status.clockedIn') : t('timesheet.status.clockedOut')}
                 </p>
                 {activeEntry && (
                   <p className="text-muted-foreground">
-                    Since {format(new Date(activeEntry.clock_in_time), 'h:mm a')} 
+                    {t('timesheet.summary.since')} {format(new Date(activeEntry.clock_in_time), 'h:mm a')} 
                     ({formatDistance(new Date(activeEntry.clock_in_time), new Date(), { addSuffix: true })})
                   </p>
                 )}
               </div>
               <Badge variant={isClockedIn ? 'default' : 'secondary'} className="text-sm px-3 py-1">
-                {isClockedIn ? 'Active' : 'Inactive'}
+                {isClockedIn ? t('timesheet.status.active') : t('timesheet.status.inactive')}
               </Badge>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes (optional)</Label>
+              <Label htmlFor="notes">{t('timesheet.form.notesOptional')}</Label>
               <Textarea
                 id="notes"
-                placeholder="Add notes about your work session..."
+                placeholder={t('timesheet.form.notesPlaceholder')}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 className="resize-none"
@@ -117,7 +119,7 @@ export default function Timesheet() {
                   className="flex-1"
                 >
                   <Play className="mr-2 h-4 w-4" />
-                  {isClockingIn ? 'Clocking In...' : 'Clock In'}
+                  {isClockingIn ? t('timesheet.actions.clockingIn') : t('timesheet.actions.clockIn')}
                 </Button>
               ) : (
                 <Button
@@ -128,7 +130,7 @@ export default function Timesheet() {
                   className="flex-1"
                 >
                   <Square className="mr-2 h-4 w-4" />
-                  {isClockingOut ? 'Clocking Out...' : 'Clock Out'}
+                  {isClockingOut ? t('timesheet.actions.clockingOut') : t('timesheet.actions.clockOut')}
                 </Button>
               )}
             </div>
@@ -138,11 +140,11 @@ export default function Timesheet() {
         {/* Today's Summary */}
         <Card>
           <CardHeader>
-            <CardTitle>Today's Summary</CardTitle>
+            <CardTitle>{t('timesheet.todaysSummary')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">Total Hours Worked:</span>
+              <span className="text-muted-foreground">{t('timesheet.summary.totalHoursWorked')}</span>
               <span className="text-xl font-semibold">{totalHoursTodayFormatted}</span>
             </div>
           </CardContent>
@@ -153,14 +155,14 @@ export default function Timesheet() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ClipboardList className="h-5 w-5" />
-              Recent Entries
+              {t('timesheet.recentEntries')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <p className="text-muted-foreground">Loading entries...</p>
+              <p className="text-muted-foreground">{t('timesheet.loading')}</p>
             ) : entries.length === 0 ? (
-              <p className="text-muted-foreground">No timesheet entries yet.</p>
+              <p className="text-muted-foreground">{t('timesheet.noEntries')}</p>
             ) : (
               <div className="space-y-3">
                 {entries.slice(0, 10).map((entry) => (
@@ -180,7 +182,7 @@ export default function Timesheet() {
                         </span>
                         {!entry.clock_out_time && (
                           <Badge variant="default" className="text-xs">
-                            Active
+                            {t('timesheet.status.active')}
                           </Badge>
                         )}
                       </div>
@@ -188,7 +190,7 @@ export default function Timesheet() {
                         {format(new Date(entry.clock_in_time), 'h:mm a')} - {' '}
                         {entry.clock_out_time 
                           ? format(new Date(entry.clock_out_time), 'h:mm a')
-                          : 'In Progress'
+                          : t('timesheet.status.inProgress')
                         }
                       </div>
                       {entry.notes && (

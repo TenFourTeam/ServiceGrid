@@ -90,6 +90,45 @@
       "next": "Next"
     }
   },
+  "timesheet": {
+    "title": "Timesheet",
+    "currentStatus": "Current Status",
+    "todaysSummary": "Today's Summary",
+    "recentEntries": "Recent Entries",
+    "status": {
+      "clockedIn": "Clocked In",
+      "clockedOut": "Clocked Out",
+      "active": "Active",
+      "inactive": "Inactive",
+      "inProgress": "In Progress"
+    },
+    "actions": {
+      "clockIn": "Clock In",
+      "clockOut": "Clock Out",
+      "clockingIn": "Clocking In...",
+      "clockingOut": "Clocking Out..."
+    },
+    "form": {
+      "notesOptional": "Notes (optional)",
+      "notesPlaceholder": "Add notes about your work session..."
+    },
+    "summary": {
+      "totalHoursWorked": "Total Hours Worked:",
+      "since": "Since"
+    },
+    "loading": "Loading entries...",
+    "noEntries": "No timesheet entries yet.",
+    "edit": {
+      "title": "Edit Timesheet Entry",
+      "clockInTime": "Clock In Time",
+      "clockOutTime": "Clock Out Time",
+      "notes": "Notes",
+      "notesPlaceholder": "Optional notes about this time entry...",
+      "cancel": "Cancel",
+      "saveChanges": "Save Changes",
+      "saving": "Saving..."
+    }
+  },
   "jobs": {
     "createTitle": "Create New Job",
     "eventTitle": "Event",

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -21,6 +22,7 @@ interface TimesheetEntryEditProps {
 }
 
 export function TimesheetEntryEdit({ entry, onEdit, isEditing, open, onOpenChange }: TimesheetEntryEditProps) {
+  const { t } = useLanguage();
   const [clockInTime, setClockInTime] = useState(
     format(new Date(entry.clock_in_time), "yyyy-MM-dd'T'HH:mm")
   );
@@ -43,11 +45,11 @@ export function TimesheetEntryEdit({ entry, onEdit, isEditing, open, onOpenChang
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent>
         <DrawerHeader>
-          <DrawerTitle>Edit Timesheet Entry</DrawerTitle>
+          <DrawerTitle>{t('timesheet.edit.title')}</DrawerTitle>
         </DrawerHeader>
         <div className="px-4 pb-4 space-y-4">
           <div>
-            <Label htmlFor="clock-in-time">Clock In Time</Label>
+            <Label htmlFor="clock-in-time">{t('timesheet.edit.clockInTime')}</Label>
             <Input
               id="clock-in-time"
               type="datetime-local"
@@ -56,7 +58,7 @@ export function TimesheetEntryEdit({ entry, onEdit, isEditing, open, onOpenChang
             />
           </div>
           <div>
-            <Label htmlFor="clock-out-time">Clock Out Time</Label>
+            <Label htmlFor="clock-out-time">{t('timesheet.edit.clockOutTime')}</Label>
             <Input
               id="clock-out-time"
               type="datetime-local"
@@ -65,21 +67,21 @@ export function TimesheetEntryEdit({ entry, onEdit, isEditing, open, onOpenChang
             />
           </div>
           <div>
-            <Label htmlFor="notes">Notes</Label>
+            <Label htmlFor="notes">{t('timesheet.edit.notes')}</Label>
             <Textarea
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Optional notes about this time entry..."
+              placeholder={t('timesheet.edit.notesPlaceholder')}
               rows={3}
             />
           </div>
           <div className="flex gap-2 justify-end">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
+              {t('timesheet.edit.cancel')}
             </Button>
             <Button onClick={handleSubmit} disabled={isEditing}>
-              {isEditing ? 'Saving...' : 'Save Changes'}
+              {isEditing ? t('timesheet.edit.saving') : t('timesheet.edit.saveChanges')}
             </Button>
           </div>
         </div>
