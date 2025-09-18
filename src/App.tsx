@@ -67,16 +67,32 @@ interface AppProps {
   clerkKey: string;
 }
 
-const App = ({ clerkKey }: AppProps) => (
-  <ClerkProvider publishableKey={clerkKey} key={clerkKey}>
-    <BrowserRouter>
-      <ClerkLoaded>
-        <AppProviders>
-          <QueryClientClerkIntegration />
-          <ErrorBoundary>
-            <Suspense fallback={<LoadingScreen />}>
-              <PrefetchRoutes />
-              <Routes>
+// Memoized App component to prevent unnecessary re-renders
+const App = React.memo(({ clerkKey }: AppProps) => {
+  // Add a unique instance ID to help debug multiple instances
+  const instanceId = React.useRef(Math.random().toString(36).substring(7));
+  
+  React.useEffect(() => {
+    console.log(`[App] Mounting ClerkProvider instance: ${instanceId.current} with key: ${clerkKey.substring(0, 10)}...`);
+    
+    return () => {
+      console.log(`[App] Unmounting ClerkProvider instance: ${instanceId.current}`);
+    };
+  }, [clerkKey]);
+
+  return (
+    <ClerkProvider 
+      publishableKey={clerkKey} 
+      key={`clerk-${clerkKey}-${instanceId.current}`}
+    >
+      <BrowserRouter>
+        <ClerkLoaded>
+          <AppProviders>
+            <QueryClientClerkIntegration />
+            <ErrorBoundary>
+              <Suspense fallback={<LoadingScreen />}>
+                <PrefetchRoutes />
+                <Routes>
                 {/* Public routes */}
                 <Route element={<PublicOnly redirectTo="/calendar" />}>
                   <Route path="/" element={<LandingPage />} />
@@ -145,14 +161,15 @@ const App = ({ clerkKey }: AppProps) => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
-          </ErrorBoundary>
-        </AppProviders>
-      </ClerkLoaded>
-      <ClerkLoading>
-        <LoadingScreen full />
-      </ClerkLoading>
-    </BrowserRouter>
-  </ClerkProvider>
-);
+            </ErrorBoundary>
+          </AppProviders>
+        </ClerkLoaded>
+        <ClerkLoading>
+          <LoadingScreen full />
+        </ClerkLoading>
+      </BrowserRouter>
+    </ClerkProvider>
+  );
+});
 
 export default App;

@@ -23,15 +23,46 @@ function ErrorScreen({ message }: { message: string }) {
   return <div style={{ padding: 24 }}>Auth configuration error: {message}</div>;
 }
 
+// Global state to prevent multiple concurrent fetches
+let keyPromise: Promise<string> | null = null;
+let cachedKey: string | null = null;
+
 function Boot() {
-  const [key, setKey] = useState<string | null>(null);
+  const [key, setKey] = useState<string | null>(cachedKey);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!cachedKey);
 
   useEffect(() => {
     let isMounted = true;
     
-    fetch('https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/clerk-publishable-key')
+    // If we already have a cached key, use it immediately
+    if (cachedKey) {
+      setKey(cachedKey);
+      setIsLoading(false);
+      return;
+    }
+
+    // If there's already a fetch in progress, wait for it
+    if (keyPromise) {
+      keyPromise
+        .then((fetchedKey) => {
+          if (isMounted) {
+            cachedKey = fetchedKey;
+            setKey(fetchedKey);
+            setIsLoading(false);
+          }
+        })
+        .catch((e) => {
+          if (isMounted) {
+            setError(e.message || 'Failed to load Clerk key');
+            setIsLoading(false);
+          }
+        });
+      return;
+    }
+
+    // Start a new fetch
+    keyPromise = fetch('https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/clerk-publishable-key')
       .then(async (res) => {
         if (!res.ok) {
           let msg = 'Failed to load Clerk key';
@@ -41,19 +72,28 @@ function Boot() {
         return res.json();
       })
       .then((data) => {
+        const fetchedKey = data.publishableKey;
+        if (!fetchedKey) {
+          throw new Error('Missing authentication configuration');
+        }
+        return fetchedKey;
+      });
+
+    keyPromise
+      .then((fetchedKey) => {
         if (isMounted) {
-          setKey(data.publishableKey || null);
+          cachedKey = fetchedKey;
+          setKey(fetchedKey);
+          setIsLoading(false);
         }
       })
       .catch((e) => {
         if (isMounted) {
           setError(e.message || 'Failed to load Clerk key');
-        }
-      })
-      .finally(() => {
-        if (isMounted) {
           setIsLoading(false);
         }
+        // Reset promise on error so retries can happen
+        keyPromise = null;
       });
 
     return () => {
