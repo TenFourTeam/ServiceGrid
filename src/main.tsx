@@ -5,6 +5,25 @@ import App from './App';
 import './index.css';
 import './i18n/config';
 
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen grid place-items-center">
+      <div className="flex items-center gap-3 text-muted-foreground">
+        <div
+          className="h-5 w-5 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-primary"
+          role="status"
+          aria-label="Loading"
+        />
+        <span className="text-sm">Loading…</span>
+      </div>
+    </div>
+  );
+}
+
+function ErrorScreen({ message }: { message: string }) {
+  return <div style={{ padding: 24 }}>Auth configuration error: {message}</div>;
+}
+
 function Boot() {
   const [key, setKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -26,33 +45,18 @@ function Boot() {
   }, []);
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen grid place-items-center">
-        <div className="flex items-center gap-3 text-muted-foreground">
-          <div
-            className="h-5 w-5 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-primary"
-            role="status"
-            aria-label="Loading"
-          />
-          <span className="text-sm">Loading…</span>
-        </div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (error) {
-    return <div style={{ padding: 24 }}>Auth configuration error: {error}</div>;
+    return <ErrorScreen message={error} />;
   }
 
   if (!key) {
-    return <div style={{ padding: 24 }}>Missing authentication configuration</div>;
+    return <ErrorScreen message="Missing authentication configuration" />;
   }
 
-  return (
-    <ClerkProvider publishableKey={key}>
-      <App />
-    </ClerkProvider>
-  );
+  return <App clerkKey={key} />;
 }
 
 const root = document.getElementById('root')!;
