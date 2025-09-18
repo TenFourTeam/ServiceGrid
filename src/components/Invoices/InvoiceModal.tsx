@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon, Send, Eye, Edit3, DollarSign } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { formatDate, formatMoney } from '@/utils/format';
+import { formatDate, formatMoney, formatCurrencyInputNoSymbol, parseCurrencyInput, sanitizeMoneyTyping } from '@/utils/format';
 import { useCustomersData } from '@/queries/unified';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useRecordPayment } from '@/hooks/useInvoiceOperations';
@@ -65,6 +65,7 @@ export default function InvoiceModal({
   const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'Check' | 'Card'>('Cash');
   const [paymentDate, setPaymentDate] = useState<Date>(new Date());
   const [paymentAmount, setPaymentAmount] = useState(0);
+  const [paymentAmountInput, setPaymentAmountInput] = useState('');
 
   const customerName = useMemo(() => {
     const customer = customers.find(c => c.id === (invoice?.customerId || customerId));
@@ -112,6 +113,7 @@ export default function InvoiceModal({
       setSubject(defaultSubject);
       setMessage('');
       setPaymentAmount(invoice.total);
+      setPaymentAmountInput(formatCurrencyInputNoSymbol(invoice.total));
       setPaymentDate(new Date());
       setPaymentMethod('Cash');
     } else if (open && !invoice && initialCustomerId) {
@@ -124,6 +126,7 @@ export default function InvoiceModal({
       setSubject('');
       setMessage('');
       setPaymentAmount(0);
+      setPaymentAmountInput('0.00');
       setPaymentDate(new Date());
       setPaymentMethod('Cash');
     }
@@ -327,11 +330,17 @@ export default function InvoiceModal({
             <Label htmlFor="paymentAmount">Payment Amount</Label>
             <Input
               id="paymentAmount"
-              type="number"
-              value={paymentAmount}
-              onChange={(e) => setPaymentAmount(Number(e.target.value))}
-              step="0.01"
-              min="0"
+              type="text"
+              value={paymentAmountInput}
+              onChange={(e) => {
+                const sanitized = sanitizeMoneyTyping(e.target.value);
+                setPaymentAmountInput(sanitized);
+                setPaymentAmount(parseCurrencyInput(sanitized));
+              }}
+              onBlur={() => {
+                setPaymentAmountInput(formatCurrencyInputNoSymbol(paymentAmount));
+              }}
+              placeholder="0.00"
             />
           </div>
 
