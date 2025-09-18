@@ -7,7 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Send, Eye, Edit3, DollarSign } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { CalendarIcon, Send, Eye, Edit3, DollarSign, Briefcase } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { formatDate, formatMoney, formatCurrencyInputNoSymbol, parseCurrencyInput, sanitizeMoneyTyping } from '@/utils/format';
@@ -15,12 +16,14 @@ import { useCustomersData } from '@/queries/unified';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useRecordPayment } from '@/hooks/useInvoiceOperations';
 import { useInvoicePayments } from '@/hooks/useInvoicePayments';
+import { useJobsData } from '@/hooks/useJobsData';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { invalidationHelpers, queryKeys } from '@/queries/keys';
 import { generateInvoiceEmail } from '@/utils/emailTemplateEngine';
 import { escapeHtml } from '@/utils/sanitize';
+import JobShowModal from '@/components/Jobs/JobShowModal';
 import type { Invoice } from '@/types';
 
 export interface InvoiceModalProps {
@@ -41,6 +44,7 @@ export default function InvoiceModal({
   onSuccess 
 }: InvoiceModalProps) {
   const { data: customers = [] } = useCustomersData();
+  const { data: jobs = [] } = useJobsData();
   const { business, businessName, businessLogoUrl, businessLightLogoUrl, businessId } = useBusinessContext();
   const { getToken } = useClerkAuth();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
@@ -49,6 +53,7 @@ export default function InvoiceModal({
 
   const [mode, setMode] = useState(initialMode);
   const [loading, setLoading] = useState(false);
+  const [showJobModal, setShowJobModal] = useState(false);
   
   const { data: payments = [] } = useInvoicePayments({ 
     invoiceId: invoice?.id,
@@ -82,6 +87,11 @@ export default function InvoiceModal({
     const customer = customers.find(c => c.id === (invoice?.customerId || customerId));
     return customer?.email || '';
   }, [customers, invoice?.customerId, customerId]);
+
+  const relatedJob = useMemo(() => {
+    if (!invoice?.jobId) return null;
+    return jobs.find(job => job.id === invoice.jobId) || null;
+  }, [jobs, invoice?.jobId]);
 
   // Email templates
   const defaultEmailHTML = useMemo(() => {
@@ -609,6 +619,38 @@ export default function InvoiceModal({
           )}
         </div>
 
+        {/* Work Order Section */}
+        {relatedJob && (
+          <div className="pt-2 border-t">
+            <div className="text-sm font-medium mb-2">Related Work Order</div>
+            <div className="bg-muted/30 rounded-md p-3">
+              <div className="flex items-center justify-between text-sm mb-2">
+                <span className="font-medium">{relatedJob.title || 'Work Order'}</span>
+                <Badge variant={relatedJob.status === 'Completed' ? 'default' : 'secondary'}>
+                  {relatedJob.status}
+                </Badge>
+              </div>
+              
+              {relatedJob.starts_at && (
+                <div className="flex items-center justify-between text-sm mt-1">
+                  <span className="text-muted-foreground">Scheduled</span>
+                  <span>{formatDate(relatedJob.starts_at)}</span>
+                </div>
+              )}
+              
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full mt-3"
+                onClick={() => setShowJobModal(true)}
+              >
+                <Briefcase className="h-4 w-4 mr-2" />
+                View Work Order Details
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Payment Information Section */}
         {payments.length > 0 && (
           <div className="pt-2 border-t">
@@ -711,21 +753,32 @@ export default function InvoiceModal({
   };
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[90vh]">
-        <DrawerHeader>
-          <DrawerTitle>{getModalTitle()}</DrawerTitle>
-          <DrawerDescription>{getModalDescription()}</DrawerDescription>
-        </DrawerHeader>
-        
-        <div className="px-4 pb-4">
-          {renderContent()}
-        </div>
-        
-        <DrawerFooter>
-          {renderActions()}
-        </DrawerFooter>
-      </DrawerContent>
-    </Drawer>
+    <>
+      <Drawer open={open} onOpenChange={onOpenChange}>
+        <DrawerContent className="max-h-[90vh]">
+          <DrawerHeader>
+            <DrawerTitle>{getModalTitle()}</DrawerTitle>
+            <DrawerDescription>{getModalDescription()}</DrawerDescription>
+          </DrawerHeader>
+          
+          <div className="px-4 pb-4">
+            {renderContent()}
+          </div>
+          
+          <DrawerFooter>
+            {renderActions()}
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+
+      {/* Job Show Modal */}
+      {relatedJob && (
+        <JobShowModal
+          job={relatedJob}
+          open={showJobModal}
+          onOpenChange={setShowJobModal}
+        />
+      )}
+    </>
   );
 }
