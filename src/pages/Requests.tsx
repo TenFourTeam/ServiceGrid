@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { Plus, Search, Share } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { formatDistanceToNow } from "date-fns";
 import AppLayout from "@/components/Layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -108,6 +109,38 @@ export default function Requests() {
     );
   };
 
+  // Request Card component for mobile view
+  function RequestCard({ request, onClick }: { request: RequestListItem; onClick: () => void }) {
+    return (
+      <div 
+        onClick={onClick}
+        className="p-4 border rounded-md bg-card shadow-sm cursor-pointer hover:bg-accent/30 transition-colors"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="font-medium truncate">{request.title}</div>
+            </div>
+            <div className="text-sm text-muted-foreground truncate">
+              Customer: {request.customer?.name || 'Unknown Customer'}
+            </div>
+            {request.property_address && (
+              <div className="text-sm text-muted-foreground truncate">{request.property_address}</div>
+            )}
+            <div className="text-sm text-muted-foreground mt-1">
+              {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
+            </div>
+          </div>
+          <div className="flex flex-col items-end gap-2">
+            {getStatusBadge(request.status)}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const isMobile = useIsMobile();
+
   if (error) {
     return (
       <AppLayout>
@@ -171,115 +204,163 @@ export default function Requests() {
             </div>
           </div>
 
-          {/* Requests Table */}
-          <Card>
-            <CardContent className="p-0">
-              {isLoading ? (
-                <div className="p-6 space-y-4">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="flex items-center space-x-4">
-                      <Skeleton className="h-4 w-32" />
-                      <Skeleton className="h-4 w-48" />
-                      <Skeleton className="h-4 w-24" />
-                      <Skeleton className="h-4 w-20" />
-                      <Skeleton className="h-4 w-16" />
-                    </div>
-                  ))}
-                </div>
-              ) : filteredRequests.length === 0 ? (
-                <div className="text-center py-12">
-                  <p className="text-muted-foreground text-lg">
-                    {searchQuery || selectedStatus !== "All" 
-                      ? "No requests match your filters"
-                      : "No requests yet"
-                    }
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    {!searchQuery && selectedStatus === "All" 
-                      ? "Create your first request to get started"
-                      : "Try adjusting your search or filters"
-                    }
-                  </p>
-                  {!searchQuery && selectedStatus === "All" && (
-                    <Button className="mt-4" onClick={() => setIsCreateModalOpen(true)}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      New Request
-                    </Button>
-                  )}
-                </div>
-              ) : (
-                  <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>
-                        <button className="flex items-center gap-1" onClick={() => handleSort('customer')} aria-label="Sort by customer">
-                          Customers{sortKey === 'customer' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
-                        </button>
-                      </TableHead>
-                      <TableHead>
-                        <button className="flex items-center gap-1" onClick={() => handleSort('title')} aria-label="Sort by title">
-                          Title{sortKey === 'title' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
-                        </button>
-                      </TableHead>
-                      <TableHead>
-                        <button className="flex items-center gap-1" onClick={() => handleSort('property')} aria-label="Sort by property">
-                          Property{sortKey === 'property' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
-                        </button>
-                      </TableHead>
-                      <TableHead>
-                        <button className="flex items-center gap-1" onClick={() => handleSort('contact')} aria-label="Sort by contact">
-                          Contact{sortKey === 'contact' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
-                        </button>
-                      </TableHead>
-                      <TableHead>
-                        <button className="flex items-center gap-1" onClick={() => handleSort('created')} aria-label="Sort by requested date">
-                          Requested{sortKey === 'created' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
-                        </button>
-                      </TableHead>
-                      <TableHead>
-                        <button className="flex items-center gap-1" onClick={() => handleSort('status')} aria-label="Sort by status">
-                          Status{sortKey === 'status' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
-                        </button>
-                      </TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredRequests.map((request) => (
-                      <TableRow
-                        key={request.id}
-                        className="cursor-pointer hover:bg-muted/50 transition-colors"
-                        onClick={() => {
-                          setSelectedRequest(request);
-                          setIsShowModalOpen(true);
-                        }}
-                      >
-                        <TableCell className="font-medium">
-                          {request.customer?.name || 'Unknown Customer'}
-                        </TableCell>
-                        <TableCell>{request.title}</TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {request.property_address || 'No address provided'}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {request.customer?.email || 'No email'}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
-                        </TableCell>
-                        <TableCell>
-                          {getStatusBadge(request.status)}
-                        </TableCell>
-                        <TableCell>
-                          <RequestActions request={request} />
-                        </TableCell>
-                      </TableRow>
+          {/* Requests Content */}
+          {isMobile ? (
+            // Mobile/Tablet Card View
+            <Card>
+              <CardContent className="p-3 space-y-3">
+                {isLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-20 w-full" />
+                    <Skeleton className="h-20 w-full" />
+                    <Skeleton className="h-20 w-full" />
+                  </div>
+                ) : filteredRequests.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground text-lg">
+                      {searchQuery || selectedStatus !== "All" 
+                        ? "No requests match your filters"
+                        : "No requests yet"
+                      }
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      {!searchQuery && selectedStatus === "All" 
+                        ? "Create your first request to get started"
+                        : "Try adjusting your search or filters"
+                      }
+                    </p>
+                    {!searchQuery && selectedStatus === "All" && (
+                      <Button className="mt-4" onClick={() => setIsCreateModalOpen(true)}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        New Request
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  filteredRequests.map((request) => (
+                    <RequestCard
+                      key={request.id}
+                      request={request}
+                      onClick={() => {
+                        setSelectedRequest(request);
+                        setIsShowModalOpen(true);
+                      }}
+                    />
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            // Desktop Table View
+            <Card>
+              <CardContent className="p-0">
+                {isLoading ? (
+                  <div className="p-6 space-y-4">
+                    {[...Array(5)].map((_, i) => (
+                      <div key={i} className="flex items-center space-x-4">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-4 w-48" />
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-4 w-20" />
+                        <Skeleton className="h-4 w-16" />
+                      </div>
                     ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
+                  </div>
+                ) : filteredRequests.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground text-lg">
+                      {searchQuery || selectedStatus !== "All" 
+                        ? "No requests match your filters"
+                        : "No requests yet"
+                      }
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      {!searchQuery && selectedStatus === "All" 
+                        ? "Create your first request to get started"
+                        : "Try adjusting your search or filters"
+                      }
+                    </p>
+                    {!searchQuery && selectedStatus === "All" && (
+                      <Button className="mt-4" onClick={() => setIsCreateModalOpen(true)}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        New Request
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                    <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>
+                          <button className="flex items-center gap-1" onClick={() => handleSort('customer')} aria-label="Sort by customer">
+                            Customers{sortKey === 'customer' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                          </button>
+                        </TableHead>
+                        <TableHead>
+                          <button className="flex items-center gap-1" onClick={() => handleSort('title')} aria-label="Sort by title">
+                            Title{sortKey === 'title' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                          </button>
+                        </TableHead>
+                        <TableHead>
+                          <button className="flex items-center gap-1" onClick={() => handleSort('property')} aria-label="Sort by property">
+                            Property{sortKey === 'property' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                          </button>
+                        </TableHead>
+                        <TableHead>
+                          <button className="flex items-center gap-1" onClick={() => handleSort('contact')} aria-label="Sort by contact">
+                            Contact{sortKey === 'contact' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                          </button>
+                        </TableHead>
+                        <TableHead>
+                          <button className="flex items-center gap-1" onClick={() => handleSort('created')} aria-label="Sort by requested date">
+                            Requested{sortKey === 'created' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                          </button>
+                        </TableHead>
+                        <TableHead>
+                          <button className="flex items-center gap-1" onClick={() => handleSort('status')} aria-label="Sort by status">
+                            Status{sortKey === 'status' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                          </button>
+                        </TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredRequests.map((request) => (
+                        <TableRow
+                          key={request.id}
+                          className="cursor-pointer hover:bg-muted/50 transition-colors"
+                          onClick={() => {
+                            setSelectedRequest(request);
+                            setIsShowModalOpen(true);
+                          }}
+                        >
+                          <TableCell className="font-medium">
+                            {request.customer?.name || 'Unknown Customer'}
+                          </TableCell>
+                          <TableCell>{request.title}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {request.property_address || 'No address provided'}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {request.customer?.email || 'No email'}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
+                          </TableCell>
+                          <TableCell>
+                            {getStatusBadge(request.status)}
+                          </TableCell>
+                          <TableCell>
+                            <RequestActions request={request} />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </AppLayout>
 

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import AppLayout from '@/components/Layout/AppLayout';
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -162,6 +163,40 @@ export default function QuotesPage() {
     }
   }, [location.search, navigate]);
 
+  // Quote Card component for mobile view
+  function QuoteCard({ quote, onClick }: { quote: QuoteListItem; onClick: () => void }) {
+    return (
+      <div 
+        onClick={onClick}
+        className={`p-4 border rounded-md bg-card shadow-sm cursor-pointer hover:bg-accent/30 transition-all duration-500 ${
+          highlightedQuoteId === quote.id 
+            ? 'animate-bounce bg-success/20 border-l-4 border-l-success scale-[1.03] shadow-xl ring-2 ring-success/30' 
+            : ''
+        }`}
+        data-quote-id={quote.id}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="font-medium truncate">#{quote.number}</div>
+              <div className="text-sm text-muted-foreground">{formatCurrency(quote.total)}</div>
+            </div>
+            <div className="text-sm text-muted-foreground truncate">
+              Customer: {getCustomerName(quote.customerId)}
+            </div>
+          </div>
+          <div className="flex flex-col items-end gap-2">
+            <Badge className={statusColors[quote.status]}>
+              {quote.status}
+            </Badge>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const isMobile = useIsMobile();
+
 
   return (
     <AppLayout title="Quotes">
@@ -181,95 +216,138 @@ export default function QuotesPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>
-                    <button className="flex items-center gap-1" onClick={() => handleSort('number')} aria-label="Sort by number">
-                      Number{sortKey === 'number' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
-                    </button>
-                  </TableHead>
-                  <TableHead>
-                    <button className="flex items-center gap-1" onClick={() => handleSort('customer')} aria-label="Sort by customer">
-                      Customer{sortKey === 'customer' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
-                    </button>
-                  </TableHead>
-                  <TableHead>
-                    <button className="flex items-center gap-1" onClick={() => handleSort('total')} aria-label="Sort by total">
-                      Total{sortKey === 'total' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
-                    </button>
-                  </TableHead>
-                  <TableHead>
-                    <button className="flex items-center gap-1" onClick={() => handleSort('status')} aria-label="Sort by status">
-                      Status{sortKey === 'status' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
-                    </button>
-                  </TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            {isMobile ? (
+              // Mobile/Tablet Card View
+              <div className="space-y-3">
                 {quotes.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="p-0">
-                      <div className="flex flex-col items-center justify-center py-16 px-4 text-center space-y-6">
-                        <div className="h-16 w-16 mx-auto rounded-full bg-muted flex items-center justify-center">
-                          <Receipt className="h-8 w-8 text-muted-foreground" />
-                        </div>
-                        <div className="space-y-2 max-w-md">
-                          <h3 className="text-xl font-semibold">Ready to create your first quote?</h3>
-                          <p className="text-muted-foreground">Send professional quotes to customers and convert them to jobs when approved. Get paid faster with integrated payment processing.</p>
-                        </div>
-                        <div className="flex flex-col sm:flex-row gap-2">
-                          <Button onClick={() => {
-                            setCreateModalOpen(true);
-                            setDetailsModalMode('create');
-                            setSelectedQuoteId(null);
-                          }} className="gap-2">
-                            <Receipt className="h-4 w-4" />
-                            Create Your First Quote
-                          </Button>
-                          <Button variant="outline" onClick={onboarding.openAddCustomer} size="sm" className="gap-1">
-                            <Users className="h-3 w-3" />
-                            Add Customer First
-                          </Button>
-                        </div>
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                  <div className="flex flex-col items-center justify-center py-16 px-4 text-center space-y-6">
+                    <div className="h-16 w-16 mx-auto rounded-full bg-muted flex items-center justify-center">
+                      <Receipt className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <div className="space-y-2 max-w-md">
+                      <h3 className="text-xl font-semibold">Ready to create your first quote?</h3>
+                      <p className="text-muted-foreground">Send professional quotes to customers and convert them to jobs when approved. Get paid faster with integrated payment processing.</p>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Button onClick={() => {
+                        setCreateModalOpen(true);
+                        setDetailsModalMode('create');
+                        setSelectedQuoteId(null);
+                      }} className="gap-2">
+                        <Receipt className="h-4 w-4" />
+                        Create Your First Quote
+                      </Button>
+                      <Button variant="outline" onClick={onboarding.openAddCustomer} size="sm" className="gap-1">
+                        <Users className="h-3 w-3" />
+                        Add Customer First
+                      </Button>
+                    </div>
+                  </div>
                 ) : (
                   sortedQuotes.map((quote) => (
-                  <TableRow 
-                    key={quote.id}
-                    data-quote-id={quote.id}
-                    className={`cursor-pointer hover:bg-muted/50 transition-all duration-500 ${
-                      highlightedQuoteId === quote.id 
-                        ? 'animate-bounce bg-success/20 border-l-4 border-l-success scale-[1.03] shadow-xl ring-2 ring-success/30' 
-                        : ''
-                    }`}
-                    onClick={() => {
-                      setSelectedQuoteId(quote.id);
-                      setDetailsModalMode('view');
-                    }}
-                  >
-                      <TableCell className="font-medium">{quote.number}</TableCell>
-                      <TableCell>{getCustomerName(quote.customerId)}</TableCell>
-                      <TableCell>{formatCurrency(quote.total)}</TableCell>
-                      <TableCell>
-                        <Badge className={statusColors[quote.status]}>
-                          {quote.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell onClick={(e) => e.stopPropagation()}>
-                        <QuoteActions 
-                          quote={quote} 
-                          onSendQuote={handleSendQuote}
-                        />
-                      </TableCell>
-                    </TableRow>
+                    <QuoteCard
+                      key={quote.id}
+                      quote={quote}
+                      onClick={() => {
+                        setSelectedQuoteId(quote.id);
+                        setDetailsModalMode('view');
+                      }}
+                    />
                   ))
                 )}
-              </TableBody>
-            </Table>
+              </div>
+            ) : (
+              // Desktop Table View
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>
+                      <button className="flex items-center gap-1" onClick={() => handleSort('number')} aria-label="Sort by number">
+                        Number{sortKey === 'number' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                      </button>
+                    </TableHead>
+                    <TableHead>
+                      <button className="flex items-center gap-1" onClick={() => handleSort('customer')} aria-label="Sort by customer">
+                        Customer{sortKey === 'customer' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                      </button>
+                    </TableHead>
+                    <TableHead>
+                      <button className="flex items-center gap-1" onClick={() => handleSort('total')} aria-label="Sort by total">
+                        Total{sortKey === 'total' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                      </button>
+                    </TableHead>
+                    <TableHead>
+                      <button className="flex items-center gap-1" onClick={() => handleSort('status')} aria-label="Sort by status">
+                        Status{sortKey === 'status' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                      </button>
+                    </TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {quotes.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="p-0">
+                        <div className="flex flex-col items-center justify-center py-16 px-4 text-center space-y-6">
+                          <div className="h-16 w-16 mx-auto rounded-full bg-muted flex items-center justify-center">
+                            <Receipt className="h-8 w-8 text-muted-foreground" />
+                          </div>
+                          <div className="space-y-2 max-w-md">
+                            <h3 className="text-xl font-semibold">Ready to create your first quote?</h3>
+                            <p className="text-muted-foreground">Send professional quotes to customers and convert them to jobs when approved. Get paid faster with integrated payment processing.</p>
+                          </div>
+                          <div className="flex flex-col sm:flex-row gap-2">
+                            <Button onClick={() => {
+                              setCreateModalOpen(true);
+                              setDetailsModalMode('create');
+                              setSelectedQuoteId(null);
+                            }} className="gap-2">
+                              <Receipt className="h-4 w-4" />
+                              Create Your First Quote
+                            </Button>
+                            <Button variant="outline" onClick={onboarding.openAddCustomer} size="sm" className="gap-1">
+                              <Users className="h-3 w-3" />
+                              Add Customer First
+                            </Button>
+                          </div>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    sortedQuotes.map((quote) => (
+                    <TableRow 
+                      key={quote.id}
+                      data-quote-id={quote.id}
+                      className={`cursor-pointer hover:bg-muted/50 transition-all duration-500 ${
+                        highlightedQuoteId === quote.id 
+                          ? 'animate-bounce bg-success/20 border-l-4 border-l-success scale-[1.03] shadow-xl ring-2 ring-success/30' 
+                          : ''
+                      }`}
+                      onClick={() => {
+                        setSelectedQuoteId(quote.id);
+                        setDetailsModalMode('view');
+                      }}
+                    >
+                        <TableCell className="font-medium">{quote.number}</TableCell>
+                        <TableCell>{getCustomerName(quote.customerId)}</TableCell>
+                        <TableCell>{formatCurrency(quote.total)}</TableCell>
+                        <TableCell>
+                          <Badge className={statusColors[quote.status]}>
+                            {quote.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <QuoteActions 
+                            quote={quote} 
+                            onSendQuote={handleSendQuote}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       </section>

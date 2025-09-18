@@ -10,6 +10,7 @@ import { CustomerBottomModal } from '@/components/Customers/CustomerBottomModal'
 import { CustomerSearchFilter } from '@/components/Customers/CustomerSearchFilter';
 import { useState, useMemo, useEffect } from "react";
 import { useCustomersData } from '@/queries/unified';
+import { useIsMobile } from "@/hooks/use-mobile";
 import { SimpleCSVImport } from '@/components/Onboarding/SimpleCSVImport';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useCustomerOperations } from '@/hooks/useCustomerOperations';
@@ -186,6 +187,37 @@ export default function CustomersPage() {
     }
   };
 
+  // Customer Card component for mobile view
+  function CustomerCard({ customer, onClick, isSelected, onSelect }: { 
+    customer: any; 
+    onClick: () => void; 
+    isSelected: boolean;
+    onSelect: (checked: boolean) => void;
+  }) {
+    return (
+      <div className="p-4 border rounded-md bg-card shadow-sm">
+        <div className="flex items-center gap-3">
+          <div onClick={(e) => e.stopPropagation()}>
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={onSelect}
+            />
+          </div>
+          <div 
+            onClick={onClick}
+            className="min-w-0 flex-1 cursor-pointer hover:bg-accent/30 transition-colors rounded p-2 -m-2"
+          >
+            <div className="font-medium truncate">{customer.name}</div>
+            <div className="text-sm text-muted-foreground truncate">{customer.email || ''}</div>
+            <div className="text-sm text-muted-foreground truncate">{customer.phone || ''}</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const isMobile = useIsMobile();
+
   return (
     <AppLayout title="Customers">
       <section className="space-y-4">
@@ -242,66 +274,82 @@ export default function CustomersPage() {
                 <div className="text-destructive">Error loading customers: {error.message}</div>
               ) : rows.length > 0 ? (
                 <CustomerErrorBoundary>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-12">
-                          <Checkbox
-                            checked={selectedCustomers.size === filteredAndSortedCustomers.length && filteredAndSortedCustomers.length > 0}
-                            onCheckedChange={handleSelectAll}
-                          />
-                        </TableHead>
-                        <TableHead 
-                          className="cursor-pointer hover:bg-muted/50 select-none"
-                          onClick={() => handleSort('name')}
-                        >
-                          <div className="flex items-center">
-                            Name
-                            {getSortIcon('name')}
-                          </div>
-                        </TableHead>
-                        <TableHead 
-                          className="cursor-pointer hover:bg-muted/50 select-none"
-                          onClick={() => handleSort('email')}
-                        >
-                          <div className="flex items-center">
-                            Email
-                            {getSortIcon('email')}
-                          </div>
-                        </TableHead>
-                        <TableHead 
-                          className="cursor-pointer hover:bg-muted/50 select-none"
-                          onClick={() => handleSort('phone')}
-                        >
-                          <div className="flex items-center">
-                            Phone
-                            {getSortIcon('phone')}
-                          </div>
-                        </TableHead>
-                        <TableHead>Address</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                  {isMobile ? (
+                    // Mobile/Tablet Card View
+                    <div className="space-y-3">
                       {rows.map((c) => (
-                        <TableRow 
+                        <CustomerCard
                           key={c.id}
-                          className="cursor-pointer hover:bg-muted/50 transition-colors"
+                          customer={c}
                           onClick={() => openEdit(c)}
-                        >
-                          <TableCell onClick={(e) => e.stopPropagation()}>
-                            <Checkbox
-                              checked={selectedCustomers.has(c.id)}
-                              onCheckedChange={(checked) => handleSelectCustomer(c.id, checked as boolean)}
-                            />
-                          </TableCell>
-                          <TableCell>{c.name}</TableCell>
-                          <TableCell>{c.email ?? ''}</TableCell>
-                          <TableCell>{c.phone ?? ''}</TableCell>
-                          <TableCell>{c.address ?? ''}</TableCell>
-                        </TableRow>
+                          isSelected={selectedCustomers.has(c.id)}
+                          onSelect={(checked) => handleSelectCustomer(c.id, checked)}
+                        />
                       ))}
-                    </TableBody>
-                  </Table>
+                    </div>
+                  ) : (
+                    // Desktop Table View
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-12">
+                            <Checkbox
+                              checked={selectedCustomers.size === filteredAndSortedCustomers.length && filteredAndSortedCustomers.length > 0}
+                              onCheckedChange={handleSelectAll}
+                            />
+                          </TableHead>
+                          <TableHead 
+                            className="cursor-pointer hover:bg-muted/50 select-none"
+                            onClick={() => handleSort('name')}
+                          >
+                            <div className="flex items-center">
+                              Name
+                              {getSortIcon('name')}
+                            </div>
+                          </TableHead>
+                          <TableHead 
+                            className="cursor-pointer hover:bg-muted/50 select-none"
+                            onClick={() => handleSort('email')}
+                          >
+                            <div className="flex items-center">
+                              Email
+                              {getSortIcon('email')}
+                            </div>
+                          </TableHead>
+                          <TableHead 
+                            className="cursor-pointer hover:bg-muted/50 select-none"
+                            onClick={() => handleSort('phone')}
+                          >
+                            <div className="flex items-center">
+                              Phone
+                              {getSortIcon('phone')}
+                            </div>
+                          </TableHead>
+                          <TableHead>Address</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {rows.map((c) => (
+                          <TableRow 
+                            key={c.id}
+                            className="cursor-pointer hover:bg-muted/50 transition-colors"
+                            onClick={() => openEdit(c)}
+                          >
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <Checkbox
+                                checked={selectedCustomers.has(c.id)}
+                                onCheckedChange={(checked) => handleSelectCustomer(c.id, checked as boolean)}
+                              />
+                            </TableCell>
+                            <TableCell>{c.name}</TableCell>
+                            <TableCell>{c.email ?? ''}</TableCell>
+                            <TableCell>{c.phone ?? ''}</TableCell>
+                            <TableCell>{c.address ?? ''}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
                 </CustomerErrorBoundary>
               ) : !searchQuery && customers?.length === 0 ? (
                 <div className="text-center py-12">

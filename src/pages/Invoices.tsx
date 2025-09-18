@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { formatDate, formatMoney } from '@/utils/format';
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
+import { useIsMobile } from "@/hooks/use-mobile";
 import InvoiceModal from '@/components/Invoices/InvoiceModal';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Send, Download } from 'lucide-react';
@@ -202,6 +203,37 @@ export default function InvoicesPage() {
     document.body.removeChild(link);
   };
 
+  // Invoice Card component for mobile view
+  function InvoiceCard({ invoice, onClick }: { invoice: any; onClick: () => void }) {
+    const customer = customers.find(c => c.id === invoice.customerId);
+    return (
+      <div 
+        onClick={onClick}
+        className="p-4 border rounded-md bg-card shadow-sm cursor-pointer hover:bg-accent/30 transition-colors"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="font-medium truncate">#{invoice.number}</div>
+              <div className="text-sm text-muted-foreground">{formatMoney(invoice.total)}</div>
+            </div>
+            <div className="text-sm text-muted-foreground truncate">
+              Customer: {customer?.name || 'Unknown'}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Due: {formatDate(invoice.dueAt)}
+            </div>
+          </div>
+          <div className="flex flex-col items-end gap-2">
+            <div className="text-sm font-medium">{invoice.status}</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const isMobile = useIsMobile();
+
 
   return (
     <AppLayout title="Invoices">
@@ -244,61 +276,84 @@ export default function InvoicesPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>
-                    <button className="flex items-center gap-1" onClick={() => requestSort('number')} aria-label="Sort by number">
-                      Number{sortKey === 'number' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
-                    </button>
-                </TableHead>
-                <TableHead>
-                    <button className="flex items-center gap-1" onClick={() => requestSort('customer')} aria-label="Sort by customer">
-                      Customer{sortKey === 'customer' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
-                    </button>
-                </TableHead>
-                <TableHead>
-                    <button className="flex items-center gap-1" onClick={() => requestSort('amount')} aria-label="Sort by amount">
-                      Amount{sortKey === 'amount' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
-                    </button>
-                </TableHead>
-                <TableHead>
-                    <button className="flex items-center gap-1" onClick={() => requestSort('issued')} aria-label="Sort by issued date">
-                      Issued{sortKey === 'issued' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
-                    </button>
-                </TableHead>
-                <TableHead>
-                    <button className="flex items-center gap-1" onClick={() => requestSort('due')} aria-label="Sort by due date">
-                      Due{sortKey === 'due' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
-                    </button>
-                </TableHead>
-                <TableHead>
-                    <button className="flex items-center gap-1" onClick={() => requestSort('status')} aria-label="Sort by status">
-                       Status{sortKey === 'status' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
-                    </button>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedInvoices.map((i)=> (
-                <TableRow 
-                  key={i.id} 
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => {
-                    setSelectedInvoice(i.id);
-                    setModalMode('view');
-                  }}
-                >
-                  <TableCell>{i.number}</TableCell>
-                  <TableCell>{customers.find(c=>c.id===i.customerId)?.name}</TableCell>
-                  <TableCell>{formatMoney(i.total)}</TableCell>
-                  <TableCell>{formatDate(i.createdAt)}</TableCell>
-                  <TableCell>{formatDate(i.dueAt)}</TableCell>
-                  <TableCell>{i.status}</TableCell>
+          {isMobile ? (
+            // Mobile/Tablet Card View
+            <div className="space-y-3">
+              {sortedInvoices.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground text-lg">No invoices found</p>
+                </div>
+              ) : (
+                sortedInvoices.map((i) => (
+                  <InvoiceCard
+                    key={i.id}
+                    invoice={i}
+                    onClick={() => {
+                      setSelectedInvoice(i.id);
+                      setModalMode('view');
+                    }}
+                  />
+                ))
+              )}
+            </div>
+          ) : (
+            // Desktop Table View
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>
+                      <button className="flex items-center gap-1" onClick={() => requestSort('number')} aria-label="Sort by number">
+                        Number{sortKey === 'number' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                      </button>
+                  </TableHead>
+                  <TableHead>
+                      <button className="flex items-center gap-1" onClick={() => requestSort('customer')} aria-label="Sort by customer">
+                        Customer{sortKey === 'customer' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                      </button>
+                  </TableHead>
+                  <TableHead>
+                      <button className="flex items-center gap-1" onClick={() => requestSort('amount')} aria-label="Sort by amount">
+                        Amount{sortKey === 'amount' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                      </button>
+                  </TableHead>
+                  <TableHead>
+                      <button className="flex items-center gap-1" onClick={() => requestSort('issued')} aria-label="Sort by issued date">
+                        Issued{sortKey === 'issued' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                      </button>
+                  </TableHead>
+                  <TableHead>
+                      <button className="flex items-center gap-1" onClick={() => requestSort('due')} aria-label="Sort by due date">
+                        Due{sortKey === 'due' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                      </button>
+                  </TableHead>
+                  <TableHead>
+                      <button className="flex items-center gap-1" onClick={() => requestSort('status')} aria-label="Sort by status">
+                         Status{sortKey === 'status' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                      </button>
+                  </TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {sortedInvoices.map((i)=> (
+                  <TableRow 
+                    key={i.id} 
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => {
+                      setSelectedInvoice(i.id);
+                      setModalMode('view');
+                    }}
+                  >
+                    <TableCell>{i.number}</TableCell>
+                    <TableCell>{customers.find(c=>c.id===i.customerId)?.name}</TableCell>
+                    <TableCell>{formatMoney(i.total)}</TableCell>
+                    <TableCell>{formatDate(i.createdAt)}</TableCell>
+                    <TableCell>{formatDate(i.dueAt)}</TableCell>
+                    <TableCell>{i.status}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
       <InvoiceModal
