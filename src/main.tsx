@@ -28,12 +28,7 @@ function Boot() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  console.log('[Boot] Rendering with state:', { key: key ? 'present' : 'null', error, isLoading });
-
   useEffect(() => {
-    let mounted = true; // Prevent state updates if component unmounts
-    
-    console.log('[Boot] useEffect triggered, fetching clerk key');
     fetch('https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/clerk-publishable-key')
       .then(async (res) => {
         if (!res.ok) {
@@ -43,46 +38,23 @@ function Boot() {
         }
         return res.json();
       })
-      .then((data) => {
-        console.log('[Boot] Got clerk key successfully');
-        if (mounted) {
-          setKey(data.publishableKey || null);
-        }
-      })
-      .catch((e) => {
-        console.error('[Boot] Error fetching clerk key:', e);
-        if (mounted) {
-          setError(e.message || 'Failed to load Clerk key');
-        }
-      })
-      .finally(() => {
-        console.log('[Boot] Finished loading');
-        if (mounted) {
-          setIsLoading(false);
-        }
-      });
-
-    return () => {
-      mounted = false;
-    };
+      .then((data) => setKey(data.publishableKey || null))
+      .catch((e) => setError(e.message || 'Failed to load Clerk key'))
+      .finally(() => setIsLoading(false));
   }, []);
 
   if (isLoading) {
-    console.log('[Boot] Showing loading screen');
     return <LoadingScreen />;
   }
 
   if (error) {
-    console.log('[Boot] Showing error screen:', error);
     return <ErrorScreen message={error} />;
   }
 
   if (!key) {
-    console.log('[Boot] No key found, showing config error');
     return <ErrorScreen message="Missing authentication configuration" />;
   }
 
-  console.log('[Boot] Rendering App component');
   return <App clerkKey={key} />;
 }
 

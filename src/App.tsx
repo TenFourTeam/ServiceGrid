@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect, useMemo } from "react";
+import React, { Suspense, lazy, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import { BrowserRouter } from "react-router-dom";
 import { ClerkProvider, ClerkLoaded, ClerkLoading } from "@clerk/clerk-react";
@@ -67,96 +67,92 @@ interface AppProps {
   clerkKey: string;
 }
 
-const App = ({ clerkKey }: AppProps) => {
-  console.log('[App] Rendering with clerkKey:', clerkKey ? 'present' : 'missing');
-  
-  return (
-    <ClerkProvider publishableKey={clerkKey}>
-      <BrowserRouter>
-        <ClerkLoaded>
-          <AppProviders>
-            <QueryClientClerkIntegration />
-            <ErrorBoundary>
-              <Suspense fallback={<LoadingScreen />}>
-                <PrefetchRoutes />
-                <Routes>
-                  {/* Public routes */}
-                  <Route element={<PublicOnly redirectTo="/calendar" />}>
-                    <Route path="/" element={<LandingPage />} />
-                  </Route>
+const App = ({ clerkKey }: AppProps) => (
+  <ClerkProvider publishableKey={clerkKey}>
+    <BrowserRouter>
+      <ClerkLoaded>
+        <AppProviders>
+          <QueryClientClerkIntegration />
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingScreen />}>
+              <PrefetchRoutes />
+              <Routes>
+                {/* Public routes */}
+                <Route element={<PublicOnly redirectTo="/calendar" />}>
+                  <Route path="/" element={<LandingPage />} />
+                </Route>
+                
+                {/* Protected routes */}
+                <Route element={<RequireAuth />}>
+                  {/* Routes accessible to both owners and workers */}
+                  <Route path="/calendar" element={<CalendarPage />} />
+                  <Route path="/timesheet" element={<TimesheetPage />} />
                   
-                  {/* Protected routes */}
-                  <Route element={<RequireAuth />}>
-                    {/* Routes accessible to both owners and workers */}
-                    <Route path="/calendar" element={<CalendarPage />} />
-                    <Route path="/timesheet" element={<TimesheetPage />} />
-                    
-                    {/* Owner-only routes */}
-                    <Route path="/team" element={
-                      <RequireRole role="owner">
-                        <TeamPage />
-                      </RequireRole>
-                    } />
-                    <Route path="/team/member/:userId" element={
-                      <RequireRole role="owner">
-                        <MemberTimesheetPage />
-                      </RequireRole>
-                    } />
-                    
-                    {/* Owner-only routes */}
-                    <Route path="/work-orders" element={
-                      <RequireRole role="owner">
-                        <WorkOrdersPage />
-                      </RequireRole>
-                    } />
-                    <Route path="/quotes" element={
-                      <RequireRole role="owner">
-                        <QuotesPage />
-                      </RequireRole>
-                    } />
-                    <Route path="/invoices" element={
-                      <RequireRole role="owner">
-                        <InvoicesPage />
-                      </RequireRole>
-                    } />
-                    <Route path="/customers" element={
-                      <RequireRole role="owner">
-                        <CustomersPage />
-                      </RequireRole>
-                    } />
-                    <Route path="/requests" element={
-                      <RequireRole role="owner">
-                        <RequestsPage />
-                      </RequireRole>
-                    } />
-                    <Route path="/settings" element={<SettingsPage />} />
-                    <Route path="/referral" element={<ReferralPage />} />
-                    <Route path="/legal" element={<LegalPage />} />
-                    <Route path="/legal/:slug" element={<LegalDocument />} />
-                  </Route>
+                  {/* Owner-only routes */}
+                  <Route path="/team" element={
+                    <RequireRole role="owner">
+                      <TeamPage />
+                    </RequireRole>
+                  } />
+                  <Route path="/team/member/:userId" element={
+                    <RequireRole role="owner">
+                      <MemberTimesheetPage />
+                    </RequireRole>
+                  } />
+                  
+                  {/* Owner-only routes */}
+                  <Route path="/work-orders" element={
+                    <RequireRole role="owner">
+                      <WorkOrdersPage />
+                    </RequireRole>
+                  } />
+                  <Route path="/quotes" element={
+                    <RequireRole role="owner">
+                      <QuotesPage />
+                    </RequireRole>
+                  } />
+                  <Route path="/invoices" element={
+                    <RequireRole role="owner">
+                      <InvoicesPage />
+                    </RequireRole>
+                  } />
+                  <Route path="/customers" element={
+                    <RequireRole role="owner">
+                      <CustomersPage />
+                    </RequireRole>
+                  } />
+                  <Route path="/requests" element={
+                    <RequireRole role="owner">
+                      <RequestsPage />
+                    </RequireRole>
+                  } />
+                  <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/referral" element={<ReferralPage />} />
+                  <Route path="/legal" element={<LegalPage />} />
+                  <Route path="/legal/:slug" element={<LegalDocument />} />
+                </Route>
 
-                  {/* Public pages that don't require auth checks */}
-                  <Route path="/clerk-auth" element={<ClerkAuthPage />} />
-                  <Route path="/quote-action" element={<QuoteActionPage />} />
-                  <Route path="/quote/:token" element={<QuoteViewerPage />} />
-                  <Route path="/payment-success" element={<PaymentSuccessPage />} />
-                  <Route path="/payment-canceled" element={<PaymentCanceledPage />} />
-                  <Route path="/invoice-pay" element={<InvoicePayPage />} />
-                  <Route path="/invite" element={<InvitePage />} />
-                  <Route path="/request/:businessId" element={<PublicRequestFormPage />} />
-                  
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Suspense>
-            </ErrorBoundary>
-          </AppProviders>
-        </ClerkLoaded>
-        <ClerkLoading>
-          <LoadingScreen full />
-        </ClerkLoading>
-      </BrowserRouter>
-    </ClerkProvider>
-  );
-};
+                {/* Public pages that don't require auth checks */}
+                <Route path="/clerk-auth" element={<ClerkAuthPage />} />
+                <Route path="/quote-action" element={<QuoteActionPage />} />
+                <Route path="/quote/:token" element={<QuoteViewerPage />} />
+                <Route path="/payment-success" element={<PaymentSuccessPage />} />
+                <Route path="/payment-canceled" element={<PaymentCanceledPage />} />
+                <Route path="/invoice-pay" element={<InvoicePayPage />} />
+                <Route path="/invite" element={<InvitePage />} />
+                <Route path="/request/:businessId" element={<PublicRequestFormPage />} />
+                
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </ErrorBoundary>
+        </AppProviders>
+      </ClerkLoaded>
+      <ClerkLoading>
+        <LoadingScreen full />
+      </ClerkLoading>
+    </BrowserRouter>
+  </ClerkProvider>
+);
 
 export default App;
