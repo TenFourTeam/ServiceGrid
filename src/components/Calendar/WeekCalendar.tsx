@@ -174,7 +174,7 @@ const minuteOfDayFromAnchorOffset = (offset: number) => {
 
   async function createInvoiceFromJob(jobId: string) {
     try {
-      const { data, error } = await authApi.invoke('invoices-crud', {
+      const { data: response, error } = await authApi.invoke('invoices-crud', {
         method: 'POST',
         body: { jobId },
         toast: {
@@ -186,6 +186,20 @@ const minuteOfDayFromAnchorOffset = (offset: number) => {
       
       if (error) {
         throw new Error(error.message || 'Failed to create invoice');
+      }
+
+      // Optimistic update - add invoice to cache immediately
+      if (response?.invoice && businessId) {
+        queryClient.setQueryData(queryKeys.data.invoices(businessId), (oldData: any) => {
+          if (oldData) {
+            return {
+              ...oldData,
+              invoices: [response.invoice, ...oldData.invoices],
+              count: oldData.count + 1
+            };
+          }
+          return { invoices: [response.invoice], count: 1 };
+        });
       }
     } catch (e: any) {
       console.error(e);

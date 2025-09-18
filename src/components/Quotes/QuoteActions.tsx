@@ -6,6 +6,9 @@ import { toast } from 'sonner';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useLifecycleEmailIntegration } from '@/hooks/useLifecycleEmailIntegration';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/queries/keys';
 import type { QuoteListItem } from '@/types';
 
 interface QuoteActionsProps {
@@ -16,6 +19,8 @@ interface QuoteActionsProps {
 export function QuoteActions({ quote, onSendQuote }: QuoteActionsProps) {
   const navigate = useNavigate();
   const { getToken } = useClerkAuth();
+  const { businessId } = useBusinessContext();
+  const queryClient = useQueryClient();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const { triggerJobScheduled, triggerInvoiceSent } = useLifecycleEmailIntegration();
 
@@ -74,6 +79,20 @@ export function QuoteActions({ quote, onSendQuote }: QuoteActionsProps) {
           onSuccess: triggerInvoiceSent
         }
       });
+
+      // Optimistic update - add invoice to cache immediately
+      if (result?.invoice && businessId) {
+        queryClient.setQueryData(queryKeys.data.invoices(businessId), (oldData: any) => {
+          if (oldData) {
+            return {
+              ...oldData,
+              invoices: [result.invoice, ...oldData.invoices],
+              count: oldData.count + 1
+            };
+          }
+          return { invoices: [result.invoice], count: 1 };
+        });
+      }
 
       if (result) {
         navigate('/invoices');

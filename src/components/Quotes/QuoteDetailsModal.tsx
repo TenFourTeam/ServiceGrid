@@ -294,6 +294,20 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
         }
       });
 
+      // Optimistic update - add invoice to cache immediately
+      if (result?.invoice && businessId) {
+        queryClient.setQueryData(queryKeys.data.invoices(businessId), (oldData: any) => {
+          if (oldData) {
+            return {
+              ...oldData,
+              invoices: [result.invoice, ...oldData.invoices],
+              count: oldData.count + 1
+            };
+          }
+          return { invoices: [result.invoice], count: 1 };
+        });
+      }
+
       if (result) {
         onOpenChange(false);
         navigate('/invoices');

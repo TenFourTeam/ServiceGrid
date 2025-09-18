@@ -18,7 +18,7 @@ import { useInvoicePayments } from '@/hooks/useInvoicePayments';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { invalidationHelpers } from '@/queries/keys';
+import { invalidationHelpers, queryKeys } from '@/queries/keys';
 import { generateInvoiceEmail } from '@/utils/emailTemplateEngine';
 import { escapeHtml } from '@/utils/sanitize';
 import type { Invoice } from '@/types';
@@ -165,7 +165,7 @@ export default function InvoiceModal({
         });
       } else {
         // Create new invoice
-        await authApi.invoke('invoices-crud', {
+        const { data: response } = await authApi.invoke('invoices-crud', {
           method: 'POST',
           body: data,
           toast: {
@@ -174,6 +174,20 @@ export default function InvoiceModal({
             error: 'Failed to create invoice'
           }
         });
+
+        // Optimistic update - add invoice to cache immediately
+        if (response?.invoice && businessId) {
+          queryClient.setQueryData(queryKeys.data.invoices(businessId), (oldData: any) => {
+            if (oldData) {
+              return {
+                ...oldData,
+                invoices: [response.invoice, ...oldData.invoices],
+                count: oldData.count + 1
+              };
+            }
+            return { invoices: [response.invoice], count: 1 };
+          });
+        }
       }
 
       invalidationHelpers.invoices(queryClient, businessId);

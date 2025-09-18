@@ -92,7 +92,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
       setIsCreatingInvoice(true);
       
       try {
-        await authApi.invoke('invoices-crud', {
+        const { data: response } = await authApi.invoke('invoices-crud', {
           method: 'POST',
           body: { 
             customerId: job.customerId,
@@ -108,6 +108,20 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
             error: 'Failed to create invoice'
           }
         });
+
+        // Optimistic update - add invoice to cache immediately
+        if (response?.invoice && businessId) {
+          queryClient.setQueryData(queryKeys.data.invoices(businessId), (oldData: any) => {
+            if (oldData) {
+              return {
+                ...oldData,
+                invoices: [response.invoice, ...oldData.invoices],
+                count: oldData.count + 1
+              };
+            }
+            return { invoices: [response.invoice], count: 1 };
+          });
+        }
         
         if (businessId) {
           invalidationHelpers.jobs(queryClient, businessId);
@@ -131,7 +145,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
     setIsCreatingInvoice(true);
     
     try {
-      await authApi.invoke('invoices-crud', {
+      const { data: response } = await authApi.invoke('invoices-crud', {
         method: 'POST',
         body: { quoteId: currentQuoteId },
         toast: {
@@ -140,6 +154,20 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
           error: 'Failed to create invoice'
         }
       });
+
+      // Optimistic update - add invoice to cache immediately
+      if (response?.invoice && businessId) {
+        queryClient.setQueryData(queryKeys.data.invoices(businessId), (oldData: any) => {
+          if (oldData) {
+            return {
+              ...oldData,
+              invoices: [response.invoice, ...oldData.invoices],
+              count: oldData.count + 1
+            };
+          }
+          return { invoices: [response.invoice], count: 1 };
+        });
+      }
       
       if (businessId) {
         invalidationHelpers.jobs(queryClient, businessId);
