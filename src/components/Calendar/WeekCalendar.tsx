@@ -4,6 +4,7 @@ import { useJobsData, useCustomersData } from '@/queries/unified';
 import { clamp, formatDateTime, minutesSinceStartOfDay } from '@/utils/format';
 import { safeCreateDate, safeToISOString, filterJobsWithValidDates } from '@/utils/validation';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { useIsPhone } from '@/hooks/use-phone';
 import { queryKeys } from '@/queries/keys';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -47,6 +48,7 @@ export function WeekCalendar({
   const { data: customers } = useCustomersData();
   const { businessId, userId, role } = useBusinessContext();
   const queryClient = useQueryClient();
+  const isPhone = useIsPhone();
   
   // Initialize automatic job status management
   const { checkAndUpdateJobStatuses } = useJobStatusManager();
@@ -77,9 +79,38 @@ export function WeekCalendar({
     monday.setHours(0, 0, 0, 0);
     return monday;
   });
-  const days = Array.from({
-    length: 7
-  }, (_, i) => new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + i));
+  const days = useMemo(() => {
+    if (isPhone) {
+      // For phones: show 3 days centered around the current date
+      const centerDate = new Date(weekStart);
+      const today = new Date();
+      
+      // If the week contains today, center around today
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+      
+      if (today >= weekStart && today <= weekEnd) {
+        // Center around today, but ensure we don't go outside the current week
+        const dayOfWeek = today.getDay();
+        const mondayOffset = (dayOfWeek + 6) % 7; // Days since Monday
+        
+        let startOffset = Math.max(0, Math.min(4, mondayOffset - 1)); // Show 1 day before, but stay within week
+        return Array.from({ length: 3 }, (_, i) => 
+          new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + startOffset + i)
+        );
+      } else {
+        // If current week doesn't contain today, show first 3 days of the week
+        return Array.from({ length: 3 }, (_, i) => 
+          new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + i)
+        );
+      }
+    } else {
+      // For tablets and desktop: show full week (7 days)
+      return Array.from({ length: 7 }, (_, i) => 
+        new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + i)
+      );
+    }
+  }, [weekStart, isPhone]);
 
   const weekEnd = useMemo(() => {
     const d = new Date(weekStart);
@@ -482,7 +513,11 @@ function onDragStart(e: React.PointerEvent, job: Job) {
       <div className="w-full">
         <div className="px-2 md:px-0">
           {/* Day headers */}
-          <div className="grid grid-cols-[48px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] md:grid-cols-[64px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-1 mb-2">
+          <div className={`gap-1 mb-2 ${
+            isPhone 
+              ? 'grid grid-cols-[40px_repeat(3,minmax(0,1fr))]' 
+              : 'grid grid-cols-[48px_repeat(7,minmax(0,1fr))] md:grid-cols-[64px_repeat(7,minmax(0,1fr))]'
+          }`}>
             <div />
             {days.map(day => {
             const isToday = isSameDay(day, now);
@@ -502,7 +537,11 @@ function onDragStart(e: React.PointerEvent, job: Job) {
           </div>
 
           {/* Calendar grid */}
-          <div className="grid grid-cols-[48px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] md:grid-cols-[64px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-1">
+          <div className={`gap-1 ${
+            isPhone 
+              ? 'grid grid-cols-[40px_repeat(3,minmax(0,1fr))]' 
+              : 'grid grid-cols-[48px_repeat(7,minmax(0,1fr))] md:grid-cols-[64px_repeat(7,minmax(0,1fr))]'
+          }`}>
             <div className="text-xs text-muted-foreground">
               {Array.from({ length: 25 }, (_, i) => (START_ANCHOR_HOUR + i) % 24).map(h => (
                 <div key={h + '-' + Math.random()} className="h-12 md:h-16 pr-1 md:pr-2 text-right text-xs">{h}:00</div>

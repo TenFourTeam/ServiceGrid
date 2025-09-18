@@ -10,6 +10,7 @@ import { addMonths, startOfDay, addDays, format, startOfWeek, endOfWeek } from "
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useJobsData } from "@/hooks/useJobsData";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsPhone } from "@/hooks/use-phone";
 type CalendarDisplayMode = 'scheduled' | 'clocked' | 'combined';
 
 export default function CalendarShell({
@@ -22,6 +23,7 @@ export default function CalendarShell({
   const [date, setDate] = useState<Date>(startOfDay(new Date()));
   const { data: jobs, refetch: refetchJobs } = useJobsData();
   const isMobile = useIsMobile();
+  const isPhone = useIsPhone();
   
   const month = useMemo(() => new Date(date), [date]);
   const rangeTitle = useMemo(() => {
@@ -36,8 +38,17 @@ export default function CalendarShell({
 
   // Keyboard shortcuts: 1/2/3 to switch views, T for today, arrows to navigate
   const stepDate = useCallback((dir: 1 | -1) => {
-    if (view === "month") setDate(addMonths(date, dir));else if (view === "week") setDate(addDays(date, 7 * dir));else setDate(addDays(date, dir));
-  }, [date, view]);
+    if (view === "month") {
+      setDate(addMonths(date, dir));
+    } else if (view === "week") {
+      // For phone in week view, navigate by 1 day to slide the 3-day window
+      // For tablet/desktop, navigate by full week (7 days)
+      const step = (isPhone && view === "week") ? 1 : 7;
+      setDate(addDays(date, step * dir));
+    } else {
+      setDate(addDays(date, dir));
+    }
+  }, [date, view, isPhone]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement)?.tagName === 'INPUT' || (e.target as HTMLElement)?.tagName === 'TEXTAREA') return;
@@ -54,40 +65,71 @@ export default function CalendarShell({
   return <div className="flex-1 min-h-0 flex flex-col gap-2 md:gap-4">
         <header className="flex flex-col gap-3 md:gap-0 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center justify-between md:gap-3">
-            <h2 className="text-lg md:text-base font-semibold">{rangeTitle}</h2>
+            <h2 className={`font-semibold ${isPhone ? 'text-base' : 'text-lg md:text-base'}`}>
+              {rangeTitle}
+            </h2>
             {isMobile && (
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="icon" aria-label="Previous" onClick={() => stepDate(-1)}>
+              <div className="flex items-center gap-1">
+                <Button 
+                  variant="outline" 
+                  size={isPhone ? "sm" : "icon"} 
+                  aria-label="Previous" 
+                  onClick={() => stepDate(-1)}
+                  className={isPhone ? "px-2" : ""}
+                >
                   <ChevronLeft className="h-4 w-4" />
+                  {isPhone && <span className="sr-only">Previous</span>}
                 </Button>
-                <Button variant="outline" size="icon" aria-label="Next" onClick={() => stepDate(1)}>
+                <Button 
+                  variant="outline" 
+                  size={isPhone ? "sm" : "icon"} 
+                  aria-label="Next" 
+                  onClick={() => stepDate(1)}
+                  className={isPhone ? "px-2" : ""}
+                >
                   <ChevronRight className="h-4 w-4" />
+                  {isPhone && <span className="sr-only">Next</span>}
                 </Button>
               </div>
             )}
           </div>
           
-          <div className="flex items-center justify-between md:justify-end gap-2">
+          <div className={`flex items-center justify-between md:justify-end ${isPhone ? 'gap-1' : 'gap-2'}`}>
             <Select value={displayMode} onValueChange={v => setDisplayMode(v as CalendarDisplayMode)}>
-              <SelectTrigger className="w-[120px] md:w-[140px]">
+              <SelectTrigger className={isPhone ? "w-[100px] text-xs" : "w-[120px] md:w-[140px]"}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="scheduled">Scheduled</SelectItem>
-                <SelectItem value="clocked">Clocked</SelectItem>
-                <SelectItem value="combined">Combined</SelectItem>
+                <SelectItem value="scheduled">
+                  {isPhone ? "Sched" : "Scheduled"}
+                </SelectItem>
+                <SelectItem value="clocked">
+                  {isPhone ? "Clock" : "Clocked"}
+                </SelectItem>
+                <SelectItem value="combined">
+                  {isPhone ? "Both" : "Combined"}
+                </SelectItem>
               </SelectContent>
             </Select>
             
             <Tabs value={view} onValueChange={v => setView(v as any)}>
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="day" className="text-xs md:text-sm px-2 md:px-3">
+              <TabsList className={`grid w-full grid-cols-3 ${isPhone ? 'h-8' : ''}`}>
+                <TabsTrigger 
+                  value="day" 
+                  className={`${isPhone ? 'text-xs px-1' : 'text-xs md:text-sm px-2 md:px-3'}`}
+                >
                   {isMobile ? "D" : "Day"}
                 </TabsTrigger>
-                <TabsTrigger value="week" className="text-xs md:text-sm px-2 md:px-3">
+                <TabsTrigger 
+                  value="week" 
+                  className={`${isPhone ? 'text-xs px-1' : 'text-xs md:text-sm px-2 md:px-3'}`}
+                >
                   {isMobile ? "W" : "Week"}
                 </TabsTrigger>
-                <TabsTrigger value="month" className="text-xs md:text-sm px-2 md:px-3">
+                <TabsTrigger 
+                  value="month" 
+                  className={`${isPhone ? 'text-xs px-1' : 'text-xs md:text-sm px-2 md:px-3'}`}
+                >
                   {isMobile ? "M" : "Month"}
                 </TabsTrigger>
               </TabsList>
@@ -95,10 +137,11 @@ export default function CalendarShell({
             
             <Button 
               variant="outline" 
-              size={isMobile ? "sm" : "sm"} 
+              size={isPhone ? "sm" : "sm"} 
               onClick={() => setDate(startOfDay(new Date()))}
+              className={isPhone ? "px-2 text-xs" : ""}
             >
-              Today
+              {isPhone ? "Now" : "Today"}
             </Button>
             
             {!isMobile && (
