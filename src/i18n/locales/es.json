@@ -581,5 +581,73 @@
       "customer": "Cliente",
       "due": "Vence"
     }
+  },
+  "team": {
+    "title": "Gestión de Equipo",
+    "allMemberships": "Todas Mis Membresías de Negocio",
+    "allMembershipsDescription": "Todos los negocios donde eres miembro del equipo",
+    "joined": "Se unió",
+    "current": "Actual",
+    "switch": "Cambiar",
+    "leave": "Salir",
+    "emptyStates": {
+      "noOtherTeams": "Aún no eres miembro de otros equipos",
+      "noOtherTeamsDescription": "Verás otros negocios aquí cuando te inviten a unirte"
+    },
+    "leaveDialog": {
+      "title": "Salir del Negocio",
+      "description": "¿Estás seguro de que quieres salir de {businessName}? Perderás acceso a este espacio de trabajo y todos sus datos. Solo podrás volver a unirte si el propietario del negocio te invita nuevamente.",
+      "cancel": "Cancelar",
+      "confirm": "Salir del Negocio"
+    },
+    "membersList": {
+      "title": "Miembros del Equipo",
+      "description": "Administrar miembros del equipo e invitaciones pendientes",
+      "memberCount": "{count} miembro{plural}",
+      "inviteWorker": "Invitar Trabajador",
+      "invite": "Invitar",
+      "loadingMembers": "Cargando miembros del equipo...",
+      "seatLimit": {
+        "title": "Acercándose al límite de asientos",
+        "description": "Tienes {used}/5 asientos utilizados. Considera actualizar para más miembros del equipo.",
+        "upgrade": "Actualizar Plan"
+      },
+      "tabs": {
+        "members": "Miembros",
+        "pendingInvites": "Invitaciones Pendientes"
+      },
+      "badges": {
+        "active": "Activo",
+        "expired": "Expirado",
+        "pending": "Pendiente"
+      },
+      "memberInfo": {
+        "joined": "Se unió",
+        "invited": "Invitado",
+        "clickToViewTimesheet": "Haz clic para ver la hoja de tiempo"
+      },
+      "inviteActions": {
+        "checking": "Verificando...",
+        "alreadyMember": "Ya es Miembro",
+        "add": "Agregar",
+        "resend": "Reenviar"
+      },
+      "inviteInfo": {
+        "sent": "Enviado",
+        "expires": "Expira",
+        "invitedBy": "Invitado por"
+      },
+      "emptyStates": {
+        "noMembers": "Ningún miembro coincide con tus filtros",
+        "noMembersDescription": "Intenta ajustar tu búsqueda o filtros",
+        "noTeamMembers": "Aún no hay miembros del equipo",
+        "noTeamMembersDescription": "Invita trabajadores para colaborar en tu negocio",
+        "loadingInvites": "Cargando invitaciones...",
+        "noInvitesSearch": "Ninguna invitación coincide con tu búsqueda",
+        "noInvitesSearchDescription": "Intenta ajustar tus términos de búsqueda",
+        "noInvites": "No hay invitaciones pendientes",
+        "noInvitesDescription": "Invita trabajadores para ver invitaciones pendientes aquí"
+      }
+    }
   }
 }

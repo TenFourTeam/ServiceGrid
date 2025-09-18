@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Building2, Users, ArrowRight, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useBusinessSwitcher } from "@/hooks/useBusinessSwitcher";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +28,7 @@ export default function Team() {
   const { data: businesses } = useUserBusinesses();
   const { switchBusiness } = useBusinessSwitcher();
   const { leaveBusiness, isLeaving } = useBusinessLeaving();
+  const { t } = useLanguage();
   const [leavingBusinessId, setLeavingBusinessId] = useState<string | null>(null);
 
   const allBusinesses = businesses || [];
@@ -44,7 +46,7 @@ export default function Team() {
   };
 
   return (
-    <AppLayout title="Team Management">
+    <AppLayout title={t('team.title')}>
       <div className="space-y-6">
         <WorkerLimitedAccess />
 
@@ -58,10 +60,10 @@ export default function Team() {
           <div className="mb-4">
             <h3 className="text-xl font-bold flex items-center gap-2">
               <Users className="h-5 w-5" />
-              All My Business Memberships
+              {t('team.allMemberships')}
             </h3>
             <p className="text-sm text-muted-foreground mt-1">
-              All businesses where you're a team member
+              {t('team.allMembershipsDescription')}
             </p>
           </div>
 
@@ -81,7 +83,7 @@ export default function Team() {
                         </span>
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        Joined {new Date(business.joined_at).toLocaleDateString()}
+                        {t('team.joined')} {new Date(business.joined_at).toLocaleDateString()}
                       </div>
                     </div>
                   </div>
@@ -94,7 +96,7 @@ export default function Team() {
                         disabled
                         className="flex items-center gap-2"
                       >
-                        Current
+                        {t('team.current')}
                       </Button>
                     ) : (
                       <Button
@@ -105,7 +107,7 @@ export default function Team() {
                         disabled={switchBusiness.isPending}
                       >
                         <ArrowRight className="h-4 w-4" />
-                        Switch
+                        {t('team.switch')}
                       </Button>
                     )}
                     
@@ -119,25 +121,23 @@ export default function Team() {
                             disabled={isLeaving}
                           >
                             <LogOut className="h-4 w-4" />
-                            Leave
+                            {t('team.leave')}
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Leave Business</AlertDialogTitle>
+                            <AlertDialogTitle>{t('team.leaveDialog.title')}</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Are you sure you want to leave <strong>{business.name}</strong>? 
-                              You will lose access to this business workspace and all its data.
-                              You can only rejoin if invited again by the business owner.
+                              {t('team.leaveDialog.description', { businessName: business.name })}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogCancel>{t('team.leaveDialog.cancel')}</AlertDialogCancel>
                             <AlertDialogAction
                               onClick={() => handleLeaveBusiness(business.id)}
                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
-                              Leave Business
+                              {t('team.leaveDialog.confirm')}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
@@ -150,10 +150,10 @@ export default function Team() {
           ) : (
             <div className="text-center py-8">
               <div className="text-muted-foreground mb-2">
-                You're not a member of any other teams yet
+                {t('team.emptyStates.noOtherTeams')}
               </div>
               <p className="text-sm text-muted-foreground">
-                You'll see other businesses here when you get invited to join them
+                {t('team.emptyStates.noOtherTeamsDescription')}
               </p>
             </div>
           )}

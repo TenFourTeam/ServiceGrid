@@ -581,5 +581,73 @@
       "customer": "Customer",
       "due": "Due"
     }
+  },
+  "team": {
+    "title": "Team Management",
+    "allMemberships": "All My Business Memberships",
+    "allMembershipsDescription": "All businesses where you're a team member",
+    "joined": "Joined",
+    "current": "Current",
+    "switch": "Switch",
+    "leave": "Leave",
+    "emptyStates": {
+      "noOtherTeams": "You're not a member of any other teams yet",
+      "noOtherTeamsDescription": "You'll see other businesses here when you get invited to join them"
+    },
+    "leaveDialog": {
+      "title": "Leave Business",
+      "description": "Are you sure you want to leave {businessName}? You will lose access to this business workspace and all its data. You can only rejoin if invited again by the business owner.",
+      "cancel": "Cancel",
+      "confirm": "Leave Business"
+    },
+    "membersList": {
+      "title": "Team Members",
+      "description": "Manage team members and pending invitations",
+      "memberCount": "{count} member{plural}",
+      "inviteWorker": "Invite Worker",
+      "invite": "Invite",
+      "loadingMembers": "Loading team members...",
+      "seatLimit": {
+        "title": "Approaching seat limit",
+        "description": "You have {used}/5 seats used. Consider upgrading for more team members.",
+        "upgrade": "Upgrade Plan"
+      },
+      "tabs": {
+        "members": "Members",
+        "pendingInvites": "Pending Invites"
+      },
+      "badges": {
+        "active": "Active",
+        "expired": "Expired",
+        "pending": "Pending"
+      },
+      "memberInfo": {
+        "joined": "Joined",
+        "invited": "Invited",
+        "clickToViewTimesheet": "Click to view timesheet"
+      },
+      "inviteActions": {
+        "checking": "Checking...",
+        "alreadyMember": "Already Member",
+        "add": "Add",
+        "resend": "Resend"
+      },
+      "inviteInfo": {
+        "sent": "Sent",
+        "expires": "Expires",
+        "invitedBy": "Invited by"
+      },
+      "emptyStates": {
+        "noMembers": "No members match your filters",
+        "noMembersDescription": "Try adjusting your search or filters",
+        "noTeamMembers": "No team members yet",
+        "noTeamMembersDescription": "Invite workers to collaborate on your business",
+        "loadingInvites": "Loading invites...",
+        "noInvitesSearch": "No invites match your search",
+        "noInvitesSearchDescription": "Try adjusting your search terms",
+        "noInvites": "No pending invitations",
+        "noInvitesDescription": "Invite workers to see pending invitations here"
+      }
+    }
   }
 }

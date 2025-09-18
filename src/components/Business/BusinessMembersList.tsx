@@ -12,6 +12,7 @@ import { EnhancedInviteModal } from "@/components/Team/EnhancedInviteModal";
 import { useTeamOperations } from "@/hooks/useTeamOperations";
 import { TeamSearchFilter } from "@/components/Team/TeamSearchFilter";
 import { TeamMemberActions } from "@/components/Team/TeamMemberActions";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { UserPlus, Mail, Clock, Send, X, Users, AlertCircle, Shield } from "lucide-react";
 import { RequireRole } from "@/components/Auth/RequireRole";
 
@@ -21,6 +22,7 @@ interface BusinessMembersListProps {
 
 export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
   const { role } = useBusinessContext();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [userExistence, setUserExistence] = useState<Record<string, { exists: boolean; isAlreadyMember: boolean; isLoading: boolean }>>({});
@@ -167,7 +169,7 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
     return (
       <Card className="p-6">
         <div className="flex items-center justify-center py-8">
-          <div className="text-muted-foreground">Loading team members...</div>
+          <div className="text-muted-foreground">{t('team.membersList.loadingMembers')}</div>
         </div>
       </Card>
     );
@@ -180,10 +182,10 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
         <div className="min-w-0 flex-1">
           <h3 className="text-xl font-bold flex items-center gap-2 truncate">
             <Users className="h-5 w-5 flex-shrink-0" />
-            Team Members
+            {t('team.membersList.title')}
           </h3>
           <p className="text-sm text-muted-foreground mt-1 truncate">
-            Manage team members and pending invitations • {members.length} member{members.length !== 1 ? 's' : ''}
+            {t('team.membersList.description')} • {t('team.membersList.memberCount', { count: members.length, plural: members.length !== 1 ? 's' : '' })}
           </p>
         </div>
         <RequireRole role="owner" fallback={null}>
@@ -193,8 +195,8 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
             size="sm"
           >
             <UserPlus className="h-4 w-4" />
-            <span className="hidden sm:inline">Invite Worker</span>
-            <span className="sm:hidden">Invite</span>
+            <span className="hidden sm:inline">{t('team.membersList.inviteWorker')}</span>
+            <span className="sm:hidden">{t('team.membersList.invite')}</span>
           </Button>
         </RequireRole>
       </div>
@@ -217,14 +219,14 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
               <AlertCircle className="h-4 w-4 text-orange-600 flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-orange-800 truncate">
-                  Approaching seat limit
+                  {t('team.membersList.seatLimit.title')}
                 </p>
                 <p className="text-xs text-orange-700 truncate">
-                  You have {members.length}/5 seats used. Consider upgrading for more team members.
+                  {t('team.membersList.seatLimit.description', { used: members.length })}
                 </p>
               </div>
               <Button variant="outline" size="sm" className="border-orange-300 text-orange-700 hover:bg-orange-100 flex-shrink-0 hidden sm:flex">
-                Upgrade Plan
+                {t('team.membersList.seatLimit.upgrade')}
               </Button>
             </div>
           </div>
@@ -235,11 +237,11 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="members" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
-            Members ({filteredMembers.length})
+            {t('team.membersList.tabs.members')} ({filteredMembers.length})
           </TabsTrigger>
           <TabsTrigger value="invites" className="flex items-center gap-2">
             <Mail className="h-4 w-4" />
-            Pending Invites ({filteredInvites.length})
+            {t('team.membersList.tabs.pendingInvites')} ({filteredInvites.length})
           </TabsTrigger>
         </TabsList>
         
@@ -249,14 +251,14 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
               <Users className="h-12 w-12 mx-auto mb-4 opacity-30" />
               {filters.search || filters.role || filters.status ? (
                 <>
-                  <p className="text-lg font-medium mb-2">No members match your filters</p>
-                  <p className="text-sm">Try adjusting your search or filters</p>
+                  <p className="text-lg font-medium mb-2">{t('team.membersList.emptyStates.noMembers')}</p>
+                  <p className="text-sm">{t('team.membersList.emptyStates.noMembersDescription')}</p>
                 </>
               ) : (
                 <>
-                  <p className="text-lg font-medium mb-2">No team members yet</p>
+                  <p className="text-lg font-medium mb-2">{t('team.membersList.emptyStates.noTeamMembers')}</p>
                   <RequireRole role="owner" fallback={null}>
-                    <p className="text-sm">Invite workers to collaborate on your business</p>
+                    <p className="text-sm">{t('team.membersList.emptyStates.noTeamMembersDescription')}</p>
                   </RequireRole>
                 </>
               )}
@@ -288,25 +290,25 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
                         </Badge>
                         {member.joined_at && (
                           <Badge variant="outline" className="text-xs">
-                            Active
+                            {t('team.membersList.badges.active')}
                           </Badge>
                         )}
                       </div>
                     </div>
                     <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
                       {member.joined_at ? (
-                        <span className="truncate">Joined {new Date(member.joined_at).toLocaleDateString()}</span>
+                        <span className="truncate">{t('team.membersList.memberInfo.joined')} {new Date(member.joined_at).toLocaleDateString()}</span>
                       ) : (
                         <span className="flex items-center gap-1 truncate">
                           <Mail className="h-3 w-3 flex-shrink-0" />
-                          Invited {new Date(member.invited_at).toLocaleDateString()}
+                          {t('team.membersList.memberInfo.invited')} {new Date(member.invited_at).toLocaleDateString()}
                         </span>
                       )}
                       {member.name && (
                         <span className="truncate">• {member.name}</span>
                       )}
                       {role === 'owner' && member.user_id && (
-                        <span className="text-primary">• Click to view timesheet</span>
+                        <span className="text-primary">• {t('team.membersList.memberInfo.clickToViewTimesheet')}</span>
                       )}
                     </div>
                   </div>
@@ -327,21 +329,21 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
         <TabsContent value="invites" className="space-y-3 mt-4">
           {loadingInvites ? (
             <div className="text-center py-8">
-              <div className="text-muted-foreground">Loading invites...</div>
+              <div className="text-muted-foreground">{t('team.membersList.emptyStates.loadingInvites')}</div>
             </div>
           ) : filteredInvites.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Mail className="h-12 w-12 mx-auto mb-4 opacity-30" />
               {filters.search ? (
                 <>
-                  <p className="text-lg font-medium mb-2">No invites match your search</p>
-                  <p className="text-sm">Try adjusting your search terms</p>
+                  <p className="text-lg font-medium mb-2">{t('team.membersList.emptyStates.noInvitesSearch')}</p>
+                  <p className="text-sm">{t('team.membersList.emptyStates.noInvitesSearchDescription')}</p>
                 </>
               ) : (
                 <>
-                  <p className="text-lg font-medium mb-2">No pending invitations</p>
+                  <p className="text-lg font-medium mb-2">{t('team.membersList.emptyStates.noInvites')}</p>
                   <RequireRole role="owner" fallback={null}>
-                    <p className="text-sm">Invite workers to see pending invitations here</p>
+                    <p className="text-sm">{t('team.membersList.emptyStates.noInvitesDescription')}</p>
                   </RequireRole>
                 </>
               )}
@@ -352,12 +354,12 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
                 const isExpired = new Date(invite.expires_at) < new Date();
                 const userStatus = userExistence[invite.email];
                 const buttonText = userStatus?.isLoading 
-                  ? "Checking..."
+                  ? t('team.membersList.inviteActions.checking')
                   : userStatus?.isAlreadyMember 
-                    ? "Already Member"
+                    ? t('team.membersList.inviteActions.alreadyMember')
                     : userStatus?.exists 
-                      ? "Add" 
-                      : "Resend";
+                      ? t('team.membersList.inviteActions.add')
+                      : t('team.membersList.inviteActions.resend');
                 const isButtonDisabled = userStatus?.isLoading || userStatus?.isAlreadyMember || resendInvite.isPending || addTeamMember.isPending;
                 
                 return (
@@ -374,7 +376,7 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
                             className="flex items-center gap-1 text-xs"
                           >
                             <Clock className="h-3 w-3" />
-                            {isExpired ? "Expired" : "Pending"}
+                            {isExpired ? t('team.membersList.badges.expired') : t('team.membersList.badges.pending')}
                           </Badge>
                           <Badge variant="secondary" className="text-xs">
                             {invite.role}
@@ -383,12 +385,12 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
                       </div>
                       <div className="text-xs sm:text-sm text-muted-foreground">
                         <div className="truncate">
-                          Sent {new Date(invite.created_at).toLocaleDateString()} • 
-                          Expires {new Date(invite.expires_at).toLocaleDateString()}
+                          {t('team.membersList.inviteInfo.sent')} {new Date(invite.created_at).toLocaleDateString()} • 
+                          {t('team.membersList.inviteInfo.expires')} {new Date(invite.expires_at).toLocaleDateString()}
                         </div>
                         {invite.profiles?.email && (
                           <div className="truncate mt-1">
-                            Invited by {invite.profiles.email}
+                            {t('team.membersList.inviteInfo.invitedBy')} {invite.profiles.email}
                           </div>
                         )}
                       </div>
