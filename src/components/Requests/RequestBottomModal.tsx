@@ -369,9 +369,11 @@ export function RequestBottomModal({
                     <div className="grid grid-cols-2 gap-2">
                       {files.map((file, index) => (
                         <div key={index} className="relative">
-                          <div className="aspect-video bg-muted rounded-md flex items-center justify-center text-sm text-muted-foreground p-2">
-                            <span className="truncate">{file.name}</span>
-                          </div>
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={`Preview ${index + 1}`}
+                            className="w-full h-20 object-cover rounded-md border"
+                          />
                           <Button
                             type="button"
                             variant="destructive"

@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
-import { Mail, Phone, MapPin, Calendar, Clock, FileText, User } from "lucide-react";
+import { Mail, Phone, MapPin, Calendar, Clock, FileText, User, Camera } from "lucide-react";
 import { format } from "date-fns";
 import { RequestListItem } from "@/hooks/useRequestsData";
 import { useCustomersData } from "@/hooks/useCustomersData";
@@ -149,6 +149,32 @@ export function RequestShowModal({
                 </div>
               </div>
             )}
+
+            {/* Photos */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <Camera className="h-4 w-4" />
+                Photos
+              </div>
+              <div className="pl-6">
+                {request.photos && request.photos.length > 0 ? (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                    {request.photos.map((url: string, idx: number) => (
+                      <a key={idx} href={url} target="_blank" rel="noreferrer" className="block">
+                        <img
+                          src={url}
+                          alt={`Request photo ${idx + 1}`}
+                          loading="lazy"
+                          className="w-full h-20 object-cover rounded-md border"
+                        />
+                      </a>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-sm text-muted-foreground">No photos attached.</div>
+                )}
+              </div>
+            </div>
 
             {/* Internal Notes */}
             {request.notes && (
