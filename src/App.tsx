@@ -82,8 +82,7 @@ const App = React.memo(({ clerkKey }: AppProps) => {
 
   return (
     <ClerkProvider 
-      publishableKey={clerkKey} 
-      key={`clerk-${clerkKey}-${instanceId.current}`}
+      publishableKey={clerkKey}
     >
       <BrowserRouter>
         <ClerkLoaded>
