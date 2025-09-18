@@ -22,6 +22,7 @@ import { CustomerBottomModal } from "@/components/Customers/CustomerBottomModal"
 import { preferredTimeOptions, statusOptions } from "@/validation/requests";
 import { cn } from "@/lib/utils";
 import type { Customer } from "@/types";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface RequestBottomModalProps {
   open: boolean;
@@ -34,6 +35,7 @@ export function RequestBottomModal({
   onOpenChange, 
   onRequestCreated 
 }: RequestBottomModalProps) {
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const { businessId, userId } = useBusinessContext();
   const { getToken } = useAuth();
@@ -78,17 +80,17 @@ export function RequestBottomModal({
   const handleSave = async () => {
     // Validation
     if (!customer) {
-      toast.error("Please select a customer");
+      toast.error(t('requests.create.validation.customerRequired'));
       return;
     }
     
     if (!title.trim()) {
-      toast.error("Title is required");
+      toast.error(t('requests.create.validation.titleRequired'));
       return;
     }
     
     if (!serviceDetails.trim()) {
-      toast.error("Service details are required");
+      toast.error(t('requests.create.validation.detailsRequired'));
       return;
     }
 
@@ -107,7 +109,7 @@ export function RequestBottomModal({
           photoUrls = await uploadPhotos();
         } catch (uploadError) {
           console.error("Photo upload failed:", uploadError);
-          toast.error("Failed to upload photos");
+          toast.error(t('requests.create.messages.photoUploadFailed'));
           return;
         } finally {
           setUploading(false);
@@ -134,11 +136,11 @@ export function RequestBottomModal({
         
       if (error) {
         console.error("Error creating request:", error);
-        toast.error(`Failed to create request: ${error.message || 'Unknown error'}`);
+        toast.error(t('requests.create.messages.error'));
         return;
       }
       
-      toast.success("Request created successfully");
+      toast.success(t('requests.create.messages.success'));
       
       // Call the onRequestCreated callback with the new request data
       if (onRequestCreated && data?.request) {
@@ -151,7 +153,7 @@ export function RequestBottomModal({
       onOpenChange(false);
     } catch (error) {
       console.error("Error creating request:", error);
-      toast.error("Failed to create request");
+      toast.error(t('requests.create.messages.error'));
     } finally {
       setLoading(false);
     }
@@ -223,14 +225,14 @@ export function RequestBottomModal({
       <Drawer open={open} onOpenChange={handleOpenChange}>
         <DrawerContent className="max-h-[90vh]">
           <DrawerHeader className="text-left">
-            <DrawerTitle>New Request</DrawerTitle>
+            <DrawerTitle>{t('requests.create.title')}</DrawerTitle>
           </DrawerHeader>
           
           <div className="px-4 pb-4 overflow-y-auto">
             <div className="space-y-4">
               {/* Customer */}
               <div className="space-y-2">
-                <Label>Customer *</Label>
+                <Label>{t('requests.create.customer')} *</Label>
                 <CustomerCombobox
                   customers={customers}
                   value={customer?.id || ""}
@@ -244,35 +246,35 @@ export function RequestBottomModal({
 
               {/* Title */}
               <div className="space-y-2">
-                <Label htmlFor="title">Title *</Label>
+                <Label htmlFor="title">{t('requests.create.requestTitle')} *</Label>
                 <Input
                   id="title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Brief description of the request"
+                  placeholder={t('requests.create.titlePlaceholder')}
                   required
                 />
               </div>
 
               {/* Property Address */}
               <div className="space-y-2">
-                <Label htmlFor="property_address">Property Address</Label>
+                <Label htmlFor="property_address">{t('requests.create.propertyAddress')}</Label>
                 <Input
                   id="property_address"
                   value={propertyAddress}
                   onChange={(e) => setPropertyAddress(e.target.value)}
-                  placeholder={customer?.address || "Address where service is needed"}
+                  placeholder={customer?.address || t('requests.create.addressPlaceholder')}
                 />
               </div>
 
               {/* Service Details */}
               <div className="space-y-2">
-                <Label htmlFor="service_details">Service Details *</Label>
+                <Label htmlFor="service_details">{t('requests.create.serviceDetails')} *</Label>
                 <Textarea
                   id="service_details"
                   value={serviceDetails}
                   onChange={(e) => setServiceDetails(e.target.value)}
-                  placeholder="Detailed description of the work requested"
+                  placeholder={t('requests.create.detailsPlaceholder')}
                   rows={3}
                   required
                 />
@@ -280,7 +282,7 @@ export function RequestBottomModal({
 
               {/* Preferred Assessment Date */}
               <div className="space-y-2">
-                <Label>Preferred Assessment Date</Label>
+                <Label>{t('requests.create.preferredDate')}</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -291,7 +293,7 @@ export function RequestBottomModal({
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {preferredDate ? format(preferredDate, "PPP") : <span>Pick a date</span>}
+                      {preferredDate ? format(preferredDate, "PPP") : <span>{t('requests.create.pickDate')}</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -319,29 +321,38 @@ export function RequestBottomModal({
 
               {/* Preferred Times */}
               <div className="space-y-2">
-                <Label>Preferred Times</Label>
+                <Label>{t('requests.create.preferredTimes')}</Label>
                 <div className="grid grid-cols-1 gap-2">
-                  {preferredTimeOptions.map((time) => (
-                    <div key={time} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={time}
-                        checked={preferredTimes.includes(time)}
-                        onCheckedChange={() => handleTimeToggle(time)}
-                      />
-                      <label
-                        htmlFor={time}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        {time}
-                      </label>
-                    </div>
-                  ))}
+                  {preferredTimeOptions.map((time) => {
+                    // Get translated time labels
+                    const timeMap: Record<string, string> = {
+                      'Morning (8am - 12pm)': t('requests.create.times.morning'),
+                      'Afternoon (12pm - 5pm)': t('requests.create.times.afternoon'),
+                      'Evening (5pm - 8pm)': t('requests.create.times.evening')
+                    };
+                    
+                    return (
+                      <div key={time} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={time}
+                          checked={preferredTimes.includes(time)}
+                          onCheckedChange={() => handleTimeToggle(time)}
+                        />
+                        <label
+                          htmlFor={time}
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          {timeMap[time] || time}
+                        </label>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
               {/* Photos */}
               <div className="space-y-2">
-                <Label>Photos</Label>
+                <Label>{t('requests.create.photos')}</Label>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <input
@@ -361,7 +372,7 @@ export function RequestBottomModal({
                       )}
                     >
                       <ImagePlus className="h-4 w-4" />
-                      {files.length >= 5 ? "Maximum 5 photos" : "Add Photos"}
+                      {files.length >= 5 ? t('requests.create.photosHelp') : t('requests.create.photos')}
                     </Label>
                   </div>
                   
@@ -392,12 +403,12 @@ export function RequestBottomModal({
 
               {/* Notes */}
               <div className="space-y-2">
-                <Label htmlFor="notes">Internal Notes</Label>
+                <Label htmlFor="notes">{t('requests.create.notes')}</Label>
                 <Textarea
                   id="notes"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Internal notes about this request"
+                  placeholder={t('requests.create.notesPlaceholder')}
                   rows={2}
                 />
               </div>
@@ -412,14 +423,14 @@ export function RequestBottomModal({
                 disabled={loading}
                 className="flex-1"
               >
-                Cancel
+                {t('requests.create.cancel')}
               </Button>
               <Button
                 onClick={handleSave}
                 disabled={loading || uploading}
                 className="flex-1"
               >
-                {uploading ? "Uploading Photos..." : loading ? "Creating..." : "Create Request"}
+                {uploading ? t('requests.create.creating') : loading ? t('requests.create.creating') : t('requests.create.createRequest')}
               </Button>
             </div>
           </DrawerFooter>

@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Copy, Link, Code } from "lucide-react";
 import { toast } from "sonner";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface RequestShareModalProps {
   open: boolean;
@@ -24,6 +25,7 @@ export function RequestShareModal({
   open, 
   onOpenChange
 }: RequestShareModalProps) {
+  const { t } = useLanguage();
   const { business } = useBusinessContext();
   const [activeTab, setActiveTab] = useState("share-link");
   const [embedSettings, setEmbedSettings] = useState<EmbedSettings>({
@@ -92,7 +94,7 @@ export function RequestShareModal({
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="max-h-[90vh]">
         <DrawerHeader className="text-left">
-          <DrawerTitle>Share Request Form</DrawerTitle>
+          <DrawerTitle>{t('requests.share.title')}</DrawerTitle>
         </DrawerHeader>
         
         <div className="px-4 pb-4 overflow-y-auto">

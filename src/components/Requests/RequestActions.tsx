@@ -9,12 +9,14 @@ import { useCreateQuote } from '@/hooks/useQuoteOperations';
 import { useLifecycleEmailIntegration } from '@/hooks/useLifecycleEmailIntegration';
 import { useRequestOperations } from '@/hooks/useRequestOperations';
 import type { RequestListItem } from '@/hooks/useRequestsData';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface RequestActionsProps {
   request: RequestListItem;
 }
 
 export function RequestActions({ request }: RequestActionsProps) {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { getToken } = useClerkAuth();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
@@ -177,21 +179,21 @@ export function RequestActions({ request }: RequestActionsProps) {
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleScheduleAssessment(); }} className="gap-2">
             <Calendar className="h-4 w-4" />
-            Schedule Assessment
+            {t('requests.actions.scheduleAssessment')}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleConvertToQuote(); }} className="gap-2">
             <FileText className="h-4 w-4" />
-            Convert to Quote
+            {t('requests.actions.convertToQuote')}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleConvertToJob(); }} className="gap-2">
             <Wrench className="h-4 w-4" />
-            Convert to Job
+            {t('requests.actions.convertToJob')}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleArchive(); }} className="gap-2">
             <Archive className="h-4 w-4" />
-            Archive
+            {t('requests.actions.archive')}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

@@ -129,6 +129,126 @@
       "saving": "Saving..."
     }
   },
+  "requests": {
+    "title": "Requests",
+    "allRequests": "All Requests",
+    "newRequest": "New Request",
+    "shareRequestForm": "Share Request Form",
+    "searchPlaceholder": "Search requests...",
+    "table": {
+      "customer": "Customer",
+      "title": "Title",
+      "property": "Property",
+      "contact": "Contact", 
+      "requested": "Requested",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "new": "New",
+      "scheduled": "Scheduled", 
+      "assessed": "Assessed",
+      "archived": "Archived",
+      "all": "All"
+    },
+    "filters": {
+      "allStatuses": "All Statuses",
+      "statusCount": "{{count}} {{status}}"
+    },
+    "empty": {
+      "noRequests": "No requests found",
+      "noRequestsDescription": "Create your first request to get started.",
+      "noResults": "No requests match your search.",
+      "tryDifferentSearch": "Try a different search term or filter."
+    },
+    "loading": "Loading requests...",
+    "error": "Error loading requests",
+    "actions": {
+      "scheduleAssessment": "Schedule Assessment", 
+      "convertToQuote": "Convert to Quote",
+      "convertToJob": "Convert to Job",
+      "archive": "Archive",
+      "moreActions": "More Actions"
+    },
+    "create": {
+      "title": "Create New Request",
+      "customer": "Customer",
+      "selectCustomer": "Select a customer",
+      "newCustomer": "New Customer",
+      "requestTitle": "Request Title", 
+      "titlePlaceholder": "Brief description of the request",
+      "propertyAddress": "Property Address",
+      "addressPlaceholder": "Enter property address",
+      "serviceDetails": "Service Details",
+      "detailsPlaceholder": "Describe the services needed...",
+      "preferredDate": "Preferred Date (Optional)",
+      "pickDate": "Pick a date",
+      "preferredTimes": "Preferred Times (Optional)",
+      "times": {
+        "morning": "Morning (8AM-12PM)",
+        "afternoon": "Afternoon (12PM-5PM)", 
+        "evening": "Evening (5PM-8PM)"
+      },
+      "notes": "Internal Notes",
+      "notesPlaceholder": "Internal notes (not visible to customer)...",
+      "photos": "Photos (Optional)",
+      "photosHelp": "Upload up to 5 photos (max 5MB each)",
+      "cancel": "Cancel",
+      "createRequest": "Create Request",
+      "creating": "Creating...",
+      "validation": {
+        "customerRequired": "Please select a customer",
+        "titleRequired": "Request title is required",
+        "detailsRequired": "Service details are required"
+      },
+      "messages": {
+        "success": "Request created successfully",
+        "error": "Failed to create request",
+        "photoUploadFailed": "Request created but photo upload failed"
+      }
+    },
+    "show": {
+      "title": "Request Details",
+      "customerInfo": "Customer Information",
+      "requestInfo": "Request Information", 
+      "schedulingPrefs": "Scheduling Preferences",
+      "photos": "Photos",
+      "internalNotes": "Internal Notes",
+      "metadata": "Request Metadata",
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "address": "Address",
+      "propertyAddress": "Property Address",
+      "serviceDetails": "Service Details",
+      "preferredDate": "Preferred Date",
+      "preferredTimes": "Preferred Times",
+      "createdAt": "Created",
+      "status": "Status",
+      "editRequest": "Edit Request",
+      "noPhotos": "No photos attached",
+      "noNotes": "No internal notes",
+      "noPreferredDate": "No preferred date specified",
+      "noPreferredTimes": "No preferred times specified"
+    },
+    "share": {
+      "title": "Share Request Form",
+      "shareLink": "Share Link",
+      "embedForm": "Embed Form", 
+      "description": "Share this link with customers to collect service requests:",
+      "copyLink": "Copy Link",
+      "linkCopied": "Link copied to clipboard!",
+      "embed": {
+        "description": "Customize and embed this form on your website:",
+        "buttonColor": "Button Color",
+        "textColor": "Text Color",
+        "preview": "Preview",
+        "embedCode": "Embed Code",
+        "copyCode": "Copy Code",
+        "codeCopied": "Embed code copied to clipboard!"
+      }
+    }
+  },
   "jobs": {
     "createTitle": "Create New Job",
     "eventTitle": "Event",

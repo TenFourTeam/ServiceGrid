@@ -129,6 +129,126 @@
       "saving": "Guardando..."
     }
   },
+  "requests": {
+    "title": "Solicitudes",
+    "allRequests": "Todas las Solicitudes",
+    "newRequest": "Nueva Solicitud",
+    "shareRequestForm": "Compartir Formulario de Solicitud",
+    "searchPlaceholder": "Buscar solicitudes...",
+    "table": {
+      "customer": "Cliente",
+      "title": "Título",
+      "property": "Propiedad",
+      "contact": "Contacto",
+      "requested": "Solicitado",
+      "status": "Estado",
+      "actions": "Acciones"
+    },
+    "status": {
+      "new": "Nuevo",
+      "scheduled": "Programado",
+      "assessed": "Evaluado", 
+      "archived": "Archivado",
+      "all": "Todos"
+    },
+    "filters": {
+      "allStatuses": "Todos los Estados",
+      "statusCount": "{{count}} {{status}}"
+    },
+    "empty": {
+      "noRequests": "No se encontraron solicitudes",
+      "noRequestsDescription": "Crea tu primera solicitud para comenzar.",
+      "noResults": "No hay solicitudes que coincidan con tu búsqueda.",
+      "tryDifferentSearch": "Prueba con un término de búsqueda o filtro diferente."
+    },
+    "loading": "Cargando solicitudes...",
+    "error": "Error al cargar solicitudes",
+    "actions": {
+      "scheduleAssessment": "Programar Evaluación",
+      "convertToQuote": "Convertir a Cotización",
+      "convertToJob": "Convertir a Trabajo",
+      "archive": "Archivar",
+      "moreActions": "Más Acciones"
+    },
+    "create": {
+      "title": "Crear Nueva Solicitud",
+      "customer": "Cliente",
+      "selectCustomer": "Seleccionar un cliente",
+      "newCustomer": "Nuevo Cliente",
+      "requestTitle": "Título de Solicitud",
+      "titlePlaceholder": "Breve descripción de la solicitud",
+      "propertyAddress": "Dirección de la Propiedad",
+      "addressPlaceholder": "Ingresa la dirección de la propiedad",
+      "serviceDetails": "Detalles del Servicio",
+      "detailsPlaceholder": "Describe los servicios necesarios...",
+      "preferredDate": "Fecha Preferida (Opcional)",
+      "pickDate": "Seleccionar una fecha",
+      "preferredTimes": "Horarios Preferidos (Opcional)",
+      "times": {
+        "morning": "Mañana (8AM-12PM)",
+        "afternoon": "Tarde (12PM-5PM)",
+        "evening": "Noche (5PM-8PM)"
+      },
+      "notes": "Notas Internas",
+      "notesPlaceholder": "Notas internas (no visibles para el cliente)...",
+      "photos": "Fotos (Opcional)",
+      "photosHelp": "Sube hasta 5 fotos (máx. 5MB cada una)",
+      "cancel": "Cancelar",
+      "createRequest": "Crear Solicitud",
+      "creating": "Creando...",
+      "validation": {
+        "customerRequired": "Por favor selecciona un cliente",
+        "titleRequired": "El título de la solicitud es requerido",
+        "detailsRequired": "Los detalles del servicio son requeridos"
+      },
+      "messages": {
+        "success": "Solicitud creada exitosamente",
+        "error": "Error al crear la solicitud",
+        "photoUploadFailed": "Solicitud creada pero falló la carga de fotos"
+      }
+    },
+    "show": {
+      "title": "Detalles de la Solicitud",
+      "customerInfo": "Información del Cliente",
+      "requestInfo": "Información de la Solicitud",
+      "schedulingPrefs": "Preferencias de Programación",
+      "photos": "Fotos",
+      "internalNotes": "Notas Internas",
+      "metadata": "Metadatos de la Solicitud",
+      "name": "Nombre",
+      "email": "Correo Electrónico",
+      "phone": "Teléfono",
+      "address": "Dirección",
+      "propertyAddress": "Dirección de la Propiedad",
+      "serviceDetails": "Detalles del Servicio",
+      "preferredDate": "Fecha Preferida",
+      "preferredTimes": "Horarios Preferidos",
+      "createdAt": "Creado",
+      "status": "Estado",
+      "editRequest": "Editar Solicitud",
+      "noPhotos": "No hay fotos adjuntas",
+      "noNotes": "No hay notas internas",
+      "noPreferredDate": "No se especificó fecha preferida",
+      "noPreferredTimes": "No se especificaron horarios preferidos"
+    },
+    "share": {
+      "title": "Compartir Formulario de Solicitud",
+      "shareLink": "Compartir Enlace",
+      "embedForm": "Incrustar Formulario",
+      "description": "Comparte este enlace con clientes para recopilar solicitudes de servicio:",
+      "copyLink": "Copiar Enlace",
+      "linkCopied": "¡Enlace copiado al portapapeles!",
+      "embed": {
+        "description": "Personaliza e incrusta este formulario en tu sitio web:",
+        "buttonColor": "Color del Botón",
+        "textColor": "Color del Texto",
+        "preview": "Vista Previa",
+        "embedCode": "Código de Incrustación",
+        "copyCode": "Copiar Código",
+        "codeCopied": "¡Código de incrustación copiado al portapapeles!"
+      }
+    }
+  },
   "jobs": {
     "createTitle": "Crear Nuevo Trabajo",
     "eventTitle": "Evento",

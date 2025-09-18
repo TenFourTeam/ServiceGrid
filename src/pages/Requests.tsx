@@ -29,8 +29,10 @@ import { RequestShowModal } from "@/components/Requests/RequestShowModal";
 import { RequestShareModal } from "@/components/Requests/RequestShareModal";
 import { RequestActions } from "@/components/Requests/RequestActions";
 import { statusOptions } from "@/validation/requests";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function Requests() {
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("All");
   const [selectedRequest, setSelectedRequest] = useState<RequestListItem | null>(null);
@@ -99,12 +101,19 @@ export default function Requests() {
   };
 
   const getStatusBadge = (status: string) => {
+    const statusMap: Record<string, string> = {
+      'New': t('requests.status.new'),
+      'Scheduled': t('requests.status.scheduled'),
+      'Assessed': t('requests.status.assessed'),
+      'Archived': t('requests.status.archived')
+    };
+    
     const statusOption = statusOptions.find(option => option.value === status);
     if (!statusOption) return null;
     
     return (
       <Badge variant="secondary" className={statusOption.color}>
-        {statusOption.label}
+        {statusMap[status] || statusOption.label}
       </Badge>
     );
   };
@@ -122,7 +131,7 @@ export default function Requests() {
               <div className="font-medium truncate">{request.title}</div>
             </div>
             <div className="text-sm text-muted-foreground truncate">
-              Customer: {request.customer?.name || 'Unknown Customer'}
+              {t('requests.table.customer')}: {request.customer?.name || t('requests.table.customer')}
             </div>
             {request.property_address && (
               <div className="text-sm text-muted-foreground truncate">{request.property_address}</div>
@@ -146,7 +155,7 @@ export default function Requests() {
       <AppLayout>
         <div className="container mx-auto p-6">
           <div className="text-center py-8">
-            <p className="text-destructive">Error loading requests: {error.message}</p>
+            <p className="text-destructive">{t('requests.error')}: {error.message}</p>
           </div>
         </div>
       </AppLayout>
@@ -155,21 +164,21 @@ export default function Requests() {
 
   return (
     <div className="min-h-screen flex w-full">
-      <AppLayout title="Requests">
+      <AppLayout title={t('requests.title')}>
         <div className="container mx-auto p-6 space-y-6">
           {/* Header */}
           <Card>
             <CardHeader>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <CardTitle>All Requests</CardTitle>
+                <CardTitle>{t('requests.allRequests')}</CardTitle>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <Button variant="outline" onClick={() => setIsShareModalOpen(true)} className="w-full sm:w-auto">
                     <Share className="h-4 w-4 mr-2" />
-                    Share Request Form
+                    {t('requests.shareRequestForm')}
                   </Button>
                   <Button onClick={() => setIsCreateModalOpen(true)} className="w-full sm:w-auto">
                     <Plus className="h-4 w-4 mr-2" />
-                    New Request
+                    {t('requests.newRequest')}
                   </Button>
                 </div>
               </div>
@@ -181,7 +190,7 @@ export default function Requests() {
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search requests..."
+                placeholder={t('requests.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-8"
@@ -193,12 +202,20 @@ export default function Requests() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="All">All ({counts.All})</SelectItem>
-                  {statusOptions.map((status) => (
-                    <SelectItem key={status.value} value={status.value}>
-                      {status.label} ({counts[status.value]})
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="All">{t('requests.status.all')} ({counts.All})</SelectItem>
+                  {statusOptions.map((status) => {
+                    const statusMap: Record<string, string> = {
+                      'New': t('requests.status.new'),
+                      'Scheduled': t('requests.status.scheduled'),
+                      'Assessed': t('requests.status.assessed'),
+                      'Archived': t('requests.status.archived')
+                    };
+                    return (
+                      <SelectItem key={status.value} value={status.value}>
+                        {statusMap[status.value] || status.label} ({counts[status.value]})
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -219,20 +236,20 @@ export default function Requests() {
                   <div className="text-center py-12">
                     <p className="text-muted-foreground text-lg">
                       {searchQuery || selectedStatus !== "All" 
-                        ? "No requests match your filters"
-                        : "No requests yet"
+                        ? t('requests.empty.noResults')
+                        : t('requests.empty.noRequests')
                       }
                     </p>
                     <p className="text-sm text-muted-foreground mt-2">
                       {!searchQuery && selectedStatus === "All" 
-                        ? "Create your first request to get started"
-                        : "Try adjusting your search or filters"
+                        ? t('requests.empty.noRequestsDescription')
+                        : t('requests.empty.tryDifferentSearch')
                       }
                     </p>
                     {!searchQuery && selectedStatus === "All" && (
                       <Button className="mt-4" onClick={() => setIsCreateModalOpen(true)}>
                         <Plus className="h-4 w-4 mr-2" />
-                        New Request
+                        {t('requests.newRequest')}
                       </Button>
                     )}
                   </div>
@@ -270,20 +287,20 @@ export default function Requests() {
                   <div className="text-center py-12">
                     <p className="text-muted-foreground text-lg">
                       {searchQuery || selectedStatus !== "All" 
-                        ? "No requests match your filters"
-                        : "No requests yet"
+                        ? t('requests.empty.noResults')
+                        : t('requests.empty.noRequests')
                       }
                     </p>
                     <p className="text-sm text-muted-foreground mt-2">
                       {!searchQuery && selectedStatus === "All" 
-                        ? "Create your first request to get started"
-                        : "Try adjusting your search or filters"
+                        ? t('requests.empty.noRequestsDescription')
+                        : t('requests.empty.tryDifferentSearch')
                       }
                     </p>
                     {!searchQuery && selectedStatus === "All" && (
                       <Button className="mt-4" onClick={() => setIsCreateModalOpen(true)}>
                         <Plus className="h-4 w-4 mr-2" />
-                        New Request
+                        {t('requests.newRequest')}
                       </Button>
                     )}
                   </div>
@@ -293,35 +310,35 @@ export default function Requests() {
                       <TableRow>
                         <TableHead>
                           <button className="flex items-center gap-1" onClick={() => handleSort('customer')} aria-label="Sort by customer">
-                            Customers{sortKey === 'customer' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                            {t('requests.table.customer')}{sortKey === 'customer' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
                           </button>
                         </TableHead>
                         <TableHead>
                           <button className="flex items-center gap-1" onClick={() => handleSort('title')} aria-label="Sort by title">
-                            Title{sortKey === 'title' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                            {t('requests.table.title')}{sortKey === 'title' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
                           </button>
                         </TableHead>
                         <TableHead>
                           <button className="flex items-center gap-1" onClick={() => handleSort('property')} aria-label="Sort by property">
-                            Property{sortKey === 'property' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                            {t('requests.table.property')}{sortKey === 'property' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
                           </button>
                         </TableHead>
                         <TableHead>
                           <button className="flex items-center gap-1" onClick={() => handleSort('contact')} aria-label="Sort by contact">
-                            Contact{sortKey === 'contact' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                            {t('requests.table.contact')}{sortKey === 'contact' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
                           </button>
                         </TableHead>
                         <TableHead>
                           <button className="flex items-center gap-1" onClick={() => handleSort('created')} aria-label="Sort by requested date">
-                            Requested{sortKey === 'created' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                            {t('requests.table.requested')}{sortKey === 'created' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
                           </button>
                         </TableHead>
                         <TableHead>
                           <button className="flex items-center gap-1" onClick={() => handleSort('status')} aria-label="Sort by status">
-                            Status{sortKey === 'status' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                            {t('requests.table.status')}{sortKey === 'status' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
                           </button>
                         </TableHead>
-                        <TableHead>Actions</TableHead>
+                        <TableHead>{t('requests.table.actions')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -335,14 +352,14 @@ export default function Requests() {
                           }}
                         >
                           <TableCell className="font-medium">
-                            {request.customer?.name || 'Unknown Customer'}
+                            {request.customer?.name || t('requests.table.customer')}
                           </TableCell>
                           <TableCell>{request.title}</TableCell>
                           <TableCell className="text-muted-foreground">
-                            {request.property_address || 'No address provided'}
+                            {request.property_address || t('requests.empty.noResults')}
                           </TableCell>
                           <TableCell className="text-muted-foreground">
-                            {request.customer?.email || 'No email'}
+                            {request.customer?.email || t('requests.table.contact')}
                           </TableCell>
                           <TableCell className="text-muted-foreground">
                             {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
