@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle as ModalTitle } from "
 import PickQuoteModal from "@/components/Jobs/PickQuoteModal";
 import { JobMemberAssignments } from "@/components/Jobs/JobMemberAssignments";
 import { useQueryClient } from "@tanstack/react-query";
-import { invalidationHelpers } from '@/queries/keys';
+import { invalidationHelpers, queryKeys } from '@/queries/keys';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useNavigate } from 'react-router-dom';
 import { useClockInOut } from "@/hooks/useClockInOut";
@@ -30,7 +30,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
   const { data: quotes = [] } = useQuotesData();
   const { data: invoices = [] } = useInvoicesData();
   const queryClient = useQueryClient();
-  const { businessId, role } = useBusinessContext();
+  const { businessId, userId, role } = useBusinessContext();
   const navigate = useNavigate();
   const [localNotes, setLocalNotes] = useState(job.notes ?? "");
   const notesTimer = useRef<number | null>(null);
@@ -156,6 +156,24 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
   async function handleCompleteJob() {
     setIsCompletingJob(true);
     
+    const currentTime = new Date().toISOString();
+    
+    // Optimistic update - immediately update job status in cache
+    const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
+    const previousData = queryClient.getQueryData(queryKey);
+    
+    queryClient.setQueryData(queryKey, (old: any) => {
+      if (!old) return old;
+      return {
+        ...old,
+        jobs: old.jobs.map((j: Job) => 
+          j.id === job.id 
+            ? { ...j, status: 'Completed', endsAt: currentTime }
+            : j
+        )
+      };
+    });
+    
     try {
       const { error } = await authApi.invoke(`jobs?id=${job.id}`, {
         method: 'PATCH',
@@ -176,6 +194,10 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
       }
     } catch (e: any) {
       console.error('Failed to complete job:', e);
+      // Rollback optimistic update on error
+      if (previousData) {
+        queryClient.setQueryData(queryKey, previousData);
+      }
     } finally {
       setIsCompletingJob(false);
     }
@@ -226,6 +248,22 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
       if (newPhotoUrls.length > 0) {
         const allPhotos = [...existingPhotos, ...newPhotoUrls];
         
+        // Optimistic update - immediately show photos in cache
+        const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
+        const previousData = queryClient.getQueryData(queryKey);
+        
+        queryClient.setQueryData(queryKey, (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            jobs: old.jobs.map((j: Job) => 
+              j.id === job.id 
+                ? { ...j, photos: allPhotos }
+                : j
+            )
+          };
+        });
+        
         // Update job with new photos
         const { error: updateError } = await authApi.invoke(`jobs?id=${job.id}`, {
           method: 'PATCH',
@@ -235,6 +273,10 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
         });
         
         if (updateError) {
+          // Rollback optimistic update on error
+          if (previousData) {
+            queryClient.setQueryData(queryKey, previousData);
+          }
           throw new Error(updateError.message || 'Failed to update job photos');
         }
         
@@ -348,6 +390,21 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
               onChange={(e)=>{
                 const val = e.target.value;
                 setLocalNotes(val);
+                
+                // Optimistic update - immediately update notes in cache
+                const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
+                queryClient.setQueryData(queryKey, (old: any) => {
+                  if (!old) return old;
+                  return {
+                    ...old,
+                    jobs: old.jobs.map((j: Job) => 
+                      j.id === job.id 
+                        ? { ...j, notes: val }
+                        : j
+                    )
+                  };
+                });
+                
                 if (notesTimer.current) window.clearTimeout(notesTimer.current);
                 notesTimer.current = window.setTimeout(async ()=>{
                     try {
