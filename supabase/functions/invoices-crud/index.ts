@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
             owner_id: ctx.userId,
             invoice_id: invoiceId,
             amount: Math.round(amount * 100), // Convert to cents
-            status: 'Completed',
+            status: 'Succeeded',
             method: method,
             received_at: paidAt
           });
