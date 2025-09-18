@@ -20,16 +20,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { invalidationHelpers } from '@/queries/keys';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
-import { useAuth } from '@clerk/clerk-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 
 export default function InvoicesPage() {
   const { data: customers = [] } = useCustomersData();
   const { data: invoices = [] } = useInvoicesData();
-  const { isSignedIn } = useClerkAuth();
+  const { isSignedIn, getToken } = useClerkAuth();
   const { businessId } = useBusinessContext();
   const { t } = useLanguage();
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<'All' | 'Draft' | 'Sent' | 'Paid' | 'Overdue'>('All');
@@ -141,10 +141,6 @@ export default function InvoicesPage() {
 
   const handleExportCSV = async () => {
     if (sortedInvoices.length === 0) return;
-
-    // We need auth context for the API calls
-    const { getToken } = useAuth();
-    const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
 
     // Fetch payment data for all paid invoices
     const paymentPromises = sortedInvoices

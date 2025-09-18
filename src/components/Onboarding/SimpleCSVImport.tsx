@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -217,15 +217,15 @@ export function SimpleCSVImport({ open, onOpenChange, onImportComplete }: Simple
   // Show permission denied message for non-owners
   if (!canManage) {
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      <Drawer open={open} onOpenChange={onOpenChange}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle className="flex items-center gap-2">
               <Upload className="h-5 w-5" />
               Import Customers from CSV
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+            </DrawerTitle>
+          </DrawerHeader>
+          <div className="space-y-4 p-4">
             <div className="text-center py-8">
               <p className="text-muted-foreground">
                 Only business owners can import customers from CSV files.
@@ -240,22 +240,22 @@ export function SimpleCSVImport({ open, onOpenChange, onImportComplete }: Simple
               </Button>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </DrawerContent>
+      </Drawer>
     );
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent>
+        <DrawerHeader>
+          <DrawerTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5" />
             Import Customers from CSV
-          </DialogTitle>
-        </DialogHeader>
+          </DrawerTitle>
+        </DrawerHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 p-4">
           <div className="space-y-2">
             <Label htmlFor="csv-file">CSV File</Label>
             <Input
@@ -297,7 +297,7 @@ export function SimpleCSVImport({ open, onOpenChange, onImportComplete }: Simple
             </Button>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </DrawerContent>
+    </Drawer>
   );
 }
