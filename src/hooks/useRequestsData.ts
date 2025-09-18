@@ -25,6 +25,7 @@ export interface RequestListItem {
   preferred_times: string[];
   status: 'New' | 'Reviewed' | 'Scheduled' | 'Assessed' | 'Archived';
   notes?: string;
+  photos: string[];
   created_at: string;
   updated_at: string;
   customer: RequestCustomer;

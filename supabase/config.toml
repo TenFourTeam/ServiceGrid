@@ -137,5 +137,8 @@ verify_jwt = false
 [functions.invite-manage]
 verify_jwt = false
 
+[functions.upload-request-photo]
+verify_jwt = false
+
 [functions.public-request-submit]
 verify_jwt = false

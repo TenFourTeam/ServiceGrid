@@ -898,6 +898,7 @@ export type Database = {
           id: string
           notes: string | null
           owner_id: string
+          photos: Json
           preferred_assessment_date: string | null
           preferred_times: Json | null
           property_address: string | null
@@ -914,6 +915,7 @@ export type Database = {
           id?: string
           notes?: string | null
           owner_id: string
+          photos?: Json
           preferred_assessment_date?: string | null
           preferred_times?: Json | null
           property_address?: string | null
@@ -930,6 +932,7 @@ export type Database = {
           id?: string
           notes?: string | null
           owner_id?: string
+          photos?: Json
           preferred_assessment_date?: string | null
           preferred_times?: Json | null
           property_address?: string | null

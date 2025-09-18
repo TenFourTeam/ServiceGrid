@@ -8,7 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarIcon, CheckCircle, Building2 } from "lucide-react";
+import { CalendarIcon, CheckCircle, Building2, ImagePlus, X } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -41,8 +41,55 @@ export default function PublicRequestForm() {
   const [alternativeDate, setAlternativeDate] = useState("");
   const [preferredTimes, setPreferredTimes] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(e.target.files || []);
+    const validFiles = selectedFiles.filter(file => {
+      const isValidType = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'].includes(file.type);
+      const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB
+      
+      if (!isValidType) {
+        toast.error(`${file.name} is not a supported image format`);
+        return false;
+      }
+      
+      if (!isValidSize) {
+        toast.error(`${file.name} is too large (max 10MB)`);
+        return false;
+      }
+      
+      return true;
+    });
+
+    setFiles(prev => [...prev, ...validFiles].slice(0, 5)); // Limit to 5 files
+  };
+
+  const removeFile = (index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadPhotos = async (): Promise<string[]> => {
+    const uploadPromises = files.map(async (file) => {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const { data, error } = await supabase.functions.invoke('upload-request-photo', {
+        body: formData
+      });
+
+      if (error) {
+        throw new Error(`Failed to upload ${file.name}: ${error.message}`);
+      }
+
+      return data.url;
+    });
+
+    return Promise.all(uploadPromises);
+  };
 
   const handleTimeToggle = (time: string) => {
     setPreferredTimes(prev => 
@@ -78,6 +125,21 @@ export default function PublicRequestForm() {
 
     setLoading(true);
     try {
+      // Upload photos first if any
+      let photoUrls: string[] = [];
+      if (files.length > 0) {
+        setUploading(true);
+        try {
+          photoUrls = await uploadPhotos();
+        } catch (uploadError) {
+          console.error("Photo upload failed:", uploadError);
+          toast.error("Failed to upload photos");
+          return;
+        } finally {
+          setUploading(false);
+        }
+      }
+
       const requestData = {
         business_id: businessId,
         customer_name: customerName.trim() || null,
@@ -91,6 +153,7 @@ export default function PublicRequestForm() {
         alternative_date: alternativeDate.trim() || null,
         preferred_times: preferredTimes,
         notes: notes.trim() || null,
+        photos: photoUrls,
       };
       
       const { data, error } = await supabase.functions.invoke('public-request-submit', {
@@ -307,6 +370,55 @@ export default function PublicRequestForm() {
                 </div>
               </div>
 
+              {/* Photos */}
+              <div className="space-y-2">
+                <Label>Photos</Label>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleFileChange}
+                      className="hidden"
+                      id="request-photos"
+                      disabled={files.length >= 5}
+                    />
+                    <Label
+                      htmlFor="request-photos"
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-2 border border-dashed rounded-md cursor-pointer hover:bg-muted/50",
+                        files.length >= 5 && "opacity-50 cursor-not-allowed"
+                      )}
+                    >
+                      <ImagePlus className="h-4 w-4" />
+                      {files.length >= 5 ? "Maximum 5 photos" : "Add Photos"}
+                    </Label>
+                  </div>
+                  
+                  {files.length > 0 && (
+                    <div className="grid grid-cols-2 gap-2">
+                      {files.map((file, index) => (
+                        <div key={index} className="relative">
+                          <div className="aspect-video bg-muted rounded-md flex items-center justify-center text-sm text-muted-foreground p-2">
+                            <span className="truncate">{file.name}</span>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            className="absolute -top-2 -right-2 h-6 w-6 p-0"
+                            onClick={() => removeFile(index)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Additional Notes */}
               <div className="space-y-2">
                 <Label htmlFor="notes">Additional Notes</Label>
@@ -322,9 +434,9 @@ export default function PublicRequestForm() {
               <Button 
                 type="submit" 
                 className="w-full" 
-                disabled={loading}
+                disabled={loading || uploading}
               >
-                {loading ? "Submitting..." : "Submit Request"}
+                {uploading ? "Uploading photos..." : loading ? "Submitting..." : "Submit Request"}
               </Button>
             </form>
           </CardContent>

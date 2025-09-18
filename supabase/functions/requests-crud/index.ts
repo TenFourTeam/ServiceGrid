@@ -105,7 +105,8 @@ Deno.serve(async (req) => {
         alternative_date,
         preferred_times,
         status = 'New',
-        notes
+        notes,
+        photos = []
       } = body;
 
       console.log('[requests-crud] POST - About to insert request with data:', {
@@ -129,7 +130,8 @@ Deno.serve(async (req) => {
           alternative_date,
           preferred_times: preferred_times || [],
           status,
-          notes
+          notes,
+          photos: photos || []
         })
         .select('*')
         .single();

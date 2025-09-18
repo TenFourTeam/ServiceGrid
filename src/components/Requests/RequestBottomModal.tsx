@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, ImagePlus, X } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -49,6 +49,8 @@ export function RequestBottomModal({
   const [alternativeDate, setAlternativeDate] = useState("");
   const [preferredTimes, setPreferredTimes] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showCreateCustomer, setShowCreateCustomer] = useState(false);
 
@@ -68,6 +70,8 @@ export function RequestBottomModal({
     setAlternativeDate("");
     setPreferredTimes([]);
     setNotes("");
+    setFiles([]);
+    setUploading(false);
     setLoading(false);
   };
 
@@ -95,6 +99,21 @@ export function RequestBottomModal({
 
     setLoading(true);
     try {
+      // Upload photos first if any
+      let photoUrls: string[] = [];
+      if (files.length > 0) {
+        setUploading(true);
+        try {
+          photoUrls = await uploadPhotos();
+        } catch (uploadError) {
+          console.error("Photo upload failed:", uploadError);
+          toast.error("Failed to upload photos");
+          return;
+        } finally {
+          setUploading(false);
+        }
+      }
+
       const requestData = {
         customer_id: customer.id,
         title: title.trim(),
@@ -105,6 +124,7 @@ export function RequestBottomModal({
         preferred_times: preferredTimes,
         status: 'New',
         notes: notes.trim() || null,
+        photos: photoUrls,
       };
       
       const { data, error } = await authApi.invoke('requests-crud', {
@@ -150,6 +170,52 @@ export function RequestBottomModal({
         ? prev.filter(t => t !== time)
         : [...prev, time]
     );
+  };
+
+  const uploadPhotos = async (): Promise<string[]> => {
+    const uploadPromises = files.map(async (file) => {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const { data, error } = await authApi.invoke('upload-request-photo', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (error) {
+        throw new Error(`Failed to upload ${file.name}: ${error.message}`);
+      }
+
+      return data.url;
+    });
+
+    return Promise.all(uploadPromises);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(e.target.files || []);
+    const validFiles = selectedFiles.filter(file => {
+      const isValidType = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'].includes(file.type);
+      const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB
+      
+      if (!isValidType) {
+        toast.error(`${file.name} is not a supported image format`);
+        return false;
+      }
+      
+      if (!isValidSize) {
+        toast.error(`${file.name} is too large (max 10MB)`);
+        return false;
+      }
+      
+      return true;
+    });
+
+    setFiles(prev => [...prev, ...validFiles].slice(0, 5)); // Limit to 5 files
+  };
+
+  const removeFile = (index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -273,6 +339,55 @@ export function RequestBottomModal({
                 </div>
               </div>
 
+              {/* Photos */}
+              <div className="space-y-2">
+                <Label>Photos</Label>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleFileChange}
+                      className="hidden"
+                      id="request-photos"
+                      disabled={files.length >= 5}
+                    />
+                    <Label
+                      htmlFor="request-photos"
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-2 border border-dashed rounded-md cursor-pointer hover:bg-muted/50",
+                        files.length >= 5 && "opacity-50 cursor-not-allowed"
+                      )}
+                    >
+                      <ImagePlus className="h-4 w-4" />
+                      {files.length >= 5 ? "Maximum 5 photos" : "Add Photos"}
+                    </Label>
+                  </div>
+                  
+                  {files.length > 0 && (
+                    <div className="grid grid-cols-2 gap-2">
+                      {files.map((file, index) => (
+                        <div key={index} className="relative">
+                          <div className="aspect-video bg-muted rounded-md flex items-center justify-center text-sm text-muted-foreground p-2">
+                            <span className="truncate">{file.name}</span>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            className="absolute -top-2 -right-2 h-6 w-6 p-0"
+                            onClick={() => removeFile(index)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Notes */}
               <div className="space-y-2">
                 <Label htmlFor="notes">Internal Notes</Label>
@@ -299,10 +414,10 @@ export function RequestBottomModal({
               </Button>
               <Button
                 onClick={handleSave}
-                disabled={loading}
+                disabled={loading || uploading}
                 className="flex-1"
               >
-                Create Request
+                {uploading ? "Uploading Photos..." : loading ? "Creating..." : "Create Request"}
               </Button>
             </div>
           </DrawerFooter>

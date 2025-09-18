@@ -22,6 +22,7 @@ interface PublicRequestData {
   alternative_date?: string;
   preferred_times?: string[];
   notes?: string;
+  photos?: string[];
 }
 
 /**
@@ -306,6 +307,7 @@ const handler = async (req: Request): Promise<Response> => {
       preferred_times: requestData.preferred_times || [],
       status: 'New',
       notes: requestData.notes || null,
+      photos: requestData.photos || [],
     });
     
     const { data: request, error: requestError } = await supabase
@@ -322,6 +324,7 @@ const handler = async (req: Request): Promise<Response> => {
         preferred_times: requestData.preferred_times || [],
         status: 'New',
         notes: requestData.notes || null,
+        photos: requestData.photos || [],
       })
       .select()
       .single();

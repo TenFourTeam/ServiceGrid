@@ -140,6 +140,7 @@ export function RequestActions({ request }: RequestActionsProps) {
           notes: `Created from request: ${request.title}\n\nService Details: ${request.service_details}${request.notes ? `\n\nNotes: ${request.notes}` : ''}`,
           status: 'Scheduled',
           startsAt: request.preferred_assessment_date,
+          photos: request.photos || [],
         },
         toast: {
           success: `Job created from request successfully`,
