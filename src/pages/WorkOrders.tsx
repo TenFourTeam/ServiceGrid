@@ -27,6 +27,7 @@ import JobShowModal from '@/components/Jobs/JobShowModal';
 import { JobBottomModal } from '@/components/Jobs/JobBottomModal';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Plus } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 function useFilteredJobs() {
   const { data: jobs = [] } = useJobsData();
@@ -143,38 +144,43 @@ function useFilteredJobs() {
   return { q, setQ, sort, setSort, jobs: filtered, counts, hasInvoice, getInvoiceForJob, tableSort, handleTableSort };
 }
 
-function StatusChip({ status }: { status: Job['status'] }) {
+function StatusChip({ status, t }: { status: Job['status'], t: (key: string) => string }) {
+  const statusKey = status === 'Scheduled' ? 'workOrders.status.scheduled' 
+    : status === 'In Progress' ? 'workOrders.status.inProgress'
+    : 'workOrders.status.completed';
+  
   const styles = status === 'Scheduled'
     ? 'bg-primary/10 text-primary'
     : status === 'In Progress'
     ? 'bg-accent text-accent-foreground'
     : 'bg-muted text-muted-foreground';
-  return <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${styles}`}>{status}</span>;
+  return <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${styles}`}>{t(statusKey)}</span>;
 }
 
-function WorkOrderRow({ job, uninvoiced, customerName, when, onOpen }: {
+function WorkOrderRow({ job, uninvoiced, customerName, when, onOpen, t }: {
   job: Job;
   uninvoiced: boolean;
   customerName: string;
   when: string;
   onOpen: () => void;
+  t: (key: string) => string;
 }) {
   return (
     <div onClick={onOpen} className="p-4 border rounded-md bg-card shadow-sm cursor-pointer hover:bg-accent/30 transition-colors">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <div className="font-medium truncate">{job.title || 'Job'}</div>
+            <div className="font-medium truncate">{job.title || t('jobs.form.titlePlaceholder')}</div>
             <div className="text-sm text-muted-foreground">{formatMoney(job.total || 0)}</div>
-            {uninvoiced && job.status==='Completed' && <Badge variant="secondary">Uninvoiced</Badge>}
+            {uninvoiced && job.status==='Completed' && <Badge variant="secondary">{t('workOrders.badges.uninvoiced')}</Badge>}
           </div>
-          <div className="text-sm text-muted-foreground truncate">Customer: {customerName}</div>
+          <div className="text-sm text-muted-foreground truncate">{t('workOrders.modal.customer')}: {customerName}</div>
           {job.address && <div className="text-sm text-muted-foreground truncate">{job.address}</div>}
           <div className="text-sm text-muted-foreground mt-1">{when}</div>
         </div>
         <div className="flex flex-col items-end gap-2">
-          <StatusChip status={job.status} />
-          <div className="text-xs text-muted-foreground">Click to view details</div>
+          <StatusChip status={job.status} t={t} />
+          <div className="text-xs text-muted-foreground">{t('workOrders.actions.viewDetails')}</div>
         </div>
       </div>
     </div>
@@ -191,20 +197,21 @@ export default function WorkOrdersPage() {
   const [activeJob, setActiveJob] = useState<Job | null>(null);
   const [createJobOpen, setCreateJobOpen] = useState(false);
   const isMobile = useIsMobile();
+  const { t } = useLanguage();
 
   // Jobs data is now loaded from dashboard data in AppLayout
   // No need for separate data fetching and syncing here
 
   return (
-    <AppLayout title="Work Orders">
+    <AppLayout title={t('workOrders.title')}>
       <section aria-label="work-orders" className="space-y-4">
         <Card>
           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <CardTitle>All Work Orders</CardTitle>
+            <CardTitle>{t('workOrders.allWorkOrders')}</CardTitle>
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <Button onClick={() => setCreateJobOpen(true)} className="w-full sm:w-auto">
                 <Plus className="h-4 w-4 mr-2" />
-                New Job
+                {t('workOrders.newJob')}
               </Button>
             </div>
           </CardHeader>
@@ -213,7 +220,7 @@ export default function WorkOrdersPage() {
               <Input 
                 value={q} 
                 onChange={(e)=>setQ(e.target.value)} 
-                placeholder="Search customer or address" 
+                placeholder={t('workOrders.search.placeholder')} 
                 className="w-full sm:flex-1" 
               />
               <select 
@@ -221,11 +228,11 @@ export default function WorkOrdersPage() {
                 onChange={(e)=>setSort(e.target.value as any)} 
                 className="w-full sm:w-auto rounded-md border bg-background px-3 py-2 text-sm"
               >
-                <option value="all">All ({counts.all})</option>
-                <option value="unscheduled">Unscheduled ({counts.unscheduled})</option>
-                <option value="today">Today ({counts.today})</option>
-                <option value="upcoming">Upcoming ({counts.upcoming})</option>
-                <option value="completed">Completed ({counts.completed})</option>
+                <option value="all">{t('workOrders.filters.all')} ({counts.all})</option>
+                <option value="unscheduled">{t('workOrders.filters.unscheduled')} ({counts.unscheduled})</option>
+                <option value="today">{t('workOrders.filters.today')} ({counts.today})</option>
+                <option value="upcoming">{t('workOrders.filters.upcoming')} ({counts.upcoming})</option>
+                <option value="completed">{t('workOrders.filters.completed')} ({counts.completed})</option>
               </select>
             </div>
           </CardContent>
@@ -248,11 +255,11 @@ export default function WorkOrdersPage() {
                   <Skeleton className="h-20 w-full" />
                 </div>
               ) : jobs.length === 0 ? (
-                <div className="text-sm text-muted-foreground p-8 text-center">No jobs in this view.</div>
+                <div className="text-sm text-muted-foreground p-8 text-center">{t('workOrders.empty.noJobs')}</div>
               ) : (
                 jobs.map((j)=>{
-                  const customerName = customers.find(c=>c.id===j.customerId)?.name || 'Customer';
-                  const when = j.startsAt ? formatDateTime(j.startsAt) : 'Unscheduled';
+                  const customerName = customers.find(c=>c.id===j.customerId)?.name || t('workOrders.modal.customer');
+                  const when = j.startsAt ? formatDateTime(j.startsAt) : t('workOrders.time.unscheduled');
                   const uninvoiced = j.status==='Completed' && !hasInvoice(j.id);
                   return (
                     <WorkOrderRow
@@ -262,6 +269,7 @@ export default function WorkOrdersPage() {
                       when={when}
                       uninvoiced={uninvoiced}
                       onOpen={() => setActiveJob(j as Job)}
+                      t={t}
                     />
                   );
                 })
@@ -279,7 +287,7 @@ export default function WorkOrdersPage() {
                   <Skeleton className="h-12 w-full" />
                 </div>
               ) : jobs.length === 0 ? (
-                <div className="text-sm text-muted-foreground p-8 text-center">No jobs in this view.</div>
+                <div className="text-sm text-muted-foreground p-8 text-center">{t('workOrders.empty.noJobs')}</div>
               ) : (
                 <Table>
                   <TableHeader>
@@ -288,41 +296,41 @@ export default function WorkOrdersPage() {
                         className="cursor-pointer hover:bg-muted/50"
                         onClick={() => handleTableSort('title')}
                       >
-                        Job Title {tableSort?.column === 'title' && (tableSort.direction === 'asc' ? '▲' : '▼')}
+                        {t('workOrders.table.jobTitle')} {tableSort?.column === 'title' && (tableSort.direction === 'asc' ? '▲' : '▼')}
                       </TableHead>
                       <TableHead 
                         className="cursor-pointer hover:bg-muted/50"
                         onClick={() => handleTableSort('customer')}
                       >
-                        Customer {tableSort?.column === 'customer' && (tableSort.direction === 'asc' ? '▲' : '▼')}
+                        {t('workOrders.table.customer')} {tableSort?.column === 'customer' && (tableSort.direction === 'asc' ? '▲' : '▼')}
                       </TableHead>
-                      <TableHead>Address</TableHead>
+                      <TableHead>{t('workOrders.table.address')}</TableHead>
                       <TableHead 
                         className="cursor-pointer hover:bg-muted/50"
                         onClick={() => handleTableSort('scheduled')}
                       >
-                        Scheduled {tableSort?.column === 'scheduled' && (tableSort.direction === 'asc' ? '▲' : '▼')}
+                        {t('workOrders.table.scheduled')} {tableSort?.column === 'scheduled' && (tableSort.direction === 'asc' ? '▲' : '▼')}
                       </TableHead>
                       <TableHead 
                         className="cursor-pointer hover:bg-muted/50"
                         onClick={() => handleTableSort('status')}
                       >
-                        Status {tableSort?.column === 'status' && (tableSort.direction === 'asc' ? '▲' : '▼')}
+                        {t('workOrders.table.status')} {tableSort?.column === 'status' && (tableSort.direction === 'asc' ? '▲' : '▼')}
                       </TableHead>
                       <TableHead 
                         className="cursor-pointer hover:bg-muted/50 text-right"
                         onClick={() => handleTableSort('amount')}
                       >
-                        Amount {tableSort?.column === 'amount' && (tableSort.direction === 'asc' ? '▲' : '▼')}
+                        {t('workOrders.table.amount')} {tableSort?.column === 'amount' && (tableSort.direction === 'asc' ? '▲' : '▼')}
                       </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {jobs.map((j) => {
                       const customer = customers.find(c => c.id === j.customerId);
-                      const customerName = customer?.name || 'Customer';
+                      const customerName = customer?.name || t('workOrders.modal.customer');
                       const address = j.address || customer?.address || '';
-                      const when = j.startsAt ? formatDateTime(j.startsAt) : 'Unscheduled';
+                      const when = j.startsAt ? formatDateTime(j.startsAt) : t('workOrders.time.unscheduled');
                       const uninvoiced = j.status === 'Completed' && !hasInvoice(j.id);
                       
                       return (
@@ -333,15 +341,15 @@ export default function WorkOrdersPage() {
                         >
                           <TableCell className="font-medium">
                             <div className="flex items-center gap-2">
-                              {j.title || 'Job'}
-                              {uninvoiced && <Badge variant="secondary">Uninvoiced</Badge>}
+                              {j.title || t('jobs.form.titlePlaceholder')}
+                              {uninvoiced && <Badge variant="secondary">{t('workOrders.badges.uninvoiced')}</Badge>}
                             </div>
                           </TableCell>
                           <TableCell>{customerName}</TableCell>
                           <TableCell className="max-w-xs truncate">{address}</TableCell>
                           <TableCell>{when}</TableCell>
                           <TableCell>
-                            <StatusChip status={j.status} />
+                            <StatusChip status={j.status} t={t} />
                           </TableCell>
                           <TableCell className="text-right">{formatMoney(j.total || 0)}</TableCell>
                         </TableRow>

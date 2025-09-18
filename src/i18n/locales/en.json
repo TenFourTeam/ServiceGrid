@@ -304,5 +304,96 @@
       "createFailed": "Failed to create job",
       "photoUploadFailed": "Job created but photo upload failed"
     }
+  },
+  "workOrders": {
+    "title": "Work Orders",
+    "allWorkOrders": "All Work Orders",
+    "newJob": "New Job",
+    "search": {
+      "placeholder": "Search customer or address"
+    },
+    "filters": {
+      "all": "All",
+      "unscheduled": "Unscheduled",
+      "today": "Today", 
+      "upcoming": "Upcoming",
+      "completed": "Completed"
+    },
+    "table": {
+      "jobTitle": "Job Title",
+      "customer": "Customer",
+      "address": "Address",
+      "scheduled": "Scheduled",
+      "status": "Status",
+      "amount": "Amount"
+    },
+    "status": {
+      "scheduled": "Scheduled",
+      "inProgress": "In Progress",
+      "completed": "Completed"
+    },
+    "badges": {
+      "uninvoiced": "Uninvoiced"
+    },
+    "empty": {
+      "noJobs": "No jobs in this view."
+    },
+    "actions": {
+      "viewDetails": "Click to view details"
+    },
+    "time": {
+      "unscheduled": "Unscheduled"
+    },
+    "modal": {
+      "title": "Job Details",
+      "customer": "Customer",
+      "type": "Type",
+      "status": "Status",
+      "starts": "Starts",
+      "ends": "Ends",
+      "clockIn": "Clock In",
+      "clockOut": "Clock Out",
+      "address": "Address",
+      "total": "Total",
+      "quote": "Quote",
+      "notes": "Notes",
+      "photos": "Photos",
+      "noPhotos": "No photos yet.",
+      "photosUploading": "Photos uploading...",
+      "selectPhotos": "Select photos",
+      "uploadPhotos": "Upload Photos",
+      "clockInOut": "Clock In/Out",
+      "navigate": "Navigate",
+      "complete": "Complete Job",
+      "createInvoice": "Create Invoice",
+      "view": "View",
+      "link": "Link",
+      "completing": "Completing...",
+      "creatingInvoice": "Creating...",
+      "uploading": "Uploading...",
+      "startJob": "Start Job",
+      "stopJob": "Stop Job",
+      "starting": "Starting...",
+      "stopping": "Stopping...",
+      "delete": "Delete",
+      "completed": "Completed",
+      "viewInvoice": "View Invoice",
+      "addingPhotos": "Adding photos...",
+      "uploadingPhotos": "Uploading photos...",
+      "cancel": "Cancel",
+      "prev": "Prev",
+      "next": "Next",
+      "photoCount": "Photo {{current}} of {{total}}"
+    },
+    "reschedule": {
+      "title": "Reschedule",
+      "schedule": "Schedule",
+      "startTime": "Start time",
+      "duration": "Duration",
+      "unschedule": "Unschedule",
+      "save": "Save",
+      "pickDate": "Pick a date",
+      "minutes": "min"
+    }
   }
 }

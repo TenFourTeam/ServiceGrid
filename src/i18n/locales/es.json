@@ -304,5 +304,96 @@
       "createFailed": "Error al crear el trabajo",
       "photoUploadFailed": "Trabajo creado pero falló la subida de fotos"
     }
+  },
+  "workOrders": {
+    "title": "Órdenes de Trabajo",
+    "allWorkOrders": "Todas las Órdenes de Trabajo",
+    "newJob": "Nuevo Trabajo",
+    "search": {
+      "placeholder": "Buscar cliente o dirección"
+    },
+    "filters": {
+      "all": "Todos",
+      "unscheduled": "Sin Programar",
+      "today": "Hoy",
+      "upcoming": "Próximos",
+      "completed": "Completados"
+    },
+    "table": {
+      "jobTitle": "Título del Trabajo",
+      "customer": "Cliente",
+      "address": "Dirección",
+      "scheduled": "Programado",
+      "status": "Estado",
+      "amount": "Monto"
+    },
+    "status": {
+      "scheduled": "Programado",
+      "inProgress": "En Progreso",
+      "completed": "Completado"
+    },
+    "badges": {
+      "uninvoiced": "Sin Facturar"
+    },
+    "empty": {
+      "noJobs": "No hay trabajos en esta vista."
+    },
+    "actions": {
+      "viewDetails": "Haga clic para ver detalles"
+    },
+    "time": {
+      "unscheduled": "Sin Programar"
+    },
+    "modal": {
+      "title": "Detalles del Trabajo",
+      "customer": "Cliente",
+      "type": "Tipo",
+      "status": "Estado",
+      "starts": "Inicia",
+      "ends": "Termina",
+      "clockIn": "Entrada",
+      "clockOut": "Salida",
+      "address": "Dirección",
+      "total": "Total",
+      "quote": "Cotización",
+      "notes": "Notas",
+      "photos": "Fotos",
+      "noPhotos": "Aún no hay fotos.",
+      "photosUploading": "Subiendo fotos...",
+      "selectPhotos": "Seleccionar fotos",
+      "uploadPhotos": "Subir Fotos",
+      "clockInOut": "Entrada/Salida",
+      "navigate": "Navegar",
+      "complete": "Completar Trabajo",
+      "createInvoice": "Crear Factura",
+      "view": "Ver",
+      "link": "Enlazar",
+      "completing": "Completando...",
+      "creatingInvoice": "Creando...",
+      "uploading": "Subiendo...",
+      "startJob": "Iniciar Trabajo",
+      "stopJob": "Detener Trabajo",
+      "starting": "Iniciando...",
+      "stopping": "Deteniendo...",
+      "delete": "Eliminar",
+      "completed": "Completado",
+      "viewInvoice": "Ver Factura",
+      "addingPhotos": "Agregando fotos...",
+      "uploadingPhotos": "Subiendo fotos...",
+      "cancel": "Cancelar",
+      "prev": "Anterior",
+      "next": "Siguiente",
+      "photoCount": "Foto {{current}} de {{total}}"
+    },
+    "reschedule": {
+      "title": "Reprogramar",
+      "schedule": "Programar",
+      "startTime": "Hora de inicio",
+      "duration": "Duración",
+      "unschedule": "Desprogramar",
+      "save": "Guardar",
+      "pickDate": "Seleccionar fecha",
+      "minutes": "min"
+    }
   }
 }

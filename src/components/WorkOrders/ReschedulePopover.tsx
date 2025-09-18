@@ -11,6 +11,7 @@ import type { Job } from "@/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidationHelpers } from '@/queries/keys';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ReschedulePopoverProps {
   job: Job;
@@ -22,6 +23,7 @@ export default function ReschedulePopover({ job, onDone }: ReschedulePopoverProp
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const queryClient = useQueryClient();
   const { businessId } = useBusinessContext();
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState<Date | undefined>(job.startsAt ? new Date(job.startsAt) : undefined);
   const [time, setTime] = useState<string>(job.startsAt ? format(new Date(job.startsAt), "HH:mm") : "08:00");
@@ -30,7 +32,7 @@ export default function ReschedulePopover({ job, onDone }: ReschedulePopoverProp
 
   const handleSave = async () => {
     if (!date) {
-      toast.error("Pick a date");
+      toast.error(t('workOrders.reschedule.pickDate'));
       return;
     }
     try {
@@ -45,9 +47,9 @@ export default function ReschedulePopover({ job, onDone }: ReschedulePopoverProp
         method: "PATCH",
         body: { startsAt: starts.toISOString(), endsAt: ends.toISOString() },
         toast: {
-          success: "Job rescheduled successfully",
-          loading: "Rescheduling job...",
-          error: "Failed to reschedule"
+          success: t('workOrders.reschedule.messages.updated'),
+          loading: t('workOrders.reschedule.title'),
+          error: t('workOrders.reschedule.messages.failed')
         }
       });
       
@@ -76,9 +78,9 @@ export default function ReschedulePopover({ job, onDone }: ReschedulePopoverProp
         method: "PATCH",
         body: { startsAt: null, endsAt: null },
         toast: {
-          success: "Job unscheduled successfully",
-          loading: "Unscheduling job...",
-          error: "Failed to unschedule"
+          success: t('workOrders.reschedule.messages.unscheduled'),
+          loading: t('workOrders.reschedule.unschedule'),
+          error: t('workOrders.reschedule.messages.failed')
         }
       });
       
@@ -102,35 +104,35 @@ export default function ReschedulePopover({ job, onDone }: ReschedulePopoverProp
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button size="sm" variant="secondary">{job.startsAt ? "Reschedule" : "Schedule"}</Button>
+        <Button size="sm" variant="secondary">{job.startsAt ? t('workOrders.reschedule.title') : t('workOrders.reschedule.schedule')}</Button>
       </PopoverTrigger>
       <PopoverContent className="w-80" align="end">
         <div className="space-y-3">
           <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Start time</label>
+              <label className="text-xs text-muted-foreground">{t('workOrders.reschedule.startTime')}</label>
               <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Duration</label>
+              <label className="text-xs text-muted-foreground">{t('workOrders.reschedule.duration')}</label>
               <select
                 className="h-9 rounded-md border bg-background px-2 text-sm"
                 value={durationMins}
                 onChange={(e) => setDurationMins(parseInt(e.target.value, 10))}
               >
                 {[30, 45, 60, 90, 120, 180].map((d) => (
-                  <option key={d} value={d}>{d} min</option>
+                  <option key={d} value={d}>{d} {t('workOrders.reschedule.minutes')}</option>
                 ))}
               </select>
             </div>
           </div>
           <div className="flex items-center justify-between gap-2">
             <Button variant="ghost" size="sm" onClick={handleUnschedule} disabled={submitting}>
-              Unschedule
+              {t('workOrders.reschedule.unschedule')}
             </Button>
             <Button size="sm" onClick={handleSave} disabled={submitting}>
-              Save
+              {t('workOrders.reschedule.save')}
             </Button>
           </div>
         </div>

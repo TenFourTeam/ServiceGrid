@@ -18,6 +18,7 @@ import { invalidationHelpers, queryKeys } from '@/queries/keys';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useNavigate } from 'react-router-dom';
 import { useClockInOut } from "@/hooks/useClockInOut";
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface JobShowModalProps {
   open: boolean;
@@ -46,6 +47,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
   const [linkedQuoteId, setLinkedQuoteId] = useState<string | null>(null);
   const [linkedQuoteObject, setLinkedQuoteObject] = useState<any>(null);
   const { clockInOut, isLoading: isClockingInOut } = useClockInOut();
+  const { t } = useLanguage();
   
   useEffect(() => {
     setLocalNotes(job.notes ?? "");
@@ -59,7 +61,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
     }
   }, [open]);
 
-  const customerName = useMemo(() => customers.find(c => c.id === job.customerId)?.name || "Customer", [customers, job.customerId]);
+  const customerName = useMemo(() => customers.find(c => c.id === job.customerId)?.name || t('workOrders.modal.customer'), [customers, job.customerId]);
   const currentQuoteId = linkedQuoteId || (job as any).quoteId;
   const linkedQuote = useMemo(() => {
     // Use optimistic quote object first, then fall back to cache lookup
@@ -103,9 +105,9 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
             discount: 0
           },
           toast: {
-            success: 'Invoice created successfully',
-            loading: 'Creating invoice...',
-            error: 'Failed to create invoice'
+            success: t('workOrders.modal.createInvoice'),
+            loading: t('workOrders.modal.creatingInvoice'),
+            error: t('workOrders.modal.createInvoice')
           }
         });
 
@@ -149,9 +151,9 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
         method: 'POST',
         body: { quoteId: currentQuoteId },
         toast: {
-          success: 'Invoice created successfully',
-          loading: 'Creating invoice...',
-          error: 'Failed to create invoice'
+          success: t('workOrders.modal.createInvoice'),
+          loading: t('workOrders.modal.creatingInvoice'),
+          error: t('workOrders.modal.createInvoice')
         }
       });
 
@@ -207,9 +209,9 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
         method: 'PATCH',
         body: { status: 'Completed' },
         toast: {
-          success: 'Job marked as complete',
-          loading: 'Marking job as complete...',
-          error: 'Failed to mark job as complete'
+          success: t('workOrders.modal.complete'),
+          loading: t('workOrders.modal.completing'),
+          error: t('workOrders.modal.complete')
         }
       });
       
@@ -238,7 +240,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
     if (address) {
       window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`, '_blank');
     } else {
-      toast.error('No address available for navigation');
+      toast.error(t('workOrders.modal.navigate'));
     }
   }
 
@@ -313,14 +315,14 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
           invalidationHelpers.jobs(queryClient, businessId);
         }
         
-        toast.success(`${newPhotoUrls.length} photo${newPhotoUrls.length === 1 ? '' : 's'} uploaded successfully`);
+        toast.success(`${newPhotoUrls.length} ${newPhotoUrls.length === 1 ? t('workOrders.modal.photos') : t('workOrders.modal.photos')} ${t('workOrders.modal.uploadPhotos')}`);
       }
       
       // Clear selected files
       setPhotosToUpload([]);
     } catch (error) {
       console.error('[JobShowModal] Photo upload failed:', error);
-      toast.error('Failed to upload photos');
+      toast.error(t('workOrders.modal.uploadPhotos'));
     } finally {
       setUploadingPhotos(false);
     }
@@ -331,52 +333,52 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent>
         <DrawerHeader>
-          <DrawerTitle>Job Details</DrawerTitle>
+          <DrawerTitle>{t('workOrders.modal.title')}</DrawerTitle>
         </DrawerHeader>
         <div className="px-4 space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <div className="text-sm text-muted-foreground">Customer</div>
+              <div className="text-sm text-muted-foreground">{t('workOrders.modal.customer')}</div>
               <div className="font-medium">{customerName}</div>
             </div>
             <div>
-              <div className="text-sm text-muted-foreground">Type</div>
-              <div className="font-medium capitalize">{job.jobType?.replace('_', ' ') || 'Scheduled'}</div>
+              <div className="text-sm text-muted-foreground">{t('workOrders.modal.type')}</div>
+              <div className="font-medium capitalize">{job.jobType?.replace('_', ' ') || t('jobs.types.scheduled')}</div>
             </div>
             <div>
-              <div className="text-sm text-muted-foreground">Status</div>
+              <div className="text-sm text-muted-foreground">{t('workOrders.modal.status')}</div>
               <div className="font-medium">{job.status}</div>
             </div>
             <div>
-              <div className="text-sm text-muted-foreground">Starts</div>
+              <div className="text-sm text-muted-foreground">{t('workOrders.modal.starts')}</div>
               <div>{formatDateTime(job.startsAt)}</div>
             </div>
             <div>
-              <div className="text-sm text-muted-foreground">Ends</div>
+              <div className="text-sm text-muted-foreground">{t('workOrders.modal.ends')}</div>
               <div>{formatDateTime(job.endsAt)}</div>
             </div>
             {job.jobType === 'time_and_materials' && (
               <>
                 <div>
-                  <div className="text-sm text-muted-foreground">Clock In</div>
+                  <div className="text-sm text-muted-foreground">{t('workOrders.modal.clockIn')}</div>
                   <div>{job.clockInTime ? formatDateTime(job.clockInTime) : '—'}</div>
                 </div>
                 <div>
-                  <div className="text-sm text-muted-foreground">Clock Out</div>
+                  <div className="text-sm text-muted-foreground">{t('workOrders.modal.clockOut')}</div>
                   <div>{job.clockOutTime ? formatDateTime(job.clockOutTime) : '—'}</div>
                 </div>
               </>
             )}
             <div>
-              <div className="text-sm text-muted-foreground">Address</div>
+              <div className="text-sm text-muted-foreground">{t('workOrders.modal.address')}</div>
               <div className="truncate">{job.address || "—"}</div>
             </div>
             <div>
-              <div className="text-sm text-muted-foreground">Total</div>
+              <div className="text-sm text-muted-foreground">{t('workOrders.modal.total')}</div>
               <div>{typeof job.total === 'number' ? formatMoney(job.total) : '—'}</div>
             </div>
             <div>
-            <div className="text-sm text-muted-foreground">Quote</div>
+            <div className="text-sm text-muted-foreground">{t('workOrders.modal.quote')}</div>
             <div className="flex items-center gap-2">
               {linkedQuote ? (
                 <>
@@ -390,7 +392,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                     }}
                     className="h-6 px-2 text-xs"
                   >
-                    View
+                    {t('workOrders.modal.view')}
                   </Button>
                 </>
               ) : (
@@ -403,7 +405,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                       onClick={() => setPickerOpen(true)}
                       className="h-6 px-2 text-xs"
                     >
-                      Link
+                      {t('workOrders.modal.link')}
                     </Button>
                   )}
                 </>
@@ -412,7 +414,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
             </div>
           </div>
           <div>
-            <div className="text-sm text-muted-foreground mb-1">Notes</div>
+            <div className="text-sm text-muted-foreground mb-1">{t('workOrders.modal.notes')}</div>
             <Textarea
               value={localNotes}
               onChange={(e)=>{
@@ -451,7 +453,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
           </div>
 
           <div>
-            <div className="text-sm text-muted-foreground mb-1">Photos</div>
+            <div className="text-sm text-muted-foreground mb-1">{t('workOrders.modal.photos')}</div>
             {Array.isArray((job as any).photos) && (job as any).photos.length > 0 ? (
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
                 {(job as any).photos.map((url: string, idx: number) => (
@@ -466,9 +468,9 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                 ))}
               </div>
             ) : (job as any).uploadingPhotos ? (
-              <div className="text-sm text-muted-foreground">Photos uploading...</div>
+              <div className="text-sm text-muted-foreground">{t('workOrders.modal.photosUploading')}</div>
             ) : (
-              <div className="text-sm text-muted-foreground">No photos yet.</div>
+              <div className="text-sm text-muted-foreground">{t('workOrders.modal.noPhotos')}</div>
             )}
             
             {/* Photo Upload Section */}
@@ -488,14 +490,14 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
               {photosToUpload.length > 0 && (
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground">
-                    {photosToUpload.length} photo{photosToUpload.length === 1 ? '' : 's'} selected
+                    {photosToUpload.length} {photosToUpload.length === 1 ? t('workOrders.modal.photos') : t('workOrders.modal.photos')} {t('workOrders.modal.selectPhotos')}
                   </span>
                   <Button 
                     size="sm" 
                     onClick={handlePhotoUpload}
                     disabled={uploadingPhotos}
                   >
-                    {uploadingPhotos ? (photos.length > 0 ? 'Adding photos...' : 'Uploading photos...') : 'Upload Photos'}
+                    {uploadingPhotos ? (photos.length > 0 ? t('workOrders.modal.addingPhotos') : t('workOrders.modal.uploadingPhotos')) : t('workOrders.modal.uploadPhotos')}
                   </Button>
                   <Button 
                     size="sm" 
@@ -503,7 +505,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                     onClick={() => setPhotosToUpload([])}
                     disabled={uploadingPhotos}
                   >
-                    Cancel
+                    {t('workOrders.modal.cancel')}
                   </Button>
                 </div>
               )}
@@ -530,7 +532,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                   onClick={handleNavigate}
                   size="sm"
                 >
-                  Navigate
+                  {t('workOrders.modal.navigate')}
                 </Button>
                 {job.jobType === 'time_and_materials' && (
                   <>
@@ -541,7 +543,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                         onClick={() => clockInOut({ jobId: job.id, isClockingIn: true })}
                         disabled={isClockingInOut}
                       >
-                        {isClockingInOut ? 'Starting...' : 'Start Job'}
+                        {isClockingInOut ? t('workOrders.modal.starting') : t('workOrders.modal.startJob')}
                       </Button>
                     )}
                     {job.isClockedIn && (
@@ -551,7 +553,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                         onClick={() => clockInOut({ jobId: job.id, isClockingIn: false })}
                         disabled={isClockingInOut}
                       >
-                        {isClockingInOut ? 'Stopping...' : 'Stop Job'}
+                        {isClockingInOut ? t('workOrders.modal.stopping') : t('workOrders.modal.stopJob')}
                       </Button>
                     )}
                   </>
@@ -564,7 +566,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                       disabled={isCreatingInvoice || (job.jobType === 'scheduled' && !currentQuoteId && !existingInvoice)}
                       size="sm"
                     >
-                      {isCreatingInvoice ? 'Creating...' : existingInvoice ? 'View Invoice' : 'Create Invoice'}
+                      {isCreatingInvoice ? t('workOrders.modal.creatingInvoice') : existingInvoice ? t('workOrders.modal.viewInvoice') : t('workOrders.modal.createInvoice')}
                     </Button>
                     <Button 
                       variant="outline" 
@@ -572,37 +574,37 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                       disabled={job.status === 'Completed' || isCompletingJob}
                       size="sm"
                     >
-                      {isCompletingJob ? 'Completing...' : job.status === 'Completed' ? 'Completed' : 'Complete'}
+                      {isCompletingJob ? t('workOrders.modal.completing') : job.status === 'Completed' ? t('workOrders.modal.completed') : t('workOrders.modal.complete')}
                     </Button>
                   </>
                 )}
               </div>
               {role === 'owner' && (
-                <div className="flex items-center gap-2">
-                  <Button variant="destructive" size="sm" onClick={async () => {
-                    try {
-                      const { error } = await authApi.invoke(`jobs?id=${job.id}`, { 
-                        method: 'DELETE',
-                        toast: {
-                          success: 'Job deleted',
-                          loading: 'Deleting job...',
-                          error: 'Failed to delete job'
+                  <div className="flex items-center gap-2">
+                    <Button variant="destructive" size="sm" onClick={async () => {
+                      try {
+                        const { error } = await authApi.invoke(`jobs?id=${job.id}`, { 
+                          method: 'DELETE',
+                          toast: {
+                            success: t('workOrders.modal.delete'),
+                            loading: t('workOrders.modal.delete'),
+                            error: t('workOrders.modal.delete')
+                          }
+                        });
+                        
+                        if (error) {
+                          throw new Error(error.message || 'Failed to delete job');
                         }
-                      });
-                      
-                      if (error) {
-                        throw new Error(error.message || 'Failed to delete job');
+                        
+                        if (businessId) {
+                          invalidationHelpers.jobs(queryClient, businessId);
+                        }
+                        onOpenChange(false);
+                      } catch (e: any) {
+                        console.error('Failed to delete job:', e);
                       }
-                      
-                      if (businessId) {
-                        invalidationHelpers.jobs(queryClient, businessId);
-                      }
-                      onOpenChange(false);
-                    } catch (e: any) {
-                      console.error('Failed to delete job:', e);
-                    }
-                  }}>Delete</Button>
-                </div>
+                    }}>{t('workOrders.modal.delete')}</Button>
+                  </div>
               )}
             </div>
           </div>
@@ -611,7 +613,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
         <Dialog open={viewerOpen} onOpenChange={setViewerOpen}>
           <DialogContent className="max-w-4xl" aria-describedby="photo-viewer-description">
             <DialogHeader>
-              <ModalTitle>Photo {viewerIndex + 1} of {photos.length}</ModalTitle>
+              <ModalTitle>{t('workOrders.modal.photoCount', { current: viewerIndex + 1, total: photos.length })}</ModalTitle>
             </DialogHeader>
             <div id="photo-viewer-description" className="sr-only">
               View and navigate through job photos
@@ -630,7 +632,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                     onClick={(e)=>{ e.stopPropagation(); setViewerIndex((i)=> (i - 1 + photos.length) % photos.length); }}
                     className="pointer-events-auto px-3 py-2 rounded-md bg-background/60 border"
                   >
-                    Prev
+                    {t('workOrders.modal.prev')}
                   </button>
                   <button
                     type="button"
@@ -638,7 +640,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                     onClick={(e)=>{ e.stopPropagation(); setViewerIndex((i)=> (i + 1) % photos.length); }}
                     className="pointer-events-auto px-3 py-2 rounded-md bg-background/60 border"
                   >
-                    Next
+                    {t('workOrders.modal.next')}
                   </button>
                 </div>
               </div>
