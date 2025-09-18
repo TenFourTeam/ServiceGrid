@@ -15,6 +15,7 @@ export interface Invoice {
   discount: number;
   status: "Draft" | "Sent" | "Paid" | "Overdue";
   dueAt?: string | null;
+  paidAt?: string | null;
   createdAt?: string;
   updatedAt?: string;
   publicToken?: string;

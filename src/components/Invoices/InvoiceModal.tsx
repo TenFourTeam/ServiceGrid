@@ -7,12 +7,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Send, Eye, Edit3 } from 'lucide-react';
+import { CalendarIcon, Send, Eye, Edit3, DollarSign } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { formatDate, formatMoney } from '@/utils/format';
 import { useCustomersData } from '@/queries/unified';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { useRecordPayment } from '@/hooks/useInvoiceOperations';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -25,7 +26,7 @@ export interface InvoiceModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   invoice: Invoice | null;
-  mode?: 'view' | 'edit' | 'send' | 'create';
+  mode?: 'view' | 'edit' | 'send' | 'create' | 'mark_paid';
   initialCustomerId?: string;
   onSuccess?: () => void;
 }
@@ -43,6 +44,7 @@ export default function InvoiceModal({
   const { getToken } = useClerkAuth();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const queryClient = useQueryClient();
+  const recordPaymentMutation = useRecordPayment();
 
   const [mode, setMode] = useState(initialMode);
   const [loading, setLoading] = useState(false);
@@ -58,6 +60,11 @@ export default function InvoiceModal({
   const [to, setTo] = useState('');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
+
+  // Payment recording state
+  const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'Check' | 'Card'>('Cash');
+  const [paymentDate, setPaymentDate] = useState<Date>(new Date());
+  const [paymentAmount, setPaymentAmount] = useState(0);
 
   const customerName = useMemo(() => {
     const customer = customers.find(c => c.id === (invoice?.customerId || customerId));
@@ -104,6 +111,9 @@ export default function InvoiceModal({
       setTo(customerEmail);
       setSubject(defaultSubject);
       setMessage('');
+      setPaymentAmount(invoice.total);
+      setPaymentDate(new Date());
+      setPaymentMethod('Cash');
     } else if (open && !invoice && initialCustomerId) {
       setCustomerId(initialCustomerId);
       setStatus('Draft');
@@ -113,6 +123,9 @@ export default function InvoiceModal({
       setTo('');
       setSubject('');
       setMessage('');
+      setPaymentAmount(0);
+      setPaymentDate(new Date());
+      setPaymentMethod('Cash');
     }
     setMode(initialMode);
   }, [open, invoice, initialCustomerId, initialMode, customerEmail, defaultSubject, business?.taxRateDefault]);
@@ -237,6 +250,27 @@ export default function InvoiceModal({
     }
   };
 
+  const handleRecordPayment = async () => {
+    if (!invoice) return;
+
+    try {
+      setLoading(true);
+      await recordPaymentMutation.mutateAsync({
+        invoiceId: invoice.id,
+        amount: paymentAmount,
+        method: paymentMethod,
+        paidAt: paymentDate.toISOString()
+      });
+
+      onSuccess?.();
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Failed to record payment:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleMarkSent = async () => {
     if (!invoice || !businessId) return;
 
@@ -268,17 +302,82 @@ export default function InvoiceModal({
     switch (mode) {
       case 'send': return `Send Invoice ${invoice.number}`;
       case 'edit': return `Edit Invoice ${invoice.number}`;
+      case 'mark_paid': return `Record Payment - Invoice ${invoice.number}`;
       default: return `Invoice ${invoice.number}`;
     }
   };
 
   const getModalDescription = () => {
     if (mode === 'send') return `Send invoice to ${customerName}`;
+    if (mode === 'mark_paid') return `Record payment for ${customerName}`;
     if (!invoice) return 'Create a new invoice';
     return `${customerName} • ${invoice.status}${invoice.dueAt ? ` • Due ${formatDate(invoice.dueAt)}` : ''}`;
   };
 
   const renderContent = () => {
+    if (mode === 'mark_paid') {
+      return (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-4 bg-muted/30 rounded-md">
+            <span className="text-sm font-medium">Invoice Total</span>
+            <span className="text-lg font-semibold">{formatMoney(invoice?.total || 0)}</span>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="paymentAmount">Payment Amount</Label>
+            <Input
+              id="paymentAmount"
+              type="number"
+              value={paymentAmount}
+              onChange={(e) => setPaymentAmount(Number(e.target.value))}
+              step="0.01"
+              min="0"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="paymentMethod">Payment Method</Label>
+            <Select value={paymentMethod} onValueChange={(value: any) => setPaymentMethod(value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Cash">Cash</SelectItem>
+                <SelectItem value="Check">Check</SelectItem>
+                <SelectItem value="Card">Card</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Payment Date</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {format(paymentDate, "PPP")}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={paymentDate}
+                  onSelect={(date) => date && setPaymentDate(date)}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+      );
+    }
+
     if (mode === 'send') {
       return (
         <div className="space-y-4">
@@ -459,10 +558,24 @@ export default function InvoiceModal({
             <span>{customerName}</span>
           </div>
           
+          {invoice.createdAt && (
+            <div className="flex items-center justify-between text-sm mt-1">
+              <span className="text-muted-foreground">Issued Date</span>
+              <span>{formatDate(invoice.createdAt)}</span>
+            </div>
+          )}
+          
           {invoice.dueAt && (
             <div className="flex items-center justify-between text-sm mt-1">
               <span className="text-muted-foreground">Due Date</span>
               <span>{formatDate(invoice.dueAt)}</span>
+            </div>
+          )}
+
+          {invoice.status === 'Paid' && invoice.paidAt && (
+            <div className="flex items-center justify-between text-sm mt-1">
+              <span className="text-muted-foreground">Paid Date</span>
+              <span>{formatDate(invoice.paidAt)}</span>
             </div>
           )}
         </div>
@@ -471,6 +584,22 @@ export default function InvoiceModal({
   };
 
   const renderActions = () => {
+    if (mode === 'mark_paid') {
+      return (
+        <>
+          <Button variant="outline" onClick={() => setMode('view')}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleRecordPayment} 
+            disabled={loading || paymentAmount <= 0}
+          >
+            {loading ? 'Recording...' : 'Record Payment'}
+          </Button>
+        </>
+      );
+    }
+
     if (mode === 'send') {
       return (
         <>
@@ -505,12 +634,21 @@ export default function InvoiceModal({
       return null;
     }
 
+    const canMarkAsPaid = invoice.status === 'Draft' || invoice.status === 'Sent';
+
     return (
       <>
         <Button variant="outline" onClick={() => setMode('edit')}>
           <Edit3 className="h-4 w-4 mr-2" />
           Edit Invoice
         </Button>
+
+        {canMarkAsPaid && (
+          <Button variant="outline" onClick={() => setMode('mark_paid')}>
+            <DollarSign className="h-4 w-4 mr-2" />
+            Mark as Paid
+          </Button>
+        )}
 
         <Button onClick={() => setMode('send')}>
           <Eye className="h-4 w-4 mr-2" />

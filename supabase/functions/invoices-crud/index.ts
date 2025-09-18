@@ -55,6 +55,48 @@ Deno.serve(async (req) => {
 
     if (req.method === 'POST') {
       const body = await req.json();
+      
+      // Handle record payment action
+      if (body.action === 'record_payment') {
+        console.log('[invoices-crud] Recording payment for invoice:', body.invoiceId);
+        
+        const { invoiceId, amount, method, paidAt } = body;
+        
+        // Update invoice status to paid
+        const { error: invoiceUpdateError } = await supabase
+          .from('invoices')
+          .update({ 
+            status: 'Paid',
+            paid_at: paidAt 
+          })
+          .eq('id', invoiceId)
+          .eq('business_id', ctx.businessId);
+
+        if (invoiceUpdateError) {
+          console.error('[invoices-crud] Error updating invoice:', invoiceUpdateError);
+          throw new Error('Failed to update invoice status');
+        }
+
+        // Create payment record
+        const { error: paymentError } = await supabase
+          .from('payments')
+          .insert({
+            owner_id: ctx.userId,
+            invoice_id: invoiceId,
+            amount: Math.round(amount * 100), // Convert to cents
+            status: 'Completed',
+            method: method,
+            received_at: paidAt
+          });
+
+        if (paymentError) {
+          console.error('[invoices-crud] Error creating payment record:', paymentError);
+          throw new Error('Failed to create payment record');
+        }
+
+        return json({ success: true });
+      }
+
       const { customerId, jobId, status, total, subtotal, taxRate, discount, dueAt, quoteId } = body;
 
       let invoiceData: any = {

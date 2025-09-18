@@ -154,3 +154,55 @@ export function useUpdateInvoice() {
     }
   });
 }
+
+export function useRecordPayment() {
+  const { getToken } = useAuth();
+  const { businessId } = useBusinessContext();
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ 
+      invoiceId, 
+      amount, 
+      method, 
+      paidAt 
+    }: { 
+      invoiceId: string; 
+      amount: number; 
+      method: 'Cash' | 'Check' | 'Card';
+      paidAt: string;
+    }) => {
+      const { data, error } = await authApi.invoke('invoices-crud', {
+        method: 'POST',
+        body: { 
+          action: 'record_payment',
+          invoiceId,
+          amount,
+          method,
+          paidAt
+        },
+        toast: {
+          success: 'Payment recorded successfully!',
+          loading: 'Recording payment...',
+          error: 'Failed to record payment'
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to record payment');
+      }
+
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ 
+        queryKey: queryKeys.data.invoices(businessId || ''),
+        refetchType: 'active'
+      });
+    },
+    onError: (error: any) => {
+      console.error('[useRecordPayment] error:', error);
+    }
+  });
+}
