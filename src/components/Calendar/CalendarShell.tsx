@@ -63,7 +63,7 @@ export default function CalendarShell({
     return () => window.removeEventListener('keydown', onKey);
   }, [stepDate]);
   return <div className="flex-1 min-h-0 flex flex-col gap-2 md:gap-4">
-        <header className="flex flex-col gap-3 md:gap-0 md:flex-row md:items-center md:justify-between">
+        <header className="pt-4 md:pt-6 flex flex-col gap-3 md:gap-0 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center justify-between md:gap-3">
             <h2 className={`font-semibold ${isPhone ? 'text-base' : 'text-lg md:text-base'}`}>
               {rangeTitle}
