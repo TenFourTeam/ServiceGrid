@@ -57,8 +57,6 @@
   },
   "sidebar": {
     "navigation": "Navigation",
-    "coreFeatures": "Core Features",
-    "businessManagement": "Business Management",
     "subtitle": "Contractor Console", 
     "myBusiness": "My Business",
     "termsServices": "Terms & Services",

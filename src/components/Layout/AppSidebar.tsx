@@ -3,7 +3,7 @@ import { RequireRole } from "@/components/Auth/RequireRole";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useUserBusinesses } from "@/hooks/useUserBusinesses";
 import { useBusinessSwitcher } from "@/hooks/useBusinessSwitcher";
-import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarTrigger, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarHeader, SidebarSeparator, SidebarTrigger, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
 import { Calendar as CalendarIcon, FileText, Receipt, Users, Wrench, User as UserIcon, Settings as SettingsIcon, LifeBuoy, LogOut, Shield, Clock, UserPlus, ClipboardList } from "lucide-react";
 import BusinessLogo from "@/components/BusinessLogo";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -132,7 +132,6 @@ export default function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>{t('sidebar.coreFeatures')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {visibleCoreItems.map(item => <SidebarMenuItem key={item.url}>
@@ -150,23 +149,25 @@ export default function AppSidebar() {
         </SidebarGroup>
 
         {visibleBusinessItems.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel>{t('sidebar.businessManagement')}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {visibleBusinessItems.map(item => <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton asChild isActive={isActivePath(item.url)}>
-                      <NavLink to={item.url} end className={({
-                    isActive
-                  }) => isActive ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"}>
-                        <item.icon className="mr-2 h-4 w-4" />
-                        <span className="truncate">{item.title}</span>
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>)}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          <>
+            <SidebarSeparator />
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {visibleBusinessItems.map(item => <SidebarMenuItem key={item.url}>
+                      <SidebarMenuButton asChild isActive={isActivePath(item.url)}>
+                        <NavLink to={item.url} end className={({
+                      isActive
+                    }) => isActive ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"}>
+                          <item.icon className="mr-2 h-4 w-4" />
+                          <span className="truncate">{item.title}</span>
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>)}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
         )}
       </SidebarContent>
 
