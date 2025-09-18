@@ -665,7 +665,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                             zIndex: isHighlighted ? 10 : 1
                           }}
                           onPointerDown={canDrag ? (e) => onDragStart(e, j) : undefined}
-                          onClick={() => setActiveJob(j)}
+                          onClick={(e) => { e.stopPropagation(); setActiveJob(j); }}
                         >
                           <div className="flex items-center gap-1 text-xs font-medium leading-tight">
                             {startsAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} — {customer?.name || 'Unknown'}
@@ -722,7 +722,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                             height: `${Math.max(clockHeight, 4)}%`,
                             zIndex: displayMode === 'combined' ? 10 : (highlightJobId === j.id ? 10 : 2)
                           }}
-                          onClick={() => setActiveJob(j)}
+                          onClick={(e) => { e.stopPropagation(); setActiveJob(j); }}
                         >
                           <div className="flex items-center gap-1 text-xs font-medium leading-tight">
                             {clockStart.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} — {customer?.name || 'Unknown'}

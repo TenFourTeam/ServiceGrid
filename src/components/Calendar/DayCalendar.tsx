@@ -65,7 +65,7 @@ export default function DayCalendar({ date, displayMode = 'scheduled' }: { date:
             const statusColors = getJobStatusColors((j as Job).status, (j as Job).isAssessment);
             
             blocks.push(
-              <li key={`${(j as Job).id}-scheduled`} className={`${statusColors.bg} ${statusColors.text} ${statusColors.border} rounded px-3 py-2 border ${displayMode === 'combined' ? 'opacity-60' : ''} cursor-pointer hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-primary`} onClick={() => { setActiveJob(j as Job); setOpen(true); }}>
+              <li key={`${(j as Job).id}-scheduled`} className={`${statusColors.bg} ${statusColors.text} ${statusColors.border} rounded px-3 py-2 border ${displayMode === 'combined' ? 'opacity-60' : ''} cursor-pointer hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-primary`} onClick={(e) => { e.stopPropagation(); setActiveJob(j as Job); setOpen(true); }}>
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <span className={`inline-block h-2 w-2 rounded-full ${(j as Job).isAssessment ? 'bg-status-assessment-foreground' : (j as Job).status === 'Completed' ? 'bg-success' : 'bg-primary'}`} aria-hidden="true" />
                   <span>{s.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
@@ -89,7 +89,7 @@ export default function DayCalendar({ date, displayMode = 'scheduled' }: { date:
             const liClasses = `rounded px-3 py-2 bg-[hsl(var(--clocked-time))] text-[hsl(var(--clocked-time-foreground))] border border-[hsl(var(--clocked-time))]`;
             
             blocks.push(
-              <li key={`${(j as Job).id}-clocked`} className={`${liClasses} cursor-pointer hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-primary`} onClick={() => { setActiveJob(j as Job); setOpen(true); }}>
+              <li key={`${(j as Job).id}-clocked`} className={`${liClasses} cursor-pointer hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-primary`} onClick={(e) => { e.stopPropagation(); setActiveJob(j as Job); setOpen(true); }}>
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <span className="inline-block h-2 w-2 rounded-full bg-white" aria-hidden="true" />
                   <span>{clockStart.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
