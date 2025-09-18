@@ -21,6 +21,7 @@ import { invalidationHelpers } from '@/queries/keys';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 import { useAuth } from '@clerk/clerk-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 
 export default function InvoicesPage() {
@@ -28,6 +29,7 @@ export default function InvoicesPage() {
   const { data: invoices = [] } = useInvoicesData();
   const { isSignedIn } = useClerkAuth();
   const { businessId } = useBusinessContext();
+  const { t } = useLanguage();
   
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<'All' | 'Draft' | 'Sent' | 'Paid' | 'Overdue'>('All');
@@ -218,10 +220,10 @@ export default function InvoicesPage() {
               <div className="text-sm text-muted-foreground">{formatMoney(invoice.total)}</div>
             </div>
             <div className="text-sm text-muted-foreground truncate">
-              Customer: {customer?.name || 'Unknown'}
+              {t('invoices.mobile.customer')}: {customer?.name || 'Unknown'}
             </div>
             <div className="text-sm text-muted-foreground">
-              Due: {formatDate(invoice.dueAt)}
+              {t('invoices.mobile.due')}: {formatDate(invoice.dueAt)}
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
@@ -236,14 +238,14 @@ export default function InvoicesPage() {
 
 
   return (
-    <AppLayout title="Invoices">
+    <AppLayout title={t('invoices.title')}>
       <Card>
         <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <CardTitle>All Invoices</CardTitle>
+          <CardTitle>{t('invoices.title')}</CardTitle>
           <div className="flex flex-col sm:flex-row items-center gap-2">
             <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
               <Input
-                placeholder="Search number or customer…"
+                placeholder={t('invoices.searchPlaceholder')}
                 value={q}
                 onChange={(e)=>setQ(e.target.value)}
                 className="w-full sm:w-48"
@@ -253,11 +255,11 @@ export default function InvoicesPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="All">All</SelectItem>
-                  <SelectItem value="Draft">Draft</SelectItem>
-                  <SelectItem value="Sent">Sent</SelectItem>
-                  <SelectItem value="Paid">Paid</SelectItem>
-                  <SelectItem value="Overdue">Overdue</SelectItem>
+                  <SelectItem value="All">{t('invoices.status.all')}</SelectItem>
+                  <SelectItem value="Draft">{t('invoices.status.draft')}</SelectItem>
+                  <SelectItem value="Sent">{t('invoices.status.sent')}</SelectItem>
+                  <SelectItem value="Paid">{t('invoices.status.paid')}</SelectItem>
+                  <SelectItem value="Overdue">{t('invoices.status.overdue')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -270,7 +272,7 @@ export default function InvoicesPage() {
                 className="w-full sm:w-auto"
               >
                 <Download className="h-4 w-4 mr-2" />
-                Export CSV
+                {t('invoices.exportCSV')}
               </Button>
             </div>
           </div>
@@ -281,7 +283,7 @@ export default function InvoicesPage() {
             <div className="space-y-3">
               {sortedInvoices.length === 0 ? (
                 <div className="text-center py-12">
-                  <p className="text-muted-foreground text-lg">No invoices found</p>
+                  <p className="text-muted-foreground text-lg">{t('invoices.noInvoicesFound')}</p>
                 </div>
               ) : (
                 sortedInvoices.map((i) => (
@@ -303,32 +305,32 @@ export default function InvoicesPage() {
                 <TableRow>
                   <TableHead>
                       <button className="flex items-center gap-1" onClick={() => requestSort('number')} aria-label="Sort by number">
-                        Number{sortKey === 'number' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                        {t('invoices.table.number')}{sortKey === 'number' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
                       </button>
                   </TableHead>
                   <TableHead>
                       <button className="flex items-center gap-1" onClick={() => requestSort('customer')} aria-label="Sort by customer">
-                        Customer{sortKey === 'customer' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                        {t('invoices.table.customer')}{sortKey === 'customer' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
                       </button>
                   </TableHead>
                   <TableHead>
                       <button className="flex items-center gap-1" onClick={() => requestSort('amount')} aria-label="Sort by amount">
-                        Amount{sortKey === 'amount' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                        {t('invoices.table.amount')}{sortKey === 'amount' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
                       </button>
                   </TableHead>
                   <TableHead>
                       <button className="flex items-center gap-1" onClick={() => requestSort('issued')} aria-label="Sort by issued date">
-                        Issued{sortKey === 'issued' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                        {t('invoices.table.issued')}{sortKey === 'issued' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
                       </button>
                   </TableHead>
                   <TableHead>
                       <button className="flex items-center gap-1" onClick={() => requestSort('due')} aria-label="Sort by due date">
-                        Due{sortKey === 'due' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                        {t('invoices.table.due')}{sortKey === 'due' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
                       </button>
                   </TableHead>
                   <TableHead>
                       <button className="flex items-center gap-1" onClick={() => requestSort('status')} aria-label="Sort by status">
-                         Status{sortKey === 'status' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                         {t('invoices.table.status')}{sortKey === 'status' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
                       </button>
                   </TableHead>
                 </TableRow>

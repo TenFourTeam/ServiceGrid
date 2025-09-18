@@ -506,5 +506,30 @@
       "noCustomer": "No se encontró cliente.",
       "addNewCustomer": "Agregar nuevo cliente"
     }
+  },
+  "invoices": {
+    "title": "Todas las Facturas",
+    "searchPlaceholder": "Buscar número o cliente…",
+    "noInvoicesFound": "No se encontraron facturas",
+    "exportCSV": "Exportar CSV",
+    "table": {
+      "number": "Número",
+      "customer": "Cliente",
+      "amount": "Cantidad",
+      "issued": "Emitida",
+      "due": "Vence",
+      "status": "Estado"
+    },
+    "status": {
+      "all": "Todas",
+      "draft": "Borrador",
+      "sent": "Enviada",
+      "paid": "Pagada",
+      "overdue": "Vencida"
+    },
+    "mobile": {
+      "customer": "Cliente",
+      "due": "Vence"
+    }
   }
 }

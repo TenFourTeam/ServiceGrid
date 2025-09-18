@@ -506,5 +506,30 @@
       "noCustomer": "No customer found.",
       "addNewCustomer": "Add new customer"
     }
+  },
+  "invoices": {
+    "title": "All Invoices",
+    "searchPlaceholder": "Search number or customer…",
+    "noInvoicesFound": "No invoices found",
+    "exportCSV": "Export CSV",
+    "table": {
+      "number": "Number",
+      "customer": "Customer",
+      "amount": "Amount",
+      "issued": "Issued",
+      "due": "Due",
+      "status": "Status"
+    },
+    "status": {
+      "all": "All",
+      "draft": "Draft",
+      "sent": "Sent",
+      "paid": "Paid",
+      "overdue": "Overdue"
+    },
+    "mobile": {
+      "customer": "Customer",
+      "due": "Due"
+    }
   }
 }
