@@ -11,6 +11,7 @@ import { LineItemsEditor } from '@/components/Quotes/LineItemsEditor';
 import { CustomerBottomModal } from '@/components/Customers/CustomerBottomModal';
 import { useQuoteCalculations } from '@/hooks/useQuoteCalculations';
 import { formatCurrencyInputNoSymbol, parseCurrencyInput, sanitizeMoneyTyping } from '@/utils/format';
+import { useLanguage } from '@/contexts/LanguageContext';
 import type { Customer, LineItem, Quote } from '@/types';
 
 interface QuoteFormData {
@@ -38,6 +39,7 @@ interface QuoteFormProps {
 }
 
 export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disabled, initialData, mode = 'create' }: QuoteFormProps) {
+  const { t } = useLanguage();
   const [showCreateCustomer, setShowCreateCustomer] = useState(false);
   const [data, setData] = useState<QuoteFormData>({
     customerId: '',
@@ -127,24 +129,24 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
       <div className="grid md:grid-cols-2 gap-6">
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="customer">Customer *</Label>
+            <Label htmlFor="customer">{t('quotes.form.customer')} *</Label>
             <CustomerCombobox
               customers={customers}
               value={data.customerId}
               onChange={(id) => setData(prev => ({ ...prev, customerId: id }))}
-              placeholder="Select customer…"
+              placeholder={t('quotes.form.selectCustomer')}
               disabled={disabled || isReadOnly}
               onCreateCustomer={() => setShowCreateCustomer(true)}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="address">Service Address</Label>
+            <Label htmlFor="address">{t('quotes.form.serviceAddress')}</Label>
             <Input
               id="address"
               value={data.address}
               onChange={(e) => setData(prev => ({ ...prev, address: e.target.value }))}
-              placeholder="Enter service address"
+              placeholder={t('quotes.form.serviceAddressPlaceholder')}
               disabled={disabled || isReadOnly}
               readOnly={isReadOnly}
             />
@@ -162,7 +164,7 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
         <div className="space-y-4">
           <div className="rounded-lg border p-4 space-y-4">
             <div className="space-y-2">
-              <Label>Tax Rate (%)</Label>
+              <Label>{t('quotes.form.taxRate')}</Label>
               <Input
                 type="number"
                 min="0"
@@ -176,7 +178,7 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
             </div>
 
             <div className="space-y-2">
-              <Label>Discount ($)</Label>
+              <Label>{t('quotes.form.discount')}</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                 <Input
@@ -203,7 +205,7 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Payment Terms</Label>
+                <Label>{t('quotes.form.paymentTerms')}</Label>
                 <Select
                   value={data.paymentTerms}
                   onValueChange={(value) => setData(prev => ({ ...prev, paymentTerms: value as any }))}
@@ -213,16 +215,16 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="due_on_receipt">Due on receipt</SelectItem>
-                    <SelectItem value="net_15">Net 15</SelectItem>
-                    <SelectItem value="net_30">Net 30</SelectItem>
-                    <SelectItem value="net_60">Net 60</SelectItem>
+                    <SelectItem value="due_on_receipt">{t('quotes.form.paymentTerms.dueOnReceipt')}</SelectItem>
+                    <SelectItem value="net_15">{t('quotes.form.paymentTerms.net15')}</SelectItem>
+                    <SelectItem value="net_30">{t('quotes.form.paymentTerms.net30')}</SelectItem>
+                    <SelectItem value="net_60">{t('quotes.form.paymentTerms.net60')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label>Frequency</Label>
+                <Label>{t('quotes.form.frequency')}</Label>
                 <Select
                   value={data.frequency}
                   onValueChange={(value) => setData(prev => ({ ...prev, frequency: value as any }))}
@@ -232,11 +234,11 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="one-off">One-off</SelectItem>
-                    <SelectItem value="bi-monthly">Bi-monthly</SelectItem>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="bi-yearly">Bi-yearly</SelectItem>
-                    <SelectItem value="yearly">Yearly</SelectItem>
+                    <SelectItem value="one-off">{t('quotes.form.frequency.oneOff')}</SelectItem>
+                    <SelectItem value="bi-monthly">{t('quotes.form.frequency.biMonthly')}</SelectItem>
+                    <SelectItem value="monthly">{t('quotes.form.frequency.monthly')}</SelectItem>
+                    <SelectItem value="bi-yearly">{t('quotes.form.frequency.biYearly')}</SelectItem>
+                    <SelectItem value="yearly">{t('quotes.form.frequency.yearly')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -250,14 +252,14 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
                   onCheckedChange={(checked) => setData(prev => ({ ...prev, depositRequired: !!checked }))}
                   disabled={isReadOnly}
                 />
-                <Label htmlFor="deposit-required">Deposit Required</Label>
+                <Label htmlFor="deposit-required">{t('quotes.form.deposit.required')}</Label>
               </div>
               {data.depositRequired && (
                 <Input
                   type="number"
                   min="0"
                   max="100"
-                  placeholder="Deposit percentage"
+                  placeholder={t('quotes.form.deposit.percentage')}
                   value={data.depositPercent}
                   onChange={(e) => setData(prev => ({ ...prev, depositPercent: parseInt(e.target.value) || 0 }))}
                   disabled={disabled || isReadOnly}
@@ -270,21 +272,21 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
 
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span>Subtotal:</span>
+                <span>{t('quotes.form.summary.subtotal')}:</span>
                 <span>${(totals.subtotal / 100).toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Tax:</span>
+                <span>{t('quotes.form.summary.tax')}:</span>
                 <span>${(totals.taxAmount / 100).toFixed(2)}</span>
               </div>
               {data.discount > 0 && (
                 <div className="flex justify-between">
-                  <span>Discount:</span>
+                  <span>{t('quotes.form.summary.discount')}:</span>
                   <span>-${(data.discount / 100).toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between font-semibold text-base pt-2 border-t">
-                <span>Total:</span>
+                <span>{t('quotes.form.summary.total')}:</span>
                 <span>${(totals.total / 100).toFixed(2)}</span>
               </div>
             </div>
@@ -295,23 +297,23 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
       {/* Add text fields for terms and notes */}
       <div className="grid md:grid-cols-2 gap-6">
         <div className="space-y-2">
-          <Label htmlFor="terms">Terms & Conditions</Label>
+          <Label htmlFor="terms">{t('quotes.form.terms')}</Label>
           <Textarea
             id="terms"
             value={data.terms}
             onChange={(e) => setData(prev => ({ ...prev, terms: e.target.value }))}
-            placeholder="Enter terms and conditions"
+            placeholder={t('quotes.form.termsPlaceholder')}
             disabled={disabled || isReadOnly}
             readOnly={isReadOnly}
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="notes">Internal Notes</Label>
+          <Label htmlFor="notes">{t('quotes.form.internalNotes')}</Label>
           <Textarea
             id="notes"
             value={data.notesInternal}
             onChange={(e) => setData(prev => ({ ...prev, notesInternal: e.target.value }))}
-            placeholder="Enter internal notes"
+            placeholder={t('quotes.form.internalNotesPlaceholder')}
             disabled={disabled || isReadOnly}
             readOnly={isReadOnly}
           />
@@ -321,10 +323,10 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
       {!isReadOnly && (
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={onCancel} disabled={disabled}>
-            Cancel
+            {t('quotes.form.cancel')}
           </Button>
           <Button onClick={handleSubmit} disabled={!isValid || disabled}>
-            {mode === 'edit' ? 'Update Quote' : 'Create Quote'}
+            {mode === 'edit' ? t('quotes.form.updateQuote') : t('quotes.form.createQuote')}
           </Button>
         </div>
       )}
