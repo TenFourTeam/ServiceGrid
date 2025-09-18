@@ -62,7 +62,7 @@ export function JobBottomModal({
   const { data: customers } = useCustomersData();
   const queryClient = useQueryClient();
   const { getToken } = useAuth();
-  const { businessId } = useBusinessContext();
+  const { businessId, userId } = useBusinessContext();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
 
   // Reset state when modal closes
@@ -184,11 +184,14 @@ export function JobBottomModal({
       updatedAt: new Date().toISOString(),
     } as Job;
 
-    // Store previous data for rollback
-    const previousData = queryClient.getQueryData(queryKeys.data.jobs(businessId));
+    // Store previous data for rollback - use same query key pattern as useJobsData
+    const jobsQueryKey = queryKeys.data.jobs(businessId, userId || '');
+    const previousData = queryClient.getQueryData(jobsQueryKey);
+
+    console.log("[JobBottomModal] Optimistic update - adding job to cache with key:", jobsQueryKey);
 
     // Optimistic update - show job immediately
-    queryClient.setQueryData(queryKeys.data.jobs(businessId), (oldData: { jobs: Job[], count: number } | undefined) => {
+    queryClient.setQueryData(jobsQueryKey, (oldData: { jobs: Job[], count: number } | undefined) => {
       const currentJobs = oldData?.jobs || [];
       const currentCount = oldData?.count || 0;
       return {
@@ -229,7 +232,7 @@ export function JobBottomModal({
       const createdJob: Job = jobData.job;
 
       // Replace optimistic job with real job data
-      queryClient.setQueryData(queryKeys.data.jobs(businessId), (oldData: { jobs: Job[], count: number } | undefined) => {
+      queryClient.setQueryData(jobsQueryKey, (oldData: { jobs: Job[], count: number } | undefined) => {
         const currentJobs = oldData?.jobs || [];
         const currentCount = oldData?.count || 0;
         return {
@@ -252,7 +255,7 @@ export function JobBottomModal({
       
       // Rollback optimistic update on error
       if (previousData) {
-        queryClient.setQueryData(queryKeys.data.jobs(businessId), previousData);
+        queryClient.setQueryData(jobsQueryKey, previousData);
       }
       
       toast.error("Failed to create job");
@@ -299,8 +302,9 @@ export function JobBottomModal({
       const updatedJob = jobData.job;
       
       // Update cache with correct query key
-      if (businessId) {
-        queryClient.setQueryData(queryKeys.data.jobs(businessId), (oldData: { jobs: Job[], count: number } | undefined) => {
+      if (businessId && userId) {
+        const jobsQueryKey = queryKeys.data.jobs(businessId, userId);
+        queryClient.setQueryData(jobsQueryKey, (oldData: { jobs: Job[], count: number } | undefined) => {
           const currentJobs = oldData?.jobs || [];
           return {
             jobs: currentJobs.map(job => 

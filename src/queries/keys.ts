@@ -88,8 +88,10 @@ const invalidationHelpers = {
   },
   
   jobs: (queryClient: any, businessId: string) => {
+    console.log("[invalidationHelpers.jobs] Invalidating jobs for businessId:", businessId);
     queryClient.invalidateQueries({ queryKey: queryKeys.counts.jobs(businessId) });
-    queryClient.invalidateQueries({ queryKey: queryKeys.data.jobs(businessId) });
+    // Use pattern matching to invalidate both job queries (with and without userId)
+    queryClient.invalidateQueries({ queryKey: ['data', 'jobs', businessId] });
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary() });
     // Cross-entity: jobs affect calendar view
     queryClient.invalidateQueries({ queryKey: ['calendar'] });
