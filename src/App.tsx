@@ -130,6 +130,7 @@ const App = () => (
               <Route path="/invoice-pay" element={<InvoicePayPage />} />
               <Route path="/invite" element={<InvitePage />} />
               <Route path="/request/:businessId" element={<PublicRequestFormPage />} />
+              <Route path="/request" element={<PublicRequestFormPage />} />
               
               <Route path="*" element={<NotFound />} />
             </Routes>
