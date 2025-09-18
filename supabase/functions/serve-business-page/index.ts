@@ -54,8 +54,8 @@ Deno.serve(async (req) => {
 
 function generateHTML(business: any) {
   // Default values
-  const defaultTitle = 'ServiceGrid - Professional Lawn Care Management';
-  const defaultDescription = 'Professional lawn care management software for service businesses. Streamline scheduling, invoicing, and customer management.';
+  const defaultTitle = 'ServiceGrid - Professional Services';
+  const defaultDescription = 'Professional softwaressssss for service businesses. Streamline scheduling, invoicing, and customer management.';
   const defaultImage = '/favicon.svg';
 
   // Business-specific values
