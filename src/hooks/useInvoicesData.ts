@@ -3,23 +3,7 @@ import { queryKeys } from "@/queries/keys";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useAuth } from '@clerk/clerk-react';
 import { createAuthEdgeApi } from "@/utils/authEdgeApi";
-
-export interface Invoice {
-  id: string;
-  number: string;
-  customerId: string;
-  jobId?: string | null;
-  subtotal: number;
-  total: number;
-  taxRate: number;
-  discount: number;
-  status: "Draft" | "Sent" | "Paid" | "Overdue";
-  dueAt?: string | null;
-  paidAt?: string | null;
-  createdAt?: string;
-  updatedAt?: string;
-  publicToken?: string;
-}
+import type { Invoice } from '@/types';
 
 interface UseInvoicesDataOptions {
   enabled?: boolean;

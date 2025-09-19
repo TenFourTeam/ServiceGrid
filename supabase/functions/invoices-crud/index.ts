@@ -35,6 +35,34 @@ Deno.serve(async (req) => {
         throw new Error(`Failed to fetch invoices: ${error.message}`);
       }
 
+      // Fetch line items for all invoices
+      const invoiceIds = data?.map(inv => inv.id) || [];
+      let lineItemsMap: Record<string, any[]> = {};
+      
+      if (invoiceIds.length > 0) {
+        const { data: lineItemsData } = await supabase
+          .from('invoice_line_items')
+          .select('*')
+          .in('invoice_id', invoiceIds)
+          .order('position', { ascending: true });
+        
+        if (lineItemsData) {
+          lineItemsMap = lineItemsData.reduce((acc, item) => {
+            if (!acc[item.invoice_id]) acc[item.invoice_id] = [];
+            acc[item.invoice_id].push({
+              id: item.id,
+              name: item.name,
+              quantity: item.qty,
+              unitPrice: item.unit_price,
+              lineTotal: item.line_total,
+              unit: item.unit,
+              position: item.position
+            });
+            return acc;
+          }, {} as Record<string, any[]>);
+        }
+      }
+
       const invoices = data?.map((invoice: any) => ({
         id: invoice.id,
         number: invoice.number,
@@ -59,6 +87,7 @@ Deno.serve(async (req) => {
         depositPercent: invoice.deposit_percent,
         notesInternal: invoice.notes_internal,
         terms: invoice.terms,
+        lineItems: lineItemsMap[invoice.id] || [],
       })) || [];
 
       console.log('[invoices-crud] Fetched', invoices.length, 'invoices');

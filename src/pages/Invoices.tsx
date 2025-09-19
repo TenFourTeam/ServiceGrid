@@ -261,6 +261,16 @@ export default function InvoicesPage() {
             </div>
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <Button
+                onClick={() => {
+                  setSelectedInvoice(null);
+                  setModalMode('create');
+                }}
+                size="sm"
+                className="w-full sm:w-auto"
+              >
+                Create Invoice
+              </Button>
+              <Button
                 variant="outline"
                 size="sm"
                 onClick={handleExportCSV}
@@ -355,8 +365,13 @@ export default function InvoicesPage() {
         </CardContent>
       </Card>
       <InvoiceModal
-        open={!!selectedInvoice}
-        onOpenChange={(open) => { if (!open) setSelectedInvoice(null); }}
+        open={!!selectedInvoice || modalMode === 'create'}
+        onOpenChange={(open) => { 
+          if (!open) {
+            setSelectedInvoice(null);
+            setModalMode('view');
+          }
+        }}
         invoice={formattedInvoices.find(inv => inv.id === selectedInvoice) || null}
         mode={modalMode}
       />

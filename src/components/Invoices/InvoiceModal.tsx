@@ -509,87 +509,176 @@ export default function InvoiceModal({
     }
 
     return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Total</span>
-          <span className="text-lg font-semibold">{formatMoney(invoice.total)}</span>
+      <div className="space-y-6">
+        {/* Customer Information */}
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-muted-foreground">Customer Information</h3>
+          <div className="bg-muted/30 rounded-md p-3 space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Name</span>
+              <span className="font-medium">{customerName}</span>
+            </div>
+            {customerEmail && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Email</span>
+                <span>{customerEmail}</span>
+              </div>
+            )}
+            {invoice.address && (
+              <div className="flex items-start justify-between text-sm">
+                <span className="text-muted-foreground">Address</span>
+                <span className="text-right">{invoice.address}</span>
+              </div>
+            )}
+          </div>
         </div>
-        
-        {invoice.subtotal !== invoice.total && (
-          <>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Subtotal</span>
+
+        {/* Line Items */}
+        {invoice.lineItems && invoice.lineItems.length > 0 && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium text-muted-foreground">Line Items</h3>
+            <div className="border rounded-md">
+              <div className="grid grid-cols-12 gap-2 p-3 border-b bg-muted/30 text-xs font-medium text-muted-foreground">
+                <div className="col-span-6">Description</div>
+                <div className="col-span-2 text-right">Qty</div>
+                <div className="col-span-2 text-right">Rate</div>
+                <div className="col-span-2 text-right">Amount</div>
+              </div>
+              {invoice.lineItems.map((item: any, index: number) => (
+                <div key={item.id || index} className="grid grid-cols-12 gap-2 p-3 text-sm border-b last:border-b-0">
+                  <div className="col-span-6">{item.name}</div>
+                  <div className="col-span-2 text-right">{item.quantity}</div>
+                  <div className="col-span-2 text-right">{formatMoney(item.unitPrice)}</div>
+                  <div className="col-span-2 text-right font-medium">{formatMoney(item.lineTotal)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Pricing Summary */}
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-muted-foreground">Pricing</h3>
+          <div className="bg-muted/30 rounded-md p-3 space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Subtotal</span>
               <span>{formatMoney(invoice.subtotal)}</span>
             </div>
             
             {invoice.taxRate > 0 && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Tax ({invoice.taxRate}%)</span>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Tax ({invoice.taxRate}%)</span>
                 <span>{formatMoney(Math.round(invoice.subtotal * invoice.taxRate / 100))}</span>
               </div>
             )}
             
             {invoice.discount > 0 && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Discount</span>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Discount</span>
                 <span>-{formatMoney(invoice.discount)}</span>
               </div>
             )}
-          </>
-        )}
 
-        <div className="pt-2 border-t">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Customer</span>
-            <span>{customerName}</span>
-          </div>
-          
-          {invoice.createdAt && (
-            <div className="flex items-center justify-between text-sm mt-1">
-              <span className="text-muted-foreground">Issued Date</span>
-              <span>{formatDate(invoice.createdAt)}</span>
-            </div>
-          )}
-          
-          {invoice.dueAt && (
-            <div className="flex items-center justify-between text-sm mt-1">
-              <span className="text-muted-foreground">Due Date</span>
-              <span>{formatDate(invoice.dueAt)}</span>
-            </div>
-          )}
-
-          {invoice.status === 'Paid' && invoice.paidAt && (
-            <div className="flex items-center justify-between text-sm mt-1">
-              <span className="text-muted-foreground">Paid Date</span>
-              <span>{formatDate(invoice.paidAt)}</span>
-            </div>
-          )}
-
-          {/* Work Order */}
-          <div className="flex items-center justify-between text-sm mt-1">
-            <span className="text-muted-foreground">Work Order</span>
-            <div className="flex items-center gap-2">
-              {relatedJob ? (
-                <>
-                  <span className="text-sm">{relatedJob.title || 'Work Order'}</span>
-                  <Badge variant={relatedJob.status === 'Completed' ? 'default' : 'secondary'} className="text-xs">
-                    {relatedJob.status}
-                  </Badge>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-6 px-2 text-xs"
-                    onClick={() => setShowJobModal(true)}
-                  >
-                    View
-                  </Button>
-                </>
-              ) : (
-                <span>—</span>
-              )}
+            {invoice.depositRequired && invoice.depositPercent && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Deposit ({invoice.depositPercent}%)</span>
+                <span>{formatMoney(Math.round(invoice.total * invoice.depositPercent / 100))}</span>
+              </div>
+            )}
+            
+            <div className="flex items-center justify-between text-lg font-semibold pt-2 border-t">
+              <span>Total</span>
+              <span>{formatMoney(invoice.total)}</span>
             </div>
           </div>
         </div>
+
+        {/* Terms & Details */}
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-muted-foreground">Invoice Details</h3>
+          <div className="bg-muted/30 rounded-md p-3 space-y-2">
+            {invoice.createdAt && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Issued Date</span>
+                <span>{formatDate(invoice.createdAt)}</span>
+              </div>
+            )}
+            
+            {invoice.dueAt && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Due Date</span>
+                <span>{formatDate(invoice.dueAt)}</span>
+              </div>
+            )}
+
+            {invoice.paymentTerms && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Payment Terms</span>
+                <span>{invoice.paymentTerms.replace(/_/g, ' ')}</span>
+              </div>
+            )}
+
+            {invoice.frequency && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Frequency</span>
+                <span>{invoice.frequency.replace(/_/g, ' ')}</span>
+              </div>
+            )}
+
+            {invoice.status === 'Paid' && invoice.paidAt && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Paid Date</span>
+                <span>{formatDate(invoice.paidAt)}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Work Order */}
+        {relatedJob && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium text-muted-foreground">Related Work Order</h3>
+            <div className="bg-muted/30 rounded-md p-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">{relatedJob.title || 'Work Order'}</span>
+                  <Badge variant={relatedJob.status === 'Completed' ? 'default' : 'secondary'} className="text-xs">
+                    {relatedJob.status}
+                  </Badge>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-3 text-xs"
+                  onClick={() => setShowJobModal(true)}
+                >
+                  View Details
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Notes */}
+        {(invoice.notesInternal || invoice.terms) && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium text-muted-foreground">Notes & Terms</h3>
+            <div className="bg-muted/30 rounded-md p-3 space-y-3">
+              {invoice.notesInternal && (
+                <div>
+                  <div className="text-xs font-medium text-muted-foreground mb-1">Internal Notes</div>
+                  <div className="text-sm whitespace-pre-wrap">{invoice.notesInternal}</div>
+                </div>
+              )}
+              {invoice.terms && (
+                <div>
+                  <div className="text-xs font-medium text-muted-foreground mb-1">Terms & Conditions</div>
+                  <div className="text-sm whitespace-pre-wrap">{invoice.terms}</div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Payment Information Section */}
         {payments.length > 0 && (

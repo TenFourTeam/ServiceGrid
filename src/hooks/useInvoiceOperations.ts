@@ -5,7 +5,7 @@ import { useLifecycleEmailIntegration } from './useLifecycleEmailIntegration';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 import { queryKeys } from '@/queries/keys';
 
-import type { Invoice } from './useInvoicesData';
+import type { Invoice } from '@/types';
 
 export function useCreateInvoice() {
   const { getToken } = useAuth();
