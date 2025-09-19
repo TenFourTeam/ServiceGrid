@@ -769,13 +769,13 @@ export default function InvoiceModal({
   return (
     <>
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="max-h-[90vh]">
+        <DrawerContent className="max-h-[90vh] flex flex-col">
           <DrawerHeader>
             <DrawerTitle>{getModalTitle()}</DrawerTitle>
             <DrawerDescription>{getModalDescription()}</DrawerDescription>
           </DrawerHeader>
           
-          <div className="px-4 pb-4">
+          <div className="px-4 space-y-4 overflow-y-auto flex-1">
             {renderContent()}
           </div>
           
