@@ -21,9 +21,10 @@ Deno.serve(async (req) => {
       const { data, error, count } = await supabase
         .from('invoices')
         .select(`
-          id, number, total, status, due_at, paid_at, 
-          created_at, updated_at, public_token,
-          customer_id,
+          id, number, total, subtotal, tax_rate, discount, status, due_at, paid_at, 
+          created_at, updated_at, public_token, job_id,
+          customer_id, address, payment_terms, frequency, 
+          deposit_required, deposit_percent, notes_internal, terms,
           customers!inner(name, email)
         `, { count: 'exact' })
         .eq('business_id', ctx.businessId)
@@ -38,6 +39,9 @@ Deno.serve(async (req) => {
         id: invoice.id,
         number: invoice.number,
         total: invoice.total,
+        subtotal: invoice.subtotal,
+        taxRate: invoice.tax_rate,
+        discount: invoice.discount,
         status: invoice.status,
         dueAt: invoice.due_at,
         paidAt: invoice.paid_at,
@@ -45,8 +49,16 @@ Deno.serve(async (req) => {
         updatedAt: invoice.updated_at,
         publicToken: invoice.public_token,
         customerId: invoice.customer_id,
+        jobId: invoice.job_id,
         customerName: invoice.customers?.name,
         customerEmail: invoice.customers?.email,
+        address: invoice.address,
+        paymentTerms: invoice.payment_terms,
+        frequency: invoice.frequency,
+        depositRequired: invoice.deposit_required || false,
+        depositPercent: invoice.deposit_percent,
+        notesInternal: invoice.notes_internal,
+        terms: invoice.terms,
       })) || [];
 
       console.log('[invoices-crud] Fetched', invoices.length, 'invoices');
@@ -97,7 +109,9 @@ Deno.serve(async (req) => {
         return json({ success: true });
       }
 
-      const { customerId, jobId, status, total, subtotal, taxRate, discount, dueAt, quoteId } = body;
+      const { customerId, jobId, status, total, subtotal, taxRate, discount, dueAt, quoteId, 
+              address, paymentTerms, frequency, depositRequired, depositPercent, 
+              notesInternal, terms, lineItems } = body;
 
       let invoiceData: any = {
         business_id: ctx.businessId,
@@ -109,10 +123,14 @@ Deno.serve(async (req) => {
       if (quoteId) {
         console.log('[invoices-crud] Creating invoice from quote:', quoteId);
         
-        // Fetch the quote
+        // Fetch the quote with all fields
         const { data: quoteData, error: quoteError } = await supabase
           .from('quotes')
-          .select('customer_id, total, subtotal, tax_rate, discount')
+          .select(`
+            customer_id, total, subtotal, tax_rate, discount, address,
+            payment_terms, frequency, deposit_required, deposit_percent,
+            notes_internal, terms
+          `)
           .eq('id', quoteId)
           .eq('business_id', ctx.businessId)
           .single();
@@ -122,12 +140,19 @@ Deno.serve(async (req) => {
           throw new Error(`Failed to fetch quote: ${quoteError.message}`);
         }
 
-        // Copy quote data to invoice
+        // Copy all quote data to invoice
         invoiceData.customer_id = quoteData.customer_id;
         invoiceData.total = quoteData.total;
         invoiceData.subtotal = quoteData.subtotal;
         invoiceData.tax_rate = quoteData.tax_rate;
         invoiceData.discount = quoteData.discount;
+        invoiceData.address = quoteData.address;
+        invoiceData.payment_terms = quoteData.payment_terms;
+        invoiceData.frequency = quoteData.frequency;
+        invoiceData.deposit_required = quoteData.deposit_required;
+        invoiceData.deposit_percent = quoteData.deposit_percent;
+        invoiceData.notes_internal = quoteData.notes_internal;
+        invoiceData.terms = quoteData.terms;
         invoiceData.job_id = jobId;
         invoiceData.due_at = dueAt;
       } else {
@@ -139,6 +164,13 @@ Deno.serve(async (req) => {
         invoiceData.tax_rate = taxRate || 0;
         invoiceData.discount = discount || 0;
         invoiceData.due_at = dueAt;
+        invoiceData.address = address;
+        invoiceData.payment_terms = paymentTerms;
+        invoiceData.frequency = frequency;
+        invoiceData.deposit_required = depositRequired || false;
+        invoiceData.deposit_percent = depositPercent;
+        invoiceData.notes_internal = notesInternal;
+        invoiceData.terms = terms;
       }
 
       // Get next invoice number
@@ -204,6 +236,31 @@ Deno.serve(async (req) => {
 
           console.log('[invoices-crud] Created', invoiceLineItems.length, 'line items');
         }
+      } else if (lineItems && lineItems.length > 0) {
+        // Creating invoice manually with line items
+        console.log('[invoices-crud] Creating manual invoice line items');
+        
+        const invoiceLineItems = lineItems.map((item: any, index: number) => ({
+          invoice_id: data.id,
+          owner_id: ctx.userId,
+          name: item.name,
+          qty: item.qty,
+          unit: item.unit,
+          unit_price: item.unitPrice,
+          line_total: item.lineTotal,
+          position: index
+        }));
+
+        const { error: insertLineItemsError } = await supabase
+          .from('invoice_line_items')
+          .insert(invoiceLineItems);
+
+        if (insertLineItemsError) {
+          console.error('[invoices-crud] Manual line items insert error:', insertLineItemsError);
+          throw new Error(`Failed to create invoice line items: ${insertLineItemsError.message}`);
+        }
+
+        console.log('[invoices-crud] Created', invoiceLineItems.length, 'manual line items');
       }
 
       console.log('[invoices-crud] Invoice created:', data.id);
@@ -212,7 +269,9 @@ Deno.serve(async (req) => {
 
     if (req.method === 'PUT') {
       const body = await req.json();
-      const { id, status, total, subtotal, taxRate, discount, dueAt, paidAt } = body;
+      const { id, status, total, subtotal, taxRate, discount, dueAt, paidAt, 
+              address, paymentTerms, frequency, depositRequired, depositPercent, 
+              notesInternal, terms } = body;
 
       const updateData: any = {};
       if (status !== undefined) updateData.status = status;
@@ -222,6 +281,13 @@ Deno.serve(async (req) => {
       if (discount !== undefined) updateData.discount = discount;
       if (dueAt !== undefined) updateData.due_at = dueAt;
       if (paidAt !== undefined) updateData.paid_at = paidAt;
+      if (address !== undefined) updateData.address = address;
+      if (paymentTerms !== undefined) updateData.payment_terms = paymentTerms;
+      if (frequency !== undefined) updateData.frequency = frequency;
+      if (depositRequired !== undefined) updateData.deposit_required = depositRequired;
+      if (depositPercent !== undefined) updateData.deposit_percent = depositPercent;
+      if (notesInternal !== undefined) updateData.notes_internal = notesInternal;
+      if (terms !== undefined) updateData.terms = terms;
 
       const { data, error } = await supabase
         .from('invoices')

@@ -341,56 +341,77 @@ export type Database = {
       }
       invoices: {
         Row: {
+          address: string | null
           business_id: string
           created_at: string
           customer_id: string
+          deposit_percent: number | null
+          deposit_required: boolean
           discount: number
           due_at: string | null
+          frequency: Database["public"]["Enums"]["quote_frequency"] | null
           id: string
           job_id: string | null
+          notes_internal: string | null
           number: string
           owner_id: string
           paid_at: string | null
+          payment_terms: Database["public"]["Enums"]["payment_terms"] | null
           public_token: string
           status: Database["public"]["Enums"]["invoice_status"]
           subtotal: number
           tax_rate: number
+          terms: string | null
           total: number
           updated_at: string
         }
         Insert: {
+          address?: string | null
           business_id: string
           created_at?: string
           customer_id: string
+          deposit_percent?: number | null
+          deposit_required?: boolean
           discount?: number
           due_at?: string | null
+          frequency?: Database["public"]["Enums"]["quote_frequency"] | null
           id?: string
           job_id?: string | null
+          notes_internal?: string | null
           number: string
           owner_id: string
           paid_at?: string | null
+          payment_terms?: Database["public"]["Enums"]["payment_terms"] | null
           public_token?: string
           status?: Database["public"]["Enums"]["invoice_status"]
           subtotal?: number
           tax_rate?: number
+          terms?: string | null
           total?: number
           updated_at?: string
         }
         Update: {
+          address?: string | null
           business_id?: string
           created_at?: string
           customer_id?: string
+          deposit_percent?: number | null
+          deposit_required?: boolean
           discount?: number
           due_at?: string | null
+          frequency?: Database["public"]["Enums"]["quote_frequency"] | null
           id?: string
           job_id?: string | null
+          notes_internal?: string | null
           number?: string
           owner_id?: string
           paid_at?: string | null
+          payment_terms?: Database["public"]["Enums"]["payment_terms"] | null
           public_token?: string
           status?: Database["public"]["Enums"]["invoice_status"]
           subtotal?: number
           tax_rate?: number
+          terms?: string | null
           total?: number
           updated_at?: string
         }

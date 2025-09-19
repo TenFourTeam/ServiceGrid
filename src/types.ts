@@ -160,6 +160,14 @@ export interface Invoice {
   createdAt: ISODate;
   updatedAt: ISODate;
   publicToken: string;
+  // New fields to match Quote functionality
+  address?: string;
+  paymentTerms?: PaymentTerms;
+  frequency?: QuoteFrequency;
+  depositRequired: boolean;
+  depositPercent?: number;
+  notesInternal?: string;
+  terms?: string;
 }
 
 export interface Payment {

@@ -24,6 +24,7 @@ import { invalidationHelpers, queryKeys } from '@/queries/keys';
 import { generateInvoiceEmail } from '@/utils/emailTemplateEngine';
 import { escapeHtml } from '@/utils/sanitize';
 import JobShowModal from '@/components/Jobs/JobShowModal';
+import { InvoiceForm, type InvoiceFormData } from '@/components/Invoices/InvoiceForm';
 import type { Invoice } from '@/types';
 
 export interface InvoiceModalProps {
@@ -149,17 +150,27 @@ export default function InvoiceModal({
     setMode(initialMode);
   }, [open, invoice, initialCustomerId, initialMode, customerEmail, defaultSubject, business?.taxRateDefault]);
 
-  const handleSave = async () => {
+  const handleSave = async (formData: InvoiceFormData) => {
     if (!businessId) return;
     
     setLoading(true);
     try {
       const data = {
-        customerId,
-        status,
-        dueAt: dueDate?.toISOString(),
-        taxRate,
-        discount,
+        customerId: formData.customerId,
+        address: formData.address,
+        taxRate: formData.taxRate,
+        discount: formData.discount,
+        subtotal: formData.lineItems.reduce((sum, item) => sum + item.lineTotal, 0),
+        total: formData.lineItems.reduce((sum, item) => sum + item.lineTotal, 0) * (1 + formData.taxRate) - formData.discount,
+        paymentTerms: formData.paymentTerms,
+        frequency: formData.frequency,
+        depositRequired: formData.depositRequired,
+        depositPercent: formData.depositPercent,
+        notesInternal: formData.notesInternal,
+        terms: formData.terms,
+        dueAt: formData.dueDate?.toISOString(),
+        lineItems: formData.lineItems,
+        status: 'Draft'
       };
 
       if (invoice) {
@@ -464,39 +475,33 @@ export default function InvoiceModal({
     }
 
     if (mode === 'edit' || mode === 'create') {
-      return (
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="customer">Customer</Label>
-            <Select value={customerId} onValueChange={setCustomerId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select customer..." />
-              </SelectTrigger>
-              <SelectContent>
-                {customers.map((customer) => (
-                  <SelectItem key={customer.id} value={customer.id}>
-                    {customer.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+      const initialData = invoice ? {
+        customerId: invoice.customerId,
+        address: invoice.address,
+        lineItems: invoice.lineItems || [],
+        taxRate: invoice.taxRate || 0,
+        discount: invoice.discount || 0,
+        paymentTerms: invoice.paymentTerms,
+        frequency: invoice.frequency,
+        depositRequired: invoice.depositRequired || false,
+        depositPercent: invoice.depositPercent,
+        notesInternal: invoice.notesInternal,
+        terms: invoice.terms,
+        dueDate: invoice.dueAt ? new Date(invoice.dueAt) : undefined
+      } : undefined;
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select value={status} onValueChange={(value: any) => setStatus(value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Draft">Draft</SelectItem>
-                  <SelectItem value="Sent">Sent</SelectItem>
-                  <SelectItem value="Paid">Paid</SelectItem>
-                  <SelectItem value="Overdue">Overdue</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      return (
+        <InvoiceForm
+          customers={customers}
+          onSubmit={handleSave}
+          onCancel={() => onOpenChange(false)}
+          initialData={initialData}
+          mode={mode}
+          loading={loading}
+          businessTaxRateDefault={business?.taxRateDefault}
+        />
+      );
+    }
 
             <div className="space-y-2">
               <Label>Due Date</Label>
