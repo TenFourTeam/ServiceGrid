@@ -61,7 +61,7 @@ export default function QuotesPage() {
   const handleSendQuote = async (quoteListItem: QuoteListItem) => {
     // Convert QuoteListItem to full Quote by fetching from API
     try {
-      const { data: fullQuote, error } = await authApi.invoke(`quotes?id=${quoteListItem.id}`, {
+      const { data: fullQuote, error } = await authApi.invoke(`quotes-crud?id=${quoteListItem.id}`, {
         method: 'GET'
       });
       
