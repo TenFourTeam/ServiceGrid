@@ -82,7 +82,7 @@ function Boot() {
     return <ErrorScreen message="Missing authentication configuration" />;
   }
 
-  return <App clerkKey={key} />;
+  return <App key={`app-${key}`} clerkKey={key} />;
 }
 
 const root = document.getElementById('root')!;
