@@ -183,11 +183,12 @@ Deno.serve(async (req) => {
         invoiceData.notes_internal = quoteData.notes_internal;
         invoiceData.terms = quoteData.terms;
         invoiceData.job_id = jobId;
+        invoiceData.quote_id = quoteId;
         invoiceData.due_at = dueAt;
       } else {
-        // Creating invoice manually
         invoiceData.customer_id = customerId;
         invoiceData.job_id = jobId;
+        invoiceData.quote_id = quoteId;
         invoiceData.total = total || 0;
         invoiceData.subtotal = subtotal || 0;
         invoiceData.tax_rate = taxRate || 0;
@@ -200,6 +201,20 @@ Deno.serve(async (req) => {
         invoiceData.deposit_percent = depositPercent;
         invoiceData.notes_internal = notesInternal;
         invoiceData.terms = terms;
+
+        // If linking to a job and no notes provided, inherit job notes
+        if (jobId && !notesInternal) {
+          const { data: jobData } = await supabase
+            .from('jobs')
+            .select('notes')
+            .eq('id', jobId)
+            .eq('business_id', ctx.businessId)
+            .single();
+          
+          if (jobData?.notes) {
+            invoiceData.notes_internal = jobData.notes;
+          }
+        }
       }
 
       // Get next invoice number
@@ -297,10 +312,10 @@ Deno.serve(async (req) => {
     }
 
     if (req.method === 'PUT') {
-      const body = await req.json();
-      const { id, status, total, subtotal, taxRate, discount, dueAt, paidAt, 
-              address, paymentTerms, frequency, depositRequired, depositPercent, 
-              notesInternal, terms, lineItems } = body;
+    const body = await req.json();
+    const { id, status, total, subtotal, taxRate, discount, dueAt, paidAt, 
+            address, paymentTerms, frequency, depositRequired, depositPercent, 
+            notesInternal, terms, lineItems, jobId, quoteId } = body;
 
       const updateData: any = {};
       if (status !== undefined) updateData.status = status;
@@ -314,9 +329,11 @@ Deno.serve(async (req) => {
       if (paymentTerms !== undefined) updateData.payment_terms = paymentTerms;
       if (frequency !== undefined) updateData.frequency = frequency;
       if (depositRequired !== undefined) updateData.deposit_required = depositRequired;
-      if (depositPercent !== undefined) updateData.deposit_percent = depositPercent;
-      if (notesInternal !== undefined) updateData.notes_internal = notesInternal;
-      if (terms !== undefined) updateData.terms = terms;
+    if (depositPercent !== undefined) updateData.deposit_percent = depositPercent;
+    if (notesInternal !== undefined) updateData.notes_internal = notesInternal;
+    if (terms !== undefined) updateData.terms = terms;
+    if (jobId !== undefined) updateData.job_id = jobId;
+    if (quoteId !== undefined) updateData.quote_id = quoteId;
 
       // Handle line items update if provided
       if (lineItems && Array.isArray(lineItems)) {

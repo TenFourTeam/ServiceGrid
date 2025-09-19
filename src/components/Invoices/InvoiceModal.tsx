@@ -12,7 +12,7 @@ import { CalendarIcon, Send, Eye, Edit3, DollarSign, Briefcase } from 'lucide-re
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { formatDate, formatMoney, formatCurrencyInputNoSymbol, parseCurrencyInput, sanitizeMoneyTyping } from '@/utils/format';
-import { useCustomersData } from '@/queries/unified';
+import { useCustomersData, useQuotesData } from '@/queries/unified';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useRecordPayment } from '@/hooks/useInvoiceOperations';
 import { useInvoicePayments } from '@/hooks/useInvoicePayments';
@@ -24,6 +24,8 @@ import { invalidationHelpers, queryKeys } from '@/queries/keys';
 import { generateInvoiceEmail } from '@/utils/emailTemplateEngine';
 import { escapeHtml } from '@/utils/sanitize';
 import JobShowModal from '@/components/Jobs/JobShowModal';
+import PickJobModal from '@/components/Jobs/PickJobModal';
+import PickQuoteModal from '@/components/Jobs/PickQuoteModal';
 import { InvoiceForm, type InvoiceFormData } from '@/components/Invoices/InvoiceForm';
 import type { Invoice } from '@/types';
 
@@ -46,6 +48,7 @@ export default function InvoiceModal({
 }: InvoiceModalProps) {
   const { data: customers = [] } = useCustomersData();
   const { data: jobs = [] } = useJobsData();
+  const { data: quotes = [] } = useQuotesData();
   const { business, businessName, businessLogoUrl, businessLightLogoUrl, businessId } = useBusinessContext();
   const { getToken } = useClerkAuth();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
@@ -55,6 +58,10 @@ export default function InvoiceModal({
   const [mode, setMode] = useState(initialMode);
   const [loading, setLoading] = useState(false);
   const [showJobModal, setShowJobModal] = useState(false);
+  const [showJobPicker, setShowJobPicker] = useState(false);
+  const [showQuotePicker, setShowQuotePicker] = useState(false);
+  const [linkedJobId, setLinkedJobId] = useState<string | null>(null);
+  const [linkedQuoteId, setLinkedQuoteId] = useState<string | null>(null);
   
   const { data: payments = [] } = useInvoicePayments({ 
     invoiceId: invoice?.id,
@@ -89,10 +96,18 @@ export default function InvoiceModal({
     return customer?.email || '';
   }, [customers, invoice?.customerId, customerId]);
 
+  const currentJobId = linkedJobId === null ? null : (linkedJobId || invoice?.jobId);
+  const currentQuoteId = linkedQuoteId === null ? null : (linkedQuoteId || invoice?.quoteId);
+  
   const relatedJob = useMemo(() => {
-    if (!invoice?.jobId) return null;
-    return jobs.find(job => job.id === invoice.jobId) || null;
-  }, [jobs, invoice?.jobId]);
+    if (!currentJobId) return null;
+    return jobs.find(job => job.id === currentJobId) || null;
+  }, [jobs, currentJobId]);
+
+  const relatedQuote = useMemo(() => {
+    if (!currentQuoteId) return null;
+    return quotes.find(quote => quote.id === currentQuoteId) || null;
+  }, [quotes, currentQuoteId]);
 
   // Email templates
   const defaultEmailHTML = useMemo(() => {
@@ -133,6 +148,8 @@ export default function InvoiceModal({
       setPaymentAmountInput(formatCurrencyInputNoSymbol(invoice.total));
       setPaymentDate(new Date());
       setPaymentMethod('Cash');
+      setLinkedJobId(null);
+      setLinkedQuoteId(null);
     } else if (open && !invoice && initialCustomerId) {
       setCustomerId(initialCustomerId);
       setStatus('Draft');
@@ -146,6 +163,8 @@ export default function InvoiceModal({
       setPaymentAmountInput('0.00');
       setPaymentDate(new Date());
       setPaymentMethod('Cash');
+      setLinkedJobId(null);
+      setLinkedQuoteId(null);
     }
     setMode(initialMode);
   }, [open, invoice, initialCustomerId, initialMode, customerEmail, defaultSubject, business?.taxRateDefault]);
@@ -170,6 +189,8 @@ export default function InvoiceModal({
         terms: formData.terms,
         dueAt: formData.dueDate?.toISOString(),
         lineItems: formData.lineItems,
+        jobId: currentJobId,
+        quoteId: currentQuoteId,
         status: 'Draft'
       };
 
@@ -339,6 +360,101 @@ export default function InvoiceModal({
     }
   };
 
+  const handleLinkJob = async (jobId: string) => {
+    if (!invoice || !businessId) return;
+    
+    const job = jobs.find(j => j.id === jobId);
+    
+    try {
+      const updateData: any = { jobId };
+      
+      // Inherit notes from job if invoice notes are empty
+      if (job?.notes && !invoice.notesInternal) {
+        updateData.notesInternal = job.notes;
+      }
+      
+      await authApi.invoke('invoices-crud', {
+        method: 'PUT',
+        body: { id: invoice.id, ...updateData },
+        toast: {
+          success: 'Work order linked successfully',
+          loading: 'Linking work order...',
+          error: 'Failed to link work order'
+        }
+      });
+
+      setLinkedJobId(jobId);
+      invalidationHelpers.invoices(queryClient, businessId);
+      setShowJobPicker(false);
+    } catch (error) {
+      console.error('Failed to link job:', error);
+    }
+  };
+
+  const handleUnlinkJob = async () => {
+    if (!invoice || !businessId) return;
+
+    try {
+      await authApi.invoke('invoices-crud', {
+        method: 'PUT',
+        body: { id: invoice.id, jobId: null },
+        toast: {
+          success: 'Work order unlinked successfully',
+          loading: 'Unlinking work order...',
+          error: 'Failed to unlink work order'
+        }
+      });
+
+      setLinkedJobId(null);
+      invalidationHelpers.invoices(queryClient, businessId);
+    } catch (error) {
+      console.error('Failed to unlink job:', error);
+    }
+  };
+
+  const handleLinkQuote = async (quoteId: string) => {
+    if (!invoice || !businessId) return;
+
+    try {
+      await authApi.invoke('invoices-crud', {
+        method: 'PUT',
+        body: { id: invoice.id, quoteId },
+        toast: {
+          success: 'Quote linked successfully',
+          loading: 'Linking quote...',
+          error: 'Failed to link quote'
+        }
+      });
+
+      setLinkedQuoteId(quoteId);
+      invalidationHelpers.invoices(queryClient, businessId);
+      setShowQuotePicker(false);
+    } catch (error) {
+      console.error('Failed to link quote:', error);
+    }
+  };
+
+  const handleUnlinkQuote = async () => {
+    if (!invoice || !businessId) return;
+
+    try {
+      await authApi.invoke('invoices-crud', {
+        method: 'PUT',
+        body: { id: invoice.id, quoteId: null },
+        toast: {
+          success: 'Quote unlinked successfully',
+          loading: 'Unlinking quote...',
+          error: 'Failed to unlink quote'
+        }
+      });
+
+      setLinkedQuoteId(null);
+      invalidationHelpers.invoices(queryClient, businessId);
+    } catch (error) {
+      console.error('Failed to unlink quote:', error);
+    }
+  };
+
   const getModalTitle = () => {
     if (!invoice && mode === 'create') return 'Create Invoice';
     if (!invoice) return 'Invoice';
@@ -488,7 +604,7 @@ export default function InvoiceModal({
           frequency: invoice.frequency,
           depositRequired: Boolean(invoice.depositRequired),
           depositPercent: invoice.depositPercent || 50,
-          notesInternal: invoice.notesInternal || '',
+          notesInternal: invoice.notesInternal || (relatedJob?.notes || ''),
           terms: invoice.terms || '',
           dueDate: invoice.dueAt ? (
             typeof invoice.dueAt === 'string' ? new Date(invoice.dueAt) : invoice.dueAt
@@ -643,10 +759,10 @@ export default function InvoiceModal({
         </div>
 
         {/* Work Order */}
-        {relatedJob && (
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium text-muted-foreground">Related Work Order</h3>
-            <div className="bg-muted/30 rounded-md p-3">
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-muted-foreground">Related Work Order</h3>
+          <div className="bg-muted/30 rounded-md p-3">
+            {relatedJob ? (
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">{relatedJob.title || 'Work Order'}</span>
@@ -654,18 +770,93 @@ export default function InvoiceModal({
                     {relatedJob.status}
                   </Badge>
                 </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-3 text-xs"
+                    onClick={() => setShowJobModal(true)}
+                  >
+                    View Details
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-3 text-xs"
+                    onClick={handleUnlinkJob}
+                  >
+                    Unlink
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">No work order linked</span>
                 <Button
                   variant="outline"
                   size="sm"
                   className="h-8 px-3 text-xs"
-                  onClick={() => setShowJobModal(true)}
+                  onClick={() => setShowJobPicker(true)}
                 >
-                  View Details
+                  <Briefcase className="w-3 h-3 mr-1" />
+                  Link Work Order
                 </Button>
               </div>
-            </div>
+            )}
           </div>
-        )}
+        </div>
+
+        {/* Quote */}
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-muted-foreground">Related Quote</h3>
+          <div className="bg-muted/30 rounded-md p-3">
+            {relatedQuote ? (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">{relatedQuote.number}</span>
+                  <Badge variant="outline" className="text-xs">
+                    {relatedQuote.status}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">{formatMoney(relatedQuote.total)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-3 text-xs"
+                    onClick={() => {
+                      onOpenChange(false);
+                      window.location.href = `/quotes?highlight=${relatedQuote.id}`;
+                    }}
+                  >
+                    View Quote
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-3 text-xs"
+                    onClick={handleUnlinkQuote}
+                  >
+                    Unlink
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">No quote linked</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-3 text-xs"
+                  onClick={() => setShowQuotePicker(true)}
+                >
+                  <DollarSign className="w-3 h-3 mr-1" />
+                  Link Quote
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Notes */}
         <div className="space-y-3">
@@ -802,6 +993,22 @@ export default function InvoiceModal({
           onOpenChange={setShowJobModal}
         />
       )}
+
+      {/* Pick Job Modal */}
+      <PickJobModal
+        open={showJobPicker}
+        onOpenChange={setShowJobPicker}
+        onSelect={handleLinkJob}
+        customerId={invoice?.customerId}
+      />
+
+      {/* Pick Quote Modal */}
+      <PickQuoteModal
+        open={showQuotePicker}
+        onOpenChange={setShowQuotePicker}
+        onSelect={handleLinkQuote}
+        customerId={invoice?.customerId}
+      />
     </>
   );
 }

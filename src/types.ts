@@ -149,6 +149,7 @@ export interface Invoice {
   businessId: ID;
   customerId: ID;
   jobId?: ID;
+  quoteId?: ID;
   lineItems: LineItem[];
   taxRate: number;
   discount: Money;
