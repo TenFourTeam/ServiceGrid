@@ -141,7 +141,12 @@ export default function Requests() {
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
-            {getStatusBadge(request.status)}
+            <div className="flex items-center gap-2">
+              {getStatusBadge(request.status)}
+              <div onClick={(e) => e.stopPropagation()}>
+                <RequestActions request={request} />
+              </div>
+            </div>
           </div>
         </div>
       </div>

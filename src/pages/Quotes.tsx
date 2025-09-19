@@ -188,9 +188,17 @@ export default function QuotesPage() {
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
-            <Badge className={statusColors[quote.status]}>
-              {t(`quotes.status.${quote.status.toLowerCase().replace(/\s+/g, '')}`)}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge className={statusColors[quote.status]}>
+                {t(`quotes.status.${quote.status.toLowerCase().replace(/\s+/g, '')}`)}
+              </Badge>
+              <div onClick={(e) => e.stopPropagation()}>
+                <QuoteActions 
+                  quote={quote} 
+                  onSendQuote={handleSendQuote}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
