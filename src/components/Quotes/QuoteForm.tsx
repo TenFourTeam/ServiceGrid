@@ -10,6 +10,8 @@ import { CustomerCombobox } from '@/components/Quotes/CustomerCombobox';
 import { LineItemsEditor } from '@/components/Quotes/LineItemsEditor';
 import { CustomerBottomModal } from '@/components/Customers/CustomerBottomModal';
 import { useQuoteCalculations } from '@/hooks/useQuoteCalculations';
+import { useSessionStorage } from '@/hooks/useSessionStorage';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { formatCurrencyInputNoSymbol, parseCurrencyInput, sanitizeMoneyTyping } from '@/utils/format';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { Customer, LineItem, Quote } from '@/types';
@@ -41,6 +43,11 @@ interface QuoteFormProps {
 export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disabled, initialData, mode = 'create' }: QuoteFormProps) {
   const { t } = useLanguage();
   const [showCreateCustomer, setShowCreateCustomer] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  
+  // Create storage key based on mode and quote ID
+  const storageKey = initialData?.id ? `quote-draft-${initialData.id}` : 'quote-draft-new';
+  
   const [data, setData] = useState<QuoteFormData>({
     customerId: '',
     address: '',
@@ -55,10 +62,18 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
     depositPercent: 0,
   });
 
-  // Populate form with initial data when provided
+  // Session storage for draft persistence
+  const [storedData, setStoredData, removeStoredData] = useSessionStorage<QuoteFormData | null>(storageKey, null);
+  
+  // Debounced value for auto-saving
+  const debouncedData = useDebouncedValue(data, 1000);
+
+  // Populate form with initial data when provided or restore from storage
   useEffect(() => {
     if (initialData) {
-      setData({
+      // For existing quotes, prefer stored draft data if available and it's a draft quote
+      const shouldUseStoredData = storedData && initialData.status === 'Draft';
+      const dataToUse = shouldUseStoredData ? storedData : {
         customerId: initialData.customerId || '',
         address: initialData.address || '',
         lineItems: initialData.lineItems || [],
@@ -70,10 +85,25 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
         frequency: initialData.frequency || 'one-off',
         depositRequired: initialData.depositRequired || false,
         depositPercent: initialData.depositPercent || 0,
-      });
-      setDiscountInput(formatCurrencyInputNoSymbol(initialData.discount || 0));
+      };
+      
+      setData(dataToUse);
+      setDiscountInput(formatCurrencyInputNoSymbol(dataToUse.discount || 0));
+    } else if (storedData && mode === 'create') {
+      // For new quotes, restore from storage if available
+      setData(storedData);
+      setDiscountInput(formatCurrencyInputNoSymbol(storedData.discount || 0));
     }
-  }, [initialData, defaultTaxRate]);
+  }, [initialData, defaultTaxRate, storedData, mode]);
+
+  // Auto-save to session storage when data changes (only for drafts)
+  useEffect(() => {
+    const shouldAutoSave = (mode === 'create') || (initialData?.status === 'Draft');
+    if (shouldAutoSave && debouncedData && (debouncedData.customerId || debouncedData.lineItems.length > 0)) {
+      setStoredData(debouncedData);
+      setLastSaved(new Date());
+    }
+  }, [debouncedData, mode, initialData?.status, setStoredData]);
 
   // Auto-populate address when customer is selected
   useEffect(() => {
@@ -130,8 +160,18 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
         ...data,
         lineItems: data.lineItems.filter(item => item.name.trim() !== '')
       };
+      
+      // Clear stored data after successful submission
+      removeStoredData();
+      
       onSubmit(filteredData);
     }
+  };
+
+  const handleCancel = () => {
+    // Clear stored data when canceling
+    removeStoredData();
+    onCancel();
   };
 
   return (
@@ -331,13 +371,22 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
       </div>
 
       {!isReadOnly && (
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={onCancel} disabled={disabled}>
-            {t('quotes.form.cancel')}
-          </Button>
-          <Button onClick={handleSubmit} disabled={!isValid || disabled}>
-            {mode === 'edit' ? t('quotes.form.updateQuote') : t('quotes.form.createQuote')}
-          </Button>
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            {lastSaved && (
+              <span className="text-xs text-muted-foreground">
+                Draft saved {lastSaved.toLocaleTimeString()}
+              </span>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleCancel} disabled={disabled}>
+              {t('quotes.form.cancel')}
+            </Button>
+            <Button onClick={handleSubmit} disabled={!isValid || disabled}>
+              {mode === 'edit' ? t('quotes.form.updateQuote') : t('quotes.form.createQuote')}
+            </Button>
+          </div>
         </div>
       )}
       

@@ -401,7 +401,7 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
           <div className="flex gap-2 justify-end">
             {currentMode === 'view' && quote && (
               <>
-                {(quote.status === 'Draft' || quote.status === 'Edits Requested') && (
+                {quote && (
                   <Button 
                     variant="outline" 
                     onClick={() => setCurrentMode('edit')}
@@ -413,7 +413,7 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
                   variant="outline" 
                   onClick={() => onSendQuote?.(quote)}
                 >
-                  {t('quotes.actions.sendQuote')}
+                  {quote.sentAt || quote.status !== 'Draft' ? t('quotes.actions.resendQuote') : t('quotes.actions.sendQuote')}
                 </Button>
                 <Button 
                   variant="outline" 
