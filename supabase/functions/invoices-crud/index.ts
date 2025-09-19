@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
             acc[item.invoice_id].push({
               id: item.id,
               name: item.name,
-              quantity: item.qty,
+              qty: item.qty,
               unitPrice: item.unit_price,
               lineTotal: item.line_total,
               unit: item.unit,

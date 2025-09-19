@@ -547,7 +547,7 @@ export default function InvoiceModal({
               {invoice.lineItems.map((item: any, index: number) => (
                 <div key={item.id || index} className="grid grid-cols-12 gap-2 p-3 text-sm border-b last:border-b-0">
                   <div className="col-span-6">{item.name}</div>
-                  <div className="col-span-2 text-right">{item.quantity}</div>
+                  <div className="col-span-2 text-right">{item.qty}</div>
                   <div className="col-span-2 text-right">{formatMoney(item.unitPrice)}</div>
                   <div className="col-span-2 text-right font-medium">{formatMoney(item.lineTotal)}</div>
                 </div>
@@ -567,8 +567,8 @@ export default function InvoiceModal({
             
             {invoice.taxRate > 0 && (
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Tax ({invoice.taxRate}%)</span>
-                <span>{formatMoney(Math.round(invoice.subtotal * invoice.taxRate / 100))}</span>
+                <span className="text-muted-foreground">Tax ({(invoice.taxRate * 100).toFixed(1)}%)</span>
+                <span>{formatMoney(Math.round(invoice.subtotal * invoice.taxRate))}</span>
               </div>
             )}
             
