@@ -426,7 +426,8 @@
       "sendQuote": "Enviar Cotización",
       "convertToJob": "Convertir a Trabajo",
       "createInvoice": "Crear Factura",
-      "editQuote": "Editar Cotización"
+      "editQuote": "Editar Cotización",
+      "resendQuote": "Reenviar Cotización"
     },
     "messages": {
       "linkCopied": "Enlace de cotización copiado al portapapeles",

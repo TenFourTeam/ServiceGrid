@@ -426,7 +426,8 @@
       "sendQuote": "Send Quote",
       "convertToJob": "Convert to Job",
       "createInvoice": "Create Invoice",
-      "editQuote": "Edit Quote"
+      "editQuote": "Edit Quote",
+      "resendQuote": "Re-send Quote"
     },
     "messages": {
       "linkCopied": "Quote link copied to clipboard",
