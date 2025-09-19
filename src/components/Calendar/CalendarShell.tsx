@@ -34,10 +34,14 @@ export default function CalendarShell({
   
   // Default to showing the owner's own calendar
   useEffect(() => {
-    if (userId && selectedMemberId === null) {
-      setSelectedMemberId(userId);
+    if (userId && selectedMemberId === null && businessMembers && businessMembers.length > 0) {
+      // Find the current user in the business members array
+      const currentUser = businessMembers.find(member => member.user_id === userId);
+      if (currentUser) {
+        setSelectedMemberId(userId);
+      }
     }
-  }, [userId, selectedMemberId]);
+  }, [userId, selectedMemberId, businessMembers]);
   
   const month = useMemo(() => new Date(date), [date]);
   const rangeTitle = useMemo(() => {
