@@ -3,6 +3,7 @@ import { ReactNode, useEffect, useState } from 'react';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/Layout/AppSidebar';
 import MobileHeader from '@/components/Layout/MobileHeader';
+import MobileNavigation from '@/components/Layout/MobileNavigation';
 
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { PageFade } from '@/components/Motion/PageFade';
@@ -56,19 +57,21 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
     document.title = title ? `${title} • ServiceGrid` : 'ServiceGrid';
   }, [title]);
 
-  // Mobile/Tablet Layout (< 1024px)
+  // Mobile/Tablet Layout (< 1366px)
   if (isMobile) {
     return (
       <div className="min-h-screen w-full max-w-full overflow-x-hidden flex flex-col">
         <MobileHeader title={title} />
         <SubscriptionBanner />
-        <main className="flex-1 flex flex-col min-h-0 max-w-full overflow-x-hidden">
+        <main className="flex-1 flex flex-col min-h-0 max-w-full overflow-x-hidden pb-20">
           <div className="flex-1 max-w-full px-4">
             <PageFade key={String(title)}>
               {children}
             </PageFade>
           </div>
         </main>
+        
+        <MobileNavigation />
 
         {/* Onboarding Components */}
         <IntentPickerModal
@@ -89,7 +92,7 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
     );
   }
 
-  // Desktop Layout (≥ 1024px)
+  // Desktop Layout (≥ 1366px)
   return (
     <SidebarProvider>
       <div className="min-h-screen w-full max-w-full overflow-x-hidden flex">

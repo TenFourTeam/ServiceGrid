@@ -1,6 +1,6 @@
 import * as React from "react"
 
-const PHONE_BREAKPOINT = 768
+const PHONE_BREAKPOINT = 896
 
 export function useIsPhone() {
   const [isPhone, setIsPhone] = React.useState<boolean | undefined>(undefined)
