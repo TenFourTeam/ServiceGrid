@@ -57,7 +57,7 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
     document.title = title ? `${title} • ServiceGrid` : 'ServiceGrid';
   }, [title]);
 
-  // Mobile/Tablet Layout (< 1366px)
+  // Mobile/Tablet Layout (< 1200px)
   if (isMobile) {
     return (
       <div className="min-h-screen w-full max-w-full overflow-x-hidden flex flex-col">
@@ -92,7 +92,7 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
     );
   }
 
-  // Desktop Layout (≥ 1366px)
+  // Desktop Layout (≥ 1200px)
   return (
     <SidebarProvider>
       <div className="min-h-screen w-full max-w-full overflow-x-hidden flex">
