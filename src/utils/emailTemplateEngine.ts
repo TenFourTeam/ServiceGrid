@@ -168,55 +168,129 @@ export function generateInvoiceEmail(props: InvoiceEmailProps) {
   
   const greeting = `
     <div style="font-size:14px; line-height:1.6; color:#374151; margin-bottom:20px;">
-      ${customerName ? `<div style="margin-bottom:6px; color:#111827;">Hello ${escapeHtml(customerName)},</div>` : ''}
+      ${customerName ? `<div style="margin-bottom:6px; color:#111827; font-weight:600;">Hello ${escapeHtml(customerName)},</div>` : ''}
       <div>Thank you for your business. Please find your invoice details below.</div>
     </div>
   `;
 
-  // Invoice details section
-  const invoiceDetails = `
-    <div style="background:#f8fafc; border-radius:8px; padding:16px; margin-bottom:20px;">
-      <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:12px;">
-        <div>
-          <div style="font-weight:600; color:#111827; margin-bottom:4px;">Invoice ${escapeHtml(invoice.number)}</div>
-          <div style="font-size:13px; color:#6b7280;">
-            ${invoice.dueAt ? `Due: ${new Date(invoice.dueAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : 'Due on receipt'}
-          </div>
-        </div>
-        ${invoice.paymentTerms || invoice.frequency ? `
-          <div style="text-align:right;">
-            ${invoice.paymentTerms ? `<div style="font-size:13px; color:#6b7280;">Payment: ${invoice.paymentTerms.replace('_', ' ')}</div>` : ''}
-            ${invoice.frequency ? `<div style="font-size:13px; color:#6b7280;">Frequency: ${invoice.frequency}</div>` : ''}
-          </div>
-        ` : ''}
+  // Customer Information Section
+  const customerInfo = `
+    <div style="margin-bottom:24px;">
+      <div style="font-weight:600; color:#6b7280; text-transform:uppercase; font-size:11px; letter-spacing:0.5px; margin-bottom:12px;">Customer Information</div>
+      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:16px;">
+        <table style="width:100%; border-collapse:collapse;">
+          <tr>
+            <td style="padding:4px 0; font-size:13px; color:#6b7280; width:80px;">Name:</td>
+            <td style="padding:4px 0; font-size:14px; font-weight:500; color:#111827;">${customerName ? escapeHtml(customerName) : 'N/A'}</td>
+          </tr>
+          ${invoice.address ? `
+            <tr>
+              <td style="padding:4px 0; font-size:13px; color:#6b7280; vertical-align:top;">Address:</td>
+              <td style="padding:4px 0; font-size:13px; color:#374151;">${escapeHtml(invoice.address).replace(/\n/g, '<br>')}</td>
+            </tr>
+          ` : ''}
+        </table>
       </div>
-      ${invoice.address ? `
-        <div style="font-size:13px; color:#6b7280; border-top:1px solid #e2e8f0; padding-top:12px;">
-          <strong>Service Address:</strong><br>
-          ${escapeHtml(invoice.address).replace(/\n/g, '<br>')}
-        </div>
-      ` : ''}
     </div>
   `;
 
-  // Line items table
-  const lineItemsTable = invoice.lineItems && invoice.lineItems.length > 0 ? createLineItemsTable(invoice.lineItems) : '';
+  // Invoice Details Section
+  const invoiceDetails = `
+    <div style="margin-bottom:24px;">
+      <div style="font-weight:600; color:#6b7280; text-transform:uppercase; font-size:11px; letter-spacing:0.5px; margin-bottom:12px;">Invoice Details</div>
+      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:16px;">
+        <table style="width:100%; border-collapse:collapse;">
+          <tr>
+            <td style="padding:4px 0; font-size:13px; color:#6b7280;">Invoice Number:</td>
+            <td style="padding:4px 0; font-size:14px; font-weight:600; color:#111827;">${escapeHtml(invoice.number)}</td>
+          </tr>
+          ${invoice.createdAt ? `
+            <tr>
+              <td style="padding:4px 0; font-size:13px; color:#6b7280;">Issued Date:</td>
+              <td style="padding:4px 0; font-size:13px; color:#374151;">${new Date(invoice.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+            </tr>
+          ` : ''}
+          <tr>
+            <td style="padding:4px 0; font-size:13px; color:#6b7280;">Due Date:</td>
+            <td style="padding:4px 0; font-size:13px; color:#374151;">${invoice.dueAt ? new Date(invoice.dueAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Due on receipt'}</td>
+          </tr>
+          ${invoice.paymentTerms ? `
+            <tr>
+              <td style="padding:4px 0; font-size:13px; color:#6b7280;">Payment Terms:</td>
+              <td style="padding:4px 0; font-size:13px; color:#374151;">${invoice.paymentTerms.replace(/_/g, ' ')}</td>
+            </tr>
+          ` : ''}
+          ${invoice.frequency ? `
+            <tr>
+              <td style="padding:4px 0; font-size:13px; color:#6b7280;">Frequency:</td>
+              <td style="padding:4px 0; font-size:13px; color:#374151;">${invoice.frequency.replace(/_/g, ' ')}</td>
+            </tr>
+          ` : ''}
+          ${invoice.depositRequired ? `
+            <tr>
+              <td style="padding:4px 0; font-size:13px; color:#6b7280;">Deposit Required:</td>
+              <td style="padding:4px 0; font-size:13px; color:#374151;">Yes (${invoice.depositPercent || 0}%)</td>
+            </tr>
+          ` : ''}
+        </table>
+      </div>
+    </div>
+  `;
 
-  const totalsTable = createTotalsTable({
-    subtotal: invoice.subtotal,
-    discount: invoice.discount,
-    taxAmount: Math.max(0, (invoice.total ?? 0) - ((invoice.subtotal ?? 0) - (invoice.discount ?? 0))),
-    total: invoice.total,
-    showDueDate: invoice.dueAt ? new Date(invoice.dueAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : undefined
-  });
+  // Line items section
+  const lineItemsSection = invoice.lineItems && invoice.lineItems.length > 0 ? `
+    <div style="margin-bottom:24px;">
+      <div style="font-weight:600; color:#6b7280; text-transform:uppercase; font-size:11px; letter-spacing:0.5px; margin-bottom:12px;">Line Items</div>
+      <div style="border:1px solid #e2e8f0; border-radius:8px; overflow:hidden;">
+        ${createLineItemsTable(invoice.lineItems)}
+      </div>
+    </div>
+  ` : '';
+
+  // Pricing section
+  const pricingSection = `
+    <div style="margin-bottom:24px;">
+      <div style="font-weight:600; color:#6b7280; text-transform:uppercase; font-size:11px; letter-spacing:0.5px; margin-bottom:12px;">Pricing Summary</div>
+      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:16px;">
+        <table style="width:100%; border-collapse:collapse;">
+          <tr>
+            <td style="padding:4px 0; font-size:13px; color:#6b7280;">Subtotal:</td>
+            <td style="padding:4px 0; font-size:13px; color:#374151; text-align:right;">${formatMoney(invoice.subtotal || 0)}</td>
+          </tr>
+          ${invoice.taxRate && invoice.taxRate > 0 ? `
+            <tr>
+              <td style="padding:4px 0; font-size:13px; color:#6b7280;">Tax (${(invoice.taxRate * 100).toFixed(1)}%):</td>
+              <td style="padding:4px 0; font-size:13px; color:#374151; text-align:right;">${formatMoney(Math.round((invoice.subtotal || 0) * invoice.taxRate))}</td>
+            </tr>
+          ` : ''}
+          ${invoice.discount && invoice.discount > 0 ? `
+            <tr>
+              <td style="padding:4px 0; font-size:13px; color:#6b7280;">Discount:</td>
+              <td style="padding:4px 0; font-size:13px; color:#374151; text-align:right;">-${formatMoney(invoice.discount)}</td>
+            </tr>
+          ` : ''}
+          ${invoice.depositRequired && invoice.depositPercent ? `
+            <tr>
+              <td style="padding:4px 0; font-size:13px; color:#6b7280;">Deposit (${invoice.depositPercent}%):</td>
+              <td style="padding:4px 0; font-size:13px; color:#374151; text-align:right;">${formatMoney(Math.round((invoice.total || 0) * invoice.depositPercent / 100))}</td>
+            </tr>
+          ` : ''}
+          <tr style="border-top:1px solid #e2e8f0;">
+            <td style="padding:8px 0 4px; font-size:16px; font-weight:600; color:#111827;">Total:</td>
+            <td style="padding:8px 0 4px; font-size:16px; font-weight:600; color:#111827; text-align:right;">${formatMoney(invoice.total || 0)}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  `;
 
   const actions = payUrl ? createActionButtons([
-    { label: 'Pay Invoice', url: payUrl, primary: true }
+    { label: 'Pay Invoice Online', url: payUrl, primary: true }
   ]) : '';
 
   // Terms and conditions
   const termsSection = invoice.terms ? `
-    <div style="margin-top:20px; padding:16px; background:#f9fafb; border-radius:6px; border-left:3px solid #3b82f6;">
+    <div style="margin-top:24px; padding:16px; background:#f9fafb; border:1px solid #e2e8f0; border-radius:8px; border-left:3px solid #3b82f6;">
       <div style="font-weight:600; color:#111827; margin-bottom:8px;">Terms & Conditions</div>
       <div style="font-size:13px; color:#6b7280; line-height:1.5;">
         ${escapeHtml(invoice.terms).replace(/\n/g, '<br>')}
@@ -225,19 +299,20 @@ export function generateInvoiceEmail(props: InvoiceEmailProps) {
   ` : '';
 
   const footer = `
-    <div style="margin-top:16px; font-size:13px; color:#6b7280;">
-      Reply to this email if you have any questions.
+    <div style="margin-top:24px; font-size:13px; color:#6b7280; text-align:center; padding-top:16px; border-top:1px solid #e2e8f0;">
+      Reply to this email if you have any questions about this invoice.
     </div>
   `;
 
   const content = `
     ${header}
     <tr>
-      <td style="padding:20px;">
+      <td style="padding:32px 24px;">
         ${greeting}
+        ${customerInfo}
         ${invoiceDetails}
-        ${lineItemsTable}
-        ${totalsTable}
+        ${lineItemsSection}
+        ${pricingSection}
         ${actions}
         ${termsSection}
         ${footer}

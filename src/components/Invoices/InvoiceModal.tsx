@@ -581,10 +581,18 @@ export default function InvoiceModal({
           
           <div className="space-y-2">
             <Label>Preview</Label>
-            <div 
-              className="border rounded-md p-3 max-h-40 overflow-y-auto text-sm bg-muted/30"
-              dangerouslySetInnerHTML={{ __html: previewHtml || defaultEmailHTML }}
-            />
+            <div className="relative">
+              <div className="absolute inset-x-0 top-0 z-10 flex justify-center">
+                <div className="mt-2 px-2 py-0.5 text-xs rounded-md bg-muted text-muted-foreground">
+                  Preview
+                </div>
+              </div>
+              <div 
+                className="border rounded-md p-4 pt-8 max-h-[60vh] overflow-y-auto text-sm bg-background"
+                aria-label="Email preview (non-interactive)"
+                dangerouslySetInnerHTML={{ __html: previewHtml || defaultEmailHTML }}
+              />
+            </div>
           </div>
         </div>
       );
