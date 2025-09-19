@@ -62,7 +62,7 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
   }, [open]);
 
   const customerName = useMemo(() => customers.find(c => c.id === job.customerId)?.name || t('workOrders.modal.customer'), [customers, job.customerId]);
-  const currentQuoteId = linkedQuoteId || (job as any).quoteId;
+  const currentQuoteId = linkedQuoteId === null ? null : (linkedQuoteId || (job as any).quoteId);
   const linkedQuote = useMemo(() => {
     // Use optimistic quote object first, then fall back to cache lookup
     return linkedQuoteObject || (currentQuoteId ? quotes.find(q => q.id === currentQuoteId) : null);
