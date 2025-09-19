@@ -503,64 +503,6 @@ export default function InvoiceModal({
       );
     }
 
-            <div className="space-y-2">
-              <Label>Due Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !dueDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dueDate ? format(dueDate, "PPP") : "Pick a date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={dueDate}
-                    onSelect={setDueDate}
-                    initialFocus
-                    className="pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="taxRate">Tax Rate (%)</Label>
-              <Input
-                id="taxRate"
-                type="number"
-                value={taxRate}
-                onChange={(e) => setTaxRate(Number(e.target.value))}
-                step="0.01"
-                min="0"
-                max="100"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="discount">Discount ($)</Label>
-              <Input
-                id="discount"
-                type="number"
-                value={discount}
-                onChange={(e) => setDiscount(Number(e.target.value))}
-                step="0.01"
-                min="0"
-              />
-            </div>
-          </div>
-        </div>
-      );
-    }
-
     // View mode
     if (!invoice) {
       return <div className="text-sm text-muted-foreground">No invoice selected.</div>;
@@ -709,16 +651,8 @@ export default function InvoiceModal({
     }
 
     if (mode === 'edit' || mode === 'create') {
-      return (
-        <>
-          <Button variant="outline" onClick={() => mode === 'create' ? onOpenChange(false) : setMode('view')}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={loading || !customerId}>
-            {loading ? 'Saving...' : 'Save'}
-          </Button>
-        </>
-      );
+      // Form submission is handled by InvoiceForm component itself
+      return null;
     }
 
     // View mode actions
