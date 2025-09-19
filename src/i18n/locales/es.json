@@ -368,6 +368,7 @@
       "createInvoice": "Crear Factura",
       "view": "Ver",
       "link": "Enlazar",
+      "unlink": "Desenlazar",
       "completing": "Completando...",
       "creatingInvoice": "Creando...",
       "uploading": "Subiendo...",

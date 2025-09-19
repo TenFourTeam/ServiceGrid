@@ -394,6 +394,66 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                   >
                     {t('workOrders.modal.view')}
                   </Button>
+                  {role === 'owner' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          // Optimistic update - clear quote immediately
+                          setLinkedQuoteId(null);
+                          setLinkedQuoteObject(null);
+                          
+                          const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
+                          const previousData = queryClient.getQueryData(queryKey);
+                          
+                          queryClient.setQueryData(queryKey, (old: any) => {
+                            if (!old) return old;
+                            return {
+                              ...old,
+                              jobs: old.jobs.map((j: Job) => 
+                                j.id === job.id 
+                                  ? { ...j, quoteId: null }
+                                  : j
+                              )
+                            };
+                          });
+                          
+                          const { error } = await authApi.invoke('jobs-crud', {
+                            method: 'PUT',
+                            body: { 
+                              id: job.id, 
+                              quoteId: null 
+                            },
+                            toast: {
+                              success: 'Quote unlinked successfully',
+                              loading: 'Unlinking quote...',
+                              error: 'Failed to unlink quote'
+                            }
+                          });
+                          
+                          if (error) {
+                            // Rollback optimistic update on error
+                            if (previousData) {
+                              queryClient.setQueryData(queryKey, previousData);
+                            }
+                            setLinkedQuoteId(currentQuoteId);
+                            setLinkedQuoteObject(linkedQuote);
+                            throw new Error(error.message);
+                          }
+                          
+                          if (businessId) {
+                            invalidationHelpers.jobs(queryClient, businessId);
+                          }
+                        } catch (e: any) {
+                          console.error('Failed to unlink quote:', e);
+                        }
+                      }}
+                      className="h-6 px-2 text-xs"
+                    >
+                      {t('workOrders.modal.unlink')}
+                    </Button>
+                  )}
                 </>
               ) : (
                 <>
