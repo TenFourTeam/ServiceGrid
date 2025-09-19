@@ -604,26 +604,25 @@ export default function InvoiceModal({
               </div>
             )}
             
-            {invoice.dueAt && (
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Due Date</span>
-                <span>{formatDate(invoice.dueAt)}</span>
-              </div>
-            )}
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Due Date</span>
+              <span>{invoice.dueAt ? formatDate(invoice.dueAt) : 'Not set'}</span>
+            </div>
 
-            {invoice.paymentTerms && (
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Payment Terms</span>
-                <span>{invoice.paymentTerms.replace(/_/g, ' ')}</span>
-              </div>
-            )}
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Payment Terms</span>
+              <span>{invoice.paymentTerms ? invoice.paymentTerms.replace(/_/g, ' ') : 'None'}</span>
+            </div>
 
-            {invoice.frequency && (
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Frequency</span>
-                <span>{invoice.frequency.replace(/_/g, ' ')}</span>
-              </div>
-            )}
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Frequency</span>
+              <span>{invoice.frequency ? invoice.frequency.replace(/_/g, ' ') : 'None'}</span>
+            </div>
+
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Deposit Required</span>
+              <span>{invoice.depositRequired ? `Yes (${invoice.depositPercent || 0}%)` : 'No'}</span>
+            </div>
 
             {invoice.status === 'Paid' && invoice.paidAt && (
               <div className="flex items-center justify-between text-sm">
@@ -660,25 +659,19 @@ export default function InvoiceModal({
         )}
 
         {/* Notes */}
-        {(invoice.notesInternal || invoice.terms) && (
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium text-muted-foreground">Notes & Terms</h3>
-            <div className="bg-muted/30 rounded-md p-3 space-y-3">
-              {invoice.notesInternal && (
-                <div>
-                  <div className="text-xs font-medium text-muted-foreground mb-1">Internal Notes</div>
-                  <div className="text-sm whitespace-pre-wrap">{invoice.notesInternal}</div>
-                </div>
-              )}
-              {invoice.terms && (
-                <div>
-                  <div className="text-xs font-medium text-muted-foreground mb-1">Terms & Conditions</div>
-                  <div className="text-sm whitespace-pre-wrap">{invoice.terms}</div>
-                </div>
-              )}
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-muted-foreground">Notes & Terms</h3>
+          <div className="bg-muted/30 rounded-md p-3 space-y-3">
+            <div>
+              <div className="text-xs font-medium text-muted-foreground mb-1">Internal Notes</div>
+              <div className="text-sm whitespace-pre-wrap">{invoice.notesInternal || 'None'}</div>
+            </div>
+            <div>
+              <div className="text-xs font-medium text-muted-foreground mb-1">Terms & Conditions</div>
+              <div className="text-sm whitespace-pre-wrap">{invoice.terms || 'None'}</div>
             </div>
           </div>
-        )}
+        </div>
 
         {/* Payment Information Section */}
         {payments.length > 0 && (
