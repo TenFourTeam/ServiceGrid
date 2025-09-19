@@ -152,7 +152,7 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
             <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={sending} className="flex-1">
               {t('quotes.modal.cancel')}
             </Button>
-            <Button onClick={send} disabled={sending || !to || (!!quote && (quote.status === 'Sent' || quote.status === 'Approved'))} className="flex-1">
+            <Button onClick={send} disabled={sending || !to || (!!quote && quote.status === 'Approved')} className="flex-1">
               {sending ? t('quotes.modal.sending') : t('quotes.modal.sendEmail')}
             </Button>
           </div>
