@@ -475,20 +475,29 @@ export default function InvoiceModal({
     }
 
     if (mode === 'edit' || mode === 'create') {
-      const initialData = invoice ? {
-        customerId: invoice.customerId,
-        address: invoice.address || '',
-        lineItems: invoice.lineItems || [],
-        taxRate: invoice.taxRate || 0,
-        discount: invoice.discount || 0,
-        paymentTerms: invoice.paymentTerms,
-        frequency: invoice.frequency,
-        depositRequired: invoice.depositRequired || false,
-        depositPercent: invoice.depositPercent,
-        notesInternal: invoice.notesInternal || '',
-        terms: invoice.terms || '',
-        dueDate: invoice.dueAt ? new Date(invoice.dueAt) : undefined
-      } : undefined;
+      let initialData: Partial<InvoiceFormData> | undefined;
+
+      try {
+        initialData = invoice ? {
+          customerId: invoice.customerId || '',
+          address: invoice.address || '',
+          lineItems: invoice.lineItems || [],
+          taxRate: invoice.taxRate || 0,
+          discount: invoice.discount || 0,
+          paymentTerms: invoice.paymentTerms,
+          frequency: invoice.frequency,
+          depositRequired: Boolean(invoice.depositRequired),
+          depositPercent: invoice.depositPercent || 50,
+          notesInternal: invoice.notesInternal || '',
+          terms: invoice.terms || '',
+          dueDate: invoice.dueAt ? (
+            typeof invoice.dueAt === 'string' ? new Date(invoice.dueAt) : invoice.dueAt
+          ) : undefined
+        } : undefined;
+      } catch (error) {
+        console.error('Error initializing invoice form data:', error, invoice);
+        initialData = undefined;
+      }
 
       return (
         <InvoiceForm
