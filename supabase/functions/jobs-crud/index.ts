@@ -91,6 +91,7 @@ Deno.serve(async (req) => {
         updatedAt: job.updated_at,
         customerId: job.customer_id,
         quoteId: job.quote_id,
+        ownerId: job.owner_id,
         isAssessment: job.is_assessment,
         requestId: job.request_id,
         customerName: job.customers?.name,

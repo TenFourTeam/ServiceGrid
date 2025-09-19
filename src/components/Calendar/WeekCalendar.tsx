@@ -160,7 +160,7 @@ export function WeekCalendar({
           const job = j as Job;
           // Show jobs where the selected member is assigned or is the owner
           const isAssignedToMember = job.assignedMembers?.some(member => member.user_id === selectedMemberId);
-          const isOwnedByMember = (job as any).ownerId === selectedMemberId || (job as any).owner_id === selectedMemberId;
+          const isOwnedByMember = job.ownerId === selectedMemberId;
           if (!(isAssignedToMember || isOwnedByMember)) return; // Skip if not assigned/owned by selected member
         }
         

@@ -104,6 +104,7 @@ export type JobType = 'scheduled' | 'time_and_materials';
 export interface Job {
   id: ID;
   businessId: ID;
+  ownerId: ID;
   quoteId?: ID;
   customerId: ID;
   address?: string;

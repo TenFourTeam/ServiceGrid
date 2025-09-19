@@ -23,7 +23,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 interface JobShowModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  job: Pick<Job, "id" | "customerId" | "startsAt" | "endsAt" | "status" | "jobType" | "isClockedIn" | "businessId" | "createdAt" | "updatedAt"> & Partial<Pick<Job, "notes" | "address" | "total" | "photos" | "quoteId" | "clockInTime" | "clockOutTime" | "assignedMembers">>;
+  job: Pick<Job, "id" | "customerId" | "startsAt" | "endsAt" | "status" | "jobType" | "isClockedIn" | "businessId" | "ownerId" | "createdAt" | "updatedAt"> & Partial<Pick<Job, "notes" | "address" | "total" | "photos" | "quoteId" | "clockInTime" | "clockOutTime" | "assignedMembers">>;
 }
 
 export default function JobShowModal({ open, onOpenChange, job }: JobShowModalProps) {
