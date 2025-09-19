@@ -186,12 +186,12 @@ export function InvoiceForm({
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Payment Terms</Label>
-                  <Select value={paymentTerms || ''} onValueChange={(value) => setPaymentTerms(value as PaymentTerms)}>
+                  <Select value={paymentTerms || "none"} onValueChange={(value) => setPaymentTerms(value === "none" ? undefined : value as PaymentTerms)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select terms..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
                       <SelectItem value="due_on_receipt">Due on Receipt</SelectItem>
                       <SelectItem value="net_15">Net 15</SelectItem>
                       <SelectItem value="net_30">Net 30</SelectItem>
@@ -202,12 +202,12 @@ export function InvoiceForm({
 
                 <div className="space-y-2">
                   <Label>Frequency</Label>
-                  <Select value={frequency || ''} onValueChange={(value) => setFrequency(value as QuoteFrequency)}>
+                  <Select value={frequency || "none"} onValueChange={(value) => setFrequency(value === "none" ? undefined : value as QuoteFrequency)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select frequency..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
                       <SelectItem value="one-off">One-off</SelectItem>
                       <SelectItem value="monthly">Monthly</SelectItem>
                       <SelectItem value="bi-monthly">Bi-monthly</SelectItem>

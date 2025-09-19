@@ -300,7 +300,7 @@ Deno.serve(async (req) => {
       const body = await req.json();
       const { id, status, total, subtotal, taxRate, discount, dueAt, paidAt, 
               address, paymentTerms, frequency, depositRequired, depositPercent, 
-              notesInternal, terms } = body;
+              notesInternal, terms, lineItems } = body;
 
       const updateData: any = {};
       if (status !== undefined) updateData.status = status;
@@ -317,6 +317,47 @@ Deno.serve(async (req) => {
       if (depositPercent !== undefined) updateData.deposit_percent = depositPercent;
       if (notesInternal !== undefined) updateData.notes_internal = notesInternal;
       if (terms !== undefined) updateData.terms = terms;
+
+      // Handle line items update if provided
+      if (lineItems && Array.isArray(lineItems)) {
+        console.log('[invoices-crud] Updating line items for invoice:', id);
+        
+        // Delete existing line items
+        const { error: deleteError } = await supabase
+          .from('invoice_line_items')
+          .delete()
+          .eq('invoice_id', id);
+
+        if (deleteError) {
+          console.error('[invoices-crud] Error deleting existing line items:', deleteError);
+          throw new Error(`Failed to delete existing line items: ${deleteError.message}`);
+        }
+
+        // Insert new line items
+        if (lineItems.length > 0) {
+          const invoiceLineItems = lineItems.map((item: any, index: number) => ({
+            invoice_id: id,
+            owner_id: ctx.userId,
+            name: item.name,
+            qty: item.qty,
+            unit: item.unit,
+            unit_price: item.unitPrice,
+            line_total: item.lineTotal,
+            position: index
+          }));
+
+          const { error: insertError } = await supabase
+            .from('invoice_line_items')
+            .insert(invoiceLineItems);
+
+          if (insertError) {
+            console.error('[invoices-crud] Error inserting updated line items:', insertError);
+            throw new Error(`Failed to insert updated line items: ${insertError.message}`);
+          }
+
+          console.log('[invoices-crud] Updated', invoiceLineItems.length, 'line items');
+        }
+      }
 
       const { data, error } = await supabase
         .from('invoices')
