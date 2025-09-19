@@ -33,12 +33,14 @@ export function WeekCalendar({
   displayMode = 'scheduled',
   jobs: propsJobs,
   refetchJobs: propsRefetchJobs,
+  selectedMemberId,
 }: {
   selectedJobId?: string;
   date?: Date;
   displayMode?: 'scheduled' | 'clocked' | 'combined';
   jobs?: Job[];
   refetchJobs?: () => void;
+  selectedMemberId?: string | null;
 }) {
   // Use jobs from props if provided, otherwise fetch independently
   const jobsQuery = useJobsData({ enabled: !propsJobs });
@@ -152,12 +154,22 @@ export function WeekCalendar({
     validJobs.forEach(j => {
       const d = safeCreateDate(j.startsAt);
       if (d) {
+        // Team member filter - only for owners with selectedMemberId
+        if (selectedMemberId) {
+          // Cast to Job type to access properties
+          const job = j as Job;
+          // Show jobs where the selected member is assigned or is the owner
+          const isAssignedToMember = job.assignedMembers?.some(member => member.user_id === selectedMemberId);
+          const isOwnedByMember = (job as any).ownerId === selectedMemberId || (job as any).owner_id === selectedMemberId;
+          if (!(isAssignedToMember || isOwnedByMember)) return; // Skip if not assigned/owned by selected member
+        }
+        
         const key = dayKey(d);
         if (map[key]) map[key].push(j as Job);
       }
     });
     return map;
-  }, [jobs, weekStart]);
+  }, [jobs, weekStart, selectedMemberId]);
   const [activeJob, setActiveJob] = useState<Job | null>(() => selectedJobId ? jobs.find(j => j.id === selectedJobId) as Job ?? null : null);
   const [now, setNow] = useState<Date>(new Date());
   useEffect(() => {

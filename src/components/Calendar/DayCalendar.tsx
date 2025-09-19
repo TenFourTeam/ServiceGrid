@@ -9,7 +9,7 @@ import type { Job } from "@/types";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { getJobStatusColors } from "@/utils/jobStatus";
 
-export default function DayCalendar({ date, displayMode = 'scheduled' }: { date: Date; displayMode?: 'scheduled' | 'clocked' | 'combined'; }) {
+export default function DayCalendar({ date, displayMode = 'scheduled', selectedMemberId }: { date: Date; displayMode?: 'scheduled' | 'clocked' | 'combined'; selectedMemberId?: string | null; }) {
   const { data: allJobs } = useJobsData();
   const { data: customers } = useCustomersData();
   const { role } = useBusinessContext();
@@ -26,7 +26,21 @@ export default function DayCalendar({ date, displayMode = 'scheduled' }: { date:
         if (!j.startsAt) return false;
         const jobStart = safeCreateDate(j.startsAt);
         if (!jobStart) return false;
-        return jobStart >= dayStart && jobStart <= dayEnd;
+        
+        // Date range filter
+        if (!(jobStart >= dayStart && jobStart <= dayEnd)) return false;
+        
+        // Team member filter - only for owners with selectedMemberId
+        if (selectedMemberId) {
+          // Cast to Job type to access properties
+          const job = j as Job;
+          // Show jobs where the selected member is assigned or is the owner
+          const isAssignedToMember = job.assignedMembers?.some(member => member.user_id === selectedMemberId);
+          const isOwnedByMember = (job as any).ownerId === selectedMemberId || (job as any).owner_id === selectedMemberId;
+          return isAssignedToMember || isOwnedByMember;
+        }
+        
+        return true;
       })
       .sort((a, b) => {
         const dateA = safeCreateDate(a.startsAt);
@@ -34,7 +48,7 @@ export default function DayCalendar({ date, displayMode = 'scheduled' }: { date:
         if (!dateA || !dateB) return 0;
         return dateA.getTime() - dateB.getTime();
       });
-  }, [allJobs, dayStart, dayEnd]);
+  }, [allJobs, dayStart, dayEnd, selectedMemberId]);
   
   const customersMap = useMemo(() => new Map(customers.map(c => [c.id, c.name])), [customers]);
   const [activeJob, setActiveJob] = useState<Job | null>(null);

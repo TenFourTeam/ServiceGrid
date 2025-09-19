@@ -17,7 +17,7 @@ function useMonthGrid(date: Date) {
   return { start, end, days };
 }
 
-export default function MonthCalendar({ date, onDateChange, displayMode = 'scheduled' }: { date: Date; onDateChange: (d: Date) => void; displayMode?: 'scheduled' | 'clocked' | 'combined'; }) {
+export default function MonthCalendar({ date, onDateChange, displayMode = 'scheduled', selectedMemberId }: { date: Date; onDateChange: (d: Date) => void; displayMode?: 'scheduled' | 'clocked' | 'combined'; selectedMemberId?: string | null; }) {
   const { start, end, days } = useMonthGrid(date);
   const { data: allJobs } = useJobsData();
   const { data: customers } = useCustomersData();
@@ -32,9 +32,23 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
       if (!j.startsAt) return false;
       const jobStart = safeCreateDate(j.startsAt);
       if (!jobStart) return false;
-      return jobStart >= start && jobStart <= end;
+      
+      // Date range filter
+      if (!(jobStart >= start && jobStart <= end)) return false;
+      
+      // Team member filter - only for owners with selectedMemberId
+      if (selectedMemberId) {
+        // Cast to Job type to access properties
+        const job = j as Job;
+        // Show jobs where the selected member is assigned or is the owner
+        const isAssignedToMember = job.assignedMembers?.some(member => member.user_id === selectedMemberId);
+        const isOwnedByMember = (job as any).ownerId === selectedMemberId || (job as any).owner_id === selectedMemberId;
+        return isAssignedToMember || isOwnedByMember;
+      }
+      
+      return true;
     });
-  }, [allJobs, start, end]);
+  }, [allJobs, start, end, selectedMemberId]);
 
   const [activeJob, setActiveJob] = useState<Job | null>(null);
   const [open, setOpen] = useState(false);

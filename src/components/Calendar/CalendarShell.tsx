@@ -9,9 +9,11 @@ import { useMemo, useState, useEffect, useCallback } from "react";
 import { addMonths, startOfDay, addDays, format, startOfWeek, endOfWeek } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useJobsData } from "@/hooks/useJobsData";
+import { useBusinessMembersData } from "@/hooks/useBusinessMembers";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useIsPhone } from "@/hooks/use-phone";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useBusinessContext } from "@/hooks/useBusinessContext";
 type CalendarDisplayMode = 'scheduled' | 'clocked' | 'combined';
 
 export default function CalendarShell({
@@ -23,9 +25,19 @@ export default function CalendarShell({
   const [displayMode, setDisplayMode] = useState<CalendarDisplayMode>('scheduled');
   const [date, setDate] = useState<Date>(startOfDay(new Date()));
   const { data: jobs, refetch: refetchJobs } = useJobsData();
+  const { data: businessMembers } = useBusinessMembersData();
+  const { role, userId } = useBusinessContext();
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const isMobile = useIsMobile();
   const isPhone = useIsPhone();
   const { t } = useLanguage();
+  
+  // Default to showing the owner's own calendar
+  useEffect(() => {
+    if (userId && selectedMemberId === null) {
+      setSelectedMemberId(userId);
+    }
+  }, [userId, selectedMemberId]);
   
   const month = useMemo(() => new Date(date), [date]);
   const rangeTitle = useMemo(() => {
@@ -112,6 +124,23 @@ export default function CalendarShell({
               </SelectContent>
             </Select>
             
+            {/* Team Member Selector - Only for owners */}
+            {role === 'owner' && (
+              <Select value={selectedMemberId || 'all'} onValueChange={v => setSelectedMemberId(v === 'all' ? null : v)}>
+                <SelectTrigger className={isPhone ? "w-[100px] text-xs" : "w-[120px] md:w-[140px]"}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Members</SelectItem>
+                  {businessMembers.map((member) => (
+                    <SelectItem key={member.user_id} value={member.user_id}>
+                      {member.name || member.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            
             <Tabs value={view} onValueChange={v => setView(v as any)}>
               <TabsList className={`grid w-full grid-cols-3 ${isPhone ? 'h-8' : ''}`}>
                 <TabsTrigger 
@@ -161,9 +190,9 @@ export default function CalendarShell({
         
         {/* Main calendar area */}
         <main className="h-full min-h-0" role="grid">
-          {view === "month" && <MonthCalendar date={date} onDateChange={setDate} displayMode={displayMode} />}
-          {view === "week" && <WeekCalendar selectedJobId={selectedJobId} date={date} displayMode={displayMode} jobs={jobs} refetchJobs={refetchJobs} />}
-          {view === "day" && <DayCalendar date={date} displayMode={displayMode} />}
+          {view === "month" && <MonthCalendar date={date} onDateChange={setDate} displayMode={displayMode} selectedMemberId={selectedMemberId} />}
+          {view === "week" && <WeekCalendar selectedJobId={selectedJobId} date={date} displayMode={displayMode} jobs={jobs} refetchJobs={refetchJobs} selectedMemberId={selectedMemberId} />}
+          {view === "day" && <DayCalendar date={date} displayMode={displayMode} selectedMemberId={selectedMemberId} />}
         </main>
 
         {/* Right rail (search/shortcuts placeholder) */}
