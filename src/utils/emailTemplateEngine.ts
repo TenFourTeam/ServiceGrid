@@ -173,6 +173,35 @@ export function generateInvoiceEmail(props: InvoiceEmailProps) {
     </div>
   `;
 
+  // Invoice details section
+  const invoiceDetails = `
+    <div style="background:#f8fafc; border-radius:8px; padding:16px; margin-bottom:20px;">
+      <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:12px;">
+        <div>
+          <div style="font-weight:600; color:#111827; margin-bottom:4px;">Invoice ${escapeHtml(invoice.number)}</div>
+          <div style="font-size:13px; color:#6b7280;">
+            ${invoice.dueAt ? `Due: ${new Date(invoice.dueAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : 'Due on receipt'}
+          </div>
+        </div>
+        ${invoice.paymentTerms || invoice.frequency ? `
+          <div style="text-align:right;">
+            ${invoice.paymentTerms ? `<div style="font-size:13px; color:#6b7280;">Payment: ${invoice.paymentTerms.replace('_', ' ')}</div>` : ''}
+            ${invoice.frequency ? `<div style="font-size:13px; color:#6b7280;">Frequency: ${invoice.frequency}</div>` : ''}
+          </div>
+        ` : ''}
+      </div>
+      ${invoice.address ? `
+        <div style="font-size:13px; color:#6b7280; border-top:1px solid #e2e8f0; padding-top:12px;">
+          <strong>Service Address:</strong><br>
+          ${escapeHtml(invoice.address).replace(/\n/g, '<br>')}
+        </div>
+      ` : ''}
+    </div>
+  `;
+
+  // Line items table
+  const lineItemsTable = invoice.lineItems && invoice.lineItems.length > 0 ? createLineItemsTable(invoice.lineItems) : '';
+
   const totalsTable = createTotalsTable({
     subtotal: invoice.subtotal,
     discount: invoice.discount,
@@ -185,6 +214,16 @@ export function generateInvoiceEmail(props: InvoiceEmailProps) {
     { label: 'Pay Invoice', url: payUrl, primary: true }
   ]) : '';
 
+  // Terms and conditions
+  const termsSection = invoice.terms ? `
+    <div style="margin-top:20px; padding:16px; background:#f9fafb; border-radius:6px; border-left:3px solid #3b82f6;">
+      <div style="font-weight:600; color:#111827; margin-bottom:8px;">Terms & Conditions</div>
+      <div style="font-size:13px; color:#6b7280; line-height:1.5;">
+        ${escapeHtml(invoice.terms).replace(/\n/g, '<br>')}
+      </div>
+    </div>
+  ` : '';
+
   const footer = `
     <div style="margin-top:16px; font-size:13px; color:#6b7280;">
       Reply to this email if you have any questions.
@@ -196,8 +235,11 @@ export function generateInvoiceEmail(props: InvoiceEmailProps) {
     <tr>
       <td style="padding:20px;">
         ${greeting}
+        ${invoiceDetails}
+        ${lineItemsTable}
         ${totalsTable}
         ${actions}
+        ${termsSection}
         ${footer}
       </td>
     </tr>

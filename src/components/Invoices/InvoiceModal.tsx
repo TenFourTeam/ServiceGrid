@@ -477,7 +477,7 @@ export default function InvoiceModal({
     if (mode === 'edit' || mode === 'create') {
       const initialData = invoice ? {
         customerId: invoice.customerId,
-        address: invoice.address,
+        address: invoice.address || '',
         lineItems: invoice.lineItems || [],
         taxRate: invoice.taxRate || 0,
         discount: invoice.discount || 0,
@@ -485,8 +485,8 @@ export default function InvoiceModal({
         frequency: invoice.frequency,
         depositRequired: invoice.depositRequired || false,
         depositPercent: invoice.depositPercent,
-        notesInternal: invoice.notesInternal,
-        terms: invoice.terms,
+        notesInternal: invoice.notesInternal || '',
+        terms: invoice.terms || '',
         dueDate: invoice.dueAt ? new Date(invoice.dueAt) : undefined
       } : undefined;
 
