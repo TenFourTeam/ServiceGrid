@@ -397,42 +397,42 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
           )}
         </div>
 
-        <DrawerFooter>
-          <div className="flex gap-2 justify-end">
-            {currentMode === 'view' && quote && (
-              <>
-                {quote && (
+        {currentMode === 'view' && (
+          <DrawerFooter>
+            <div className="flex gap-2 justify-end">
+              {quote && (
+                <>
                   <Button 
                     variant="outline" 
                     onClick={() => setCurrentMode('edit')}
                   >
                     {t('quotes.actions.editQuote')}
                   </Button>
-                )}
-                <Button 
-                  variant="outline" 
-                  onClick={() => onSendQuote?.(quote)}
-                >
-                  {quote.sentAt || quote.status !== 'Draft' ? t('quotes.actions.resendQuote') : t('quotes.actions.sendQuote')}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={handleConvertToJob}
-                  disabled={isConvertingToJob}
-                >
-                  {isConvertingToJob ? t('quotes.messages.convertingToJob') : t('quotes.actions.convertToJob')}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={handleCreateInvoice}
-                  disabled={isCreatingInvoice}
-                >
-                  {isCreatingInvoice ? t('quotes.messages.creatingInvoice') : t('quotes.actions.createInvoice')}
-                </Button>
-              </>
-            )}
-          </div>
-        </DrawerFooter>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => onSendQuote?.(quote)}
+                  >
+                    {quote.sentAt || quote.status !== 'Draft' ? t('quotes.actions.resendQuote') : t('quotes.actions.sendQuote')}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleConvertToJob}
+                    disabled={isConvertingToJob}
+                  >
+                    {isConvertingToJob ? t('quotes.messages.convertingToJob') : t('quotes.actions.convertToJob')}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleCreateInvoice}
+                    disabled={isCreatingInvoice}
+                  >
+                    {isCreatingInvoice ? t('quotes.messages.creatingInvoice') : t('quotes.actions.createInvoice')}
+                  </Button>
+                </>
+              )}
+            </div>
+          </DrawerFooter>
+        )}
       </DrawerContent>
     </Drawer>
   );

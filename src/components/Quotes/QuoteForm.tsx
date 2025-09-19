@@ -120,7 +120,9 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
 
   const totals = useQuoteCalculations(data.lineItems, data.taxRate, data.discount);
 
-  const isValid = data.customerId && data.lineItems.some(li => li.name.trim() && li.lineTotal > 0);
+  const isValid = mode === 'edit' 
+    ? data.customerId // Less strict for edit mode - just need customer
+    : data.customerId && data.lineItems.some(li => li.name.trim() && li.lineTotal > 0);
   const isReadOnly = mode === 'view';
 
   const addLineItem = () => {
