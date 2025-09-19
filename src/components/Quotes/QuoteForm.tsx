@@ -75,6 +75,16 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
     }
   }, [initialData, defaultTaxRate]);
 
+  // Auto-populate address when customer is selected
+  useEffect(() => {
+    if (data.customerId && customers.length > 0 && !initialData) {
+      const selectedCustomer = customers.find(c => c.id === data.customerId);
+      if (selectedCustomer?.address && !data.address) {
+        setData(prev => ({ ...prev, address: selectedCustomer.address || '' }));
+      }
+    }
+  }, [data.customerId, customers, initialData, data.address]);
+
   const [discountInput, setDiscountInput] = useState('');
   const lineItemIdCounter = useState(() => ({ current: 1 }))[0];
 

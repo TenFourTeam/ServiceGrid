@@ -427,6 +427,10 @@ export function JobBottomModal({
               onChange={(id) => {
                 const selectedCustomer = customers?.find(c => c.id === id);
                 setCustomer(selectedCustomer || null);
+                // Auto-populate address when customer is selected
+                if (selectedCustomer?.address && !address) {
+                  setAddress(selectedCustomer.address);
+                }
               }}
               onCreateCustomer={() => setShowCreateCustomer(true)}
             />
