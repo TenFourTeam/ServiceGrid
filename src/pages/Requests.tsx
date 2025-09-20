@@ -148,6 +148,9 @@ export default function Requests() {
           <div className="text-sm text-muted-foreground mt-1">
             {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
           </div>
+          <div className="text-sm text-muted-foreground mt-1 truncate">
+            {request.service_details}
+          </div>
         </div>
       </div>
     );
