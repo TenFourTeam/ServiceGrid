@@ -69,10 +69,11 @@ export function InvoiceForm({
     initialData?.dueDate ? new Date(initialData.dueDate) : undefined
   );
   const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [initialDataLoaded, setInitialDataLoaded] = useState(mode === 'create');
 
   // Sync form state with initialData changes (for edit mode)
   useEffect(() => {
-    if (initialData) {
+    if (initialData && mode === 'edit') {
       setCustomerId(initialData.customerId || '');
       setAddress(initialData.address || '');
       setLineItems(initialData.lineItems || []);
@@ -89,14 +90,20 @@ export function InvoiceForm({
       if (initialData.discount !== undefined) {
         setDiscountInput(formatCurrencyInputNoSymbol(initialData.discount));
       }
+      
+      setInitialDataLoaded(true);
     }
-  }, [initialData, businessTaxRateDefault]);
+  }, [initialData, businessTaxRateDefault, mode]);
 
-  // Calculate totals
+  // Calculate totals (guard against premature calculations in edit mode)
   const taxRate = taxRateInput / 100;
   const discount = parseCurrencyInput(discountInput);
   
-  const { subtotal, taxAmount, total } = useQuoteCalculations(lineItems, taxRate, discount);
+  const { subtotal, taxAmount, total } = useQuoteCalculations(
+    initialDataLoaded ? lineItems : [],
+    initialDataLoaded ? taxRate : 0,
+    initialDataLoaded ? discount : 0
+  );
 
   // Auto-populate address from selected customer
   useEffect(() => {
