@@ -11,6 +11,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useIsMobile } from "@/hooks/use-mobile";
 import InvoiceModal from '@/components/Invoices/InvoiceModal';
+import { InvoiceActions } from '@/components/Invoices/InvoiceActions';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Send, Download } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -34,7 +35,7 @@ export default function InvoicesPage() {
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<'All' | 'Draft' | 'Sent' | 'Paid' | 'Overdue'>('All');
   const [selectedInvoice, setSelectedInvoice] = useState<string | null>(null);
-  const [modalMode, setModalMode] = useState<'view' | 'edit' | 'send' | 'create'>('view');
+  const [modalMode, setModalMode] = useState<'view' | 'edit' | 'send' | 'create' | 'mark_paid'>('view');
   const [sortKey, setSortKey] = useState<'number' | 'issued' | 'customer' | 'amount' | 'due' | 'status'>('number');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const qc = useQueryClient();
@@ -201,6 +202,22 @@ export default function InvoicesPage() {
     document.body.removeChild(link);
   };
 
+  // Handler functions for invoice actions
+  const handleEditInvoice = (invoice: any) => {
+    setSelectedInvoice(invoice.id);
+    setModalMode('edit');
+  };
+
+  const handleMarkAsPaid = (invoice: any) => {
+    setSelectedInvoice(invoice.id);
+    setModalMode('mark_paid');
+  };
+
+  const handleEmailPreview = (invoice: any) => {
+    setSelectedInvoice(invoice.id);
+    setModalMode('send');
+  };
+
   // Invoice Card component for mobile view
   function InvoiceCard({ invoice, onClick }: { invoice: any; onClick: () => void }) {
     const customer = customers.find(c => c.id === invoice.customerId);
@@ -224,6 +241,14 @@ export default function InvoicesPage() {
           </div>
           <div className="flex flex-col items-end gap-2">
             <div className="text-sm font-medium">{invoice.status}</div>
+            <div onClick={(e) => e.stopPropagation()}>
+              <InvoiceActions
+                invoice={invoice}
+                onEditInvoice={handleEditInvoice}
+                onMarkAsPaid={handleMarkAsPaid}
+                onEmailPreview={handleEmailPreview}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -339,6 +364,7 @@ export default function InvoicesPage() {
                          {t('invoices.table.status')}{sortKey === 'status' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
                       </button>
                   </TableHead>
+                  <TableHead className="w-[100px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -357,6 +383,14 @@ export default function InvoicesPage() {
                     <TableCell>{formatDate(i.createdAt)}</TableCell>
                     <TableCell>{formatDate(i.dueAt)}</TableCell>
                     <TableCell>{i.status}</TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <InvoiceActions
+                        invoice={i}
+                        onEditInvoice={handleEditInvoice}
+                        onMarkAsPaid={handleMarkAsPaid}
+                        onEmailPreview={handleEmailPreview}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
