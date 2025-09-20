@@ -24,9 +24,10 @@ interface JobShowModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   job: Pick<Job, "id" | "customerId" | "startsAt" | "endsAt" | "status" | "jobType" | "isClockedIn" | "businessId" | "ownerId" | "createdAt" | "updatedAt"> & Partial<Pick<Job, "notes" | "address" | "total" | "photos" | "quoteId" | "clockInTime" | "clockOutTime" | "assignedMembers">>;
+  onOpenJobEditModal?: (job: Job) => void;
 }
 
-export default function JobShowModal({ open, onOpenChange, job }: JobShowModalProps) {
+export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditModal }: JobShowModalProps) {
   const { data: customers = [] } = useCustomersData();
   const { data: quotes = [] } = useQuotesData();
   const { data: invoices = [] } = useInvoicesData();
@@ -594,6 +595,18 @@ export default function JobShowModal({ open, onOpenChange, job }: JobShowModalPr
                 >
                   {t('workOrders.modal.navigate')}
                 </Button>
+                {role === 'owner' && onOpenJobEditModal && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      onOpenJobEditModal(job as Job);
+                      onOpenChange(false);
+                    }}
+                    size="sm"
+                  >
+                    {t('common.edit')}
+                  </Button>
+                )}
                 {job.jobType === 'time_and_materials' && (
                   <>
                     {!job.isClockedIn && (

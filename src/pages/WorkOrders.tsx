@@ -423,6 +423,7 @@ export default function WorkOrdersPage() {
           <JobShowModal
             open={!!activeJob}
             onOpenChange={(o)=>{ if (!o) setActiveJob(null); }}
+            onOpenJobEditModal={handleJobEditClick}
             job={{
               id: activeJob.id,
               customerId: activeJob.customerId,
