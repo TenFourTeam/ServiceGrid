@@ -3,6 +3,7 @@ import { queryKeys } from "@/queries/keys";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useAuth } from '@clerk/clerk-react';
 import { createAuthEdgeApi } from "@/utils/authEdgeApi";
+import { toCustomerUI } from "@/queries/transform";
 
 import type { Customer } from '@/types';
 
@@ -37,7 +38,7 @@ export function useCustomersData(opts?: UseCustomersDataOptions) {
       console.info("[useCustomersData] fetched", data?.customers?.length || 0, "customers");
       
       return {
-        customers: data?.customers || [],
+        customers: (data?.customers || []).map(toCustomerUI),
         count: data?.count || 0
       };
     },
