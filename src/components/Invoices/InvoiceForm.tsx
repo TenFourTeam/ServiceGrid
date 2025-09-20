@@ -69,41 +69,19 @@ export function InvoiceForm({
     initialData?.dueDate ? new Date(initialData.dueDate) : undefined
   );
   const [showCustomerModal, setShowCustomerModal] = useState(false);
-  const [initialDataLoaded, setInitialDataLoaded] = useState(mode === 'create');
 
-  // Sync form state with initialData changes (for edit mode)
+  // Initialize discount display
   useEffect(() => {
-    if (initialData && mode === 'edit') {
-      setCustomerId(initialData.customerId || '');
-      setAddress(initialData.address || '');
-      setLineItems(initialData.lineItems || []);
-      setTaxRateInput((initialData.taxRate || businessTaxRateDefault) * 100);
-      setPaymentTerms(initialData.paymentTerms);
-      setFrequency(initialData.frequency);
-      setDepositRequired(initialData.depositRequired || false);
-      setDepositPercent(initialData.depositPercent || 50);
-      setNotesInternal(initialData.notesInternal || '');
-      setTerms(initialData.terms || '');
-      setDueDate(initialData.dueDate ? new Date(initialData.dueDate) : undefined);
-      
-      // Handle discount separately with formatting
-      if (initialData.discount !== undefined) {
-        setDiscountInput(formatCurrencyInputNoSymbol(initialData.discount));
-      }
-      
-      setInitialDataLoaded(true);
+    if (initialData?.discount !== undefined) {
+      setDiscountInput(formatCurrencyInputNoSymbol(initialData.discount));
     }
-  }, [initialData, businessTaxRateDefault, mode]);
+  }, [initialData?.discount]);
 
-  // Calculate totals (guard against premature calculations in edit mode)
+  // Calculate totals
   const taxRate = taxRateInput / 100;
   const discount = parseCurrencyInput(discountInput);
   
-  const { subtotal, taxAmount, total } = useQuoteCalculations(
-    initialDataLoaded ? lineItems : [],
-    initialDataLoaded ? taxRate : 0,
-    initialDataLoaded ? discount : 0
-  );
+  const { subtotal, taxAmount, total } = useQuoteCalculations(lineItems, taxRate, discount);
 
   // Auto-populate address from selected customer
   useEffect(() => {
