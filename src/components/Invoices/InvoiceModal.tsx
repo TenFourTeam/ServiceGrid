@@ -9,7 +9,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { CalendarIcon, Send, Eye, Edit3, DollarSign, Briefcase, Trash2 } from 'lucide-react';
+import { CalendarIcon, Send, DollarSign, Briefcase } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { formatDate, formatMoney, formatCurrencyInputNoSymbol, parseCurrencyInput, sanitizeMoneyTyping } from '@/utils/format';
@@ -973,19 +973,16 @@ export default function InvoiceModal({
     return (
       <>
         <Button variant="outline" onClick={() => setMode('edit')}>
-          <Edit3 className="h-4 w-4 mr-2" />
-          Edit Invoice
+          Edit
         </Button>
 
         {canMarkAsPaid && (
           <Button variant="outline" onClick={() => setMode('mark_paid')}>
-            <DollarSign className="h-4 w-4 mr-2" />
             Mark as Paid
           </Button>
         )}
 
-        <Button onClick={() => setMode('send')}>
-          <Eye className="h-4 w-4 mr-2" />
+        <Button variant="outline" onClick={() => setMode('send')}>
           Email Preview
         </Button>
 
@@ -994,7 +991,6 @@ export default function InvoiceModal({
             variant="destructive" 
             onClick={() => setShowDeleteDialog(true)}
           >
-            <Trash2 className="h-4 w-4 mr-2" />
             {t('common.delete')}
           </Button>
         )}
@@ -1016,7 +1012,9 @@ export default function InvoiceModal({
           </div>
           
           <DrawerFooter>
-            {renderActions()}
+            <div className="flex gap-2 justify-end">
+              {renderActions()}
+            </div>
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
