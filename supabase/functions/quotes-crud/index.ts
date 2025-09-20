@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
         return json({ error: 'Invalid JSON in request body' }, { status: 400 });
       }
       
-      const { customerId, status, total, subtotal, taxRate, discount, terms, address, lineItems, paymentTerms, frequency, depositRequired, depositPercent, notesInternal } = body;
+      const { customerId, status, total, subtotal, taxRate, discount, terms, address, lineItems, paymentTerms, frequency, depositRequired, depositPercent, notesInternal, isSubscription } = body;
 
       // Get next quote number - direct database operation like customers-crud
       const { data: businessData, error: businessError } = await supabase
@@ -196,7 +196,8 @@ Deno.serve(async (req) => {
           frequency,
           deposit_required: depositRequired,
           deposit_percent: depositPercent,
-          notes_internal: notesInternal
+          notes_internal: notesInternal,
+          is_subscription: isSubscription || false
         }])
         .select()
         .single();

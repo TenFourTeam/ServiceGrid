@@ -513,9 +513,11 @@ export type Database = {
           id: string
           is_assessment: boolean | null
           is_clocked_in: boolean | null
+          is_recurring: boolean
           job_type: Database["public"]["Enums"]["job_type"] | null
           notes: string | null
           owner_id: string
+          parent_quote_id: string | null
           photos: Json
           quote_id: string | null
           recurrence: string | null
@@ -537,9 +539,11 @@ export type Database = {
           id?: string
           is_assessment?: boolean | null
           is_clocked_in?: boolean | null
+          is_recurring?: boolean
           job_type?: Database["public"]["Enums"]["job_type"] | null
           notes?: string | null
           owner_id: string
+          parent_quote_id?: string | null
           photos?: Json
           quote_id?: string | null
           recurrence?: string | null
@@ -561,9 +565,11 @@ export type Database = {
           id?: string
           is_assessment?: boolean | null
           is_clocked_in?: boolean | null
+          is_recurring?: boolean
           job_type?: Database["public"]["Enums"]["job_type"] | null
           notes?: string | null
           owner_id?: string
+          parent_quote_id?: string | null
           photos?: Json
           quote_id?: string | null
           recurrence?: string | null
@@ -835,6 +841,7 @@ export type Database = {
           files: Json
           frequency: Database["public"]["Enums"]["quote_frequency"] | null
           id: string
+          is_subscription: boolean
           notes_internal: string | null
           number: string
           owner_id: string
@@ -842,6 +849,7 @@ export type Database = {
           public_token: string
           sent_at: string | null
           status: Database["public"]["Enums"]["quote_status"]
+          stripe_subscription_id: string | null
           subtotal: number
           tax_rate: number
           terms: string | null
@@ -862,6 +870,7 @@ export type Database = {
           files?: Json
           frequency?: Database["public"]["Enums"]["quote_frequency"] | null
           id?: string
+          is_subscription?: boolean
           notes_internal?: string | null
           number: string
           owner_id: string
@@ -869,6 +878,7 @@ export type Database = {
           public_token?: string
           sent_at?: string | null
           status?: Database["public"]["Enums"]["quote_status"]
+          stripe_subscription_id?: string | null
           subtotal?: number
           tax_rate?: number
           terms?: string | null
@@ -889,6 +899,7 @@ export type Database = {
           files?: Json
           frequency?: Database["public"]["Enums"]["quote_frequency"] | null
           id?: string
+          is_subscription?: boolean
           notes_internal?: string | null
           number?: string
           owner_id?: string
@@ -896,6 +907,7 @@ export type Database = {
           public_token?: string
           sent_at?: string | null
           status?: Database["public"]["Enums"]["quote_status"]
+          stripe_subscription_id?: string | null
           subtotal?: number
           tax_rate?: number
           terms?: string | null
@@ -919,6 +931,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      recurring_schedules: {
+        Row: {
+          business_id: string
+          created_at: string
+          customer_id: string
+          frequency: Database["public"]["Enums"]["quote_frequency"]
+          id: string
+          is_active: boolean
+          next_billing_date: string
+          quote_id: string
+          stripe_subscription_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          customer_id: string
+          frequency: Database["public"]["Enums"]["quote_frequency"]
+          id?: string
+          is_active?: boolean
+          next_billing_date: string
+          quote_id: string
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          customer_id?: string
+          frequency?: Database["public"]["Enums"]["quote_frequency"]
+          id?: string
+          is_active?: boolean
+          next_billing_date?: string
+          quote_id?: string
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       requests: {
         Row: {

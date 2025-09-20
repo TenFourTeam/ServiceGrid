@@ -82,6 +82,10 @@ export interface Quote {
   sentAt?: ISODate;
   viewCount?: number;
 
+  // Subscription fields
+  isSubscription?: boolean;
+  stripeSubscriptionId?: string;
+
   subtotal: Money;
   total: Money;
   status: QuoteStatus;

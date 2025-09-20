@@ -116,6 +116,57 @@ serve(async (req) => {
           .eq("id", quote_id);
         if (upErr) console.error("quotes update error:", upErr);
 
+        // Handle subscription creation for approved quotes
+        if (type === "approve" && (q as any).is_subscription) {
+          console.log("Quote is a subscription, creating Stripe subscription...");
+          
+          try {
+            // Call the manage-quote-subscription function
+            const subscriptionResponse = await supabase.functions.invoke('manage-quote-subscription', {
+              body: { quoteId: quote_id }
+            });
+
+            if (subscriptionResponse.error) {
+              console.error("Failed to create subscription:", subscriptionResponse.error);
+              // Don't fail the approval, just log the error
+            } else {
+              console.log("Subscription created successfully:", subscriptionResponse.data);
+            }
+          } catch (subscriptionError) {
+            console.error("Error creating subscription:", subscriptionError);
+            // Don't fail the approval, just log the error
+          }
+        } else if (type === "approve") {
+          // For non-subscription quotes, create a regular unscheduled work order
+          console.log("Creating unscheduled work order for approved quote...");
+          
+          try {
+            const { error: jobError } = await supabase
+              .from('jobs')
+              .insert({
+                owner_id: (q as any).owner_id,
+                business_id: (q as any).business_id,
+                customer_id: (q as any).customer_id,
+                quote_id: quote_id,
+                title: `${(q as any).number} - Service`,
+                address: (q as any).address,
+                status: 'Scheduled',
+                total: (q as any).total,
+                job_type: 'scheduled',
+                is_clocked_in: false,
+                is_recurring: false
+              });
+
+            if (jobError) {
+              console.error("Failed to create work order:", jobError);
+            } else {
+              console.log("Work order created successfully");
+            }
+          } catch (jobErr) {
+            console.error("Error creating work order:", jobErr);
+          }
+        }
+
         // Send follow-up email requesting details when edits are requested
         if (type === "edit") {
           const custEmail = (q as any)?.customers?.email as string | null;
