@@ -130,25 +130,23 @@ export default function Requests() {
           {getStatusBadge(request.status)}
         </div>
         
-        <div className="flex items-center justify-between gap-3 pr-20">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="font-medium truncate">{request.title}</div>
-            </div>
-            <div className="text-sm text-muted-foreground truncate">
-              {t('requests.table.customer')}: {request.customer?.name || t('requests.table.customer')}
-            </div>
-            {request.property_address && (
-              <div className="text-sm text-muted-foreground truncate">{request.property_address}</div>
-            )}
-            <div className="text-sm text-muted-foreground mt-1">
-              {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
-            </div>
+        {/* Three-dot menu positioned absolutely in bottom-right corner */}
+        <div className="absolute bottom-2 right-2" onClick={(e) => e.stopPropagation()}>
+          <RequestActions request={request} />
+        </div>
+        
+        <div className="pr-20 pb-8">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="font-medium truncate">{request.title}</div>
           </div>
-          <div className="flex items-center">
-            <div onClick={(e) => e.stopPropagation()}>
-              <RequestActions request={request} />
-            </div>
+          <div className="text-sm text-muted-foreground truncate">
+            {t('requests.table.customer')}: {request.customer?.name || t('requests.table.customer')}
+          </div>
+          {request.property_address && (
+            <div className="text-sm text-muted-foreground truncate">{request.property_address}</div>
+          )}
+          <div className="text-sm text-muted-foreground mt-1">
+            {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
           </div>
         </div>
       </div>
