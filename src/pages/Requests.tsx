@@ -130,8 +130,8 @@ export default function Requests() {
           {getStatusBadge(request.status)}
         </div>
         
-        {/* Three-dot menu positioned absolutely in bottom-right corner */}
-        <div className="absolute bottom-2 right-2" onClick={(e) => e.stopPropagation()}>
+        {/* Three-dot menu positioned absolutely halfway up the right edge */}
+        <div className="absolute top-1/2 right-2 -translate-y-1/2" onClick={(e) => e.stopPropagation()}>
           <RequestActions request={request} />
         </div>
         
