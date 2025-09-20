@@ -358,6 +358,7 @@ export type Database = {
           paid_at: string | null
           payment_terms: Database["public"]["Enums"]["payment_terms"] | null
           public_token: string
+          quote_id: string | null
           status: Database["public"]["Enums"]["invoice_status"]
           subtotal: number
           tax_rate: number
@@ -383,6 +384,7 @@ export type Database = {
           paid_at?: string | null
           payment_terms?: Database["public"]["Enums"]["payment_terms"] | null
           public_token?: string
+          quote_id?: string | null
           status?: Database["public"]["Enums"]["invoice_status"]
           subtotal?: number
           tax_rate?: number
@@ -408,6 +410,7 @@ export type Database = {
           paid_at?: string | null
           payment_terms?: Database["public"]["Enums"]["payment_terms"] | null
           public_token?: string
+          quote_id?: string | null
           status?: Database["public"]["Enums"]["invoice_status"]
           subtotal?: number
           tax_rate?: number
@@ -435,6 +438,13 @@ export type Database = {
             columns: ["job_id"]
             isOneToOne: false
             referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
             referencedColumns: ["id"]
           },
         ]
