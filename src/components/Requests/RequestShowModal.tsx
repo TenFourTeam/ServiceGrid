@@ -247,12 +247,10 @@ export function RequestShowModal({
                 {t('requests.show.requestInfo')}
               </div>
               <div className="space-y-3 pl-6">
-                {request.property_address && (
-                  <div>
-                    <div className="text-sm text-muted-foreground">{t('requests.show.propertyAddress')}</div>
-                    <div className="font-medium">{request.property_address}</div>
-                  </div>
-                )}
+                <div>
+                  <div className="text-sm text-muted-foreground">{t('requests.show.propertyAddress')}</div>
+                  <div className="font-medium">{request.property_address || ''}</div>
+                </div>
                 
                 <div>
                   <div className="text-sm text-muted-foreground">{t('requests.show.serviceDetails')}</div>
