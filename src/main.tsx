@@ -24,9 +24,15 @@ function ErrorScreen({ message }: { message: string }) {
 }
 
 function Boot() {
-  const [key, setKey] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [state, setState] = useState<{
+    key: string | null;
+    error: string | null;
+    isLoading: boolean;
+  }>({
+    key: null,
+    error: null,
+    isLoading: true
+  });
 
   useEffect(() => {
     let mounted = true;
@@ -52,13 +58,11 @@ function Boot() {
         }
         
         if (mounted) {
-          setKey(fetchedKey);
-          setIsLoading(false);
+          setState({ key: fetchedKey, error: null, isLoading: false });
         }
       } catch (e: any) {
         if (mounted) {
-          setError(e.message || 'Failed to load Clerk key');
-          setIsLoading(false);
+          setState({ key: null, error: e.message || 'Failed to load Clerk key', isLoading: false });
         }
       }
     };
@@ -70,19 +74,19 @@ function Boot() {
     };
   }, []);
 
-  if (isLoading) {
+  if (state.isLoading) {
     return <LoadingScreen />;
   }
 
-  if (error) {
-    return <ErrorScreen message={error} />;
+  if (state.error) {
+    return <ErrorScreen message={state.error} />;
   }
 
-  if (!key) {
+  if (!state.key) {
     return <ErrorScreen message="Missing authentication configuration" />;
   }
 
-  return <App clerkKey={key} />;
+  return <App clerkKey={state.key} key="app-instance" />;
 }
 
 const root = document.getElementById('root')!;
