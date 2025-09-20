@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { formatDateTime, formatMoney } from '@/utils/format';
+import { getJobStatusColors } from '@/utils/jobStatus';
 import { useNavigate } from 'react-router-dom';
 import { Job } from '@/types';
 import { toast } from 'sonner';
@@ -170,10 +171,35 @@ function WorkOrderRow({ job, uninvoiced, customerName, when, onOpen, t, userRole
   userRole: string;
   existingInvoice?: any;
 }) {
+  const statusColors = getJobStatusColors(job.status);
+  const statusKey = job.status === 'Scheduled' ? 'workOrders.status.scheduled' 
+    : job.status === 'In Progress' ? 'workOrders.status.inProgress'
+    : 'workOrders.status.completed';
+
   return (
-    <div onClick={onOpen} className="p-4 border rounded-md bg-card shadow-sm cursor-pointer hover:bg-accent/30 transition-colors">
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0 flex-1">
+    <div 
+      onClick={onOpen} 
+      className="relative p-4 border rounded-md bg-card shadow-sm cursor-pointer hover:bg-accent/30 transition-colors"
+    >
+      {/* Status badge in top-right corner */}
+      <div className="absolute top-2 right-2">
+        <Badge className={`${statusColors.bg} ${statusColors.text} ${statusColors.border}`}>
+          {t(statusKey)}
+        </Badge>
+      </div>
+      
+      {/* Actions menu halfway up right edge */}
+      <div className="absolute top-1/2 right-2 -translate-y-1/2" onClick={(e) => e.stopPropagation()}>
+        <WorkOrderActions 
+          job={job}
+          userRole={userRole}
+          existingInvoice={existingInvoice}
+        />
+      </div>
+      
+      {/* Content with right padding to avoid overlap */}
+      <div className="pr-20 pb-8">
+        <div className="space-y-1">
           <div className="flex items-center gap-2 mb-1">
             <div className="font-medium truncate">{job.title || t('jobs.form.titlePlaceholder')}</div>
             <div className="text-sm text-muted-foreground">{formatMoney(job.total || 0)}</div>
@@ -182,19 +208,6 @@ function WorkOrderRow({ job, uninvoiced, customerName, when, onOpen, t, userRole
           <div className="text-sm text-muted-foreground truncate">{t('workOrders.modal.customer')}: {customerName}</div>
           {job.address && <div className="text-sm text-muted-foreground truncate">{job.address}</div>}
           <div className="text-sm text-muted-foreground mt-1">{when}</div>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex flex-col items-end gap-2">
-            <StatusChip status={job.status} t={t} />
-            <div className="text-xs text-muted-foreground">{t('workOrders.actions.viewDetails')}</div>
-          </div>
-          <div onClick={(e) => e.stopPropagation()}>
-            <WorkOrderActions 
-              job={job}
-              userRole={userRole}
-              existingInvoice={existingInvoice}
-            />
-          </div>
         </div>
       </div>
     </div>
