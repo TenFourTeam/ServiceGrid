@@ -25,6 +25,7 @@ import { invalidationHelpers, queryKeys } from '@/queries/keys';
 import { generateInvoiceEmail } from '@/utils/emailTemplateEngine';
 import { escapeHtml } from '@/utils/sanitize';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 import JobShowModal from '@/components/Jobs/JobShowModal';
 import PickJobModal from '@/components/Jobs/PickJobModal';
 import PickQuoteModal from '@/components/Jobs/PickQuoteModal';
@@ -50,6 +51,7 @@ export default function InvoiceModal({
 }: InvoiceModalProps) {
   const { data: customers = [] } = useCustomersData();
   const { data: jobs = [] } = useJobsData();
+  const isMobile = useIsMobile();
   const { data: quotes = [] } = useQuotesData();
   const { business, businessName, businessLogoUrl, businessLightLogoUrl, businessId } = useBusinessContext();
   const { getToken } = useClerkAuth();
@@ -927,33 +929,43 @@ export default function InvoiceModal({
   const renderActions = () => {
     if (mode === 'mark_paid') {
       return (
-        <>
-          <Button variant="outline" onClick={() => setMode('view')}>
+        <div className={isMobile ? "flex flex-col gap-2" : "flex gap-2"}>
+          <Button 
+            variant="outline" 
+            onClick={() => setMode('view')}
+            className={isMobile ? "w-full" : ""}
+          >
             Cancel
           </Button>
           <Button 
             onClick={handleRecordPayment} 
             disabled={loading || paymentAmount <= 0}
+            className={isMobile ? "w-full" : ""}
           >
             {loading ? 'Recording...' : 'Record Payment'}
           </Button>
-        </>
+        </div>
       );
     }
 
     if (mode === 'send') {
       return (
-        <>
-          <Button variant="outline" onClick={() => setMode('view')}>
+        <div className={isMobile ? "flex flex-col gap-2" : "flex gap-2"}>
+          <Button 
+            variant="outline" 
+            onClick={() => setMode('view')}
+            className={isMobile ? "w-full" : ""}
+          >
             Back
           </Button>
           <Button 
             onClick={handleSendEmail} 
             disabled={loading || !to.trim()}
+            className={isMobile ? "w-full" : ""}
           >
             {loading ? 'Sending...' : 'Send Email'}
           </Button>
-        </>
+        </div>
       );
     }
 
@@ -969,6 +981,39 @@ export default function InvoiceModal({
 
     const canMarkAsPaid = invoice.status !== 'Paid';
     const canDelete = invoice.status === 'Draft'; // Only allow deleting draft invoices
+
+    if (isMobile) {
+      return (
+        <div className="flex flex-col gap-2">
+          {/* Primary action first */}
+          <Button variant="default" onClick={() => setMode('edit')} className="w-full">
+            Edit Invoice
+          </Button>
+          
+          {/* Secondary actions */}
+          {canMarkAsPaid && (
+            <Button variant="outline" onClick={() => setMode('mark_paid')} className="w-full">
+              Mark as Paid
+            </Button>
+          )}
+
+          <Button variant="outline" onClick={() => setMode('send')} className="w-full">
+            Email Preview
+          </Button>
+
+          {/* Destructive action last */}
+          {canDelete && (
+            <Button 
+              variant="destructive" 
+              onClick={() => setShowDeleteDialog(true)}
+              className="w-full"
+            >
+              {t('common.delete')}
+            </Button>
+          )}
+        </div>
+      );
+    }
 
     return (
       <>
@@ -1018,9 +1063,15 @@ export default function InvoiceModal({
           </div>
           
           <DrawerFooter>
-            <div className="flex justify-between">
-              {renderActions()}
-            </div>
+            {isMobile ? (
+              <div className="flex flex-col">
+                {renderActions()}
+              </div>
+            ) : (
+              <div className="flex justify-between">
+                {renderActions()}
+              </div>
+            )}
           </DrawerFooter>
         </DrawerContent>
       </Drawer>

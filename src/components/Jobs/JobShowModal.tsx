@@ -19,6 +19,7 @@ import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useNavigate } from 'react-router-dom';
 import { useClockInOut } from "@/hooks/useClockInOut";
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface JobShowModalProps {
   open: boolean;
@@ -31,6 +32,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
   const { data: customers = [] } = useCustomersData();
   const { data: quotes = [] } = useQuotesData();
   const { data: invoices = [] } = useInvoicesData();
+  const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   const { businessId, userId, role } = useBusinessContext();
   const navigate = useNavigate();
@@ -577,84 +579,88 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
           <JobMemberAssignments job={job} />
         </div>
         <DrawerFooter>
-          <div className="flex flex-col gap-3">
-            {/* Job Actions */}
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                {role === 'owner' && (
-                  <ReschedulePopover job={job as Job} onDone={()=>{
-                    if (businessId) {
-                      invalidationHelpers.jobs(queryClient, businessId);
-                    }
-                  }} />
-                )}
+          {isMobile ? (
+            <div className="flex flex-col gap-2">
+              {/* Primary actions first */}
+              {role === 'owner' && onOpenJobEditModal && (
                 <Button 
-                  variant="outline" 
-                  onClick={handleNavigate}
-                  size="sm"
+                  variant="default" 
+                  onClick={() => {
+                    onOpenJobEditModal(job as Job);
+                    onOpenChange(false);
+                  }}
+                  className="w-full"
                 >
-                  {t('workOrders.modal.navigate')}
+                  Edit Job
                 </Button>
-                {job.jobType === 'time_and_materials' && (
-                  <>
-                    {!job.isClockedIn && (
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => clockInOut({ jobId: job.id, isClockingIn: true })}
-                        disabled={isClockingInOut}
-                      >
-                        {isClockingInOut ? t('workOrders.modal.starting') : t('workOrders.modal.startJob')}
-                      </Button>
-                    )}
-                    {job.isClockedIn && (
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => clockInOut({ jobId: job.id, isClockingIn: false })}
-                        disabled={isClockingInOut}
-                      >
-                        {isClockingInOut ? t('workOrders.modal.stopping') : t('workOrders.modal.stopJob')}
-                      </Button>
-                    )}
-                  </>
-                )}
-                {role === 'owner' && (
-                  <>
-                    <Button 
-                      variant="outline" 
-                      onClick={handleCreateInvoice}
-                      disabled={isCreatingInvoice || (job.jobType === 'scheduled' && !currentQuoteId && !existingInvoice)}
-                      size="sm"
+              )}
+              
+              {/* Time tracking actions */}
+              {job.jobType === 'time_and_materials' && (
+                <>
+                  {!job.isClockedIn && (
+                    <Button
+                      variant="default"
+                      onClick={() => clockInOut({ jobId: job.id, isClockingIn: true })}
+                      disabled={isClockingInOut}
+                      className="w-full"
                     >
-                      {isCreatingInvoice ? t('workOrders.modal.creatingInvoice') : existingInvoice ? t('workOrders.modal.viewInvoice') : t('workOrders.modal.createInvoice')}
+                      {isClockingInOut ? t('workOrders.modal.starting') : t('workOrders.modal.startJob')}
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={handleCompleteJob}
-                      disabled={job.status === 'Completed' || isCompletingJob}
-                      size="sm"
+                  )}
+                  {job.isClockedIn && (
+                    <Button
+                      variant="destructive"
+                      onClick={() => clockInOut({ jobId: job.id, isClockingIn: false })}
+                      disabled={isClockingInOut}
+                      className="w-full"
                     >
-                      {isCompletingJob ? t('workOrders.modal.completing') : job.status === 'Completed' ? t('workOrders.modal.completed') : t('workOrders.modal.complete')}
+                      {isClockingInOut ? t('workOrders.modal.stopping') : t('workOrders.modal.stopJob')}
                     </Button>
-                  </>
-                )}
-              </div>
+                  )}
+                </>
+              )}
+              
+              {/* Secondary actions */}
+              <Button 
+                variant="outline" 
+                onClick={handleNavigate}
+                className="w-full"
+              >
+                {t('workOrders.modal.navigate')}
+              </Button>
+              
               {role === 'owner' && (
-                  <div className="flex items-center gap-2">
-                    {onOpenJobEditModal && (
-                      <Button 
-                        variant="default" 
-                        onClick={() => {
-                          onOpenJobEditModal(job as Job);
-                          onOpenChange(false);
-                        }}
-                        size="sm"
-                      >
-                        Edit Job
-                      </Button>
-                    )}
-                    <Button variant="destructive" size="sm" onClick={async () => {
+                <ReschedulePopover job={job as Job} onDone={()=>{
+                  if (businessId) {
+                    invalidationHelpers.jobs(queryClient, businessId);
+                  }
+                }} />
+              )}
+              
+              {role === 'owner' && (
+                <>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleCreateInvoice}
+                    disabled={isCreatingInvoice || (job.jobType === 'scheduled' && !currentQuoteId && !existingInvoice)}
+                    className="w-full"
+                  >
+                    {isCreatingInvoice ? t('workOrders.modal.creatingInvoice') : existingInvoice ? t('workOrders.modal.viewInvoice') : t('workOrders.modal.createInvoice')}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleCompleteJob}
+                    disabled={job.status === 'Completed' || isCompletingJob}
+                    className="w-full"
+                  >
+                    {isCompletingJob ? t('workOrders.modal.completing') : job.status === 'Completed' ? t('workOrders.modal.completed') : t('workOrders.modal.complete')}
+                  </Button>
+                  
+                  {/* Destructive action last */}
+                  <Button 
+                    variant="destructive" 
+                    onClick={async () => {
                       try {
                         const { error } = await authApi.invoke(`jobs?id=${job.id}`, { 
                           method: 'DELETE',
@@ -676,11 +682,120 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                       } catch (e: any) {
                         console.error('Failed to delete job:', e);
                       }
-                    }}>{t('workOrders.modal.delete')}</Button>
-                  </div>
+                    }}
+                    className="w-full"
+                  >
+                    {t('workOrders.modal.delete')}
+                  </Button>
+                </>
               )}
             </div>
-          </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {/* Job Actions */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  {role === 'owner' && (
+                    <ReschedulePopover job={job as Job} onDone={()=>{
+                      if (businessId) {
+                        invalidationHelpers.jobs(queryClient, businessId);
+                      }
+                    }} />
+                  )}
+                  <Button 
+                    variant="outline" 
+                    onClick={handleNavigate}
+                    size="sm"
+                  >
+                    {t('workOrders.modal.navigate')}
+                  </Button>
+                  {job.jobType === 'time_and_materials' && (
+                    <>
+                      {!job.isClockedIn && (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => clockInOut({ jobId: job.id, isClockingIn: true })}
+                          disabled={isClockingInOut}
+                        >
+                          {isClockingInOut ? t('workOrders.modal.starting') : t('workOrders.modal.startJob')}
+                        </Button>
+                      )}
+                      {job.isClockedIn && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => clockInOut({ jobId: job.id, isClockingIn: false })}
+                          disabled={isClockingInOut}
+                        >
+                          {isClockingInOut ? t('workOrders.modal.stopping') : t('workOrders.modal.stopJob')}
+                        </Button>
+                      )}
+                    </>
+                  )}
+                  {role === 'owner' && (
+                    <>
+                      <Button 
+                        variant="outline" 
+                        onClick={handleCreateInvoice}
+                        disabled={isCreatingInvoice || (job.jobType === 'scheduled' && !currentQuoteId && !existingInvoice)}
+                        size="sm"
+                      >
+                        {isCreatingInvoice ? t('workOrders.modal.creatingInvoice') : existingInvoice ? t('workOrders.modal.viewInvoice') : t('workOrders.modal.createInvoice')}
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={handleCompleteJob}
+                        disabled={job.status === 'Completed' || isCompletingJob}
+                        size="sm"
+                      >
+                        {isCompletingJob ? t('workOrders.modal.completing') : job.status === 'Completed' ? t('workOrders.modal.completed') : t('workOrders.modal.complete')}
+                      </Button>
+                    </>
+                  )}
+                </div>
+                {role === 'owner' && (
+                    <div className="flex items-center gap-2">
+                      {onOpenJobEditModal && (
+                        <Button 
+                          variant="default" 
+                          onClick={() => {
+                            onOpenJobEditModal(job as Job);
+                            onOpenChange(false);
+                          }}
+                          size="sm"
+                        >
+                          Edit Job
+                        </Button>
+                      )}
+                      <Button variant="destructive" size="sm" onClick={async () => {
+                        try {
+                          const { error } = await authApi.invoke(`jobs?id=${job.id}`, { 
+                            method: 'DELETE',
+                            toast: {
+                              success: t('workOrders.modal.delete'),
+                              loading: t('workOrders.modal.delete'),
+                              error: t('workOrders.modal.delete')
+                            }
+                          });
+                          
+                          if (error) {
+                            throw new Error(error.message || 'Failed to delete job');
+                          }
+                          
+                          if (businessId) {
+                            invalidationHelpers.jobs(queryClient, businessId);
+                          }
+                          onOpenChange(false);
+                        } catch (e: any) {
+                          console.error('Failed to delete job:', e);
+                        }
+                      }}>{t('workOrders.modal.delete')}</Button>
+                    </div>
+                )}
+              </div>
+            </div>
+          )}
         </DrawerFooter>
 
         <Dialog open={viewerOpen} onOpenChange={setViewerOpen}>

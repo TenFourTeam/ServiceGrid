@@ -17,6 +17,7 @@ import { QuoteForm } from '@/components/Quotes/QuoteForm';
 import { useLifecycleEmailIntegration } from '@/hooks/useLifecycleEmailIntegration';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useDeleteQuote } from '@/hooks/useQuoteOperations';
+import { useIsMobile } from '@/hooks/use-mobile';
 import type { Quote, QuoteListItem, QuoteStatus, Customer } from '@/types';
 
 const statusColors: Record<QuoteStatus, string> = {
@@ -41,6 +42,7 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
   const { t } = useLanguage();
   const { data: customers = [] } = useCustomersData();
   const { businessId } = useBusinessContext();
+  const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { getToken } = useClerkAuth();
@@ -415,13 +417,21 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
 
         {currentMode === 'view' && (
           <DrawerFooter>
-            <div className="flex justify-between">
-              {quote && (
-                <>
-                  <div className="flex gap-2">
+            {isMobile ? (
+              <div className="flex flex-col gap-2">
+                {quote && (
+                  <>
+                    <Button 
+                      variant="default" 
+                      onClick={() => setCurrentMode('edit')}
+                      className="w-full"
+                    >
+                      {t('quotes.actions.editQuote')}
+                    </Button>
                     <Button 
                       variant="outline" 
                       onClick={() => onSendQuote?.(quote)}
+                      className="w-full"
                     >
                       {quote.sentAt || quote.status !== 'Draft' ? t('quotes.actions.resendQuote') : t('quotes.actions.sendQuote')}
                     </Button>
@@ -429,6 +439,7 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
                       variant="outline" 
                       onClick={handleConvertToJob}
                       disabled={isConvertingToJob}
+                      className="w-full"
                     >
                       {isConvertingToJob ? t('quotes.messages.convertingToJob') : t('quotes.actions.convertToJob')}
                     </Button>
@@ -436,20 +447,13 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
                       variant="outline" 
                       onClick={handleCreateInvoice}
                       disabled={isCreatingInvoice}
+                      className="w-full"
                     >
                       {isCreatingInvoice ? t('quotes.messages.creatingInvoice') : t('quotes.actions.createInvoice')}
                     </Button>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="default" 
-                      onClick={() => setCurrentMode('edit')}
-                    >
-                      {t('quotes.actions.editQuote')}
-                    </Button>
                     <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
                       <AlertDialogTrigger asChild>
-                        <Button variant="destructive">
+                        <Button variant="destructive" className="w-full">
                           {t('quotes.actions.deleteQuote')}
                         </Button>
                       </AlertDialogTrigger>
@@ -472,10 +476,72 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
-                  </div>
-                </>
-              )}
-            </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="flex justify-between">
+                {quote && (
+                  <>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => onSendQuote?.(quote)}
+                      >
+                        {quote.sentAt || quote.status !== 'Draft' ? t('quotes.actions.resendQuote') : t('quotes.actions.sendQuote')}
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={handleConvertToJob}
+                        disabled={isConvertingToJob}
+                      >
+                        {isConvertingToJob ? t('quotes.messages.convertingToJob') : t('quotes.actions.convertToJob')}
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={handleCreateInvoice}
+                        disabled={isCreatingInvoice}
+                      >
+                        {isCreatingInvoice ? t('quotes.messages.creatingInvoice') : t('quotes.actions.createInvoice')}
+                      </Button>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="default" 
+                        onClick={() => setCurrentMode('edit')}
+                      >
+                        {t('quotes.actions.editQuote')}
+                      </Button>
+                      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive">
+                            {t('quotes.actions.deleteQuote')}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>{t('quotes.delete.confirmTitle')}</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              {t('quotes.delete.confirmDescription', { number: quote.number })}
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={handleDeleteQuote}
+                              disabled={deleteQuoteMutation.isPending}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              {deleteQuoteMutation.isPending ? t('quotes.delete.deleting') : t('common.delete')}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </DrawerFooter>
         )}
       </DrawerContent>

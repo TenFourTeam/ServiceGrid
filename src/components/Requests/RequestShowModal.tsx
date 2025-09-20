@@ -16,6 +16,7 @@ import { useCreateQuote } from "@/hooks/useQuoteOperations";
 import { useLifecycleEmailIntegration } from "@/hooks/useLifecycleEmailIntegration";
 import { useRequestOperations } from "@/hooks/useRequestOperations";
 import { useNavigate } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
 interface RequestShowModalProps {
   request: RequestListItem | null;
   open: boolean;
@@ -32,6 +33,7 @@ export function RequestShowModal({
   const { t } = useLanguage();
   const navigate = useNavigate();
   const { getToken } = useClerkAuth();
+  const isMobile = useIsMobile();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const { triggerJobScheduled } = useLifecycleEmailIntegration();
   const createQuote = useCreateQuote();
@@ -370,44 +372,86 @@ export function RequestShowModal({
           </div>
           
           <DrawerFooter>
-            <div className="flex justify-between">
-              <div className="flex gap-2">
+            {isMobile ? (
+              <div className="flex flex-col gap-2">
+                <Button
+                  variant="default"
+                  onClick={() => setShowEditModal(true)}
+                  className="w-full"
+                >
+                  {t('requests.show.editRequest')}
+                </Button>
                 <Button
                   variant="outline"
                   onClick={handleScheduleAssessment}
                   disabled={request.status === 'Archived'}
+                  className="w-full"
                 >
                   {t('requests.actions.scheduleAssessment')}
                 </Button>
                 <Button
                   variant="outline"
                   onClick={handleConvertToQuote}
+                  className="w-full"
                 >
                   {t('requests.actions.convertToQuote')}
                 </Button>
                 <Button
                   variant="outline"
                   onClick={handleConvertToJob}
+                  className="w-full"
                 >
                   {t('requests.actions.convertToJob')}
-                </Button>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="default"
-                  onClick={() => setShowEditModal(true)}
-                >
-                  {t('requests.show.editRequest')}
                 </Button>
                 <Button
                   variant="default"
                   onClick={handleArchive}
                   disabled={request.status === 'Archived'}
+                  className="w-full"
                 >
                   {t('requests.actions.archive')}
                 </Button>
               </div>
-            </div>
+            ) : (
+              <div className="flex justify-between">
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={handleScheduleAssessment}
+                    disabled={request.status === 'Archived'}
+                  >
+                    {t('requests.actions.scheduleAssessment')}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleConvertToQuote}
+                  >
+                    {t('requests.actions.convertToQuote')}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleConvertToJob}
+                  >
+                    {t('requests.actions.convertToJob')}
+                  </Button>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="default"
+                    onClick={() => setShowEditModal(true)}
+                  >
+                    {t('requests.show.editRequest')}
+                  </Button>
+                  <Button
+                    variant="default"
+                    onClick={handleArchive}
+                    disabled={request.status === 'Archived'}
+                  >
+                    {t('requests.actions.archive')}
+                  </Button>
+                </div>
+              </div>
+            )}
           </DrawerFooter>
         </DrawerContent>
       </Drawer>

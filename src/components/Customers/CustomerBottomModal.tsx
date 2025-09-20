@@ -9,6 +9,7 @@ import { invalidationHelpers } from "@/queries/keys";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useAuth } from '@clerk/clerk-react';
 import { createAuthEdgeApi } from "@/utils/authEdgeApi";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { Customer } from "@/types";
 
 // Email validation regex - requires a valid email format
@@ -54,6 +55,7 @@ export function CustomerBottomModal({
   const { businessId, userId } = useBusinessContext();
   const { getToken } = useAuth();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const isMobile = useIsMobile();
   
   const [formData, setFormData] = useState<CustomerFormData>({
     name: "",
@@ -318,36 +320,55 @@ export function CustomerBottomModal({
         
         <DrawerFooter>
           {mode === 'view' ? (
-            <div className="flex justify-end">
-              <div className="flex gap-2">
+            isMobile ? (
+              <div className="flex flex-col gap-2">
                 <Button
                   variant="default"
                   onClick={handleEdit}
+                  className="w-full"
                 >
                   Edit Customer
                 </Button>
                 <Button
                   variant="destructive"
                   onClick={handleDelete}
+                  className="w-full"
                 >
                   Delete Customer
                 </Button>
               </div>
-            </div>
+            ) : (
+              <div className="flex justify-end">
+                <div className="flex gap-2">
+                  <Button
+                    variant="default"
+                    onClick={handleEdit}
+                  >
+                    Edit Customer
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={handleDelete}
+                  >
+                    Delete Customer
+                  </Button>
+                </div>
+              </div>
+            )
           ) : (
-            <div className="flex gap-2">
+            <div className={isMobile ? "flex flex-col gap-2" : "flex gap-2"}>
               <Button
                 variant="outline"
                 onClick={() => handleOpenChange(false)}
                 disabled={loading}
-                className="flex-1"
+                className={isMobile ? "w-full" : "flex-1"}
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleSave}
                 disabled={loading}
-                className="flex-1"
+                className={isMobile ? "w-full" : "flex-1"}
               >
                 {customer?.id ? "Update" : "Create"} Customer
               </Button>
