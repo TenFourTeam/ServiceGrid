@@ -123,9 +123,14 @@ export default function Requests() {
     return (
       <div 
         onClick={onClick}
-        className="p-4 border rounded-md bg-card shadow-sm cursor-pointer hover:bg-accent/30 transition-colors"
+        className="relative p-4 border rounded-md bg-card shadow-sm cursor-pointer hover:bg-accent/30 transition-colors"
       >
-        <div className="flex items-center justify-between gap-3">
+        {/* Status badge positioned absolutely in top-right corner */}
+        <div className="absolute top-2 right-2">
+          {getStatusBadge(request.status)}
+        </div>
+        
+        <div className="flex items-center justify-between gap-3 pr-20">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-1">
               <div className="font-medium truncate">{request.title}</div>
@@ -140,12 +145,9 @@ export default function Requests() {
               {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
             </div>
           </div>
-          <div className="flex flex-col items-end gap-2">
-            <div className="flex items-center gap-2">
-              {getStatusBadge(request.status)}
-              <div onClick={(e) => e.stopPropagation()}>
-                <RequestActions request={request} />
-              </div>
+          <div className="flex items-center">
+            <div onClick={(e) => e.stopPropagation()}>
+              <RequestActions request={request} />
             </div>
           </div>
         </div>
