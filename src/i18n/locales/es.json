@@ -561,7 +561,8 @@
       "cancel": "Cancelar",
       "confirm": "Eliminar",
       "deleting": "Eliminando..."
-    }
+    },
+    "noAddressProvided": "Sin dirección proporcionada"
   },
   "invoices": {
     "title": "Todas las Facturas",

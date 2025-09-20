@@ -561,7 +561,8 @@
       "cancel": "Cancel",
       "confirm": "Delete",
       "deleting": "Deleting..."
-    }
+    },
+    "noAddressProvided": "No address provided"
   },
   "invoices": {
     "title": "All Invoices",
