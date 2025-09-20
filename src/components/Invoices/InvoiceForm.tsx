@@ -70,12 +70,27 @@ export function InvoiceForm({
   );
   const [showCustomerModal, setShowCustomerModal] = useState(false);
 
-  // Initialize discount display
+  // Sync form state with initialData changes (for edit mode)
   useEffect(() => {
-    if (initialData?.discount !== undefined) {
-      setDiscountInput(formatCurrencyInputNoSymbol(initialData.discount));
+    if (initialData) {
+      setCustomerId(initialData.customerId || '');
+      setAddress(initialData.address || '');
+      setLineItems(initialData.lineItems || []);
+      setTaxRateInput((initialData.taxRate || businessTaxRateDefault) * 100);
+      setPaymentTerms(initialData.paymentTerms);
+      setFrequency(initialData.frequency);
+      setDepositRequired(initialData.depositRequired || false);
+      setDepositPercent(initialData.depositPercent || 50);
+      setNotesInternal(initialData.notesInternal || '');
+      setTerms(initialData.terms || '');
+      setDueDate(initialData.dueDate ? new Date(initialData.dueDate) : undefined);
+      
+      // Handle discount separately with formatting
+      if (initialData.discount !== undefined) {
+        setDiscountInput(formatCurrencyInputNoSymbol(initialData.discount));
+      }
     }
-  }, [initialData?.discount]);
+  }, [initialData, businessTaxRateDefault]);
 
   // Calculate totals
   const taxRate = taxRateInput / 100;
