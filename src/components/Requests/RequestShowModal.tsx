@@ -249,7 +249,7 @@ export function RequestShowModal({
               <div className="space-y-3 pl-6">
                 <div>
                   <div className="text-sm text-muted-foreground">{t('requests.show.propertyAddress')}</div>
-                  <div className="font-medium">{request.property_address || ''}</div>
+                  <div className="font-medium">{request.property_address || '\u00A0'}</div>
                 </div>
                 
                 <div>
