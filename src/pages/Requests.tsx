@@ -142,14 +142,11 @@ export default function Requests() {
           <div className="text-sm text-muted-foreground truncate">
             {t('requests.table.customer')}: {request.customer?.name || t('requests.table.customer')}
           </div>
-          {request.property_address && (
-            <div className="text-sm text-muted-foreground truncate">{request.property_address}</div>
-          )}
           <div className="text-sm text-muted-foreground mt-1">
             {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
           </div>
           <div className="text-sm text-muted-foreground mt-1 truncate">
-            {request.service_details}
+            {request.property_address || 'No address provided'}
           </div>
         </div>
       </div>
