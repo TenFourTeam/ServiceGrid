@@ -935,7 +935,7 @@ export default function InvoiceModal({
             onClick={handleRecordPayment} 
             disabled={loading || paymentAmount <= 0}
           >
-            Record Payment
+            {loading ? 'Recording...' : 'Record Payment'}
           </Button>
         </>
       );
@@ -945,24 +945,45 @@ export default function InvoiceModal({
       return (
         <>
           <Button variant="outline" onClick={() => setMode('view')}>
-            Cancel
+            Back
           </Button>
           <Button 
             onClick={handleSendEmail} 
-            disabled={loading || !customerEmail}
+            disabled={loading || !to.trim()}
           >
-            Send Email
+            {loading ? 'Sending...' : 'Send Email'}
           </Button>
         </>
       );
     }
 
-    const canDelete = invoice.status === 'Draft';
+    if (mode === 'edit' || mode === 'create') {
+      // Form submission is handled by InvoiceForm component itself
+      return null;
+    }
+
+    // View mode actions
+    if (!invoice) {
+      return null;
+    }
+
+    const canMarkAsPaid = invoice.status !== 'Paid';
+    const canDelete = invoice.status === 'Draft'; // Only allow deleting draft invoices
 
     return (
       <>
-        <Button variant="default" onClick={() => setMode('edit')}>
-          Edit Invoice
+        <Button variant="outline" onClick={() => setMode('edit')}>
+          Edit
+        </Button>
+
+        {canMarkAsPaid && (
+          <Button variant="outline" onClick={() => setMode('mark_paid')}>
+            Mark as Paid
+          </Button>
+        )}
+
+        <Button variant="outline" onClick={() => setMode('send')}>
+          Email Preview
         </Button>
 
         {canDelete && (
@@ -976,8 +997,6 @@ export default function InvoiceModal({
       </>
     );
   };
-
-  const canMarkAsPaid = invoice && invoice.status !== 'Paid';
 
   return (
     <>
@@ -993,20 +1012,8 @@ export default function InvoiceModal({
           </div>
           
           <DrawerFooter>
-            <div className="flex justify-between">
-              <div className="flex gap-2">
-                {canMarkAsPaid && (
-                  <Button variant="outline" onClick={() => setMode('mark_paid')}>
-                    Mark as Paid
-                  </Button>
-                )}
-                <Button variant="outline" onClick={() => setMode('send')}>
-                  Email Preview
-                </Button>
-              </div>
-              <div className="flex gap-2">
-                {renderActions()}
-              </div>
+            <div className="flex gap-2 justify-end">
+              {renderActions()}
             </div>
           </DrawerFooter>
         </DrawerContent>
