@@ -58,6 +58,11 @@ export default function QuotesPage() {
   const [detailsModalMode, setDetailsModalMode] = useState<'create' | 'view' | 'edit'>('view');
   const [highlightedQuoteId, setHighlightedQuoteId] = useState<string | null>(null);
 
+  const handleEditQuote = (quote: QuoteListItem) => {
+    setSelectedQuoteId(quote.id);
+    setDetailsModalMode('edit');
+  };
+
   const handleSendQuote = async (quoteListItem: QuoteListItem) => {
     // Convert QuoteListItem to full Quote by fetching from API
     try {
@@ -196,6 +201,7 @@ export default function QuotesPage() {
                 <QuoteActions 
                   quote={quote} 
                   onSendQuote={handleSendQuote}
+                  onEditQuote={handleEditQuote}
                 />
               </div>
             </div>
@@ -350,6 +356,7 @@ export default function QuotesPage() {
                           <QuoteActions 
                             quote={quote} 
                             onSendQuote={handleSendQuote}
+                            onEditQuote={handleEditQuote}
                           />
                         </TableCell>
                       </TableRow>

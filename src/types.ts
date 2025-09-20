@@ -60,6 +60,7 @@ export interface QuoteListItem {
   customerId: ID;
   customerName?: string;
   customerEmail?: string;
+  sentAt?: ISODate;
 }
 
 // Full quote data for detailed operations

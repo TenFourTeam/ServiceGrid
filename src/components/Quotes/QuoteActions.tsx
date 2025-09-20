@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Send, FileText, Receipt } from 'lucide-react';
+import { MoreHorizontal, Send, FileText, Receipt, Edit } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
@@ -15,9 +15,10 @@ import type { QuoteListItem } from '@/types';
 interface QuoteActionsProps {
   quote: QuoteListItem;
   onSendQuote: (quote: QuoteListItem) => void;
+  onEditQuote: (quote: QuoteListItem) => void;
 }
 
-export function QuoteActions({ quote, onSendQuote }: QuoteActionsProps) {
+export function QuoteActions({ quote, onSendQuote, onEditQuote }: QuoteActionsProps) {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const { getToken } = useClerkAuth();
@@ -26,6 +27,8 @@ export function QuoteActions({ quote, onSendQuote }: QuoteActionsProps) {
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const { triggerJobScheduled, triggerInvoiceSent } = useLifecycleEmailIntegration();
 
+  // Determine if quote has been sent (show "Re-send" vs "Send")
+  const hasBeenSent = quote.sentAt != null || quote.status !== 'Draft';
 
   const handleConvertToJob = async () => {
     if (quote.status === 'Draft') {
@@ -112,9 +115,13 @@ export function QuoteActions({ quote, onSendQuote }: QuoteActionsProps) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => onEditQuote(quote)} className="gap-2">
+          <Edit className="h-4 w-4" />
+          {t('quotes.actions.editQuote')}
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => onSendQuote(quote)} className="gap-2">
           <Send className="h-4 w-4" />
-          {t('quotes.actions.sendQuote')}
+          {hasBeenSent ? t('quotes.actions.resendQuote') : t('quotes.actions.sendQuote')}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleConvertToJob} className="gap-2">

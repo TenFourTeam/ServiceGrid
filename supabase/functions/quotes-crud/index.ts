@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
           .from('quotes')
           .select(`
             id, number, total, status, updated_at, public_token, view_count,
-            customer_id,
+            customer_id, sent_at,
             customers!inner(name, email)
           `, { count: 'exact' })
           .eq('business_id', ctx.businessId)
@@ -119,6 +119,7 @@ Deno.serve(async (req) => {
           customerId: quote.customer_id,
           customerName: quote.customers?.name,
           customerEmail: quote.customers?.email,
+          sentAt: quote.sent_at,
         })) || [];
 
         console.log('[quotes-crud] Fetched', quotes.length, 'quotes');
