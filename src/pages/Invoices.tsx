@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { formatDate, formatMoney } from '@/utils/format';
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
+import { formatDistanceToNow } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
 import { useIsMobile } from "@/hooks/use-mobile";
 import InvoiceModal from '@/components/Invoices/InvoiceModal';
 import { InvoiceActions } from '@/components/Invoices/InvoiceActions';
@@ -23,6 +25,12 @@ import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 import { useLanguage } from '@/contexts/LanguageContext';
 
+const statusColors: Record<string, string> = {
+  'Draft': 'bg-gray-100 text-gray-800',
+  'Sent': 'bg-blue-100 text-blue-800', 
+  'Paid': 'bg-green-100 text-green-800',
+  'Overdue': 'bg-red-100 text-red-800'
+};
 
 export default function InvoicesPage() {
   const { data: customers = [] } = useCustomersData();
@@ -224,30 +232,42 @@ export default function InvoicesPage() {
     return (
       <div 
         onClick={onClick}
-        className="p-4 border rounded-md bg-card shadow-sm cursor-pointer hover:bg-accent/30 transition-colors"
+        className="relative p-4 border rounded-md bg-card shadow-sm cursor-pointer hover:bg-accent/30 transition-colors"
       >
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="font-medium truncate">#{invoice.number}</div>
-              <div className="text-sm text-muted-foreground">{formatMoney(invoice.total)}</div>
-            </div>
-            <div className="text-sm text-muted-foreground truncate">
+        {/* Status badge in top-right corner */}
+        <div className="absolute top-2 right-2">
+          <Badge variant="secondary" className={statusColors[invoice.status] || 'bg-gray-100 text-gray-800'}>
+            {invoice.status}
+          </Badge>
+        </div>
+
+        {/* Actions menu halfway up right edge */}
+        <div className="absolute right-2 top-1/2 -translate-y-1/2" onClick={(e) => e.stopPropagation()}>
+          <InvoiceActions
+            invoice={invoice}
+            onEditInvoice={handleEditInvoice}
+            onMarkAsPaid={handleMarkAsPaid}
+            onEmailPreview={handleEmailPreview}
+          />
+        </div>
+
+        {/* Content area with right padding */}
+        <div className="pr-20 pb-8">
+          <div className="space-y-1">
+            <div className="font-medium">#{invoice.number}</div>
+            <div className="text-sm text-muted-foreground">
               {t('invoices.mobile.customer')}: {customer?.name || 'Unknown'}
             </div>
+            {customer?.address && (
+              <div className="text-xs text-muted-foreground">
+                {customer.address}
+              </div>
+            )}
             <div className="text-sm text-muted-foreground">
-              {t('invoices.mobile.due')}: {formatDate(invoice.dueAt)}
+              {formatMoney(invoice.total)}
             </div>
-          </div>
-          <div className="flex flex-col items-end gap-2">
-            <div className="text-sm font-medium">{invoice.status}</div>
-            <div onClick={(e) => e.stopPropagation()}>
-              <InvoiceActions
-                invoice={invoice}
-                onEditInvoice={handleEditInvoice}
-                onMarkAsPaid={handleMarkAsPaid}
-                onEmailPreview={handleEmailPreview}
-              />
+            <div className="text-xs text-muted-foreground">
+              {formatDistanceToNow(new Date(invoice.updatedAt), { addSuffix: true })}
             </div>
           </div>
         </div>
