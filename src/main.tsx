@@ -36,8 +36,12 @@ function Boot() {
 
   useEffect(() => {
     let mounted = true;
+    let hasRun = false; // Prevent multiple runs
     
     const fetchClerkKey = async () => {
+      if (hasRun) return; // Prevent duplicate calls
+      hasRun = true;
+      
       try {
         const res = await fetch('https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/clerk-publishable-key');
         
@@ -58,11 +62,19 @@ function Boot() {
         }
         
         if (mounted) {
-          setState({ key: fetchedKey, error: null, isLoading: false });
+          setState(prev => {
+            // Only update if we don't already have a key
+            if (prev.key) return prev;
+            return { key: fetchedKey, error: null, isLoading: false };
+          });
         }
       } catch (e: any) {
         if (mounted) {
-          setState({ key: null, error: e.message || 'Failed to load Clerk key', isLoading: false });
+          setState(prev => {
+            // Only update if we don't already have a key or error
+            if (prev.key || prev.error) return prev;
+            return { key: null, error: e.message || 'Failed to load Clerk key', isLoading: false };
+          });
         }
       }
     };
@@ -72,7 +84,7 @@ function Boot() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, []); // Empty dependency array ensures this runs only once
 
   if (state.isLoading) {
     return <LoadingScreen />;
@@ -86,7 +98,7 @@ function Boot() {
     return <ErrorScreen message="Missing authentication configuration" />;
   }
 
-  return <App clerkKey={state.key} key="app-instance" />;
+  return <App clerkKey={state.key} />;
 }
 
 const root = document.getElementById('root')!;
