@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { formatDateTime, formatMoney } from '@/utils/format';
-import { getJobStatusColors } from '@/utils/jobStatus';
 import { useNavigate } from 'react-router-dom';
 import { Job } from '@/types';
 import { toast } from 'sonner';
@@ -32,6 +31,13 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { WorkOrderActions } from '@/components/WorkOrders/WorkOrderActions';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { format } from 'date-fns';
+import { formatMoney as formatCurrency } from '@/utils/format';
+
+const statusColors: Record<string, string> = {
+  'Scheduled': 'bg-green-100 text-green-800',
+  'In Progress': 'bg-blue-100 text-blue-800',
+  'Completed': 'bg-gray-100 text-gray-800'
+};
 
 function useFilteredJobs() {
   const { data: jobs = [] } = useJobsData();
@@ -171,7 +177,6 @@ function WorkOrderRow({ job, uninvoiced, customerName, when, onOpen, t, userRole
   userRole: string;
   existingInvoice?: any;
 }) {
-  const statusColors = getJobStatusColors(job.status);
   const statusKey = job.status === 'Scheduled' ? 'workOrders.status.scheduled' 
     : job.status === 'In Progress' ? 'workOrders.status.inProgress'
     : 'workOrders.status.completed';
@@ -183,7 +188,7 @@ function WorkOrderRow({ job, uninvoiced, customerName, when, onOpen, t, userRole
     >
       {/* Status badge in top-right corner */}
       <div className="absolute top-2 right-2">
-        <Badge className={`${statusColors.bg} ${statusColors.text} ${statusColors.border}`}>
+        <Badge className={statusColors[job.status]}>
           {t(statusKey)}
         </Badge>
       </div>
