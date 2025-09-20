@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import AppLayout from '@/components/Layout/AppLayout';
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from '@/components/ui/button';
+import { formatDistanceToNow } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -175,35 +176,41 @@ export default function QuotesPage() {
     return (
       <div 
         onClick={onClick}
-        className={`p-4 border rounded-md bg-card shadow-sm cursor-pointer hover:bg-accent/30 transition-all duration-500 ${
+        className={`relative p-4 border rounded-md bg-card shadow-sm cursor-pointer hover:bg-accent/30 transition-all duration-500 ${
           highlightedQuoteId === quote.id 
             ? 'animate-bounce bg-success/20 border-l-4 border-l-success scale-[1.03] shadow-xl ring-2 ring-success/30' 
             : ''
         }`}
         data-quote-id={quote.id}
       >
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="font-medium truncate">#{quote.number}</div>
-              <div className="text-sm text-muted-foreground">{formatCurrency(quote.total)}</div>
-            </div>
-            <div className="text-sm text-muted-foreground truncate">
+        {/* Status badge in top-right corner */}
+        <div className="absolute top-2 right-2">
+          <Badge className={statusColors[quote.status]}>
+            {t(`quotes.status.${quote.status.toLowerCase().replace(/\s+/g, '')}`)}
+          </Badge>
+        </div>
+        
+        {/* Actions menu halfway up right edge */}
+        <div className="absolute top-1/2 right-2 -translate-y-1/2" onClick={(e) => e.stopPropagation()}>
+          <QuoteActions 
+            quote={quote} 
+            onSendQuote={handleSendQuote}
+            onEditQuote={handleEditQuote}
+          />
+        </div>
+        
+        {/* Content with right padding to avoid overlap */}
+        <div className="pr-20 pb-8">
+          <div className="space-y-1">
+            <div className="font-medium">#{quote.number}</div>
+            <div className="text-sm text-muted-foreground">
               {t('quotes.modal.customer')}: {getCustomerName(quote.customerId)}
             </div>
-          </div>
-          <div className="flex flex-col items-end gap-2">
-            <div className="flex items-center gap-2">
-              <Badge className={statusColors[quote.status]}>
-                {t(`quotes.status.${quote.status.toLowerCase().replace(/\s+/g, '')}`)}
-              </Badge>
-              <div onClick={(e) => e.stopPropagation()}>
-                <QuoteActions 
-                  quote={quote} 
-                  onSendQuote={handleSendQuote}
-                  onEditQuote={handleEditQuote}
-                />
-              </div>
+            <div className="text-sm text-muted-foreground">
+              {formatCurrency(quote.total)}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {formatDistanceToNow(new Date(quote.updatedAt), { addSuffix: true })}
             </div>
           </div>
         </div>
