@@ -25,8 +25,7 @@ import { invalidationHelpers, queryKeys } from '@/queries/keys';
 import { generateInvoiceEmail } from '@/utils/emailTemplateEngine';
 import { escapeHtml } from '@/utils/sanitize';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useIsMobile } from "@/hooks/use-mobile";
-import { useIsPhone } from "@/hooks/use-phone";
+import { useIsMobile } from '@/hooks/use-mobile';
 import JobShowModal from '@/components/Jobs/JobShowModal';
 import PickJobModal from '@/components/Jobs/PickJobModal';
 import PickQuoteModal from '@/components/Jobs/PickQuoteModal';
@@ -53,8 +52,6 @@ export default function InvoiceModal({
   const { data: customers = [] } = useCustomersData();
   const { data: jobs = [] } = useJobsData();
   const isMobile = useIsMobile();
-  const isPhone = useIsPhone();
-  const isTablet = isMobile && !isPhone;
   const { data: quotes = [] } = useQuotesData();
   const { business, businessName, businessLogoUrl, businessLightLogoUrl, businessId } = useBusinessContext();
   const { getToken } = useClerkAuth();
@@ -985,23 +982,26 @@ export default function InvoiceModal({
     const canMarkAsPaid = invoice.status !== 'Paid';
     const canDelete = invoice.status === 'Draft'; // Only allow deleting draft invoices
 
-    if (isPhone) {
-      // Phone layout - single column stack
+    if (isMobile) {
       return (
         <div className="flex flex-col gap-2">
+          {/* Secondary actions first */}
           {canMarkAsPaid && (
             <Button variant="outline" onClick={() => setMode('mark_paid')} className="w-full">
               Mark as Paid
             </Button>
           )}
-          {invoice.status !== 'Sent' && (
-            <Button variant="outline" onClick={() => setMode('send')} className="w-full">
-              Email Preview
-            </Button>
-          )}
+
+          <Button variant="outline" onClick={() => setMode('send')} className="w-full">
+            Email Preview
+          </Button>
+          
+          {/* Edit action before destructive action */}
           <Button variant="default" onClick={() => setMode('edit')} className="w-full">
             Edit Invoice
           </Button>
+
+          {/* Destructive action last */}
           {canDelete && (
             <Button 
               variant="destructive" 
@@ -1013,23 +1013,29 @@ export default function InvoiceModal({
           )}
         </div>
       );
-    } else if (isTablet) {
-      // Tablet layout - 2-column grid
-      return (
-        <div className="grid grid-cols-2 gap-2">
+    }
+
+    return (
+      <>
+        {/* Left group - Mark as Paid and Email Preview */}
+        <div className="flex gap-2">
           {canMarkAsPaid && (
             <Button variant="outline" onClick={() => setMode('mark_paid')}>
               Mark as Paid
             </Button>
           )}
-          {invoice.status !== 'Sent' && (
-            <Button variant="outline" onClick={() => setMode('send')}>
-              Email Preview
-            </Button>
-          )}
+
+          <Button variant="outline" onClick={() => setMode('send')}>
+            Email Preview
+          </Button>
+        </div>
+
+        {/* Right group - Edit and Delete */}
+        <div className="flex gap-2">
           <Button variant="default" onClick={() => setMode('edit')}>
             Edit Invoice
           </Button>
+
           {canDelete && (
             <Button 
               variant="destructive" 
@@ -1039,39 +1045,8 @@ export default function InvoiceModal({
             </Button>
           )}
         </div>
-      );
-    } else {
-      // Desktop layout
-      return (
-        <div className="flex justify-between">
-          <div className="flex gap-2">
-            {canMarkAsPaid && (
-              <Button variant="outline" onClick={() => setMode('mark_paid')}>
-                Mark as Paid
-              </Button>
-            )}
-            {invoice.status !== 'Sent' && (
-              <Button variant="outline" onClick={() => setMode('send')}>
-                Email Preview
-              </Button>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <Button variant="default" onClick={() => setMode('edit')}>
-              Edit Invoice
-            </Button>
-            {canDelete && (
-              <Button 
-                variant="destructive" 
-                onClick={() => setShowDeleteDialog(true)}
-              >
-                {t('common.delete')}
-              </Button>
-            )}
-          </div>
-        </div>
-      );
-    }
+      </>
+    );
   };
 
   return (

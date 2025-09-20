@@ -20,7 +20,6 @@ import { useNavigate } from 'react-router-dom';
 import { useClockInOut } from "@/hooks/useClockInOut";
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useIsPhone } from "@/hooks/use-phone";
 
 interface JobShowModalProps {
   open: boolean;
@@ -34,8 +33,6 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
   const { data: quotes = [] } = useQuotesData();
   const { data: invoices = [] } = useInvoicesData();
   const isMobile = useIsMobile();
-  const isPhone = useIsPhone();
-  const isTablet = isMobile && !isPhone;
   const queryClient = useQueryClient();
   const { businessId, userId, role } = useBusinessContext();
   const navigate = useNavigate();
@@ -52,7 +49,6 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
   const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
   const [linkedQuoteId, setLinkedQuoteId] = useState<string | null>(null);
   const [linkedQuoteObject, setLinkedQuoteObject] = useState<any>(null);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { clockInOut, isLoading: isClockingInOut } = useClockInOut();
   const { t } = useLanguage();
   
@@ -335,345 +331,543 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
     }
   }
 
-  async function handleDeleteJob() {
-    try {
-      const { error } = await authApi.invoke(`jobs?id=${job.id}`, { 
-        method: 'DELETE',
-        toast: {
-          success: t('workOrders.modal.delete'),
-          loading: t('workOrders.modal.delete'),
-          error: t('workOrders.modal.delete')
-        }
-      });
-      
-      if (error) {
-        throw new Error(error.message || 'Failed to delete job');
-      }
-      
-      if (businessId) {
-        invalidationHelpers.jobs(queryClient, businessId);
-      }
-      onOpenChange(false);
-    } catch (e: any) {
-      console.error('Failed to delete job:', e);
-    }
-  }
-
-  // Create button components to avoid duplication
-  const clockInOutButton = job?.jobType === 'time_and_materials' && (
-    !job.isClockedIn ? (
-      <Button
-        variant="default"
-        onClick={() => clockInOut({ jobId: job.id, isClockingIn: true })}
-        disabled={isClockingInOut}
-        className={isPhone ? "w-full" : ""}
-      >
-        {isClockingInOut ? t('workOrders.modal.starting') : t('workOrders.modal.startJob')}
-      </Button>
-    ) : (
-      <Button
-        variant="destructive"
-        onClick={() => clockInOut({ jobId: job.id, isClockingIn: false })}
-        disabled={isClockingInOut}
-        className={isPhone ? "w-full" : ""}
-      >
-        {isClockingInOut ? t('workOrders.modal.stopping') : t('workOrders.modal.stopJob')}
-      </Button>
-    )
-  );
-
-  const navigateButton = (
-    <Button 
-      variant="outline" 
-      onClick={handleNavigate}
-      className={isPhone ? "w-full" : ""}
-    >
-      {t('workOrders.modal.navigate')}
-    </Button>
-  );
-
-  const rescheduleButton = role === 'owner' && (
-    <ReschedulePopover 
-      job={job as Job} 
-      onDone={() => {
-        if (businessId) {
-          invalidationHelpers.jobs(queryClient, businessId);
-        }
-      }} 
-    />
-  );
-
-  const invoiceButton = role === 'owner' && (
-    <Button 
-      variant="outline" 
-      onClick={handleCreateInvoice}
-      disabled={isCreatingInvoice || (job.jobType === 'scheduled' && !currentQuoteId && !existingInvoice)}
-      className={isPhone ? "w-full" : ""}
-    >
-      {isCreatingInvoice ? t('workOrders.modal.creatingInvoice') : existingInvoice ? t('workOrders.modal.viewInvoice') : t('workOrders.modal.createInvoice')}
-    </Button>
-  );
-
-  const markCompleteButton = role === 'owner' && (
-    <Button 
-      variant="outline" 
-      onClick={handleCompleteJob}
-      disabled={job.status === 'Completed' || isCompletingJob}
-      className={isPhone ? "w-full" : ""}
-    >
-      {isCompletingJob ? t('workOrders.modal.completing') : job.status === 'Completed' ? t('workOrders.modal.completed') : t('workOrders.modal.complete')}
-    </Button>
-  );
 
   return (
-    <>
-      <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="max-h-[85vh]">
-          <DrawerHeader>
-            <DrawerTitle>{t('workOrders.modal.title')}</DrawerTitle>
-          </DrawerHeader>
-          <div className="px-4 space-y-4 overflow-y-auto">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <div className="text-sm text-muted-foreground">{t('workOrders.modal.customer')}</div>
-                <div className="font-semibold">{customerName}</div>
-              </div>
-              <div>
-                <div className="text-sm text-muted-foreground">{t('workOrders.modal.status')}</div>
-                <div className="font-semibold">{job.status}</div>
-              </div>
-              <div>
-                <div className="text-sm text-muted-foreground">{t('workOrders.modal.starts')}</div>
-                <div>{formatDateTime(job.startsAt)}</div>
-              </div>
-              <div>
-                <div className="text-sm text-muted-foreground">{t('workOrders.modal.ends')}</div>
-                <div>{formatDateTime(job.endsAt)}</div>
-              </div>
-              {job.address && (
-                <div className="col-span-2">
-                  <div className="text-sm text-muted-foreground">{t('workOrders.modal.address')}</div>
-                  <div>{job.address}</div>
-                </div>
-              )}
-              {job.total && (
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="max-h-[85vh]">
+        <DrawerHeader>
+          <DrawerTitle>{t('workOrders.modal.title')}</DrawerTitle>
+        </DrawerHeader>
+        <div className="px-4 space-y-4 overflow-y-auto">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <div className="text-sm text-muted-foreground">{t('workOrders.modal.customer')}</div>
+              <div className="font-medium">{customerName}</div>
+            </div>
+            <div>
+              <div className="text-sm text-muted-foreground">{t('workOrders.modal.type')}</div>
+              <div className="font-medium capitalize">{job.jobType?.replace('_', ' ') || t('jobs.types.scheduled')}</div>
+            </div>
+            <div>
+              <div className="text-sm text-muted-foreground">{t('workOrders.modal.status')}</div>
+              <div className="font-medium">{job.status}</div>
+            </div>
+            <div>
+              <div className="text-sm text-muted-foreground">{t('workOrders.modal.starts')}</div>
+              <div>{formatDateTime(job.startsAt)}</div>
+            </div>
+            <div>
+              <div className="text-sm text-muted-foreground">{t('workOrders.modal.ends')}</div>
+              <div>{formatDateTime(job.endsAt)}</div>
+            </div>
+            {job.jobType === 'time_and_materials' && (
+              <>
                 <div>
-                  <div className="text-sm text-muted-foreground">{t('workOrders.modal.total')}</div>
-                  <div className="font-semibold">{formatMoney(job.total)}</div>
+                  <div className="text-sm text-muted-foreground">{t('workOrders.modal.clockIn')}</div>
+                  <div>{job.clockInTime ? formatDateTime(job.clockInTime) : '—'}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">{t('workOrders.modal.clockOut')}</div>
+                  <div>{job.clockOutTime ? formatDateTime(job.clockOutTime) : '—'}</div>
+                </div>
+              </>
+            )}
+            <div>
+              <div className="text-sm text-muted-foreground">{t('workOrders.modal.address')}</div>
+              <div className="truncate">{job.address || "—"}</div>
+            </div>
+            <div>
+              <div className="text-sm text-muted-foreground">{t('workOrders.modal.total')}</div>
+              <div>{typeof job.total === 'number' ? formatMoney(job.total) : '—'}</div>
+            </div>
+            <div>
+            <div className="text-sm text-muted-foreground">{t('workOrders.modal.quote')}</div>
+            <div className="flex items-center gap-2">
+              {linkedQuote ? (
+                <>
+                  <span className="font-medium">{linkedQuote.number}</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      onOpenChange(false);
+                      navigate(`/quotes?highlight=${linkedQuote.id}`);
+                    }}
+                    className="h-6 px-2 text-xs"
+                  >
+                    {t('workOrders.modal.view')}
+                  </Button>
+                  {role === 'owner' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          // Optimistic update - clear quote immediately
+                          setLinkedQuoteId(null);
+                          setLinkedQuoteObject(null);
+                          
+                          const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
+                          const previousData = queryClient.getQueryData(queryKey);
+                          
+                          queryClient.setQueryData(queryKey, (old: any) => {
+                            if (!old) return old;
+                            return {
+                              ...old,
+                              jobs: old.jobs.map((j: Job) => 
+                                j.id === job.id 
+                                  ? { ...j, quoteId: null }
+                                  : j
+                              )
+                            };
+                          });
+                          
+                          const { error } = await authApi.invoke('jobs-crud', {
+                            method: 'PUT',
+                            body: { 
+                              id: job.id, 
+                              quoteId: null 
+                            },
+                            toast: {
+                              success: 'Quote unlinked successfully',
+                              loading: 'Unlinking quote...',
+                              error: 'Failed to unlink quote'
+                            }
+                          });
+                          
+                          if (error) {
+                            // Rollback optimistic update on error
+                            if (previousData) {
+                              queryClient.setQueryData(queryKey, previousData);
+                            }
+                            setLinkedQuoteId(currentQuoteId);
+                            setLinkedQuoteObject(linkedQuote);
+                            throw new Error(error.message);
+                          }
+                          
+                          if (businessId) {
+                            invalidationHelpers.jobs(queryClient, businessId);
+                          }
+                        } catch (e: any) {
+                          console.error('Failed to unlink quote:', e);
+                        }
+                      }}
+                      className="h-6 px-2 text-xs"
+                    >
+                      {t('workOrders.modal.unlink')}
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <span>—</span>
+                  {role === 'owner' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPickerOpen(true)}
+                      className="h-6 px-2 text-xs"
+                    >
+                      {t('workOrders.modal.link')}
+                    </Button>
+                  )}
+                </>
+              )}
+            </div>
+            </div>
+          </div>
+          <div>
+            <div className="text-sm text-muted-foreground mb-1">{t('workOrders.modal.notes')}</div>
+            <Textarea
+              value={localNotes}
+              onChange={(e)=>{
+                const val = e.target.value;
+                setLocalNotes(val);
+                
+                // Optimistic update - immediately update notes in cache
+                const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
+                queryClient.setQueryData(queryKey, (old: any) => {
+                  if (!old) return old;
+                  return {
+                    ...old,
+                    jobs: old.jobs.map((j: Job) => 
+                      j.id === job.id 
+                        ? { ...j, notes: val }
+                        : j
+                    )
+                  };
+                });
+                
+                if (notesTimer.current) window.clearTimeout(notesTimer.current);
+                notesTimer.current = window.setTimeout(async ()=>{
+                    try {
+                      const { error } = await authApi.invoke(`jobs?id=${job.id}`, {
+                        method: 'PATCH',
+                        body: { notes: val }
+                      });
+                      
+                      if (!error && businessId) {
+                        invalidationHelpers.jobs(queryClient, businessId);
+                      }
+                    } catch {}
+                }, 600) as unknown as number;
+              }}
+            />
+          </div>
+
+          <div>
+            <div className="text-sm text-muted-foreground mb-1">{t('workOrders.modal.photos')}</div>
+            {Array.isArray((job as any).photos) && (job as any).photos.length > 0 ? (
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                {(job as any).photos.map((url: string, idx: number) => (
+                  <a key={idx} href={url} target="_blank" rel="noreferrer" className="block">
+                    <img
+                      src={url}
+                      alt={`Job photo ${idx + 1}`}
+                      loading="lazy"
+                      className="w-full h-20 object-cover rounded-md border"
+                    />
+                  </a>
+                ))}
+              </div>
+            ) : (job as any).uploadingPhotos ? (
+              <div className="text-sm text-muted-foreground">{t('workOrders.modal.photosUploading')}</div>
+            ) : (
+              <div className="text-sm text-muted-foreground">{t('workOrders.modal.noPhotos')}</div>
+            )}
+            
+            {/* Photo Upload Section */}
+            <div className="mt-3 space-y-2">
+              <div className="flex items-center gap-2">
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    setPhotosToUpload(files);
+                  }}
+                  className="text-sm text-muted-foreground file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-sm file:bg-secondary file:text-secondary-foreground hover:file:bg-secondary/80"
+                />
+              </div>
+              {photosToUpload.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">
+                    {photosToUpload.length} {photosToUpload.length === 1 ? t('workOrders.modal.photos') : t('workOrders.modal.photos')} {t('workOrders.modal.selectPhotos')}
+                  </span>
+                  <Button 
+                    size="sm" 
+                    onClick={handlePhotoUpload}
+                    disabled={uploadingPhotos}
+                  >
+                    {uploadingPhotos ? (photos.length > 0 ? t('workOrders.modal.addingPhotos') : t('workOrders.modal.uploadingPhotos')) : t('workOrders.modal.uploadPhotos')}
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => setPhotosToUpload([])}
+                    disabled={uploadingPhotos}
+                  >
+                    {t('workOrders.modal.cancel')}
+                  </Button>
                 </div>
               )}
             </div>
-
-            {/* Notes Section */}
-            <div className="space-y-2">
-              <div className="text-sm font-medium">{t('workOrders.modal.notes')}</div>
-              <Textarea
-                value={localNotes}
-                onChange={(e) => {
-                  setLocalNotes(e.target.value);
-                  if (notesTimer.current) clearTimeout(notesTimer.current);
-                  notesTimer.current = window.setTimeout(async () => {
-                    try {
-                      await authApi.invoke(`jobs?id=${job.id}`, {
-                        method: 'PATCH',
-                        body: { notes: e.target.value }
-                      });
+          </div>
+          
+          {/* Team Assignment Section */}
+          <JobMemberAssignments job={job} />
+        </div>
+        <DrawerFooter>
+          {isMobile ? (
+            <div className="flex flex-col gap-2">
+              {/* Time tracking actions first */}
+              {job.jobType === 'time_and_materials' && (
+                <>
+                  {!job.isClockedIn && (
+                    <Button
+                      variant="default"
+                      onClick={() => clockInOut({ jobId: job.id, isClockingIn: true })}
+                      disabled={isClockingInOut}
+                      className="w-full"
+                    >
+                      {isClockingInOut ? t('workOrders.modal.starting') : t('workOrders.modal.startJob')}
+                    </Button>
+                  )}
+                  {job.isClockedIn && (
+                    <Button
+                      variant="destructive"
+                      onClick={() => clockInOut({ jobId: job.id, isClockingIn: false })}
+                      disabled={isClockingInOut}
+                      className="w-full"
+                    >
+                      {isClockingInOut ? t('workOrders.modal.stopping') : t('workOrders.modal.stopJob')}
+                    </Button>
+                  )}
+                </>
+              )}
+              
+              {/* Secondary actions */}
+              <Button 
+                variant="outline" 
+                onClick={handleNavigate}
+                className="w-full"
+              >
+                {t('workOrders.modal.navigate')}
+              </Button>
+              
+              {role === 'owner' && (
+                <ReschedulePopover job={job as Job} onDone={()=>{
+                  if (businessId) {
+                    invalidationHelpers.jobs(queryClient, businessId);
+                  }
+                }} />
+              )}
+              
+              {role === 'owner' && (
+                <>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleCreateInvoice}
+                    disabled={isCreatingInvoice || (job.jobType === 'scheduled' && !currentQuoteId && !existingInvoice)}
+                    className="w-full"
+                  >
+                    {isCreatingInvoice ? t('workOrders.modal.creatingInvoice') : existingInvoice ? t('workOrders.modal.viewInvoice') : t('workOrders.modal.createInvoice')}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleCompleteJob}
+                    disabled={job.status === 'Completed' || isCompletingJob}
+                    className="w-full"
+                  >
+                    {isCompletingJob ? t('workOrders.modal.completing') : job.status === 'Completed' ? t('workOrders.modal.completed') : t('workOrders.modal.complete')}
+                  </Button>
+                  
+                  {/* Edit action before destructive action */}
+                  {onOpenJobEditModal && (
+                    <Button 
+                      variant="default" 
+                      onClick={() => {
+                        onOpenJobEditModal(job as Job);
+                        onOpenChange(false);
+                      }}
+                      className="w-full"
+                    >
+                      Edit Job
+                    </Button>
+                  )}
+                  
+                  {/* Destructive action last */}
+                  <Button 
+                    variant="destructive" 
+                    onClick={async () => {
+                      try {
+                        const { error } = await authApi.invoke(`jobs?id=${job.id}`, { 
+                          method: 'DELETE',
+                          toast: {
+                            success: t('workOrders.modal.delete'),
+                            loading: t('workOrders.modal.delete'),
+                            error: t('workOrders.modal.delete')
+                          }
+                        });
+                        
+                        if (error) {
+                          throw new Error(error.message || 'Failed to delete job');
+                        }
+                        
+                        if (businessId) {
+                          invalidationHelpers.jobs(queryClient, businessId);
+                        }
+                        onOpenChange(false);
+                      } catch (e: any) {
+                        console.error('Failed to delete job:', e);
+                      }
+                    }}
+                    className="w-full"
+                  >
+                    {t('workOrders.modal.delete')}
+                  </Button>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {/* Job Actions */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  {role === 'owner' && (
+                    <ReschedulePopover job={job as Job} onDone={()=>{
                       if (businessId) {
                         invalidationHelpers.jobs(queryClient, businessId);
                       }
-                    } catch (error) {
-                      console.error('Failed to update notes:', error);
-                    }
-                  }, 1000);
-                }}
-                placeholder={t('workOrders.modal.notesPlaceholder')}
-                className="min-h-[100px]"
-              />
-            </div>
-
-            {/* Photos Section */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-medium">{t('workOrders.modal.photos')}</div>
-                <div className="flex gap-2">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={(e) => {
-                      const files = Array.from(e.target.files || []);
-                      setPhotosToUpload(files);
-                    }}
-                    className="hidden"
-                    id="photo-upload"
-                  />
-                  <label
-                    htmlFor="photo-upload"
-                    className="px-3 py-1 text-xs bg-muted hover:bg-muted/80 rounded cursor-pointer"
+                    }} />
+                  )}
+                  <Button 
+                    variant="outline" 
+                    onClick={handleNavigate}
+                    size="sm"
                   >
-                    {t('workOrders.modal.selectPhotos')}
-                  </label>
-                  {photosToUpload.length > 0 && (
-                    <Button
-                      size="sm"
-                      onClick={handlePhotoUpload}
-                      disabled={uploadingPhotos}
-                    >
-                      {uploadingPhotos ? t('workOrders.modal.uploading') : `${t('workOrders.modal.upload')} ${photosToUpload.length}`}
-                    </Button>
+                    {t('workOrders.modal.navigate')}
+                  </Button>
+                  {job.jobType === 'time_and_materials' && (
+                    <>
+                      {!job.isClockedIn && (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => clockInOut({ jobId: job.id, isClockingIn: true })}
+                          disabled={isClockingInOut}
+                        >
+                          {isClockingInOut ? t('workOrders.modal.starting') : t('workOrders.modal.startJob')}
+                        </Button>
+                      )}
+                      {job.isClockedIn && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => clockInOut({ jobId: job.id, isClockingIn: false })}
+                          disabled={isClockingInOut}
+                        >
+                          {isClockingInOut ? t('workOrders.modal.stopping') : t('workOrders.modal.stopJob')}
+                        </Button>
+                      )}
+                    </>
+                  )}
+                  {role === 'owner' && (
+                    <>
+                      <Button 
+                        variant="outline" 
+                        onClick={handleCreateInvoice}
+                        disabled={isCreatingInvoice || (job.jobType === 'scheduled' && !currentQuoteId && !existingInvoice)}
+                        size="sm"
+                      >
+                        {isCreatingInvoice ? t('workOrders.modal.creatingInvoice') : existingInvoice ? t('workOrders.modal.viewInvoice') : t('workOrders.modal.createInvoice')}
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={handleCompleteJob}
+                        disabled={job.status === 'Completed' || isCompletingJob}
+                        size="sm"
+                      >
+                        {isCompletingJob ? t('workOrders.modal.completing') : job.status === 'Completed' ? t('workOrders.modal.completed') : t('workOrders.modal.complete')}
+                      </Button>
+                    </>
                   )}
                 </div>
-              </div>
-              {photos.length > 0 && (
-                <div className="grid grid-cols-3 gap-2">
-                  {photos.map((photo, index) => (
-                    <div key={index} className="aspect-square relative cursor-pointer">
-                      <img
-                        src={photo}
-                        alt={`Job photo ${index + 1}`}
-                        className="w-full h-full object-cover rounded"
-                        onClick={() => {
-                          setViewerIndex(index);
-                          setViewerOpen(true);
-                        }}
-                      />
+                {role === 'owner' && (
+                    <div className="flex items-center gap-2">
+                      {onOpenJobEditModal && (
+                        <Button 
+                          variant="default" 
+                          onClick={() => {
+                            onOpenJobEditModal(job as Job);
+                            onOpenChange(false);
+                          }}
+                          size="sm"
+                        >
+                          Edit Job
+                        </Button>
+                      )}
+                      <Button variant="destructive" size="sm" onClick={async () => {
+                        try {
+                          const { error } = await authApi.invoke(`jobs?id=${job.id}`, { 
+                            method: 'DELETE',
+                            toast: {
+                              success: t('workOrders.modal.delete'),
+                              loading: t('workOrders.modal.delete'),
+                              error: t('workOrders.modal.delete')
+                            }
+                          });
+                          
+                          if (error) {
+                            throw new Error(error.message || 'Failed to delete job');
+                          }
+                          
+                          if (businessId) {
+                            invalidationHelpers.jobs(queryClient, businessId);
+                          }
+                          onOpenChange(false);
+                        } catch (e: any) {
+                          console.error('Failed to delete job:', e);
+                        }
+                      }}>{t('workOrders.modal.delete')}</Button>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            
-            {/* Team Assignment Section */}
-            <JobMemberAssignments job={job} />
-          </div>
-          
-          <DrawerFooter className="px-0 pb-safe-area-inset-bottom">
-            {isPhone ? (
-              // Phone layout - single column stack
-              <div className="flex flex-col gap-2">
-                {clockInOutButton}
-                {navigateButton}
-                {rescheduleButton}
-                {invoiceButton}
-                {markCompleteButton}
-                <Button variant="outline" onClick={() => onOpenJobEditModal?.(job as Job)}>
-                  Edit Job
-                </Button>
-                <Button variant="destructive" onClick={handleDeleteJob}>
-                  Delete Job
-                </Button>
-              </div>
-            ) : isTablet ? (
-              // Tablet layout - 2-column grid
-              <div className="grid grid-cols-2 gap-2">
-                {clockInOutButton}
-                {navigateButton}
-                {rescheduleButton}
-                {invoiceButton}
-                {markCompleteButton}
-                <Button variant="outline" onClick={() => onOpenJobEditModal?.(job as Job)}>
-                  Edit Job
-                </Button>
-                <div className="col-span-2">
-                  <Button variant="destructive" onClick={handleDeleteJob} className="w-full">
-                    Delete Job
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              // Desktop layout - horizontal
-              <div className="flex justify-between">
-                <div className="flex gap-2">
-                  {clockInOutButton}
-                  {navigateButton}
-                  {rescheduleButton}
-                  {invoiceButton}
-                  {markCompleteButton}
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => onOpenJobEditModal?.(job as Job)}>
-                    Edit Job
-                  </Button>
-                  <Button variant="destructive" onClick={handleDeleteJob}>
-                    Delete Job
-                  </Button>
-                </div>
-              </div>
-            )}
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
-
-      <Dialog open={viewerOpen} onOpenChange={setViewerOpen}>
-        <DialogContent className="max-w-4xl" aria-describedby="photo-viewer-description">
-          <DialogHeader>
-            <ModalTitle>{t('workOrders.modal.photoCount', { current: viewerIndex + 1, total: photos.length })}</ModalTitle>
-          </DialogHeader>
-          <div id="photo-viewer-description" className="sr-only">
-            View and navigate through job photos
-          </div>
-          {photos.length > 0 && (
-            <div className="relative">
-              <img
-                src={photos[viewerIndex]}
-                alt={`Job photo ${viewerIndex + 1}`}
-                className="max-h-[70vh] w-full object-contain rounded"
-              />
-              <div className="absolute inset-0 flex items-center justify-between pointer-events-none px-2">
-                <button
-                  type="button"
-                  aria-label="Previous photo"
-                  onClick={(e)=>{ e.stopPropagation(); setViewerIndex((i)=> (i - 1 + photos.length) % photos.length); }}
-                  className="pointer-events-auto px-3 py-2 rounded-md bg-background/60 border"
-                >
-                  {t('workOrders.modal.prev')}
-                </button>
-                <button
-                  type="button"
-                  aria-label="Next photo"
-                  onClick={(e)=>{ e.stopPropagation(); setViewerIndex((i)=> (i + 1) % photos.length); }}
-                  className="pointer-events-auto px-3 py-2 rounded-md bg-background/60 border"
-                >
-                  {t('workOrders.modal.next')}
-                </button>
+                )}
               </div>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
+        </DrawerFooter>
 
-      <PickQuoteModal
-        open={pickerOpen}
-        onOpenChange={setPickerOpen}
-        customerId={job.customerId}
-        onSelect={async (quoteId) => {
-          try {
-            // Find the selected quote and store it optimistically
-            const selectedQuote = quotes.find(q => q.id === quoteId);
-            
-            const { error: linkError } = await authApi.invoke(`jobs?id=${job.id}`, {
-              method: 'PATCH',
-              body: { quoteId }
-            });
-            
-            if (linkError) {
-              throw new Error(linkError.message || 'Failed to link quote');
+        <Dialog open={viewerOpen} onOpenChange={setViewerOpen}>
+          <DialogContent className="max-w-4xl" aria-describedby="photo-viewer-description">
+            <DialogHeader>
+              <ModalTitle>{t('workOrders.modal.photoCount', { current: viewerIndex + 1, total: photos.length })}</ModalTitle>
+            </DialogHeader>
+            <div id="photo-viewer-description" className="sr-only">
+              View and navigate through job photos
+            </div>
+            {photos.length > 0 && (
+              <div className="relative">
+                <img
+                  src={photos[viewerIndex]}
+                  alt={`Job photo ${viewerIndex + 1}`}
+                  className="max-h-[70vh] w-full object-contain rounded"
+                />
+                <div className="absolute inset-0 flex items-center justify-between pointer-events-none px-2">
+                  <button
+                    type="button"
+                    aria-label="Previous photo"
+                    onClick={(e)=>{ e.stopPropagation(); setViewerIndex((i)=> (i - 1 + photos.length) % photos.length); }}
+                    className="pointer-events-auto px-3 py-2 rounded-md bg-background/60 border"
+                  >
+                    {t('workOrders.modal.prev')}
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Next photo"
+                    onClick={(e)=>{ e.stopPropagation(); setViewerIndex((i)=> (i + 1) % photos.length); }}
+                    className="pointer-events-auto px-3 py-2 rounded-md bg-background/60 border"
+                  >
+                    {t('workOrders.modal.next')}
+                  </button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+        <PickQuoteModal
+          open={pickerOpen}
+          onOpenChange={setPickerOpen}
+          customerId={job.customerId}
+          onSelect={async (quoteId) => {
+            try {
+              // Find the selected quote and store it optimistically
+              const selectedQuote = quotes.find(q => q.id === quoteId);
+              
+              const { error: linkError } = await authApi.invoke(`jobs?id=${job.id}`, {
+                method: 'PATCH',
+                body: { quoteId }
+              });
+              
+              if (linkError) {
+                throw new Error(linkError.message || 'Failed to link quote');
+              }
+              if (businessId) {
+                invalidationHelpers.jobs(queryClient, businessId);
+              }
+              
+              // Set both the ID and the complete quote object optimistically
+              setLinkedQuoteId(quoteId);
+              setLinkedQuoteObject(selectedQuote);
+              
+              toast.success('Quote linked to job');
+              setPickerOpen(false);
+            } catch (e: any) {
+              toast.error(e?.message || 'Failed to link quote');
             }
-            if (businessId) {
-              invalidationHelpers.jobs(queryClient, businessId);
-            }
-            
-            // Set both the ID and the complete quote object optimistically
-            setLinkedQuoteId(quoteId);
-            setLinkedQuoteObject(selectedQuote);
-            
-            toast.success('Quote linked to job');
-            setPickerOpen(false);
-          } catch (e: any) {
-            toast.error(e?.message || 'Failed to link quote');
-          }
-        }}
-      />
-    </>
+          }}
+        />
+      </DrawerContent>
+    </Drawer>
   );
 }
