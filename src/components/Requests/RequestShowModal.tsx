@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
-import { Mail, Phone, MapPin, Calendar, Clock, FileText, User, Camera, Wrench, Archive } from "lucide-react";
+import { Mail, Phone, MapPin, Calendar, Clock, FileText, User, Camera } from "lucide-react";
 import { format } from "date-fns";
 import { RequestListItem } from "@/hooks/useRequestsData";
 import { useCustomersData } from "@/hooks/useCustomersData";
@@ -370,49 +370,40 @@ export function RequestShowModal({
           </div>
           
           <DrawerFooter>
-            <div className="grid grid-cols-2 gap-2 mb-4">
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setShowEditModal(true)}
+              >
+                {t('requests.show.editRequest')}
+              </Button>
               <Button
                 variant="outline"
                 onClick={handleScheduleAssessment}
-                className="gap-2"
                 disabled={request.status === 'Archived'}
               >
-                <Calendar className="h-4 w-4" />
                 {t('requests.actions.scheduleAssessment')}
               </Button>
               <Button
                 variant="outline"
                 onClick={handleConvertToQuote}
-                className="gap-2"
               >
-                <FileText className="h-4 w-4" />
                 {t('requests.actions.convertToQuote')}
               </Button>
               <Button
                 variant="outline"
                 onClick={handleConvertToJob}
-                className="gap-2"
               >
-                <Wrench className="h-4 w-4" />
                 {t('requests.actions.convertToJob')}
               </Button>
               <Button
-                variant="outline"
+                variant="destructive"
                 onClick={handleArchive}
-                className="gap-2"
                 disabled={request.status === 'Archived'}
               >
-                <Archive className="h-4 w-4" />
                 {t('requests.actions.archive')}
               </Button>
             </div>
-            
-            <Button
-              onClick={() => setShowEditModal(true)}
-              className="w-full"
-            >
-              {t('requests.show.editRequest')}
-            </Button>
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
