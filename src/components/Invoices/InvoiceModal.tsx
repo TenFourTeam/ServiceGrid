@@ -8,13 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
-import { CalendarIcon, Send, Eye, Edit3, DollarSign, Briefcase } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { CalendarIcon, Send, Eye, Edit3, DollarSign, Briefcase, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { formatDate, formatMoney, formatCurrencyInputNoSymbol, parseCurrencyInput, sanitizeMoneyTyping } from '@/utils/format';
 import { useCustomersData, useQuotesData } from '@/queries/unified';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
-import { useRecordPayment } from '@/hooks/useInvoiceOperations';
+import { useRecordPayment, useDeleteInvoice } from '@/hooks/useInvoiceOperations';
 import { useInvoicePayments } from '@/hooks/useInvoicePayments';
 import { useJobsData } from '@/hooks/useJobsData';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
@@ -23,6 +24,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { invalidationHelpers, queryKeys } from '@/queries/keys';
 import { generateInvoiceEmail } from '@/utils/emailTemplateEngine';
 import { escapeHtml } from '@/utils/sanitize';
+import { useLanguage } from '@/contexts/LanguageContext';
 import JobShowModal from '@/components/Jobs/JobShowModal';
 import PickJobModal from '@/components/Jobs/PickJobModal';
 import PickQuoteModal from '@/components/Jobs/PickQuoteModal';
@@ -54,6 +56,8 @@ export default function InvoiceModal({
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const queryClient = useQueryClient();
   const recordPaymentMutation = useRecordPayment();
+  const deleteInvoice = useDeleteInvoice();
+  const { t } = useLanguage();
 
   const [mode, setMode] = useState(initialMode);
   const [loading, setLoading] = useState(false);
@@ -62,6 +66,7 @@ export default function InvoiceModal({
   const [showQuotePicker, setShowQuotePicker] = useState(false);
   const [linkedJobId, setLinkedJobId] = useState<string | null>(null);
   const [linkedQuoteId, setLinkedQuoteId] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   
   const { data: payments = [] } = useInvoicePayments({ 
     invoiceId: invoice?.id,
@@ -333,6 +338,18 @@ export default function InvoiceModal({
       console.error('Failed to record payment:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!invoice) return;
+
+    try {
+      await deleteInvoice.mutateAsync(invoice.id);
+      setShowDeleteDialog(false);
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Failed to delete invoice:', error);
     }
   };
 
@@ -951,6 +968,7 @@ export default function InvoiceModal({
     }
 
     const canMarkAsPaid = invoice.status !== 'Paid';
+    const canDelete = invoice.status === 'Draft'; // Only allow deleting draft invoices
 
     return (
       <>
@@ -970,6 +988,16 @@ export default function InvoiceModal({
           <Eye className="h-4 w-4 mr-2" />
           Email Preview
         </Button>
+
+        {canDelete && (
+          <Button 
+            variant="destructive" 
+            onClick={() => setShowDeleteDialog(true)}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            {t('common.delete')}
+          </Button>
+        )}
       </>
     );
   };
@@ -992,6 +1020,28 @@ export default function InvoiceModal({
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('invoices.delete.confirmTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('invoices.delete.confirmDescription', { number: invoice?.number })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteInvoice.isPending}
+            >
+              {deleteInvoice.isPending ? t('invoices.delete.deleting') : t('common.delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Job Show Modal */}
       {relatedJob && (

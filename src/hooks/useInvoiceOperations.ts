@@ -206,3 +206,52 @@ export function useRecordPayment() {
     }
   });
 }
+
+export function useDeleteInvoice() {
+  const { getToken } = useAuth();
+  const { businessId } = useBusinessContext();
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (invoiceId: string) => {
+      const { data, error } = await authApi.invoke('invoices-crud', {
+        method: 'DELETE',
+        body: { id: invoiceId },
+        toast: {
+          success: 'Invoice deleted successfully!',
+          loading: 'Deleting invoice...',
+          error: 'Failed to delete invoice'
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to delete invoice');
+      }
+
+      return data;
+    },
+    onSuccess: (data, invoiceId) => {
+      // Optimistic update: remove invoice from cache
+      queryClient.setQueryData(queryKeys.data.invoices(businessId || ''), (oldData: any) => {
+        if (oldData) {
+          return {
+            ...oldData,
+            invoices: oldData.invoices.filter((invoice: any) => invoice.id !== invoiceId),
+            count: Math.max(0, oldData.count - 1)
+          };
+        }
+        return oldData;
+      });
+      
+      // Also invalidate and refetch for server confirmation
+      queryClient.invalidateQueries({ 
+        queryKey: queryKeys.data.invoices(businessId || ''),
+        refetchType: 'active'
+      });
+    },
+    onError: (error: any) => {
+      console.error('[useDeleteInvoice] error:', error);
+    }
+  });
+}

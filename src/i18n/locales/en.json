@@ -599,6 +599,14 @@
     "mobile": {
       "customer": "Customer",
       "due": "Due"
+    },
+    "actions": {
+      "deleteInvoice": "Delete Invoice"
+    },
+    "delete": {
+      "confirmTitle": "Delete Invoice",
+      "confirmDescription": "Are you sure you want to delete invoice {{number}}? This action cannot be undone.",
+      "deleting": "Deleting..."
     }
   },
   "team": {

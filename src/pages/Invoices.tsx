@@ -248,6 +248,10 @@ export default function InvoicesPage() {
             onEditInvoice={handleEditInvoice}
             onMarkAsPaid={handleMarkAsPaid}
             onEmailPreview={handleEmailPreview}
+            onInvoiceDeleted={() => {
+              // Refresh data after deletion
+              invalidationHelpers.invoices(qc, businessId || '');
+            }}
           />
         </div>
 
@@ -409,6 +413,10 @@ export default function InvoicesPage() {
                         onEditInvoice={handleEditInvoice}
                         onMarkAsPaid={handleMarkAsPaid}
                         onEmailPreview={handleEmailPreview}
+                        onInvoiceDeleted={() => {
+                          // Refresh data after deletion
+                          invalidationHelpers.invoices(qc, businessId || '');
+                        }}
                       />
                     </TableCell>
                   </TableRow>

@@ -599,6 +599,14 @@
     "mobile": {
       "customer": "Cliente",
       "due": "Vence"
+    },
+    "actions": {
+      "deleteInvoice": "Eliminar Factura"
+    },
+    "delete": {
+      "confirmTitle": "Eliminar Factura",
+      "confirmDescription": "¿Estás seguro de que quieres eliminar la factura {{number}}? Esta acción no se puede deshacer.",
+      "deleting": "Eliminando..."
     }
   },
   "team": {
