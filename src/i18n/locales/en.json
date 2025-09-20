@@ -255,6 +255,7 @@
   },
   "jobs": {
     "createTitle": "Create New Job",
+    "editTitle": "Edit Job",
     "eventTitle": "Event",
     "form": {
       "jobType": "Job Type",
@@ -293,7 +294,9 @@
       "cancel": "Cancel",
       "remove": "Remove",
       "createSchedule": "Create & Schedule",
-      "creating": "Creating..."
+      "creating": "Creating...",
+      "updateJob": "Update Job",
+      "updating": "Updating..."
     },
     "messages": {
       "selectCustomer": "Please select a customer",
@@ -304,7 +307,9 @@
       "businessNotAvailable": "Business context not available",
       "createSuccess": "Job created successfully",
       "createFailed": "Failed to create job",
-      "photoUploadFailed": "Job created but photo upload failed"
+      "photoUploadFailed": "Job created but photo upload failed",
+      "updateSuccess": "Job updated successfully",
+      "updateFailed": "Failed to update job"
     }
   },
   "workOrders": {
@@ -341,7 +346,8 @@
       "noJobs": "No jobs in this view."
     },
     "actions": {
-      "viewDetails": "Click to view details"
+      "viewDetails": "Click to view details",
+      "editJob": "Edit Job"
     },
     "time": {
       "unscheduled": "Unscheduled"

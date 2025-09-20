@@ -25,6 +25,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import ReschedulePopover from '@/components/WorkOrders/ReschedulePopover';
 import JobShowModal from '@/components/Jobs/JobShowModal';
 import { JobBottomModal } from '@/components/Jobs/JobBottomModal';
+import { JobEditModal } from '@/components/Jobs/JobEditModal';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Plus } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -167,12 +168,13 @@ function StatusChip({ status, t }: { status: Job['status'], t: (key: string) => 
   return <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${styles}`}>{t(statusKey)}</span>;
 }
 
-function WorkOrderRow({ job, uninvoiced, customerName, when, onOpen, t, userRole, existingInvoice }: {
+function WorkOrderRow({ job, uninvoiced, customerName, when, onOpen, onOpenJobEditModal, t, userRole, existingInvoice }: {
   job: Job;
   uninvoiced: boolean;
   customerName: string;
   when: string;
   onOpen: () => void;
+  onOpenJobEditModal?: (job: Job) => void;
   t: (key: string) => string;
   userRole: string;
   existingInvoice?: any;
@@ -198,6 +200,7 @@ function WorkOrderRow({ job, uninvoiced, customerName, when, onOpen, t, userRole
         <WorkOrderActions 
           job={job}
           userRole={userRole}
+          onOpenJobEditModal={onOpenJobEditModal}
           existingInvoice={existingInvoice}
         />
       </div>
@@ -228,10 +231,17 @@ export default function WorkOrdersPage() {
   const lastSyncKeyRef = useRef<string | null>(null);
   const [activeJob, setActiveJob] = useState<Job | null>(null);
   const [createJobOpen, setCreateJobOpen] = useState(false);
+  const [showEditJob, setShowEditJob] = useState(false);
+  const [selectedEditJob, setSelectedEditJob] = useState<Job | null>(null);
   const isMobile = useIsMobile();
   const { t } = useLanguage();
   const { role } = useBusinessContext();
   const { data: invoices = [] } = useInvoicesData();
+
+  const handleJobEditClick = (job: Job) => {
+    setSelectedEditJob(job);
+    setShowEditJob(true);
+  };
 
   // Jobs data is now loaded from dashboard data in AppLayout
   // No need for separate data fetching and syncing here
@@ -304,6 +314,7 @@ export default function WorkOrdersPage() {
                       when={when}
                       uninvoiced={uninvoiced}
                       onOpen={() => setActiveJob(j as Job)}
+                      onOpenJobEditModal={handleJobEditClick}
                       t={t}
                       userRole={role || 'member'}
                       existingInvoice={existingInvoice}
@@ -395,6 +406,7 @@ export default function WorkOrdersPage() {
                             <WorkOrderActions 
                               job={j as Job}
                               userRole={role || 'member'}
+                              onOpenJobEditModal={handleJobEditClick}
                               existingInvoice={existingInvoice}
                             />
                           </TableCell>
@@ -429,6 +441,11 @@ export default function WorkOrdersPage() {
           open={createJobOpen}
           onOpenChange={setCreateJobOpen}
           onJobCreated={() => setCreateJobOpen(false)}
+        />
+        <JobEditModal
+          open={showEditJob}
+          onOpenChange={setShowEditJob}
+          job={selectedEditJob}
         />
       </section>
     </AppLayout>

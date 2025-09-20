@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Calendar, Navigation, FileText, CheckCircle, Trash2, Eye } from 'lucide-react';
+import { MoreHorizontal, Calendar, Navigation, FileText, CheckCircle, Trash2, Eye, Edit } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
@@ -18,14 +18,16 @@ interface WorkOrderActionsProps {
   job: Job;
   userRole: string;
   onOpenJobModal?: (job: Job) => void;
+  onOpenJobEditModal?: (job: Job) => void;
   existingInvoice?: any;
 }
 
 export function WorkOrderActions({ 
   job, 
-  userRole,
+  userRole, 
   onOpenJobModal,
-  existingInvoice
+  onOpenJobEditModal,
+  existingInvoice 
 }: WorkOrderActionsProps) {
   const { t } = useLanguage();
   const { getToken } = useClerkAuth();
@@ -207,6 +209,14 @@ export function WorkOrderActions({
             }} 
           />
         </div>
+
+        {/* Edit Job - Only show if user is owner */}
+        {isOwner && onOpenJobEditModal && (
+          <DropdownMenuItem onClick={() => onOpenJobEditModal(job)} className="gap-2">
+            <Edit className="h-4 w-4" />
+            {t('workOrders.actions.editJob')}
+          </DropdownMenuItem>
+        )}
         
         <DropdownMenuSeparator />
         

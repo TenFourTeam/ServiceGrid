@@ -255,6 +255,7 @@
   },
   "jobs": {
     "createTitle": "Crear Nuevo Trabajo",
+    "editTitle": "Editar Trabajo",
     "eventTitle": "Evento",
     "form": {
       "jobType": "Tipo de Trabajo",
@@ -293,7 +294,9 @@
       "cancel": "Cancelar",
       "remove": "Eliminar",
       "createSchedule": "Crear y Programar",
-      "creating": "Creando..."
+      "creating": "Creando...",
+      "updateJob": "Actualizar Trabajo",
+      "updating": "Actualizando..."
     },
     "messages": {
       "selectCustomer": "Por favor selecciona un cliente",
@@ -304,7 +307,9 @@
       "businessNotAvailable": "Contexto de negocio no disponible",
       "createSuccess": "Trabajo creado exitosamente",
       "createFailed": "Error al crear el trabajo",
-      "photoUploadFailed": "Trabajo creado pero falló la subida de fotos"
+      "photoUploadFailed": "Trabajo creado pero falló la subida de fotos",
+      "updateSuccess": "Trabajo actualizado exitosamente",
+      "updateFailed": "Error al actualizar el trabajo"
     }
   },
   "workOrders": {
@@ -341,7 +346,8 @@
       "noJobs": "No hay trabajos en esta vista."
     },
     "actions": {
-      "viewDetails": "Haga clic para ver detalles"
+      "viewDetails": "Haga clic para ver detalles",
+      "editJob": "Editar Trabajo"
     },
     "time": {
       "unscheduled": "Sin Programar"
