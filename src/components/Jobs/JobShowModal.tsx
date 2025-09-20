@@ -595,18 +595,6 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                 >
                   {t('workOrders.modal.navigate')}
                 </Button>
-                {role === 'owner' && onOpenJobEditModal && (
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      onOpenJobEditModal(job as Job);
-                      onOpenChange(false);
-                    }}
-                    size="sm"
-                  >
-                    {t('common.edit')}
-                  </Button>
-                )}
                 {job.jobType === 'time_and_materials' && (
                   <>
                     {!job.isClockedIn && (
@@ -654,6 +642,18 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
               </div>
               {role === 'owner' && (
                   <div className="flex items-center gap-2">
+                    {onOpenJobEditModal && (
+                      <Button 
+                        variant="default" 
+                        onClick={() => {
+                          onOpenJobEditModal(job as Job);
+                          onOpenChange(false);
+                        }}
+                        size="sm"
+                      >
+                        Edit Job
+                      </Button>
+                    )}
                     <Button variant="destructive" size="sm" onClick={async () => {
                       try {
                         const { error } = await authApi.invoke(`jobs?id=${job.id}`, { 
