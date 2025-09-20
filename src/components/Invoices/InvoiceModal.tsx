@@ -987,8 +987,8 @@ export default function InvoiceModal({
 
         {/* Right group - Edit and Delete */}
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setMode('edit')}>
-            Edit
+          <Button variant="default" onClick={() => setMode('edit')}>
+            Edit Invoice
           </Button>
 
           {canDelete && (
