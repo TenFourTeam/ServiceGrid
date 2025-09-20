@@ -972,28 +972,34 @@ export default function InvoiceModal({
 
     return (
       <>
-        <Button variant="outline" onClick={() => setMode('edit')}>
-          Edit
-        </Button>
+        {/* Left group - Mark as Paid and Email Preview */}
+        <div className="flex gap-2">
+          {canMarkAsPaid && (
+            <Button variant="outline" onClick={() => setMode('mark_paid')}>
+              Mark as Paid
+            </Button>
+          )}
 
-        {canMarkAsPaid && (
-          <Button variant="outline" onClick={() => setMode('mark_paid')}>
-            Mark as Paid
+          <Button variant="outline" onClick={() => setMode('send')}>
+            Email Preview
           </Button>
-        )}
+        </div>
 
-        <Button variant="outline" onClick={() => setMode('send')}>
-          Email Preview
-        </Button>
-
-        {canDelete && (
-          <Button 
-            variant="destructive" 
-            onClick={() => setShowDeleteDialog(true)}
-          >
-            {t('common.delete')}
+        {/* Right group - Edit and Delete */}
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setMode('edit')}>
+            Edit
           </Button>
-        )}
+
+          {canDelete && (
+            <Button 
+              variant="destructive" 
+              onClick={() => setShowDeleteDialog(true)}
+            >
+              {t('common.delete')}
+            </Button>
+          )}
+        </div>
       </>
     );
   };
@@ -1012,7 +1018,7 @@ export default function InvoiceModal({
           </div>
           
           <DrawerFooter>
-            <div className="flex gap-2 justify-end">
+            <div className="flex justify-between">
               {renderActions()}
             </div>
           </DrawerFooter>
