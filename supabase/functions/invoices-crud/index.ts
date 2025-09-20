@@ -78,6 +78,7 @@ Deno.serve(async (req) => {
         publicToken: invoice.public_token,
         customerId: invoice.customer_id,
         jobId: invoice.job_id,
+        quoteId: invoice.quote_id,
         customerName: invoice.customers?.name,
         customerEmail: invoice.customers?.email,
         address: invoice.address,
