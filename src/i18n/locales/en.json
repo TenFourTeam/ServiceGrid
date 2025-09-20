@@ -161,6 +161,7 @@
       "noResults": "No requests match your search.",
       "tryDifferentSearch": "Try a different search term or filter."
     },
+    "noAddressProvided": "No address provided",
     "loading": "Loading requests...",
     "error": "Error loading requests",
     "actions": {

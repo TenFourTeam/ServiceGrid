@@ -161,6 +161,7 @@
       "noResults": "No hay solicitudes que coincidan con tu búsqueda.",
       "tryDifferentSearch": "Prueba con un término de búsqueda o filtro diferente."
     },
+    "noAddressProvided": "Sin dirección proporcionada",
     "loading": "Cargando solicitudes...",
     "error": "Error al cargar solicitudes",
     "actions": {

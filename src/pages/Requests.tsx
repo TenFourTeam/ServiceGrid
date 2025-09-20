@@ -146,7 +146,7 @@ export default function Requests() {
             {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
           </div>
           <div className="text-sm text-muted-foreground mt-1 truncate">
-            {request.property_address || 'No address provided'}
+            {request.property_address || t('requests.noAddressProvided')}
           </div>
         </div>
       </div>
@@ -361,7 +361,7 @@ export default function Requests() {
                           </TableCell>
                           <TableCell>{request.title}</TableCell>
                           <TableCell className="text-muted-foreground">
-                            {request.property_address || t('requests.empty.noResults')}
+                            {request.property_address || t('requests.noAddressProvided')}
                           </TableCell>
                           <TableCell className="text-muted-foreground">
                             {request.customer?.email || t('requests.table.contact')}
