@@ -985,12 +985,7 @@ export default function InvoiceModal({
     if (isMobile) {
       return (
         <div className="flex flex-col gap-2">
-          {/* Primary action first */}
-          <Button variant="default" onClick={() => setMode('edit')} className="w-full">
-            Edit Invoice
-          </Button>
-          
-          {/* Secondary actions */}
+          {/* Secondary actions first */}
           {canMarkAsPaid && (
             <Button variant="outline" onClick={() => setMode('mark_paid')} className="w-full">
               Mark as Paid
@@ -999,6 +994,11 @@ export default function InvoiceModal({
 
           <Button variant="outline" onClick={() => setMode('send')} className="w-full">
             Email Preview
+          </Button>
+          
+          {/* Edit action before destructive action */}
+          <Button variant="default" onClick={() => setMode('edit')} className="w-full">
+            Edit Invoice
           </Button>
 
           {/* Destructive action last */}

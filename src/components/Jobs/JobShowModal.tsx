@@ -581,21 +581,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
         <DrawerFooter>
           {isMobile ? (
             <div className="flex flex-col gap-2">
-              {/* Primary actions first */}
-              {role === 'owner' && onOpenJobEditModal && (
-                <Button 
-                  variant="default" 
-                  onClick={() => {
-                    onOpenJobEditModal(job as Job);
-                    onOpenChange(false);
-                  }}
-                  className="w-full"
-                >
-                  Edit Job
-                </Button>
-              )}
-              
-              {/* Time tracking actions */}
+              {/* Time tracking actions first */}
               {job.jobType === 'time_and_materials' && (
                 <>
                   {!job.isClockedIn && (
@@ -656,6 +642,20 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                   >
                     {isCompletingJob ? t('workOrders.modal.completing') : job.status === 'Completed' ? t('workOrders.modal.completed') : t('workOrders.modal.complete')}
                   </Button>
+                  
+                  {/* Edit action before destructive action */}
+                  {onOpenJobEditModal && (
+                    <Button 
+                      variant="default" 
+                      onClick={() => {
+                        onOpenJobEditModal(job as Job);
+                        onOpenChange(false);
+                      }}
+                      className="w-full"
+                    >
+                      Edit Job
+                    </Button>
+                  )}
                   
                   {/* Destructive action last */}
                   <Button 

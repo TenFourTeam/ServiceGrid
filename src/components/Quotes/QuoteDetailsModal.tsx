@@ -422,13 +422,6 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
                 {quote && (
                   <>
                     <Button 
-                      variant="default" 
-                      onClick={() => setCurrentMode('edit')}
-                      className="w-full"
-                    >
-                      {t('quotes.actions.editQuote')}
-                    </Button>
-                    <Button 
                       variant="outline" 
                       onClick={() => onSendQuote?.(quote)}
                       className="w-full"
@@ -450,6 +443,13 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
                       className="w-full"
                     >
                       {isCreatingInvoice ? t('quotes.messages.creatingInvoice') : t('quotes.actions.createInvoice')}
+                    </Button>
+                    <Button 
+                      variant="default" 
+                      onClick={() => setCurrentMode('edit')}
+                      className="w-full"
+                    >
+                      {t('quotes.actions.editQuote')}
                     </Button>
                     <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
                       <AlertDialogTrigger asChild>

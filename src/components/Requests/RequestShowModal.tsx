@@ -375,13 +375,6 @@ export function RequestShowModal({
             {isMobile ? (
               <div className="flex flex-col gap-2">
                 <Button
-                  variant="default"
-                  onClick={() => setShowEditModal(true)}
-                  className="w-full"
-                >
-                  {t('requests.show.editRequest')}
-                </Button>
-                <Button
                   variant="outline"
                   onClick={handleScheduleAssessment}
                   disabled={request.status === 'Archived'}
@@ -402,6 +395,13 @@ export function RequestShowModal({
                   className="w-full"
                 >
                   {t('requests.actions.convertToJob')}
+                </Button>
+                <Button
+                  variant="default"
+                  onClick={() => setShowEditModal(true)}
+                  className="w-full"
+                >
+                  {t('requests.show.editRequest')}
                 </Button>
                 <Button
                   variant="default"
