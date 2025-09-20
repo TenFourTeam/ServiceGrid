@@ -18,8 +18,11 @@ interface CustomerBottomModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   customer?: any;
+  mode?: 'create' | 'edit' | 'view';
   onSave?: () => void;
   onCustomerCreated?: (customer: any) => void;
+  onEdit?: (customer: any) => void;
+  onDelete?: (customer: any) => void;
 }
 
 // Form data interface for internal component state
@@ -41,8 +44,11 @@ export function CustomerBottomModal({
   open, 
   onOpenChange, 
   customer,
+  mode = 'create',
   onSave,
-  onCustomerCreated
+  onCustomerCreated,
+  onEdit,
+  onDelete
 }: CustomerBottomModalProps) {
   const queryClient = useQueryClient();
   const { businessId, userId } = useBusinessContext();
@@ -96,6 +102,14 @@ export function CustomerBottomModal({
 
   const validateName = (name: string): boolean => {
     return name.trim().length >= 2;
+  };
+
+  const handleEdit = () => {
+    onEdit?.(customer);
+  };
+
+  const handleDelete = () => {
+    onDelete?.(customer);
   };
 
   const handleSave = async () => {
@@ -216,94 +230,129 @@ export function CustomerBottomModal({
       <DrawerContent className="max-h-[90vh]">
         <DrawerHeader className="text-left">
           <DrawerTitle>
-            {customer?.id ? "Edit Customer" : "New Customer"}
+            {mode === 'view' ? 'Customer Details' : (customer?.id ? "Edit Customer" : "New Customer")}
           </DrawerTitle>
         </DrawerHeader>
         
         <div className="px-4 pb-4 overflow-y-auto">
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Name *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => {
-                  setFormData({ ...formData, name: e.target.value });
-                  if (validationErrors.name && validateName(e.target.value)) {
-                    setValidationErrors({ ...validationErrors, name: false });
-                  }
-                }}
-                placeholder="Customer name"
-                required
-                className={validationErrors.name ? "border-destructive" : ""}
-              />
-              {validationErrors.name && (
+              <Label htmlFor="name">Name {mode !== 'view' && '*'}</Label>
+              {mode === 'view' ? (
+                <div className="p-2 bg-muted/50 rounded-md">{formData.name || 'N/A'}</div>
+              ) : (
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => {
+                    setFormData({ ...formData, name: e.target.value });
+                    if (validationErrors.name && validateName(e.target.value)) {
+                      setValidationErrors({ ...validationErrors, name: false });
+                    }
+                  }}
+                  placeholder="Customer name"
+                  required
+                  className={validationErrors.name ? "border-destructive" : ""}
+                />
+              )}
+              {validationErrors.name && mode !== 'view' && (
                 <p className="text-sm text-destructive">Name must be at least 2 characters long</p>
               )}
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="email">Email *</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => {
-                  setFormData({ ...formData, email: e.target.value });
-                  if (validationErrors.email && validateEmail(e.target.value)) {
-                    setValidationErrors({ ...validationErrors, email: false });
-                  }
-                }}
-                placeholder="customer@example.com"
-                required
-                className={validationErrors.email ? "border-destructive" : ""}
-              />
-              {validationErrors.email && (
+              <Label htmlFor="email">Email {mode !== 'view' && '*'}</Label>
+              {mode === 'view' ? (
+                <div className="p-2 bg-muted/50 rounded-md">{formData.email || 'N/A'}</div>
+              ) : (
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => {
+                    setFormData({ ...formData, email: e.target.value });
+                    if (validationErrors.email && validateEmail(e.target.value)) {
+                      setValidationErrors({ ...validationErrors, email: false });
+                    }
+                  }}
+                  placeholder="customer@example.com"
+                  required
+                  className={validationErrors.email ? "border-destructive" : ""}
+                />
+              )}
+              {validationErrors.email && mode !== 'view' && (
                 <p className="text-sm text-destructive">Please enter a valid email address (e.g., user@example.com)</p>
               )}
             </div>
             
             <div className="space-y-2">
               <Label htmlFor="phone">Phone</Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="(555) 123-4567"
-              />
+              {mode === 'view' ? (
+                <div className="p-2 bg-muted/50 rounded-md">{formData.phone || 'N/A'}</div>
+              ) : (
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  placeholder="(555) 123-4567"
+                />
+              )}
             </div>
             
             <div className="space-y-2">
               <Label htmlFor="address">Address</Label>
-              <Input
-                id="address"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                placeholder="123 Main St, City, State 12345"
-              />
+              {mode === 'view' ? (
+                <div className="p-2 bg-muted/50 rounded-md">{formData.address || 'N/A'}</div>
+              ) : (
+                <Input
+                  id="address"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  placeholder="123 Main St, City, State 12345"
+                />
+              )}
             </div>
           </div>
         </div>
         
         <DrawerFooter>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => handleOpenChange(false)}
-              disabled={loading}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={loading}
-              className="flex-1"
-            >
-              {customer?.id ? "Update" : "Create"} Customer
-            </Button>
-          </div>
+          {mode === 'view' ? (
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={handleEdit}
+                className="flex-1"
+              >
+                Edit Customer
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                className="flex-1"
+              >
+                Delete Customer
+              </Button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => handleOpenChange(false)}
+                disabled={loading}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={loading}
+                className="flex-1"
+              >
+                {customer?.id ? "Update" : "Create"} Customer
+              </Button>
+            </div>
+          )}
         </DrawerFooter>
       </DrawerContent>
     </Drawer>

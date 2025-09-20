@@ -526,10 +526,12 @@
       "name": "Nombre",
       "email": "Correo Electrónico",
       "phone": "Teléfono",
-      "address": "Dirección"
+      "address": "Dirección",
+      "actions": "Acciones"
     },
     "actions": {
-      "delete": "Eliminar",
+      "edit": "Editar Cliente",
+      "delete": "Eliminar Cliente", 
       "deleteMultiple": "Eliminar {count} cliente{plural}"
     },
     "emptyStates": {

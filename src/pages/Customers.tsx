@@ -3,11 +3,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Trash2, ChevronUp, ChevronDown, Download } from 'lucide-react';
+import { ChevronUp, ChevronDown, Download } from 'lucide-react';
 import Papa from 'papaparse';
 import { formatDate } from '@/utils/format';
 import { CustomerBottomModal } from '@/components/Customers/CustomerBottomModal';
 import { CustomerSearchFilter } from '@/components/Customers/CustomerSearchFilter';
+import { CustomerActions } from '@/components/Customers/CustomerActions';
 import { useState, useMemo, useEffect } from "react";
 import { useCustomersData } from '@/queries/unified';
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -15,7 +16,6 @@ import { SimpleCSVImport } from '@/components/Onboarding/SimpleCSVImport';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useCustomerOperations } from '@/hooks/useCustomerOperations';
 import CustomerErrorBoundary from '@/components/ErrorBoundaries/CustomerErrorBoundary';
-import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function CustomersPage() {
@@ -25,14 +25,13 @@ export default function CustomersPage() {
   const { t } = useLanguage();
   
   const [open, setOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'create' | 'edit' | 'view'>('view');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<any>(null);
-  const [selectedCustomers, setSelectedCustomers] = useState<Set<string>>(new Set());
-  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   
-  const { deleteCustomer, isDeletingCustomer, bulkDeleteCustomers, isBulkDeleting } = useCustomerOperations();
+  const { deleteCustomer, isDeletingCustomer } = useCustomerOperations();
   
   // Search and sort state
   const [searchQuery, setSearchQuery] = useState("");
@@ -76,11 +75,19 @@ export default function CustomersPage() {
 
   function openNew() {
     setEditingId(null);
+    setModalMode('create');
+    setOpen(true);
+  }
+
+  function openView(c: any) {
+    setEditingId(c.id);
+    setModalMode('view');
     setOpen(true);
   }
 
   function openEdit(c: any) {
     setEditingId(c.id);
+    setModalMode('edit');
     setOpen(true);
   }
 
@@ -101,7 +108,23 @@ export default function CustomersPage() {
     setCustomerToDelete(customer);
     setDeleteDialogOpen(true);
   }
-  
+
+  const handleEditCustomer = (customer: any) => {
+    openEdit(customer);
+  };
+
+  const handleDeleteCustomer = async () => {
+    if (!customerToDelete) return;
+    
+    deleteCustomer.mutate(customerToDelete.id, {
+      onSuccess: () => {
+        setDeleteDialogOpen(false);
+        setCustomerToDelete(null);
+        setOpen(false); // Close modal if open
+      }
+    });
+  };
+
   const handleSort = (key: 'name' | 'email' | 'phone') => {
     setSortConfig(current => {
       if (!current || current.key !== key) {
@@ -121,45 +144,6 @@ export default function CustomersPage() {
     return sortConfig.direction === 'asc' ? 
       <ChevronUp className="h-4 w-4 ml-1" /> : 
       <ChevronDown className="h-4 w-4 ml-1" />;
-  };
-
-  const handleDeleteCustomer = async () => {
-    if (!customerToDelete) return;
-    
-    deleteCustomer.mutate(customerToDelete.id, {
-      onSuccess: () => {
-        setDeleteDialogOpen(false);
-        setCustomerToDelete(null);
-      }
-    });
-  };
-
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedCustomers(new Set(filteredAndSortedCustomers.map(c => c.id)));
-    } else {
-      setSelectedCustomers(new Set());
-    }
-  };
-
-  const handleSelectCustomer = (customerId: string, checked: boolean) => {
-    const newSelected = new Set(selectedCustomers);
-    if (checked) {
-      newSelected.add(customerId);
-    } else {
-      newSelected.delete(customerId);
-    }
-    setSelectedCustomers(newSelected);
-  };
-
-  const handleBulkDelete = () => {
-    if (selectedCustomers.size === 0) return;
-    bulkDeleteCustomers.mutate(Array.from(selectedCustomers), {
-      onSuccess: () => {
-        setSelectedCustomers(new Set());
-        setShowBulkDeleteDialog(false);
-      }
-    });
   };
 
   const handleExportCSV = () => {
@@ -190,21 +174,13 @@ export default function CustomersPage() {
   };
 
   // Customer Card component for mobile view
-  function CustomerCard({ customer, onClick, isSelected, onSelect }: { 
+  function CustomerCard({ customer, onClick }: { 
     customer: any; 
     onClick: () => void; 
-    isSelected: boolean;
-    onSelect: (checked: boolean) => void;
   }) {
     return (
       <div className="p-4 border rounded-md bg-card shadow-sm">
-        <div className="flex items-center gap-3">
-          <div onClick={(e) => e.stopPropagation()}>
-            <Checkbox
-              checked={isSelected}
-              onCheckedChange={onSelect}
-            />
-          </div>
+        <div className="flex items-center justify-between gap-3">
           <div 
             onClick={onClick}
             className="min-w-0 flex-1 cursor-pointer hover:bg-accent/30 transition-colors rounded p-2 -m-2"
@@ -212,6 +188,13 @@ export default function CustomersPage() {
             <div className="font-medium truncate">{customer.name}</div>
             <div className="text-sm text-muted-foreground truncate">{customer.email || ''}</div>
             <div className="text-sm text-muted-foreground truncate">{customer.phone || ''}</div>
+          </div>
+          <div onClick={(e) => e.stopPropagation()}>
+            <CustomerActions 
+              customer={customer}
+              onEdit={handleEditCustomer}
+              onDelete={openDeleteDialog}
+            />
           </div>
         </div>
       </div>
@@ -227,20 +210,6 @@ export default function CustomersPage() {
           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <CardTitle>{t('customers.cardTitle')}</CardTitle>
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-              {selectedCustomers.size > 0 && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => setShowBulkDeleteDialog(true)}
-                  disabled={isBulkDeleting}
-                  className="w-full sm:w-auto"
-                >
-                  {t('customers.actions.deleteMultiple', { 
-                    count: selectedCustomers.size, 
-                    plural: selectedCustomers.size === 1 ? '' : 's' 
-                  })}
-                </Button>
-              )}
               <Button variant="outline" onClick={() => setCsvImportOpen(true)} className="w-full sm:w-auto">
                 {t('customers.importCsv')}
               </Button>
@@ -286,9 +255,7 @@ export default function CustomersPage() {
                         <CustomerCard
                           key={c.id}
                           customer={c}
-                          onClick={() => openEdit(c)}
-                          isSelected={selectedCustomers.has(c.id)}
-                          onSelect={(checked) => handleSelectCustomer(c.id, checked)}
+                          onClick={() => openView(c)}
                         />
                       ))}
                     </div>
@@ -297,12 +264,6 @@ export default function CustomersPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="w-12">
-                            <Checkbox
-                              checked={selectedCustomers.size === filteredAndSortedCustomers.length && filteredAndSortedCustomers.length > 0}
-                              onCheckedChange={handleSelectAll}
-                            />
-                          </TableHead>
                           <TableHead 
                             className="cursor-pointer hover:bg-muted/50 select-none"
                             onClick={() => handleSort('name')}
@@ -331,6 +292,7 @@ export default function CustomersPage() {
                             </div>
                           </TableHead>
                           <TableHead>{t('customers.table.address')}</TableHead>
+                          <TableHead className="w-12">{t('customers.table.actions')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -338,18 +300,19 @@ export default function CustomersPage() {
                           <TableRow 
                             key={c.id}
                             className="cursor-pointer hover:bg-muted/50 transition-colors"
-                            onClick={() => openEdit(c)}
+                            onClick={() => openView(c)}
                           >
-                            <TableCell onClick={(e) => e.stopPropagation()}>
-                              <Checkbox
-                                checked={selectedCustomers.has(c.id)}
-                                onCheckedChange={(checked) => handleSelectCustomer(c.id, checked as boolean)}
-                              />
-                            </TableCell>
                             <TableCell>{c.name}</TableCell>
                             <TableCell>{c.email ?? ''}</TableCell>
                             <TableCell>{c.phone ?? ''}</TableCell>
                             <TableCell>{c.address ?? ''}</TableCell>
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <CustomerActions 
+                                customer={c}
+                                onEdit={handleEditCustomer}
+                                onDelete={openDeleteDialog}
+                              />
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -384,6 +347,9 @@ export default function CustomersPage() {
         open={open}
         onOpenChange={setOpen}
         customer={editingId ? rows.find(c => c.id === editingId) : null}
+        mode={modalMode}
+        onEdit={handleEditCustomer}
+        onDelete={openDeleteDialog}
       />
 
       <SimpleCSVImport
@@ -431,39 +397,6 @@ export default function CustomersPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('customers.deleteDialog.bulkTitle')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('customers.deleteDialog.bulkDescription', { 
-                count: selectedCustomers.size, 
-                plural: selectedCustomers.size === 1 ? '' : 's' 
-              })}
-              <div className="mt-3 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-                <div className="text-sm font-medium text-destructive">
-                  {t('customers.deleteDialog.warningBulkTitle')}
-                </div>
-                <div className="text-sm text-muted-foreground mt-1">
-                  • {t('customers.deleteDialog.warningBulkItems.0')}
-                </div>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isBulkDeleting}>
-              {t('customers.deleteDialog.cancel')}
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleBulkDelete}
-              disabled={isBulkDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {isBulkDeleting ? t('customers.deleteDialog.deleting') : t('customers.deleteDialog.confirm')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </AppLayout>
   );
 }
