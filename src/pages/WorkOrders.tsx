@@ -28,6 +28,9 @@ import { JobBottomModal } from '@/components/Jobs/JobBottomModal';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Plus } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { WorkOrderActions } from '@/components/WorkOrders/WorkOrderActions';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { format } from 'date-fns';
 
 function useFilteredJobs() {
   const { data: jobs = [] } = useJobsData();
@@ -157,13 +160,15 @@ function StatusChip({ status, t }: { status: Job['status'], t: (key: string) => 
   return <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${styles}`}>{t(statusKey)}</span>;
 }
 
-function WorkOrderRow({ job, uninvoiced, customerName, when, onOpen, t }: {
+function WorkOrderRow({ job, uninvoiced, customerName, when, onOpen, t, userRole, existingInvoice }: {
   job: Job;
   uninvoiced: boolean;
   customerName: string;
   when: string;
   onOpen: () => void;
   t: (key: string) => string;
+  userRole: string;
+  existingInvoice?: any;
 }) {
   return (
     <div onClick={onOpen} className="p-4 border rounded-md bg-card shadow-sm cursor-pointer hover:bg-accent/30 transition-colors">
@@ -178,9 +183,18 @@ function WorkOrderRow({ job, uninvoiced, customerName, when, onOpen, t }: {
           {job.address && <div className="text-sm text-muted-foreground truncate">{job.address}</div>}
           <div className="text-sm text-muted-foreground mt-1">{when}</div>
         </div>
-        <div className="flex flex-col items-end gap-2">
-          <StatusChip status={job.status} t={t} />
-          <div className="text-xs text-muted-foreground">{t('workOrders.actions.viewDetails')}</div>
+        <div className="flex items-center gap-2">
+          <div className="flex flex-col items-end gap-2">
+            <StatusChip status={job.status} t={t} />
+            <div className="text-xs text-muted-foreground">{t('workOrders.actions.viewDetails')}</div>
+          </div>
+          <div onClick={(e) => e.stopPropagation()}>
+            <WorkOrderActions 
+              job={job}
+              userRole={userRole}
+              existingInvoice={existingInvoice}
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -198,6 +212,8 @@ export default function WorkOrdersPage() {
   const [createJobOpen, setCreateJobOpen] = useState(false);
   const isMobile = useIsMobile();
   const { t } = useLanguage();
+  const { role } = useBusinessContext();
+  const { data: invoices = [] } = useInvoicesData();
 
   // Jobs data is now loaded from dashboard data in AppLayout
   // No need for separate data fetching and syncing here
@@ -261,6 +277,7 @@ export default function WorkOrdersPage() {
                   const customerName = customers.find(c=>c.id===j.customerId)?.name || t('workOrders.modal.customer');
                   const when = j.startsAt ? formatDateTime(j.startsAt) : t('workOrders.time.unscheduled');
                   const uninvoiced = j.status==='Completed' && !hasInvoice(j.id);
+                  const existingInvoice = invoices.find(inv => inv.jobId === j.id);
                   return (
                     <WorkOrderRow
                       key={j.id}
@@ -270,6 +287,8 @@ export default function WorkOrdersPage() {
                       uninvoiced={uninvoiced}
                       onOpen={() => setActiveJob(j as Job)}
                       t={t}
+                      userRole={role || 'member'}
+                      existingInvoice={existingInvoice}
                     />
                   );
                 })
@@ -323,6 +342,7 @@ export default function WorkOrdersPage() {
                       >
                         {t('workOrders.table.amount')} {tableSort?.column === 'amount' && (tableSort.direction === 'asc' ? '▲' : '▼')}
                       </TableHead>
+                      <TableHead className="w-[50px]">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -332,6 +352,7 @@ export default function WorkOrdersPage() {
                       const address = j.address || customer?.address || '';
                       const when = j.startsAt ? formatDateTime(j.startsAt) : t('workOrders.time.unscheduled');
                       const uninvoiced = j.status === 'Completed' && !hasInvoice(j.id);
+                      const existingInvoice = invoices.find(inv => inv.jobId === j.id);
                       
                       return (
                         <TableRow 
@@ -352,6 +373,13 @@ export default function WorkOrdersPage() {
                             <StatusChip status={j.status} t={t} />
                           </TableCell>
                           <TableCell className="text-right">{formatMoney(j.total || 0)}</TableCell>
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            <WorkOrderActions 
+                              job={j as Job}
+                              userRole={role || 'member'}
+                              existingInvoice={existingInvoice}
+                            />
+                          </TableCell>
                         </TableRow>
                       );
                     })}
