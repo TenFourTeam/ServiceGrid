@@ -1095,6 +1095,15 @@ export type Database = {
         Args: { p_business_id: string }
         Returns: boolean
       }
+      link_invoice_relations: {
+        Args: {
+          p_invoice_id: string
+          p_job_id?: string
+          p_quote_id?: string
+          p_user_id?: string
+        }
+        Returns: undefined
+      }
       log_audit_action: {
         Args: {
           p_action: string

@@ -333,8 +333,7 @@ Deno.serve(async (req) => {
     if (depositPercent !== undefined) updateData.deposit_percent = depositPercent;
     if (notesInternal !== undefined) updateData.notes_internal = notesInternal;
     if (terms !== undefined) updateData.terms = terms;
-    if (jobId !== undefined) updateData.job_id = jobId;
-    if (quoteId !== undefined) updateData.quote_id = quoteId;
+    // Note: jobId and quoteId are handled separately via the database function below
 
       // Handle line items update if provided
       if (lineItems && Array.isArray(lineItems)) {
@@ -375,6 +374,25 @@ Deno.serve(async (req) => {
 
           console.log('[invoices-crud] Updated', invoiceLineItems.length, 'line items');
         }
+      }
+
+      // Handle quote/job linking using secure database function
+      if (jobId !== undefined || quoteId !== undefined) {
+        console.log('[invoices-crud] Linking/unlinking quote/job for invoice:', id);
+        
+        const { error: linkError } = await supabase.rpc('link_invoice_relations', {
+          p_invoice_id: id,
+          p_quote_id: quoteId || null,
+          p_job_id: jobId || null,
+          p_user_id: ctx.userId
+        });
+
+        if (linkError) {
+          console.error('[invoices-crud] Error linking quote/job:', linkError);
+          throw new Error(`Failed to link quote/job: ${linkError.message}`);
+        }
+
+        console.log('[invoices-crud] Successfully linked/unlinked quote/job');
       }
 
       const { data, error } = await supabase
