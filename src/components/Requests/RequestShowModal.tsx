@@ -370,39 +370,43 @@ export function RequestShowModal({
           </div>
           
           <DrawerFooter>
-            <div className="flex gap-2 justify-end">
-              <Button
-                variant="outline"
-                onClick={() => setShowEditModal(true)}
-              >
-                {t('requests.show.editRequest')}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleScheduleAssessment}
-                disabled={request.status === 'Archived'}
-              >
-                {t('requests.actions.scheduleAssessment')}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleConvertToQuote}
-              >
-                {t('requests.actions.convertToQuote')}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleConvertToJob}
-              >
-                {t('requests.actions.convertToJob')}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleArchive}
-                disabled={request.status === 'Archived'}
-              >
-                {t('requests.actions.archive')}
-              </Button>
+            <div className="flex justify-between">
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleScheduleAssessment}
+                  disabled={request.status === 'Archived'}
+                >
+                  {t('requests.actions.scheduleAssessment')}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleConvertToQuote}
+                >
+                  {t('requests.actions.convertToQuote')}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleConvertToJob}
+                >
+                  {t('requests.actions.convertToJob')}
+                </Button>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="default"
+                  onClick={() => setShowEditModal(true)}
+                >
+                  {t('requests.show.editRequest')}
+                </Button>
+                <Button
+                  variant="default"
+                  onClick={handleArchive}
+                  disabled={request.status === 'Archived'}
+                >
+                  {t('requests.actions.archive')}
+                </Button>
+              </div>
             </div>
           </DrawerFooter>
         </DrawerContent>
