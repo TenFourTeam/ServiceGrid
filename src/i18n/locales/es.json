@@ -436,7 +436,13 @@
       "convertToJob": "Convertir a Trabajo",
       "createInvoice": "Crear Factura",
       "editQuote": "Editar Cotización",
-      "resendQuote": "Reenviar Cotización"
+      "resendQuote": "Reenviar Cotización",
+      "deleteQuote": "Eliminar Cotización"
+    },
+    "delete": {
+      "confirmTitle": "Eliminar Cotización",
+      "confirmDescription": "¿Estás seguro de que quieres eliminar la cotización {{number}}? Esta acción no se puede deshacer.",
+      "deleting": "Eliminando..."
     },
     "messages": {
       "linkCopied": "Enlace de cotización copiado al portapapeles",

@@ -436,7 +436,13 @@
       "convertToJob": "Convert to Job",
       "createInvoice": "Create Invoice",
       "editQuote": "Edit Quote",
-      "resendQuote": "Re-send Quote"
+      "resendQuote": "Re-send Quote",
+      "deleteQuote": "Delete Quote"
+    },
+    "delete": {
+      "confirmTitle": "Delete Quote",
+      "confirmDescription": "Are you sure you want to delete quote {{number}}? This action cannot be undone.",
+      "deleting": "Deleting..."
     },
     "messages": {
       "linkCopied": "Quote link copied to clipboard",

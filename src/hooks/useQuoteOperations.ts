@@ -125,3 +125,34 @@ export function useConvertQuoteToInvoice() {
     }
   });
 }
+
+export function useDeleteQuote() {
+  const { getToken } = useAuth();
+  const { businessId } = useBusinessContext();
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (quoteId: string) => {
+      const { data, error } = await authApi.invoke('quotes-crud', {
+        method: 'DELETE',
+        body: { id: quoteId }
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to delete quote');
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      // Invalidate quotes query
+      queryClient.invalidateQueries({ queryKey: queryKeys.data.quotes(businessId || '') });
+      
+      toast.success('Quote deleted successfully!');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to delete quote');
+    }
+  });
+}

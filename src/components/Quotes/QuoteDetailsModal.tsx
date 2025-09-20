@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Drawer, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { formatMoney, formatDate } from '@/utils/format';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
@@ -15,6 +16,7 @@ import LoadingScreen from '@/components/LoadingScreen';
 import { QuoteForm } from '@/components/Quotes/QuoteForm';
 import { useLifecycleEmailIntegration } from '@/hooks/useLifecycleEmailIntegration';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useDeleteQuote } from '@/hooks/useQuoteOperations';
 import type { Quote, QuoteListItem, QuoteStatus, Customer } from '@/types';
 
 const statusColors: Record<QuoteStatus, string> = {
@@ -44,12 +46,14 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
   const { getToken } = useClerkAuth();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const { triggerQuoteCreated } = useLifecycleEmailIntegration();
+  const deleteQuoteMutation = useDeleteQuote();
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(false);
   const [currentMode, setCurrentMode] = useState<'create' | 'view' | 'edit'>(mode);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isConvertingToJob, setIsConvertingToJob] = useState(false);
   const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const customerName = useMemo(() => {
     if (!quote) return '';
@@ -321,6 +325,18 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
     }
   };
 
+  const handleDeleteQuote = async () => {
+    if (!quote) return;
+    
+    try {
+      await deleteQuoteMutation.mutateAsync(quote.id);
+      setShowDeleteDialog(false);
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Failed to delete quote:', error);
+    }
+  };
+
   const getModalTitle = () => {
     if (currentMode === 'create') return t('quotes.modal.create');
     if (currentMode === 'edit') return `${t('quotes.modal.edit')} ${quote?.number || ''}`;
@@ -428,6 +444,31 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
                   >
                     {isCreatingInvoice ? t('quotes.messages.creatingInvoice') : t('quotes.actions.createInvoice')}
                   </Button>
+                  <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive">
+                        {t('quotes.actions.deleteQuote')}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>{t('quotes.delete.confirmTitle')}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          {t('quotes.delete.confirmDescription', { number: quote.number })}
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleDeleteQuote}
+                          disabled={deleteQuoteMutation.isPending}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          {deleteQuoteMutation.isPending ? t('quotes.delete.deleting') : t('common.delete')}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </>
               )}
             </div>

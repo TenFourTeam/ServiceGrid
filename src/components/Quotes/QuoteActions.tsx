@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Send, FileText, Receipt, Edit } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { MoreHorizontal, Send, FileText, Receipt, Edit, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
@@ -10,7 +11,9 @@ import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/queries/keys';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useDeleteQuote } from '@/hooks/useQuoteOperations';
 import type { QuoteListItem } from '@/types';
+import { useState } from 'react';
 
 interface QuoteActionsProps {
   quote: QuoteListItem;
@@ -26,6 +29,8 @@ export function QuoteActions({ quote, onSendQuote, onEditQuote }: QuoteActionsPr
   const queryClient = useQueryClient();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const { triggerJobScheduled, triggerInvoiceSent } = useLifecycleEmailIntegration();
+  const deleteQuoteMutation = useDeleteQuote();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // Determine if quote has been sent (show "Re-send" vs "Send")
   const hasBeenSent = quote.sentAt != null || quote.status !== 'Draft';
@@ -107,6 +112,15 @@ export function QuoteActions({ quote, onSendQuote, onEditQuote }: QuoteActionsPr
     }
   };
 
+  const handleDeleteQuote = async () => {
+    try {
+      await deleteQuoteMutation.mutateAsync(quote.id);
+      setShowDeleteDialog(false);
+    } catch (error) {
+      console.error('Failed to delete quote:', error);
+    }
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -132,6 +146,39 @@ export function QuoteActions({ quote, onSendQuote, onEditQuote }: QuoteActionsPr
           <Receipt className="h-4 w-4" />
           {t('quotes.actions.createInvoice')}
         </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogTrigger asChild>
+            <DropdownMenuItem 
+              onSelect={(e) => {
+                e.preventDefault();
+                setShowDeleteDialog(true);
+              }}
+              className="gap-2 text-destructive focus:text-destructive"
+            >
+              <Trash2 className="h-4 w-4" />
+              {t('quotes.actions.deleteQuote')}
+            </DropdownMenuItem>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('quotes.delete.confirmTitle')}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t('quotes.delete.confirmDescription', { number: quote.number })}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteQuote}
+                disabled={deleteQuoteMutation.isPending}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {deleteQuoteMutation.isPending ? t('quotes.delete.deleting') : t('common.delete')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DropdownMenuContent>
     </DropdownMenu>
   );
