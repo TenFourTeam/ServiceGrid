@@ -20,6 +20,7 @@ import { useNavigate } from 'react-router-dom';
 import { useClockInOut } from "@/hooks/useClockInOut";
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsPhone } from "@/hooks/use-phone";
 
 interface JobShowModalProps {
   open: boolean;
@@ -33,6 +34,8 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
   const { data: quotes = [] } = useQuotesData();
   const { data: invoices = [] } = useInvoicesData();
   const isMobile = useIsMobile();
+  const isPhone = useIsPhone();
+  const isTablet = isMobile && !isPhone;
   const queryClient = useQueryClient();
   const { businessId, userId, role } = useBusinessContext();
   const navigate = useNavigate();
@@ -579,7 +582,59 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
           <JobMemberAssignments job={job} />
         </div>
         <DrawerFooter>
-          {isMobile ? (
+          {isPhone ? (
+            // Phone layout - single column stack
+            <div className="flex flex-col gap-2">
+              {job?.type === 'time_and_materials' && clockInOutButton}
+              {navigateButton}
+              {rescheduleButton}
+              {invoiceButton}
+              {markCompleteButton}
+              <Button variant="outline" onClick={() => onOpenJobEditModal?.(job)}>
+                Edit Job
+              </Button>
+              <Button variant="destructive" onClick={() => setShowDeleteDialog(true)}>
+                Delete Job
+              </Button>
+            </div>
+          ) : isTablet ? (
+            // Tablet layout - 2-column grid
+            <div className="grid grid-cols-2 gap-2">
+              {job?.type === 'time_and_materials' && clockInOutButton}
+              {navigateButton}
+              {rescheduleButton}
+              {invoiceButton}
+              {markCompleteButton}
+              <Button variant="outline" onClick={() => onOpenJobEditModal?.(job)}>
+                Edit Job
+              </Button>
+              <div className="col-span-2">
+                <Button variant="destructive" onClick={() => setShowDeleteDialog(true)} className="w-full">
+                  Delete Job
+                </Button>
+              </div>
+            </div>
+          ) : (
+            // Desktop layout
+            <div className="flex justify-between">
+              <div className="flex gap-2">
+                {job?.type === 'time_and_materials' && clockInOutButton}
+                {navigateButton}
+                {rescheduleButton}
+                {invoiceButton}
+                {markCompleteButton}
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => onOpenJobEditModal?.(job)}>
+                  Edit Job
+                </Button>
+                <Button variant="destructive" onClick={() => setShowDeleteDialog(true)}>
+                  Delete Job
+                </Button>
+              </div>
+            </div>
+          )}
+        </DrawerFooter>
             <div className="flex flex-col gap-2">
               {/* Time tracking actions first */}
               {job.jobType === 'time_and_materials' && (
@@ -796,9 +851,8 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
               </div>
             </div>
           )}
-        </DrawerFooter>
-
-        <Dialog open={viewerOpen} onOpenChange={setViewerOpen}>
+      </DrawerContent>
+    </Drawer>
           <DialogContent className="max-w-4xl" aria-describedby="photo-viewer-description">
             <DialogHeader>
               <ModalTitle>{t('workOrders.modal.photoCount', { current: viewerIndex + 1, total: photos.length })}</ModalTitle>

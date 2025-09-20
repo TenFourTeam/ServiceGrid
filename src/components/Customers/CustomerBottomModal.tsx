@@ -10,6 +10,7 @@ import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useAuth } from '@clerk/clerk-react';
 import { createAuthEdgeApi } from "@/utils/authEdgeApi";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsPhone } from "@/hooks/use-phone";
 import type { Customer } from "@/types";
 
 // Email validation regex - requires a valid email format
@@ -56,6 +57,8 @@ export function CustomerBottomModal({
   const { getToken } = useAuth();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const isMobile = useIsMobile();
+  const isPhone = useIsPhone();
+  const isTablet = isMobile && !isPhone;
   
   const [formData, setFormData] = useState<CustomerFormData>({
     name: "",
@@ -320,7 +323,8 @@ export function CustomerBottomModal({
         
         <DrawerFooter>
           {mode === 'view' ? (
-            isMobile ? (
+            isPhone ? (
+              // Phone layout - single column stack
               <div className="flex flex-col gap-2">
                 <Button
                   variant="default"
@@ -337,7 +341,24 @@ export function CustomerBottomModal({
                   Delete Customer
                 </Button>
               </div>
+            ) : isTablet ? (
+              // Tablet layout - 2-column grid
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant="default"
+                  onClick={handleEdit}
+                >
+                  Edit Customer
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleDelete}
+                >
+                  Delete Customer
+                </Button>
+              </div>
             ) : (
+              // Desktop layout
               <div className="flex justify-end">
                 <div className="flex gap-2">
                   <Button
@@ -356,19 +377,19 @@ export function CustomerBottomModal({
               </div>
             )
           ) : (
-            <div className={isMobile ? "flex flex-col gap-2" : "flex gap-2"}>
+            <div className={isPhone ? "flex flex-col gap-2" : isTablet ? "grid grid-cols-2 gap-2" : "flex gap-2"}>
               <Button
                 variant="outline"
                 onClick={() => handleOpenChange(false)}
                 disabled={loading}
-                className={isMobile ? "w-full" : "flex-1"}
+                className={isPhone ? "w-full" : "flex-1"}
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleSave}
                 disabled={loading}
-                className={isMobile ? "w-full" : "flex-1"}
+                className={isPhone ? "w-full" : "flex-1"}
               >
                 {customer?.id ? "Update" : "Create"} Customer
               </Button>

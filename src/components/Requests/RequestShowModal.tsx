@@ -17,6 +17,7 @@ import { useLifecycleEmailIntegration } from "@/hooks/useLifecycleEmailIntegrati
 import { useRequestOperations } from "@/hooks/useRequestOperations";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsPhone } from "@/hooks/use-phone";
 interface RequestShowModalProps {
   request: RequestListItem | null;
   open: boolean;
@@ -34,6 +35,8 @@ export function RequestShowModal({
   const navigate = useNavigate();
   const { getToken } = useClerkAuth();
   const isMobile = useIsMobile();
+  const isPhone = useIsPhone();
+  const isTablet = isMobile && !isPhone;
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const { triggerJobScheduled } = useLifecycleEmailIntegration();
   const createQuote = useCreateQuote();
@@ -372,7 +375,8 @@ export function RequestShowModal({
           </div>
           
           <DrawerFooter>
-            {isMobile ? (
+            {isPhone ? (
+              // Phone layout - single column stack
               <div className="flex flex-col gap-2">
                 <Button
                   variant="outline"
@@ -412,7 +416,47 @@ export function RequestShowModal({
                   {t('requests.actions.archive')}
                 </Button>
               </div>
+            ) : isTablet ? (
+              // Tablet layout - 2-column grid
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleScheduleAssessment}
+                  disabled={request.status === 'Archived'}
+                >
+                  {t('requests.actions.scheduleAssessment')}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleConvertToQuote}
+                >
+                  {t('requests.actions.convertToQuote')}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleConvertToJob}
+                >
+                  {t('requests.actions.convertToJob')}
+                </Button>
+                <Button
+                  variant="default"
+                  onClick={() => setShowEditModal(true)}
+                >
+                  {t('requests.show.editRequest')}
+                </Button>
+                <div className="col-span-2">
+                  <Button
+                    variant="default"
+                    onClick={handleArchive}
+                    disabled={request.status === 'Archived'}
+                    className="w-full"
+                  >
+                    {t('requests.actions.archive')}
+                  </Button>
+                </div>
+              </div>
             ) : (
+              // Desktop layout
               <div className="flex justify-between">
                 <div className="flex gap-2">
                   <Button
