@@ -2,13 +2,20 @@ import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
-import { Mail, Phone, MapPin, Calendar, Clock, FileText, User, Camera } from "lucide-react";
+import { Mail, Phone, MapPin, Calendar, Clock, FileText, User, Camera, Wrench, Archive } from "lucide-react";
 import { format } from "date-fns";
 import { RequestListItem } from "@/hooks/useRequestsData";
 import { useCustomersData } from "@/hooks/useCustomersData";
 import { statusOptions } from "@/validation/requests";
-import { RequestBottomModal } from "./RequestBottomModal";
+import { RequestEditModal } from "./RequestEditModal";
+import { RequestActions } from "./RequestActions";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { createAuthEdgeApi } from "@/utils/authEdgeApi";
+import { useAuth as useClerkAuth } from "@clerk/clerk-react";
+import { useCreateQuote } from "@/hooks/useQuoteOperations";
+import { useLifecycleEmailIntegration } from "@/hooks/useLifecycleEmailIntegration";
+import { useRequestOperations } from "@/hooks/useRequestOperations";
+import { useNavigate } from "react-router-dom";
 interface RequestShowModalProps {
   request: RequestListItem | null;
   open: boolean;
@@ -23,6 +30,12 @@ export function RequestShowModal({
   onRequestUpdated
 }: RequestShowModalProps) {
   const { t } = useLanguage();
+  const navigate = useNavigate();
+  const { getToken } = useClerkAuth();
+  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const { triggerJobScheduled } = useLifecycleEmailIntegration();
+  const createQuote = useCreateQuote();
+  const { updateRequest } = useRequestOperations();
   const { data: customers = [] } = useCustomersData();
   const [showEditModal, setShowEditModal] = useState(false);
   
@@ -35,6 +48,144 @@ export function RequestShowModal({
     request ? statusOptions.find(s => s.value === request.status) : null,
     [request?.status]
   );
+
+  // Action handlers (reused from RequestActions)
+  const handleConvertToQuote = () => {
+    if (!request) return;
+    createQuote.mutate({
+      customerId: request.customer_id,
+      address: request.property_address,
+      status: 'Draft',
+      notesInternal: `Created from request: ${request.title}\n\nService Details: ${request.service_details}${request.notes ? `\n\nNotes: ${request.notes}` : ''}`,
+      depositRequired: false,
+      taxRate: 0,
+      discount: 0,
+    }, {
+      onSuccess: (data) => {
+        onOpenChange(false);
+        navigate(`/quotes?newQuote=${data.id}`);
+      }
+    });
+  };
+
+  const getPreferredHour = (preferredTimes: string[] = []): number => {
+    const firstPreference = preferredTimes[0] || 'Any time';
+    switch (firstPreference) {
+      case 'Morning (8am - 12pm)': return 9;
+      case 'Afternoon (12pm - 5pm)': return 13;
+      case 'Evening (5pm - 8pm)': return 17;
+      case 'Any time':
+      default: return 9;
+    }
+  };
+
+  const getNextBusinessDay = (): Date => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    while (tomorrow.getDay() === 0 || tomorrow.getDay() === 6) {
+      tomorrow.setDate(tomorrow.getDate() + 1);
+    }
+    return tomorrow;
+  };
+
+  const calculateAssessmentStartTime = (): string => {
+    const preferredHour = getPreferredHour(request.preferred_times as string[]);
+    let assessmentDate: Date;
+    
+    if (request.preferred_assessment_date) {
+      assessmentDate = new Date(request.preferred_assessment_date);
+    } else {
+      assessmentDate = getNextBusinessDay();
+    }
+    
+    assessmentDate.setHours(preferredHour, 0, 0, 0);
+    const now = new Date();
+    if (assessmentDate <= now) {
+      assessmentDate = getNextBusinessDay();
+      assessmentDate.setHours(preferredHour, 0, 0, 0);
+    }
+    
+    return assessmentDate.toISOString();
+  };
+
+  const handleScheduleAssessment = async () => {
+    if (!request) return;
+    try {
+      const { data: result } = await authApi.invoke('jobs-crud', {
+        method: 'POST',
+        body: {
+          customerId: request.customer_id,
+          title: `${request.title} - Assessment`,
+          address: request.property_address,
+          notes: `Assessment for request: ${request.title}\n\nService Details: ${request.service_details}${request.notes ? `\n\nNotes: ${request.notes}` : ''}`,
+          status: 'Scheduled',
+          startsAt: calculateAssessmentStartTime(),
+          isAssessment: true,
+          requestId: request.id,
+        },
+        toast: {
+          success: `Assessment scheduled successfully`,
+          loading: 'Scheduling assessment...',
+          error: 'Failed to schedule assessment',
+          onSuccess: triggerJobScheduled
+        }
+      });
+
+      if (result) {
+        updateRequest.mutate({
+          id: request.id,
+          status: 'Scheduled'
+        });
+        onOpenChange(false);
+        navigate('/work-orders');
+      }
+    } catch (error) {
+      console.error('Failed to schedule assessment:', error);
+    }
+  };
+
+  const handleConvertToJob = async () => {
+    if (!request) return;
+    try {
+      const { data: result } = await authApi.invoke('jobs-crud', {
+        method: 'POST',
+        body: {
+          customerId: request.customer_id,
+          title: request.title,
+          address: request.property_address,
+          notes: `Created from request: ${request.title}\n\nService Details: ${request.service_details}${request.notes ? `\n\nNotes: ${request.notes}` : ''}`,
+          status: 'Scheduled',
+          startsAt: request.preferred_assessment_date,
+          photos: request.photos || [],
+        },
+        toast: {
+          success: `Job created from request successfully`,
+          loading: 'Converting request to job...',
+          error: 'Failed to convert request to job',
+          onSuccess: triggerJobScheduled
+        }
+      });
+
+      if (result) {
+        onOpenChange(false);
+        navigate('/work-orders');
+      }
+    } catch (error) {
+      console.error('Failed to convert request to job:', error);
+    }
+  };
+
+  const handleArchive = () => {
+    if (!request) return;
+    updateRequest.mutate({
+      id: request.id,
+      status: 'Archived'
+    }, {
+      onSuccess: () => {
+        onOpenChange(false);
+      }
+    });
+  };
 
   if (!request) return null;
 
@@ -221,6 +372,43 @@ export function RequestShowModal({
           </div>
           
           <DrawerFooter>
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              <Button
+                variant="outline"
+                onClick={handleScheduleAssessment}
+                className="gap-2"
+                disabled={request.status === 'Archived'}
+              >
+                <Calendar className="h-4 w-4" />
+                {t('requests.actions.scheduleAssessment')}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleConvertToQuote}
+                className="gap-2"
+              >
+                <FileText className="h-4 w-4" />
+                {t('requests.actions.convertToQuote')}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleConvertToJob}
+                className="gap-2"
+              >
+                <Wrench className="h-4 w-4" />
+                {t('requests.actions.convertToJob')}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleArchive}
+                className="gap-2"
+                disabled={request.status === 'Archived'}
+              >
+                <Archive className="h-4 w-4" />
+                {t('requests.actions.archive')}
+              </Button>
+            </div>
+            
             <Button
               onClick={() => setShowEditModal(true)}
               className="w-full"
@@ -231,8 +419,16 @@ export function RequestShowModal({
         </DrawerContent>
       </Drawer>
 
-      {/* Edit Modal - Note: This would need to be a separate edit modal component */}
-      {/* For now, we'll use the RequestBottomModal in a future iteration */}
+      <RequestEditModal
+        open={showEditModal}
+        onOpenChange={setShowEditModal}
+        request={request}
+        onRequestUpdated={() => {
+          if (onRequestUpdated) {
+            onRequestUpdated();
+          }
+        }}
+      />
     </>
   );
 }

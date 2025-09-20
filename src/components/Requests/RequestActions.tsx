@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, FileText, Wrench, Calendar, Archive } from 'lucide-react';
+import { MoreHorizontal, FileText, Wrench, Calendar, Archive, Edit } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
@@ -10,6 +10,8 @@ import { useLifecycleEmailIntegration } from '@/hooks/useLifecycleEmailIntegrati
 import { useRequestOperations } from '@/hooks/useRequestOperations';
 import type { RequestListItem } from '@/hooks/useRequestsData';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { RequestEditModal } from './RequestEditModal';
+import { useState } from 'react';
 
 interface RequestActionsProps {
   request: RequestListItem;
@@ -18,6 +20,7 @@ interface RequestActionsProps {
 export function RequestActions({ request }: RequestActionsProps) {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const [showEditModal, setShowEditModal] = useState(false);
   const { getToken } = useClerkAuth();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const { triggerJobScheduled } = useLifecycleEmailIntegration();
@@ -176,7 +179,12 @@ export function RequestActions({ request }: RequestActionsProps) {
             <MoreHorizontal className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent align="end" className="bg-background/95 backdrop-blur-sm border z-50">
+          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setShowEditModal(true); }} className="gap-2">
+            <Edit className="h-4 w-4" />
+            {t('requests.actions.edit')}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleScheduleAssessment(); }} className="gap-2">
             <Calendar className="h-4 w-4" />
             {t('requests.actions.scheduleAssessment')}
@@ -197,6 +205,15 @@ export function RequestActions({ request }: RequestActionsProps) {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <RequestEditModal
+        open={showEditModal}
+        onOpenChange={setShowEditModal}
+        request={request}
+        onRequestUpdated={() => {
+          // Refresh will be handled by the query invalidation in the modal
+        }}
+      />
     </>
   );
 }

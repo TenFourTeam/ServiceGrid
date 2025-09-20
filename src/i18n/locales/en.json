@@ -164,6 +164,7 @@
     "loading": "Loading requests...",
     "error": "Error loading requests",
     "actions": {
+      "edit": "Edit Request",
       "scheduleAssessment": "Schedule Assessment", 
       "convertToQuote": "Convert to Quote",
       "convertToJob": "Convert to Job",

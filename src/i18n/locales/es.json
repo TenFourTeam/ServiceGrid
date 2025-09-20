@@ -164,6 +164,7 @@
     "loading": "Cargando solicitudes...",
     "error": "Error al cargar solicitudes",
     "actions": {
+      "edit": "Editar Solicitud",
       "scheduleAssessment": "Programar Evaluación",
       "convertToQuote": "Convertir a Cotización",
       "convertToJob": "Convertir a Trabajo",
