@@ -318,21 +318,21 @@ export function CustomerBottomModal({
         
         <DrawerFooter>
           {mode === 'view' ? (
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={handleEdit}
-                className="flex-1"
-              >
-                Edit Customer
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleDelete}
-                className="flex-1"
-              >
-                Delete Customer
-              </Button>
+            <div className="flex justify-end">
+              <div className="flex gap-2">
+                <Button
+                  variant="default"
+                  onClick={handleEdit}
+                >
+                  Edit Customer
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleDelete}
+                >
+                  Delete Customer
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="flex gap-2">
