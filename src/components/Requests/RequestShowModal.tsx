@@ -397,7 +397,7 @@ export function RequestShowModal({
                 {t('requests.actions.convertToJob')}
               </Button>
               <Button
-                variant="destructive"
+                variant="outline"
                 onClick={handleArchive}
                 disabled={request.status === 'Archived'}
               >
