@@ -25,21 +25,54 @@ const handler = async (req: Request): Promise<Response> => {
     
     if (type === 'single' && jobId) {
       // Get single job - only if not already confirmed
+      console.log(`[send-work-order-confirmations] Fetching single job ${jobId} without joins first`);
+      
+      // First get just the job data
       const { data: job, error: jobError } = await supaAdmin
         .from('jobs')
-        .select(`
-          *,
-          customers!inner(*),
-          businesses!inner(*)
-        `)
+        .select('*')
         .eq('id', jobId)
         .eq('business_id', businessId)
         .eq('status', 'Scheduled')
         .is('confirmation_token', null)
         .single();
       
-      if (jobError) throw jobError;
-      if (job) jobsToProcess = [job];
+      if (jobError) {
+        console.error(`[send-work-order-confirmations] Error fetching single job:`, jobError);
+        throw jobError;
+      }
+      
+      if (job) {
+        // Now get customer data separately
+        const { data: customer, error: customerError } = await supaAdmin
+          .from('customers')
+          .select('*')
+          .eq('id', job.customer_id)
+          .single();
+        
+        if (customerError) {
+          console.error(`[send-work-order-confirmations] Error fetching customer:`, customerError);
+          throw customerError;
+        }
+        
+        // Now get business data separately
+        const { data: business, error: businessError } = await supaAdmin
+          .from('businesses')
+          .select('*')
+          .eq('id', job.business_id)
+          .single();
+        
+        if (businessError) {
+          console.error(`[send-work-order-confirmations] Error fetching business:`, businessError);
+          throw businessError;
+        }
+        
+        jobsToProcess = [{
+          ...job,
+          customers: customer,
+          businesses: business
+        }];
+      }
       
     } else if (type === 'bulk') {
       // Get all scheduled jobs for tomorrow that haven't been confirmed yet
@@ -48,21 +81,65 @@ const handler = async (req: Request): Promise<Response> => {
       const tomorrowStart = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate());
       const tomorrowEnd = new Date(tomorrowStart.getTime() + 24 * 60 * 60 * 1000);
       
+      console.log(`[send-work-order-confirmations] Fetching bulk jobs for ${tomorrowStart.toISOString()} to ${tomorrowEnd.toISOString()} without joins first`);
+      
+      // First get just the jobs data
       const { data: jobs, error: jobsError } = await supaAdmin
         .from('jobs')
-        .select(`
-          *,
-          customers!inner(*),
-          businesses!inner(*)
-        `)
+        .select('*')
         .eq('business_id', businessId)
         .eq('status', 'Scheduled')
         .gte('starts_at', tomorrowStart.toISOString())
         .lt('starts_at', tomorrowEnd.toISOString())
         .is('confirmation_token', null);
       
-      if (jobsError) throw jobsError;
-      jobsToProcess = jobs || [];
+      if (jobsError) {
+        console.error(`[send-work-order-confirmations] Error fetching bulk jobs:`, jobsError);
+        throw jobsError;
+      }
+      
+      if (jobs && jobs.length > 0) {
+        // Get all unique customer IDs and business ID
+        const customerIds = [...new Set(jobs.map(job => job.customer_id))];
+        
+        // Fetch all customers in batch
+        const { data: customers, error: customersError } = await supaAdmin
+          .from('customers')
+          .select('*')
+          .in('id', customerIds);
+        
+        if (customersError) {
+          console.error(`[send-work-order-confirmations] Error fetching customers:`, customersError);
+          throw customersError;
+        }
+        
+        // Fetch business data
+        const { data: business, error: businessError } = await supaAdmin
+          .from('businesses')
+          .select('*')
+          .eq('id', businessId)
+          .single();
+        
+        if (businessError) {
+          console.error(`[send-work-order-confirmations] Error fetching business:`, businessError);
+          throw businessError;
+        }
+        
+        // Create customer lookup map
+        const customerMap = (customers || []).reduce((acc, customer) => {
+          acc[customer.id] = customer;
+          return acc;
+        }, {});
+        
+        // Combine job data with customer and business data
+        jobsToProcess = jobs.map(job => ({
+          ...job,
+          customers: customerMap[job.customer_id],
+          businesses: business
+        }));
+      } else {
+        jobsToProcess = [];
+      }
     }
 
     console.log(`[send-work-order-confirmations] Found ${jobsToProcess.length} jobs to process`);
@@ -74,6 +151,7 @@ const handler = async (req: Request): Promise<Response> => {
         const confirmationToken = crypto.randomUUID();
         
         // Store confirmation token in job record
+        console.log(`[send-work-order-confirmations] Updating job ${job.id} with confirmation token`);
         const { error: updateError } = await supaAdmin
           .from('jobs')
           .update({ confirmation_token: confirmationToken })
