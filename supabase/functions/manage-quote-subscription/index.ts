@@ -50,6 +50,25 @@ serve(async (req) => {
       return json({ error: "Quote is not a subscription" }, { status: 400 });
     }
 
+    // Check if customer already has an active subscription for this business
+    const { data: activeSubscription, error: activeSubError } = await supabase.rpc(
+      'has_active_subscription',
+      {
+        p_customer_id: quote.customers.id,
+        p_business_id: quote.businesses.id
+      }
+    );
+
+    if (activeSubError) {
+      console.error("[manage-quote-subscription] Active subscription check error:", activeSubError);
+      return json({ error: "Failed to check existing subscriptions" }, { status: 500 });
+    }
+
+    if (activeSubscription) {
+      console.log("[manage-quote-subscription] Customer already has active subscription");
+      return json({ error: "Customer already has an active subscription for this business" }, { status: 400 });
+    }
+
     console.log("[manage-quote-subscription] Quote found:", {
       id: quote.id,
       isSubscription: quote.is_subscription,

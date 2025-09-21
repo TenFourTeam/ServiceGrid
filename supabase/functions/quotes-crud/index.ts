@@ -20,6 +20,58 @@ Deno.serve(async (req) => {
     if (req.method === 'GET') {
       const url = new URL(req.url);
       const quoteId = url.searchParams.get('id');
+      const action = url.searchParams.get('action');
+      
+      // Handle subscription status check
+      if (action === 'subscription-status') {
+        const body = await req.json().catch(() => ({}));
+        const customerId = body.customerId;
+        
+        if (!customerId) {
+          return json({ error: 'Customer ID is required' }, { status: 400 });
+        }
+
+        // Get active subscription info
+        const { data: subscriptionInfo, error: subError } = await supabase.rpc(
+          'get_active_subscription_info',
+          {
+            p_customer_id: customerId,
+            p_business_id: ctx.businessId
+          }
+        );
+
+        if (subError) {
+          console.error('[quotes-crud] Subscription info error:', subError);
+          // Don't fail, just return no active subscription
+        }
+
+        // Get superseded quotes
+        const { data: supersededQuotes, error: supersededError } = await supabase
+          .from('quotes')
+          .select('id, number, superseded_at, superseded_by_quote_id')
+          .eq('customer_id', customerId)
+          .eq('business_id', ctx.businessId)
+          .eq('is_active', false)
+          .not('superseded_at', 'is', null)
+          .order('superseded_at', { ascending: false });
+
+        if (supersededError) {
+          console.error('[quotes-crud] Superseded quotes error:', supersededError);
+        }
+
+        const result = {
+          hasActiveSubscription: !!subscriptionInfo && subscriptionInfo.length > 0,
+          activeSubscriptionInfo: subscriptionInfo?.[0] ? {
+            quoteId: subscriptionInfo[0].quote_id,
+            subscriptionId: subscriptionInfo[0].subscription_id,
+            frequency: subscriptionInfo[0].frequency,
+            nextBillingDate: subscriptionInfo[0].next_billing_date
+          } : undefined,
+          supersededQuotes: supersededQuotes || []
+        };
+
+        return json(result);
+      }
 
       if (quoteId) {
         // Fetch individual quote by ID
@@ -141,6 +193,9 @@ Deno.serve(async (req) => {
       
       const { customerId, status, total, subtotal, taxRate, discount, terms, address, lineItems, paymentTerms, frequency, depositRequired, depositPercent, notesInternal, isSubscription } = body;
 
+      // Check if sending a quote (not just creating draft)
+      const isSending = status === 'Sent';
+
       // Get next quote number - direct database operation like customers-crud
       const { data: businessData, error: businessError } = await supabase
         .from('businesses')
@@ -197,10 +252,33 @@ Deno.serve(async (req) => {
           deposit_required: depositRequired,
           deposit_percent: depositPercent,
           notes_internal: notesInternal,
-          is_subscription: isSubscription || false
+          is_subscription: isSubscription || false,
+          // Generate new token when sending
+          public_token: isSending ? crypto.randomUUID() : undefined
         }])
         .select()
         .single();
+
+      if (error) {
+        console.error('[quotes-crud] POST error:', error);
+        throw new Error(`Failed to create quote: ${error.message}`);
+      }
+
+      // If sending this quote, supersede previous ones
+      if (isSending && customerId) {
+        console.log('[quotes-crud] Superseding previous quotes for customer:', customerId);
+        const { error: supersedeError } = await supabase.rpc('supersede_previous_quotes', {
+          p_customer_id: customerId,
+          p_business_id: ctx.businessId,
+          p_new_quote_id: data.id,
+          p_is_subscription: isSubscription || false
+        });
+
+        if (supersedeError) {
+          console.error('[quotes-crud] Error superseding quotes:', supersedeError);
+          // Don't fail the request, just log the error
+        }
+      }
 
       if (error) {
         console.error('[quotes-crud] POST error:', error);
@@ -255,6 +333,9 @@ Deno.serve(async (req) => {
       
       const { id, status, total, subtotal, taxRate, discount, terms, address, viewCount, lineItems, paymentTerms, frequency, depositRequired, depositPercent, notesInternal } = body;
 
+      // Check if this update is sending the quote
+      const isSending = status === 'Sent';
+      
       const updateData: any = {};
       if (status !== undefined) updateData.status = status;
       if (total !== undefined) updateData.total = total;
@@ -270,6 +351,11 @@ Deno.serve(async (req) => {
       if (depositRequired !== undefined) updateData.deposit_required = depositRequired;
       if (depositPercent !== undefined) updateData.deposit_percent = depositPercent;
       if (notesInternal !== undefined) updateData.notes_internal = notesInternal;
+      
+      // Generate new token if sending
+      if (isSending) {
+        updateData.public_token = crypto.randomUUID();
+      }
 
       const { data, error } = await supabase
         .from('quotes')
@@ -278,6 +364,27 @@ Deno.serve(async (req) => {
         .eq('business_id', ctx.businessId)
         .select()
         .single();
+
+      if (error) {
+        console.error('[quotes-crud] PUT error:', error);
+        throw new Error(`Failed to update quote: ${error.message}`);
+      }
+
+      // If sending this quote, supersede previous ones
+      if (isSending && data.customer_id) {
+        console.log('[quotes-crud] Superseding previous quotes for customer:', data.customer_id);
+        const { error: supersedeError } = await supabase.rpc('supersede_previous_quotes', {
+          p_customer_id: data.customer_id,
+          p_business_id: data.business_id,
+          p_new_quote_id: data.id,
+          p_is_subscription: data.is_subscription || false
+        });
+
+        if (supersedeError) {
+          console.error('[quotes-crud] Error superseding quotes:', supersedeError);
+          // Don't fail the request, just log the error
+        }
+      }
 
       if (error) {
         console.error('[quotes-crud] PUT error:', error);

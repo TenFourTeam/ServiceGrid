@@ -86,6 +86,11 @@ export interface Quote {
   isSubscription?: boolean;
   stripeSubscriptionId?: string;
 
+  // Quote management fields
+  isActive?: boolean;
+  supersededByQuoteId?: string;
+  supersededAt?: ISODate;
+
   subtotal: Money;
   total: Money;
   status: QuoteStatus;

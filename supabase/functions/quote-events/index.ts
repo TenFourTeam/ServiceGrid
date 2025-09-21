@@ -93,7 +93,7 @@ serve(async (req) => {
       // Validate quote and token
       const { data: q, error: qErr } = await supabase
         .from("quotes")
-        .select("id,status,public_token,number,customer_id,businesses(name,logo_url),customers(email,name)")
+        .select("id,status,public_token,number,customer_id,is_active,is_subscription,businesses(name,logo_url),customers(email,name)")
         .eq("id", quote_id)
         .single();
 
@@ -107,8 +107,55 @@ serve(async (req) => {
 <html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Invalid Link</title><style>body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;padding:24px;background:#f6f9fc;color:#0f172a}</style></head><body><div style="max-width:720px;margin:0 auto"><div style="background:#0f172a;color:#fff;border-radius:12px 12px 0 0;padding:20px 24px"><strong>Quote Action</strong></div><div style="background:#fff;border:1px solid #e5e7eb;border-top:0;border-radius:0 0 12px 12px;padding:24px"><div style="font-size:18px;font-weight:700;margin:0 0 8px">Invalid or expired link</div><p style="color:#475569;margin:0">Please contact the sender for a new email.</p></div><div style="color:#64748b;font-size:12px;text-align:center;margin-top:16px">Powered by Supabase Edge Functions</div></div></body></html>`, 400);
       }
 
+      // Check if quote is still active
+      if (!(q as any).is_active) {
+        console.log("Quote has been superseded");
+        const supersededHTML = `
+          <!DOCTYPE html>
+          <html>
+            <head><title>Quote Superseded</title></head>
+            <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+              <h1>Quote No Longer Available</h1>
+              <p>This quote has been superseded by a newer version. Please contact the business for the latest quote.</p>
+            </body>
+          </html>
+        `;
+        return html(supersededHTML);
+      }
+
       const already = ["Approved", "Edits Requested", "Declined"].includes((q as any).status);
       if (!already) {
+        // Check for existing active subscription before approving
+        if (type === "approve" && (q as any).is_subscription) {
+          const { data: hasActiveSub, error: activeSubError } = await supabase.rpc(
+            'has_active_subscription',
+            {
+              p_customer_id: (q as any).customer_id,
+              p_business_id: (q as any).business_id
+            }
+          );
+
+          if (activeSubError) {
+            console.error("Error checking active subscription:", activeSubError);
+            return html(`<h1>Error</h1><p>Failed to process subscription.</p>`);
+          }
+
+          if (hasActiveSub) {
+            console.log("Customer already has active subscription");
+            const existingSubHTML = `
+              <!DOCTYPE html>
+              <html>
+                <head><title>Subscription Already Active</title></head>
+                <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+                  <h1>Subscription Already Active</h1>
+                  <p>You already have an active subscription for this service. Please contact the business to modify your existing subscription.</p>
+                </body>
+              </html>
+            `;
+            return html(existingSubHTML);
+          }
+        }
+
         const newStatus = type === "approve" ? "Approved" : "Edits Requested";
         const { error: upErr } = await supabase
           .from("quotes")
