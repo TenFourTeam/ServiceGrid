@@ -291,7 +291,7 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
                     </SelectContent>
                   </Select>
                 ) : (
-                  <div className="px-3 py-2 bg-muted text-muted-foreground rounded-md">
+                  <div className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm">
                     One-off
                   </div>
                 )}
