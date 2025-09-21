@@ -7,6 +7,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useCustomersData } from "@/queries/unified";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import type { Quote } from "@/types";
 import { generateQuoteEmail, generateQuoteSubject } from "@/utils/quoteEmailTemplates";
 import { combineMessageWithEmail } from "@/utils/emailTemplateEngine";
 import { useQueryClient } from "@tanstack/react-query";
@@ -14,8 +15,6 @@ import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { toast } from "sonner";
 import { invalidationHelpers } from '@/queries/keys';
-import { QuoteSupersededAlert } from "./QuoteSupersededAlert";
-import type { Quote } from "@/types";
 
 export interface SendQuoteModalProps {
   open: boolean;
@@ -116,14 +115,6 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
         <DrawerHeader>
           <DrawerTitle>{t('quotes.modal.sendQuote')}</DrawerTitle>
         </DrawerHeader>
-
-        <div className="px-4 space-y-4">
-          <QuoteSupersededAlert 
-            customerId={quote?.customerId} 
-            quoteId={quote?.id}
-            isSubscription={quote?.isSubscription}
-          />
-        </div>
         <div className="px-4 pb-4 space-y-6 overflow-y-auto flex-1">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-1.5">

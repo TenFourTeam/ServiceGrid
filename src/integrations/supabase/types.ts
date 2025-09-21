@@ -841,7 +841,6 @@ export type Database = {
           files: Json
           frequency: Database["public"]["Enums"]["quote_frequency"] | null
           id: string
-          is_active: boolean
           is_subscription: boolean
           notes_internal: string | null
           number: string
@@ -852,8 +851,6 @@ export type Database = {
           status: Database["public"]["Enums"]["quote_status"]
           stripe_subscription_id: string | null
           subtotal: number
-          superseded_at: string | null
-          superseded_by_quote_id: string | null
           tax_rate: number
           terms: string | null
           total: number
@@ -873,7 +870,6 @@ export type Database = {
           files?: Json
           frequency?: Database["public"]["Enums"]["quote_frequency"] | null
           id?: string
-          is_active?: boolean
           is_subscription?: boolean
           notes_internal?: string | null
           number: string
@@ -884,8 +880,6 @@ export type Database = {
           status?: Database["public"]["Enums"]["quote_status"]
           stripe_subscription_id?: string | null
           subtotal?: number
-          superseded_at?: string | null
-          superseded_by_quote_id?: string | null
           tax_rate?: number
           terms?: string | null
           total?: number
@@ -905,7 +899,6 @@ export type Database = {
           files?: Json
           frequency?: Database["public"]["Enums"]["quote_frequency"] | null
           id?: string
-          is_active?: boolean
           is_subscription?: boolean
           notes_internal?: string | null
           number?: string
@@ -916,8 +909,6 @@ export type Database = {
           status?: Database["public"]["Enums"]["quote_status"]
           stripe_subscription_id?: string | null
           subtotal?: number
-          superseded_at?: string | null
-          superseded_by_quote_id?: string | null
           tax_rate?: number
           terms?: string | null
           total?: number
@@ -1151,19 +1142,6 @@ export type Database = {
         Args: { input_text: string }
         Returns: string
       }
-      get_active_subscription_info: {
-        Args: { p_business_id: string; p_customer_id: string }
-        Returns: {
-          frequency: Database["public"]["Enums"]["quote_frequency"]
-          next_billing_date: string
-          quote_id: string
-          subscription_id: string
-        }[]
-      }
-      has_active_subscription: {
-        Args: { p_business_id: string; p_customer_id: string }
-        Returns: boolean
-      }
       is_business_member: {
         Args: { p_business_id: string }
         Returns: boolean
@@ -1199,15 +1177,6 @@ export type Database = {
           | { p_business_id: string }
           | { p_business_id: string; p_user_id: string }
         Returns: string
-      }
-      supersede_previous_quotes: {
-        Args: {
-          p_business_id: string
-          p_customer_id: string
-          p_is_subscription?: boolean
-          p_new_quote_id: string
-        }
-        Returns: undefined
       }
       user_business_role: {
         Args: { p_business_id: string }
