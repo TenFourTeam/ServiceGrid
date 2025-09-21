@@ -189,31 +189,38 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
   async function handleCompleteJob() {
     setIsCompletingJob(true);
     
-    const currentTime = new Date().toISOString();
-    
-    // Optimistic update - immediately update job status in cache
-    const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
-    const previousData = queryClient.getQueryData(queryKey);
-    
-    queryClient.setQueryData(queryKey, (old: any) => {
-      if (!old) return old;
-      return {
-        ...old,
-        jobs: old.jobs.map((j: Job) => 
-          j.id === job.id 
-            ? { ...j, status: 'Completed', endsAt: currentTime }
-            : j
-        )
-      };
-    });
-    
     try {
+      // If job is clocked in, clock out first
+      if (job.isClockedIn) {
+        await clockInOut({ jobId: job.id, isClockingIn: false });
+        // Wait a moment for the clock out to complete
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      
+      const currentTime = new Date().toISOString();
+      
+      // Optimistic update - immediately update job status in cache
+      const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
+      const previousData = queryClient.getQueryData(queryKey);
+      
+      queryClient.setQueryData(queryKey, (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          jobs: old.jobs.map((j: Job) => 
+            j.id === job.id 
+              ? { ...j, status: 'Completed', endsAt: currentTime }
+              : j
+          )
+        };
+      });
+      
       const { error } = await authApi.invoke(`jobs?id=${job.id}`, {
         method: 'PATCH',
         body: { status: 'Completed' },
         toast: {
           success: t('workOrders.modal.complete'),
-          loading: t('workOrders.modal.completing'),
+          loading: job.isClockedIn ? 'Completing & clocking out...' : t('workOrders.modal.completing'),
           error: t('workOrders.modal.complete')
         }
       });
@@ -228,6 +235,8 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
     } catch (e: any) {
       console.error('Failed to complete job:', e);
       // Rollback optimistic update on error
+      const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
+      const previousData = queryClient.getQueryData(queryKey);
       if (previousData) {
         queryClient.setQueryData(queryKey, previousData);
       }
@@ -582,29 +591,15 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
           {isMobile ? (
             <div className="flex flex-col gap-2">
               {/* Time tracking actions first */}
-              {job.jobType === 'time_and_materials' && (
-                <>
-                  {!job.isClockedIn && (
-                    <Button
-                      variant="outline"
-                      onClick={() => clockInOut({ jobId: job.id, isClockingIn: true })}
-                      disabled={isClockingInOut}
-                      className="w-full"
-                    >
-                      {isClockingInOut ? t('workOrders.modal.starting') : t('workOrders.modal.startJob')}
-                    </Button>
-                  )}
-                  {job.isClockedIn && (
-                    <Button
-                      variant="outline"
-                      onClick={() => clockInOut({ jobId: job.id, isClockingIn: false })}
-                      disabled={isClockingInOut}
-                      className="w-full"
-                    >
-                      {isClockingInOut ? t('workOrders.modal.stopping') : t('workOrders.modal.stopJob')}
-                    </Button>
-                  )}
-                </>
+              {job.jobType === 'time_and_materials' && !job.isClockedIn && (
+                <Button
+                  variant="outline"
+                  onClick={() => clockInOut({ jobId: job.id, isClockingIn: true })}
+                  disabled={isClockingInOut}
+                  className="w-full"
+                >
+                  {isClockingInOut ? t('workOrders.modal.starting') : t('workOrders.modal.startJob')}
+                </Button>
               )}
               
               {/* Secondary actions */}
@@ -637,10 +632,12 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                   <Button 
                     variant="outline" 
                     onClick={handleCompleteJob}
-                    disabled={job.status === 'Completed' || isCompletingJob}
+                    disabled={job.status === 'Completed' || isCompletingJob || isClockingInOut}
                     className="w-full"
                   >
-                    {isCompletingJob ? t('workOrders.modal.completing') : job.status === 'Completed' ? t('workOrders.modal.completed') : t('workOrders.modal.complete')}
+                    {isCompletingJob ? (job.isClockedIn ? 'Completing & Clocking Out...' : t('workOrders.modal.completing')) : 
+                     job.status === 'Completed' ? t('workOrders.modal.completed') : 
+                     (job.isClockedIn ? 'Complete & Clock Out' : t('workOrders.modal.complete'))}
                   </Button>
                   
                   {/* Edit action before destructive action */}
@@ -709,29 +706,15 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                   >
                     {t('workOrders.modal.navigate')}
                   </Button>
-                  {job.jobType === 'time_and_materials' && (
-                    <>
-                      {!job.isClockedIn && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => clockInOut({ jobId: job.id, isClockingIn: true })}
-                          disabled={isClockingInOut}
-                        >
-                          {isClockingInOut ? t('workOrders.modal.starting') : t('workOrders.modal.startJob')}
-                        </Button>
-                      )}
-                      {job.isClockedIn && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => clockInOut({ jobId: job.id, isClockingIn: false })}
-                          disabled={isClockingInOut}
-                        >
-                          {isClockingInOut ? t('workOrders.modal.stopping') : t('workOrders.modal.stopJob')}
-                        </Button>
-                      )}
-                    </>
+                  {job.jobType === 'time_and_materials' && !job.isClockedIn && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => clockInOut({ jobId: job.id, isClockingIn: true })}
+                      disabled={isClockingInOut}
+                    >
+                      {isClockingInOut ? t('workOrders.modal.starting') : t('workOrders.modal.startJob')}
+                    </Button>
                   )}
                   {role === 'owner' && (
                     <>
@@ -746,10 +729,12 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                       <Button 
                         variant="outline" 
                         onClick={handleCompleteJob}
-                        disabled={job.status === 'Completed' || isCompletingJob}
+                        disabled={job.status === 'Completed' || isCompletingJob || isClockingInOut}
                         size="sm"
                       >
-                        {isCompletingJob ? t('workOrders.modal.completing') : job.status === 'Completed' ? t('workOrders.modal.completed') : t('workOrders.modal.complete')}
+                        {isCompletingJob ? (job.isClockedIn ? 'Completing & Clocking Out...' : t('workOrders.modal.completing')) : 
+                         job.status === 'Completed' ? t('workOrders.modal.completed') : 
+                         (job.isClockedIn ? 'Complete & Clock Out' : t('workOrders.modal.complete'))}
                       </Button>
                     </>
                   )}
