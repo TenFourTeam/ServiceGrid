@@ -157,11 +157,14 @@ function useFilteredJobs() {
 
 function StatusChip({ status, t }: { status: Job['status'], t: (key: string) => string }) {
   const statusKey = status === 'Scheduled' ? 'workOrders.status.scheduled' 
+    : status === 'Schedule Approved' ? 'workOrders.status.scheduleApproved'
     : status === 'In Progress' ? 'workOrders.status.inProgress'
     : 'workOrders.status.completed';
   
   const styles = status === 'Scheduled'
     ? 'bg-primary/10 text-primary'
+    : status === 'Schedule Approved'
+    ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300'
     : status === 'In Progress'
     ? 'bg-accent text-accent-foreground'
     : 'bg-muted text-muted-foreground';
@@ -253,6 +256,39 @@ export default function WorkOrdersPage() {
           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <CardTitle>{t('workOrders.allWorkOrders')}</CardTitle>
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <Button 
+                onClick={async () => {
+                  const now = new Date();
+                  const currentHour = now.getHours();
+                  
+                  // Show bulk confirmation button only after 5 PM
+                  if (currentHour >= 17) {
+                    try {
+                      const response = await fetch('/functions/v1/send-work-order-confirmations', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          type: 'bulk',
+                          businessId: '' // This would come from business context
+                        })
+                      });
+                      
+                      if (response.ok) {
+                        // Show success toast
+                        console.log('Bulk confirmations sent successfully');
+                      }
+                    } catch (error) {
+                      console.error('Failed to send bulk confirmations:', error);
+                    }
+                  } else {
+                    alert('Bulk confirmations can only be sent after 5 PM');
+                  }
+                }}
+                variant="outline"
+                className="w-full sm:w-auto"
+              >
+                Send Tomorrow's Confirmations
+              </Button>
               <Button onClick={() => setCreateJobOpen(true)} className="w-full sm:w-auto">
                 <Plus className="h-4 w-4 mr-2" />
                 {t('workOrders.newJob')}

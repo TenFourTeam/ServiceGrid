@@ -32,6 +32,7 @@ const PaymentSuccessPage = lazy(() => import("./pages/PaymentSuccess"));
 const PaymentCanceledPage = lazy(() => import("./pages/PaymentCanceled"));
 const InvoicePayPage = lazy(() => import("./pages/InvoicePay"));
 const InvitePage = lazy(() => import("./pages/Invite"));
+const JobConfirmationPage = lazy(() => import("./pages/JobConfirmation"));
 const PublicRequestFormPage = lazy(() => import("./pages/PublicRequestForm"));
 
 function PrefetchRoutes() {
@@ -144,6 +145,7 @@ function App({ clerkKey }: AppProps) {
                 <Route path="/payment-canceled" element={<PaymentCanceledPage />} />
                 <Route path="/invoice-pay" element={<InvoicePayPage />} />
                 <Route path="/invite" element={<InvitePage />} />
+                <Route path="/job-confirmation" element={<JobConfirmationPage />} />
                 <Route path="/request/:businessId" element={<PublicRequestFormPage />} />
                 
                 <Route path="*" element={<NotFound />} />

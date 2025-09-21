@@ -336,6 +336,7 @@
     },
     "status": {
       "scheduled": "Scheduled",
+      "scheduleApproved": "Schedule Approved",
       "inProgress": "In Progress",
       "completed": "Completed"
     },

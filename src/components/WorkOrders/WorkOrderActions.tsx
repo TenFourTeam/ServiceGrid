@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Calendar, Navigation, FileText, CheckCircle, Trash2, Eye, Edit } from 'lucide-react';
+import { MoreHorizontal, Calendar, Navigation, FileText, CheckCircle, Trash2, Eye, Edit, Mail } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
@@ -39,6 +39,7 @@ export function WorkOrderActions({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCompletingJob, setIsCompletingJob] = useState(false);
   const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
+  const [isSendingConfirmation, setIsSendingConfirmation] = useState(false);
 
   const isOwner = userRole === 'owner';
   const canEdit = isOwner;
@@ -46,6 +47,7 @@ export function WorkOrderActions({
   const canComplete = isOwner && job.status !== 'Completed';
   const canCreateInvoice = isOwner && !existingInvoice && job.status === 'Completed';
   const canViewInvoice = existingInvoice;
+  const canSendConfirmation = isOwner && job.status === 'Scheduled';
 
   const handleNavigate = () => {
     const address = job.address;
@@ -159,6 +161,35 @@ export function WorkOrderActions({
     }
   };
 
+  const handleSendConfirmation = async () => {
+    setIsSendingConfirmation(true);
+    try {
+      const response = await fetch('/functions/v1/send-work-order-confirmations', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await getToken({ template: 'supabase' })}`
+        },
+        body: JSON.stringify({
+          type: 'single',
+          jobId: job.id,
+          businessId
+        })
+      });
+      
+      if (response.ok) {
+        toast.success('Confirmation email sent successfully');
+      } else {
+        throw new Error('Failed to send confirmation');
+      }
+    } catch (error) {
+      console.error('Error sending confirmation:', error);
+      toast.error('Failed to send confirmation email');
+    } finally {
+      setIsSendingConfirmation(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!window.confirm(t('workOrders.modal.confirmDelete'))) {
       return;
@@ -215,6 +246,18 @@ export function WorkOrderActions({
           <DropdownMenuItem onClick={() => onOpenJobEditModal(job)} className="gap-2">
             <Edit className="h-4 w-4" />
             {t('workOrders.actions.editJob')}
+          </DropdownMenuItem>
+        )}
+
+        {/* Send Confirmation - Only show if job is Scheduled */}
+        {canSendConfirmation && (
+          <DropdownMenuItem 
+            onClick={handleSendConfirmation} 
+            disabled={isSendingConfirmation}
+            className="gap-2"
+          >
+            <Mail className="h-4 w-4" />
+            {isSendingConfirmation ? 'Sending...' : 'Send Confirmation'}
           </DropdownMenuItem>
         )}
         
