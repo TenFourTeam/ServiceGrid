@@ -17,6 +17,12 @@ export function getJobStatusColors(status: JobStatus, isAssessment?: boolean) {
         text: 'text-status-scheduled-foreground',
         border: 'border-status-scheduled/20'
       };
+    case 'Schedule Approved':
+      return {
+        bg: 'bg-status-approved',
+        text: 'text-status-approved-foreground',
+        border: 'border-status-approved/20'
+      };
     case 'In Progress':
       return {
         bg: 'bg-status-in-progress',
@@ -126,7 +132,7 @@ export function checkJobTimeConflict(
  * Determines if a job should automatically transition to "In Progress" status
  */
 export function shouldJobBeInProgress(job: { status: string; startsAt: string | null; endsAt: string | null }, currentTime: Date): boolean {
-  if (job.status !== 'Scheduled' || !job.startsAt || !job.endsAt) {
+  if ((job.status !== 'Scheduled' && job.status !== 'Schedule Approved') || !job.startsAt || !job.endsAt) {
     return false;
   }
   

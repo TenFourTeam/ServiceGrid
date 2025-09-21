@@ -44,6 +44,9 @@ verify_jwt = false
 [functions.quote-events]
 verify_jwt = false
 
+[functions.job-confirm]
+verify_jwt = false
+
 # Batch operations
 [functions.jobs-status-batch]
 verify_jwt = false

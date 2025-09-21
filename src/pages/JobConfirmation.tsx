@@ -22,12 +22,12 @@ export default function JobConfirmation() {
       }
 
       try {
-        // Fetch job details from the API
-        const response = await fetch(`/api/jobs/confirm/${token}`);
+        // Fetch job details from the Supabase edge function
+        const response = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/job-confirm?token=${token}`);
         const data = await response.json();
 
         if (!response.ok || !data.job) {
-          setError('Job not found or confirmation link expired');
+          setError(data.error || 'Job not found or confirmation link expired');
         } else {
           setJob(data.job);
           if (data.job.status === 'Schedule Approved') {
@@ -50,12 +50,18 @@ export default function JobConfirmation() {
     
     setLoading(true);
     try {
-      const response = await fetch(`/api/jobs/confirm/${token}`, {
-        method: 'POST'
+      const response = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/job-confirm`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token })
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        setError('Failed to confirm appointment');
+        setError(data.error || 'Failed to confirm appointment');
       } else {
         setConfirmed(true);
       }
