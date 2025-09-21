@@ -73,8 +73,8 @@ export function useClockInOut() {
     onSuccess: (data, variables) => {
       const { isClockingIn } = variables;
       
-      // Invalidate jobs queries to refresh the data
-      queryClient.invalidateQueries({ queryKey: queryKeys.data.jobs(businessId || '') });
+      // Don't invalidate immediately - let optimistic update persist
+      // The data should already be up to date from the optimistic update
       
       toast.success(isClockingIn ? "Job Started - Time tracking started" : "Job Stopped - Time tracking stopped");
     },
