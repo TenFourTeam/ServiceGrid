@@ -154,28 +154,27 @@ export function WorkOrderActions({
 
   const handleSendConfirmation = async () => {
     setIsSendingConfirmation(true);
+    
     try {
-      const response = await fetch('/functions/v1/send-work-order-confirmations', {
+      const { data, error } = await authApi.invoke('send-work-order-confirmations', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await getToken({ template: 'supabase' })}`
-        },
-        body: JSON.stringify({
+        body: {
           type: 'single',
           jobId: job.id,
           businessId
-        })
+        },
+        toast: {
+          success: 'Confirmation email sent successfully',
+          loading: 'Sending confirmation...',
+          error: 'Failed to send confirmation email'
+        }
       });
-      
-      if (response.ok) {
-        toast.success('Confirmation email sent successfully');
-      } else {
-        throw new Error('Failed to send confirmation');
+
+      if (error) {
+        throw new Error(error.message || 'Failed to send confirmation');
       }
     } catch (error) {
       console.error('Error sending confirmation:', error);
-      toast.error('Failed to send confirmation email');
     } finally {
       setIsSendingConfirmation(false);
     }
