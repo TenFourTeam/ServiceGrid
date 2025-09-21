@@ -1,23 +1,12 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.54.0';
 import { Resend } from "npm:resend@2.0.0";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-);
+import { requireCtx, corsHeaders } from "../_lib/auth.ts";
 
 const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
 interface WorkOrderConfirmationRequest {
   type: 'single' | 'bulk';
   jobId?: string; // For single job confirmation
-  businessId: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -26,15 +15,17 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { type, jobId, businessId }: WorkOrderConfirmationRequest = await req.json();
+    // Authenticate request and get business context
+    const { businessId, supaAdmin } = await requireCtx(req);
+    const { type, jobId }: Omit<WorkOrderConfirmationRequest, 'businessId'> = await req.json();
     
     console.log('[send-work-order-confirmations] Request:', { type, jobId, businessId });
 
     let jobsToProcess = [];
     
     if (type === 'single' && jobId) {
-      // Get single job
-      const { data: job, error: jobError } = await supabase
+      // Get single job - only if not already confirmed
+      const { data: job, error: jobError } = await supaAdmin
         .from('jobs')
         .select(`
           *,
@@ -44,19 +35,20 @@ const handler = async (req: Request): Promise<Response> => {
         .eq('id', jobId)
         .eq('business_id', businessId)
         .eq('status', 'Scheduled')
+        .is('confirmation_token', null)
         .single();
       
       if (jobError) throw jobError;
       if (job) jobsToProcess = [job];
       
     } else if (type === 'bulk') {
-      // Get all scheduled jobs for tomorrow
+      // Get all scheduled jobs for tomorrow that haven't been confirmed yet
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
       const tomorrowStart = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate());
       const tomorrowEnd = new Date(tomorrowStart.getTime() + 24 * 60 * 60 * 1000);
       
-      const { data: jobs, error: jobsError } = await supabase
+      const { data: jobs, error: jobsError } = await supaAdmin
         .from('jobs')
         .select(`
           *,
@@ -66,7 +58,8 @@ const handler = async (req: Request): Promise<Response> => {
         .eq('business_id', businessId)
         .eq('status', 'Scheduled')
         .gte('starts_at', tomorrowStart.toISOString())
-        .lt('starts_at', tomorrowEnd.toISOString());
+        .lt('starts_at', tomorrowEnd.toISOString())
+        .is('confirmation_token', null);
       
       if (jobsError) throw jobsError;
       jobsToProcess = jobs || [];
@@ -81,7 +74,7 @@ const handler = async (req: Request): Promise<Response> => {
         const confirmationToken = crypto.randomUUID();
         
         // Store confirmation token in job record
-        const { error: updateError } = await supabase
+        const { error: updateError } = await supaAdmin
           .from('jobs')
           .update({ confirmation_token: confirmationToken })
           .eq('id', job.id);

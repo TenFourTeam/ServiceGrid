@@ -258,30 +258,50 @@ export default function WorkOrdersPage() {
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <Button 
                 onClick={async () => {
-                  const now = new Date();
-                  const currentHour = now.getHours();
-                  
-                  // Show bulk confirmation button only after 5 PM
-                  if (currentHour >= 17) {
-                    try {
-                      const response = await fetch('/functions/v1/send-work-order-confirmations', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          type: 'bulk',
-                          businessId: '' // This would come from business context
-                        })
-                      });
-                      
-                      if (response.ok) {
-                        // Show success toast
-                        console.log('Bulk confirmations sent successfully');
-                      }
-                    } catch (error) {
-                      console.error('Failed to send bulk confirmations:', error);
+                  if (!isSignedIn) {
+                    toast.error('Please sign in to send confirmations');
+                    return;
+                  }
+
+                  try {
+                    toast.loading('Sending tomorrow\'s confirmations...');
+                    
+                    const token = await getToken();
+                    if (!token) {
+                      throw new Error('Unable to get authentication token');
                     }
-                  } else {
-                    alert('Bulk confirmations can only be sent after 5 PM');
+
+                    const response = await fetch('https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/send-work-order-confirmations', {
+                      method: 'POST',
+                      headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlqdWRrenFmcmlhemFiaW9zbnZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ2NzIyNjAsImV4cCI6MjA3MDI0ODI2MH0.HLOwmgddlBTcHfYrX9RYvO8RK6IVkjDQvsdHyXuMXIM'
+                      },
+                      body: JSON.stringify({
+                        type: 'bulk'
+                      })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (response.ok) {
+                      const processedCount = result.results?.length || 0;
+                      const successCount = result.results?.filter((r: any) => r.success)?.length || 0;
+                      
+                      toast.dismiss();
+                      if (successCount > 0) {
+                        toast.success(`Successfully sent ${successCount} confirmation${successCount !== 1 ? 's' : ''} for tomorrow's scheduled work orders`);
+                      } else {
+                        toast.info('No scheduled work orders found for tomorrow that need confirmation');
+                      }
+                    } else {
+                      throw new Error(result.error || 'Failed to send confirmations');
+                    }
+                  } catch (error) {
+                    toast.dismiss();
+                    console.error('Failed to send bulk confirmations:', error);
+                    toast.error(error instanceof Error ? error.message : 'Failed to send confirmations');
                   }
                 }}
                 variant="outline"
