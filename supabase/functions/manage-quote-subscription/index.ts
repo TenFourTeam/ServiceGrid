@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { userId, supaAdmin: supabase } = await requireCtx(req);
+    const ctx = await requireCtx(req);
     const { quoteId } = await req.json();
 
     console.log("[manage-quote-subscription] Processing quote:", quoteId);
@@ -21,8 +21,8 @@ serve(async (req) => {
       return json({ error: "Quote ID is required" }, { status: 400 });
     }
 
-    // Get the quote details
-    const { data: quote, error: quoteError } = await supabase
+    // Get the quote details using business context filtering
+    const { data: quote, error: quoteError } = await ctx.supaAdmin
       .from('quotes')
       .select(`
         *,
@@ -38,7 +38,7 @@ serve(async (req) => {
         )
       `)
       .eq('id', quoteId)
-      .eq('owner_id', userId)
+      .eq('business_id', ctx.businessId)
       .single();
 
     if (quoteError) {
@@ -144,10 +144,11 @@ serve(async (req) => {
     const nextBillingDate = new Date(subscription.current_period_end * 1000);
 
     // Update quote with subscription ID
-    const { error: updateError } = await supabase
+    const { error: updateError } = await ctx.supaAdmin
       .from('quotes')
       .update({ stripe_subscription_id: subscription.id })
-      .eq('id', quoteId);
+      .eq('id', quoteId)
+      .eq('business_id', ctx.businessId);
 
     if (updateError) {
       console.error("[manage-quote-subscription] Quote update error:", updateError);
@@ -155,11 +156,11 @@ serve(async (req) => {
     }
 
     // Create recurring schedule record
-    const { error: scheduleError } = await supabase
+    const { error: scheduleError } = await ctx.supaAdmin
       .from('recurring_schedules')
       .insert({
         quote_id: quoteId,
-        business_id: quote.businesses.id,
+        business_id: ctx.businessId,
         customer_id: quote.customers.id,
         frequency: quote.frequency,
         next_billing_date: nextBillingDate.toISOString(),

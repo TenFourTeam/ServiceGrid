@@ -41,13 +41,10 @@ serve(async (req: Request): Promise<Response> => {
   const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-  // Auth: require valid Clerk token
-  let ownerId: string;
-  let supabaseAdmin: ReturnType<typeof createClient>;
+  // Auth: require valid Clerk token and business context
+  let ctx: any;
   try {
-    const { userId, supaAdmin } = await requireCtx(req);
-    ownerId = userId;
-    supabaseAdmin = supaAdmin;
+    ctx = await requireCtx(req);
   } catch (e) {
     console.warn('[resend-send-email] auth failed', e);
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { "Content-Type": "application/json", ...getCorsHeaders(req) } });
@@ -91,55 +88,55 @@ serve(async (req: Request): Promise<Response> => {
   
   try {
     if (payload.invoice_id) {
-      const { data: inv } = await supabaseAdmin
+      const { data: inv } = await ctx.supaAdmin
         .from('invoices')
         .select('id,customer_id,business_id')
         .eq('id', payload.invoice_id)
+        .eq('business_id', ctx.businessId)
         .limit(1);
       if (!inv || !inv.length) {
         return new Response(JSON.stringify({ error: 'Invoice not found' }), { status: 404, headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) } });
       }
-      const businessId = inv[0].business_id;
-      const { data: b } = await supabaseAdmin.from('businesses').select('owner_id,name').eq('id', businessId).limit(1);
-      if (!b || !b.length || b[0].owner_id !== ownerId) {
-        return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) } });
+      const { data: b } = await ctx.supaAdmin.from('businesses').select('name').eq('id', ctx.businessId).limit(1);
+      if (!b || !b.length) {
+        return new Response(JSON.stringify({ error: 'Business not found' }), { status: 403, headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) } });
       }
       businessName = b[0].name;
-      const { data: cust } = await supabaseAdmin.from('customers').select('email').eq('id', inv[0].customer_id).limit(1);
+      const { data: cust } = await ctx.supaAdmin.from('customers').select('email').eq('id', inv[0].customer_id).eq('business_id', ctx.businessId).limit(1);
       recipientEmail = (cust && cust.length) ? (cust[0].email as string | null) : null;
     } else if (payload.quote_id) {
-      const { data: q } = await supabaseAdmin
+      const { data: q } = await ctx.supaAdmin
         .from('quotes')
-        .select('id,customer_id,business_id')
+        .select('id,customer_id,business_id,is_subscription')
         .eq('id', payload.quote_id)
+        .eq('business_id', ctx.businessId)
         .limit(1);
       if (!q || !q.length) {
         return new Response(JSON.stringify({ error: 'Quote not found' }), { status: 404, headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) } });
       }
-      const businessId = q[0].business_id;
-      const { data: b } = await supabaseAdmin.from('businesses').select('owner_id,name').eq('id', businessId).limit(1);
-      if (!b || !b.length || b[0].owner_id !== ownerId) {
-        return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) } });
+      const { data: b } = await ctx.supaAdmin.from('businesses').select('name').eq('id', ctx.businessId).limit(1);
+      if (!b || !b.length) {
+        return new Response(JSON.stringify({ error: 'Business not found' }), { status: 403, headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) } });
       }
       businessName = b[0].name;
-      const { data: cust } = await supabaseAdmin.from('customers').select('email').eq('id', q[0].customer_id).limit(1);
+      const { data: cust } = await ctx.supaAdmin.from('customers').select('email').eq('id', q[0].customer_id).eq('business_id', ctx.businessId).limit(1);
       recipientEmail = (cust && cust.length) ? (cust[0].email as string | null) : null;
     } else if (payload.job_id) {
-      const { data: j } = await supabaseAdmin
+      const { data: j } = await ctx.supaAdmin
         .from('jobs')
         .select('id,customer_id,business_id')
         .eq('id', payload.job_id)
+        .eq('business_id', ctx.businessId)
         .limit(1);
       if (!j || !j.length) {
         return new Response(JSON.stringify({ error: 'Job not found' }), { status: 404, headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) } });
       }
-      const businessId = j[0].business_id;
-      const { data: b } = await supabaseAdmin.from('businesses').select('owner_id,name').eq('id', businessId).limit(1);
-      if (!b || !b.length || b[0].owner_id !== ownerId) {
-        return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) } });
+      const { data: b } = await ctx.supaAdmin.from('businesses').select('name').eq('id', ctx.businessId).limit(1);
+      if (!b || !b.length) {
+        return new Response(JSON.stringify({ error: 'Business not found' }), { status: 403, headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) } });
       }
       businessName = b[0].name;
-      const { data: cust } = await supabaseAdmin.from('customers').select('email').eq('id', j[0].customer_id).limit(1);
+      const { data: cust } = await ctx.supaAdmin.from('customers').select('email').eq('id', j[0].customer_id).eq('business_id', ctx.businessId).limit(1);
       recipientEmail = (cust && cust.length) ? (cust[0].email as string | null) : null;
     } else {
       return new Response(JSON.stringify({ error: 'Missing quote_id, invoice_id, or job_id' }), { status: 400, headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) } });
@@ -180,7 +177,7 @@ serve(async (req: Request): Promise<Response> => {
 
   // Idempotency: if we've already sent this request successfully, return previous result
   try {
-    const { data: existing } = await supabaseAdmin
+    const { data: existing } = await ctx.supaAdmin
       .from('mail_sends')
       .select('id,status,provider_message_id,created_at')
       .eq('request_hash', hash)
@@ -213,8 +210,8 @@ serve(async (req: Request): Promise<Response> => {
       const message = String((sendRes as any)?.error?.message || 'Unknown error');
       console.error('Resend send error:', (sendRes as any)?.error);
 
-      await supabaseAdmin.from('mail_sends').insert({
-        user_id: ownerId,
+      await ctx.supaAdmin.from('mail_sends').insert({
+        user_id: ctx.userId,
         to_email: recipientEmail,
         subject: payload.subject,
         status: 'failed',
@@ -241,8 +238,8 @@ serve(async (req: Request): Promise<Response> => {
 
     const messageId = (sendRes as any)?.data?.id ?? null;
 
-    await supabaseAdmin.from('mail_sends').insert({
-      user_id: ownerId,
+    await ctx.supaAdmin.from('mail_sends').insert({
+      user_id: ctx.userId,
       to_email: recipientEmail,
       subject: payload.subject,
       status: 'sent',
@@ -255,18 +252,43 @@ serve(async (req: Request): Promise<Response> => {
       invoice_id: payload.invoice_id || null,
     } as any);
 
-    // Update quote status to Sent after successful email, scoped to owner
+    // Update quote status to Sent after successful email and handle superseding
     try {
-      if (payload.quote_id && ownerId) {
-        const { data: q } = await supabaseAdmin.from('quotes').select('id,business_id').eq('id', payload.quote_id).limit(1);
-        const businessId = q && q.length ? q[0].business_id : null;
-        if (businessId) {
-          const { data: b } = await supabaseAdmin.from('businesses').select('id,owner_id').eq('id', businessId).limit(1);
-          if (b && b.length && b[0].owner_id === ownerId) {
-            await supabaseAdmin
-              .from('quotes')
-              .update({ status: 'Sent', updated_at: new Date().toISOString(), sent_at: new Date().toISOString() } as any)
-              .eq('id', payload.quote_id);
+      if (payload.quote_id) {
+        const { data: q } = await ctx.supaAdmin
+          .from('quotes')
+          .select('id,business_id,customer_id,is_subscription')
+          .eq('id', payload.quote_id)
+          .eq('business_id', ctx.businessId)
+          .single();
+
+        if (q) {
+          // Update quote status to Sent
+          await ctx.supaAdmin
+            .from('quotes')
+            .update({ 
+              status: 'Sent', 
+              updated_at: new Date().toISOString(), 
+              sent_at: new Date().toISOString() 
+            })
+            .eq('id', payload.quote_id)
+            .eq('business_id', ctx.businessId);
+
+          // If this is a subscription quote, supersede previous quotes
+          if (q.is_subscription) {
+            console.info('[resend-send-email] Superseding previous subscription quotes for customer:', q.customer_id);
+            try {
+              await ctx.supaAdmin.rpc('supersede_previous_quotes', {
+                p_customer_id: q.customer_id,
+                p_business_id: ctx.businessId,
+                p_new_quote_id: q.id,
+                p_is_subscription: true
+              });
+              console.info('[resend-send-email] Successfully superseded previous quotes');
+            } catch (supersedeError) {
+              console.error('[resend-send-email] Failed to supersede previous quotes:', supersedeError);
+              // Don't fail the email send, just log the error
+            }
           }
         }
       }
@@ -274,20 +296,14 @@ serve(async (req: Request): Promise<Response> => {
       console.warn('Failed to update quote status to Sent:', e);
     }
 
-    // Optionally update invoice status to Sent after successful email, scoped to owner
+    // Optionally update invoice status to Sent after successful email
     try {
-      if (payload.invoice_id && ownerId) {
-        const { data: inv } = await supabaseAdmin.from('invoices').select('id,business_id').eq('id', payload.invoice_id).limit(1);
-        const businessId = inv && inv.length ? inv[0].business_id : null;
-        if (businessId) {
-          const { data: b } = await supabaseAdmin.from('businesses').select('id,owner_id').eq('id', businessId).limit(1);
-          if (b && b.length && b[0].owner_id === ownerId) {
-            await supabaseAdmin
-              .from('invoices')
-              .update({ status: 'Sent', updated_at: new Date().toISOString() } as any)
-              .eq('id', payload.invoice_id);
-          }
-        }
+      if (payload.invoice_id) {
+        await ctx.supaAdmin
+          .from('invoices')
+          .update({ status: 'Sent', updated_at: new Date().toISOString() })
+          .eq('id', payload.invoice_id)
+          .eq('business_id', ctx.businessId);
       }
     } catch (e) {
       console.warn('Failed to update invoice status to Sent:', e);

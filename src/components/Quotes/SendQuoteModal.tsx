@@ -15,6 +15,9 @@ import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { toast } from "sonner";
 import { invalidationHelpers } from '@/queries/keys';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertTriangle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface SendQuoteModalProps {
   open: boolean;
@@ -35,6 +38,8 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(false);
 
   const { html, defaultSubject } = useMemo(() => {
     if (!quote) return { html: "", defaultSubject: "" };
@@ -52,6 +57,41 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
     combineMessageWithEmail(message, html), 
     [message, html]
   );
+
+  // Check for active subscription when modal opens and quote is subscription
+  useEffect(() => {
+    async function checkActiveSubscription() {
+      if (!open || !quote?.isSubscription || !quote.customerId || !businessId) {
+        setHasActiveSubscription(false);
+        return;
+      }
+
+      setSubscriptionLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('recurring_schedules')
+          .select('id, stripe_subscription_id')
+          .eq('customer_id', quote.customerId)
+          .eq('business_id', businessId)
+          .eq('is_active', true)
+          .limit(1);
+
+        if (error) {
+          console.error('Failed to check subscription status:', error);
+          setHasActiveSubscription(false);
+        } else {
+          setHasActiveSubscription(data && data.length > 0);
+        }
+      } catch (error) {
+        console.error('Error checking subscription status:', error);
+        setHasActiveSubscription(false);
+      } finally {
+        setSubscriptionLoading(false);
+      }
+    }
+
+    checkActiveSubscription();
+  }, [open, quote?.isSubscription, quote?.customerId, businessId]);
 
   // Reset state on open/quote change
   useEffect(() => {
@@ -116,6 +156,16 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
           <DrawerTitle>{t('quotes.modal.sendQuote')}</DrawerTitle>
         </DrawerHeader>
         <div className="px-4 pb-4 space-y-6 overflow-y-auto flex-1">
+          {/* Subscription warning */}
+          {quote?.isSubscription && hasActiveSubscription && (
+            <Alert className="border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/20">
+              <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+              <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+                This customer already has an active subscription. Sending this quote will supersede the previous subscription quote and may affect billing.
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-muted-foreground">{t('quotes.modal.to')}</label>

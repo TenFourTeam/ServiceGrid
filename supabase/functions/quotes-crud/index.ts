@@ -15,7 +15,8 @@ Deno.serve(async (req) => {
     const ctx = await requireCtx(req);
     console.log('[quotes-crud] Context resolved:', { userId: ctx.userId, businessId: ctx.businessId });
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Use service role client from context for RLS bypass
+    const supabase = ctx.supaAdmin;
 
     if (req.method === 'GET') {
       const url = new URL(req.url);
@@ -141,12 +142,11 @@ Deno.serve(async (req) => {
       
       const { customerId, status, total, subtotal, taxRate, discount, terms, address, lineItems, paymentTerms, frequency, depositRequired, depositPercent, notesInternal, isSubscription } = body;
 
-      // Get next quote number - direct database operation like customers-crud
+      // Get next quote number using service role client
       const { data: businessData, error: businessError } = await supabase
         .from('businesses')
         .select('est_prefix, est_seq')
         .eq('id', ctx.businessId)
-        .eq('owner_id', ctx.userId)
         .single();
 
       if (businessError || !businessData) {
@@ -159,8 +159,7 @@ Deno.serve(async (req) => {
       const { error: updateError } = await supabase
         .from('businesses')
         .update({ est_seq: newSeq })
-        .eq('id', ctx.businessId)
-        .eq('owner_id', ctx.userId);
+        .eq('id', ctx.businessId);
 
       if (updateError) {
         console.error('[quotes-crud] Sequence update error:', updateError);
