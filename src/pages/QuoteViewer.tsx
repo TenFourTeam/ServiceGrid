@@ -3,7 +3,9 @@ import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CalendarIcon, PhoneIcon, MailIcon } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
+import { CalendarIcon, PhoneIcon, MailIcon, AlertTriangle } from 'lucide-react';
 import type { Quote } from '@/types';
 import { formatMoney } from '@/utils/format';
 import { buildEdgeFunctionUrl } from '@/utils/env';
@@ -13,6 +15,7 @@ export default function QuoteViewer() {
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [subscriptionConsent, setSubscriptionConsent] = useState(false);
 
   useEffect(() => {
     // Set page title and meta
@@ -201,6 +204,40 @@ export default function QuoteViewer() {
             </CardContent>
           </Card>
 
+          {/* Subscription Warning */}
+          {quote.status === 'Sent' && quote.isSubscription && (
+            <Alert className="border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950/50">
+              <AlertTriangle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+              <AlertDescription className="text-orange-800 dark:text-orange-200">
+                <div className="space-y-3">
+                  <p className="font-medium">⚠️ This is a subscription service quote</p>
+                  <div className="text-sm space-y-2">
+                    <p>By approving this quote, you agree to:</p>
+                    <ul className="list-disc list-inside space-y-1 ml-2">
+                      <li>Recurring billing at the quoted amount on a regular schedule</li>
+                      <li>Automatic work order creation for scheduled services</li>
+                      <li>Automatic billing to your payment method on file</li>
+                      <li>Service will continue until you cancel or modify your subscription</li>
+                    </ul>
+                  </div>
+                  <div className="flex items-center space-x-2 pt-2">
+                    <Checkbox 
+                      id="subscription-consent" 
+                      checked={subscriptionConsent}
+                      onCheckedChange={(checked) => setSubscriptionConsent(checked as boolean)}
+                    />
+                    <label 
+                      htmlFor="subscription-consent" 
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      I understand this is a recurring subscription service and agree to automatic billing
+                    </label>
+                  </div>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Actions */}
           {quote.status === 'Sent' && (
             <Card>
@@ -208,6 +245,7 @@ export default function QuoteViewer() {
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Button 
                     className="flex-1"
+                    disabled={quote.isSubscription && !subscriptionConsent}
                     onClick={() => {
                       const approveUrl = `/quote-action?type=approve&quote_id=${encodeURIComponent(quote.id)}&token=${encodeURIComponent(quote.publicToken)}`;
                       window.location.href = approveUrl;
