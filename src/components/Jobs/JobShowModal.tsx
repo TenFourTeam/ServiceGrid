@@ -586,7 +586,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                 <>
                   {!job.isClockedIn && (
                     <Button
-                      variant="default"
+                      variant="outline"
                       onClick={() => clockInOut({ jobId: job.id, isClockingIn: true })}
                       disabled={isClockingInOut}
                       className="w-full"
@@ -713,7 +713,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                     <>
                       {!job.isClockedIn && (
                         <Button
-                          variant="default"
+                          variant="outline"
                           size="sm"
                           onClick={() => clockInOut({ jobId: job.id, isClockingIn: true })}
                           disabled={isClockingInOut}
