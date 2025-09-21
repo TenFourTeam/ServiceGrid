@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Calendar, Navigation, FileText, CheckCircle, Trash2, Eye, Edit, Mail } from 'lucide-react';
+import { MoreHorizontal, Calendar, FileText, CheckCircle, Trash2, Eye, Edit, Mail } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
@@ -47,16 +47,7 @@ export function WorkOrderActions({
   const canComplete = isOwner && job.status !== 'Completed';
   const canCreateInvoice = isOwner && !existingInvoice && job.status === 'Completed';
   const canViewInvoice = existingInvoice;
-  const canSendConfirmation = isOwner && job.status === 'Scheduled';
-
-  const handleNavigate = () => {
-    const address = job.address;
-    if (address) {
-      window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`, '_blank');
-    } else {
-      toast.error(t('workOrders.modal.navigate'));
-    }
-  };
+  const canSendConfirmation = isOwner && job.customerId && job.address;
 
   const handleCompleteJob = async () => {
     setIsCompletingJob(true);
@@ -230,16 +221,17 @@ export function WorkOrderActions({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="bg-background border shadow-md z-50">
         {/* Schedule/Reschedule */}
-        <div className="px-2 py-1.5">
+        <DropdownMenuItem asChild className="gap-2">
           <ReschedulePopover 
             job={job} 
+            asDropdownItem={true}
             onDone={() => {
               if (businessId) {
                 invalidationHelpers.jobs(queryClient, businessId);
               }
             }} 
           />
-        </div>
+        </DropdownMenuItem>
 
         {/* Edit Job - Only show if user is owner */}
         {isOwner && onOpenJobEditModal && (
@@ -249,7 +241,7 @@ export function WorkOrderActions({
           </DropdownMenuItem>
         )}
 
-        {/* Send Confirmation - Only show if job is Scheduled */}
+        {/* Send Confirmation - Show for jobs with customer and address */}
         {canSendConfirmation && (
           <DropdownMenuItem 
             onClick={handleSendConfirmation} 
@@ -262,14 +254,6 @@ export function WorkOrderActions({
         )}
         
         <DropdownMenuSeparator />
-        
-        {/* Navigate */}
-        {job.address && (
-          <DropdownMenuItem onClick={handleNavigate} className="gap-2">
-            <Navigation className="h-4 w-4" />
-            {t('workOrders.modal.navigate')}
-          </DropdownMenuItem>
-        )}
         
         {/* Invoice Actions */}
         {canViewInvoice && (

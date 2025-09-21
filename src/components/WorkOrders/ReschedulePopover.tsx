@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
@@ -16,9 +17,10 @@ import { useLanguage } from '@/contexts/LanguageContext';
 interface ReschedulePopoverProps {
   job: Job;
   onDone?: () => void | Promise<void>;
+  asDropdownItem?: boolean;
 }
 
-export default function ReschedulePopover({ job, onDone }: ReschedulePopoverProps) {
+export default function ReschedulePopover({ job, onDone, asDropdownItem = false }: ReschedulePopoverProps) {
   const { getToken } = useClerkAuth();
   const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
   const queryClient = useQueryClient();
@@ -104,7 +106,14 @@ export default function ReschedulePopover({ job, onDone }: ReschedulePopoverProp
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button size="sm" variant="outline">{job.startsAt ? t('workOrders.reschedule.title') : t('workOrders.reschedule.schedule')}</Button>
+        {asDropdownItem ? (
+          <span className="flex items-center gap-2 cursor-pointer">
+            <CalendarIcon className="h-4 w-4" />
+            {job.startsAt ? t('workOrders.reschedule.title') : t('workOrders.reschedule.schedule')}
+          </span>
+        ) : (
+          <Button size="sm" variant="outline">{job.startsAt ? t('workOrders.reschedule.title') : t('workOrders.reschedule.schedule')}</Button>
+        )}
       </PopoverTrigger>
       <PopoverContent className="w-80" align="end">
         <div className="space-y-3">
