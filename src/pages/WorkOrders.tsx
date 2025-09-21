@@ -266,7 +266,7 @@ export default function WorkOrdersPage() {
                   try {
                     toast.loading('Sending tomorrow\'s confirmations...');
                     
-                    const token = await getToken();
+                    const token = await getToken({ template: 'supabase' });
                     if (!token) {
                       throw new Error('Unable to get authentication token');
                     }
