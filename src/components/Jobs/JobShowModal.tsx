@@ -49,6 +49,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
   const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
   const [linkedQuoteId, setLinkedQuoteId] = useState<string | null>(null);
   const [linkedQuoteObject, setLinkedQuoteObject] = useState<any>(null);
+  const [isSendingConfirmation, setIsSendingConfirmation] = useState(false);
   const { clockInOut, isLoading: isClockingInOut } = useClockInOut();
   const { t } = useLanguage();
   
@@ -245,14 +246,27 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
     }
   }
 
-  function handleNavigate() {
-    const customer = customers.find(c => c.id === job.customerId);
-    const address = job.address || customer?.address;
+  async function handleSendConfirmation() {
+    setIsSendingConfirmation(true);
     
-    if (address) {
-      window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`, '_blank');
-    } else {
-      toast.error(t('workOrders.modal.navigate'));
+    try {
+      const { error } = await authApi.invoke('send-work-order-confirmations', {
+        method: 'POST',
+        body: { type: 'single', jobId: job.id },
+        toast: {
+          success: 'Work order confirmation sent successfully',
+          loading: 'Sending confirmation...',
+          error: 'Failed to send confirmation'
+        }
+      });
+      
+      if (error) {
+        throw new Error(error.message || 'Failed to send confirmation');
+      }
+    } catch (error) {
+      console.error('Failed to send confirmation:', error);
+    } finally {
+      setIsSendingConfirmation(false);
     }
   }
 
@@ -605,10 +619,11 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
               {/* Secondary actions */}
               <Button 
                 variant="outline" 
-                onClick={handleNavigate}
+                onClick={handleSendConfirmation}
                 className="w-full"
+                disabled={isSendingConfirmation}
               >
-                {t('workOrders.modal.navigate')}
+                {isSendingConfirmation ? 'Sending...' : 'Send Confirmation'}
               </Button>
               
               {role === 'owner' && (
@@ -701,10 +716,11 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                   )}
                   <Button 
                     variant="outline" 
-                    onClick={handleNavigate}
+                    onClick={handleSendConfirmation}
                     size="sm"
+                    disabled={isSendingConfirmation}
                   >
-                    {t('workOrders.modal.navigate')}
+                    {isSendingConfirmation ? 'Sending...' : 'Send Confirmation'}
                   </Button>
                   {job.jobType === 'time_and_materials' && !job.isClockedIn && (
                     <Button
