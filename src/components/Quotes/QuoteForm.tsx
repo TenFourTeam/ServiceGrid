@@ -256,24 +256,35 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
               </div>
             </div>
 
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="deposit-required"
+                  checked={data.depositRequired}
+                  onCheckedChange={(checked) => setData(prev => ({ ...prev, depositRequired: !!checked }))}
+                  disabled={isReadOnly}
+                />
+                <Label htmlFor="deposit-required">{t('quotes.form.deposit.required')}</Label>
+              </div>
+              {data.depositRequired && (
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  placeholder={t('quotes.form.deposit.percentage')}
+                  value={data.depositPercent}
+                  onChange={(e) => setData(prev => ({ ...prev, depositPercent: parseInt(e.target.value) || 0 }))}
+                  disabled={disabled || isReadOnly}
+                  readOnly={isReadOnly}
+                />
+              )}
+            </div>
+
             <Separator />
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Billing Frequency</Label>
-                <div className="flex items-center gap-2 mb-2">
-                  <Checkbox
-                    id="subscription-service"
-                    checked={data.isSubscription}
-                    onCheckedChange={(checked) => setData(prev => ({ 
-                      ...prev, 
-                      isSubscription: !!checked,
-                      frequency: !!checked ? 'bi-monthly' : 'one-off'
-                    }))}
-                    disabled={isReadOnly}
-                  />
-                  <Label htmlFor="subscription-service">Subscription Service</Label>
-                </div>
                 {data.isSubscription ? (
                   <Select
                     value={data.frequency}
@@ -320,25 +331,17 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Checkbox
-                  id="deposit-required"
-                  checked={data.depositRequired}
-                  onCheckedChange={(checked) => setData(prev => ({ ...prev, depositRequired: !!checked }))}
+                  id="subscription-service"
+                  checked={data.isSubscription}
+                  onCheckedChange={(checked) => setData(prev => ({ 
+                    ...prev, 
+                    isSubscription: !!checked,
+                    frequency: !!checked ? 'bi-monthly' : 'one-off'
+                  }))}
                   disabled={isReadOnly}
                 />
-                <Label htmlFor="deposit-required">{t('quotes.form.deposit.required')}</Label>
+                <Label htmlFor="subscription-service">Subscription Service</Label>
               </div>
-              {data.depositRequired && (
-                <Input
-                  type="number"
-                  min="0"
-                  max="100"
-                  placeholder={t('quotes.form.deposit.percentage')}
-                  value={data.depositPercent}
-                  onChange={(e) => setData(prev => ({ ...prev, depositPercent: parseInt(e.target.value) || 0 }))}
-                  disabled={disabled || isReadOnly}
-                  readOnly={isReadOnly}
-                />
-              )}
             </div>
 
             <Separator />
