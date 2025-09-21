@@ -33,7 +33,6 @@ const handler = async (req: Request): Promise<Response> => {
         .select('*')
         .eq('id', jobId)
         .eq('business_id', businessId)
-        .eq('status', 'Scheduled')
         .is('confirmation_token', null)
         .single();
       
@@ -88,7 +87,6 @@ const handler = async (req: Request): Promise<Response> => {
         .from('jobs')
         .select('*')
         .eq('business_id', businessId)
-        .eq('status', 'Scheduled')
         .gte('starts_at', tomorrowStart.toISOString())
         .lt('starts_at', tomorrowEnd.toISOString())
         .is('confirmation_token', null);
