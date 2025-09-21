@@ -260,6 +260,44 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
+                <Label>Billing Frequency</Label>
+                <div className="flex items-center gap-2 mb-2">
+                  <Checkbox
+                    id="subscription-service"
+                    checked={data.isSubscription}
+                    onCheckedChange={(checked) => setData(prev => ({ 
+                      ...prev, 
+                      isSubscription: !!checked,
+                      frequency: !!checked ? 'bi-monthly' : 'one-off'
+                    }))}
+                    disabled={isReadOnly}
+                  />
+                  <Label htmlFor="subscription-service">Subscription Service</Label>
+                </div>
+                {data.isSubscription ? (
+                  <Select
+                    value={data.frequency}
+                    onValueChange={(value) => setData(prev => ({ ...prev, frequency: value as any }))}
+                    disabled={isReadOnly}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select billing frequency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="bi-monthly">{t('quotes.form.frequency.biMonthly')}</SelectItem>
+                      <SelectItem value="monthly">{t('quotes.form.frequency.monthly')}</SelectItem>
+                      <SelectItem value="bi-yearly">{t('quotes.form.frequency.biYearly')}</SelectItem>
+                      <SelectItem value="yearly">{t('quotes.form.frequency.yearly')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="px-3 py-2 bg-muted text-muted-foreground rounded-md">
+                    One-off
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
                 <Label>{t('quotes.form.paymentTerms.label')}</Label>
                 <Select
                   value={data.paymentTerms}
@@ -276,35 +314,6 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
                     <SelectItem value="net_60">{t('quotes.form.paymentTerms.net60')}</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="subscription-service"
-                    checked={data.isSubscription}
-                    onCheckedChange={(checked) => setData(prev => ({ ...prev, isSubscription: !!checked }))}
-                    disabled={isReadOnly}
-                  />
-                  <Label htmlFor="subscription-service">Subscription Service</Label>
-                </div>
-                {data.isSubscription && (
-                  <Select
-                    value={data.frequency}
-                    onValueChange={(value) => setData(prev => ({ ...prev, frequency: value as any }))}
-                    disabled={isReadOnly}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select billing frequency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="bi-monthly">{t('quotes.form.frequency.biMonthly')}</SelectItem>
-                      <SelectItem value="monthly">{t('quotes.form.frequency.monthly')}</SelectItem>
-                      <SelectItem value="bi-yearly">{t('quotes.form.frequency.biYearly')}</SelectItem>
-                      <SelectItem value="yearly">{t('quotes.form.frequency.yearly')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
               </div>
             </div>
 
