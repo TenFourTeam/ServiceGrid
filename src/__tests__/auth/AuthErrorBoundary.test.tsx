@@ -135,7 +135,8 @@ describe('AuthErrorBoundary', () => {
     expect(container).not.toHaveTextContent('Authentication Error');
   });
 
-  it('resets error state when custom retry is clicked', () => {
+  it('resets error state when custom retry is clicked', async () => {
+    const user = userEvent.setup();
     const { rerender, container } = render(
       <AuthErrorBoundary fallback={CustomFallback}>
         <ThrowingComponent shouldThrow={true} />
@@ -148,7 +149,7 @@ describe('AuthErrorBoundary', () => {
     // Click custom retry button
     const customRetryButton = container.querySelector('[data-testid="custom-retry"]');
     if (customRetryButton) {
-      customRetryButton.click();
+      await user.click(customRetryButton);
     }
 
     // Re-render with non-throwing component

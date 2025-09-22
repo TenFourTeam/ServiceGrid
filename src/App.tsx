@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect } from "react";
+import React, { Suspense, lazy } from "react";
 import { Routes, Route } from "react-router-dom";
 import { BrowserRouter } from "react-router-dom";
 import { ClerkProvider, ClerkLoaded, ClerkLoading } from "@clerk/clerk-react";
@@ -36,34 +36,7 @@ const InvitePage = lazy(() => import("./pages/Invite"));
 const JobConfirmationPage = lazy(() => import("./pages/JobConfirmation"));
 const PublicRequestFormPage = lazy(() => import("./pages/PublicRequestForm"));
 
-function PrefetchRoutes() {
-  useEffect(() => {
-    void Promise.all([
-      import("./pages/Calendar"),
-      import("./pages/WorkOrders"),
-      import("./pages/Quotes"),
-      import("./pages/Requests"),
-      import("./pages/Invoices"),
-      import("./pages/Customers"),
-      import("./pages/Settings"),
-      import("./pages/Legal"),
-      import("./components/Legal/LegalDocument"),
-      import("./pages/Team"),
-      import("./pages/Timesheet"),
-      import("./pages/Referral"),
-      import("./pages/NotFound"),
-      import("./pages/ClerkAuth"),
-      import("./pages/QuoteAction"),
-      import("./pages/QuoteViewer"),
-      import("./pages/PaymentSuccess"),
-      import("./pages/PaymentCanceled"),
-      import("./pages/InvoicePay"),
-      import("./pages/Invite"),
-      import("./pages/PublicRequestForm"),
-    ]);
-  }, []);
-  return null;
-}
+// Routes are now properly lazy-loaded without aggressive prefetching
 
 interface AppProps {
   clerkKey: string;
@@ -80,9 +53,8 @@ function App({ clerkKey }: AppProps) {
           <AppProviders>
             <QueryClientClerkIntegration />
             <ErrorBoundary>
-              <Suspense fallback={<LoadingScreen />}>
-                <PrefetchRoutes />
-                <Routes>
+            <Suspense fallback={<LoadingScreen />}>
+              <Routes>
                 {/* Public routes */}
                 <Route element={<PublicOnly redirectTo="/calendar" />}>
                   <Route path="/" element={<LandingPage />} />
