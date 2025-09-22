@@ -18,6 +18,68 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     if (req.method === 'GET') {
+      const url = new URL(req.url);
+      const action = url.searchParams.get('action');
+      
+      // Handle get_payments action
+      if (action === 'get_payments') {
+        const invoiceId = url.searchParams.get('invoiceId');
+        
+        if (!invoiceId) {
+          throw new Error('Invoice ID is required for get_payments action');
+        }
+        
+        console.log('[invoices-crud] Fetching payments for invoice:', invoiceId);
+        
+        // Verify user has access to this invoice and is business owner
+        const { data: invoiceData, error: invoiceError } = await supabase
+          .from('invoices')
+          .select('business_id')
+          .eq('id', invoiceId)
+          .eq('business_id', ctx.businessId)
+          .single();
+        
+        if (invoiceError || !invoiceData) {
+          throw new Error('Invoice not found or access denied');
+        }
+        
+        // Check if user is business owner (payments are now restricted to owners only)
+        const { data: businessData, error: businessError } = await supabase
+          .from('businesses')
+          .select('owner_id')
+          .eq('id', ctx.businessId)
+          .single();
+        
+        if (businessError || !businessData || businessData.owner_id !== ctx.userId) {
+          throw new Error('Access denied: Only business owners can view payment information');
+        }
+        
+        // Fetch payments for the invoice
+        const { data: paymentsData, error: paymentsError } = await supabase
+          .from('payments')
+          .select('*')
+          .eq('invoice_id', invoiceId);
+        
+        if (paymentsError) {
+          console.error('[invoices-crud] Error fetching payments:', paymentsError);
+          throw new Error(`Failed to fetch payments: ${paymentsError.message}`);
+        }
+        
+        const payments = paymentsData?.map(payment => ({
+          id: payment.id,
+          invoiceId: payment.invoice_id,
+          amount: payment.amount,
+          method: payment.method,
+          receivedAt: payment.received_at,
+          createdAt: payment.created_at,
+          last4: payment.last4
+        })) || [];
+        
+        console.log('[invoices-crud] Fetched', payments.length, 'payments for invoice');
+        return json({ payments });
+      }
+      
+      // Default GET action - fetch all invoices
       const { data, error, count } = await supabase
         .from('invoices')
         .select(`
