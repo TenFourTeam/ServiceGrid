@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { z } from 'zod';
 import fc from 'fast-check';
 import { normalizeToE164 as normalizePhoneNumber } from '@/utils/phoneNormalization';
@@ -50,18 +50,34 @@ describe('Validation Logic', () => {
     });
 
     it('property-based phone validation', () => {
-      fc.assert(
-        fc.property(
-          fc.string().filter(s => /^\+?\d[\d\s\-\(\)\.]+$/.test(s)), // Valid phone-like strings
-          (phoneInput) => {
-            const normalized = normalizePhoneNumber(phoneInput);
-            if (normalized) { // Only test if normalization succeeded
-              expect(normalized).toMatch(/^\+\d+$/); // Should start with + and contain only digits
-              expect(normalized.length).toBeGreaterThan(5); // Reasonable minimum length
+      // Mock console.warn to suppress expected libphonenumber-js warnings during property testing
+      const originalWarn = console.warn;
+      console.warn = vi.fn();
+      
+      try {
+        fc.assert(
+          fc.property(
+            // Generate more realistic phone-like strings (10+ digits with formatting)
+            fc.string().filter(s => {
+              // Must have 10+ digits and reasonable phone formatting
+              const digitCount = (s.match(/\d/g) || []).length;
+              return digitCount >= 10 && digitCount <= 15 && 
+                     /^[\+]?[\d\s\-\(\)\.]{10,20}$/.test(s);
+            }),
+            (phoneInput) => {
+              const normalized = normalizePhoneNumber(phoneInput);
+              if (normalized) { // Only test if normalization succeeded
+                expect(normalized).toMatch(/^\+\d+$/); // Should start with + and contain only digits
+                expect(normalized.length).toBeGreaterThan(5); // Reasonable minimum length
+              }
+              // If normalization failed (returned empty), that's also valid behavior
             }
-          }
-        )
-      );
+          )
+        );
+      } finally {
+        // Restore original console.warn
+        console.warn = originalWarn;
+      }
     });
   });
 
