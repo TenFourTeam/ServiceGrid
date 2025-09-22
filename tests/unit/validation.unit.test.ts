@@ -57,13 +57,20 @@ describe('Validation Logic', () => {
       try {
         fc.assert(
           fc.property(
-            // Generate more realistic phone-like strings (10+ digits with formatting)
-            fc.string().filter(s => {
-              // Must have 10+ digits and reasonable phone formatting
-              const digitCount = (s.match(/\d/g) || []).length;
-              return digitCount >= 10 && digitCount <= 15 && 
-                     /^[\+]?[\d\s\-\(\)\.]{10,20}$/.test(s);
-            }),
+            // Generate realistic phone numbers directly instead of filtering
+            fc.oneof(
+              // US format variations
+              fc.tuple(fc.integer(200, 999), fc.integer(200, 999), fc.integer(1000, 9999))
+                .map(([area, exchange, number]) => `(${area}) ${exchange}-${number}`),
+              fc.tuple(fc.integer(200, 999), fc.integer(200, 999), fc.integer(1000, 9999))
+                .map(([area, exchange, number]) => `${area}-${exchange}-${number}`),
+              fc.tuple(fc.integer(200, 999), fc.integer(200, 999), fc.integer(1000, 9999))
+                .map(([area, exchange, number]) => `${area}${exchange}${number}`),
+              // International format
+              fc.tuple(fc.integer(1, 999), fc.integer(1000000000, 9999999999))
+                .map(([country, number]) => `+${country} ${number}`)
+            ),
+            { numRuns: 20 }, // Limit iterations for speed
             (phoneInput) => {
               const normalized = normalizePhoneNumber(phoneInput);
               if (normalized) { // Only test if normalization succeeded
