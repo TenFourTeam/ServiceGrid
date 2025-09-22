@@ -12,9 +12,10 @@ const queryClient = new QueryClient({
       staleTime: 15_000, // 15 seconds
       gcTime: 10 * 60 * 1000, // 10 minutes
       refetchOnWindowFocus: false,
-      retry: (failureCount, error: any) => {
+      retry: (failureCount, error: unknown) => {
         // Don't retry on auth errors
-        if (error?.status === 401 || error?.message?.includes('401')) return false;
+        const errorObj = error as { status?: number; message?: string };
+        if (errorObj?.status === 401 || errorObj?.message?.includes('401')) return false;
         return failureCount < 2;
       }
     },

@@ -40,12 +40,18 @@ export function useBusinessMembersData(opts?: UseBusinessMembersDataOptions) {
       
       if (error) {
         console.error("[useBusinessMembersData] error:", error);
-        throw new Error(error.message || 'Failed to fetch business members');
+        const errorMessage = (error && typeof error === 'object' && 'message' in error) 
+          ? (error as { message: string }).message 
+          : 'Failed to fetch business members';
+        throw new Error(errorMessage);
       }
       
       console.info("[useBusinessMembersData] fetched", data?.members?.length || 0, "members");
       
-      return { members: data?.members || [], count: data?.count || 0 };
+      return { 
+        members: (data && typeof data === 'object' && 'members' in data) ? (data as { members: BusinessMember[] }).members : [], 
+        count: (data && typeof data === 'object' && 'count' in data) ? (data as { count: number }).count : 0 
+      };
     },
     staleTime: 30_000,
   });
@@ -78,7 +84,10 @@ export function useBusinessMemberOperations() {
       });
       
       if (error) {
-        throw new Error(error.message || 'Failed to invite team member');
+        const errorMessage = (error && typeof error === 'object' && 'message' in error) 
+          ? (error as { message: string }).message 
+          : 'Failed to invite team member';
+        throw new Error(errorMessage);
       }
       
       return data;
@@ -105,7 +114,10 @@ export function useBusinessMemberOperations() {
       });
       
       if (error) {
-        throw new Error(error.message || 'Failed to remove team member');
+        const errorMessage = (error && typeof error === 'object' && 'message' in error) 
+          ? (error as { message: string }).message 
+          : 'Failed to remove team member';
+        throw new Error(errorMessage);
       }
       
       return data;

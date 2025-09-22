@@ -168,25 +168,27 @@ export function SimpleCSVImport({ open, onOpenChange, onImportComplete }: Simple
         console.error("Import API error:", error);
         
         // More specific error handling
-        if (error.message?.includes('JWT') || error.message?.includes('Unauthorized') || error.status === 401) {
+        if (hasMessage(error) && (error.message.includes('JWT') || error.message.includes('Unauthorized')) || (hasStatus(error) && error.status === 401)) {
           toast.error("Authentication error. Please refresh the page and try again.");
-        } else if (error.status === 403) {
+        } else if (hasStatus(error) && error.status === 403) {
           toast.error("Permission denied. Please contact support.");
-        } else if (error.status === 500) {
+        } else if (hasStatus(error) && error.status === 500) {
           toast.error("Server error. Please try again in a few minutes.");
         } else {
-          toast.error(`Import failed: ${error.message || 'Unknown error occurred'}`);
+          const errorMessage = hasMessage(error) ? error.message : 'Unknown error occurred';
+          toast.error(`Import failed: ${errorMessage}`);
         }
         return;
       }
 
-      if (result?.imported > 0) {
+      if (hasImported(result) && result.imported > 0) {
         toast.success(`Successfully imported ${result.imported} customers`);
         invalidationHelpers.customers(queryClient, businessId);
         onImportComplete(result.imported);
         resetModal();
       } else {
-        toast.warning(result?.message || "No new customers were imported (duplicates or invalid data)");
+        const message = hasMessage(result) ? result.message : "No new customers were imported (duplicates or invalid data)";
+        toast.warning(message);
       }
     } catch (error) {
       console.error('Import error:', error);

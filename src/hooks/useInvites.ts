@@ -29,10 +29,15 @@ export function usePendingInvites(businessId?: string) {
       });
       
       if (error) {
-        throw new Error(error.message || 'Failed to fetch pending invites');
+        const errorMessage = (error && typeof error === 'object' && 'message' in error) 
+          ? (error as { message: string }).message 
+          : 'Failed to fetch pending invites';
+        throw new Error(errorMessage);
       }
       
-      return data || { invites: [] };
+      return (data && typeof data === 'object' && 'invites' in data) 
+        ? data as { invites: Invite[] }
+        : { invites: [] };
     },
     staleTime: 30_000,
   });
@@ -54,7 +59,10 @@ export function useRevokeInvite(businessId: string) {
       });
       
       if (error) {
-        throw new Error(error.message || 'Failed to revoke invite');
+        const errorMessage = (error && typeof error === 'object' && 'message' in error) 
+          ? (error as { message: string }).message 
+          : 'Failed to revoke invite';
+        throw new Error(errorMessage);
       }
       
       return data;
@@ -85,7 +93,10 @@ export function useResendInvite(businessId: string) {
       });
       
       if (error) {
-        throw new Error(error.message || 'Failed to resend invite');
+        const errorMessage = (error && typeof error === 'object' && 'message' in error) 
+          ? (error as { message: string }).message 
+          : 'Failed to resend invite';
+        throw new Error(errorMessage);
       }
       
       return data;
@@ -116,7 +127,10 @@ export function useRedeemInvite() {
       });
       
       if (error) {
-        throw new Error(error.message || 'Failed to redeem invite');
+        const errorMessage = (error && typeof error === 'object' && 'message' in error) 
+          ? (error as { message: string }).message 
+          : 'Failed to redeem invite';
+        throw new Error(errorMessage);
       }
       
       return data;

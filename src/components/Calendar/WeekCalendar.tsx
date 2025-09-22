@@ -512,7 +512,10 @@ function onDragStart(e: React.PointerEvent, job: Job) {
         });
         
         if (error) {
-          throw new Error(error.message || 'Failed to update job duration');
+          const errorMessage = (error && typeof error === 'object' && 'message' in error) 
+            ? (error as { message: string }).message 
+            : 'Failed to update job duration';
+          throw new Error(errorMessage);
         }
       } catch (err: Error | unknown) {
         console.error(err);
