@@ -17,21 +17,18 @@ export function RLSTest() {
     setError(null);
     
     try {
-      // Test direct Supabase query with Clerk accessToken integration
-      console.log('Testing RLS with Clerk accessToken callback...');
+      // Test the new hybrid RLS approach via Edge Function
+      console.log('Testing RLS with hybrid auth approach...');
       
-      const { data, error: queryError } = await supabase
-        .from('profiles')
-        .select('id, clerk_user_id')
-        .limit(1);
+      const { data, error: functionError } = await supabase.functions.invoke('test-rls-auth');
 
-      if (queryError) {
-        throw queryError;
+      if (functionError) {
+        throw functionError;
       }
 
       setResult({
-        auth_uid: 'Testing with accessToken callback',
-        profile_data: data?.[0] || 'No profiles found',
+        auth_uid: 'Edge Function Test',
+        profile_data: data,
       });
     } catch (err) {
       console.error('RLS test error:', err);
@@ -43,14 +40,14 @@ export function RLSTest() {
 
   return (
     <div className="p-4 border rounded-lg">
-      <h3 className="text-lg font-semibold mb-4">RLS Integration Test (accessToken)</h3>
+      <h3 className="text-lg font-semibold mb-4">RLS Integration Test (Hybrid Approach)</h3>
       
       <button 
         onClick={testRLS}
         disabled={loading}
         className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
       >
-        {loading ? 'Testing...' : 'Test RLS with accessToken()'}
+        {loading ? 'Testing...' : 'Test RLS with Hybrid Auth'}
       </button>
 
       {error && (

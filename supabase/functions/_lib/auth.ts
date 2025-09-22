@@ -13,6 +13,15 @@ export type AuthContext = {
   supaAdmin: ReturnType<typeof createClient>;
 };
 
+export type AuthContextWithUserClient = {
+  clerkUserId: ClerkUserId;
+  userId: UserUuid;
+  email?: string;
+  businessId: string;
+  supaAdmin: ReturnType<typeof createClient>;
+  userClient: ReturnType<typeof createClient>;
+};
+
 export async function requireCtx(req: Request, options: { autoCreate?: boolean } = { autoCreate: true }): Promise<AuthContext> {
   console.info('🔍 [auth] === JWT DEBUGGING START ===');
   console.info('🔍 [auth] Request URL:', req.url);
@@ -125,6 +134,45 @@ export async function requireCtx(req: Request, options: { autoCreate?: boolean }
     email: email?.toLowerCase() || undefined,
     businessId,
     supaAdmin
+  };
+}
+
+export async function requireCtxWithUserClient(req: Request, options: { autoCreate?: boolean } = { autoCreate: true }): Promise<AuthContextWithUserClient> {
+  // Get the standard auth context using service role
+  const authCtx = await requireCtx(req, options);
+  
+  // Extract the original Clerk JWT token
+  const authHeader = req.headers.get("authorization") || req.headers.get("Authorization");
+  const token = authHeader!.replace(/^Bearer\s+/i, "");
+  
+  // Create user-scoped Supabase client using the Clerk JWT
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  if (!supabaseUrl || !anonKey) {
+    throw new Error("Supabase configuration missing");
+  }
+  
+  // Create client that will establish proper auth session with Clerk JWT
+  const userClient = createClient(supabaseUrl, anonKey, {
+    auth: { 
+      persistSession: false,
+      autoRefreshToken: false,
+      storage: undefined // Don't persist in edge functions
+    },
+    db: { schema: 'public' },
+    global: {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'apikey': anonKey
+      }
+    }
+  });
+
+  console.info('✅ [auth] Created user-scoped client with Clerk JWT for RLS');
+  
+  return {
+    ...authCtx,
+    userClient
   };
 }
 
