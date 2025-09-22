@@ -2,20 +2,33 @@ name: CI
 on:
   push:
     branches: ["**"]
+    paths-ignore:
+      - "docs/**"
+      - "*.md"
+      - ".gitignore"
   pull_request:
     branches: ["**"]
+    paths-ignore:
+      - "docs/**"
+      - "*.md"
+      - ".gitignore"
   workflow_dispatch: {}
 
 permissions:
   contents: read
+  pull-requests: write
+  security-events: write
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18, 20]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,11 +36,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ matrix.node-version }}
           cache: npm
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Security audit
+        run: npm audit --audit-level high
 
       - name: Lint
         run: npm run lint
@@ -35,5 +51,35 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
+      - name: Run tests
+        run: npm test
+
       - name: Build
         run: npm run build
+
+      - name: Bundle analysis
+        run: |
+          npm run build -- --mode=production
+          du -sh dist/
+          find dist/ -name "*.js" -exec wc -c {} + | sort -n
+
+  dependabot-auto-merge:
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]' && github.event_name == 'pull_request'
+    needs: test
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v1
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Auto-merge patch updates
+        if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
+        run: gh pr merge --auto --merge "$PR_URL"
+        env:
+          PR_URL: ${{github.event.pull_request.html_url}}
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
