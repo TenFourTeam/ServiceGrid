@@ -3,17 +3,19 @@ import { useAuth, useUser } from '@clerk/clerk-react';
 import { useBusinessContext } from './useBusinessContext';
 import { useProfile } from '@/queries/useProfile';
 import { useStripeConnectStatus } from './useStripeConnectStatus';
+import { useAuthApi } from './useAuthApi';
 import { lifecycleEmailTriggers, getUserEngagementData, daysSinceSignup, daysSinceLastLogin } from '@/utils/lifecycleEmails';
 
 /**
  * Hook to handle lifecycle email triggers based on user state and actions
  */
 export function useLifecycleEmailTriggers(enableAutoTriggers: boolean = false) {
-  const { isSignedIn, isLoaded, getToken } = useAuth();
+  const { isSignedIn, isLoaded } = useAuth();
   const { user } = useUser();
   const { business, businessName, isLoadingBusiness } = useBusinessContext();
   const { data: profile } = useProfile();
   const { data: stripeStatus } = useStripeConnectStatus();
+  const authApi = useAuthApi();
   const hasTriggeredWelcome = useRef(false);
   const hasTriggeredStripeConnected = useRef(false);
   const lastLoginCheck = useRef<string | null>(null);
@@ -39,7 +41,7 @@ export function useLifecycleEmailTriggers(enableAutoTriggers: boolean = false) {
 
     // Only send welcome email if we have basic user data
     if (emailData.userEmail && emailData.userId) {
-      lifecycleEmailTriggers.sendWelcomeEmail(emailData, () => getToken({ template: 'supabase' }));
+      lifecycleEmailTriggers.sendWelcomeEmail(emailData, authApi);
       hasTriggeredWelcome.current = true;
       console.info('[useLifecycleEmailTriggers] Welcome email triggered');
     }
@@ -53,7 +55,7 @@ export function useLifecycleEmailTriggers(enableAutoTriggers: boolean = false) {
 
     // Check if Stripe is newly connected (charges enabled and details submitted)
     if (stripeStatus.chargesEnabled && stripeStatus.detailsSubmitted) {
-      lifecycleEmailTriggers.sendStripeConnectedEmail(emailData, () => getToken({ template: 'supabase' }));
+      lifecycleEmailTriggers.sendStripeConnectedEmail(emailData, authApi);
       hasTriggeredStripeConnected.current = true;
       console.info('[useLifecycleEmailTriggers] Stripe connected email triggered');
     }
@@ -71,7 +73,7 @@ export function useLifecycleEmailTriggers(enableAutoTriggers: boolean = false) {
 
     // Day 3: Customer Management discovery
     if (daysSinceSignup >= 3 && daysSinceSignup < 4) {
-      lifecycleEmailTriggers.sendFeatureDiscoveryEmail(emailData, () => getToken({ template: 'supabase' }), {
+      lifecycleEmailTriggers.sendFeatureDiscoveryEmail(emailData, authApi, {
         feature: 'Customer Management',
         featureDescription: 'Organize your customer information',
         ctaUrl: '/customers',
@@ -81,7 +83,7 @@ export function useLifecycleEmailTriggers(enableAutoTriggers: boolean = false) {
 
     // Day 5: Calendar Integration discovery
     if (daysSinceSignup >= 5 && daysSinceSignup < 6) {
-      lifecycleEmailTriggers.sendFeatureDiscoveryEmail(emailData, () => getToken({ template: 'supabase' }), {
+      lifecycleEmailTriggers.sendFeatureDiscoveryEmail(emailData, authApi, {
         feature: 'Calendar Integration',
         featureDescription: 'Schedule and track your jobs',
         ctaUrl: '/calendar',
@@ -91,7 +93,7 @@ export function useLifecycleEmailTriggers(enableAutoTriggers: boolean = false) {
 
     // Day 10: Case study/social proof
     if (daysSinceSignup >= 10 && daysSinceSignup < 11) {
-      lifecycleEmailTriggers.sendFeatureDiscoveryEmail(emailData, () => getToken({ template: 'supabase' }), {
+      lifecycleEmailTriggers.sendFeatureDiscoveryEmail(emailData, authApi, {
         feature: 'Success Stories',
         featureDescription: 'See how other businesses are growing',
         ctaUrl: '/quotes',
@@ -113,12 +115,12 @@ export function useLifecycleEmailTriggers(enableAutoTriggers: boolean = false) {
       }
 
       try {
-        const engagementData = await getUserEngagementData(emailData.userId, () => getToken({ template: 'supabase' }));
+        const engagementData = await getUserEngagementData(emailData.userId, authApi);
         const daysSinceLogin = daysSinceLastLogin(engagementData.lastLoginDate);
 
         // 7-day inactive email
         if (daysSinceLogin >= 7 && daysSinceLogin < 8) {
-          lifecycleEmailTriggers.sendEngagementRecoveryEmail(emailData, () => getToken({ template: 'supabase' }), {
+          lifecycleEmailTriggers.sendEngagementRecoveryEmail(emailData, authApi, {
             type: '7-day',
             lastActivity: engagementData.lastLoginDate
           });
@@ -126,7 +128,7 @@ export function useLifecycleEmailTriggers(enableAutoTriggers: boolean = false) {
 
         // 14-day inactive email
         if (daysSinceLogin >= 14 && daysSinceLogin < 15) {
-          lifecycleEmailTriggers.sendEngagementRecoveryEmail(emailData, () => getToken({ template: 'supabase' }), {
+          lifecycleEmailTriggers.sendEngagementRecoveryEmail(emailData, authApi, {
             type: '14-day',
             lastActivity: engagementData.lastLoginDate
           });
@@ -148,10 +150,10 @@ export function useLifecycleEmailTriggers(enableAutoTriggers: boolean = false) {
     emailData,
     // Export trigger functions for manual use in mutations
     triggerMilestoneEmail: {
-      firstQuoteCreated: () => lifecycleEmailTriggers.sendFirstQuoteCreatedEmail(emailData, () => getToken({ template: 'supabase' })),
-      firstJobScheduled: () => lifecycleEmailTriggers.sendFirstJobScheduledEmail(emailData, () => getToken({ template: 'supabase' })),
-      firstInvoiceSent: () => lifecycleEmailTriggers.sendFirstInvoiceSentEmail(emailData, () => getToken({ template: 'supabase' })),
-      stripeConnected: () => lifecycleEmailTriggers.sendStripeConnectedEmail(emailData, () => getToken({ template: 'supabase' }))
+      firstQuoteCreated: () => lifecycleEmailTriggers.sendFirstQuoteCreatedEmail(emailData, authApi),
+      firstJobScheduled: () => lifecycleEmailTriggers.sendFirstJobScheduledEmail(emailData, authApi),
+      firstInvoiceSent: () => lifecycleEmailTriggers.sendFirstInvoiceSentEmail(emailData, authApi),
+      stripeConnected: () => lifecycleEmailTriggers.sendStripeConnectedEmail(emailData, authApi)
     }
   };
 }
