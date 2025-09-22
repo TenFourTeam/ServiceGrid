@@ -1123,6 +1123,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      debug_auth_state: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       ensure_default_business: {
         Args: Record<PropertyKey, never>
         Returns: {

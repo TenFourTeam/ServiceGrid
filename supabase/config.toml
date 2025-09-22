@@ -1,5 +1,18 @@
 project_id = "ijudkzqfriazabiosnvb"
 
+# Configure authentication
+[auth]
+enable_confirmations = false
+enable_signups = true
+enable_email_signups = true
+enable_anonymous_signups = false
+enable_manual_linking = false
+
+# Third-party authentication with Clerk
+[auth.third_party.clerk]
+enabled = true
+domain = "divine-cow-23.clerk.accounts.dev"
+
 # Business page serving for link previews
 [functions.serve-business-page]
 verify_jwt = false
