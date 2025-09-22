@@ -20,13 +20,13 @@ export function createAuthEdgeApi(getToken: (options?: { template?: string }) =>
     async invoke(
       functionName: string,
       options: {
-      body?: any;
+      body?: unknown;
       method?: string;
       headers?: Record<string, string>;
       queryParams?: Record<string, string>;
       toast?: ToastOptions;
       } = {}
-    ): Promise<{ data: any; error: any }> {
+    ): Promise<{ data: unknown; error: unknown }> {
       const { toast: toastOptions, ...requestOptions } = options;
       const {
         success = getDefaultSuccessMessage(requestOptions.method || 'GET'),
@@ -139,7 +139,7 @@ export function createAuthEdgeApi(getToken: (options?: { template?: string }) =>
         }
 
         return { data, error };
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Dismiss loading toast
         if (toastId) {
           toast.dismiss(toastId);

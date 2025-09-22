@@ -38,7 +38,7 @@ export function ConsolidatedToaster() {
 
   return (
     <SonnerToaster
-      theme={theme as any}
+      theme={theme as 'light' | 'dark' | 'system'}
       className="toaster group"
       position="bottom-right"
       offset="16px"

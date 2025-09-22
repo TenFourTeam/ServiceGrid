@@ -4,7 +4,7 @@
  */
 
 export interface AuthApiClient {
-  invoke: (name: string, options: { body: Record<string, unknown> }) => Promise<{ data: any; error: any }>;
+  invoke: (name: string, options: { body: Record<string, unknown> }) => Promise<{ data: unknown; error: unknown }>;
 }
 
 export interface LifecycleEmailData {

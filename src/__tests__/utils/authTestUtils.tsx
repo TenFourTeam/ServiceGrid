@@ -11,7 +11,7 @@ export interface MockAuthState {
 }
 
 export interface MockBusinessState {
-  data?: any;
+  data?: unknown;
   isLoading?: boolean;
   error?: Error | null;
 }

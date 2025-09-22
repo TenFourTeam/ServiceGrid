@@ -10,6 +10,7 @@ import { useAuthApi } from '@/hooks/useAuthApi';
 import { invalidationHelpers } from '@/queries/keys';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import Papa from 'papaparse';
+import { hasMessage, hasStatus, hasImported } from '@/types/api';
 
 interface CustomerImport {
   name: string;

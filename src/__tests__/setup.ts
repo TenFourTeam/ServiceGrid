@@ -36,7 +36,7 @@ global.IntersectionObserver = vi.fn().mockImplementation(() => ({
 
 // Silence console errors in tests unless explicitly testing error scenarios
 const originalError = console.error;
-console.error = (...args: any[]) => {
+console.error = (...args: unknown[]) => {
   if (
     typeof args[0] === 'string' &&
     args[0].includes('Warning: ReactDOM.render is no longer supported')

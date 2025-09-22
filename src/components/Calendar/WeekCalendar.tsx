@@ -98,7 +98,7 @@ export function WeekCalendar({
         const dayOfWeek = today.getDay();
         const mondayOffset = (dayOfWeek + 6) % 7; // Days since Monday
         
-        let startOffset = Math.max(0, Math.min(4, mondayOffset - 1)); // Show 1 day before, but stay within week
+        const startOffset = Math.max(0, Math.min(4, mondayOffset - 1)); // Show 1 day before, but stay within week
         return Array.from({ length: 3 }, (_, i) => 
           new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + startOffset + i)
         );
@@ -229,20 +229,24 @@ const minuteOfDayFromAnchorOffset = (offset: number) => {
       });
       
       if (error) {
-        throw new Error(error.message || 'Failed to create invoice');
+        const errorMessage = (error && typeof error === 'object' && 'message' in error) 
+          ? (error as { message: string }).message 
+          : 'Failed to create invoice';
+        throw new Error(errorMessage);
       }
 
       // Optimistic update - add invoice to cache immediately
-      if (response?.invoice && businessId) {
+      if (response && typeof response === 'object' && 'invoice' in response && businessId) {
+        const invoice = (response as { invoice: unknown }).invoice;
         queryClient.setQueryData(queryKeys.data.invoices(businessId), (oldData: InvoicesCacheData | undefined) => {
           if (oldData) {
             return {
               ...oldData,
-              invoices: [response.invoice, ...oldData.invoices],
+              invoices: [invoice, ...oldData.invoices],
               count: oldData.count + 1
             };
           }
-          return { invoices: [response.invoice], count: 1 };
+          return { invoices: [invoice], count: 1 };
         });
       }
     } catch (e: Error | unknown) {
@@ -413,7 +417,10 @@ function onDragStart(e: React.PointerEvent, job: Job) {
         });
         
         if (error) {
-          throw new Error(error.message || 'Failed to reschedule job');
+          const errorMessage = (error && typeof error === 'object' && 'message' in error) 
+            ? (error as { message: string }).message 
+            : 'Failed to reschedule job';
+          throw new Error(errorMessage);
         }
       } catch (err: Error | unknown) {
         console.error(err);

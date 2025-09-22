@@ -119,7 +119,7 @@ export function validateAddress(address: string): { isValid: boolean; formatted:
  */
 export function sanitizePhoneInput(value: string): string {
   // Allow only digits, spaces, parentheses, and dashes during typing
-  return value.replace(/[^0-9\s()\-]/g, '');
+  return value.replace(/[^0-9\s()-]/g, '');
 }
 
 /**

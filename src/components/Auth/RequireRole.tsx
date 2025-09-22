@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 
 interface RequireRoleProps {
-  role: 'owner' | 'worker' | 'owner' | 'worker'[];
+  role: 'owner' | 'worker' | ('owner' | 'worker')[];
   children: ReactNode;
   fallback?: ReactNode | null;
   redirectTo?: string;
@@ -33,11 +33,11 @@ export function RequireRole({
   // Check if user has required role
   // Owners can access all content (both owner and worker)
   // Workers can only access worker content
-  const hasRequiredRole = Array.isArray(role) 
-    ? role.includes(userRole as any)
-    : role === 'worker' 
-      ? (userRole === 'owner' || userRole === 'worker') 
-      : userRole === role;
+    const hasRequiredRole = Array.isArray(role) 
+      ? role.some(r => r === userRole || (r === 'worker' && userRole === 'owner'))
+      : role === 'worker' 
+        ? (userRole === 'owner' || userRole === 'worker') 
+        : userRole === role;
 
   if (!hasRequiredRole) {
     // Use custom fallback if provided, otherwise redirect

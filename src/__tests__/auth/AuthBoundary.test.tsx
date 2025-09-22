@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { NavigateProps } from '@/types/api';
 import { render } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AuthBoundary, RequireAuth, PublicOnly } from '@/auth/AuthBoundary';
@@ -27,7 +28,7 @@ vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
   return {
     ...actual,
-    Navigate: (props: any) => {
+    Navigate: (props: NavigateProps) => {
       mockNavigate(props);
       return <div data-testid="navigate" data-to={props.to} data-replace={props.replace} />;
     }
