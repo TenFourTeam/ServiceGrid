@@ -24,7 +24,7 @@ const parseFrontmatter = (markdown: string): { frontmatter: LegalDocumentFrontma
   }
 
   const [, frontmatterString, content] = match;
-  const frontmatter: any = {};
+  const frontmatter: Record<string, string> = {};
   
   frontmatterString.split('\n').forEach(line => {
     const [key, ...valueParts] = line.split(':');
@@ -34,7 +34,13 @@ const parseFrontmatter = (markdown: string): { frontmatter: LegalDocumentFrontma
   });
 
   return {
-    frontmatter: frontmatter as LegalDocumentFrontmatter,
+    frontmatter: {
+      title: frontmatter.title || '',
+      slug: frontmatter.slug || '',
+      lastUpdated: frontmatter.lastUpdated || '',
+      icon: frontmatter.icon || '',
+      description: frontmatter.description || ''
+    },
     content: content.trim()
   };
 };

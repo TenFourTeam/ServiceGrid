@@ -51,7 +51,7 @@ export function useConvertQuoteToJob() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ quoteId, jobData }: { quoteId: string; jobData: any }) => {
+    mutationFn: async ({ quoteId, jobData }: { quoteId: string; jobData: Record<string, unknown> }) => {
       const { data, error } = await authApi.invoke('jobs-crud', {
         method: 'POST',
         body: { ...jobData, sourceQuoteId: quoteId }
@@ -90,7 +90,7 @@ export function useConvertQuoteToInvoice() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ quoteId, invoiceData }: { quoteId: string; invoiceData: any }) => {
+    mutationFn: async ({ quoteId, invoiceData }: { quoteId: string; invoiceData: Record<string, unknown> }) => {
       const { data, error } = await authApi.invoke('invoices-crud', {
         method: 'POST',
         body: { ...invoiceData, sourceQuoteId: quoteId }

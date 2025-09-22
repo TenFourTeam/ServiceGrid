@@ -17,14 +17,13 @@ export default function Landing() {
   // Defer scroll orchestrator to avoid blocking first paint
   useEffect(() => {
     let dispose: undefined | (() => void);
-    let cancel: undefined | (() => void);
 
     const schedule = (cb: () => void) => {
       const id = requestAnimationFrame(() => cb());
       return () => cancelAnimationFrame(id);
     };
 
-    cancel = schedule(() => {
+    const cancel = schedule(() => {
       dispose = initScrollOrchestrator?.();
     });
 

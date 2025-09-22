@@ -58,9 +58,10 @@ export function useProfileOperations() {
       window.dispatchEvent(new CustomEvent('business-updated'));
       toast.success('Profile updated successfully');
     },
-    onError: (error: any) => {
+    onError: (error: Error | unknown) => {
       console.error(error);
-      toast.error(error?.message || 'Failed to save your changes. Please check your connection and try again.');
+      const message = error instanceof Error ? error.message : 'Failed to save your changes. Please check your connection and try again.';
+      toast.error(message);
     },
   });
 

@@ -53,7 +53,7 @@ export function useJobsData(opts?: UseJobsDataOptions) {
       console.log("[useJobsData] DEBUG - Raw response:", {
         jobsCount: data?.jobs?.length || 0,
         totalCount: data?.count || 0,
-        jobs: data?.jobs?.map((job: any) => ({
+        jobs: data?.jobs?.map((job: Record<string, unknown>) => ({
           id: job.id,
           title: job.title,
           scheduledStart: job.scheduled_start,

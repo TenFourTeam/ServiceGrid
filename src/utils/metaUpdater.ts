@@ -60,13 +60,13 @@ export function updateBusinessMeta(businessData?: BusinessMetaData) {
   }
 
   // Update OpenGraph title
-  let ogTitle = document.querySelector('meta[property="og:title"]');
+  const ogTitle = document.querySelector('meta[property="og:title"]');
   if (ogTitle) {
     ogTitle.setAttribute('content', title);
   }
 
   // Update OpenGraph description
-  let ogDescription = document.querySelector('meta[property="og:description"]');
+  const ogDescription = document.querySelector('meta[property="og:description"]');
   if (ogDescription) {
     ogDescription.setAttribute('content', metaDescription);
   }

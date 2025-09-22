@@ -1,3 +1,5 @@
+import type { QueryClient } from '@tanstack/react-query';
+
 /**
  * Centralized query key factory to prevent cache fragmentation
  * All query keys should be created through this module
@@ -69,25 +71,25 @@ const queryKeys = {
  * Enhanced invalidation helpers with smart cross-entity invalidation
  */
 const invalidationHelpers = {
-  profile: (queryClient: any) => {
+  profile: (queryClient: QueryClient) => {
     queryClient.invalidateQueries({ queryKey: queryKeys.profile.current() });
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary() });
   },
   
-  business: (queryClient: any) => {
+  business: (queryClient: QueryClient) => {
     queryClient.invalidateQueries({ queryKey: queryKeys.business.current() });
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary() });
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.onboarding() });
   },
   
   // Smart invalidation for data entities - handles both count and full data
-  customers: (queryClient: any, businessId: string) => {
+  customers: (queryClient: QueryClient, businessId: string) => {
     queryClient.invalidateQueries({ queryKey: queryKeys.counts.customers(businessId) });
     queryClient.invalidateQueries({ queryKey: queryKeys.data.customers(businessId) });
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary() });
   },
   
-  jobs: (queryClient: any, businessId: string) => {
+  jobs: (queryClient: QueryClient, businessId: string) => {
     console.log("[invalidationHelpers.jobs] Invalidating jobs for businessId:", businessId);
     queryClient.invalidateQueries({ queryKey: queryKeys.counts.jobs(businessId) });
     // Use pattern matching to invalidate both job queries (with and without userId)
@@ -97,7 +99,7 @@ const invalidationHelpers = {
     queryClient.invalidateQueries({ queryKey: ['calendar'] });
   },
   
-  quotes: (queryClient: any, businessId: string) => {
+  quotes: (queryClient: QueryClient, businessId: string) => {
     queryClient.invalidateQueries({ queryKey: queryKeys.counts.quotes(businessId) });
     queryClient.invalidateQueries({ queryKey: queryKeys.data.quotes(businessId) });
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary() });
@@ -105,7 +107,7 @@ const invalidationHelpers = {
     queryClient.invalidateQueries({ queryKey: queryKeys.data.jobs(businessId) });
   },
   
-  invoices: (queryClient: any, businessId: string) => {
+  invoices: (queryClient: QueryClient, businessId: string) => {
     queryClient.invalidateQueries({ queryKey: queryKeys.counts.invoices(businessId) });
     queryClient.invalidateQueries({ queryKey: queryKeys.data.invoices(businessId) });
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary() });
@@ -113,27 +115,27 @@ const invalidationHelpers = {
     queryClient.invalidateQueries({ queryKey: queryKeys.data.jobs(businessId) });
   },
   
-  requests: (queryClient: any, businessId: string) => {
+  requests: (queryClient: QueryClient, businessId: string) => {
     queryClient.invalidateQueries({ queryKey: queryKeys.counts.requests(businessId) });
     queryClient.invalidateQueries({ queryKey: queryKeys.data.requests(businessId) });
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary() });
   },
   
-  timesheet: (queryClient: any, businessId: string) => {
+  timesheet: (queryClient: QueryClient, businessId: string) => {
     queryClient.invalidateQueries({ queryKey: queryKeys.data.timesheet(businessId) });
   },
   
-  team: (queryClient: any, businessId: string) => {
+  team: (queryClient: QueryClient, businessId: string) => {
     queryClient.invalidateQueries({ queryKey: queryKeys.team.members(businessId) });
     queryClient.invalidateQueries({ queryKey: queryKeys.team.invites(businessId) });
   },
   
-  billing: (queryClient: any, businessId: string, userId: string) => {
+  billing: (queryClient: QueryClient, businessId: string, userId: string) => {
     queryClient.invalidateQueries({ queryKey: queryKeys.billing.stripeStatus(businessId) });
     queryClient.invalidateQueries({ queryKey: queryKeys.billing.subscription(userId) });
   },
   
-  all: (queryClient: any, businessId: string, userId: string) => {
+  all: (queryClient: QueryClient, businessId: string, userId: string) => {
     invalidationHelpers.profile(queryClient);
     invalidationHelpers.business(queryClient);
     invalidationHelpers.customers(queryClient, businessId);

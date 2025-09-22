@@ -59,8 +59,9 @@ export function useOtherUserTimesheet(userId: string) {
       queryClient.invalidateQueries({ queryKey: ["other-user-timesheet", userId] });
       toast.success("Entry updated successfully");
     },
-    onError: (error: any) => {
-      toast.error(error.message || "Failed to update entry");
+    onError: (error: Error | unknown) => {
+      const message = error instanceof Error ? error.message : "Failed to update entry";
+      toast.error(message);
     },
   });
 

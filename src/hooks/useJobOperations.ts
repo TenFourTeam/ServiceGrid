@@ -39,7 +39,7 @@ export function useCreateJob() {
         console.error('[useCreateJob] Failed to trigger job milestone email:', error);
       }
     },
-    onError: (error: any) => {
+    onError: (error: Error | unknown) => {
       console.error('[useCreateJob] error:', error);
     }
   });
@@ -71,7 +71,7 @@ export function useUpdateJob() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.data.jobs(businessId || '') });
     },
-    onError: (error: any) => {
+    onError: (error: Error | unknown) => {
       console.error('[useUpdateJob] error:', error);
     }
   });

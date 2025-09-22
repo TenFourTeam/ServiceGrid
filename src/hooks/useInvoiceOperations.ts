@@ -6,6 +6,11 @@ import { queryKeys } from '@/queries/keys';
 
 import type { Invoice } from '@/types';
 
+interface InvoiceCacheData {
+  invoices: Invoice[];
+  count: number;
+}
+
 export function useCreateInvoice() {
   const { businessId } = useBusinessContext();
   const { triggerInvoiceSent } = useLifecycleEmailIntegration();
@@ -33,7 +38,7 @@ export function useCreateInvoice() {
     onSuccess: (data) => {
       // Optimistic update: add the new invoice to cache immediately
       if (data?.invoice) {
-        queryClient.setQueryData(queryKeys.data.invoices(businessId || ''), (oldData: any) => {
+        queryClient.setQueryData(queryKeys.data.invoices(businessId || ''), (oldData: InvoiceCacheData | undefined) => {
           if (oldData) {
             return {
               ...oldData,
@@ -57,7 +62,7 @@ export function useCreateInvoice() {
         console.error('[useCreateInvoice] Failed to trigger invoice milestone email:', error);
       }
     },
-    onError: (error: any) => {
+    onError: (error: Error | unknown) => {
       console.error('[useCreateInvoice] error:', error);
     }
   });
@@ -110,7 +115,7 @@ export function useSendInvoice() {
         console.error('[useSendInvoice] Failed to trigger invoice milestone email:', error);
       }
     },
-    onError: (error: any) => {
+    onError: (error: Error | unknown) => {
       console.error('[useSendInvoice] error:', error);
     }
   });
@@ -145,7 +150,7 @@ export function useUpdateInvoice() {
         refetchType: 'active'
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error | unknown) => {
       console.error('[useUpdateInvoice] error:', error);
     }
   });
@@ -196,7 +201,7 @@ export function useRecordPayment() {
         refetchType: 'active'
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error | unknown) => {
       console.error('[useRecordPayment] error:', error);
     }
   });
@@ -227,11 +232,11 @@ export function useDeleteInvoice() {
     },
     onSuccess: (data, invoiceId) => {
       // Optimistic update: remove invoice from cache
-      queryClient.setQueryData(queryKeys.data.invoices(businessId || ''), (oldData: any) => {
+      queryClient.setQueryData(queryKeys.data.invoices(businessId || ''), (oldData: InvoiceCacheData | undefined) => {
         if (oldData) {
           return {
             ...oldData,
-            invoices: oldData.invoices.filter((invoice: any) => invoice.id !== invoiceId),
+            invoices: oldData.invoices.filter((invoice: Invoice) => invoice.id !== invoiceId),
             count: Math.max(0, oldData.count - 1)
           };
         }
@@ -244,7 +249,7 @@ export function useDeleteInvoice() {
         refetchType: 'active'
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error | unknown) => {
       console.error('[useDeleteInvoice] error:', error);
     }
   });

@@ -38,7 +38,7 @@ export function useJobAssignments() {
       // Invalidate jobs data to refresh the assignments for all users in this business
       queryClient.invalidateQueries({ queryKey: ['data', 'jobs', businessId] });
     },
-    onError: (error: any) => {
+    onError: (error: Error | unknown) => {
       console.error('[useJobAssignments.assignMembers] error:', error);
     },
   });
@@ -65,7 +65,7 @@ export function useJobAssignments() {
       // Invalidate jobs data to refresh the assignments for all users in this business
       queryClient.invalidateQueries({ queryKey: ['data', 'jobs', businessId] });
     },
-    onError: (error: any) => {
+    onError: (error: Error | unknown) => {
       console.error('[useJobAssignments.unassignMembers] error:', error);
     },
   });
