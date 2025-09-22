@@ -467,7 +467,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                             }
                             setLinkedQuoteId(currentQuoteId);
                             setLinkedQuoteObject(linkedQuote);
-                            throw new Error(error.message);
+                            throw new Error((error as any)?.message || 'Failed to unlink quote');
                           }
                           
                           if (businessId) {
@@ -686,7 +686,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                         });
                         
                         if (error) {
-                          throw new Error(error.message || 'Failed to delete job');
+                          throw new Error((error as any)?.message || 'Failed to delete job');
                         }
                         
                         if (businessId) {
@@ -783,7 +783,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                           });
                           
                           if (error) {
-                            throw new Error(error.message || 'Failed to delete job');
+                            throw new Error((error as any)?.message || 'Failed to delete job');
                           }
                           
                           if (businessId) {
@@ -853,7 +853,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
               });
               
               if (linkError) {
-                throw new Error(linkError.message || 'Failed to link quote');
+                throw new Error((linkError as any)?.message || 'Failed to link quote');
               }
               if (businessId) {
                 invalidationHelpers.jobs(queryClient, businessId);

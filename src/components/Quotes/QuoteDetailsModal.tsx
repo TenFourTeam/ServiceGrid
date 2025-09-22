@@ -93,10 +93,10 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
         });
         
         if (error) {
-          throw new Error(error.message || 'Failed to fetch quote');
+          throw new Error((error as any)?.message || 'Failed to fetch quote');
         }
         
-        setQuote(fullQuote);
+        setQuote((fullQuote as any) || null);
       } catch (error) {
         console.error('Failed to fetch quote:', error);
         toast.error('Failed to load quote details');
@@ -142,7 +142,7 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
         });
         
         if (error) {
-          throw new Error(error.message || 'Failed to create quote');
+          throw new Error((error as any)?.message || 'Failed to create quote');
         }
 
         // Invalidate quotes data
@@ -151,17 +151,17 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
         }
 
         const newQuote: Quote = {
-          id: result.quote.id,
-          number: result.quote.number,
+          id: (result as any)?.quote?.id,
+          number: (result as any)?.quote?.number,
           businessId: businessId || '',
           customerId: formData.customerId,
           address: formData.address,
           lineItems: formData.lineItems,
-          taxRate: result.quote.taxRate,
-          discount: result.quote.discount,
-          subtotal: result.quote.subtotal,
-          total: result.quote.total,
-          status: result.quote.status,
+          taxRate: (result as any)?.quote?.taxRate,
+          discount: (result as any)?.quote?.discount,
+          subtotal: (result as any)?.quote?.subtotal,
+          total: (result as any)?.quote?.total,
+          status: (result as any)?.quote?.status,
           files: [],
           notesInternal: formData.notesInternal,
           terms: formData.terms,

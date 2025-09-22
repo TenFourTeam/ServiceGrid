@@ -29,7 +29,7 @@ export function useJobAssignments() {
       });
       
       if (error) {
-        throw new Error(error.message || 'Failed to assign team members');
+        throw new Error((error as any)?.message || 'Failed to assign team members');
       }
       
       return data;
@@ -56,7 +56,7 @@ export function useJobAssignments() {
       });
       
       if (error) {
-        throw new Error(error.message || 'Failed to unassign team members');
+        throw new Error((error as any)?.message || 'Failed to unassign team members');
       }
       
       return data;

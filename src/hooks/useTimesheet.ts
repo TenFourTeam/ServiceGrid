@@ -32,10 +32,10 @@ export function useTimesheet() {
 
       if (error) {
         console.error('Error fetching timesheet entries:', error);
-        throw new Error(error.message || 'Failed to fetch timesheet entries');
+        throw new Error((error as any)?.message || 'Failed to fetch timesheet entries');
       }
 
-      return data?.entries || [];
+      return (data as any)?.entries || [];
     },
     enabled: !!businessId,
   });
@@ -54,7 +54,7 @@ export function useTimesheet() {
         body: { notes }
       });
 
-      if (error) throw new Error(error.message || 'Failed to clock in');
+      if (error) throw new Error((error as any)?.message || 'Failed to clock in');
       return data;
     },
     onSuccess: () => {
@@ -75,7 +75,7 @@ export function useTimesheet() {
         body: { entryId, notes, action: 'clock_out' }
       });
 
-      if (error) throw new Error(error.message || 'Failed to clock out');
+      if (error) throw new Error((error as any)?.message || 'Failed to clock out');
       return data;
     },
     onSuccess: () => {
@@ -106,7 +106,7 @@ export function useTimesheet() {
         body: { entryId, clockInTime, clockOutTime, notes, action: 'edit' }
       });
 
-      if (error) throw new Error(error.message || 'Failed to edit entry');
+      if (error) throw new Error((error as any)?.message || 'Failed to edit entry');
       return data;
     },
     onSuccess: () => {

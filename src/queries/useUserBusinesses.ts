@@ -15,10 +15,10 @@ export function useUserBusinesses() {
       });
       
       if (error) {
-        throw new Error(error.message || 'Failed to fetch user businesses');
+        throw new Error((error as any)?.message || 'Failed to fetch user businesses');
       }
       
-      return data?.businesses || [];
+      return (data as any)?.businesses || [];
     },
     staleTime: 30_000,
     retry: 2,
@@ -38,10 +38,10 @@ export function useCurrentDefaultBusiness() {
       });
       
       if (error) {
-        throw new Error(error.message || 'Failed to fetch default business');
+        throw new Error((error as any)?.message || 'Failed to fetch default business');
       }
       
-      return data?.profile?.defaultBusinessId || null;
+      return (data as any)?.profile?.defaultBusinessId || null;
     },
     staleTime: 10_000, // Short stale time to catch business switches quickly
     retry: 2,

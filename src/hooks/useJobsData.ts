@@ -47,13 +47,13 @@ export function useJobsData(opts?: UseJobsDataOptions) {
       
       if (error) {
         console.error("[useJobsData] ERROR:", error);
-        throw new Error(error.message || 'Failed to fetch jobs');
+        throw new Error((error as any)?.message || 'Failed to fetch jobs');
       }
       
       console.log("[useJobsData] DEBUG - Raw response:", {
-        jobsCount: data?.jobs?.length || 0,
-        totalCount: data?.count || 0,
-        jobs: data?.jobs?.map((job: Record<string, unknown>) => ({
+        jobsCount: (data as any)?.jobs?.length || 0,
+        totalCount: (data as any)?.count || 0,
+        jobs: (data as any)?.jobs?.map((job: Record<string, unknown>) => ({
           id: job.id,
           title: job.title,
           scheduledStart: job.scheduled_start,
@@ -62,7 +62,7 @@ export function useJobsData(opts?: UseJobsDataOptions) {
         fullResponse: data
       });
       
-      return { jobs: data?.jobs || [], count: data?.count || 0 };
+      return { jobs: (data as any)?.jobs || [], count: (data as any)?.count || 0 };
     },
     refetchOnWindowFocus: true, // Get fresh data when user returns to tab
   });

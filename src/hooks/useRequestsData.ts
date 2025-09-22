@@ -46,21 +46,21 @@ export function useRequestsData() {
 
       if (error) {
         console.error("[useRequestsData] error:", error);
-        throw new Error(error.message || 'Failed to fetch requests');
+        throw new Error((error as any)?.message || 'Failed to fetch requests');
       }
 
       console.info("[useRequestsData] raw response:", data);
       console.info("[useRequestsData] data structure:", {
         hasData: !!data,
-        hasDataProperty: !!(data?.data),
-        dataLength: data?.length || 0,
-        dataData: data?.data?.length || 0,
+        hasDataProperty: !!((data as any)?.data),
+        dataLength: ((data as any)?.length) || 0,
+        dataData: ((data as any)?.data?.length) || 0,
         isArray: Array.isArray(data),
-        isDataArray: Array.isArray(data?.data)
+        isDataArray: Array.isArray((data as any)?.data)
       });
 
       // The backend returns requests directly, not wrapped in a data property
-      const requests = Array.isArray(data) ? data : (data?.data || []);
+      const requests = Array.isArray(data) ? data : ((data as any)?.data || []);
       console.info("[useRequestsData] final requests:", requests);
       
       // Return structured data to match unified pattern

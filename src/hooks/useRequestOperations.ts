@@ -43,8 +43,8 @@ export function useRequestOperations() {
         body: data,
       });
 
-      if (error) throw new Error(error.message || 'Failed to create request');
-      return result.data;
+      if (error) throw new Error((error as any)?.message || 'Failed to create request');
+      return (result as any)?.data || result;
     },
     onSuccess: () => {
       invalidationHelpers.requests(queryClient, businessId!);
@@ -63,8 +63,8 @@ export function useRequestOperations() {
         body: data,
       });
 
-      if (error) throw new Error(error.message || 'Failed to update request');
-      return result.data;
+      if (error) throw new Error((error as any)?.message || 'Failed to update request');
+      return (result as any)?.data || result;
     },
     onSuccess: () => {
       invalidationHelpers.requests(queryClient, businessId!);
@@ -83,7 +83,7 @@ export function useRequestOperations() {
         body: { id },
       });
 
-      if (error) throw new Error(error.message || 'Failed to delete request');
+      if (error) throw new Error((error as any)?.message || 'Failed to delete request');
     },
     onSuccess: () => {
       invalidationHelpers.requests(queryClient, businessId!);

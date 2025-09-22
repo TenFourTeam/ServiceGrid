@@ -42,12 +42,12 @@ export function useInvoicePayments({ invoiceId, enabled = true }: UseInvoicePaym
       
       if (error) {
         console.error("[useInvoicePayments] error:", error);
-        throw new Error(error.message || 'Failed to fetch invoice payments');
+        throw new Error((error as any)?.message || 'Failed to fetch invoice payments');
       }
       
-      console.info("[useInvoicePayments] fetched", data?.payments?.length || 0, "payments");
+      console.info("[useInvoicePayments] fetched", (data as any)?.payments?.length || 0, "payments");
       
-      return data?.payments || [];
+      return (data as any)?.payments || [];
     },
     staleTime: 30_000,
   });

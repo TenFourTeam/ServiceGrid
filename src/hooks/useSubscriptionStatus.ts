@@ -26,19 +26,19 @@ export function useSubscriptionStatus(opts?: { enabled?: boolean }) {
         const { data, error } = await authApi.invoke('check-subscription');
         
         if (error) {
-          throw new Error(error.message || 'Failed to fetch subscription status');
+          throw new Error((error as any)?.message || 'Failed to fetch subscription status');
         }
         
         // Calculate trial days from actual user creation date with debugging
         const today = new Date();
-        const userCreatedAt = new Date(data.userCreatedAt || Date.now());
+        const userCreatedAt = new Date((data as any)?.userCreatedAt || Date.now());
         
         // Debug logging for trial calculation
         console.log('Trial calculation debug:', {
           today: today.toISOString(),
           userCreatedAt: userCreatedAt.toISOString(),
-          rawUserCreatedAt: data.userCreatedAt,
-          subscribed: data.subscribed
+          rawUserCreatedAt: (data as any)?.userCreatedAt,
+          subscribed: (data as any)?.subscribed
         });
         
         // Use start of day for both dates to avoid timezone issues
@@ -48,7 +48,7 @@ export function useSubscriptionStatus(opts?: { enabled?: boolean }) {
         const diffTime = todayStartOfDay.getTime() - userCreatedStartOfDay.getTime();
         const daysSinceSignup = Math.floor(diffTime / (1000 * 60 * 60 * 24));
         const trialDaysLeft = Math.max(0, TRIAL_DURATION_DAYS - daysSinceSignup);
-        const isTrialExpired = trialDaysLeft === 0 && !data.subscribed;
+        const isTrialExpired = trialDaysLeft === 0 && !((data as any)?.subscribed);
         
         console.log('Trial calculation result:', {
           daysSinceSignup,
@@ -59,9 +59,9 @@ export function useSubscriptionStatus(opts?: { enabled?: boolean }) {
         });
 
         return {
-          subscribed: data.subscribed || false,
-          subscription_tier: data.subscription_tier,
-          subscription_end: data.subscription_end,
+          subscribed: (data as any)?.subscribed || false,
+          subscription_tier: (data as any)?.subscription_tier,
+          subscription_end: (data as any)?.subscription_end,
           trialDaysLeft,
           isTrialExpired,
         };

@@ -28,7 +28,7 @@ export function useStripeConnectStatus(opts?: { enabled?: boolean }) {
       });
       
       if (error) {
-        throw new Error(error.message || 'Failed to fetch Stripe connect status');
+        throw new Error((error as any)?.message || 'Failed to fetch Stripe connect status');
       }
       
       return data as ConnectStatus;

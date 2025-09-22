@@ -94,7 +94,7 @@ export function useJobStatusManager() {
       });
 
       if (error) {
-        throw new Error(error.message || 'Failed to update job statuses');
+        throw new Error((error as any)?.message || 'Failed to update job statuses');
       }
 
       // Update the cache immediately for responsive UI

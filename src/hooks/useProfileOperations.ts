@@ -44,7 +44,7 @@ export function useProfileOperations() {
       
       if (error) {
         console.error('[useProfileOperations] edge function error:', error);
-        throw new Error(error.message || 'Failed to update profile');
+        throw new Error((error as any)?.message || 'Failed to update profile');
       }
       
       console.info('[useProfileOperations] mutation completed successfully', data);

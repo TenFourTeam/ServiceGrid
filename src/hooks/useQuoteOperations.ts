@@ -20,7 +20,7 @@ export function useCreateQuote() {
       });
 
       if (error) {
-        throw new Error(error.message || 'Failed to create quote');
+        throw new Error((error as any)?.message || 'Failed to create quote');
       }
 
       return data;
@@ -58,7 +58,7 @@ export function useConvertQuoteToJob() {
       });
 
       if (error) {
-        throw new Error(error.message || 'Failed to convert quote to job');
+        throw new Error((error as any)?.message || 'Failed to convert quote to job');
       }
 
       return data;
@@ -97,7 +97,7 @@ export function useConvertQuoteToInvoice() {
       });
 
       if (error) {
-        throw new Error(error.message || 'Failed to create invoice from quote');
+        throw new Error((error as any)?.message || 'Failed to create invoice from quote');
       }
 
       return data;
@@ -135,7 +135,7 @@ export function useDeleteQuote() {
       });
 
       if (error) {
-        throw new Error(error.message || 'Failed to delete quote');
+        throw new Error((error as any)?.message || 'Failed to delete quote');
       }
 
       return data;
