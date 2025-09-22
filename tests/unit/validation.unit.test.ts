@@ -1,23 +1,7 @@
-import { test, expect, describe } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { z } from 'zod';
 import fc from 'fast-check';
-
-// Phone number validation (simplified version)
-function normalizePhoneNumber(phone: string): string {
-  // Remove all non-digits
-  const digits = phone.replace(/\D/g, '');
-  
-  // Handle US numbers
-  if (digits.length === 10) {
-    return `+1${digits}`;
-  }
-  if (digits.length === 11 && digits.startsWith('1')) {
-    return `+${digits}`;
-  }
-  
-  // Return as-is for international
-  return `+${digits}`;
-}
+import { normalizePhoneNumber } from '@/utils/phoneNormalization';
 
 // Email validation schema
 const emailSchema = z.string().email();
@@ -45,19 +29,19 @@ const quoteSchema = z.object({
 
 describe('Validation Logic', () => {
   describe('Phone number normalization', () => {
-    test('normalizes US phone numbers', () => {
+    it('normalizes US phone numbers', () => {
       expect(normalizePhoneNumber('(555) 123-4567')).toBe('+15551234567');
       expect(normalizePhoneNumber('555-123-4567')).toBe('+15551234567');
       expect(normalizePhoneNumber('555.123.4567')).toBe('+15551234567');
       expect(normalizePhoneNumber('5551234567')).toBe('+15551234567');
     });
 
-    test('handles international numbers', () => {
+    it('handles international numbers', () => {
       expect(normalizePhoneNumber('+44 20 7946 0958')).toBe('+442079460958');
       expect(normalizePhoneNumber('33 1 42 86 83 26')).toBe('+33142868326');
     });
 
-    test('property-based phone validation', () => {
+    it('property-based phone validation', () => {
       fc.assert(
         fc.property(
           fc.string().filter(s => /\d/.test(s)), // String with at least one digit
@@ -72,7 +56,7 @@ describe('Validation Logic', () => {
   });
 
   describe('Business entity validation', () => {
-    test('validates customer data correctly', () => {
+    it('validates customer data correctly', () => {
       const validCustomer = {
         name: 'John Doe',
         email: 'john@example.com',
@@ -84,7 +68,7 @@ describe('Validation Logic', () => {
       expect(result.success).toBe(true);
     });
 
-    test('rejects invalid customer data', () => {
+    it('rejects invalid customer data', () => {
       const invalidCustomer = {
         name: '',
         email: 'invalid-email',
@@ -98,7 +82,7 @@ describe('Validation Logic', () => {
       }
     });
 
-    test('validates quote data correctly', () => {
+    it('validates quote data correctly', () => {
       const validQuote = {
         customer_id: '123e4567-e89b-12d3-a456-426614174000',
         line_items: [
@@ -115,7 +99,7 @@ describe('Validation Logic', () => {
       expect(result.success).toBe(true);
     });
 
-    test('rejects quotes with past valid_until dates', () => {
+    it('rejects quotes with past valid_until dates', () => {
       const invalidQuote = {
         customer_id: '123e4567-e89b-12d3-a456-426614174000',
         line_items: [
@@ -134,7 +118,7 @@ describe('Validation Logic', () => {
   });
 
   describe('Email validation edge cases', () => {
-    test('handles common email formats', () => {
+    it('handles common email formats', () => {
       const validEmails = [
         'user@example.com',
         'user.name+tag@example.co.uk',
@@ -146,7 +130,7 @@ describe('Validation Logic', () => {
       });
     });
 
-    test('rejects invalid email formats', () => {
+    it('rejects invalid email formats', () => {
       const invalidEmails = [
         'plainaddress',
         '@missingdomain.com',

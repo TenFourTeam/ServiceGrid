@@ -1,47 +1,29 @@
-import { test, expect, describe } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-
-// Money calculation utilities (these would be imported from your utils)
-function formatCurrency(cents: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(cents / 100);
-}
-
-function calculateQuoteTotal(lineItems: Array<{ quantity: number; unit_price: number; tax_rate?: number }>): number {
-  return lineItems.reduce((total, item) => {
-    const subtotal = item.quantity * item.unit_price;
-    const tax = subtotal * (item.tax_rate || 0);
-    return total + subtotal + tax;
-  }, 0);
-}
-
-function convertDollarsToStripeAmount(dollars: number): number {
-  return Math.round(dollars * 100);
-}
-
-function convertStripeAmountToDollars(cents: number): number {
-  return cents / 100;
-}
+import {
+  formatCurrency,
+  calculateQuoteTotal,
+  convertDollarsToStripeAmount,
+  convertStripeAmountToDollars
+} from '@/utils/money';
 
 describe('Money Calculations', () => {
   describe('Currency formatting', () => {
-    test('formats currency correctly', () => {
+    it('formats currency correctly', () => {
       expect(formatCurrency(1000)).toBe('$10.00');
       expect(formatCurrency(99)).toBe('$0.99');
       expect(formatCurrency(0)).toBe('$0.00');
       expect(formatCurrency(123456)).toBe('$1,234.56');
     });
 
-    test('handles edge cases', () => {
+    it('handles edge cases', () => {
       expect(formatCurrency(1)).toBe('$0.01');
       expect(formatCurrency(9999999)).toBe('$99,999.99');
     });
   });
 
   describe('Quote total calculations', () => {
-    test('calculates simple totals correctly', () => {
+    it('calculates simple totals correctly', () => {
       const lineItems = [
         { quantity: 2, unit_price: 500 }, // $10.00
         { quantity: 1, unit_price: 1500 }, // $15.00
@@ -49,14 +31,14 @@ describe('Money Calculations', () => {
       expect(calculateQuoteTotal(lineItems)).toBe(2500); // $25.00
     });
 
-    test('includes tax calculations', () => {
+    it('includes tax calculations', () => {
       const lineItems = [
         { quantity: 1, unit_price: 1000, tax_rate: 0.08 }, // $10.00 + 8% tax = $10.80
       ];
       expect(calculateQuoteTotal(lineItems)).toBe(1080);
     });
 
-    test('property-based testing for quote calculations', () => {
+    it('property-based testing for quote calculations', () => {
       fc.assert(
         fc.property(
           fc.array(
@@ -85,19 +67,19 @@ describe('Money Calculations', () => {
   });
 
   describe('Stripe amount conversions', () => {
-    test('converts dollars to stripe amounts correctly', () => {
+    it('converts dollars to stripe amounts correctly', () => {
       expect(convertDollarsToStripeAmount(10.99)).toBe(1099);
       expect(convertDollarsToStripeAmount(0.01)).toBe(1);
       expect(convertDollarsToStripeAmount(999.99)).toBe(99999);
     });
 
-    test('converts stripe amounts to dollars correctly', () => {
+    it('converts stripe amounts to dollars correctly', () => {
       expect(convertStripeAmountToDollars(1099)).toBe(10.99);
       expect(convertStripeAmountToDollars(1)).toBe(0.01);
       expect(convertStripeAmountToDollars(99999)).toBe(999.99);
     });
 
-    test('round-trip conversions are accurate', () => {
+    it('round-trip conversions are accurate', () => {
       fc.assert(
         fc.property(
           fc.float({ min: 0.01, max: 9999.99 }),
