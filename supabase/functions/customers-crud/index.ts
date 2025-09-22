@@ -43,6 +43,12 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     if (req.method === 'GET') {
+      // Check if user can access customer contact information
+      const { data: userRole } = await supabase
+        .rpc('user_business_role', { p_business_id: ctx.businessId });
+      
+      const canAccessContactInfo = userRole === 'owner';
+      
       const { data, error, count } = await supabase
         .from('customers')
         .select('*', { count: 'exact' })
@@ -54,20 +60,21 @@ Deno.serve(async (req) => {
         throw new Error(`Failed to fetch customers: ${error.message}`);
       }
 
+      // Filter out contact information for workers
       const customers = data?.map(customer => ({
         id: customer.id,
         businessId: customer.business_id,
         ownerId: customer.owner_id,
         name: customer.name,
-        email: customer.email,
-        phone: customer.phone,
+        email: canAccessContactInfo ? customer.email : null,
+        phone: canAccessContactInfo ? customer.phone : null,
         address: customer.address,
         notes: customer.notes,
         createdAt: customer.created_at,
         updatedAt: customer.updated_at,
       })) || [];
 
-      console.log('[customers-crud] Fetched', customers.length, 'customers');
+      console.log('[customers-crud] Fetched', customers.length, 'customers, contact info access:', canAccessContactInfo);
       return json({ customers, count: count || 0 });
     }
 

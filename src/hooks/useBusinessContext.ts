@@ -73,6 +73,7 @@ export function useBusinessContext() {
     
     // Role and permissions
     role,
+    userRole: role,
     canManage: role === 'owner',
     
     // Loading states - coordinated between Clerk and profile query
