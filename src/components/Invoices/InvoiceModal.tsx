@@ -26,6 +26,7 @@ import { generateInvoiceEmail } from '@/utils/emailTemplateEngine';
 import { escapeHtml } from '@/utils/sanitize';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAuthApi } from '@/hooks/useAuthApi';
 import JobShowModal from '@/components/Jobs/JobShowModal';
 import PickJobModal from '@/components/Jobs/PickJobModal';
 import PickQuoteModal from '@/components/Jobs/PickQuoteModal';
@@ -224,16 +225,17 @@ export default function InvoiceModal({
         });
 
         // Optimistic update - add invoice to cache immediately
-        if (response?.invoice && businessId) {
+        const invoice = getResponseInvoice(response);
+        if (invoice && businessId) {
           queryClient.setQueryData(queryKeys.data.invoices(businessId), (oldData: InvoicesCacheData | undefined) => {
             if (oldData) {
               return {
                 ...oldData,
-                invoices: [response.invoice, ...oldData.invoices],
+                invoices: [invoice, ...oldData.invoices],
                 count: oldData.count + 1
               };
             }
-            return { invoices: [response.invoice], count: 1 };
+            return { invoices: [invoice], count: 1 };
           });
         }
       }
@@ -310,8 +312,9 @@ export default function InvoiceModal({
         }
       });
 
-      if (response.url) {
-        window.open(response.url, '_blank');
+      const url = getResponseUrl(response);
+      if (url) {
+        window.open(url, '_blank');
       }
     } catch (error) {
       console.error('Failed to initiate payment:', error);

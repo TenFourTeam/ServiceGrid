@@ -12,6 +12,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/queries/keys';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useDeleteQuote } from '@/hooks/useQuoteOperations';
+import { getResponseInvoice } from '@/utils/apiHelpers';
 import type { QuoteListItem, InvoicesCacheData } from '@/types';
 import { useState } from 'react';
 
@@ -90,16 +91,17 @@ export function QuoteActions({ quote, onSendQuote, onEditQuote }: QuoteActionsPr
       });
 
       // Optimistic update - add invoice to cache immediately
-      if (result?.invoice && businessId) {
+      const invoice = getResponseInvoice(result);
+      if (invoice && businessId) {
         queryClient.setQueryData(queryKeys.data.invoices(businessId), (oldData: InvoicesCacheData | undefined) => {
           if (oldData) {
             return {
               ...oldData,
-              invoices: [result.invoice, ...oldData.invoices],
+              invoices: [invoice, ...oldData.invoices],
               count: oldData.count + 1
             };
           }
-          return { invoices: [result.invoice], count: 1 };
+          return { invoices: [invoice], count: 1 };
         });
       }
 

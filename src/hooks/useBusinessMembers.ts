@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useAuthApi } from "@/hooks/useAuthApi";
 import { queryKeys } from "@/queries/keys";
+import { getErrorMessage, hasProperty } from "@/utils/apiHelpers";
 
 export interface BusinessMember {
   id: string;
@@ -46,11 +47,11 @@ export function useBusinessMembersData(opts?: UseBusinessMembersDataOptions) {
         throw new Error(errorMessage);
       }
       
-      console.info("[useBusinessMembersData] fetched", data?.members?.length || 0, "members");
+      console.info("[useBusinessMembersData] fetched", hasProperty(data, 'members') ? (data.members as BusinessMember[]).length : 0, "members");
       
       return { 
-        members: (data && typeof data === 'object' && 'members' in data) ? (data as { members: BusinessMember[] }).members : [], 
-        count: (data && typeof data === 'object' && 'count' in data) ? (data as { count: number }).count : 0 
+        members: hasProperty(data, 'members') ? (data.members as BusinessMember[]) : [], 
+        count: hasProperty(data, 'count') ? (data.count as number) : 0 
       };
     },
     staleTime: 30_000,

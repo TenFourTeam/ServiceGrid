@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthApi } from "@/hooks/useAuthApi";
 import { queryKeys, invalidationHelpers } from "@/queries/keys";
+import { getErrorMessage, hasProperty } from "@/utils/apiHelpers";
 
 export interface Invite {
   id: string;
@@ -137,9 +138,10 @@ export function useRedeemInvite() {
     },
     onSuccess: (data) => {
       // Invalidate team queries to refresh member list
-      if (data?.businessId) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.data.members(data.businessId) });
-        queryClient.invalidateQueries({ queryKey: queryKeys.team.invites(data.businessId) });
+      const businessId = hasProperty(data, 'businessId') ? (data.businessId as string) : null;
+      if (businessId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.data.members(businessId) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.team.invites(businessId) });
       }
       // Toast is handled by authApi
     },

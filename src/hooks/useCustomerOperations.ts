@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthApi } from '@/hooks/useAuthApi';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { queryKeys } from '@/queries/keys';
+import { getErrorMessage } from '@/utils/apiHelpers';
 
 
 export function useCustomerOperations() {
@@ -22,7 +23,7 @@ export function useCustomerOperations() {
       });
       
       if (error) {
-        throw new Error(error.message || 'Failed to delete customer');
+        throw new Error(getErrorMessage(error, 'Failed to delete customer'));
       }
       
       return data;
@@ -48,7 +49,7 @@ export function useCustomerOperations() {
       });
       
       if (error) {
-        throw new Error(error.message || 'Failed to delete customers');
+        throw new Error(getErrorMessage(error, 'Failed to delete customers'));
       }
       
       return data;

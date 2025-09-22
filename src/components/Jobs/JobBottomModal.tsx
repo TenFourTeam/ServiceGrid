@@ -10,6 +10,7 @@ import { useAuthApi } from "@/hooks/useAuthApi";
 import { queryKeys } from '@/queries/keys';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getErrorMessage, getResponseJob, getResponseUrl } from '@/utils/apiHelpers';
 import { 
   Drawer,
   DrawerContent,
@@ -231,10 +232,10 @@ export function JobBottomModal({
       });
 
       if (jobError) {
-        throw new Error(jobError.message || 'Failed to create job');
+        throw new Error(getErrorMessage(jobError, 'Failed to create job'));
       }
 
-      const createdJob: Job = jobData.job;
+      const createdJob = getResponseJob(jobData) as Job;
 
       // Replace optimistic job with real job data
       queryClient.setQueryData(jobsQueryKey, (oldData: { jobs: Job[], count: number } | undefined) => {
@@ -283,10 +284,10 @@ export function JobBottomModal({
         });
 
         if (error) {
-          throw new Error(error.message || 'Failed to upload photo');
+          throw new Error(getErrorMessage(error, 'Failed to upload photo'));
         }
 
-        return data.url;
+        return getResponseUrl(data);
       });
 
       const uploadedUrls = await Promise.all(uploadPromises);
@@ -301,10 +302,10 @@ export function JobBottomModal({
       });
 
       if (updateError) {
-        throw new Error(updateError.message || 'Failed to update job with photos');
+        throw new Error(getErrorMessage(updateError, 'Failed to update job with photos'));
       }
 
-      const updatedJob = jobData.job;
+      const updatedJob = getResponseJob(jobData) as Job;
       
       // Update cache with correct query key
       if (businessId && userId) {

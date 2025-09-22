@@ -20,6 +20,7 @@ import { useNavigate } from 'react-router-dom';
 import { useClockInOut } from "@/hooks/useClockInOut";
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from "@/hooks/use-mobile";
+import { getErrorMessage, getResponseInvoice, getResponseUrl } from '@/utils/apiHelpers';
 
 interface JobShowModalProps {
   open: boolean;
@@ -114,19 +115,20 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
           }
         });
 
-        // Optimistic update - add invoice to cache immediately
-        if (response?.invoice && businessId) {
-          queryClient.setQueryData(queryKeys.data.invoices(businessId), (oldData: InvoicesCacheData | undefined) => {
-            if (oldData) {
-              return {
-                ...oldData,
-                invoices: [response.invoice, ...oldData.invoices],
-                count: oldData.count + 1
-              };
-            }
-            return { invoices: [response.invoice], count: 1 };
-          });
-        }
+      // Optimistic update - add invoice to cache immediately
+      const invoice = getResponseInvoice(response);
+      if (invoice && businessId) {
+        queryClient.setQueryData(queryKeys.data.invoices(businessId), (oldData: InvoicesCacheData | undefined) => {
+          if (oldData) {
+            return {
+              ...oldData,
+              invoices: [invoice, ...oldData.invoices],
+              count: oldData.count + 1
+            };
+          }
+          return { invoices: [invoice], count: 1 };
+        });
+      }
         
         if (businessId) {
           invalidationHelpers.jobs(queryClient, businessId);
@@ -161,16 +163,17 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
       });
 
       // Optimistic update - add invoice to cache immediately
-      if (response?.invoice && businessId) {
+      const invoice = getResponseInvoice(response);
+      if (invoice && businessId) {
         queryClient.setQueryData(queryKeys.data.invoices(businessId), (oldData: InvoicesCacheData | undefined) => {
           if (oldData) {
             return {
               ...oldData,
-              invoices: [response.invoice, ...oldData.invoices],
+              invoices: [invoice, ...oldData.invoices],
               count: oldData.count + 1
             };
           }
-          return { invoices: [response.invoice], count: 1 };
+          return { invoices: [invoice], count: 1 };
         });
       }
       
@@ -226,7 +229,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
       });
       
       if (error) {
-        throw new Error(error.message || 'Failed to mark job as complete');
+        throw new Error(getErrorMessage(error, 'Failed to mark job as complete'));
       }
       
       if (businessId) {
@@ -260,7 +263,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
       });
       
       if (error) {
-        throw new Error(error.message || 'Failed to send confirmation');
+        throw new Error(getErrorMessage(error, 'Failed to send confirmation'));
       }
     } catch (error) {
       console.error('Failed to send confirmation:', error);
@@ -291,8 +294,8 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
           if (error) {
             console.warn('[JobShowModal] Photo upload failed:', error);
             // Continue with other photos even if one fails
-          } else if (data?.url) {
-            newPhotoUrls.push(data.url as string);
+          } else if (data && getResponseUrl(data)) {
+            newPhotoUrls.push(getResponseUrl(data) as string);
           }
         } catch (error) {
           console.warn('[JobShowModal] Photo upload failed:', error);
@@ -332,7 +335,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
           if (previousData) {
             queryClient.setQueryData(queryKey, previousData);
           }
-          throw new Error(updateError.message || 'Failed to update job photos');
+          throw new Error(getErrorMessage(updateError, 'Failed to update job photos'));
         }
         
         // Invalidate cache to refresh UI

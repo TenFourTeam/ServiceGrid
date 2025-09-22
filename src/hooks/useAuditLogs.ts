@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useAuthApi } from "@/hooks/useAuthApi";
+import { getErrorMessage, hasProperty } from "@/utils/apiHelpers";
 
 export interface AuditLog {
   id: string;
@@ -34,12 +35,13 @@ export function useAuditLogs(businessId?: string, opts?: { enabled?: boolean }) 
 
       if (error) {
         console.error("[useAuditLogs] error:", error);
-        throw new Error(error.message || 'Failed to fetch audit logs');
+        throw new Error(getErrorMessage(error, 'Failed to fetch audit logs'));
       }
       
-      console.info("[useAuditLogs] fetched", data?.auditLogs?.length || 0, "audit logs");
+      const auditLogs = hasProperty(data, 'auditLogs') ? (data.auditLogs as AuditLog[]) : [];
+      console.info("[useAuditLogs] fetched", auditLogs.length, "audit logs");
       
-      return data?.auditLogs || [];
+      return auditLogs;
     },
     staleTime: 30_000,
   });
