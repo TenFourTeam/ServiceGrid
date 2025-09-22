@@ -10,6 +10,7 @@ import SendQuoteModal from '@/components/Quotes/SendQuoteModal';
 import { Input } from '@/components/ui/input';
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { useQuotesData, useCustomersData } from '@/queries/unified';
+import { RLSTest } from '@/components/RLSTest';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useBusinessContext } from '@/hooks/useBusinessContext';

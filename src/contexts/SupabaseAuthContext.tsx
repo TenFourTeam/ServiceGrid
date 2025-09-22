@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from '@clerk/clerk-react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, setClerkToken } from '@/integrations/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -14,31 +14,25 @@ const SupabaseAuthContext = createContext<SupabaseAuthContextType | undefined>(u
 
 export function SupabaseAuthProvider({ children }: { children: React.ReactNode }) {
   const { isSignedIn, getToken } = useAuth();
-  const [clerkToken, setClerkToken] = useState<string | null>(null);
+  const [clerkTokenState, setClerkTokenState] = useState<string | null>(null);
 
   useEffect(() => {
     async function updateToken() {
       if (isSignedIn) {
         try {
           const token = await getToken({ template: 'supabase' });
+          setClerkTokenState(token);
+          
+          // Set the token in the Supabase client for RLS
           setClerkToken(token);
-          
-          // Use Supabase's auth.setSession to set the Clerk token
-          if (token) {
-            await supabase.auth.setSession({
-              access_token: token,
-              refresh_token: token // Using same token for refresh
-            });
-          }
-          
-          console.log('Clerk token set for RLS:', !!token);
         } catch (error) {
           console.error('Failed to get Clerk token:', error);
+          setClerkTokenState(null);
           setClerkToken(null);
         }
       } else {
+        setClerkTokenState(null);
         setClerkToken(null);
-        supabase.auth.signOut();
       }
     }
 
@@ -50,7 +44,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       value={{ 
         supabaseClient: supabase, 
         isAuthenticated: !!isSignedIn,
-        clerkToken
+        clerkToken: clerkTokenState
       }}
     >
       {children}
