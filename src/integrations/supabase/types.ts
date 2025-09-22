@@ -434,6 +434,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers_with_conditional_contact"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "invoices_job_id_fkey"
             columns: ["job_id"]
             isOneToOne: false
@@ -596,6 +603,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jobs_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers_with_conditional_contact"
             referencedColumns: ["id"]
           },
           {
@@ -942,6 +956,13 @@ export type Database = {
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "quotes_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers_with_conditional_contact"
+            referencedColumns: ["id"]
+          },
         ]
       }
       recurring_schedules: {
@@ -1108,9 +1129,59 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      customers_with_conditional_contact: {
+        Row: {
+          address: string | null
+          business_id: string | null
+          created_at: string | null
+          email: string | null
+          id: string | null
+          name: string | null
+          notes: string | null
+          owner_id: string | null
+          phone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          business_id?: string | null
+          created_at?: string | null
+          email?: never
+          id?: string | null
+          name?: string | null
+          notes?: string | null
+          owner_id?: string | null
+          phone?: never
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          business_id?: string | null
+          created_at?: string | null
+          email?: never
+          id?: string | null
+          name?: string | null
+          notes?: string | null
+          owner_id?: string | null
+          phone?: never
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customers_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      can_access_customer_contact_info: {
+        Args: { p_business_id: string }
+        Returns: boolean
+      }
       can_manage_business: {
         Args: { p_business_id: string }
         Returns: boolean
