@@ -20,11 +20,11 @@ export function createAuthEdgeApi(getToken: (options?: { template?: string }) =>
     async invoke(
       functionName: string,
       options: {
-        body?: any;
-        method?: string;
-        headers?: Record<string, string>;
-        queryParams?: Record<string, string>;
-        toast?: ToastOptions;
+      body?: any;
+      method?: string;
+      headers?: Record<string, string>;
+      queryParams?: Record<string, string>;
+      toast?: ToastOptions;
       } = {}
     ): Promise<{ data: any; error: any }> {
       const { toast: toastOptions, ...requestOptions } = options;

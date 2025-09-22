@@ -561,9 +561,7 @@ export interface LifecycleEmailProps extends EmailBaseProps {
   appUrl?: string;
 }
 
-export interface WelcomeEmailProps extends LifecycleEmailProps {
-  // Additional welcome-specific props if needed
-}
+export type WelcomeEmailProps = LifecycleEmailProps
 
 export function generateWelcomeEmail(props: WelcomeEmailProps) {
   const { businessName, userFullName, appUrl = 'https://your-app.com' } = props;

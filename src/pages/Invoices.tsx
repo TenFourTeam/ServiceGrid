@@ -102,8 +102,8 @@ export default function InvoicesPage() {
   const sortedInvoices = useMemo(() => {
     const list = filteredInvoices.slice();
     list.sort((a, b) => {
-      let va: any;
-      let vb: any;
+      let va: string | number;
+      let vb: string | number;
       switch (sortKey) {
         case 'number':
           va = a.number || '';
@@ -174,7 +174,7 @@ export default function InvoicesPage() {
     const paymentsMap = paymentResults.reduce((acc, result) => {
       acc[result.invoiceId] = result.payments;
       return acc;
-    }, {} as Record<string, any[]>);
+    }, {} as Record<string, Array<{ invoiceId: string; amount: number; method: string; receivedAt: string; createdAt: string; last4?: string }>>);
 
     const csvData = sortedInvoices.map(invoice => {
       const customer = customers.find(c => c.id === invoice.customerId);
@@ -295,7 +295,7 @@ export default function InvoicesPage() {
                 onChange={(e)=>setQ(e.target.value)}
                 className="w-full sm:w-48"
               />
-              <Select value={status} onValueChange={(value: any) => setStatus(value)}>
+              <Select value={status} onValueChange={(value: 'All' | 'Draft' | 'Sent' | 'Paid' | 'Overdue') => setStatus(value)}>
                 <SelectTrigger className="w-full sm:w-32">
                   <SelectValue />
                 </SelectTrigger>
