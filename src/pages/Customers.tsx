@@ -156,7 +156,7 @@ export default function CustomersPage() {
       [t('customers.table.phone')]: customer.phone || '',
       [t('customers.table.address')]: customer.address || '',
       'Notes': customer.notes || '',
-      'Created Date': formatDate(customer.created_at)
+      'Created Date': formatDate(customer.createdAt)
     }));
 
     const csv = Papa.unparse(csvData);

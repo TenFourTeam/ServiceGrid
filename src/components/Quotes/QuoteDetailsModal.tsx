@@ -170,10 +170,10 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
           depositRequired: formData.depositRequired,
           depositPercent: formData.depositPercent,
           sentAt: undefined,
-          viewCount: result.quote.viewCount || 0,
-          createdAt: result.quote.createdAt || new Date().toISOString(),
-          updatedAt: result.quote.updatedAt || new Date().toISOString(),
-          publicToken: result.quote.publicToken,
+          viewCount: (result as any)?.quote?.viewCount || 0,
+          createdAt: (result as any)?.quote?.createdAt || new Date().toISOString(),
+          updatedAt: (result as any)?.quote?.updatedAt || new Date().toISOString(),
+          publicToken: (result as any)?.quote?.publicToken,
         };
 
         onOpenChange(false);
@@ -217,7 +217,7 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
         });
         
         if (error) {
-          throw new Error(error.message || 'Failed to update quote');
+          throw new Error((error as any)?.message || 'Failed to update quote');
         }
 
         // Refresh quote data
@@ -225,7 +225,7 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
           queryClient.invalidateQueries({ queryKey: queryKeys.data.quotes(businessId) });
         }
 
-        setQuote(result.quote);
+        setQuote((result as any)?.quote);
         setCurrentMode('view');
       }
     } catch (e: Error | unknown) {
@@ -301,16 +301,16 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
       });
 
       // Optimistic update - add invoice to cache immediately
-      if (result?.invoice && businessId) {
+      if ((result as any)?.invoice && businessId) {
         queryClient.setQueryData(queryKeys.data.invoices(businessId), (oldData: InvoicesCacheData | undefined) => {
           if (oldData) {
             return {
               ...oldData,
-              invoices: [result.invoice, ...oldData.invoices],
+              invoices: [(result as any)?.invoice, ...oldData.invoices],
               count: oldData.count + 1
             };
           }
-          return { invoices: [result.invoice], count: 1 };
+          return { invoices: [(result as any)?.invoice], count: 1 };
         });
       }
 

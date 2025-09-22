@@ -163,7 +163,7 @@ export default function InvoicesPage() {
               invoiceId: invoice.id 
             }
           });
-          return { invoiceId: invoice.id, payments: data?.payments || [] };
+          return { invoiceId: invoice.id, payments: (data as any)?.payments || [] };
         } catch (error) {
           console.error('Error fetching payments for invoice', invoice.id, error);
           return { invoiceId: invoice.id, payments: [] };

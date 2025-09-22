@@ -63,7 +63,7 @@ export function RequestShowModal({
     }, {
       onSuccess: (data) => {
         onOpenChange(false);
-        navigate(`/quotes?newQuote=${data.id}`);
+        navigate(`/quotes?newQuote=${(data as any)?.id}`);
       }
     });
   };

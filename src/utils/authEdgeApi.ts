@@ -147,16 +147,16 @@ export function createAuthEdgeApi(getToken: (options?: { template?: string }) =>
 
         console.error(`❌ [AuthEdgeApi] Failed to invoke ${functionName}:`, error);
         console.error(`❌ [AuthEdgeApi] Error type:`, error.constructor.name);
-        console.error(`❌ [AuthEdgeApi] Error stack:`, error.stack);
+        console.error(`❌ [AuthEdgeApi] Error stack:`, (error as any)?.stack);
 
         // Show error toast if specified
         if (errorMessage) {
-          toast.error(error?.message || errorMessage);
+          toast.error((error as any)?.message || errorMessage);
         }
 
         return {
           data: null,
-          error: { message: error.message || 'Failed to call edge function' }
+          error: { message: (error as any)?.message || 'Failed to call edge function' }
         };
       }
     }
