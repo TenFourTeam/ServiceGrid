@@ -1,8 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/queries/keys";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
-import { useAuth } from '@clerk/clerk-react';
-import { createAuthEdgeApi } from "@/utils/authEdgeApi";
+import { useAuthApi } from "@/hooks/useAuthApi";
 
 export interface Payment {
   id: string;
@@ -24,8 +23,7 @@ interface UseInvoicePaymentsOptions {
  */
 export function useInvoicePayments({ invoiceId, enabled = true }: UseInvoicePaymentsOptions) {
   const { isAuthenticated, businessId } = useBusinessContext();
-  const { getToken } = useAuth();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   const queryEnabled = isAuthenticated && !!businessId && !!invoiceId && enabled;
 
   const query = useQuery({

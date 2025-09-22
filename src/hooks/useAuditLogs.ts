@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
-import { useAuth } from '@clerk/clerk-react';
-import { createAuthEdgeApi } from "@/utils/authEdgeApi";
+import { useAuthApi } from "@/hooks/useAuthApi";
 
 export interface AuditLog {
   id: string;
@@ -18,8 +17,7 @@ export interface AuditLog {
 
 export function useAuditLogs(businessId?: string, opts?: { enabled?: boolean }) {
   const { isAuthenticated } = useBusinessContext();
-  const { getToken } = useAuth();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   const enabled = !!isAuthenticated && !!businessId && (opts?.enabled ?? true);
 
   return useQuery<AuditLog[], Error>({

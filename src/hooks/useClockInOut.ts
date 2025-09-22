@@ -1,16 +1,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/queries/keys";
 import { toast } from "sonner";
-import { useAuth } from '@clerk/clerk-react';
-import { createAuthEdgeApi } from "@/utils/authEdgeApi";
+import { useAuthApi } from "@/hooks/useAuthApi";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { Job } from "@/types";
 
 export function useClockInOut() {
   const queryClient = useQueryClient();
-  const { getToken } = useAuth();
   const { businessId } = useBusinessContext();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
 
   const clockInOut = useMutation({
     mutationFn: async ({ jobId, isClockingIn }: { jobId: string; isClockingIn: boolean }) => {

@@ -1,17 +1,15 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '@clerk/clerk-react';
+import { useAuthApi } from '@/hooks/useAuthApi';
 import { useBusinessContext } from './useBusinessContext';
 import { useLifecycleEmailIntegration } from './useLifecycleEmailIntegration';
-import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 import { queryKeys } from '@/queries/keys';
 
 import type { Invoice } from '@/types';
 
 export function useCreateInvoice() {
-  const { getToken } = useAuth();
   const { businessId } = useBusinessContext();
   const { triggerInvoiceSent } = useLifecycleEmailIntegration();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -66,10 +64,9 @@ export function useCreateInvoice() {
 }
 
 export function useSendInvoice() {
-  const { getToken } = useAuth();
   const { businessId } = useBusinessContext();
   const { triggerInvoiceSent } = useLifecycleEmailIntegration();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -120,9 +117,8 @@ export function useSendInvoice() {
 }
 
 export function useUpdateInvoice() {
-  const { getToken } = useAuth();
   const { businessId } = useBusinessContext();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -156,9 +152,8 @@ export function useUpdateInvoice() {
 }
 
 export function useRecordPayment() {
-  const { getToken } = useAuth();
   const { businessId } = useBusinessContext();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -208,9 +203,8 @@ export function useRecordPayment() {
 }
 
 export function useDeleteInvoice() {
-  const { getToken } = useAuth();
   const { businessId } = useBusinessContext();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   const queryClient = useQueryClient();
 
   return useMutation({

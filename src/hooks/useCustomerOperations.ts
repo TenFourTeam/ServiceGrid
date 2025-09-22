@@ -1,13 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '@clerk/clerk-react';
-import { createAuthEdgeApi } from '@/utils/authEdgeApi';
+import { useAuthApi } from '@/hooks/useAuthApi';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { queryKeys } from '@/queries/keys';
 
 
 export function useCustomerOperations() {
-  const { getToken } = useAuth();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   const queryClient = useQueryClient();
   const { businessId } = useBusinessContext();
 

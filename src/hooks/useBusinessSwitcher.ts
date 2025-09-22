@@ -1,7 +1,6 @@
-import { useAuth } from '@clerk/clerk-react';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { createAuthEdgeApi } from '@/utils/authEdgeApi';
+import { useAuthApi } from '@/hooks/useAuthApi';
 import { invalidationHelpers } from '@/queries/keys';
 import { toast } from 'sonner';
 import { useCurrentBusiness } from '@/contexts/CurrentBusinessContext';
@@ -9,8 +8,7 @@ import { useCurrentBusiness } from '@/contexts/CurrentBusinessContext';
 export function useBusinessSwitcher() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const { getToken } = useAuth();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   const { setCurrentBusinessId } = useCurrentBusiness();
 
   const switchBusiness = useMutation({

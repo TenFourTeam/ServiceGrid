@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
-import { useAuth } from '@clerk/clerk-react';
-import { createAuthEdgeApi } from "@/utils/authEdgeApi";
+import { useAuthApi } from "@/hooks/useAuthApi";
 import { queryKeys } from "@/queries/keys";
 
 export interface BusinessMember {
@@ -26,8 +25,7 @@ interface UseBusinessMembersDataOptions {
  */
 export function useBusinessMembersData(opts?: UseBusinessMembersDataOptions) {
   const { isAuthenticated, businessId } = useBusinessContext();
-  const { getToken } = useAuth();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   const enabled = isAuthenticated && !!businessId && (opts?.enabled ?? true);
 
   const query = useQuery({
@@ -65,8 +63,7 @@ export function useBusinessMembersData(opts?: UseBusinessMembersDataOptions) {
 export function useBusinessMemberOperations() {
   const queryClient = useQueryClient();
   const { businessId } = useBusinessContext();
-  const { getToken } = useAuth();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
 
   const inviteWorker = useMutation({
     mutationFn: async ({ email }: { email: string }) => {

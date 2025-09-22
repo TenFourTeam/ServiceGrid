@@ -1,7 +1,6 @@
 import { queryKeys, invalidationHelpers } from '@/queries/keys';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
-import { useAuth } from '@clerk/clerk-react';
-import { createAuthEdgeApi } from '@/utils/authEdgeApi';
+import { useAuthApi } from '@/hooks/useAuthApi';
 
 export type BusinessUpdatePayload = {
   businessName: string;
@@ -31,8 +30,7 @@ export type BusinessUpdateResponse = {
  */
 export function useBusinessOperations() {
   const queryClient = useQueryClient();
-  const { getToken } = useAuth();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
 
   const updateBusiness = useMutation({
     mutationFn: async (input: BusinessUpdatePayload) => {

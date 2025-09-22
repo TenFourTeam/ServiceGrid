@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAuth as useClerkAuth } from "@clerk/clerk-react";
+import { useAuthApi } from "@/hooks/useAuthApi";
 import { queryKeys, invalidationHelpers } from "@/queries/keys";
-import { createAuthEdgeApi } from "@/utils/authEdgeApi";
 
 export interface Invite {
   id: string;
@@ -16,9 +15,8 @@ export interface Invite {
 }
 
 export function usePendingInvites(businessId?: string) {
-  const { isSignedIn, getToken } = useClerkAuth();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
-  const enabled = !!isSignedIn && !!businessId;
+  const authApi = useAuthApi();
+  const enabled = !!businessId;
 
   return useQuery<{ invites: Invite[] }, Error>({
     queryKey: queryKeys.team.invites(businessId || ''),
@@ -42,8 +40,7 @@ export function usePendingInvites(businessId?: string) {
 
 export function useRevokeInvite(businessId: string) {
   const queryClient = useQueryClient();
-  const { getToken } = useClerkAuth();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   
   return useMutation({
     mutationFn: async ({ inviteId }: { inviteId: string }) => {
@@ -73,8 +70,7 @@ export function useRevokeInvite(businessId: string) {
 
 export function useResendInvite(businessId: string) {
   const queryClient = useQueryClient();
-  const { getToken } = useClerkAuth();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   
   return useMutation({
     mutationFn: async ({ inviteId }: { inviteId: string }) => {
@@ -105,8 +101,7 @@ export function useResendInvite(businessId: string) {
 
 export function useRedeemInvite() {
   const queryClient = useQueryClient();
-  const { getToken } = useClerkAuth();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   
   return useMutation({
     mutationFn: async ({ token }: { token: string }) => {
