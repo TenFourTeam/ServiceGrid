@@ -23,16 +23,15 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
           const token = await getToken({ template: 'supabase' });
           setClerkToken(token);
           
-          // Set the token in Supabase client
+          // Use Supabase's auth.setSession to set the Clerk token
           if (token) {
-            // Use the token for authenticated requests
-            // Note: This is a custom approach - Supabase will use this token
-            // when configured as a third-party auth provider
             await supabase.auth.setSession({
               access_token: token,
               refresh_token: token // Using same token for refresh
             });
           }
+          
+          console.log('Clerk token set for RLS:', !!token);
         } catch (error) {
           console.error('Failed to get Clerk token:', error);
           setClerkToken(null);

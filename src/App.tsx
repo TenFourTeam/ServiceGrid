@@ -6,8 +6,9 @@ import { AppProviders } from "@/providers/AppProviders";
 
 import { AuthBoundary, RequireAuth, PublicOnly, QueryClientClerkIntegration } from "@/auth";
 import { RequireRole } from "@/components/Auth/RequireRole";
-import ErrorBoundary from "@/components/ErrorBoundary";
-import LoadingScreen from "@/components/LoadingScreen";
+import ErrorBoundary from './components/ErrorBoundary';
+import LoadingScreen from './components/LoadingScreen';
+import { SupabaseAuthProvider } from '@/contexts/SupabaseAuthContext';
 
 const CalendarPage = lazy(() => import("./pages/Calendar"));
 const WorkOrdersPage = lazy(() => import("./pages/WorkOrders"));
@@ -77,11 +78,12 @@ function App({ clerkKey }: AppProps) {
       <BrowserRouter>
         <ClerkLoaded>
           <AppProviders>
-            <QueryClientClerkIntegration />
-            <ErrorBoundary>
-              <Suspense fallback={<LoadingScreen />}>
-                <PrefetchRoutes />
-                <Routes>
+            <SupabaseAuthProvider>
+              <QueryClientClerkIntegration />
+              <ErrorBoundary>
+                <Suspense fallback={<LoadingScreen />}>
+                  <PrefetchRoutes />
+                  <Routes>
                 {/* Public routes */}
                 <Route element={<PublicOnly redirectTo="/calendar" />}>
                   <Route path="/" element={<LandingPage />} />
@@ -149,9 +151,10 @@ function App({ clerkKey }: AppProps) {
                 <Route path="/request/:businessId" element={<PublicRequestFormPage />} />
                 
                 <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
-            </ErrorBoundary>
+                  </Routes>
+                </Suspense>
+              </ErrorBoundary>
+            </SupabaseAuthProvider>
           </AppProviders>
         </ClerkLoaded>
         <ClerkLoading>
