@@ -29,16 +29,24 @@ const quoteSchema = z.object({
 
 describe('Validation Logic', () => {
   describe('Phone number normalization', () => {
-    it('normalizes US phone numbers', () => {
+    it('normalizes valid US phone numbers', () => {
       expect(normalizePhoneNumber('(555) 123-4567')).toBe('+15551234567');
       expect(normalizePhoneNumber('555-123-4567')).toBe('+15551234567');
       expect(normalizePhoneNumber('555.123.4567')).toBe('+15551234567');
       expect(normalizePhoneNumber('5551234567')).toBe('+15551234567');
+      expect(normalizePhoneNumber('1-555-123-4567')).toBe('+15551234567');
     });
 
-    it('handles international numbers', () => {
+    it('handles valid international numbers', () => {
       expect(normalizePhoneNumber('+44 20 7946 0958')).toBe('+442079460958');
-      expect(normalizePhoneNumber('33 1 42 86 83 26')).toBe('+33142868326');
+      expect(normalizePhoneNumber('+33 1 42 86 83 26')).toBe('+33142868326');
+    });
+
+    it('returns empty string for invalid phone numbers', () => {
+      expect(normalizePhoneNumber('123')).toBe(''); // Too short
+      expect(normalizePhoneNumber('abc')).toBe(''); // Non-numeric
+      expect(normalizePhoneNumber('')).toBe(''); // Empty
+      expect(normalizePhoneNumber('33 1 42 86 83 26')).toBe(''); // International without country code prefix
     });
 
     it('property-based phone validation', () => {
