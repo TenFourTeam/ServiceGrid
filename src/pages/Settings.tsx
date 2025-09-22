@@ -154,7 +154,7 @@ export default function SettingsPage() {
         console.error(e);
       }
     })();
-  }, [isSignedIn]);
+  }, [isSignedIn, refreshSubscription]);
   const isOwner = role === 'owner';
   const pageTitle = isOwner ? t('settings.title') : t('settings.profile.title');
   

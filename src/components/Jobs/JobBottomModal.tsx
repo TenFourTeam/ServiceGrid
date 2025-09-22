@@ -75,6 +75,7 @@ export function JobBottomModal({
     if (!open) {
       resetState();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   // Set initial values when props change

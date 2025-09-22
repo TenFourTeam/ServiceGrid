@@ -41,11 +41,13 @@ export function RequestShowModal({
   
   const customer = useMemo(() => 
     request ? customers.find(c => c.id === request.customer_id) : null,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [customers, request?.customer_id]
   );
 
   const statusInfo = useMemo(() => 
     request ? statusOptions.find(s => s.value === request.status) : null,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [request?.status]
   );
 

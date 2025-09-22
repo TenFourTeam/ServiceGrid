@@ -142,7 +142,7 @@ export function useJobStatusManager() {
       console.error('Failed to apply job status updates:', error);
       toast.error('Failed to update job statuses automatically');
     }
-  }, [businessId, queryClient, jobs, refetch]);
+  }, [businessId, queryClient, jobs, refetch, authApi]);
 
   // Monitor and update job statuses
   const checkAndUpdateJobStatuses = useCallback(async () => {

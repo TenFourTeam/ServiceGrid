@@ -107,7 +107,7 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
     };
 
     fetchQuote();
-  }, [open, quoteId, onOpenChange, mode]);
+  }, [open, quoteId, onOpenChange, mode, authApi]);
 
   const handleSubmit = async (formData: any) => {
     setIsSubmitting(true);

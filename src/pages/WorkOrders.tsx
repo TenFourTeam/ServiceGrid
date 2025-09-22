@@ -130,7 +130,7 @@ function useFilteredJobs() {
     }
 
     return list;
-  }, [jobs, customers, sort, q, tableSort]);
+  }, [jobs, customers, sort, q, tableSort, sevenDaysAgo, todayStart, todayEnd]);
 
   const counts = useMemo(() => ({
     all: jobs.length,
@@ -138,7 +138,7 @@ function useFilteredJobs() {
     today: jobs.filter(j => j.status !== 'Completed' && isValidDate(j.startsAt) && new Date(j.startsAt!) >= todayStart && new Date(j.startsAt!) <= todayEnd).length,
     upcoming: jobs.filter(j => j.status !== 'Completed' && isValidDate(j.startsAt) && new Date(j.startsAt!) > todayEnd).length,
     completed: jobs.filter(j => j.status === 'Completed' && isValidDate(j.startsAt) && new Date(j.startsAt!) >= sevenDaysAgo).length,
-  }), [jobs]);
+  }), [jobs, sevenDaysAgo, todayStart, todayEnd]);
 
   const hasInvoice = (jobId: string) => invoices.some(i=> i.jobId === jobId);
   const getInvoiceForJob = (jobId: string) => invoices.find(i=> i.jobId === jobId);

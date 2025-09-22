@@ -43,6 +43,7 @@ export function useLifecycleEmailTriggers(enableAutoTriggers: boolean = false) {
       hasTriggeredWelcome.current = true;
       console.info('[useLifecycleEmailTriggers] Welcome email triggered');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enableAutoTriggers, isLoaded, isSignedIn, profile, isLoadingBusiness, emailData.userEmail, emailData.userId]);
 
   // Stripe connection celebration trigger
@@ -57,6 +58,7 @@ export function useLifecycleEmailTriggers(enableAutoTriggers: boolean = false) {
       hasTriggeredStripeConnected.current = true;
       console.info('[useLifecycleEmailTriggers] Stripe connected email triggered');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enableAutoTriggers, stripeStatus, emailData.userEmail]);
 
   // Time-based discovery emails (Day 3, 5, 10)
@@ -98,6 +100,7 @@ export function useLifecycleEmailTriggers(enableAutoTriggers: boolean = false) {
         ctaText: 'Create Your First Quote'
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enableAutoTriggers, isSignedIn, business?.createdAt, emailData.userEmail]);
 
   // Engagement recovery emails (7-day, 14-day inactive)
@@ -142,6 +145,7 @@ export function useLifecycleEmailTriggers(enableAutoTriggers: boolean = false) {
     if (enableAutoTriggers && isSignedIn) {
       checkEngagement();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enableAutoTriggers, isSignedIn, emailData.userId, emailData.userEmail]);
 
   return {

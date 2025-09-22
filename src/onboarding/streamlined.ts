@@ -81,6 +81,7 @@ export function useOnboardingState(): OnboardingState {
       nextAction,
       showIntentPicker,
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     profile?.profile?.fullName,
     profile?.profile?.phoneE164,

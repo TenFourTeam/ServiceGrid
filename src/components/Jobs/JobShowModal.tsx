@@ -54,7 +54,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
   
   useEffect(() => {
     setLocalNotes(job.notes ?? "");
-  }, [job.id]);
+  }, [job.id, job.notes]);
 
   // Clear optimistic state when modal closes
   useEffect(() => {
@@ -64,7 +64,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
     }
   }, [open]);
 
-  const customerName = useMemo(() => customers.find(c => c.id === job.customerId)?.name || t('workOrders.modal.customer'), [customers, job.customerId]);
+  const customerName = useMemo(() => customers.find(c => c.id === job.customerId)?.name || t('workOrders.modal.customer'), [customers, job.customerId, t]);
   const currentQuoteId = linkedQuoteId === null ? null : (linkedQuoteId || (job as any).quoteId);
   const linkedQuote = useMemo(() => {
     // Use optimistic quote object first, then fall back to cache lookup

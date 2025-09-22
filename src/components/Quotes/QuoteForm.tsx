@@ -335,8 +335,8 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
                   checked={data.isSubscription}
                   onCheckedChange={(checked) => setData(prev => ({ 
                     ...prev, 
-                    isSubscription: !!checked,
-                    frequency: !!checked ? 'bi-monthly' : 'one-off'
+                    isSubscription: Boolean(checked),
+                    frequency: checked ? 'bi-monthly' : 'one-off'
                   }))}
                   disabled={isReadOnly}
                 />

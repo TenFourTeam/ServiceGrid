@@ -45,7 +45,7 @@ export default function Requests() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
   const { data: requestsResponse, isLoading, error } = useRequestsData();
-  const requests = requestsResponse?.data || [];
+  const requests = useMemo(() => requestsResponse?.data || [], [requestsResponse]);
 
   // Sorting logic
   function handleSort(key: 'customer' | 'title' | 'property' | 'contact' | 'status' | 'created') {

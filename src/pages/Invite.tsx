@@ -38,6 +38,7 @@ export default function InviteAccept() {
 
     // If we have a token and user is signed in, redeem the invite
     handleRedeemInvite();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, isSignedIn, isLoaded]);
 
   const handleRedeemInvite = async () => {

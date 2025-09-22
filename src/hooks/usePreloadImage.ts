@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 
 export function usePreloadImage(url?: string) {
   useEffect(() => {
@@ -16,6 +16,8 @@ export function usePreloadImage(url?: string) {
 
 // Preload multiple images at once on mount
 export function usePreloadImages(urls?: string[]) {
+  const urlsKey = useMemo(() => urls?.join('|'), [urls]);
+  
   useEffect(() => {
     if (!urls || urls.length === 0) return;
     const images = urls
@@ -34,5 +36,5 @@ export function usePreloadImages(urls?: string[]) {
       // Allow GC to reclaim if needed
       images.splice(0, images.length);
     };
-  }, [urls?.join('|')]);
+  }, [urlsKey]);
 }

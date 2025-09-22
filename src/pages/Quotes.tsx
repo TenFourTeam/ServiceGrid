@@ -106,7 +106,7 @@ export default function QuotesPage() {
     };
     arr.sort((a, b) => (sortDir === 'asc' ? baseCompare(a, b) : -baseCompare(a, b)));
     return arr;
-  }, [quotes, sortKey, sortDir]);
+  }, [quotes, sortKey, sortDir, getCustomerName]);
 
   function getCustomerName(customerId: string): string {
     const customer = customers.find(c => c.id === customerId);

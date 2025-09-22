@@ -168,7 +168,7 @@ export function WeekCalendar({
       }
     });
     return map;
-  }, [jobs, weekStart, selectedMemberId]);
+  }, [jobs, weekStart, selectedMemberId, days]);
   const [activeJob, setActiveJob] = useState<Job | null>(() => selectedJobId ? jobs.find(j => j.id === selectedJobId) as Job ?? null : null);
   const [now, setNow] = useState<Date>(new Date());
   useEffect(() => {
