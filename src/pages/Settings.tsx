@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import BusinessLogo from '@/components/BusinessLogo';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useAuthApi } from '@/hooks/useAuthApi';
 import ConnectBanner from '@/components/Stripe/ConnectBanner';
@@ -55,7 +55,7 @@ export default function SettingsPage() {
     
     uploadLogo.mutate({ file, kind });
   }
-  async function refreshSubscription() {
+  const refreshSubscription = useCallback(async () => {
     try {
       setSubLoading(true);
       const { data, error } = await authApi.invoke('check-subscription', {
@@ -75,7 +75,7 @@ export default function SettingsPage() {
     } finally {
       setSubLoading(false);
     }
-  }
+  }, [authApi]);
   async function startCheckout(plan: 'monthly' | 'yearly') {
     try {
       const { data, error } = await authApi.invoke('create-checkout', {

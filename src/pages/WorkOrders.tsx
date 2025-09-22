@@ -48,9 +48,21 @@ function useFilteredJobs() {
   const [sort, setSort] = useState<'all' | 'unscheduled' | 'today' | 'upcoming' | 'completed'>('all');
   const [tableSort, setTableSort] = useState<{ column: string; direction: 'asc' | 'desc' } | null>(null);
 
-  const todayStart = new Date(); todayStart.setHours(0,0,0,0);
-  const todayEnd = new Date(); todayEnd.setHours(23,59,59,999);
-  const sevenDaysAgo = new Date(Date.now() - 7*24*3600*1000);
+  const todayStart = useMemo(() => {
+    const date = new Date();
+    date.setHours(0,0,0,0);
+    return date;
+  }, []);
+  
+  const todayEnd = useMemo(() => {
+    const date = new Date();
+    date.setHours(23,59,59,999);
+    return date;
+  }, []);
+  
+  const sevenDaysAgo = useMemo(() => {
+    return new Date(Date.now() - 7*24*3600*1000);
+  }, []);
 
   // Helper function to check if a date string is valid
   const isValidDate = (dateStr: string | null | undefined) => {

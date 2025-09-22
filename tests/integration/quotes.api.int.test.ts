@@ -23,7 +23,10 @@ describe('Quote API Integration', () => {
       .select()
       .single();
 
-    testCustomerId = customer?.id!;
+    if (!customer?.id) {
+      throw new Error('Failed to create test customer');
+    }
+    testCustomerId = customer.id;
   });
 
   afterEach(async () => {
@@ -71,7 +74,10 @@ describe('Quote API Integration', () => {
       expect(data?.total_amount).toBe(1890);
       expect(data?.line_items).toHaveLength(2);
 
-      testQuoteId = data?.id!;
+      if (!data?.id) {
+        throw new Error('Failed to create test quote');
+      }
+      testQuoteId = data.id;
     });
 
     test('quote status transitions work correctly', async () => {

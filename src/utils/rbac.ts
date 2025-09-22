@@ -28,7 +28,7 @@ export function hasPermission(user: User, permission: Permission): boolean {
       if (resource === 'team' && action === 'remove_owner') return false;
       return true;
       
-    case 'worker':
+    case 'worker': {
       // Workers have limited permissions
       const workerPermissions = [
         'jobs:view', 'jobs:update_status', 'jobs:add_notes',
@@ -40,6 +40,7 @@ export function hasPermission(user: User, permission: Permission): boolean {
       
       const permissionKey = `${resource}:${action}`;
       return workerPermissions.includes(permissionKey);
+    }
       
     default:
       return false;
