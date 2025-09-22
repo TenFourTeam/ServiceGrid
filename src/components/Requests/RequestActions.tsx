@@ -3,7 +3,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MoreHorizontal, FileText, Wrench, Calendar, Archive, Edit } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { createAuthEdgeApi } from '@/utils/authEdgeApi';
+import { useAuthApi } from '@/hooks/useAuthApi';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useCreateQuote } from '@/hooks/useQuoteOperations';
 import { useLifecycleEmailIntegration } from '@/hooks/useLifecycleEmailIntegration';
@@ -21,8 +21,7 @@ export function RequestActions({ request }: RequestActionsProps) {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [showEditModal, setShowEditModal] = useState(false);
-  const { getToken } = useClerkAuth();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   const { triggerJobScheduled } = useLifecycleEmailIntegration();
   const createQuote = useCreateQuote();
   const { updateRequest } = useRequestOperations();

@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '@clerk/clerk-react';
-import { createAuthEdgeApi } from '@/utils/authEdgeApi';
+import { useAuthApi } from '@/hooks/useAuthApi';
 import { invalidationHelpers } from '@/queries/keys';
 
 export interface CheckUserExistsResponse {
@@ -32,8 +31,7 @@ export interface AddTeamMemberResponse {
  */
 export function useTeamOperations() {
   const queryClient = useQueryClient();
-  const { getToken } = useAuth();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
 
   const checkUserExists = useMutation({
     mutationFn: async ({ email, businessId }: { email: string; businessId: string }) => {

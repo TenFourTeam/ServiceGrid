@@ -12,7 +12,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerC
 import { Textarea } from '@/components/ui/textarea';
 // Jobs data now comes from store via dashboard data
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
-import { createAuthEdgeApi } from '@/utils/authEdgeApi';
+import { useAuthApi } from '@/hooks/useAuthApi';
 import { toast } from 'sonner';
 import { JobBottomModal } from '@/components/Jobs/JobBottomModal';
 import { supabase } from '@/integrations/supabase/client';
@@ -135,8 +135,7 @@ export function WeekCalendar({
     setWeekStart(monday);
   }, [date]);
 
-  const { isSignedIn, getToken } = useClerkAuth();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   
   // Jobs data is now loaded via dashboard data in AppLayout
   // No need for separate range fetching

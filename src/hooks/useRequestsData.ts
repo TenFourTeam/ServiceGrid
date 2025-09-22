@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useBusinessContext } from './useBusinessContext';
-import { useAuth } from '@clerk/clerk-react';
-import { createAuthEdgeApi } from '@/utils/authEdgeApi';
+import { useAuthApi } from '@/hooks/useAuthApi';
 import { queryKeys } from '@/queries/keys';
 
 export interface RequestCustomer {
@@ -33,8 +32,7 @@ export interface RequestListItem {
 
 export function useRequestsData() {
   const { isAuthenticated, businessId } = useBusinessContext();
-  const { getToken } = useAuth();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   const enabled = isAuthenticated && !!businessId;
 
   return useQuery({

@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@clerk/clerk-react";
 import { toast } from "sonner";
-import { createAuthEdgeApi } from "@/utils/authEdgeApi";
+import { useAuthApi } from "@/hooks/useAuthApi";
 
 interface TimesheetEntry {
   id: string;
@@ -21,14 +20,13 @@ interface MemberInfo {
 }
 
 export function useOtherUserTimesheet(userId: string) {
-  const { getToken } = useAuth();
   const queryClient = useQueryClient();
-  const authEdgeApi = createAuthEdgeApi(getToken);
+  const authApi = useAuthApi();
 
   const { data, isLoading } = useQuery({
     queryKey: ["other-user-timesheet", userId],
     queryFn: async () => {
-      const result = await authEdgeApi.invoke("timesheet-crud", {
+      const result = await authApi.invoke("timesheet-crud", {
         method: "GET",
         queryParams: { userId }
       });
@@ -50,7 +48,7 @@ export function useOtherUserTimesheet(userId: string) {
       action: string;
       targetUserId?: string;
     }) => {
-      const result = await authEdgeApi.invoke("timesheet-crud", {
+      const result = await authApi.invoke("timesheet-crud", {
         method: "PUT",
         body: params,
       });

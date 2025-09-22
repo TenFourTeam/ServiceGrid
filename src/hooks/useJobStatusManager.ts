@@ -1,12 +1,11 @@
 import { useEffect, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { useJobsData } from '@/hooks/useJobsData';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { useAuthApi } from '@/hooks/useAuthApi';
 import { queryKeys } from '@/queries/keys';
 import { toast } from 'sonner';
 import { Job } from '@/types';
-import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 
 interface JobStatusUpdate {
   id: string;
@@ -21,8 +20,7 @@ interface JobStatusUpdate {
 export function useJobStatusManager() {
   const { data: jobs, refetch } = useJobsData();
   const { businessId, isAuthenticated } = useBusinessContext();
-  const { getToken } = useClerkAuth();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   const queryClient = useQueryClient();
 
   // Check which jobs need status updates

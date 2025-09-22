@@ -1,8 +1,7 @@
-import { useAuth } from '@clerk/clerk-react';
+import { useAuthApi } from '@/hooks/useAuthApi';
 import { queryKeys } from '@/queries/keys';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 
 export type LogoKind = 'dark' | 'light';
 
@@ -16,20 +15,11 @@ export type LogoUploadPayload = {
  * Handles both dark and light logo uploads with consistent error handling
  */
 export function useLogoOperations() {
-  const { isSignedIn, getToken } = useAuth();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   const queryClient = useQueryClient();
 
   const uploadLogo = useMutation({
     mutationFn: async ({ file, kind }: LogoUploadPayload) => {
-      if (!isSignedIn) {
-        throw new Error('You must be signed in');
-      }
-      
-      if (!file) {
-        throw new Error('Please choose an image file');
-      }
-
       const form = new FormData();
       form.append('file', file);
       

@@ -4,7 +4,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { MoreHorizontal, Send, FileText, Receipt, Edit, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { createAuthEdgeApi } from '@/utils/authEdgeApi';
+import { useAuthApi } from '@/hooks/useAuthApi';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useLifecycleEmailIntegration } from '@/hooks/useLifecycleEmailIntegration';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
@@ -24,10 +24,9 @@ interface QuoteActionsProps {
 export function QuoteActions({ quote, onSendQuote, onEditQuote }: QuoteActionsProps) {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const { getToken } = useClerkAuth();
   const { businessId } = useBusinessContext();
   const queryClient = useQueryClient();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   const { triggerJobScheduled, triggerInvoiceSent } = useLifecycleEmailIntegration();
   const deleteQuoteMutation = useDeleteQuote();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);

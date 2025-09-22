@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useBusinessContext } from './useBusinessContext';
-import { useAuth } from '@clerk/clerk-react';
-import { createAuthEdgeApi } from '@/utils/authEdgeApi';
+import { useAuthApi } from '@/hooks/useAuthApi';
 import { toast } from 'sonner';
 import { RequestListItem } from './useRequestsData';
 import { invalidationHelpers } from '@/queries/keys';
@@ -35,8 +34,7 @@ interface UpdateRequestData {
 export function useRequestOperations() {
   const queryClient = useQueryClient();
   const { businessId } = useBusinessContext();
-  const { getToken } = useAuth();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
 
   const createRequest = useMutation({
     mutationFn: async (data: CreateRequestData): Promise<RequestListItem> => {

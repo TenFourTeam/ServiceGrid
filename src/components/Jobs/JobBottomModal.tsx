@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { useCustomersData } from '@/queries/unified';
 import { Customer, Job, JobType } from '@/types';
 import { useAuth } from '@clerk/clerk-react';
-import { createAuthEdgeApi } from "@/utils/authEdgeApi";
+import { useAuthApi } from "@/hooks/useAuthApi";
 import { queryKeys } from '@/queries/keys';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -66,9 +66,8 @@ export function JobBottomModal({
 
   const { data: customers } = useCustomersData();
   const queryClient = useQueryClient();
-  const { getToken } = useAuth();
   const { businessId, userId } = useBusinessContext();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   const { t } = useLanguage();
 
   // Reset state when modal closes

@@ -1,17 +1,15 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '@clerk/clerk-react';
 import { useBusinessContext } from './useBusinessContext';
 import { useLifecycleEmailIntegration } from './useLifecycleEmailIntegration';
-import { createAuthEdgeApi } from '@/utils/authEdgeApi';
+import { useAuthApi } from '@/hooks/useAuthApi';
 import { queryKeys } from '@/queries/keys';
 
 import type { Job } from '@/types';
 
 export function useCreateJob() {
-  const { getToken } = useAuth();
   const { businessId } = useBusinessContext();
   const { triggerJobScheduled } = useLifecycleEmailIntegration();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -48,9 +46,8 @@ export function useCreateJob() {
 }
 
 export function useUpdateJob() {
-  const { getToken } = useAuth();
   const { businessId } = useBusinessContext();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   const queryClient = useQueryClient();
 
   return useMutation({

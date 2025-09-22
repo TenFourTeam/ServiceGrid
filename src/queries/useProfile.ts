@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from './keys';
 import { useAuth } from '@clerk/clerk-react';
-import { createAuthEdgeApi } from '@/utils/authEdgeApi';
+import { useAuthApi } from '@/hooks/useAuthApi';
 
 export function useProfile(currentBusinessId?: string | null) {
-  const { userId, getToken } = useAuth();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const { userId } = useAuth();
+  const authApi = useAuthApi();
 
   return useQuery({
     queryKey: queryKeys.profile.byId(userId || '', currentBusinessId || ''),

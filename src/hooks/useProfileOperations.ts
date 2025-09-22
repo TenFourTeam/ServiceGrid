@@ -1,8 +1,7 @@
 import { invalidationHelpers } from '@/queries/keys';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { useAuth } from '@clerk/clerk-react';
-import { createAuthEdgeApi } from '@/utils/authEdgeApi';
+import { useAuthApi } from '@/hooks/useAuthApi';
 
 export type ProfileUpdatePayload = {
   fullName: string;
@@ -23,8 +22,7 @@ export type ProfileUpdateResponse = {
  */
 export function useProfileOperations() {
   const queryClient = useQueryClient();
-  const { getToken } = useAuth();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
 
   const updateProfile = useMutation({
     mutationFn: async (input: ProfileUpdatePayload): Promise<ProfileUpdateResponse> => {

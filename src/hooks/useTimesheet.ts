@@ -2,8 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useBusinessContext } from './useBusinessContext';
 import { toast } from 'sonner';
 import { queryKeys } from '@/queries/keys';
-import { useAuth } from '@clerk/clerk-react';
-import { createAuthEdgeApi } from '@/utils/authEdgeApi';
+import { useAuthApi } from '@/hooks/useAuthApi';
 
 export interface TimesheetEntry {
   id: string;
@@ -19,8 +18,7 @@ export interface TimesheetEntry {
 export function useTimesheet() {
   const { businessId, role } = useBusinessContext();
   const queryClient = useQueryClient();
-  const { getToken } = useAuth();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
 
   // Get current user's timesheet entries via edge function
   const { data: entries = [], isLoading } = useQuery({

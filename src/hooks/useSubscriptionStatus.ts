@@ -1,8 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { queryKeys } from "@/queries/keys";
-import { createAuthEdgeApi } from '@/utils/authEdgeApi';
+import { useAuthApi } from "@/hooks/useAuthApi";
 
 export interface SubscriptionStatus {
   subscribed: boolean;
@@ -15,10 +14,9 @@ export interface SubscriptionStatus {
 const TRIAL_DURATION_DAYS = 7;
 
 export function useSubscriptionStatus(opts?: { enabled?: boolean }) {
-  const { isSignedIn, getToken } = useClerkAuth();
   const { userId } = useBusinessContext();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
-  const enabled = !!isSignedIn && (opts?.enabled ?? true);
+  const authApi = useAuthApi();
+  const enabled = (opts?.enabled ?? true);
 
   return useQuery<SubscriptionStatus | null, Error>({
     queryKey: queryKeys.billing.subscription(userId || ''),

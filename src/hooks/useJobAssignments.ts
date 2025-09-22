@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
-import { useAuth } from '@clerk/clerk-react';
-import { createAuthEdgeApi } from "@/utils/authEdgeApi";
+import { useAuthApi } from "@/hooks/useAuthApi";
 import { queryKeys } from "@/queries/keys";
 
 export interface JobAssignmentRequest {
@@ -15,8 +14,7 @@ export interface JobAssignmentRequest {
 export function useJobAssignments() {
   const queryClient = useQueryClient();
   const { businessId, userId } = useBusinessContext();
-  const { getToken } = useAuth();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
 
   const assignMembers = useMutation({
     mutationFn: async ({ jobId, userIds }: JobAssignmentRequest) => {

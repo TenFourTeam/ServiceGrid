@@ -1,8 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys, invalidationHelpers } from "@/queries/keys";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
-import { useAuth } from '@clerk/clerk-react';
-import { createAuthEdgeApi } from "@/utils/authEdgeApi";
+import { useAuthApi } from "@/hooks/useAuthApi";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from 'react';
 
@@ -17,8 +16,7 @@ interface UseJobsDataOptions {
  */
 export function useJobsData(opts?: UseJobsDataOptions) {
   const { isAuthenticated, businessId, userId, role } = useBusinessContext();
-  const { getToken } = useAuth();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   const enabled = isAuthenticated && !!businessId && (opts?.enabled ?? true);
   const queryClient = useQueryClient();
 

@@ -1,17 +1,15 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '@clerk/clerk-react';
 import { useBusinessContext } from './useBusinessContext';
 import { useLifecycleEmailIntegration } from './useLifecycleEmailIntegration';
-import { createAuthEdgeApi } from '@/utils/authEdgeApi';
+import { useAuthApi } from '@/hooks/useAuthApi';
 import { queryKeys } from '@/queries/keys';
 import { toast } from 'sonner';
 import type { Quote } from '@/types';
 
 export function useCreateQuote() {
-  const { getToken } = useAuth();
   const { businessId } = useBusinessContext();
   const { triggerQuoteCreated } = useLifecycleEmailIntegration();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -47,10 +45,9 @@ export function useCreateQuote() {
 }
 
 export function useConvertQuoteToJob() {
-  const { getToken } = useAuth();
   const { businessId } = useBusinessContext();
   const { triggerJobScheduled } = useLifecycleEmailIntegration();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -87,10 +84,9 @@ export function useConvertQuoteToJob() {
 }
 
 export function useConvertQuoteToInvoice() {
-  const { getToken } = useAuth();
   const { businessId } = useBusinessContext();
   const { triggerInvoiceSent } = useLifecycleEmailIntegration();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -127,9 +123,8 @@ export function useConvertQuoteToInvoice() {
 }
 
 export function useDeleteQuote() {
-  const { getToken } = useAuth();
   const { businessId } = useBusinessContext();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   const queryClient = useQueryClient();
 
   return useMutation({
