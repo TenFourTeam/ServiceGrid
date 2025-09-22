@@ -13,8 +13,7 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidationHelpers } from "@/queries/keys";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
-import { useAuth } from '@clerk/clerk-react';
-import { createAuthEdgeApi } from "@/utils/authEdgeApi";
+import { useAuthApi } from '@/hooks/useAuthApi';
 import { useCustomersData } from "@/hooks/useCustomersData";
 import { CustomerCombobox } from "@/components/Quotes/CustomerCombobox";
 import { CustomerBottomModal } from "@/components/Customers/CustomerBottomModal";
@@ -40,8 +39,7 @@ export function RequestEditModal({
   const { t } = useLanguage();
   const queryClient = useQueryClient();
   const { businessId } = useBusinessContext();
-  const { getToken } = useAuth();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   const { data: customers = [] } = useCustomersData();
   
   // Form state

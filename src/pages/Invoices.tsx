@@ -22,7 +22,7 @@ import { useInvoicePayments } from '@/hooks/useInvoicePayments';
 import { supabase } from '@/integrations/supabase/client';
 import { invalidationHelpers } from '@/queries/keys';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
-import { createAuthEdgeApi } from '@/utils/authEdgeApi';
+import { useAuthApi } from '@/hooks/useAuthApi';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 const statusColors: Record<string, string> = {
@@ -35,10 +35,10 @@ const statusColors: Record<string, string> = {
 export default function InvoicesPage() {
   const { data: customers = [] } = useCustomersData();
   const { data: invoices = [] } = useInvoicesData();
-  const { isSignedIn, getToken } = useClerkAuth();
+  const { isSignedIn } = useClerkAuth();
   const { businessId } = useBusinessContext();
   const { t } = useLanguage();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<'All' | 'Draft' | 'Sent' | 'Paid' | 'Overdue'>('All');

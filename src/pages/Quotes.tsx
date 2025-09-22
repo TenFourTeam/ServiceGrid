@@ -29,7 +29,7 @@ import { useOnboardingActions } from '@/onboarding/hooks';
 import { toast } from 'sonner';
 import { formatMoney as formatCurrency } from '@/utils/format';
 import type { Customer, QuoteListItem, QuoteStatus, LineItem, Quote } from '@/types';
-import { createAuthEdgeApi } from '@/utils/authEdgeApi';
+import { useAuthApi } from '@/hooks/useAuthApi';
 
 
 const statusColors: Record<QuoteStatus, string> = {
@@ -44,8 +44,8 @@ const statusColors: Record<QuoteStatus, string> = {
 
 export default function QuotesPage() {
   const { t } = useLanguage();
-  const { isSignedIn, getToken } = useClerkAuth();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const { isSignedIn } = useClerkAuth();
+  const authApi = useAuthApi();
   const { businessTaxRateDefault } = useBusinessContext();
   const { data: quotes } = useQuotesData();
   const { data: customers } = useCustomersData();

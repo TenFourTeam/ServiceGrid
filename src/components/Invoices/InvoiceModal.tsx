@@ -18,8 +18,7 @@ import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useRecordPayment, useDeleteInvoice } from '@/hooks/useInvoiceOperations';
 import { useInvoicePayments } from '@/hooks/useInvoicePayments';
 import { useJobsData } from '@/hooks/useJobsData';
-import { createAuthEdgeApi } from '@/utils/authEdgeApi';
-import { useAuth as useClerkAuth } from '@clerk/clerk-react';
+import { useAuthApi } from '@/hooks/useAuthApi';
 import { useQueryClient } from '@tanstack/react-query';
 import { invalidationHelpers, queryKeys } from '@/queries/keys';
 import { generateInvoiceEmail } from '@/utils/emailTemplateEngine';
@@ -54,8 +53,7 @@ export default function InvoiceModal({
   const isMobile = useIsMobile();
   const { data: quotes = [] } = useQuotesData();
   const { business, businessName, businessLogoUrl, businessLightLogoUrl, businessId } = useBusinessContext();
-  const { getToken } = useClerkAuth();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   const queryClient = useQueryClient();
   const recordPaymentMutation = useRecordPayment();
   const deleteInvoice = useDeleteInvoice();
@@ -301,7 +299,6 @@ export default function InvoiceModal({
 
     try {
       setLoading(true);
-      const token = await getToken({ template: 'supabase' });
       
       const { data: response } = await authApi.invoke('create-invoice-payment', {
         method: 'POST',

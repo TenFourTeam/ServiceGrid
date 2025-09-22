@@ -3,10 +3,9 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Calendar, FileText, CheckCircle, Trash2, Eye, Edit, Mail } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useUpdateJob } from '@/hooks/useJobOperations';
-import { createAuthEdgeApi } from '@/utils/authEdgeApi';
+import { useAuthApi } from '@/hooks/useAuthApi';
 import { useQueryClient } from '@tanstack/react-query';
 import { invalidationHelpers, queryKeys } from '@/queries/keys';
 import { toast } from 'sonner';
@@ -30,9 +29,8 @@ export function WorkOrderActions({
   existingInvoice 
 }: WorkOrderActionsProps) {
   const { t } = useLanguage();
-  const { getToken } = useClerkAuth();
   const { businessId } = useBusinessContext();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const updateJob = useUpdateJob();

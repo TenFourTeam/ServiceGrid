@@ -4,8 +4,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
-import { useAuth as useClerkAuth } from "@clerk/clerk-react";
-import { createAuthEdgeApi } from '@/utils/authEdgeApi';
+import { useAuthApi } from '@/hooks/useAuthApi';
 import { toast } from "sonner";
 import { addMinutes, format } from "date-fns";
 import type { Job } from "@/types";
@@ -21,8 +20,7 @@ interface ReschedulePopoverProps {
 }
 
 export default function ReschedulePopover({ job, onDone, asDropdownItem = false }: ReschedulePopoverProps) {
-  const { getToken } = useClerkAuth();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   const queryClient = useQueryClient();
   const { businessId } = useBusinessContext();
   const { t } = useLanguage();

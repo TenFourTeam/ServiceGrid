@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import BusinessLogo from '@/components/BusinessLogo';
 import { useState, useEffect } from 'react';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
-import { createAuthEdgeApi } from '@/utils/authEdgeApi';
+import { useAuthApi } from '@/hooks/useAuthApi';
 import ConnectBanner from '@/components/Stripe/ConnectBanner';
 import { useStripeConnectStatus } from '@/hooks/useStripeConnectStatus';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
@@ -21,9 +21,9 @@ import { Textarea } from '@/components/ui/textarea';
 
 export default function SettingsPage() {
   const { business, role } = useBusinessContext();
-  const { isSignedIn, getToken } = useClerkAuth();
+  const { isSignedIn } = useClerkAuth();
   const { t, language, setLanguage } = useLanguage();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   const [darkFile, setDarkFile] = useState<File | null>(null);
   const [lightFile, setLightFile] = useState<File | null>(null);
   const [sub, setSub] = useState<any>(null);

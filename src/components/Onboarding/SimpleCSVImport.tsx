@@ -5,9 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Upload, FileText } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { createAuthEdgeApi } from '@/utils/authEdgeApi';
+import { useAuthApi } from '@/hooks/useAuthApi';
 import { invalidationHelpers } from '@/queries/keys';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import Papa from 'papaparse';
@@ -26,8 +25,7 @@ interface SimpleCSVImportProps {
 }
 
 export function SimpleCSVImport({ open, onOpenChange, onImportComplete }: SimpleCSVImportProps) {
-  const { getToken } = useClerkAuth();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   const queryClient = useQueryClient();
   const { businessId, canManage } = useBusinessContext();
   const [file, setFile] = useState<File | null>(null);

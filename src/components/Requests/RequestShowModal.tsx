@@ -10,8 +10,7 @@ import { statusOptions } from "@/validation/requests";
 import { RequestEditModal } from "./RequestEditModal";
 import { RequestActions } from "./RequestActions";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { createAuthEdgeApi } from "@/utils/authEdgeApi";
-import { useAuth as useClerkAuth } from "@clerk/clerk-react";
+import { useAuthApi } from '@/hooks/useAuthApi';
 import { useCreateQuote } from "@/hooks/useQuoteOperations";
 import { useLifecycleEmailIntegration } from "@/hooks/useLifecycleEmailIntegration";
 import { useRequestOperations } from "@/hooks/useRequestOperations";
@@ -32,9 +31,8 @@ export function RequestShowModal({
 }: RequestShowModalProps) {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const { getToken } = useClerkAuth();
   const isMobile = useIsMobile();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const authApi = useAuthApi();
   const { triggerJobScheduled } = useLifecycleEmailIntegration();
   const createQuote = useCreateQuote();
   const { updateRequest } = useRequestOperations();
