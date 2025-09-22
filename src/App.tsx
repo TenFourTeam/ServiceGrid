@@ -8,7 +8,7 @@ import { AuthBoundary, RequireAuth, PublicOnly, QueryClientClerkIntegration } fr
 import { RequireRole } from "@/components/Auth/RequireRole";
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingScreen from './components/LoadingScreen';
-import { SupabaseAuthProvider } from '@/contexts/SupabaseAuthContext';
+
 
 const CalendarPage = lazy(() => import("./pages/Calendar"));
 const WorkOrdersPage = lazy(() => import("./pages/WorkOrders"));
@@ -78,12 +78,11 @@ function App({ clerkKey }: AppProps) {
       <BrowserRouter>
         <ClerkLoaded>
           <AppProviders>
-            <SupabaseAuthProvider>
-              <QueryClientClerkIntegration />
-              <ErrorBoundary>
-                <Suspense fallback={<LoadingScreen />}>
-                  <PrefetchRoutes />
-                  <Routes>
+            <QueryClientClerkIntegration />
+            <ErrorBoundary>
+              <Suspense fallback={<LoadingScreen />}>
+                <PrefetchRoutes />
+                <Routes>
                 {/* Public routes */}
                 <Route element={<PublicOnly redirectTo="/calendar" />}>
                   <Route path="/" element={<LandingPage />} />
@@ -150,11 +149,10 @@ function App({ clerkKey }: AppProps) {
                 <Route path="/job-confirmation" element={<JobConfirmationPage />} />
                 <Route path="/request/:businessId" element={<PublicRequestFormPage />} />
                 
-                <Route path="*" element={<NotFound />} />
+                 <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>
               </ErrorBoundary>
-            </SupabaseAuthProvider>
           </AppProviders>
         </ClerkLoaded>
         <ClerkLoading>

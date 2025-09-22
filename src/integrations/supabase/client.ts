@@ -5,25 +5,12 @@ import type { Database } from './types';
 const SUPABASE_URL = "https://ijudkzqfriazabiosnvb.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlqdWRrenFmcmlhemFiaW9zbnZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ2NzIyNjAsImV4cCI6MjA3MDI0ODI2MH0.HLOwmgddlBTcHfYrX9RYvO8RK6IVkjDQvsdHyXuMXIM";
 
-// Global reference to Clerk token function
-let getClerkToken: (() => Promise<string | null>) | null = null;
-
-export function setClerkTokenGetter(tokenGetter: () => Promise<string | null>) {
-  getClerkToken = tokenGetter;
-}
-
-// Create Supabase client with Clerk integration using accessToken callback
+// Simple Supabase client for non-authenticated operations only
+// All authenticated operations go through Edge Functions
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     storage: localStorage,
-    persistSession: false, // Clerk handles session persistence
-    autoRefreshToken: false, // Clerk handles token refresh
-  },
-  // Official Clerk integration method - provide access token via callback
-  accessToken: async () => {
-    if (!getClerkToken) return null;
-    const token = await getClerkToken();
-    console.log('Supabase accessToken callback - got Clerk token:', !!token);
-    return token;
+    persistSession: true,
+    autoRefreshToken: true,
   }
 });
