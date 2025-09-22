@@ -69,7 +69,7 @@ export function useBusinessOperations() {
       // Force dashboard data refresh to update onboarding state
       window.dispatchEvent(new CustomEvent('business-updated'));
     },
-    onError: (error: any) => {
+    onError: (error: Error | unknown) => {
       console.error('[useBusinessOperations] mutation error:', error);
     },
   });

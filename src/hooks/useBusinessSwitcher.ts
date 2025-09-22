@@ -33,7 +33,7 @@ export function useBusinessSwitcher() {
       // Navigate to calendar after switching business
       navigate('/calendar');
     },
-    onError: (error: any) => {
+    onError: (error: Error | unknown) => {
       console.error('[useBusinessSwitcher] Switch failed:', error);
     },
   });

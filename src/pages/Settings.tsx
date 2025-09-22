@@ -280,7 +280,7 @@ export default function SettingsPage() {
                   <Label>{t('settings.branding.darkLogo')}</Label>
                   <div className="flex items-center gap-4">
                     <div className="shrink-0 w-14 h-14 rounded-lg bg-background p-2 border border-border shadow-sm -ml-1 flex items-center justify-center overflow-hidden">
-                      <BusinessLogo size={40} src={business?.logoUrl} alt="Dark icon preview" />
+                      <BusinessLogo size={40} src={business?.logoUrl as string} alt="Dark icon preview" />
                     </div>
                     <div className="flex-1 grid gap-2 sm:grid-cols-[1fr_auto]">
                       <Input type="file" accept="image/png,image/svg+xml,image/webp,image/jpeg" onChange={e => setDarkFile(e.target.files?.[0] || null)} />
@@ -302,7 +302,7 @@ export default function SettingsPage() {
                   <Label>{t('settings.branding.lightLogo')}</Label>
                   <div className="flex items-center gap-4">
                     <div className="shrink-0 w-14 h-14 rounded-lg bg-primary p-2 shadow-sm -ml-1 flex items-center justify-center overflow-hidden">
-                      <BusinessLogo size={40} src={business?.lightLogoUrl} alt="Light icon preview" />
+                      <BusinessLogo size={40} src={business?.lightLogoUrl as string} alt="Light icon preview" />
                     </div>
                     <div className="flex-1 grid gap-2 sm:grid-cols-[1fr_auto]">
                       <Input type="file" accept="image/png,image/svg+xml,image/webp,image/jpeg" onChange={e => setLightFile(e.target.files?.[0] || null)} />

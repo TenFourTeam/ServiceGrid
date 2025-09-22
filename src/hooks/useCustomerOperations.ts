@@ -30,7 +30,7 @@ export function useCustomerOperations() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.data.customers(businessId || '') });
     },
-    onError: (error: any) => {
+    onError: (error: Error | unknown) => {
       console.error('[useCustomerOperations] error:', error);
     }
   });
@@ -56,7 +56,7 @@ export function useCustomerOperations() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.data.customers(businessId || '') });
     },
-    onError: (error: any) => {
+    onError: (error: Error | unknown) => {
       console.error('[useCustomerOperations] bulk delete error:', error);
     }
   });

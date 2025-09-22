@@ -46,7 +46,7 @@ export function useClockInOut() {
       const previousJobs = queryClient.getQueryData(queryKey);
 
       // Optimistically update the job
-      queryClient.setQueryData(queryKey, (old: any) => {
+      queryClient.setQueryData(queryKey, (old: { jobs?: Job[]; count?: number } | undefined) => {
         if (!old?.jobs) return old;
         
         const currentTime = new Date().toISOString();

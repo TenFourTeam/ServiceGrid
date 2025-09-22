@@ -55,7 +55,7 @@ export default function MobileHeader({ title }: MobileHeaderProps) {
       <div className="flex items-center gap-3">
         <BusinessLogo 
           size={32} 
-          src={businessLightLogoUrl || businessLogoUrl} 
+          src={(businessLightLogoUrl || businessLogoUrl) as string} 
           alt={`${businessName || "Business"} logo`} 
         />
         <div>

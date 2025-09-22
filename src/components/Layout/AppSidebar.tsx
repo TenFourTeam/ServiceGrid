@@ -104,14 +104,14 @@ export default function AppSidebar() {
   const displayBusinessName = businessName;
 
   // Warm the cache for the logo ASAP
-  usePreloadImage(businessLightLogoUrl || businessLogoUrl);
+  usePreloadImage((businessLightLogoUrl || businessLogoUrl) as string);
   const isActivePath = (path: string) => location.pathname.startsWith(path);
   return <Sidebar collapsible="icon">
       <SidebarHeader>
         <div className="grid grid-cols-[32px_1fr_auto] items-center pr-2 py-1.5">
           {/* Logo column - fixed width so position stays constant in both states */}
           <div className="relative h-8 w-8 ml-0 flex items-center justify-center">
-            <BusinessLogo size={26} src={businessLightLogoUrl || businessLogoUrl} alt={`${displayBusinessName || "Business"} logo`} />
+            <BusinessLogo size={26} src={(businessLightLogoUrl || businessLogoUrl) as string} alt={`${displayBusinessName || "Business"} logo`} />
             {collapsed && <SidebarTrigger aria-label="Expand sidebar" className="absolute inset-0 h-8 w-8 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity rounded-full" />}
           </div>
 

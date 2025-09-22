@@ -101,7 +101,9 @@ export interface Quote {
 
 // Backward-compatibility aliases
 export type EstimateStatus = QuoteStatus;
-export interface Estimate extends Quote {}
+export interface Estimate extends Quote {
+  // Legacy alias for Quote interface
+}
 
 export type JobStatus = 'Scheduled' | 'Schedule Approved' | 'In Progress' | 'Completed';
 export type JobType = 'scheduled' | 'time_and_materials';
@@ -195,7 +197,7 @@ export interface AppEvent {
     | 'job.created' | 'job.updated' | 'job.completed'
     | 'invoice.created' | 'invoice.sent' | 'invoice.paid';
   entityId: ID;
-  meta?: Record<string, any>;
+  meta?: Record<string, unknown>;
 }
 
 export interface AppState {
@@ -209,5 +211,28 @@ export interface AppState {
     setupWidgetDismissed?: boolean;
     setupWidgetDismissedAt?: string | null;
   };
+}
+
+// Additional types for form data and API responses
+export interface CustomerFormData {
+  name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  notes?: string;
+}
+
+export interface BusinessFormData {
+  name: string;
+  description?: string;
+  phone?: string;
+  replyToEmail?: string;
+  taxRateDefault: number;
+}
+
+export interface ProfileFormData {
+  fullName?: string;
+  phoneE164?: string;
+  email?: string;
 }
 

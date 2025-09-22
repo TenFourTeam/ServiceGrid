@@ -13,7 +13,7 @@ export type BusinessUI = {
   replyToEmail?: string;
   taxRateDefault?: number;
   role?: 'owner' | 'worker';
-  [key: string]: any;
+  [key: string]: unknown;
 };
 
 /**
@@ -49,7 +49,7 @@ export function useBusinessContext() {
       updateBusinessMeta({
         name: business.name,
         description: business.description,
-        logoUrl: business.logoUrl || business.lightLogoUrl
+        logoUrl: (business.logoUrl || business.lightLogoUrl) as string
       });
     }
   }, [business?.name, business?.description, business?.logoUrl, business?.lightLogoUrl]);

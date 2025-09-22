@@ -27,7 +27,7 @@ export function useLifecycleEmailTriggers(enableAutoTriggers: boolean = false) {
     businessName: businessName || business?.name,
     businessId: business?.id,
     userId: userId,
-    signupDate: business?.createdAt,
+    signupDate: (business?.createdAt as string) || '',
     lastLoginDate: new Date().toISOString() // Current time as proxy
   };
 
@@ -66,7 +66,7 @@ export function useLifecycleEmailTriggers(enableAutoTriggers: boolean = false) {
     }
 
     const daysSinceSignup = Math.floor(
-      (Date.now() - new Date(business.createdAt).getTime()) / (1000 * 60 * 60 * 24)
+      (Date.now() - new Date(business.createdAt as string).getTime()) / (1000 * 60 * 60 * 24)
     );
 
     // Day 3: Customer Management discovery

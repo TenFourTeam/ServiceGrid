@@ -119,7 +119,7 @@ export default function InvoiceModal({
     if (!invoice) return '';
     const { html } = generateInvoiceEmail({
       businessName,
-      businessLogoUrl,
+      businessLogoUrl: businessLogoUrl as string,
       invoice
     });
     return html;
@@ -259,7 +259,7 @@ export default function InvoiceModal({
 
       const { html: emailContent } = generateInvoiceEmail({
         businessName: businessName || 'Your Business',
-        businessLogoUrl,
+        businessLogoUrl: businessLogoUrl as string,
         customerName,
         invoice,
         payUrl

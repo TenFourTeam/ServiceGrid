@@ -87,7 +87,7 @@ export function useBusinessMemberOperations() {
       queryClient.invalidateQueries({ queryKey: queryKeys.data.members(businessId || '') });
       queryClient.invalidateQueries({ queryKey: queryKeys.team.invites(businessId || '') });
     },
-    onError: (error: any) => {
+    onError: (error: Error | unknown) => {
       console.error('[useInviteWorker] error:', error);
     },
   });
@@ -113,7 +113,7 @@ export function useBusinessMemberOperations() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.data.members(businessId || '') });
     },
-    onError: (error: any) => {
+    onError: (error: Error | unknown) => {
       console.error('[useRemoveMember] error:', error);
     },
   });

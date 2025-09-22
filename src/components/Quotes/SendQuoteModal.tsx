@@ -43,7 +43,7 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
     const logo = businessLightLogoUrl || businessLogoUrl;
     const emailData = generateQuoteEmail({
       businessName: businessName || '',
-      businessLogoUrl: logo,
+      businessLogoUrl: logo as string,
       customerName,
       quote
     });

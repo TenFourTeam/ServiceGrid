@@ -62,7 +62,7 @@ export function useRevokeInvite(businessId: string) {
     onSuccess: () => {
       invalidationHelpers.team(queryClient, businessId);
     },
-    onError: (error: any) => {
+    onError: (error: Error | unknown) => {
       console.error('[useRevokeInvite] error:', error);
     },
   });
@@ -93,7 +93,7 @@ export function useResendInvite(businessId: string) {
     onSuccess: () => {
       invalidationHelpers.team(queryClient, businessId);
     },
-    onError: (error: any) => {
+    onError: (error: Error | unknown) => {
       console.error('[useResendInvite] error:', error);
     },
   });
@@ -129,7 +129,7 @@ export function useRedeemInvite() {
       }
       // Toast is handled by authApi
     },
-    onError: (error: any) => {
+    onError: (error: Error | unknown) => {
       console.error('[useRedeemInvite] error:', error);
     },
   });

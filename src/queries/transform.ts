@@ -3,7 +3,7 @@
  * Single source of truth for data shape transformations
  */
 
-export function toBusinessUI(db: { id?: string; name?: string; description?: string; logo_url?: string; light_logo_url?: string; tax_rate_default?: number; phone?: string; [k: string]: any }) {
+export function toBusinessUI(db: { id?: string; name?: string; description?: string; logo_url?: string; light_logo_url?: string; tax_rate_default?: number; phone?: string; [k: string]: unknown }) {
   // Remove snake_case properties and ensure UI uses only camelCase
   const { logo_url, light_logo_url, tax_rate_default, ...rest } = db;
   return {
@@ -18,7 +18,7 @@ export function toBusinessUI(db: { id?: string; name?: string; description?: str
   };
 }
 
-export function toProfileUI(db: { full_name?: string; phone_e164?: string; [k: string]: any }) {
+export function toProfileUI(db: { full_name?: string; phone_e164?: string; [k: string]: unknown }) {
   // Remove snake_case properties and ensure UI uses only camelCase
   const { full_name, phone_e164, ...rest } = db;
   return {
@@ -39,7 +39,7 @@ export function toCustomerUI(db: {
   notes?: string; 
   created_at?: string; 
   updated_at?: string; 
-  [k: string]: any 
+  [k: string]: unknown 
 }) {
   // Remove snake_case properties and ensure UI uses only camelCase
   const { business_id, owner_id, created_at, updated_at, ...rest } = db;

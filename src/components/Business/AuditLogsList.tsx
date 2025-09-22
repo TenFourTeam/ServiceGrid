@@ -107,13 +107,13 @@ export function AuditLogsList({ businessId }: AuditLogsListProps) {
                   {log.details && Object.keys(log.details).length > 0 && (
                     <div className="text-muted-foreground">
                       {log.details.name && (
-                        <span>Name: {log.details.name}</span>
+                        <span>Name: {String(log.details.name)}</span>
                       )}
                       {log.details.email && (
-                        <span className="ml-2">Email: {log.details.email}</span>
+                        <span className="ml-2">Email: {String(log.details.email)}</span>
                       )}
                       {log.details.status && (
-                        <span className="ml-2">Status: {log.details.status}</span>
+                        <span className="ml-2">Status: {String(log.details.status)}</span>
                       )}
                     </div>
                   )}
