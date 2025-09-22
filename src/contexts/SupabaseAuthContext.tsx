@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from '@clerk/clerk-react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, setClerkTokenGetter } from '@/integrations/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -17,42 +17,40 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   const [clerkTokenState, setClerkTokenState] = useState<string | null>(null);
 
   useEffect(() => {
-    async function updateSupabaseSession() {
-      console.log('updateSupabaseSession called - isSignedIn:', isSignedIn);
+    async function setupClerkIntegration() {
+      console.log('Setting up Clerk integration - isSignedIn:', isSignedIn);
+      
+      // Set up the token getter function for Supabase client
+      const tokenGetter = async () => {
+        if (!isSignedIn) return null;
+        try {
+          const token = await getToken({ template: 'supabase' });
+          console.log('Clerk token getter called - got token:', !!token);
+          return token;
+        } catch (error) {
+          console.error('Failed to get Clerk token:', error);
+          return null;
+        }
+      };
+
+      setClerkTokenGetter(tokenGetter);
       
       if (isSignedIn) {
         try {
           const token = await getToken({ template: 'supabase' });
-          console.log('Got Clerk token:', !!token, token?.substring(0, 50) + '...');
+          console.log('Got Clerk token for state:', !!token, token?.substring(0, 50) + '...');
           setClerkTokenState(token);
-          
-          if (token) {
-            // Set Supabase session using Clerk token
-            console.log('Setting Supabase session with Clerk token');
-            const { data, error } = await supabase.auth.setSession({
-              access_token: token,
-              refresh_token: 'dummy-refresh-token' // Required but not used with Clerk
-            });
-            
-            if (error) {
-              console.error('Error setting Supabase session:', error);
-            } else {
-              console.log('Successfully set Supabase session:', !!data.session);
-            }
-          }
         } catch (error) {
-          console.error('Failed to set Supabase session with Clerk token:', error);
+          console.error('Failed to get Clerk token for state:', error);
           setClerkTokenState(null);
-          await supabase.auth.signOut();
         }
       } else {
         setClerkTokenState(null);
-        console.log('User signed out, clearing Supabase session');
-        await supabase.auth.signOut();
+        console.log('User signed out, clearing token state');
       }
     }
 
-    updateSupabaseSession();
+    setupClerkIntegration();
   }, [isSignedIn, getToken]);
 
   return (
