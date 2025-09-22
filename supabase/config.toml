@@ -88,6 +88,9 @@ verify_jwt = false
 [functions.check-subscription]
 verify_jwt = false
 
+[functions.check-subscription-status]
+verify_jwt = false
+
 [functions.customer-portal]
 verify_jwt = false
 

@@ -16,7 +16,6 @@ import { toast } from "sonner";
 import { invalidationHelpers } from '@/queries/keys';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 
 export interface SendQuoteModalProps {
   open: boolean;
@@ -66,19 +65,19 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
 
       setSubscriptionLoading(true);
       try {
-        const { data, error } = await supabase
-          .from('recurring_schedules')
-          .select('id, stripe_subscription_id')
-          .eq('customer_id', quote.customerId)
-          .eq('business_id', businessId)
-          .eq('is_active', true)
-          .limit(1);
+        const { data, error } = await authApi.invoke('check-subscription-status', {
+          method: 'POST',
+          body: {
+            customerId: quote.customerId,
+            businessId: businessId
+          }
+        });
 
         if (error) {
           console.error('Failed to check subscription status:', error);
           setHasActiveSubscription(false);
         } else {
-          setHasActiveSubscription(data && data.length > 0);
+          setHasActiveSubscription(data?.hasActiveSubscription || false);
         }
       } catch (error) {
         console.error('Error checking subscription status:', error);
@@ -89,7 +88,7 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
     }
 
     checkActiveSubscription();
-  }, [open, quote?.isSubscription, quote?.customerId, businessId]);
+  }, [open, quote?.isSubscription, quote?.customerId, businessId, authApi]);
 
   // Reset state on open/quote change
   useEffect(() => {
