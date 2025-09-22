@@ -28,7 +28,7 @@ export function useUserBusinesses() {
       });
       
       if (error) {
-        throw new Error((error as any)?.message || 'Failed to fetch businesses');
+        throw new Error(error.message || 'Failed to fetch businesses');
       }
       
       return data as UserBusiness[];

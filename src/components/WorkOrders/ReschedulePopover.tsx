@@ -54,7 +54,7 @@ export default function ReschedulePopover({ job, onDone, asDropdownItem = false 
       });
       
       if (error) {
-        throw new Error((error as any)?.message || 'Failed to reschedule job');
+        throw new Error(error.message || 'Failed to reschedule job');
       }
       
       if (businessId) {
@@ -85,7 +85,7 @@ export default function ReschedulePopover({ job, onDone, asDropdownItem = false 
       });
       
       if (error) {
-        throw new Error((error as any)?.message || 'Failed to unschedule job');
+        throw new Error(error.message || 'Failed to unschedule job');
       }
       
       if (businessId) {

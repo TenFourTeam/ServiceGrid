@@ -1,5 +1,3 @@
-import { RateLimitedFunction } from '@/types/api';
-
 /**
  * Simple in-memory rate limiter for client-side use
  */
@@ -62,16 +60,16 @@ export const rateLimiter = new RateLimiter();
 /**
  * Rate limit decorator for async functions
  */
-export function withRateLimit<TArgs extends unknown[], TReturn>(
-  fn: RateLimitedFunction<TArgs, TReturn>,
+export function withRateLimit<T extends (...args: any[]) => Promise<any>>(
+  fn: T,
   key: string,
   maxRequests: number,
   windowMs: number
-): RateLimitedFunction<TArgs, TReturn> {
-  return (async (...args: TArgs) => {
+): T {
+  return (async (...args: any[]) => {
     if (!rateLimiter.isAllowed(key, maxRequests, windowMs)) {
       throw new Error(`Rate limit exceeded for ${key}. Try again later.`);
     }
     return fn(...args);
-  }) as RateLimitedFunction<TArgs, TReturn>;
+  }) as T;
 }

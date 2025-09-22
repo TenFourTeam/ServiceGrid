@@ -101,7 +101,9 @@ export interface Quote {
 
 // Backward-compatibility aliases
 export type EstimateStatus = QuoteStatus;
-export type Estimate = Quote
+export interface Estimate extends Quote {
+  // Legacy alias for Quote interface
+}
 
 export type JobStatus = 'Scheduled' | 'Schedule Approved' | 'In Progress' | 'Completed';
 export type JobType = 'scheduled' | 'time_and_materials';

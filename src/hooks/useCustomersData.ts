@@ -3,7 +3,6 @@ import { queryKeys } from "@/queries/keys";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useAuthApi } from "@/hooks/useAuthApi";
 import { toCustomerUI } from "@/queries/transform";
-import { getErrorMessage, hasProperty } from "@/utils/apiHelpers";
 
 import type { Customer } from '@/types';
 
@@ -31,16 +30,14 @@ export function useCustomersData(opts?: UseCustomersDataOptions) {
       
       if (error) {
         console.error("[useCustomersData] error:", error);
-        throw new Error(getErrorMessage(error, 'Failed to fetch customers'));
+        throw new Error(error.message || 'Failed to fetch customers');
       }
       
-      const customers = hasProperty(data, 'customers') ? (data.customers as unknown[]) : [];
-      const count = hasProperty(data, 'count') ? (data.count as number) : 0;
-      console.info("[useCustomersData] fetched", customers.length, "customers");
+      console.info("[useCustomersData] fetched", data?.customers?.length || 0, "customers");
       
       return {
-        customers: customers.map(toCustomerUI),
-        count
+        customers: (data?.customers || []).map(toCustomerUI),
+        count: data?.count || 0
       };
     },
     staleTime: 30_000,

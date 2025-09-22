@@ -20,13 +20,13 @@ export function createAuthEdgeApi(getToken: (options?: { template?: string }) =>
     async invoke(
       functionName: string,
       options: {
-      body?: unknown;
-      method?: string;
-      headers?: Record<string, string>;
-      queryParams?: Record<string, string>;
-      toast?: ToastOptions;
+        body?: any;
+        method?: string;
+        headers?: Record<string, string>;
+        queryParams?: Record<string, string>;
+        toast?: ToastOptions;
       } = {}
-    ): Promise<{ data: unknown; error: unknown }> {
+    ): Promise<{ data: any; error: any }> {
       const { toast: toastOptions, ...requestOptions } = options;
       const {
         success = getDefaultSuccessMessage(requestOptions.method || 'GET'),
@@ -139,7 +139,7 @@ export function createAuthEdgeApi(getToken: (options?: { template?: string }) =>
         }
 
         return { data, error };
-      } catch (error: unknown) {
+      } catch (error: any) {
         // Dismiss loading toast
         if (toastId) {
           toast.dismiss(toastId);
@@ -147,16 +147,16 @@ export function createAuthEdgeApi(getToken: (options?: { template?: string }) =>
 
         console.error(`❌ [AuthEdgeApi] Failed to invoke ${functionName}:`, error);
         console.error(`❌ [AuthEdgeApi] Error type:`, error.constructor.name);
-        console.error(`❌ [AuthEdgeApi] Error stack:`, (error as any)?.stack);
+        console.error(`❌ [AuthEdgeApi] Error stack:`, error.stack);
 
         // Show error toast if specified
         if (errorMessage) {
-          toast.error((error as any)?.message || errorMessage);
+          toast.error(error?.message || errorMessage);
         }
 
         return {
           data: null,
-          error: { message: (error as any)?.message || 'Failed to call edge function' }
+          error: { message: error.message || 'Failed to call edge function' }
         };
       }
     }

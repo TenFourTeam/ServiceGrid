@@ -29,12 +29,12 @@ export function useQuotesData(opts?: UseQuotesDataOptions) {
       
       if (error) {
         console.error("[useQuotesData] error:", error);
-        throw new Error((error as any)?.message || 'Failed to fetch quotes');
+        throw new Error(error.message || 'Failed to fetch quotes');
       }
       
-      console.info("[useQuotesData] fetched", (data as any)?.quotes?.length || 0, "quotes");
+      console.info("[useQuotesData] fetched", data?.quotes?.length || 0, "quotes");
       
-      return { quotes: (data as any)?.quotes || [], count: (data as any)?.count || 0 };
+      return { quotes: data?.quotes || [], count: data?.count || 0 };
     },
     staleTime: 30_000,
   });

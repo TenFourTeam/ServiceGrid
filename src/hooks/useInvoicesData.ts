@@ -28,12 +28,12 @@ export function useInvoicesData(opts?: UseInvoicesDataOptions) {
       
       if (error) {
         console.error("[useInvoicesData] error:", error);
-        throw new Error((error as any)?.message || 'Failed to fetch invoices');
+        throw new Error(error.message || 'Failed to fetch invoices');
       }
       
-      console.info("[useInvoicesData] fetched", (data as any)?.invoices?.length || 0, "invoices");
+      console.info("[useInvoicesData] fetched", data?.invoices?.length || 0, "invoices");
       
-      return { invoices: (data as any)?.invoices || [], count: (data as any)?.count || 0 };
+      return { invoices: data?.invoices || [], count: data?.count || 0 };
     },
     staleTime: 5_000,
   });

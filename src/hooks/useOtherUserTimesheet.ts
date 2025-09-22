@@ -30,14 +30,14 @@ export function useOtherUserTimesheet(userId: string) {
         method: "GET",
         queryParams: { userId }
       });
-      if (result.error) throw new Error((result.error as any)?.message);
+      if (result.error) throw new Error(result.error.message);
       return result.data;
     },
     enabled: !!userId,
   });
 
-  const entries: TimesheetEntry[] = (data as any)?.entries || [];
-  const memberInfo: MemberInfo | null = (data as any)?.memberInfo || null;
+  const entries: TimesheetEntry[] = data?.entries || [];
+  const memberInfo: MemberInfo | null = data?.memberInfo || null;
 
   const editEntryMutation = useMutation({
     mutationFn: async (params: {
@@ -52,7 +52,7 @@ export function useOtherUserTimesheet(userId: string) {
         method: "PUT",
         body: params,
       });
-      if (result.error) throw new Error((result.error as any)?.message);
+      if (result.error) throw new Error(result.error.message);
       return result.data;
     },
     onSuccess: () => {

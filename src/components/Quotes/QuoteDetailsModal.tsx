@@ -93,10 +93,10 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
         });
         
         if (error) {
-          throw new Error((error as any)?.message || 'Failed to fetch quote');
+          throw new Error(error.message || 'Failed to fetch quote');
         }
         
-        setQuote((fullQuote as any) || null);
+        setQuote(fullQuote);
       } catch (error) {
         console.error('Failed to fetch quote:', error);
         toast.error('Failed to load quote details');
@@ -142,7 +142,7 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
         });
         
         if (error) {
-          throw new Error((error as any)?.message || 'Failed to create quote');
+          throw new Error(error.message || 'Failed to create quote');
         }
 
         // Invalidate quotes data
@@ -151,17 +151,17 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
         }
 
         const newQuote: Quote = {
-          id: (result as any)?.quote?.id,
-          number: (result as any)?.quote?.number,
+          id: result.quote.id,
+          number: result.quote.number,
           businessId: businessId || '',
           customerId: formData.customerId,
           address: formData.address,
           lineItems: formData.lineItems,
-          taxRate: (result as any)?.quote?.taxRate,
-          discount: (result as any)?.quote?.discount,
-          subtotal: (result as any)?.quote?.subtotal,
-          total: (result as any)?.quote?.total,
-          status: (result as any)?.quote?.status,
+          taxRate: result.quote.taxRate,
+          discount: result.quote.discount,
+          subtotal: result.quote.subtotal,
+          total: result.quote.total,
+          status: result.quote.status,
           files: [],
           notesInternal: formData.notesInternal,
           terms: formData.terms,
@@ -170,10 +170,10 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
           depositRequired: formData.depositRequired,
           depositPercent: formData.depositPercent,
           sentAt: undefined,
-          viewCount: (result as any)?.quote?.viewCount || 0,
-          createdAt: (result as any)?.quote?.createdAt || new Date().toISOString(),
-          updatedAt: (result as any)?.quote?.updatedAt || new Date().toISOString(),
-          publicToken: (result as any)?.quote?.publicToken,
+          viewCount: result.quote.viewCount || 0,
+          createdAt: result.quote.createdAt || new Date().toISOString(),
+          updatedAt: result.quote.updatedAt || new Date().toISOString(),
+          publicToken: result.quote.publicToken,
         };
 
         onOpenChange(false);
@@ -217,7 +217,7 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
         });
         
         if (error) {
-          throw new Error((error as any)?.message || 'Failed to update quote');
+          throw new Error(error.message || 'Failed to update quote');
         }
 
         // Refresh quote data
@@ -225,7 +225,7 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
           queryClient.invalidateQueries({ queryKey: queryKeys.data.quotes(businessId) });
         }
 
-        setQuote((result as any)?.quote);
+        setQuote(result.quote);
         setCurrentMode('view');
       }
     } catch (e: Error | unknown) {
@@ -301,16 +301,16 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
       });
 
       // Optimistic update - add invoice to cache immediately
-      if ((result as any)?.invoice && businessId) {
+      if (result?.invoice && businessId) {
         queryClient.setQueryData(queryKeys.data.invoices(businessId), (oldData: InvoicesCacheData | undefined) => {
           if (oldData) {
             return {
               ...oldData,
-              invoices: [(result as any)?.invoice, ...oldData.invoices],
+              invoices: [result.invoice, ...oldData.invoices],
               count: oldData.count + 1
             };
           }
-          return { invoices: [(result as any)?.invoice], count: 1 };
+          return { invoices: [result.invoice], count: 1 };
         });
       }
 

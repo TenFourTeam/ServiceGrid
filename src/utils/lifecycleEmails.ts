@@ -1,8 +1,6 @@
 // Note: This file is deprecated for frontend use. 
 // Lifecycle emails should be managed server-side through edge functions.
 
-import type { AuthApiClient, FeatureDiscoveryParams, EngagementParams } from './lifecycleEmailTypes';
-
 export interface LifecycleEmailData {
   userFullName?: string;
   userEmail?: string;
@@ -20,7 +18,7 @@ export interface LifecycleEmailData {
 export async function sendLifecycleEmail(
   type: string,
   data: LifecycleEmailData,
-  authApi: AuthApiClient,
+  authApi: any,
   extraParams?: Record<string, any>
 ) {
   try {
@@ -69,7 +67,7 @@ export function shouldSendLifecycleEmail(
  */
 export async function getUserEngagementData(
   userId: string,
-  authApi: AuthApiClient
+  authApi: any
 ): Promise<{
   lastLoginDate?: string;
   signupDate?: string;
@@ -125,7 +123,7 @@ export function daysSinceLastLogin(lastLoginDate?: string): number {
 // Note: These functions are deprecated for frontend use and should be handled server-side
 export const lifecycleEmailTriggers = {
   // Welcome email on first login
-  async sendWelcomeEmail(data: LifecycleEmailData, authApi: AuthApiClient) {
+  async sendWelcomeEmail(data: LifecycleEmailData, authApi: any) {
     if (!shouldSendLifecycleEmail(data, 'welcome')) return;
     
     return sendLifecycleEmail('welcome', data, authApi);
@@ -134,8 +132,8 @@ export const lifecycleEmailTriggers = {
   // Feature discovery emails
   async sendFeatureDiscoveryEmail(
     data: LifecycleEmailData, 
-    authApi: AuthApiClient,
-    params: FeatureDiscoveryParams
+    authApi: any,
+    params: { feature: string; featureDescription: string; ctaUrl: string; ctaText: string; daysFromSignup?: number }
   ) {
     return sendLifecycleEmail('feature-discovery', data, authApi, {
       featureName: params.feature,
@@ -146,7 +144,7 @@ export const lifecycleEmailTriggers = {
     });
   },
 
-  async sendCustomerManagementEmail(data: LifecycleEmailData, authApi: { invoke: (name: string, options: { body: Record<string, unknown> }) => Promise<{ data: unknown; error: unknown }> }) {
+  async sendCustomerManagementEmail(data: LifecycleEmailData, authApi: any) {
     const engagement = await getUserEngagementData(data.userId!, authApi);
     
     // Only send if user signed up 3+ days ago and has no customers
@@ -160,7 +158,7 @@ export const lifecycleEmailTriggers = {
     }
   },
 
-  async sendCalendarIntegrationEmail(data: LifecycleEmailData, authApi: { invoke: (name: string, options: { body: Record<string, unknown> }) => Promise<{ data: unknown; error: unknown }> }) {
+  async sendCalendarIntegrationEmail(data: LifecycleEmailData, authApi: any) {
     const engagement = await getUserEngagementData(data.userId!, authApi);
     
     // Only send if user signed up 5+ days ago and has no jobs
@@ -175,7 +173,7 @@ export const lifecycleEmailTriggers = {
   },
 
   // Milestone celebration emails
-  async sendFirstQuoteCreatedEmail(data: LifecycleEmailData, authApi: { invoke: (name: string, options: { body: Record<string, unknown> }) => Promise<{ data: unknown; error: unknown }> }) {
+  async sendFirstQuoteCreatedEmail(data: LifecycleEmailData, authApi: any) {
     return sendLifecycleEmail('milestone', data, authApi, {
       milestoneType: 'quote',
       nextSteps: 'Now you can send this quote to your customer and start converting leads into jobs.',
@@ -184,7 +182,7 @@ export const lifecycleEmailTriggers = {
     });
   },
 
-  async sendFirstJobScheduledEmail(data: LifecycleEmailData, authApi: { invoke: (name: string, options: { body: Record<string, unknown> }) => Promise<{ data: unknown; error: unknown }> }) {
+  async sendFirstJobScheduledEmail(data: LifecycleEmailData, authApi: any) {
     return sendLifecycleEmail('milestone', data, authApi, {
       milestoneType: 'job',
       nextSteps: 'Great job! You\'re building a systematic approach to managing your service business.',
@@ -193,7 +191,7 @@ export const lifecycleEmailTriggers = {
     });
   },
 
-  async sendFirstInvoiceSentEmail(data: LifecycleEmailData, authApi: { invoke: (name: string, options: { body: Record<string, unknown> }) => Promise<{ data: unknown; error: unknown }> }) {
+  async sendFirstInvoiceSentEmail(data: LifecycleEmailData, authApi: any) {
     return sendLifecycleEmail('milestone', data, authApi, {
       milestoneType: 'invoice',
       nextSteps: 'You\'re on track to get paid! Consider connecting Stripe to accept online payments.',
@@ -202,7 +200,7 @@ export const lifecycleEmailTriggers = {
     });
   },
 
-  async sendStripeConnectedEmail(data: LifecycleEmailData, authApi: { invoke: (name: string, options: { body: Record<string, unknown> }) => Promise<{ data: unknown; error: unknown }> }) {
+  async sendStripeConnectedEmail(data: LifecycleEmailData, authApi: any) {
     return sendLifecycleEmail('milestone', data, authApi, {
       milestoneType: 'stripe',
       nextSteps: 'You can now accept credit card payments directly through your invoices. Your customers will love the convenience!',
@@ -214,7 +212,7 @@ export const lifecycleEmailTriggers = {
   // Engagement recovery emails
   async sendEngagementRecoveryEmail(
     data: LifecycleEmailData, 
-    authApi: { invoke: (name: string, options: { body: Record<string, unknown> }) => Promise<{ data: unknown; error: unknown }> },
+    authApi: any,
     params: { type: string; lastActivity?: string }
   ) {
     const daysInactive = params.type === '7-day' ? 7 : 14;
@@ -229,7 +227,7 @@ export const lifecycleEmailTriggers = {
 
   async sendInactiveUserEmail(
     data: LifecycleEmailData, 
-    authApi: { invoke: (name: string, options: { body: Record<string, unknown> }) => Promise<{ data: unknown; error: unknown }> },
+    authApi: any,
     daysInactive: number
   ) {
     const isLongInactive = daysInactive >= 14;

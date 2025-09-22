@@ -1,7 +1,6 @@
 import { queryKeys, invalidationHelpers } from '@/queries/keys';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { useAuthApi } from '@/hooks/useAuthApi';
-import { getErrorMessage } from '@/utils/apiHelpers';
 
 export type BusinessUpdatePayload = {
   businessName: string;
@@ -54,7 +53,7 @@ export function useBusinessOperations() {
       });
       
       if (error) {
-        throw new Error(getErrorMessage(error, 'Failed to update business'));
+        throw new Error(error.message || 'Failed to update business');
       }
       
       console.info('[useBusinessOperations] mutation completed successfully', data);

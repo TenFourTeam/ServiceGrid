@@ -43,7 +43,7 @@ export function useTeamOperations() {
       });
       
       if (error) {
-        throw new Error((error as any)?.message || 'Failed to check user existence');
+        throw new Error(error.message || 'Failed to check user existence');
       }
       
       return data as CheckUserExistsResponse;
@@ -69,7 +69,7 @@ export function useTeamOperations() {
       });
       
       if (error) {
-        throw new Error((error as any)?.message || 'Failed to add team member');
+        throw new Error(error.message || 'Failed to add team member');
       }
       
       return data as AddTeamMemberResponse;

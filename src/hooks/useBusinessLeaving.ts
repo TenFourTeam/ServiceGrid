@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthApi } from '@/hooks/useAuthApi';
 import { invalidationHelpers } from '@/queries/keys';
-import { getErrorMessage } from '@/utils/apiHelpers';
 
 export interface LeaveBusinessResponse {
   message: string;
@@ -29,7 +28,7 @@ export function useBusinessLeaving() {
       });
       
       if (error) {
-        throw new Error(getErrorMessage(error, 'Failed to leave business'));
+        throw new Error(error.message || 'Failed to leave business');
       }
       
       return data as LeaveBusinessResponse;

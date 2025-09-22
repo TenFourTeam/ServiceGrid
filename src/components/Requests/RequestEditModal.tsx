@@ -209,10 +209,10 @@ export function RequestEditModal({
       });
 
       if (error) {
-        throw new Error(`Failed to upload ${file.name}: ${(error as any)?.message}`);
+        throw new Error(`Failed to upload ${file.name}: ${error.message}`);
       }
 
-      return (data as any)?.url;
+      return data.url;
     });
 
     return Promise.all(uploadPromises);

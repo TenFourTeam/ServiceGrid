@@ -287,7 +287,7 @@ export default function WorkOrdersPage() {
                     
                     if (response.ok) {
                       const processedCount = result.results?.length || 0;
-                      const successCount = result.results?.filter((r: { success: boolean }) => r.success)?.length || 0;
+                      const successCount = result.results?.filter((r: any) => r.success)?.length || 0;
                       
                       toast.dismiss();
                       if (successCount > 0) {
@@ -325,7 +325,7 @@ export default function WorkOrdersPage() {
               />
               <select 
                 value={sort} 
-                onChange={(e) => setSort(e.target.value as 'all' | 'unscheduled' | 'today' | 'upcoming' | 'completed')} 
+                onChange={(e)=>setSort(e.target.value as any)} 
                 className="w-full sm:w-auto rounded-md border bg-background px-3 py-2 text-sm"
               >
                 <option value="all">{t('workOrders.filters.all')} ({counts.all})</option>

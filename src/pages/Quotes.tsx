@@ -73,10 +73,10 @@ export default function QuotesPage() {
       });
       
       if (error) {
-        throw new Error((error as any)?.message || 'Failed to load quote details');
+        throw new Error(error.message || 'Failed to load quote details');
       }
       
-      setSendQuoteItem(fullQuote as any);
+      setSendQuoteItem(fullQuote);
     } catch (error) {
       console.error('Failed to fetch full quote:', error);
       toast.error('Failed to load quote details');

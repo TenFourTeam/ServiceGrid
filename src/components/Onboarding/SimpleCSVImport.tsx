@@ -10,7 +10,6 @@ import { useAuthApi } from '@/hooks/useAuthApi';
 import { invalidationHelpers } from '@/queries/keys';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import Papa from 'papaparse';
-import { hasMessage, hasStatus, hasImported } from '@/types/api';
 
 interface CustomerImport {
   name: string;
@@ -168,27 +167,25 @@ export function SimpleCSVImport({ open, onOpenChange, onImportComplete }: Simple
         console.error("Import API error:", error);
         
         // More specific error handling
-        if (hasMessage(error) && (error.message.includes('JWT') || error.message.includes('Unauthorized')) || (hasStatus(error) && error.status === 401)) {
+        if (error.message?.includes('JWT') || error.message?.includes('Unauthorized') || error.status === 401) {
           toast.error("Authentication error. Please refresh the page and try again.");
-        } else if (hasStatus(error) && error.status === 403) {
+        } else if (error.status === 403) {
           toast.error("Permission denied. Please contact support.");
-        } else if (hasStatus(error) && error.status === 500) {
+        } else if (error.status === 500) {
           toast.error("Server error. Please try again in a few minutes.");
         } else {
-          const errorMessage = hasMessage(error) ? error.message : 'Unknown error occurred';
-          toast.error(`Import failed: ${errorMessage}`);
+          toast.error(`Import failed: ${error.message || 'Unknown error occurred'}`);
         }
         return;
       }
 
-      if (hasImported(result) && result.imported > 0) {
+      if (result?.imported > 0) {
         toast.success(`Successfully imported ${result.imported} customers`);
         invalidationHelpers.customers(queryClient, businessId);
         onImportComplete(result.imported);
         resetModal();
       } else {
-        const message = hasMessage(result) ? result.message : "No new customers were imported (duplicates or invalid data)";
-        toast.warning(message);
+        toast.warning(result?.message || "No new customers were imported (duplicates or invalid data)");
       }
     } catch (error) {
       console.error('Import error:', error);

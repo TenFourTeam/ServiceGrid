@@ -30,23 +30,23 @@ export function useCreateInvoice() {
       });
 
       if (error) {
-        throw new Error((error as any)?.message || 'Failed to create invoice');
+        throw new Error(error.message || 'Failed to create invoice');
       }
 
       return data;
     },
     onSuccess: (data) => {
       // Optimistic update: add the new invoice to cache immediately
-      if ((data as any)?.invoice) {
+      if (data?.invoice) {
         queryClient.setQueryData(queryKeys.data.invoices(businessId || ''), (oldData: InvoiceCacheData | undefined) => {
           if (oldData) {
             return {
               ...oldData,
-              invoices: [(data as any)?.invoice, ...oldData.invoices],
+              invoices: [data.invoice, ...oldData.invoices],
               count: oldData.count + 1
             };
           }
-          return { invoices: [(data as any)?.invoice], count: 1 };
+          return { invoices: [data.invoice], count: 1 };
         });
       }
       
@@ -98,7 +98,7 @@ export function useSendInvoice() {
       });
 
       if (error) {
-        throw new Error((error as any)?.message || 'Failed to send invoice');
+        throw new Error(error.message || 'Failed to send invoice');
       }
 
       return data;
@@ -139,7 +139,7 @@ export function useUpdateInvoice() {
       });
 
       if (error) {
-        throw new Error((error as any)?.message || 'Failed to update invoice');
+        throw new Error(error.message || 'Failed to update invoice');
       }
 
       return data;
@@ -190,7 +190,7 @@ export function useRecordPayment() {
       });
 
       if (error) {
-        throw new Error((error as any)?.message || 'Failed to record payment');
+        throw new Error(error.message || 'Failed to record payment');
       }
 
       return data;
@@ -225,7 +225,7 @@ export function useDeleteInvoice() {
       });
 
       if (error) {
-        throw new Error((error as any)?.message || 'Failed to delete invoice');
+        throw new Error(error.message || 'Failed to delete invoice');
       }
 
       return data;

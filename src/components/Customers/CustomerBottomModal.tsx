@@ -10,7 +10,6 @@ import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useAuth } from '@clerk/clerk-react';
 import { useAuthApi } from "@/hooks/useAuthApi";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { getErrorMessage, getResponseCustomer } from "@/utils/apiHelpers";
 import type { Customer } from "@/types";
 
 // Email validation regex - requires a valid email format
@@ -166,7 +165,7 @@ export function CustomerBottomModal({
           
         if (error) {
           console.error("Error updating customer:", error);
-          toast.error(`Failed to update customer: ${getErrorMessage(error)}`);
+          toast.error(`Failed to update customer: ${error.message || 'Unknown error'}`);
           return;
         }
         
@@ -179,14 +178,13 @@ export function CustomerBottomModal({
           
         if (error) {
           console.error("Error creating customer:", error);
-          const errorMsg = getErrorMessage(error);
           // Show more specific error messages based on backend response
-          if (errorMsg.includes('invalid email format')) {
+          if (error.message && error.message.includes('invalid email format')) {
             toast.error("Please enter a valid email address (e.g., user@example.com)");
-          } else if (errorMsg.includes('already exists')) {
+          } else if (error.message && error.message.includes('already exists')) {
             toast.error("A customer with this email already exists");
           } else {
-            toast.error(`Failed to create customer: ${errorMsg}`);
+            toast.error(`Failed to create customer: ${error.message || 'Unknown error'}`);
           }
           return;
         }
@@ -194,9 +192,8 @@ export function CustomerBottomModal({
         toast.success("Customer created successfully");
         
         // Call the onCustomerCreated callback with the new customer data
-        const customer = getResponseCustomer(data);
-        if (onCustomerCreated && customer) {
-          onCustomerCreated(customer as Customer);
+        if (onCustomerCreated && data?.customer) {
+          onCustomerCreated(data.customer);
         }
       }
       

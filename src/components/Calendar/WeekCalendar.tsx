@@ -98,7 +98,7 @@ export function WeekCalendar({
         const dayOfWeek = today.getDay();
         const mondayOffset = (dayOfWeek + 6) % 7; // Days since Monday
         
-        const startOffset = Math.max(0, Math.min(4, mondayOffset - 1)); // Show 1 day before, but stay within week
+        let startOffset = Math.max(0, Math.min(4, mondayOffset - 1)); // Show 1 day before, but stay within week
         return Array.from({ length: 3 }, (_, i) => 
           new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + startOffset + i)
         );
@@ -229,24 +229,20 @@ const minuteOfDayFromAnchorOffset = (offset: number) => {
       });
       
       if (error) {
-        const errorMessage = (error && typeof error === 'object' && 'message' in error) 
-          ? (error as { message: string }).message 
-          : 'Failed to create invoice';
-        throw new Error(errorMessage);
+        throw new Error(error.message || 'Failed to create invoice');
       }
 
       // Optimistic update - add invoice to cache immediately
-      if (response && typeof response === 'object' && 'invoice' in response && businessId) {
-        const invoice = (response as { invoice: unknown }).invoice;
+      if (response?.invoice && businessId) {
         queryClient.setQueryData(queryKeys.data.invoices(businessId), (oldData: InvoicesCacheData | undefined) => {
           if (oldData) {
             return {
               ...oldData,
-              invoices: [invoice, ...oldData.invoices],
+              invoices: [response.invoice, ...oldData.invoices],
               count: oldData.count + 1
             };
           }
-          return { invoices: [invoice], count: 1 };
+          return { invoices: [response.invoice], count: 1 };
         });
       }
     } catch (e: Error | unknown) {
@@ -417,10 +413,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
         });
         
         if (error) {
-          const errorMessage = (error && typeof error === 'object' && 'message' in error) 
-            ? (error as { message: string }).message 
-            : 'Failed to reschedule job';
-          throw new Error(errorMessage);
+          throw new Error(error.message || 'Failed to reschedule job');
         }
       } catch (err: Error | unknown) {
         console.error(err);
@@ -512,10 +505,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
         });
         
         if (error) {
-          const errorMessage = (error && typeof error === 'object' && 'message' in error) 
-            ? (error as { message: string }).message 
-            : 'Failed to update job duration';
-          throw new Error(errorMessage);
+          throw new Error(error.message || 'Failed to update job duration');
         }
       } catch (err: Error | unknown) {
         console.error(err);

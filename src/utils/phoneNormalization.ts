@@ -8,7 +8,7 @@ export function normalizeToE164(phone: string, defaultCountry: string = 'US'): s
   if (!phone?.trim()) return '';
   
   try {
-    const phoneNumber = parsePhoneNumber(phone, defaultCountry as 'US');
+    const phoneNumber = parsePhoneNumber(phone, defaultCountry as any);
     if (phoneNumber && phoneNumber.isValid()) {
       return phoneNumber.format('E.164');
     }
@@ -26,7 +26,7 @@ export function isValidPhone(phone: string, defaultCountry: string = 'US'): bool
   if (!phone?.trim()) return false;
   
   try {
-    return isValidPhoneNumber(phone, defaultCountry as 'US');
+    return isValidPhoneNumber(phone, defaultCountry as any);
   } catch (e) {
     return false;
   }
@@ -39,7 +39,7 @@ export function formatPhoneDisplay(phone: string, defaultCountry: string = 'US')
   if (!phone?.trim()) return '';
   
   try {
-    const phoneNumber = parsePhoneNumber(phone, defaultCountry as 'US');
+    const phoneNumber = parsePhoneNumber(phone, defaultCountry as any);
     if (phoneNumber && phoneNumber.isValid()) {
       return phoneNumber.formatNational();
     }

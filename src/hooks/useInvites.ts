@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthApi } from "@/hooks/useAuthApi";
 import { queryKeys, invalidationHelpers } from "@/queries/keys";
-import { getErrorMessage, hasProperty } from "@/utils/apiHelpers";
 
 export interface Invite {
   id: string;
@@ -30,15 +29,10 @@ export function usePendingInvites(businessId?: string) {
       });
       
       if (error) {
-        const errorMessage = (error && typeof error === 'object' && 'message' in error) 
-          ? (error as { message: string }).message 
-          : 'Failed to fetch pending invites';
-        throw new Error(errorMessage);
+        throw new Error(error.message || 'Failed to fetch pending invites');
       }
       
-      return (data && typeof data === 'object' && 'invites' in data) 
-        ? data as { invites: Invite[] }
-        : { invites: [] };
+      return data || { invites: [] };
     },
     staleTime: 30_000,
   });
@@ -60,10 +54,7 @@ export function useRevokeInvite(businessId: string) {
       });
       
       if (error) {
-        const errorMessage = (error && typeof error === 'object' && 'message' in error) 
-          ? (error as { message: string }).message 
-          : 'Failed to revoke invite';
-        throw new Error(errorMessage);
+        throw new Error(error.message || 'Failed to revoke invite');
       }
       
       return data;
@@ -94,10 +85,7 @@ export function useResendInvite(businessId: string) {
       });
       
       if (error) {
-        const errorMessage = (error && typeof error === 'object' && 'message' in error) 
-          ? (error as { message: string }).message 
-          : 'Failed to resend invite';
-        throw new Error(errorMessage);
+        throw new Error(error.message || 'Failed to resend invite');
       }
       
       return data;
@@ -128,20 +116,16 @@ export function useRedeemInvite() {
       });
       
       if (error) {
-        const errorMessage = (error && typeof error === 'object' && 'message' in error) 
-          ? (error as { message: string }).message 
-          : 'Failed to redeem invite';
-        throw new Error(errorMessage);
+        throw new Error(error.message || 'Failed to redeem invite');
       }
       
       return data;
     },
     onSuccess: (data) => {
       // Invalidate team queries to refresh member list
-      const businessId = hasProperty(data, 'businessId') ? (data.businessId as string) : null;
-      if (businessId) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.data.members(businessId) });
-        queryClient.invalidateQueries({ queryKey: queryKeys.team.invites(businessId) });
+      if (data?.businessId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.data.members(data.businessId) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.team.invites(data.businessId) });
       }
       // Toast is handled by authApi
     },

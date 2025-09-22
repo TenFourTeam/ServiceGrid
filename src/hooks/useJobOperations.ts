@@ -25,7 +25,7 @@ export function useCreateJob() {
       });
 
       if (error) {
-        throw new Error((error as any)?.message || 'Failed to create job');
+        throw new Error(error.message || 'Failed to create job');
       }
 
       return data;
@@ -63,7 +63,7 @@ export function useUpdateJob() {
       });
 
       if (error) {
-        throw new Error((error as any)?.message || 'Failed to update job');
+        throw new Error(error.message || 'Failed to update job');
       }
 
       return data;

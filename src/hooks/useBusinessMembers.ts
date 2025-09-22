@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useAuthApi } from "@/hooks/useAuthApi";
 import { queryKeys } from "@/queries/keys";
-import { getErrorMessage, hasProperty } from "@/utils/apiHelpers";
 
 export interface BusinessMember {
   id: string;
@@ -41,18 +40,12 @@ export function useBusinessMembersData(opts?: UseBusinessMembersDataOptions) {
       
       if (error) {
         console.error("[useBusinessMembersData] error:", error);
-        const errorMessage = (error && typeof error === 'object' && 'message' in error) 
-          ? (error as { message: string }).message 
-          : 'Failed to fetch business members';
-        throw new Error(errorMessage);
+        throw new Error(error.message || 'Failed to fetch business members');
       }
       
-      console.info("[useBusinessMembersData] fetched", hasProperty(data, 'members') ? (data.members as BusinessMember[]).length : 0, "members");
+      console.info("[useBusinessMembersData] fetched", data?.members?.length || 0, "members");
       
-      return { 
-        members: hasProperty(data, 'members') ? (data.members as BusinessMember[]) : [], 
-        count: hasProperty(data, 'count') ? (data.count as number) : 0 
-      };
+      return { members: data?.members || [], count: data?.count || 0 };
     },
     staleTime: 30_000,
   });
@@ -85,10 +78,7 @@ export function useBusinessMemberOperations() {
       });
       
       if (error) {
-        const errorMessage = (error && typeof error === 'object' && 'message' in error) 
-          ? (error as { message: string }).message 
-          : 'Failed to invite team member';
-        throw new Error(errorMessage);
+        throw new Error(error.message || 'Failed to invite team member');
       }
       
       return data;
@@ -115,10 +105,7 @@ export function useBusinessMemberOperations() {
       });
       
       if (error) {
-        const errorMessage = (error && typeof error === 'object' && 'message' in error) 
-          ? (error as { message: string }).message 
-          : 'Failed to remove team member';
-        throw new Error(errorMessage);
+        throw new Error(error.message || 'Failed to remove team member');
       }
       
       return data;

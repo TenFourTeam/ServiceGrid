@@ -37,7 +37,7 @@ export function RequestActions({ request }: RequestActionsProps) {
       discount: 0,
     }, {
       onSuccess: (data) => {
-        navigate(`/quotes?newQuote=${(data as any)?.id}`);
+        navigate(`/quotes?newQuote=${data.id}`);
       }
     });
   };

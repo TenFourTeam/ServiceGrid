@@ -16,7 +16,6 @@ import { toast } from "sonner";
 import { invalidationHelpers } from '@/queries/keys';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
-import { hasProperty } from "@/utils/apiHelpers";
 
 export interface SendQuoteModalProps {
   open: boolean;
@@ -78,8 +77,7 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
           console.error('Failed to check subscription status:', error);
           setHasActiveSubscription(false);
         } else {
-          const hasActiveSubscription = hasProperty(data, 'hasActiveSubscription') ? (data.hasActiveSubscription as boolean) : false;
-          setHasActiveSubscription(hasActiveSubscription);
+          setHasActiveSubscription(data?.hasActiveSubscription || false);
         }
       } catch (error) {
         console.error('Error checking subscription status:', error);

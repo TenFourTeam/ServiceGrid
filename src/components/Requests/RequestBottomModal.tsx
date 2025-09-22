@@ -141,8 +141,8 @@ export function RequestBottomModal({
       toast.success(t('requests.create.messages.success'));
       
       // Call the onRequestCreated callback with the new request data
-      if (onRequestCreated && (data as any)?.request) {
-        onRequestCreated((data as any)?.request);
+      if (onRequestCreated && data?.request) {
+        onRequestCreated(data.request);
       }
       
       if (businessId) {
@@ -183,10 +183,10 @@ export function RequestBottomModal({
       });
 
       if (error) {
-        throw new Error(`Failed to upload ${file.name}: ${(error as any)?.message}`);
+        throw new Error(`Failed to upload ${file.name}: ${error.message}`);
       }
 
-      return (data as any)?.url;
+      return data.url;
     });
 
     return Promise.all(uploadPromises);

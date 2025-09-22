@@ -18,15 +18,13 @@ import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useRecordPayment, useDeleteInvoice } from '@/hooks/useInvoiceOperations';
 import { useInvoicePayments } from '@/hooks/useInvoicePayments';
 import { useJobsData } from '@/hooks/useJobsData';
-import { hasMessage, hasUrl, hasInvoice, hasJob, hasCustomer, hasQuote } from '@/types/api';
-import { getErrorMessage, getResponseUrl, getResponseInvoice } from '@/utils/apiHelpers';
+import { useAuthApi } from '@/hooks/useAuthApi';
 import { useQueryClient } from '@tanstack/react-query';
 import { invalidationHelpers, queryKeys } from '@/queries/keys';
 import { generateInvoiceEmail } from '@/utils/emailTemplateEngine';
 import { escapeHtml } from '@/utils/sanitize';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useAuthApi } from '@/hooks/useAuthApi';
 import JobShowModal from '@/components/Jobs/JobShowModal';
 import PickJobModal from '@/components/Jobs/PickJobModal';
 import PickQuoteModal from '@/components/Jobs/PickQuoteModal';
@@ -225,17 +223,16 @@ export default function InvoiceModal({
         });
 
         // Optimistic update - add invoice to cache immediately
-        const invoice = getResponseInvoice(response);
-        if (invoice && businessId) {
+        if (response?.invoice && businessId) {
           queryClient.setQueryData(queryKeys.data.invoices(businessId), (oldData: InvoicesCacheData | undefined) => {
             if (oldData) {
               return {
                 ...oldData,
-                invoices: [invoice, ...oldData.invoices],
+                invoices: [response.invoice, ...oldData.invoices],
                 count: oldData.count + 1
               };
             }
-            return { invoices: [invoice], count: 1 };
+            return { invoices: [response.invoice], count: 1 };
           });
         }
       }
@@ -312,9 +309,8 @@ export default function InvoiceModal({
         }
       });
 
-      const url = getResponseUrl(response);
-      if (url) {
-        window.open(url, '_blank');
+      if (response.url) {
+        window.open(response.url, '_blank');
       }
     } catch (error) {
       console.error('Failed to initiate payment:', error);

@@ -20,31 +20,31 @@ export function useProfile(currentBusinessId?: string | null) {
       
       if (error) {
         console.error('[useProfile] error:', error);
-        throw new Error((error as any)?.message || 'Failed to fetch profile');
+        throw new Error(error.message || 'Failed to fetch profile');
       }
       
-      if (!(data as any)?.profile) {
+      if (!data?.profile) {
         console.warn('[useProfile] profile not found');
         return null;
       }
       
       return {
         profile: {
-          id: (data as any)?.profile?.id,
-          fullName: (data as any)?.profile?.fullName,
-          phoneE164: (data as any)?.profile?.phoneE164,
-          defaultBusinessId: (data as any)?.profile?.defaultBusinessId
+          id: data.profile.id,
+          fullName: data.profile.fullName,
+          phoneE164: data.profile.phoneE164,
+          defaultBusinessId: data.profile.defaultBusinessId
         },
-        business: (data as any)?.business ? {
-          id: (data as any)?.business?.id,
-          name: (data as any)?.business?.name,
-          description: (data as any)?.business?.description,
-          phone: (data as any)?.business?.phone,
-          replyToEmail: (data as any)?.business?.replyToEmail,
-          taxRateDefault: (data as any)?.business?.taxRateDefault,
-          logoUrl: (data as any)?.business?.logoUrl,
-          lightLogoUrl: (data as any)?.business?.lightLogoUrl,
-          role: (data as any)?.business?.role
+        business: data.business ? {
+          id: data.business.id,
+          name: data.business.name,
+          description: data.business.description,
+          phone: data.business.phone,
+          replyToEmail: data.business.replyToEmail,
+          taxRateDefault: data.business.taxRateDefault,
+          logoUrl: data.business.logoUrl,
+          lightLogoUrl: data.business.lightLogoUrl,
+          role: data.business.role
         } : null
       };
     },

@@ -66,7 +66,7 @@ export default function SettingsPage() {
       });
       
       if (error) {
-        throw new Error((error as any)?.message || 'Failed to refresh subscription');
+        throw new Error(error.message || 'Failed to refresh subscription');
       }
       
       setSub(data || null);
@@ -88,10 +88,10 @@ export default function SettingsPage() {
       });
       
       if (error) {
-        throw new Error((error as any)?.message || 'Failed to start checkout');
+        throw new Error(error.message || 'Failed to start checkout');
       }
       
-      const url = (data as any)?.url as string | undefined;
+      const url = data?.url as string | undefined;
       if (!url) throw new Error('No checkout URL');
       window.open(url, '_blank');
     } catch (e: Error | unknown) {
@@ -109,10 +109,10 @@ export default function SettingsPage() {
       });
       
       if (error) {
-        throw new Error((error as any)?.message || 'Failed to open portal');
+        throw new Error(error.message || 'Failed to open portal');
       }
       
-      const url = (data as any)?.url as string | undefined;
+      const url = data?.url as string | undefined;
       if (!url) throw new Error('No portal URL');
       window.open(url, '_blank');
     } catch (e: any) {
@@ -130,10 +130,10 @@ export default function SettingsPage() {
       });
       
       if (error) {
-        throw new Error((error as any)?.message || 'Failed to start Stripe onboarding');
+        throw new Error(error.message || 'Failed to start Stripe onboarding');
       }
       
-      const url = (data as any)?.url as string | undefined;
+      const url = data?.url as string | undefined;
       if (url) window.open(url, '_blank');
     } catch (e: any) {
       console.error('[handleStripeConnect] error:', e);

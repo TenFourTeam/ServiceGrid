@@ -31,7 +31,7 @@ export function useLogoOperations() {
       });
       
       if (error) {
-        throw new Error((error as any)?.message || 'Failed to upload logo');
+        throw new Error(error.message || 'Failed to upload logo');
       }
       
       return data as { url: string; kind: string };

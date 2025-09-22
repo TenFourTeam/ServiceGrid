@@ -84,7 +84,7 @@ export function WorkOrderActions({
         if (previousData) {
           queryClient.setQueryData(queryKey, previousData);
         }
-        throw new Error((error as any)?.message || 'Failed to complete job');
+        throw new Error(error.message || 'Failed to complete job');
       }
       
       if (businessId) {
@@ -119,16 +119,16 @@ export function WorkOrderActions({
       });
 
       // Optimistic update - add invoice to cache immediately
-      if ((response as any)?.invoice && businessId) {
+      if (response?.invoice && businessId) {
         queryClient.setQueryData(queryKeys.data.invoices(businessId), (oldData: InvoicesCacheData | undefined) => {
           if (oldData) {
             return {
               ...oldData,
-              invoices: [(response as any)?.invoice, ...oldData.invoices],
+              invoices: [response.invoice, ...oldData.invoices],
               count: oldData.count + 1
             };
           }
-          return { invoices: [(response as any)?.invoice], count: 1 };
+          return { invoices: [response.invoice], count: 1 };
         });
       }
       
@@ -169,7 +169,7 @@ export function WorkOrderActions({
       });
 
       if (error) {
-        throw new Error((error as any)?.message || 'Failed to send confirmation');
+        throw new Error(error.message || 'Failed to send confirmation');
       }
     } catch (error) {
       console.error('Error sending confirmation:', error);
@@ -196,7 +196,7 @@ export function WorkOrderActions({
       });
       
       if (error) {
-        throw new Error((error as any)?.message || 'Failed to delete job');
+        throw new Error(error.message || 'Failed to delete job');
       }
       
       if (businessId) {
