@@ -82,7 +82,7 @@ describe('Money Calculations', () => {
     it('round-trip conversions are accurate', () => {
       fc.assert(
         fc.property(
-          fc.float({ min: 0.01, max: 9999.99 }).filter(n => Number.isFinite(n) && !Number.isNaN(n)),
+          fc.float({ min: Math.fround(0.01), max: Math.fround(9999.99) }).filter(n => Number.isFinite(n) && !Number.isNaN(n)),
           (dollars) => {
             const roundedDollars = Math.round(dollars * 100) / 100; // Round to cents
             const stripeAmount = convertDollarsToStripeAmount(roundedDollars);

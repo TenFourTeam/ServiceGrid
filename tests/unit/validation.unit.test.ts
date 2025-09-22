@@ -30,11 +30,11 @@ const quoteSchema = z.object({
 describe('Validation Logic', () => {
   describe('Phone number normalization', () => {
     it('normalizes valid US phone numbers', () => {
-      expect(normalizePhoneNumber('(555) 123-4567')).toBe('+15551234567');
-      expect(normalizePhoneNumber('555-123-4567')).toBe('+15551234567');
-      expect(normalizePhoneNumber('555.123.4567')).toBe('+15551234567');
-      expect(normalizePhoneNumber('5551234567')).toBe('+15551234567');
-      expect(normalizePhoneNumber('1-555-123-4567')).toBe('+15551234567');
+      expect(normalizePhoneNumber('(212) 123-4567')).toBe('+12121234567');
+      expect(normalizePhoneNumber('212-123-4567')).toBe('+12121234567');
+      expect(normalizePhoneNumber('212.123.4567')).toBe('+12121234567');
+      expect(normalizePhoneNumber('2121234567')).toBe('+12121234567');
+      expect(normalizePhoneNumber('1-212-123-4567')).toBe('+12121234567');
     });
 
     it('handles valid international numbers', () => {
