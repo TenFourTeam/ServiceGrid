@@ -82,7 +82,7 @@ export default function PublicRequestForm() {
       });
 
       if (error) {
-        throw new Error(`Failed to upload ${file.name}: ${error.message}`);
+        throw new Error(`Failed to upload ${file.name}: ${(error as any)?.message || 'Unknown error'}`);
       }
 
       return data.url;
@@ -162,7 +162,7 @@ export default function PublicRequestForm() {
         
       if (error) {
         console.error("Error submitting request:", error);
-        toast.error(`Failed to submit request: ${error.message || 'Unknown error'}`);
+        toast.error(`Failed to submit request: ${(error as any)?.message || 'Unknown error'}`);
         return;
       }
       

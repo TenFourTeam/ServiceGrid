@@ -1,5 +1,5 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useAuthApi } from '@/hooks/useAuthApi';
 
 interface TestResult {
   auth_uid: string | null;
@@ -11,6 +11,7 @@ export function RLSTest() {
   const [result, setResult] = useState<TestResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const authApi = useAuthApi();
 
   const testRLS = async () => {
     setLoading(true);
@@ -20,7 +21,7 @@ export function RLSTest() {
       // Test the new hybrid RLS approach via Edge Function
       console.log('Testing RLS with hybrid auth approach...');
       
-      const { data, error: functionError } = await supabase.functions.invoke('test-rls-auth');
+      const { data, error: functionError } = await authApi.invoke('test-rls-auth');
 
       if (functionError) {
         throw functionError;

@@ -107,7 +107,7 @@ export function createAuthEdgeApi(getToken: (options?: { template?: string }) =>
           body: bodyToSend,
           headers,
           method: (requestOptions.method as "POST" | "PUT" | "PATCH" | "DELETE" | "GET") || "POST",
-        });
+        }) as { data: any; error: any };
         const endInvoke = Date.now();
         console.info(`🔧 [AuthEdgeApi] Function call took ${endInvoke - startInvoke}ms`);
 
@@ -138,7 +138,7 @@ export function createAuthEdgeApi(getToken: (options?: { template?: string }) =>
           }
         }
 
-        return { data, error };
+        return { data: data as any, error: error as any };
       } catch (error: any) {
         // Dismiss loading toast
         if (toastId) {
