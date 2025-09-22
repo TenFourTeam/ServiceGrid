@@ -59,13 +59,13 @@ export default function InviteAccept() {
         navigate('/calendar');
       }, 2000);
       
-    } catch (error: any) {
+    } catch (error: Error | unknown) {
       console.error('Failed to redeem invite:', error);
       setStatus('error');
-      setMessage(error.message || 'Failed to accept invitation. The link may be expired or invalid.');
+      setMessage(error instanceof Error ? error.message : 'Failed to accept invitation. The link may be expired or invalid.');
       
       toast.error("Error", {
-        description: error.message || "Failed to accept invitation",
+        description: error instanceof Error ? error.message : "Failed to accept invitation",
       });
     }
   };

@@ -53,12 +53,12 @@ export function EnhancedSignIn({
     return cleanup;
   };
 
-  const handleAuthError = (error: any) => {
+  const handleAuthError = (error: Error | unknown) => {
     console.error('[EnhancedSignIn] Auth error:', error);
     setIsLoading(false);
     
     // User-friendly error messages
-    const message = error?.message || 'Authentication failed. Please try again.';
+    const message = (error instanceof Error ? error.message : null) || 'Authentication failed. Please try again.';
     if (message.toLowerCase().includes('email') && message.toLowerCase().includes('exist')) {
       toast.error('This email is already registered. Try signing in instead.');
     } else if (message.toLowerCase().includes('password')) {

@@ -36,9 +36,9 @@ export default function PaymentSuccess() {
           setStatus('error');
           setMessage('Verification failed.');
         }
-      } catch (e: any) {
+      } catch (e: Error | unknown) {
         setStatus('error');
-        setMessage(e?.message || 'Verification failed.');
+        setMessage((e instanceof Error ? e.message : null) || 'Verification failed.');
       }
     })();
   }, []);

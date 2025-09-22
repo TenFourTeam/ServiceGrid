@@ -17,7 +17,7 @@ import { useLifecycleEmailIntegration } from '@/hooks/useLifecycleEmailIntegrati
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useDeleteQuote } from '@/hooks/useQuoteOperations';
 import { useIsMobile } from '@/hooks/use-mobile';
-import type { Quote, QuoteListItem, QuoteStatus, Customer } from '@/types';
+import type { Quote, QuoteListItem, QuoteStatus, Customer, InvoicesCacheData } from '@/types';
 
 const statusColors: Record<QuoteStatus, string> = {
   'Draft': 'bg-gray-100 text-gray-800',
@@ -228,7 +228,7 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
         setQuote(result.quote);
         setCurrentMode('view');
       }
-    } catch (e: any) {
+    } catch (e: Error | unknown) {
       console.error(e);
       // Error already handled by authApi toast
     } finally {
@@ -302,7 +302,7 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
 
       // Optimistic update - add invoice to cache immediately
       if (result?.invoice && businessId) {
-        queryClient.setQueryData(queryKeys.data.invoices(businessId), (oldData: any) => {
+        queryClient.setQueryData(queryKeys.data.invoices(businessId), (oldData: InvoicesCacheData | undefined) => {
           if (oldData) {
             return {
               ...oldData,

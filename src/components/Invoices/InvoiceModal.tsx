@@ -29,7 +29,7 @@ import JobShowModal from '@/components/Jobs/JobShowModal';
 import PickJobModal from '@/components/Jobs/PickJobModal';
 import PickQuoteModal from '@/components/Jobs/PickQuoteModal';
 import { InvoiceForm, type InvoiceFormData } from '@/components/Invoices/InvoiceForm';
-import type { Invoice } from '@/types';
+import type { Invoice, InvoicesCacheData } from '@/types';
 
 export interface InvoiceModalProps {
   open: boolean;
@@ -224,7 +224,7 @@ export default function InvoiceModal({
 
         // Optimistic update - add invoice to cache immediately
         if (response?.invoice && businessId) {
-          queryClient.setQueryData(queryKeys.data.invoices(businessId), (oldData: any) => {
+          queryClient.setQueryData(queryKeys.data.invoices(businessId), (oldData: InvoicesCacheData | undefined) => {
             if (oldData) {
               return {
                 ...oldData,

@@ -138,9 +138,9 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
         invalidationHelpers.quotes(queryClient, businessId);
       }
       onOpenChange(false);
-    } catch (e: any) {
+    } catch (e: Error | unknown) {
       console.error(e);
-      toast.error(e.message || "Failed to send email");
+      toast.error((e instanceof Error ? e.message : null) || "Failed to send email");
     } finally {
       setSending(false);
     }

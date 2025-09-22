@@ -38,8 +38,8 @@ export default function InvoicePay() {
         } else {
           setError("Failed to create checkout session.");
         }
-      } catch (e: any) {
-        setError(e.message || "Unable to start payment.");
+      } catch (e: Error | unknown) {
+        setError((e instanceof Error ? e.message : null) || "Unable to start payment.");
       } finally {
         setLoading(false);
       }

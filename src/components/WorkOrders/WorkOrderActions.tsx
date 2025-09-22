@@ -11,7 +11,7 @@ import { invalidationHelpers, queryKeys } from '@/queries/keys';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import ReschedulePopover from './ReschedulePopover';
-import type { Job } from '@/types';
+import type { Job, JobsCacheData, InvoicesCacheData } from '@/types';
 
 interface WorkOrderActionsProps {
   job: Job;
@@ -56,7 +56,7 @@ export function WorkOrderActions({
     const queryKey = queryKeys.data.jobs(businessId || '');
     const previousData = queryClient.getQueryData(queryKey);
     
-    queryClient.setQueryData(queryKey, (old: any) => {
+    queryClient.setQueryData(queryKey, (old: JobsCacheData | undefined) => {
       if (!old) return old;
       return {
         ...old,
@@ -90,7 +90,7 @@ export function WorkOrderActions({
       if (businessId) {
         invalidationHelpers.jobs(queryClient, businessId);
       }
-    } catch (e: any) {
+    } catch (e: Error | unknown) {
       console.error('Failed to complete job:', e);
     } finally {
       setIsCompletingJob(false);
@@ -120,7 +120,7 @@ export function WorkOrderActions({
 
       // Optimistic update - add invoice to cache immediately
       if (response?.invoice && businessId) {
-        queryClient.setQueryData(queryKeys.data.invoices(businessId), (oldData: any) => {
+        queryClient.setQueryData(queryKeys.data.invoices(businessId), (oldData: InvoicesCacheData | undefined) => {
           if (oldData) {
             return {
               ...oldData,
@@ -137,7 +137,7 @@ export function WorkOrderActions({
       }
       
       navigate('/invoices');
-    } catch (e: any) {
+    } catch (e: Error | unknown) {
       console.error('Invoice creation failed:', e);
     } finally {
       setIsCreatingInvoice(false);
@@ -202,7 +202,7 @@ export function WorkOrderActions({
       if (businessId) {
         invalidationHelpers.jobs(queryClient, businessId);
       }
-    } catch (e: any) {
+    } catch (e: Error | unknown) {
       console.error('Failed to delete job:', e);
     } finally {
       setIsDeleting(false);

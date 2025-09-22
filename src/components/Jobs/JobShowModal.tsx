@@ -9,7 +9,7 @@ import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { useAuthApi } from '@/hooks/useAuthApi';
 import { toast } from "sonner";
 import ReschedulePopover from "@/components/WorkOrders/ReschedulePopover";
-import type { Job } from "@/types";
+import type { Job, Quote, JobsCacheData, InvoicesCacheData } from "@/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle as ModalTitle } from "@/components/ui/dialog";
 import PickQuoteModal from "@/components/Jobs/PickQuoteModal";
 import { JobMemberAssignments } from "@/components/Jobs/JobMemberAssignments";
@@ -47,7 +47,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
   const [isCompletingJob, setIsCompletingJob] = useState(false);
   const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
   const [linkedQuoteId, setLinkedQuoteId] = useState<string | null>(null);
-  const [linkedQuoteObject, setLinkedQuoteObject] = useState<any>(null);
+  const [linkedQuoteObject, setLinkedQuoteObject] = useState<Quote | null>(null);
   const [isSendingConfirmation, setIsSendingConfirmation] = useState(false);
   const { clockInOut, isLoading: isClockingInOut } = useClockInOut();
   const { t } = useLanguage();
@@ -116,7 +116,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
 
         // Optimistic update - add invoice to cache immediately
         if (response?.invoice && businessId) {
-          queryClient.setQueryData(queryKeys.data.invoices(businessId), (oldData: any) => {
+          queryClient.setQueryData(queryKeys.data.invoices(businessId), (oldData: InvoicesCacheData | undefined) => {
             if (oldData) {
               return {
                 ...oldData,
@@ -133,7 +133,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
         }
         
         navigate('/invoices');
-      } catch (e: any) {
+      } catch (e: Error | unknown) {
         console.error('Invoice creation failed:', e);
       } finally {
         setIsCreatingInvoice(false);
@@ -162,7 +162,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
 
       // Optimistic update - add invoice to cache immediately
       if (response?.invoice && businessId) {
-        queryClient.setQueryData(queryKeys.data.invoices(businessId), (oldData: any) => {
+        queryClient.setQueryData(queryKeys.data.invoices(businessId), (oldData: InvoicesCacheData | undefined) => {
           if (oldData) {
             return {
               ...oldData,
@@ -179,7 +179,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
       }
       
       navigate('/invoices');
-    } catch (e: any) {
+    } catch (e: Error | unknown) {
       console.error('Invoice creation failed:', e);
     } finally {
       setIsCreatingInvoice(false);
@@ -203,7 +203,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
       const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
       const previousData = queryClient.getQueryData(queryKey);
       
-      queryClient.setQueryData(queryKey, (old: any) => {
+      queryClient.setQueryData(queryKey, (old: JobsCacheData | undefined) => {
         if (!old) return old;
         return {
           ...old,
@@ -232,7 +232,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
       if (businessId) {
         invalidationHelpers.jobs(queryClient, businessId);
       }
-    } catch (e: any) {
+    } catch (e: Error | unknown) {
       console.error('Failed to complete job:', e);
       // Rollback optimistic update on error
       const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
@@ -307,7 +307,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
         const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
         const previousData = queryClient.getQueryData(queryKey);
         
-        queryClient.setQueryData(queryKey, (old: any) => {
+        queryClient.setQueryData(queryKey, (old: JobsCacheData | undefined) => {
           if (!old) return old;
           return {
             ...old,
@@ -432,10 +432,10 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                           const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
                           const previousData = queryClient.getQueryData(queryKey);
                           
-                          queryClient.setQueryData(queryKey, (old: any) => {
-                            if (!old) return old;
-                            return {
-                              ...old,
+          queryClient.setQueryData(queryKey, (old: JobsCacheData | undefined) => {
+            if (!old) return old;
+            return {
+              ...old,
                               jobs: old.jobs.map((j: Job) => 
                                 j.id === job.id 
                                   ? { ...j, quoteId: null }
@@ -470,7 +470,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                           if (businessId) {
                             invalidationHelpers.jobs(queryClient, businessId);
                           }
-                        } catch (e: any) {
+                        } catch (e: Error | unknown) {
                           console.error('Failed to unlink quote:', e);
                         }
                       }}
@@ -508,7 +508,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                 
                 // Optimistic update - immediately update notes in cache
                 const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
-                queryClient.setQueryData(queryKey, (old: any) => {
+                queryClient.setQueryData(queryKey, (old: JobsCacheData | undefined) => {
                   if (!old) return old;
                   return {
                     ...old,
@@ -690,7 +690,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                           invalidationHelpers.jobs(queryClient, businessId);
                         }
                         onOpenChange(false);
-                      } catch (e: any) {
+                      } catch (e: Error | unknown) {
                         console.error('Failed to delete job:', e);
                       }
                     }}
@@ -787,7 +787,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                             invalidationHelpers.jobs(queryClient, businessId);
                           }
                           onOpenChange(false);
-                        } catch (e: any) {
+                        } catch (e: Error | unknown) {
                           console.error('Failed to delete job:', e);
                         }
                       }}>{t('workOrders.modal.delete')}</Button>
@@ -862,8 +862,8 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
               
               toast.success('Quote linked to job');
               setPickerOpen(false);
-            } catch (e: any) {
-              toast.error(e?.message || 'Failed to link quote');
+            } catch (e: Error | unknown) {
+              toast.error((e instanceof Error ? e.message : null) || 'Failed to link quote');
             }
           }}
         />

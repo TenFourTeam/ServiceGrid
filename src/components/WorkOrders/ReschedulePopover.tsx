@@ -63,7 +63,7 @@ export default function ReschedulePopover({ job, onDone, asDropdownItem = false 
       
       setOpen(false);
       await onDone?.();
-    } catch (e: any) {
+    } catch (e: Error | unknown) {
       console.error('Failed to reschedule job:', e);
     } finally {
       setSubmitting(false);
@@ -94,7 +94,7 @@ export default function ReschedulePopover({ job, onDone, asDropdownItem = false 
       
       setOpen(false);
       await onDone?.();
-    } catch (e: any) {
+    } catch (e: Error | unknown) {
       console.error('Failed to unschedule job:', e);
     } finally {
       setSubmitting(false);

@@ -70,7 +70,7 @@ export default function SettingsPage() {
       }
       
       setSub(data || null);
-    } catch (e: any) {
+    } catch (e: Error | unknown) {
       console.error('[refreshSubscription] error:', e);
     } finally {
       setSubLoading(false);
@@ -94,7 +94,7 @@ export default function SettingsPage() {
       const url = data?.url as string | undefined;
       if (!url) throw new Error('No checkout URL');
       window.open(url, '_blank');
-    } catch (e: any) {
+    } catch (e: Error | unknown) {
       console.error('[startCheckout] error:', e);
     }
   }
@@ -344,8 +344,8 @@ export default function SettingsPage() {
                     toast: { success: 'Disconnected from Stripe', error: 'Failed to disconnect' }
                   });
                   if (!error) window.location.reload();
-                } catch (e: any) {
-                  console.error(e);
+                        } catch (e: Error | unknown) {
+                          console.error(e);
                 }
               }} />
             </CardContent>

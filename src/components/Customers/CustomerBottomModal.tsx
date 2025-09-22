@@ -18,12 +18,12 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 interface CustomerBottomModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  customer?: any;
+  customer?: Customer;
   mode?: 'create' | 'edit' | 'view';
   onSave?: () => void;
-  onCustomerCreated?: (customer: any) => void;
-  onEdit?: (customer: any) => void;
-  onDelete?: (customer: any) => void;
+  onCustomerCreated?: (customer: Customer) => void;
+  onEdit?: (customer: Customer) => void;
+  onDelete?: (customer: Customer) => void;
 }
 
 // Form data interface for internal component state

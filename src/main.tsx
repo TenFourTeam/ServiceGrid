@@ -68,12 +68,12 @@ function Boot() {
             return { key: fetchedKey, error: null, isLoading: false };
           });
         }
-      } catch (e: any) {
+      } catch (e: Error | unknown) {
         if (mounted) {
           setState(prev => {
             // Only update if we don't already have a key or error
             if (prev.key || prev.error) return prev;
-            return { key: null, error: e.message || 'Failed to load Clerk key', isLoading: false };
+            return { key: null, error: (e instanceof Error ? e.message : null) || 'Failed to load Clerk key', isLoading: false };
           });
         }
       }

@@ -160,7 +160,7 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
       } else {
         resendInvite.mutate({ inviteId });
       }
-    } catch (error: any) {
+    } catch (error: Error | unknown) {
       console.error('[BusinessMembersList] resend error:', error);
     }
   };

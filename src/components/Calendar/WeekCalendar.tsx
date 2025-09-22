@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Job } from '@/types';
+import { Job, JobsCacheData, InvoicesCacheData } from '@/types';
 import { useJobsData, useCustomersData } from '@/queries/unified';
 import { clamp, formatDateTime, minutesSinceStartOfDay } from '@/utils/format';
 import { safeCreateDate, safeToISOString, filterJobsWithValidDates } from '@/utils/validation';
@@ -234,7 +234,7 @@ const minuteOfDayFromAnchorOffset = (offset: number) => {
 
       // Optimistic update - add invoice to cache immediately
       if (response?.invoice && businessId) {
-        queryClient.setQueryData(queryKeys.data.invoices(businessId), (oldData: any) => {
+        queryClient.setQueryData(queryKeys.data.invoices(businessId), (oldData: InvoicesCacheData | undefined) => {
           if (oldData) {
             return {
               ...oldData,
@@ -245,7 +245,7 @@ const minuteOfDayFromAnchorOffset = (offset: number) => {
           return { invoices: [response.invoice], count: 1 };
         });
       }
-    } catch (e: any) {
+    } catch (e: Error | unknown) {
       console.error(e);
     }
   }
@@ -342,7 +342,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
       
       // Directly update cache for real-time feedback
       const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
-      queryClient.setQueryData(queryKey, (old: any) => {
+      queryClient.setQueryData(queryKey, (old: JobsCacheData | undefined) => {
         if (!old) return old;
         return {
           ...old,
@@ -385,7 +385,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
         
         // Revert the job position
         const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
-        queryClient.setQueryData(queryKey, (old: any) => {
+        queryClient.setQueryData(queryKey, (old: JobsCacheData | undefined) => {
           if (!old) return old;
           return {
             ...old,
@@ -415,11 +415,11 @@ function onDragStart(e: React.PointerEvent, job: Job) {
         if (error) {
           throw new Error(error.message || 'Failed to reschedule job');
         }
-      } catch (err: any) {
+      } catch (err: Error | unknown) {
         console.error(err);
         // Rollback cache on error
         const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
-        queryClient.setQueryData(queryKey, (old: any) => {
+        queryClient.setQueryData(queryKey, (old: JobsCacheData | undefined) => {
           if (!old) return old;
           return {
             ...old,
@@ -474,7 +474,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
       
       // Directly update cache for real-time feedback
       const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
-      queryClient.setQueryData(queryKey, (old: any) => {
+      queryClient.setQueryData(queryKey, (old: JobsCacheData | undefined) => {
         if (!old) return old;
         return {
           ...old,
@@ -507,11 +507,11 @@ function onDragStart(e: React.PointerEvent, job: Job) {
         if (error) {
           throw new Error(error.message || 'Failed to update job duration');
         }
-      } catch (err: any) {
+      } catch (err: Error | unknown) {
         console.error(err);
         // Rollback cache on error
         const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
-        queryClient.setQueryData(queryKey, (old: any) => {
+        queryClient.setQueryData(queryKey, (old: JobsCacheData | undefined) => {
           if (!old) return old;
           return {
             ...old,

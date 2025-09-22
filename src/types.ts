@@ -236,3 +236,24 @@ export interface ProfileFormData {
   email?: string;
 }
 
+// Cache data interfaces for type safety
+export interface JobsCacheData {
+  jobs: Job[];
+  count: number;
+}
+
+export interface InvoicesCacheData {
+  invoices: Invoice[];
+  count: number;
+}
+
+export interface CustomersCacheData {
+  customers: Customer[];
+  count: number;
+}
+
+export interface QuotesCacheData {
+  quotes: Quote[];
+  count: number;
+}
+
