@@ -37,8 +37,11 @@ export function useBusinessContext() {
   // Simplified error detection
   const hasError = profileQuery.isError;
   
+  // Get initialization state from context
+  const { isInitializing } = useCurrentBusiness();
+  
   // Coordinated loading state - don't show as loading if Clerk isn't ready
-  const isLoadingBusiness = !isLoaded || (shouldFetchProfile && profileQuery.isLoading);
+  const isLoadingBusiness = !isLoaded || isInitializing || (shouldFetchProfile && profileQuery.isLoading);
   
   // Update meta tags when business data changes
   useEffect(() => {
