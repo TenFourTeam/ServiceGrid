@@ -5,35 +5,12 @@ import type { Database } from './types';
 const SUPABASE_URL = "https://ijudkzqfriazabiosnvb.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlqdWRrenFmcmlhemFiaW9zbnZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ2NzIyNjAsImV4cCI6MjA3MDI0ODI2MH0.HLOwmgddlBTcHfYrX9RYvO8RK6IVkjDQvsdHyXuMXIM";
 
-// Store the current Clerk token for automatic inclusion in requests
-let currentClerkToken: string | null = null;
-
-// Function to set the Clerk token - called by SupabaseAuthProvider
-export function setClerkToken(token: string | null) {
-  currentClerkToken = token;
-  console.log('Clerk token updated for RLS:', !!token);
-}
-
-// Create client with current token
-function createSupabaseClient() {
-  return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-    auth: {
-      storage: localStorage,
-      persistSession: false, // Clerk handles session persistence
-      autoRefreshToken: false, // Clerk handles token refresh
-    },
-    global: {
-      headers: currentClerkToken ? {
-        'Authorization': `Bearer ${currentClerkToken}`
-      } : {}
-    }
-  });
-}
-
-// Export a proxy that always uses the current token
-export const supabase = new Proxy({} as ReturnType<typeof createSupabaseClient>, {
-  get(target, prop) {
-    const client = createSupabaseClient();
-    return (client as any)[prop];
+// Create Supabase client with default configuration
+// Authentication is handled by SupabaseAuthProvider using setSession()
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: {
+    storage: localStorage,
+    persistSession: false, // Clerk handles session persistence
+    autoRefreshToken: false, // Clerk handles token refresh
   }
 });

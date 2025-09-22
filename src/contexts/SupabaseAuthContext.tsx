@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from '@clerk/clerk-react';
-import { supabase, setClerkToken } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -17,26 +17,42 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   const [clerkTokenState, setClerkTokenState] = useState<string | null>(null);
 
   useEffect(() => {
-    async function updateToken() {
+    async function updateSupabaseSession() {
+      console.log('updateSupabaseSession called - isSignedIn:', isSignedIn);
+      
       if (isSignedIn) {
         try {
           const token = await getToken({ template: 'supabase' });
+          console.log('Got Clerk token:', !!token, token?.substring(0, 50) + '...');
           setClerkTokenState(token);
           
-          // Set the token in the Supabase client for RLS
-          setClerkToken(token);
+          if (token) {
+            // Set Supabase session using Clerk token
+            console.log('Setting Supabase session with Clerk token');
+            const { data, error } = await supabase.auth.setSession({
+              access_token: token,
+              refresh_token: 'dummy-refresh-token' // Required but not used with Clerk
+            });
+            
+            if (error) {
+              console.error('Error setting Supabase session:', error);
+            } else {
+              console.log('Successfully set Supabase session:', !!data.session);
+            }
+          }
         } catch (error) {
-          console.error('Failed to get Clerk token:', error);
+          console.error('Failed to set Supabase session with Clerk token:', error);
           setClerkTokenState(null);
-          setClerkToken(null);
+          await supabase.auth.signOut();
         }
       } else {
         setClerkTokenState(null);
-        setClerkToken(null);
+        console.log('User signed out, clearing Supabase session');
+        await supabase.auth.signOut();
       }
     }
 
-    updateToken();
+    updateSupabaseSession();
   }, [isSignedIn, getToken]);
 
   return (

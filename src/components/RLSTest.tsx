@@ -1,14 +1,13 @@
-import { useSupabaseWithAuth } from '@/hooks/useSupabaseWithAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
 
 interface TestResult {
   auth_uid: string | null;
-  profile_id: string | null;
-  clerk_user_id: string;
+  profile_data: any;
+  error?: string;
 }
 
 export function RLSTest() {
-  const { createAuthenticatedClient } = useSupabaseWithAuth();
   const [result, setResult] = useState<TestResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -18,10 +17,8 @@ export function RLSTest() {
     setError(null);
     
     try {
-      const client = await createAuthenticatedClient();
-      
-      // Test with a simple SQL query instead of RPC
-      const { data, error: queryError } = await client
+      // Test direct Supabase query with new auth integration
+      const { data, error: queryError } = await supabase
         .from('profiles')
         .select('id, clerk_user_id')
         .limit(1);
@@ -31,9 +28,8 @@ export function RLSTest() {
       }
 
       setResult({
-        auth_uid: 'Will test with SQL',
-        profile_id: data?.[0]?.id || null,
-        clerk_user_id: data?.[0]?.clerk_user_id || 'No clerk_user_id found'
+        auth_uid: 'Testing with setSession()',
+        profile_data: data?.[0] || 'No profiles found',
       });
     } catch (err) {
       console.error('RLS test error:', err);
@@ -45,14 +41,14 @@ export function RLSTest() {
 
   return (
     <div className="p-4 border rounded-lg">
-      <h3 className="text-lg font-semibold mb-4">RLS Integration Test</h3>
+      <h3 className="text-lg font-semibold mb-4">RLS Integration Test (setSession)</h3>
       
       <button 
         onClick={testRLS}
         disabled={loading}
         className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
       >
-        {loading ? 'Testing...' : 'Test RLS Integration'}
+        {loading ? 'Testing...' : 'Test RLS with setSession()'}
       </button>
 
       {error && (
