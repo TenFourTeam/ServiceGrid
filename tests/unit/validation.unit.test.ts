@@ -70,7 +70,6 @@ describe('Validation Logic', () => {
               fc.tuple(fc.integer(1, 999), fc.integer(1000000000, 9999999999))
                 .map(([country, number]) => `+${country} ${number}`)
             ),
-            { numRuns: 20 }, // Limit iterations for speed
             (phoneInput) => {
               const normalized = normalizePhoneNumber(phoneInput);
               if (normalized) { // Only test if normalization succeeded
@@ -79,7 +78,8 @@ describe('Validation Logic', () => {
               }
               // If normalization failed (returned empty), that's also valid behavior
             }
-          )
+          ),
+          { numRuns: 20 } // Limit iterations for speed - this goes in fc.assert()
         );
       } finally {
         // Restore original console.warn
