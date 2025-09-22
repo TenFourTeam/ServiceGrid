@@ -52,17 +52,28 @@ Deno.serve(async (req) => {
     if (targetBusinessId) {
       console.log('[get-profile] Fetching business data for:', targetBusinessId);
       
-      // First check if user is a member of the requested business
+      // Check if user is a member OR owner of the business
       const { data: memberData, error: memberError } = await supabase
         .from('business_members')
         .select('role')
         .eq('business_id', targetBusinessId)
         .eq('user_id', ctx.userId)
-        .single();
+        .maybeSingle();
 
-      if (memberError) {
-        console.error('[get-profile] User not a member of business:', targetBusinessId);
-        // If user isn't a member and this was a specific request, return null business
+      // Also check if user is the owner of the business (in case membership record is missing)
+      const { data: businessOwnership, error: ownershipError } = await supabase
+        .from('businesses')
+        .select('owner_id')
+        .eq('id', targetBusinessId)
+        .eq('owner_id', ctx.userId)
+        .maybeSingle();
+
+      const isOwner = !ownershipError && businessOwnership;
+      const isMember = !memberError && memberData;
+      
+      if (!isOwner && !isMember) {
+        console.error('[get-profile] User not a member or owner of business:', targetBusinessId);
+        // If user isn't a member/owner and this was a specific request, return null business
         if (requestedBusinessId) {
           return json({
             profile: {
@@ -94,6 +105,9 @@ Deno.serve(async (req) => {
         if (businessError) {
           console.error('[get-profile] Error fetching business:', businessError);
         } else {
+          // Determine role: owner if they own the business, otherwise use membership role
+          const userRole = isOwner ? 'owner' : (memberData?.role || 'owner');
+          
           business = {
             id: businessData.id,
             name: businessData.name,
@@ -103,10 +117,10 @@ Deno.serve(async (req) => {
             taxRateDefault: businessData.tax_rate_default,
             logoUrl: businessData.logo_url,
             lightLogoUrl: businessData.light_logo_url,
-            role: memberData.role
+            role: userRole
           };
 
-          console.log('[get-profile] Business data fetched successfully with role:', memberData.role);
+          console.log('[get-profile] Business data fetched successfully with role:', userRole);
         }
       }
     }

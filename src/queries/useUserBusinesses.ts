@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@clerk/clerk-react';
-import { createAuthEdgeApi } from '@/utils/authEdgeApi';
+import { useAuthApi } from '@/hooks/useAuthApi';
 
 export function useUserBusinesses() {
-  const { userId, getToken } = useAuth();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const { userId } = useAuth();
+  const authApi = useAuthApi();
 
   return useQuery({
     queryKey: ['user-businesses', userId],
@@ -26,8 +26,8 @@ export function useUserBusinesses() {
 }
 
 export function useCurrentDefaultBusiness() {
-  const { userId, getToken } = useAuth();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const { userId } = useAuth();
+  const authApi = useAuthApi();
 
   return useQuery({
     queryKey: ['user', 'default-business', userId],

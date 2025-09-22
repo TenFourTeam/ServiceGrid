@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@clerk/clerk-react';
-import { createAuthEdgeApi } from '@/utils/authEdgeApi';
+import { useAuthApi } from '@/hooks/useAuthApi';
 
 export interface UserBusiness {
   id: string;
@@ -15,8 +15,8 @@ export interface UserBusiness {
  * Hook to fetch all businesses the current user is a member of
  */
 export function useUserBusinesses() {
-  const { getToken, isSignedIn } = useAuth();
-  const authApi = createAuthEdgeApi(() => getToken({ template: 'supabase' }));
+  const { isSignedIn } = useAuth();
+  const authApi = useAuthApi();
 
   return useQuery({
     queryKey: ['user-businesses'],
