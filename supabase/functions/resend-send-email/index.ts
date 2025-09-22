@@ -42,7 +42,7 @@ serve(async (req: Request): Promise<Response> => {
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
   // Auth: require valid Clerk token and business context
-  let ctx: any;
+  let ctx: Record<string, unknown>;
   try {
     ctx = await requireCtx(req);
   } catch (e) {
@@ -206,9 +206,9 @@ serve(async (req: Request): Promise<Response> => {
       reply_to: payload.reply_to ? payload.reply_to : undefined,
     });
 
-    if ((sendRes as any)?.error) {
-      const message = String((sendRes as any)?.error?.message || 'Unknown error');
-      console.error('Resend send error:', (sendRes as any)?.error);
+    if ((sendRes as Record<string, unknown>)?.error) {
+      const message = String((sendRes as Record<string, unknown>)?.error?.message || 'Unknown error');
+      console.error('Resend send error:', (sendRes as Record<string, unknown>)?.error);
 
       await ctx.supaAdmin.from('mail_sends').insert({
         user_id: ctx.userId,
@@ -222,7 +222,7 @@ serve(async (req: Request): Promise<Response> => {
         quote_id: payload.quote_id || null,
         job_id: payload.job_id || null,
         invoice_id: payload.invoice_id || null,
-      } as any);
+      });
 
       const lower = message.toLowerCase();
       let friendly = message;
@@ -236,7 +236,7 @@ serve(async (req: Request): Promise<Response> => {
       });
     }
 
-    const messageId = (sendRes as any)?.data?.id ?? null;
+    const messageId = (sendRes as Record<string, unknown>)?.data?.id ?? null;
 
     await ctx.supaAdmin.from('mail_sends').insert({
       user_id: ctx.userId,
@@ -250,7 +250,7 @@ serve(async (req: Request): Promise<Response> => {
       quote_id: payload.quote_id || null,
       job_id: payload.job_id || null,
       invoice_id: payload.invoice_id || null,
-    } as any);
+    });
 
     // Update quote status to Sent after successful email and handle superseding
     try {
@@ -313,30 +313,30 @@ serve(async (req: Request): Promise<Response> => {
       status: 200,
       headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) },
     });
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error('Unexpected send error:', e);
 
     const encoder = new TextEncoder();
-    let payload: any = {};
+    let payload: Record<string, unknown> = {};
     try { payload = await req.json(); } catch {}
     const hash = toHex(await crypto.subtle.digest("SHA-256", encoder.encode(JSON.stringify(payload))));
 
     const supabaseAdmin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
     await supabaseAdmin.from('mail_sends').insert({
       user_id: null,
-      to_email: payload?.to || null,
-      subject: payload?.subject || null,
+      to_email: payload?.to as string || null,
+      subject: payload?.subject as string || null,
       status: 'failed',
       error_code: 'exception',
-      error_message: String(e?.message || e || 'Unknown error'),
+      error_message: String((e as Error)?.message || e || 'Unknown error'),
       provider_message_id: null,
       request_hash: hash,
-      quote_id: payload?.quote_id || null,
-      job_id: payload?.job_id || null,
-      invoice_id: payload?.invoice_id || null,
-    } as any);
+      quote_id: payload?.quote_id as string || null,
+      job_id: payload?.job_id as string || null,
+      invoice_id: payload?.invoice_id as string || null,
+    });
 
-    return new Response(JSON.stringify({ error: e?.message || 'Send failed' }), {
+    return new Response(JSON.stringify({ error: (e as Error)?.message || 'Send failed' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) },
     });

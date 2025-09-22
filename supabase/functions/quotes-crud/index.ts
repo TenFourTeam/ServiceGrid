@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
           throw new Error(`Failed to fetch quotes: ${error.message}`);
         }
 
-        const quotes = data?.map((quote: any) => ({
+        const quotes = data?.map((quote: Record<string, unknown>) => ({
           id: quote.id,
           number: quote.number,
           total: quote.total,
@@ -173,7 +173,7 @@ Deno.serve(async (req) => {
       let calculatedTotal = 0;
       
       if (lineItems && Array.isArray(lineItems)) {
-        calculatedSubtotal = lineItems.reduce((sum: number, item: any) => sum + (item.lineTotal || 0), 0);
+        calculatedSubtotal = lineItems.reduce((sum: number, item: Record<string, unknown>) => sum + (item.lineTotal as number || 0), 0);
         calculatedTotal = calculatedSubtotal + Math.round(calculatedSubtotal * (taxRate || 0)) - (discount || 0);
       }
 
@@ -208,14 +208,14 @@ Deno.serve(async (req) => {
 
       // Save line items if provided
       if (lineItems && Array.isArray(lineItems) && lineItems.length > 0) {
-        const lineItemsToInsert = lineItems.map((item: any, index: number) => ({
+        const lineItemsToInsert = lineItems.map((item: Record<string, unknown>, index: number) => ({
           quote_id: data.id,
           owner_id: ctx.userId,
-          name: item.name || '',
-          qty: item.qty || 1,
-          unit: item.unit || null,
-          unit_price: item.unitPrice || 0,
-          line_total: item.lineTotal || 0,
+          name: item.name as string || '',
+          qty: item.qty as number || 1,
+          unit: item.unit as string || null,
+          unit_price: item.unitPrice as number || 0,
+          line_total: item.lineTotal as number || 0,
           position: index
         }));
 
@@ -254,7 +254,7 @@ Deno.serve(async (req) => {
       
       const { id, status, total, subtotal, taxRate, discount, terms, address, viewCount, lineItems, paymentTerms, frequency, depositRequired, depositPercent, notesInternal } = body;
 
-      const updateData: any = {};
+      const updateData: Record<string, unknown> = {};
       if (status !== undefined) updateData.status = status;
       if (total !== undefined) updateData.total = total;
       if (subtotal !== undefined) updateData.subtotal = subtotal;
@@ -318,10 +318,10 @@ Deno.serve(async (req) => {
 
     return json({ error: 'Method not allowed' }, { status: 405 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[quotes-crud] Error:', error);
     return json(
-      { error: error.message || 'Failed to process request' },
+      { error: (error as Error).message || 'Failed to process request' },
       { status: 500 }
     );
   }

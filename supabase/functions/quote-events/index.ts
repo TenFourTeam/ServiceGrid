@@ -101,23 +101,23 @@ serve(async (req) => {
         console.error('quotes fetch error:', qErr);
       }
 
-      const qToken = (q as any)?.public_token;
+      const qToken = q?.public_token;
       if (!q || qToken !== token) {
         return html(`<!doctype html>
 <html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Invalid Link</title><style>body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;padding:24px;background:#f6f9fc;color:#0f172a}</style></head><body><div style="max-width:720px;margin:0 auto"><div style="background:#0f172a;color:#fff;border-radius:12px 12px 0 0;padding:20px 24px"><strong>Quote Action</strong></div><div style="background:#fff;border:1px solid #e5e7eb;border-top:0;border-radius:0 0 12px 12px;padding:24px"><div style="font-size:18px;font-weight:700;margin:0 0 8px">Invalid or expired link</div><p style="color:#475569;margin:0">Please contact the sender for a new email.</p></div><div style="color:#64748b;font-size:12px;text-align:center;margin-top:16px">Powered by Supabase Edge Functions</div></div></body></html>`, 400);
       }
 
-      const already = ["Approved", "Edits Requested", "Declined"].includes((q as any).status);
+      const already = ["Approved", "Edits Requested", "Declined"].includes(q.status);
       if (!already) {
         const newStatus = type === "approve" ? "Approved" : "Edits Requested";
         const { error: upErr } = await supabase
           .from("quotes")
-          .update({ status: newStatus, updated_at: new Date().toISOString() } as any)
+          .update({ status: newStatus, updated_at: new Date().toISOString() })
           .eq("id", quote_id);
         if (upErr) console.error("quotes update error:", upErr);
 
         // Handle subscription creation for approved quotes
-        if (type === "approve" && (q as any).is_subscription) {
+        if (type === "approve" && q.is_subscription) {
           console.log("Quote is a subscription, creating Stripe subscription...");
           
           try {
@@ -144,14 +144,14 @@ serve(async (req) => {
             const { error: jobError } = await supabase
               .from('jobs')
               .insert({
-                owner_id: (q as any).owner_id,
-                business_id: (q as any).business_id,
-                customer_id: (q as any).customer_id,
+                owner_id: q.owner_id,
+                business_id: q.business_id,
+                customer_id: q.customer_id,
                 quote_id: quote_id,
-                title: `${(q as any).number} - Service`,
-                address: (q as any).address,
+                title: `${q.number} - Service`,
+                address: q.address,
                 status: 'Scheduled',
-                total: (q as any).total,
+                total: q.total,
                 job_type: 'scheduled',
                 is_clocked_in: false,
                 is_recurring: false
@@ -169,11 +169,11 @@ serve(async (req) => {
 
         // Send follow-up email requesting details when edits are requested
         if (type === "edit") {
-          const custEmail = (q as any)?.customers?.email as string | null;
-          const custName = (q as any)?.customers?.name as string | null;
-          const businessName = (q as any)?.businesses?.name as string | null;
-          const businessLogoUrl = (q as any)?.businesses?.logo_url as string | null;
-          const quoteNumber = (q as any)?.number as string | null;
+          const custEmail = q?.customers?.email as string | null;
+          const custName = q?.customers?.name as string | null;
+          const businessName = q?.businesses?.name as string | null;
+          const businessLogoUrl = q?.businesses?.logo_url as string | null;
+          const quoteNumber = q?.number as string | null;
           try {
             const resendApiKey = Deno.env.get("RESEND_API_KEY");
             const fromEmail = Deno.env.get("RESEND_FROM_EMAIL");
@@ -236,8 +236,8 @@ serve(async (req) => {
     }
 
     return okJSON({ ok: true });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("quote-events error:", err);
-    return okJSON({ error: err?.message || "Unexpected error" }, 500);
+    return okJSON({ error: (err as Error)?.message || "Unexpected error" }, 500);
   }
 });
