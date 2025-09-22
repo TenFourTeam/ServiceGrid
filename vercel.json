@@ -34,11 +34,6 @@
       ]
     }
   ],
-  "functions": {
-    "app/**": {
-      "maxDuration": 30
-    }
-  },
   "rewrites": [
     {
       "source": "/(.*)",
