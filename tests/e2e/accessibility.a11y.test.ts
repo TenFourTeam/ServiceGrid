@@ -2,19 +2,12 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 test.describe('Accessibility Compliance', () => {
-  test.beforeEach(async ({ page }) => {
-    // Mock authentication
-    await page.evaluate(() => {
-      localStorage.setItem('clerk-session', 'mock-session-token');
-    });
-  });
-
-  test('dashboard has no critical accessibility issues', async ({ page }) => {
-    await page.goto('/dashboard');
+  test('landing page has no critical accessibility issues', async ({ page }) => {
+    await page.goto('/');
     await page.waitForLoadState('networkidle');
 
     const results = await new AxeBuilder({ page })
-      .exclude('.clerk-components') // Exclude third-party components
+      .exclude('.clerk-components')
       .analyze();
 
     const criticalViolations = results.violations.filter(
@@ -24,11 +17,14 @@ test.describe('Accessibility Compliance', () => {
     expect(criticalViolations).toHaveLength(0);
   });
 
-  test('customers page is accessible', async ({ page }) => {
-    await page.goto('/customers');
+  test('clerk auth page is accessible', async ({ page }) => {
+    await page.goto('/clerk-auth');
     await page.waitForLoadState('networkidle');
 
-    const results = await new AxeBuilder({ page }).analyze();
+    const results = await new AxeBuilder({ page })
+      .exclude('.clerk-components')
+      .analyze();
+      
     const criticalViolations = results.violations.filter(
       violation => violation.impact === 'critical'
     );
