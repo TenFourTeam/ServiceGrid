@@ -24,7 +24,8 @@ test.describe('Public Navigation @smoke', () => {
       await logoLink.click();
       await page.waitForLoadState('networkidle');
       
-      expect(page.url()).toBe('/') || expect(page.url()).toContain('localhost');
+      const currentUrl = page.url();
+      expect(currentUrl === '/' || currentUrl.includes('localhost')).toBe(true);
     }
   });
 
