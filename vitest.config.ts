@@ -32,4 +32,12 @@ export default defineConfig({
     // Legacy service role key for backward compatibility only
     'import.meta.env.SUPABASE_SERVICE_ROLE_KEY': JSON.stringify(process.env.SUPABASE_SERVICE_ROLE_KEY || ''),
   },
+  // Test environment variables for Edge Functions
+  env: {
+    TEST_MODE: 'true',
+    CLERK_SECRET_KEY: 'test_clerk_secret_key_for_mocking',
+    SUPABASE_URL: 'https://ijudkzqfriazabiosnvb.supabase.co',
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlqdWRrenFmcmlhemFiaW9zbnZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ2NzIyNjAsImV4cCI6MjA3MDI0ODI2MH0.HLOwmgddlBTcHfYrX9RYvO8RK6IVkjDQvsdHyXuMXIM',
+  },
 });

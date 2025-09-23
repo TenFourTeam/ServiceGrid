@@ -1,6 +1,18 @@
 // Shared authentication and business context resolution for Supabase Edge Functions
-import { verifyToken } from "https://esm.sh/@clerk/backend@1.7.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.54.0";
+
+// Conditionally import verifyToken based on test mode
+const TEST_MODE = Deno.env.get("TEST_MODE") === "true";
+let verifyToken: any;
+
+if (TEST_MODE) {
+  console.info('🧪 [auth] Running in TEST_MODE - using mock authentication');
+  const testAuth = await import("./auth-test.ts");
+  verifyToken = testAuth.verifyToken;
+} else {
+  const clerkBackend = await import("https://esm.sh/@clerk/backend@1.7.0");
+  verifyToken = clerkBackend.verifyToken;
+}
 
 type ClerkUserId = string; // e.g., 'user_abc123'
 type UserUuid = string;    // postgres uuid

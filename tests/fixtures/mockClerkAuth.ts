@@ -26,6 +26,7 @@ export interface TestContext {
 /**
  * Generate a mock Clerk JWT token for testing
  * This creates a JWT-like structure that matches what Clerk would send
+ * Enhanced to work with the mock verifyToken function
  */
 export function createMockClerkJWT(user: MockUser): string {
   const header = {
@@ -45,7 +46,13 @@ export function createMockClerkJWT(user: MockUser): string {
     nbf: now - 5,
     email: user.email,
     primary_email: user.email,
-    azp: 'https://test-app.lovable.app'
+    azp: 'https://test-app.lovable.app',
+    sid: `sess_${user.id}_${now}`,
+    // Add additional Clerk-like claims
+    email_verified: true,
+    phone_number_verified: false,
+    created_at: now - 86400, // Created a day ago
+    updated_at: now - 3600    // Updated an hour ago
   };
 
   // Base64 encode header and payload (simplified for testing)
