@@ -51,6 +51,13 @@ verify_jwt = false
 [functions.invite-redeem]
 verify_jwt = false
 
+[functions.invite-manage]
+verify_jwt = false
+
+# Clerk webhooks (public, validates Clerk signature)
+[functions.clerk-webhooks]
+verify_jwt = false
+
 # Public endpoints
 [functions.quote-events]
 verify_jwt = false
