@@ -1,3 +1,13 @@
+/**
+ * DEPRECATED: Legacy auth test setup with service role key
+ * 
+ * This file is being phased out in favor of the new API endpoint testing strategy.
+ * New tests should use tests/fixtures/apiTestSetup.ts instead.
+ * 
+ * The new approach tests the complete user journey through Edge Functions,
+ * which automatically validates RLS policies, authentication, and business logic.
+ */
+
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
 import { vi } from 'vitest';
@@ -6,48 +16,25 @@ import { vi } from 'vitest';
 const SUPABASE_URL = 'https://ijudkzqfriazabiosnvb.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlqdWRrenFmcmlhemFiaW9zbnZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ2NzIyNjAsImV4cCI6MjA3MDI0ODI2MH0.HLOwmgddlBTcHfYrX9RYvO8RK6IVkjDQvsdHyXuMXIM';
 
-// Validate that we have the required environment variables
+// Keep for backward compatibility with existing tests
 const SUPABASE_SERVICE_ROLE_KEY = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error(
-    'SUPABASE_SERVICE_ROLE_KEY environment variable is required for integration tests.\n' +
-    'For local development:\n' +
-    '  1. Get the service role key from your Supabase dashboard\n' +
-    '  2. Set it in your environment: export SUPABASE_SERVICE_ROLE_KEY="your-key-here"\n' +
-    '  3. Or add it to your shell profile for persistent access\n' +
-    'For CI/CD:\n' +
-    '  1. Add SUPABASE_SERVICE_ROLE_KEY as a repository secret in GitHub\n' +
-    '  2. The workflow will automatically use it for integration tests'
+  console.warn(
+    'SUPABASE_SERVICE_ROLE_KEY not found. Legacy tests may fail.\n' +
+    'Consider migrating to the new API endpoint testing strategy in tests/fixtures/apiTestSetup.ts'
   );
 }
 
-// Singleton pattern to avoid multiple client instances
-let _supabaseAdmin: ReturnType<typeof createClient<Database>> | null = null;
-let _supabaseClient: ReturnType<typeof createClient<Database>> | null = null;
+// Legacy clients - prefer apiTestSetup.ts for new tests
+export const supabaseAdmin = SUPABASE_SERVICE_ROLE_KEY 
+  ? createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { persistSession: false }
+    })
+  : null;
 
-// Service role client for test data setup (bypasses RLS)
-export const supabaseAdmin = (() => {
-  if (!_supabaseAdmin) {
-    _supabaseAdmin = createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-      auth: {
-        persistSession: false,
-      },
-    });
-  }
-  return _supabaseAdmin;
-})();
-
-// Regular client for testing RLS behavior
-export const supabaseClient = (() => {
-  if (!_supabaseClient) {
-    _supabaseClient = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: {
-        persistSession: false,
-      },
-    });
-  }
-  return _supabaseClient;
-})();
+export const supabaseClient = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { persistSession: false }
+});
 
 export interface TestUser {
   id: string;
