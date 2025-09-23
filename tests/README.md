@@ -1,62 +1,69 @@
 # Testing Strategy
 
-This project uses a comprehensive testing approach with a focus on API endpoint integration testing that validates the complete user journey through authentication, authorization, and business logic.
+This project uses a comprehensive testing approach with React hook integration tests that focus on user experience and business logic without infrastructure complexity.
 
 ## Testing Architecture
 
-### 1. API Endpoint Integration Tests (Recommended)
+### 1. Integration Tests (React Hooks)
 
-**Location**: `tests/integration/*.api.endpoint.test.ts`
+**Location**: `tests/integration/hooks.integration.test.ts`
 
-**Strategy**: Test the actual Edge Functions with mock Clerk authentication
+**Strategy**: Test React hooks with mocked `useAuthApi` responses
 
 **Benefits**:
-- Tests the complete user experience (Clerk JWT → Profile resolution → Business context → RLS enforcement)
-- Automatically validates RLS policies through the API layer
-- No service role key required
-- Simpler setup and more maintainable
-- Tests authentication, authorization, and business logic together
+- Tests the complete React layer (hooks, state management, UI logic)
+- No authentication, database, or network dependencies
+- Fast execution with predictable results
+- Simple setup and maintenance
+- Tests actual user experience through React components
 
 **Example**:
 ```typescript
-import { createAPITestSetup, testEdgeFunction } from '../fixtures/apiTestSetup';
+import { renderHook, waitFor } from '@testing-library/react';
+import { useCustomersData } from '@/hooks/useCustomersData';
+import { mockUseAuthApi } from '../fixtures/mockAuthApi';
 
-// Test calling customers-crud Edge Function with proper authentication
-const result = await testEdgeFunction('customers-crud', {
-  scenario: 'businessOwnerA',
-  scenarios: testSetup.scenarios,
-  method: 'POST',
-  body: { name: 'John Doe', email: 'john@test.com' }
+// Mock the API at the React hook level
+vi.mock('@/hooks/useAuthApi', () => ({
+  useAuthApi: mockUseAuthApi('owner')
+}));
+
+test('fetches customer data correctly', async () => {
+  const { result } = renderHook(() => useCustomersData(), { wrapper });
+  
+  await waitFor(() => {
+    expect(result.current.data).toHaveLength(2);
+    expect(result.current.data[0].name).toBe('John Doe');
+  });
 });
 ```
 
-### 2. Legacy Direct Database Tests (Being Phased Out)
+### 2. Unit Tests
 
-**Location**: `tests/integration/*.api.int.test.ts` and `tests/integration/*.api.rls.test.ts`
+**Location**: `tests/unit/*.unit.test.ts`
 
-**Strategy**: Direct database access with service role key
+**Strategy**: Test pure business logic functions
 
-**Issues**:
-- Bypasses the actual user flow
-- Requires complex service role key setup
-- Doesn't test the API authentication layer
-- More prone to environment issues
+**Focus**:
+- Utility functions (money, validation, formatting)
+- Calculation logic
+- Pure functions without side effects
 
 ## Test Utilities
 
-### `tests/fixtures/apiTestSetup.ts`
+### `tests/fixtures/mockAuthApi.ts`
 
-- Creates mock Clerk JWTs for different user scenarios
-- Sets up test data (users, businesses, memberships)
-- Provides utilities to call Edge Functions with proper authentication
-- Handles cleanup automatically
+- Mock implementation of `useAuthApi` hook
+- Returns controlled, realistic API responses
+- Supports different user scenarios (owner, worker, unauthorized)
+- Simulates role-based access control
 
-### `tests/fixtures/mockClerkAuth.ts`
+### `tests/fixtures/mockResponses.ts`
 
-- Generates realistic mock Clerk JWT tokens
-- Creates test scenarios for different user/business combinations
-- Provides HTTP headers for authenticated requests
-- Builder pattern for easy test scenario creation
+- Realistic mock data that matches production API responses
+- Covers all major Edge Functions (customers, quotes, invoices, etc.)
+- Includes success and error scenarios
+- Easy to extend for new test cases
 
 ## Running Tests
 
@@ -65,98 +72,83 @@ const result = await testEdgeFunction('customers-crud', {
 npm test
 
 # Run only integration tests
-npm test integration
+npm run test:integration
+
+# Run only unit tests  
+npm run test:unit
 
 # Run specific test file
-npm test tests/integration/customers.api.endpoint.test.ts
+npm test tests/integration/hooks.integration.test.ts
 ```
 
 ## Test Scenarios
 
-The testing framework supports multiple user/business scenarios:
+The testing framework supports multiple user scenarios:
 
-- **businessOwnerA**: Owner of Business A
-- **businessWorkerA**: Worker in Business A
-- **businessOwnerB**: Owner of Business B (different business)
+- **owner**: Business owner with full permissions
+- **worker**: Business worker with limited access
+- **unauthorized**: Unauthenticated user (error scenarios)
 
 This allows testing:
 - Role-based access control (owner vs worker permissions)
-- Business data isolation (cross-business access prevention)
+- Business data isolation and security
 - Authentication edge cases
-- Real user workflows
+- Error handling and user experience
 
 ## Writing New Tests
 
-### API Endpoint Tests (Recommended)
+### Integration Tests (Recommended)
 
-1. Use `createAPITestSetup()` for test environment
-2. Use `testEdgeFunction()` to call Edge Functions
+1. Add mock responses to `mockResponses.ts` for your Edge Function
+2. Write focused tests using `renderHook` and React Query
 3. Test different user scenarios and business contexts
-4. Verify proper data isolation and access control
+4. Verify proper data handling and error states
 
 ```typescript
-describe('My Feature API', () => {
-  let testSetup: APITestSetup;
-
-  beforeAll(async () => {
-    testSetup = await createAPITestSetup();
+describe('My Feature Integration', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
-  afterAll(async () => {
-    await testSetup.cleanup();
-  });
+  it('fetches data correctly for business owner', async () => {
+    const wrapper = createTestWrapper();
+    const { result } = renderHook(() => useMyFeatureData(), { wrapper });
 
-  test('feature works for business owner', async () => {
-    const result = await testEdgeFunction('my-edge-function', {
-      scenario: 'businessOwnerA',
-      scenarios: testSetup.scenarios,
-      method: 'POST',
-      body: { /* test data */ }
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
     });
 
-    expect(result.ok).toBe(true);
-    // Add more assertions
+    expect(result.current.data).toHaveLength(1);
+    expect(result.current.isError).toBe(false);
   });
 });
 ```
 
 ### Unit Tests
 
-For pure business logic without database/API dependencies:
+For pure business logic without React dependencies:
 
 **Location**: `tests/unit/*.unit.test.ts`
 
-Focus on:
-- Utility functions
-- Validation logic
-- Calculation functions
+**Focus**:
+- Utility functions (money, validation, formatting)
+- Calculation logic  
 - Pure functions without side effects
 
 ## Best Practices
 
-1. **Prefer API Endpoint Tests**: They provide the most realistic validation
-2. **Use Descriptive Test Names**: Clearly describe what is being tested
-3. **Isolate Test Data**: Use timestamps or UUIDs to avoid conflicts
-4. **Test Multiple Scenarios**: Different users, roles, and business contexts
-5. **Clean Up**: Always clean up test data to avoid interference
-6. **Test Edge Cases**: Authentication failures, invalid data, permissions
-
-## Migration from Legacy Tests
-
-If you have existing tests using the service role key approach:
-
-1. Create new endpoint tests using `apiTestSetup.ts`
-2. Replace direct database calls with Edge Function calls
-3. Update assertions to work with API responses
-4. Remove service role key dependencies
-5. Delete legacy test files once migration is complete
+1. **Mock at the Hook Level**: Use `mockUseAuthApi` instead of complex JWT mocking
+2. **Test User Experience**: Focus on what users actually interact with
+3. **Keep It Simple**: Prefer simple mocks over complex infrastructure setup
+4. **Test Error States**: Verify error handling and loading states work correctly
+5. **Use Realistic Data**: Mock responses should match production API structure
+6. **Fast Feedback**: Tests should run quickly for rapid development cycles
 
 ## Environment Variables
 
-The new testing approach minimizes environment variable requirements:
+The new testing approach requires minimal environment setup:
 
-- ✅ No `SUPABASE_SERVICE_ROLE_KEY` needed for new tests
-- ✅ Uses hardcoded Supabase URL and anon key (safe for testing)
+- ✅ No `SUPABASE_SERVICE_ROLE_KEY` needed
+- ✅ No JWT secret configuration required
 - ✅ Works in all environments without additional setup
-
-Legacy tests may still require the service role key until they are migrated.
+- ✅ No network dependencies or external service requirements
