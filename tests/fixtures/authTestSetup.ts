@@ -4,13 +4,41 @@ import { vi } from 'vitest';
 
 // Use service role key for integration tests to bypass RLS when setting up test data
 const SUPABASE_URL = 'https://ijudkzqfriazabiosnvb.supabase.co';
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'your-service-role-key';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlqdWRrenFmcmlhemFiaW9zbnZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ2NzIyNjAsImV4cCI6MjA3MDI0ODI2MH0.HLOwmgddlBTcHfYrX9RYvO8RK6IVkjDQvsdHyXuMXIM';
+
+// Validate that we have the required environment variables
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!SUPABASE_SERVICE_ROLE_KEY) {
+  throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is required for integration tests');
+}
+
+// Singleton pattern to avoid multiple client instances
+let _supabaseAdmin: ReturnType<typeof createClient<Database>> | null = null;
+let _supabaseClient: ReturnType<typeof createClient<Database>> | null = null;
 
 // Service role client for test data setup (bypasses RLS)
-export const supabaseAdmin = createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+export const supabaseAdmin = (() => {
+  if (!_supabaseAdmin) {
+    _supabaseAdmin = createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: {
+        persistSession: false,
+      },
+    });
+  }
+  return _supabaseAdmin;
+})();
 
 // Regular client for testing RLS behavior
-export const supabaseClient = createClient<Database>(SUPABASE_URL, 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlqdWRrenFmcmlhemFiaW9zbnZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ2NzIyNjAsImV4cCI6MjA3MDI0ODI2MH0.HLOwmgddlBTcHfYrX9RYvO8RK6IVkjDQvsdHyXuMXIM');
+export const supabaseClient = (() => {
+  if (!_supabaseClient) {
+    _supabaseClient = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        persistSession: false,
+      },
+    });
+  }
+  return _supabaseClient;
+})();
 
 export interface TestUser {
   id: string;
@@ -53,7 +81,9 @@ export async function createTestSetup(): Promise<TestSetup> {
     .insert(user);
 
   if (profileError) {
-    throw new Error(`Failed to create test profile: ${profileError.message}`);
+    const errorMessage = profileError?.message || profileError?.toString() || 'Unknown error';
+    console.error('Profile creation error:', profileError);
+    throw new Error(`Failed to create test profile: ${errorMessage}`);
   }
 
   // Create business
@@ -69,7 +99,9 @@ export async function createTestSetup(): Promise<TestSetup> {
     .insert(business);
 
   if (businessError) {
-    throw new Error(`Failed to create test business: ${businessError.message}`);
+    const errorMessage = businessError?.message || businessError?.toString() || 'Unknown error';
+    console.error('Business creation error:', businessError);
+    throw new Error(`Failed to create test business: ${errorMessage}`);
   }
 
   // Create business membership
@@ -83,7 +115,9 @@ export async function createTestSetup(): Promise<TestSetup> {
     });
 
   if (memberError) {
-    throw new Error(`Failed to create business membership: ${memberError.message}`);
+    const errorMessage = memberError?.message || memberError?.toString() || 'Unknown error';
+    console.error('Business membership creation error:', memberError);
+    throw new Error(`Failed to create business membership: ${errorMessage}`);
   }
 
   // Update profile with default business
@@ -93,7 +127,9 @@ export async function createTestSetup(): Promise<TestSetup> {
     .eq('id', testUserId);
 
   if (updateError) {
-    throw new Error(`Failed to update profile with default business: ${updateError.message}`);
+    const errorMessage = updateError?.message || updateError?.toString() || 'Unknown error';
+    console.error('Profile update error:', updateError);
+    throw new Error(`Failed to update profile with default business: ${errorMessage}`);
   }
 
   const cleanup = async () => {
@@ -119,8 +155,12 @@ export function createAuthenticatedClient(clerkUserId: string) {
     exp: Math.floor(Date.now() / 1000) + 3600
   };
 
-  // Create client with mocked auth
-  const client = createClient<Database>(SUPABASE_URL, 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlqdWRrenFmcmlhemFiaW9zbnZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ2NzIyNjAsImV4cCI6MjA3MDI0ODI2MH0.HLOwmgddlBTcHfYrX9RYvO8RK6IVkjDQvsdHyXuMXIM');
+  // Create client with mocked auth (reuse existing client to avoid multiple instances)
+  const client = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      persistSession: false,
+    },
+  });
 
   // Mock the auth methods
   vi.spyOn(client.auth, 'getUser').mockResolvedValue({
