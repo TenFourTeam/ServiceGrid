@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.54.0";
+import { createClerkClient } from "https://esm.sh/@clerk/backend@1.15.6";
 import { corsHeaders, json } from "../_lib/auth.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -117,8 +118,8 @@ async function handleUserCreated(userData: any) {
 
   // Default flow: Create new organization and business for the user
   try {
-    const { default: clerkBackend } = await import("https://esm.sh/@clerk/backend@1.7.0");
-    const clerkClient = clerkBackend.createClerkClient({
+    // Create Clerk client using the static import
+    const clerkClient = createClerkClient({
       secretKey: Deno.env.get("CLERK_SECRET_KEY")!
     });
 
