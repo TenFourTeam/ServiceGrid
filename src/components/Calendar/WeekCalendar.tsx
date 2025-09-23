@@ -143,6 +143,14 @@ export function WeekCalendar({
   // Removed aggressive realtime subscription that was causing race conditions
   // React Query will handle cache updates naturally with its staleTime configuration
 
+  // Transform job titles for better display
+  const getDisplayTitle = (job: Job) => {
+    if (job.title?.startsWith('Job from Quote')) {
+      return 'Work Order'; // Fallback for existing jobs with generic titles
+    }
+    return job.title || 'Work Order';
+  };
+
   const dayJobs = useMemo(() => {
     const map: Record<string, Job[]> = {};
     days.forEach(d => map[dayKey(d)] = []);
@@ -681,7 +689,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                           <div className="flex items-center gap-1 text-xs font-medium leading-tight">
                             {startsAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} — {customer?.name || 'Unknown'}
                           </div>
-                          <div className="text-xs leading-tight mt-0.5 truncate ml-2.5">{j.title}</div>
+                          <div className="text-xs leading-tight mt-0.5 truncate ml-2.5">{getDisplayTitle(j)}</div>
                           {j.address && (
                             <div className="text-xs leading-tight mt-0.5 truncate ml-2.5 opacity-70">
                               {j.address}
