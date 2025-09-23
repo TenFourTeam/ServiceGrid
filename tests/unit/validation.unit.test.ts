@@ -67,11 +67,15 @@ describe('Validation Logic', () => {
           ),
           (phoneInput) => {
             const normalized = normalizePhoneNumber(phoneInput);
-            if (normalized) { // Only test if normalization succeeded
-              expect(normalized).toMatch(/^\+/); // Should start with +
+            if (normalized.startsWith('+')) {
+              // Successfully normalized - should be valid E.164 format
+              expect(normalized).toMatch(/^\+\d+$/); // Should start with + and contain only digits
               expect(normalized.length).toBeGreaterThan(5); // Reasonable minimum length
+            } else if (normalized) {
+              // Normalization failed - should return original input
+              expect(normalized).toBe(phoneInput);
             }
-            // If normalization failed (returned empty), that's also valid behavior
+            // Empty string is also valid (for empty inputs)
           }
         ),
         { numRuns: 20 } // Limit iterations for speed - this goes in fc.assert()
