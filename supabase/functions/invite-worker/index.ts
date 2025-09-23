@@ -365,7 +365,7 @@ serve(async (req: Request) => {
       .single();
 
     // Generate invitation URL and send email
-    const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://preview--lawn-flow-dash.lovable.app';
+    const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://servicegrid.app';
     let inviteUrl = `${frontendUrl}/invite?token=${token}`;
     
     // For Clerk organizations, add signup context
