@@ -35,7 +35,7 @@ export function OrganizationSignup() {
         
         // Redirect to regular Clerk auth with the signup context stored
         const redirectUrl = searchParams.get('redirect_url') || '/calendar';
-        navigate(`/clerk-auth?redirect_url=${encodeURIComponent(redirectUrl)}`);
+        navigate(`/clerk-auth?redirect=${encodeURIComponent(redirectUrl)}`);
         
       } catch (error) {
         console.error('❌ [OrganizationSignup] Failed to parse signup context:', error);

@@ -1,25 +1,30 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { useAuth as useClerkAuth, SignedOut, SignInButton } from "@clerk/clerk-react";
+import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useRedeemInvite } from "@/hooks/useInvites";
+import { EnhancedSignIn } from "@/components/Auth/EnhancedSignIn";
 import { toast } from "sonner";
 import { CheckCircle, AlertCircle, UserPlus, Loader2 } from "lucide-react";
+import { useAuthApi } from "@/hooks/useAuthApi";
 
 export default function InviteAccept() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { isSignedIn, isLoaded } = useClerkAuth();
-  const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'auth-required'>('loading');
+  const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'auth-required' | 'invite-validated'>('loading');
   const [message, setMessage] = useState('');
-  const autoOpenRef = useRef<HTMLButtonElement | null>(null);
+  const [inviteData, setInviteData] = useState<any>(null);
+  const [authMode, setAuthMode] = useState<"sign-in" | "sign-up">("sign-up");
   
   const token = searchParams.get('token');
   const redeemInvite = useRedeemInvite();
+  const authApi = useAuthApi();
   
 
+  // Validate invite token on page load
   useEffect(() => {
     if (!token) {
       setStatus('error');
@@ -31,15 +36,65 @@ export default function InviteAccept() {
       return; // Wait for Clerk to load
     }
 
-    if (!isSignedIn) {
-      setStatus('auth-required');
+    // If already signed in, proceed with manual redemption
+    if (isSignedIn) {
+      handleRedeemInvite();
       return;
     }
 
-    // If we have a token and user is signed in, redeem the invite
-    handleRedeemInvite();
+    // For new users, validate the invite first
+    validateInvite();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, isSignedIn, isLoaded]);
+
+  const validateInvite = async () => {
+    if (!token) return;
+
+    try {
+      setStatus('loading');
+      
+      // Call the invite validation endpoint
+      const response = await fetch(`https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/invite-validate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to validate invitation');
+      }
+
+      const result = await response.json();
+      
+      if (result.valid) {
+        setInviteData(result.invite);
+        setStatus('invite-validated');
+        
+        // Store invite context for signup process
+        const signupContext = {
+          org_id: result.invite.businesses?.clerk_org_id,
+          invite_token: token,
+          invite_token_hash: result.invite_token_hash,
+          business_name: result.invite.businesses?.name,
+          inviter_name: result.inviter_name
+        };
+        
+        localStorage.setItem('clerk_signup_context', JSON.stringify(signupContext));
+        console.log('🎫 [Invite] Stored signup context:', signupContext);
+        
+      } else {
+        setStatus('error');
+        setMessage(result.message || 'This invitation is no longer valid.');
+      }
+      
+    } catch (error: Error | unknown) {
+      console.error('Failed to validate invite:', error);
+      setStatus('error');
+      setMessage(error instanceof Error ? error.message : 'Failed to validate invitation. Please try again.');
+    }
+  };
 
   const handleRedeemInvite = async () => {
     if (!token) return;
@@ -71,13 +126,16 @@ export default function InviteAccept() {
     }
   };
 
-  // Auto-trigger sign-in when auth is required
+  // Handle successful authentication
   useEffect(() => {
-    if (status === 'auth-required' && !isSignedIn) {
-      const t = setTimeout(() => autoOpenRef.current?.click(), 0);
-      return () => clearTimeout(t);
+    if (isSignedIn && status === 'invite-validated') {
+      // User just signed in, redirect to business
+      toast.success("Welcome!", {
+        description: "You have successfully joined the team.",
+      });
+      navigate('/calendar');
     }
-  }, [status, isSignedIn]);
+  }, [isSignedIn, status, navigate]);
 
   if (!token) {
     return (
@@ -102,38 +160,48 @@ export default function InviteAccept() {
     );
   }
 
-  if (status === 'auth-required') {
+  if (status === 'invite-validated') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-              <UserPlus className="h-6 w-6 text-primary" />
-            </div>
-            <CardTitle>Join the Team</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center space-y-4">
-            <p className="text-muted-foreground">
-              You've been invited to join a team on ServiceGrid. Opening sign-in to accept your invitation...
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="w-full max-w-md space-y-6">
+          <Card>
+            <CardHeader className="text-center">
+              <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                <UserPlus className="h-6 w-6 text-primary" />
+              </div>
+              <CardTitle>You're Invited!</CardTitle>
+            </CardHeader>
+            <CardContent className="text-center space-y-4">
+              <div>
+                <p className="text-muted-foreground mb-2">
+                  You've been invited to join <strong>{inviteData?.businesses?.name}</strong> as a {inviteData?.role}.
+                </p>
+                {inviteData?.inviter_name && (
+                  <p className="text-sm text-muted-foreground">
+                    Invited by {inviteData.inviter_name}
+                  </p>
+                )}
+              </div>
+              <Badge variant="secondary">
+                Join as {inviteData?.role}
+              </Badge>
+            </CardContent>
+          </Card>
+
+          <div>
+            <EnhancedSignIn
+              redirectTo="/calendar"
+              mode={authMode}
+              onModeChange={setAuthMode}
+            />
+          </div>
+
+          <div className="text-center">
+            <p className="text-xs text-muted-foreground">
+              By signing up, you'll automatically join {inviteData?.businesses?.name}
             </p>
-            <SignedOut>
-              <SignInButton
-                mode="modal"
-                forceRedirectUrl={`${window.location.origin}/invite?token=${token}`}
-                fallbackRedirectUrl={`${window.location.origin}/invite?token=${token}`}
-                appearance={{ elements: { modalBackdrop: "fixed inset-0 bg-background" } }}
-              >
-                <Button ref={autoOpenRef} className="sr-only">Open sign in</Button>
-              </SignInButton>
-              <p className="text-sm text-muted-foreground">
-                If nothing happens, {" "}
-                <button className="underline" onClick={() => autoOpenRef.current?.click()}>
-                  click here to sign in
-                </button>.
-              </p>
-            </SignedOut>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     );
   }
