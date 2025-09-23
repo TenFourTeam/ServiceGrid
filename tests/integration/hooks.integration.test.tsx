@@ -6,11 +6,11 @@ import React from 'react';
 import { useCustomersData } from '@/hooks/useCustomersData';
 import { useCustomerOperations } from '@/hooks/useCustomerOperations';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
-import { mockUseAuthApi } from '../fixtures/mockAuthApi';
+import { createMockAuthApi } from '../fixtures/mockAuthApi';
 
 // Mock the useAuthApi hook
 vi.mock('@/hooks/useAuthApi', () => ({
-  useAuthApi: mockUseAuthApi('owner')
+  useAuthApi: () => createMockAuthApi('owner')
 }));
 
 // Mock the business context to provide test business data
