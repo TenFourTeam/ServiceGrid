@@ -2,18 +2,7 @@ import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
 // Mock environment variables
-Object.defineProperty(import.meta, 'env', {
-  value: {
-    VITE_SUPABASE_URL: 'https://ijudkzqfriazabiosnvb.supabase.co',
-    VITE_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlqdWRrenFmcmlhemFiaW9zbnZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ2NzIyNjAsImV4cCI6MjA3MDI0ODI2MH0.HLOwmgddlBTcHfYrX9RYvO8RK6IVkjDQvsdHyXuMXIM',
-    // Use real service role key for integration tests
-    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
-  },
-  writable: true,
-});
-
-// Ensure NODE_ENV is set to 'test' for proper Vitest configuration
-process.env.NODE_ENV = 'test';
+// Environment variables are now handled by vitest.config.ts define block
 
 // Mock window.Clerk for authentication tests
 Object.defineProperty(window, 'Clerk', {
