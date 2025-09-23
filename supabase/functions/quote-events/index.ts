@@ -2,6 +2,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "npm:resend@2.0.0";
+import { withRateLimit, RATE_LIMITS, getClientIP, RequestValidator } from "../_lib/rate-limiter.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -44,14 +45,35 @@ function pixel() {
 }
 
 serve(async (req) => {
+  const ip = getClientIP(req);
+  const userAgent = req.headers.get("user-agent");
+  
+  console.log(`🔍 [quote-events] ${req.method} from IP: ${ip}`);
+  
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
-  // Enforce allowed origins on CORS/fetch requests only (allow direct navigation)
+
+  // Apply rate limiting - 20 requests per minute per IP for event tracking
+  const rateLimitResponse = withRateLimit("quote-events", RATE_LIMITS.EVENT_TRACKING, corsHeaders)(req);
+  if (rateLimitResponse) {
+    console.warn(`🚫 [quote-events] Rate limited IP: ${ip}`);
+    return rateLimitResponse;
+  }
+  
+  // Enhanced origin validation
   const origin = req.headers.get("Origin") || req.headers.get("origin");
   const allowed = (Deno.env.get("ALLOWED_ORIGINS") || "").split(",").map((s) => s.trim()).filter(Boolean);
-  if (origin && allowed.length && !allowed.includes("*") && !allowed.includes(origin)) {
-    return okJSON({ error: "Origin not allowed" }, 403);
+  const originError = RequestValidator.validateOrigin(req, allowed);
+  if (originError) {
+    console.warn(`🚫 [quote-events] ${originError} from IP: ${ip}`);
+    return okJSON({ error: originError }, 403);
+  }
+
+  // Detect suspicious patterns
+  const warnings = RequestValidator.detectSuspiciousPatterns(userAgent, ip);
+  if (warnings.length > 0) {
+    console.warn(`⚠️ [quote-events] Suspicious request from ${ip}: ${warnings.join(", ")}`);
   }
 
   try {
@@ -61,7 +83,21 @@ serve(async (req) => {
     const token = url.searchParams.get("token");
 
     if (!type || !quote_id || !token) {
+      console.warn(`🚫 [quote-events] Missing required params from IP: ${ip}`);
       return okJSON({ error: "Missing required params: type, quote_id, token" }, 400);
+    }
+
+    // Validate parameters 
+    if (!['open', 'approve', 'edit'].includes(type)) {
+      console.warn(`🚫 [quote-events] Invalid event type: ${type} from IP: ${ip}`);
+      return okJSON({ error: "Invalid event type" }, 400);
+    }
+
+    // Basic UUID validation for quote_id
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(quote_id)) {
+      console.warn(`🚫 [quote-events] Invalid quote_id format from IP: ${ip}`);
+      return okJSON({ error: "Invalid quote ID format" }, 400);
     }
 
     const meta = {
@@ -103,6 +139,7 @@ serve(async (req) => {
 
       const qToken = q?.public_token;
       if (!q || qToken !== token) {
+        console.warn(`🚫 [quote-events] Invalid token for quote ${quote_id} from IP: ${ip}`);
         return html(`<!doctype html>
 <html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Invalid Link</title><style>body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;padding:24px;background:#f6f9fc;color:#0f172a}</style></head><body><div style="max-width:720px;margin:0 auto"><div style="background:#0f172a;color:#fff;border-radius:12px 12px 0 0;padding:20px 24px"><strong>Quote Action</strong></div><div style="background:#fff;border:1px solid #e5e7eb;border-top:0;border-radius:0 0 12px 12px;padding:24px"><div style="font-size:18px;font-weight:700;margin:0 0 8px">Invalid or expired link</div><p style="color:#475569;margin:0">Please contact the sender for a new email.</p></div><div style="color:#64748b;font-size:12px;text-align:center;margin-top:16px">Powered by Supabase Edge Functions</div></div></body></html>`, 400);
       }
@@ -235,6 +272,7 @@ serve(async (req) => {
       return html(commonHead);
     }
 
+    console.log(`🔍 [quote-events] Event processed: ${type} for quote ${quote_id} from IP: ${ip}`);
     return okJSON({ ok: true });
   } catch (err: unknown) {
     console.error("quote-events error:", err);

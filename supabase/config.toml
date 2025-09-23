@@ -162,3 +162,14 @@ verify_jwt = false
 
 [functions.send-work-order-confirmations]
 verify_jwt = false
+
+# Stripe webhooks (public, validates signature)
+[functions.stripe-webhooks]
+verify_jwt = false
+
+[functions.manage-quote-subscription]
+verify_jwt = false
+
+# Security monitoring (authenticated)
+[functions.security-monitor]
+verify_jwt = true
