@@ -6,6 +6,7 @@ Object.defineProperty(import.meta, 'env', {
   value: {
     VITE_SUPABASE_URL: 'https://ijudkzqfriazabiosnvb.supabase.co',
     VITE_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlqdWRrenFmcmlhemFiaW9zbnZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ2NzIyNjAsImV4cCI6MjA3MDI0ODI2MH0.HLOwmgddlBTcHfYrX9RYvO8RK6IVkjDQvsdHyXuMXIM',
+    SUPABASE_SERVICE_ROLE_KEY: 'mock-service-role-key', // For integration tests
   },
   writable: true,
 });
