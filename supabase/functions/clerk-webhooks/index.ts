@@ -148,8 +148,7 @@ async function handleUserCreated(userData: any) {
         .insert({
           owner_id: profile.id,
           name: organization.name,
-          clerk_org_id: organization.id,
-          uses_clerk_orgs: true
+          clerk_org_id: organization.id
         })
         .select('id')
         .single();
@@ -177,7 +176,7 @@ async function handleUserCreated(userData: any) {
 
   } catch (error) {
     console.error('❌ [clerk-webhooks] Failed to create organization:', error);
-    // Fall back to creating regular business without Clerk org
+    // Fall back to creating regular business with Clerk org
     await createFallbackBusiness(clerkUserId, email, fullName);
   }
 }
@@ -245,7 +244,7 @@ async function handleMembershipChange(type: string, membershipData: any) {
 }
 
 async function createFallbackBusiness(clerkUserId: string, email: string, fullName?: string) {
-  console.log(`🔄 [clerk-webhooks] Creating fallback business without Clerk org`);
+  console.log(`🔄 [clerk-webhooks] Creating fallback business with basic Clerk integration`);
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -262,8 +261,7 @@ async function createFallbackBusiness(clerkUserId: string, email: string, fullNa
       .from('businesses')
       .insert({
         owner_id: profile.id,
-        name: 'My Business',
-        uses_clerk_orgs: false // Keep using legacy system
+        name: 'My Business'
       })
       .select('id')
       .single();

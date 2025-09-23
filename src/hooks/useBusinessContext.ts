@@ -18,7 +18,7 @@ export type BusinessUI = {
 
 /**
  * Single source of truth for business data access
- * Consolidates business context and data in one hook
+ * Always uses Clerk organizations - simplified authentication flow
  */
 export function useBusinessContext() {
   const { isSignedIn, isLoaded, userId } = useAuth();
@@ -35,29 +35,26 @@ export function useBusinessContext() {
   const business = profileQuery.data?.business as BusinessUI;
   const role = business?.role || 'owner';
   
-  // Check if current business uses Clerk organizations
-  const usesClerkOrgs = business?.uses_clerk_orgs === true;
-  
   // Simplified error detection
   const hasError = profileQuery.isError;
   
   // Get initialization state from context
   const { isInitializing } = useCurrentBusiness();
   
-  // Coordinated loading state - consider Clerk org loading for businesses using Clerk
-  const clerkOrgLoading = usesClerkOrgs && !orgLoaded;
-  const isLoadingBusiness = !isLoaded || isInitializing || clerkOrgLoading || (shouldFetchProfile && profileQuery.isLoading);
+  // Coordinated loading state - always consider Clerk org loading
+  const isLoadingBusiness = !isLoaded || isInitializing || !orgLoaded || (shouldFetchProfile && profileQuery.isLoading);
   
   // Update meta tags when business data changes
   useEffect(() => {
-    if (business?.name) {
+    const businessName = organization?.name || business?.name;
+    if (businessName) {
       updateBusinessMeta({
-        name: business.name,
-        description: business.description,
-        logoUrl: (business.logoUrl || business.lightLogoUrl) as string
+        name: businessName,
+        description: business?.description,
+        logoUrl: organization?.imageUrl || (business.logoUrl || business.lightLogoUrl) as string
       });
     }
-  }, [business?.name, business?.description, business?.logoUrl, business?.lightLogoUrl]);
+  }, [organization?.name, business?.name, business?.description, business?.logoUrl, business?.lightLogoUrl, organization?.imageUrl]);
   
   return {
     // Authentication state
@@ -65,28 +62,28 @@ export function useBusinessContext() {
     isLoaded,
     userId,
     
-    // Complete business data (overlay: use Clerk org data if available and business uses Clerk)
-    business: usesClerkOrgs && organization ? {
+    // Complete business data - always overlay with Clerk organization data
+    business: organization ? {
       ...business,
       name: organization.name,
       id: business?.id, // Keep database ID
       clerk_org_id: organization.id, // Add Clerk org ID
     } : business,
     businessId: business?.id,
-    businessName: usesClerkOrgs && organization ? organization.name : business?.name,
+    businessName: organization?.name || business?.name,
     businessDescription: business?.description,
     businessPhone: business?.phone,
     businessReplyToEmail: business?.replyToEmail,
     businessTaxRateDefault: business?.taxRateDefault,
-    businessLogoUrl: usesClerkOrgs && organization ? organization.imageUrl : business?.logoUrl,
+    businessLogoUrl: organization?.imageUrl || business?.logoUrl,
     businessLightLogoUrl: business?.lightLogoUrl,
     
-    // Role and permissions (overlay: use Clerk org role if available)
-    role: usesClerkOrgs && organization && membership ? 
+    // Role and permissions - always use Clerk organization role
+    role: organization && membership ? 
       (membership.role === 'org:admin' ? 'owner' : 'worker') : role,
-    userRole: usesClerkOrgs && organization && membership ? 
+    userRole: organization && membership ? 
       (membership.role === 'org:admin' ? 'owner' : 'worker') : role,
-    canManage: usesClerkOrgs && organization && membership ? 
+    canManage: organization && membership ? 
       membership.role === 'org:admin' : role === 'owner',
     
     // Loading states - coordinated between Clerk and profile query
@@ -96,8 +93,7 @@ export function useBusinessContext() {
     hasBusinessError: hasError,
     businessError: profileQuery.error,
     
-    // Clerk organization overlay data
-    usesClerkOrgs,
+    // Clerk organization data
     clerkOrganization: organization,
     
     // Utilities

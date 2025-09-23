@@ -139,7 +139,6 @@ export type Database = {
           stripe_payouts_enabled: boolean
           tax_rate_default: number
           updated_at: string
-          uses_clerk_orgs: boolean | null
         }
         Insert: {
           application_fee_bps?: number
@@ -165,7 +164,6 @@ export type Database = {
           stripe_payouts_enabled?: boolean
           tax_rate_default?: number
           updated_at?: string
-          uses_clerk_orgs?: boolean | null
         }
         Update: {
           application_fee_bps?: number
@@ -191,7 +189,6 @@ export type Database = {
           stripe_payouts_enabled?: boolean
           tax_rate_default?: number
           updated_at?: string
-          uses_clerk_orgs?: boolean | null
         }
         Relationships: []
       }
@@ -1166,7 +1163,6 @@ export type Database = {
           stripe_payouts_enabled: boolean
           tax_rate_default: number
           updated_at: string
-          uses_clerk_orgs: boolean | null
         }
       }
       generate_slug: {
