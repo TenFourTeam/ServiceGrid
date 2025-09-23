@@ -34,13 +34,6 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
     }
   }, [onboardingState.showIntentPicker, intentPickerDismissed, showIntentPicker]);
 
-  // Reset dismissal state when profile becomes complete
-  useEffect(() => {
-    if (onboardingState.profileComplete && intentPickerDismissed) {
-      setIntentPickerDismissed(false);
-    }
-  }, [onboardingState.profileComplete, intentPickerDismissed, setIntentPickerDismissed]);
-
   const handleOpenHelp = () => {
     setShowIntentPicker(true);
   };
