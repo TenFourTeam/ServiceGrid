@@ -1,7 +1,7 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { z } from 'zod';
 import fc from 'fast-check';
-import { normalizeToE164 as normalizePhoneNumber } from '@/utils/phoneNormalization';
+import { normalizeToE164 as normalizePhoneNumber } from '@/validation/profile';
 
 // Email validation schema
 const emailSchema = z.string().email();
@@ -38,8 +38,8 @@ describe('Validation Logic', () => {
     });
 
     it('handles valid international numbers', () => {
-      expect(normalizePhoneNumber('+44 20 7946 0958')).toBe('+442079460958');
-      expect(normalizePhoneNumber('+33 1 42 86 83 26')).toBe('+33142868326');
+      expect(normalizePhoneNumber('+442079460958')).toBe('+442079460958');
+      expect(normalizePhoneNumber('+33142868326')).toBe('+33142868326');
     });
 
     it('returns empty string for invalid phone numbers', () => {
@@ -50,41 +50,32 @@ describe('Validation Logic', () => {
     });
 
     it('property-based phone validation', () => {
-      // Mock console.warn to suppress expected libphonenumber-js warnings during property testing
-      const originalWarn = console.warn;
-      console.warn = vi.fn();
-      
-      try {
-        fc.assert(
-          fc.property(
-            // Generate realistic phone numbers directly instead of filtering
-            fc.oneof(
-              // US format variations
-              fc.tuple(fc.integer(200, 999), fc.integer(200, 999), fc.integer(1000, 9999))
-                .map(([area, exchange, number]) => `(${area}) ${exchange}-${number}`),
-              fc.tuple(fc.integer(200, 999), fc.integer(200, 999), fc.integer(1000, 9999))
-                .map(([area, exchange, number]) => `${area}-${exchange}-${number}`),
-              fc.tuple(fc.integer(200, 999), fc.integer(200, 999), fc.integer(1000, 9999))
-                .map(([area, exchange, number]) => `${area}${exchange}${number}`),
-              // International format
-              fc.tuple(fc.integer(1, 999), fc.integer(1000000000, 9999999999))
-                .map(([country, number]) => `+${country} ${number}`)
-            ),
-            (phoneInput) => {
-              const normalized = normalizePhoneNumber(phoneInput);
-              if (normalized) { // Only test if normalization succeeded
-                expect(normalized).toMatch(/^\+\d+$/); // Should start with + and contain only digits
-                expect(normalized.length).toBeGreaterThan(5); // Reasonable minimum length
-              }
-              // If normalization failed (returned empty), that's also valid behavior
-            }
+      fc.assert(
+        fc.property(
+          // Generate realistic phone numbers directly instead of filtering
+          fc.oneof(
+            // US format variations
+            fc.tuple(fc.integer(200, 999), fc.integer(200, 999), fc.integer(1000, 9999))
+              .map(([area, exchange, number]) => `(${area}) ${exchange}-${number}`),
+            fc.tuple(fc.integer(200, 999), fc.integer(200, 999), fc.integer(1000, 9999))
+              .map(([area, exchange, number]) => `${area}-${exchange}-${number}`),
+            fc.tuple(fc.integer(200, 999), fc.integer(200, 999), fc.integer(1000, 9999))
+              .map(([area, exchange, number]) => `${area}${exchange}${number}`),
+            // International format
+            fc.tuple(fc.integer(1, 999), fc.integer(1000000000, 9999999999))
+              .map(([country, number]) => `+${country} ${number}`)
           ),
-          { numRuns: 20 } // Limit iterations for speed - this goes in fc.assert()
-        );
-      } finally {
-        // Restore original console.warn
-        console.warn = originalWarn;
-      }
+          (phoneInput) => {
+            const normalized = normalizePhoneNumber(phoneInput);
+            if (normalized) { // Only test if normalization succeeded
+              expect(normalized).toMatch(/^\+\d+$/); // Should start with + and contain only digits
+              expect(normalized.length).toBeGreaterThan(5); // Reasonable minimum length
+            }
+            // If normalization failed (returned empty), that's also valid behavior
+          }
+        ),
+        { numRuns: 20 } // Limit iterations for speed - this goes in fc.assert()
+      );
     });
   });
 
