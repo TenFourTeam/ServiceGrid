@@ -9,7 +9,16 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // Validate that we have the required environment variables
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is required for integration tests');
+  throw new Error(
+    'SUPABASE_SERVICE_ROLE_KEY environment variable is required for integration tests.\n' +
+    'For local development:\n' +
+    '  1. Get the service role key from your Supabase dashboard\n' +
+    '  2. Set it in your environment: export SUPABASE_SERVICE_ROLE_KEY="your-key-here"\n' +
+    '  3. Or add it to your shell profile for persistent access\n' +
+    'For CI/CD:\n' +
+    '  1. Add SUPABASE_SERVICE_ROLE_KEY as a repository secret in GitHub\n' +
+    '  2. The workflow will automatically use it for integration tests'
+  );
 }
 
 // Singleton pattern to avoid multiple client instances
