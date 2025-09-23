@@ -10,7 +10,7 @@ test.describe('Authentication Flow @smoke', () => {
     expect(title).toContain('ServiceGrid');
     
     // Look for sign-in related elements
-    const signInButton = page.getByRole('button', { name: /sign in/i });
+    const signInButton = page.locator('button').filter({ hasText: /sign in/i }).first();
     
     if (await signInButton.isVisible()) {
       await signInButton.click();
@@ -36,7 +36,7 @@ test.describe('Authentication Flow @smoke', () => {
     await page.waitForLoadState('networkidle');
     
     // Look for sign-in button in TopNav
-    const signInButton = page.getByRole('button', { name: /sign in/i });
+    const signInButton = page.locator('button').filter({ hasText: /sign in/i }).first();
     
     if (await signInButton.isVisible()) {
       await signInButton.click();

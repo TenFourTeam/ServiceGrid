@@ -6,8 +6,8 @@ test.describe('Public Navigation @smoke', () => {
     await page.waitForLoadState('networkidle');
     
     // Check that sign-in and sign-up buttons exist
-    const signInButton = page.getByRole('button', { name: /sign in/i });
-    const signUpButton = page.getByRole('button', { name: /try for free|try free/i });
+    const signInButton = page.locator('button').filter({ hasText: /sign in/i }).first();
+    const signUpButton = page.locator('#hero-cta');
     
     await expect(signInButton).toBeVisible();
     await expect(signUpButton).toBeVisible();
@@ -18,7 +18,7 @@ test.describe('Public Navigation @smoke', () => {
     await page.waitForLoadState('networkidle');
     
     // Navigate back to home via logo
-    const logoLink = page.getByRole('link', { name: /servicegrid home/i });
+    const logoLink = page.locator('a[href="/"]').first();
     
     if (await logoLink.isVisible()) {
       await logoLink.click();

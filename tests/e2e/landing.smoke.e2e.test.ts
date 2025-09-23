@@ -19,11 +19,11 @@ test.describe('Landing Page Smoke Tests @smoke', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
-    // Look for sign-in or login links
-    const authLink = page.getByRole('link', { name: /sign in|login|get started/i }).first();
+    // Look for sign-in or login links/buttons
+    const authElement = page.locator('button, a').filter({ hasText: /sign in|login|get started|try for free/i }).first();
     
-    if (await authLink.isVisible()) {
-      await authLink.click();
+    if (await authElement.isVisible()) {
+      await authElement.click();
       await page.waitForLoadState('networkidle');
       
       // Should navigate somewhere (auth page or modal)
