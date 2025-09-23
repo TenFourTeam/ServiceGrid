@@ -12,6 +12,9 @@ Object.defineProperty(import.meta, 'env', {
   writable: true,
 });
 
+// Ensure NODE_ENV is set to 'test' for proper Vitest configuration
+process.env.NODE_ENV = 'test';
+
 // Mock window.Clerk for authentication tests
 Object.defineProperty(window, 'Clerk', {
   value: {
