@@ -4,12 +4,8 @@ import { createAPITestSetup, testEdgeFunction, type APITestSetup } from '../fixt
 describe('Customer API Endpoint Integration', () => {
   let testSetup: APITestSetup;
 
-  beforeAll(async () => {
-    testSetup = await createAPITestSetup();
-  });
-
-  afterAll(async () => {
-    await testSetup.cleanup();
+  beforeAll(() => {
+    testSetup = createAPITestSetup();
   });
 
   describe('Customer CRUD Operations via API', () => {
