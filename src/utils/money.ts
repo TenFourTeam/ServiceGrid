@@ -18,7 +18,8 @@ export function calculateQuoteTotal(
 ): number {
   return lineItems.reduce((total, item) => {
     const lineTotal = item.quantity * item.unit_price;
-    const tax = lineTotal * (item.tax_rate || 0);
+    const taxRate = (typeof item.tax_rate === 'number' && !Number.isNaN(item.tax_rate)) ? item.tax_rate : 0;
+    const tax = lineTotal * taxRate;
     return total + lineTotal + tax;
   }, 0);
 }
