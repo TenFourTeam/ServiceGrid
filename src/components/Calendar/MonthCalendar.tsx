@@ -129,12 +129,11 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
                             {t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                           </span>
                           <span className="mx-1 opacity-70">•</span>
-                          <span className="truncate">{j.title || 'Job'}</span>
+                          <span className="truncate">{j.title || 'Work Order'}</span>
                           {j.isAssessment && <span className="text-[10px] opacity-80 ml-1">(Assessment)</span>}
                           {customersMap.get(j.customerId) && (
                              <span className="opacity-70"> — {(customersMap.get(j.customerId) ?? 'Customer') as string}</span>
                           )}
-                          {displayMode === 'combined' && <span className="text-[10px] opacity-60"> (S)</span>}
                         </button>
                       </li>
                     );
@@ -157,7 +156,7 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
                             {clockStart.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                           </span>
                           <span className="mx-1 opacity-70">•</span>
-                          <span className="truncate">{j.title || 'Job'}</span>
+                          <span className="truncate">{j.title || 'Work Order'}</span>
                           {customersMap.get(j.customerId) && (
                             <span className="opacity-70"> — {(customersMap.get(j.customerId) ?? 'Customer') as string}</span>
                           )}

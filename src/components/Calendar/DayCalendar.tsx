@@ -86,9 +86,8 @@ export default function DayCalendar({ date, displayMode = 'scheduled', selectedM
                   <span className="opacity-70">–</span>
                   <span>{e ? e.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'End time'}</span>
                   {(j as Job).isAssessment && <span className="text-xs opacity-80">(Assessment)</span>}
-                  {displayMode === 'combined' && <span className="text-xs opacity-60">(Scheduled)</span>}
                 </div>
-                <div className="text-sm font-medium truncate">{(j as Job).title || 'Job'}</div>
+                <div className="text-sm font-medium truncate">{(j as Job).title || 'Work Order'}</div>
                 <div className="text-xs opacity-70 truncate">{(customersMap.get((j as Job).customerId) ?? 'Customer') as string}</div>
                 {(j as Job).address && <div className="text-xs opacity-70">{(j as Job).address}</div>}
               </li>
@@ -111,7 +110,7 @@ export default function DayCalendar({ date, displayMode = 'scheduled', selectedM
                   <span>{clockEnd.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
                   <span className="text-xs opacity-80">(Worked)</span>
                 </div>
-                <div className="text-sm font-medium truncate">{(j as Job).title || 'Job'}</div>
+                <div className="text-sm font-medium truncate">{(j as Job).title || 'Work Order'}</div>
                 <div className="text-xs text-white/70 truncate">{(customersMap.get((j as Job).customerId) ?? 'Customer') as string}</div>
                 {(j as Job).address && <div className="text-xs text-white/70">{(j as Job).address}</div>}
               </li>
