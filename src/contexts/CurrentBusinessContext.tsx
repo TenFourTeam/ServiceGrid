@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import { useAuth } from '@clerk/clerk-react';
-import { useUserBusinesses } from '@/queries/useUserBusinesses';
+import { useUserBusinesses } from '@/hooks/useUserBusinesses';
 
 interface CurrentBusinessContextType {
   currentBusinessId: string | null;
@@ -40,11 +40,13 @@ export function CurrentBusinessProvider({ children }: CurrentBusinessProviderPro
     if (isLoadingBusinesses) return; // Wait for businesses to load
 
     // If no business is currently selected and we have businesses available
-    if (!currentBusinessId && businesses && businesses.length > 0) {
+    if (!currentBusinessId && businesses && Array.isArray(businesses) && businesses.length > 0) {
       // Find the current default business or use the first one
       const defaultBusiness = businesses.find(b => b.is_current) || businesses[0];
       console.log('[CurrentBusinessContext] Auto-initializing with business:', defaultBusiness);
-      setCurrentBusinessIdState(defaultBusiness.id);
+      if (defaultBusiness?.id) {
+        setCurrentBusinessIdState(defaultBusiness.id);
+      }
     }
     
     setIsInitializing(false);
