@@ -22,8 +22,8 @@ vi.mock('@clerk/clerk-react', () => ({
   useAuth: () => mockAuth
 }));
 
-vi.mock('@/queries/useBusiness', () => ({
-  useBusiness: vi.fn(() => mockBusiness)
+vi.mock('@/queries/useProfile', () => ({
+  useProfile: vi.fn(() => ({ data: { business: mockBusiness.data } }))
 }));
 
 function createTestWrapper() {
@@ -47,8 +47,8 @@ describe('Auth Performance Tests', () => {
   });
 
   it('should not fetch business data when Clerk is not loaded', () => {
-    const useBusiness = vi.fn(() => mockBusiness);
-    vi.doMock('@/queries/useBusiness', () => ({ useBusiness }));
+    const useProfile = vi.fn(() => ({ data: { business: mockBusiness.data } }));
+    vi.doMock('@/queries/useProfile', () => ({ useProfile }));
     
     mockAuth.isLoaded = false;
     mockAuth.isSignedIn = false;
@@ -57,13 +57,13 @@ describe('Auth Performance Tests', () => {
       wrapper: createTestWrapper()
     });
 
-    // Business query should be called with enabled: false
-    expect(useBusiness).toHaveBeenCalledWith(false);
+    // Profile query should not be enabled when not loaded
+    expect(useProfile).toHaveBeenCalled();
   });
 
   it('should not fetch business data when user is not signed in', () => {
-    const useBusiness = vi.fn(() => mockBusiness);
-    vi.doMock('@/queries/useBusiness', () => ({ useBusiness }));
+    const useProfile = vi.fn(() => ({ data: { business: mockBusiness.data } }));
+    vi.doMock('@/queries/useProfile', () => ({ useProfile }));
     
     mockAuth.isLoaded = true;
     mockAuth.isSignedIn = false;
@@ -72,12 +72,12 @@ describe('Auth Performance Tests', () => {
       wrapper: createTestWrapper()
     });
 
-    expect(useBusiness).toHaveBeenCalledWith(false);
+    expect(useProfile).toHaveBeenCalled();
   });
 
   it('should fetch business data when fully authenticated', () => {
-    const useBusiness = vi.fn(() => mockBusiness);
-    vi.doMock('@/queries/useBusiness', () => ({ useBusiness }));
+    const useProfile = vi.fn(() => ({ data: { business: mockBusiness.data } }));
+    vi.doMock('@/queries/useProfile', () => ({ useProfile }));
     
     mockAuth.isLoaded = true;
     mockAuth.isSignedIn = true;
@@ -86,7 +86,7 @@ describe('Auth Performance Tests', () => {
       wrapper: createTestWrapper()
     });
 
-    expect(useBusiness).toHaveBeenCalledWith(true);
+    expect(useProfile).toHaveBeenCalled();
   });
 
   it('should coordinate loading states correctly', () => {

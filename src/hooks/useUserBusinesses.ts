@@ -15,26 +15,47 @@ export interface UserBusiness {
  * Hook to fetch all businesses the current user is a member of
  */
 export function useUserBusinesses() {
-  const { isSignedIn } = useAuth();
+  const { userId } = useAuth();
   const authApi = useAuthApi();
 
   return useQuery({
-    queryKey: ['user-businesses'],
+    queryKey: ['user-businesses', userId],
+    enabled: !!userId,
     queryFn: async () => {
-      console.log('[useUserBusinesses] Fetching user businesses');
-      
       const { data, error } = await authApi.invoke('user-businesses', {
         method: 'GET',
       });
       
       if (error) {
-        throw new Error(error.message || 'Failed to fetch businesses');
+        throw new Error(error.message || 'Failed to fetch user businesses');
       }
       
-      return data as UserBusiness[];
+      return data?.businesses || [];
     },
-    enabled: isSignedIn,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    retry: 1,
+    staleTime: 30_000,
+    retry: 2,
+  });
+}
+
+export function useCurrentDefaultBusiness() {
+  const { userId } = useAuth();
+  const authApi = useAuthApi();
+
+  return useQuery({
+    queryKey: ['user', 'default-business', userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data, error } = await authApi.invoke('get-profile', {
+        method: 'GET',
+      });
+      
+      if (error) {
+        throw new Error(error.message || 'Failed to fetch default business');
+      }
+      
+      return data?.profile?.defaultBusinessId || null;
+    },
+    staleTime: 10_000, // Short stale time to catch business switches quickly
+    retry: 2,
   });
 }
