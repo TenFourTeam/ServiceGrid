@@ -69,15 +69,23 @@ export function createAuthEdgeApi(getToken: (options?: { template?: string }) =>
         try {
           const [header, payload] = token.split('.');
           if (header && payload) {
+            const decodedHeader = JSON.parse(atob(header.replace(/-/g, '+').replace(/_/g, '/')));
             const decodedPayload = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+            
+            console.info(`🔧 [AuthEdgeApi] JWT HEADER:`, decodedHeader);
+            console.info(`🔧 [AuthEdgeApi] JWT PAYLOAD (FULL):`, decodedPayload);
             console.info(`🔧 [AuthEdgeApi] Token payload preview:`, {
               sub: decodedPayload.sub,
               iss: decodedPayload.iss,
+              aud: decodedPayload.aud,
               exp: decodedPayload.exp,
-              iat: decodedPayload.iat
+              iat: decodedPayload.iat,
+              role: decodedPayload.role,
+              email: decodedPayload.email
             });
             console.info(`🔧 [AuthEdgeApi] Token expires: ${new Date(decodedPayload.exp * 1000).toISOString()}`);
             console.info(`🔧 [AuthEdgeApi] Current time: ${new Date().toISOString()}`);
+            console.info(`🔧 [AuthEdgeApi] Token is expired: ${Date.now() > decodedPayload.exp * 1000}`);
           }
         } catch (decodeError) {
           console.warn('⚠️ [AuthEdgeApi] Could not decode token:', decodeError);
