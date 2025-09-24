@@ -4,7 +4,8 @@ import { BrowserRouter } from "react-router-dom";
 import { ClerkProvider, ClerkLoaded, ClerkLoading } from "@clerk/clerk-react";
 import { AppProviders } from "@/providers/AppProviders";
 
-import { AuthBoundary, RequireAuth, PublicOnly, QueryClientClerkIntegration } from "@/auth";
+import { AuthBoundary, RequireAuth, PublicOnly } from "@/auth";
+import { QueryClientClerkIntegrationWrapper } from "@/auth/QueryClientClerkIntegrationWrapper";
 import { RequireRole } from "@/components/Auth/RequireRole";
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingScreen from './components/LoadingScreen';
@@ -52,7 +53,7 @@ function App({ clerkKey }: AppProps) {
       <BrowserRouter>
         <ClerkLoaded>
           <AppProviders>
-            <QueryClientClerkIntegration />
+            <QueryClientClerkIntegrationWrapper />
             <ErrorBoundary>
             <Suspense fallback={<LoadingScreen />}>
               <Routes>
