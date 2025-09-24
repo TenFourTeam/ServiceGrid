@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.54.0";
 import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
 
@@ -11,13 +11,13 @@ serve(async (req) => {
 
     // Require authentication context
     const ctx = await requireCtx(req);
-    const { businessId, supabase } = ctx;
+    const { businessId, supaAdmin } = ctx;
 
     // GET: Fetch audit logs for the business
     if (req.method === 'GET') {
       console.info('[audit-logs-crud] GET: Fetching audit logs for business:', businessId);
 
-      const { data, error } = await supabase
+      const { data, error } = await supaAdmin
         .from('audit_logs')
         .select('*')
         .eq('business_id', businessId)

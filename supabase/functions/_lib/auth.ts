@@ -101,12 +101,13 @@ export async function requireCtx(req: Request, options: { autoCreate?: boolean }
       azp: payload.azp
     });
   } catch (e) {
+    const error = e as Error;
     console.error('❌ [auth] Token verification failed');
-    console.error('❌ [auth] Error type:', e.constructor.name);
-    console.error('❌ [auth] Error message:', e.message);
-    console.error('❌ [auth] Error stack:', e.stack);
-    console.error('❌ [auth] Full error object:', JSON.stringify(e, null, 2));
-    throw new Error(`Authentication failed: ${e.message || e}`);
+    console.error('❌ [auth] Error type:', error.constructor.name);
+    console.error('❌ [auth] Error message:', error.message);
+    console.error('❌ [auth] Error stack:', error.stack);
+    console.error('❌ [auth] Full error object:', JSON.stringify(error, null, 2));
+    throw new Error(`Authentication failed: ${error.message || error}`);
   }
 
   const clerkUserId = payload.sub as ClerkUserId;
@@ -226,7 +227,7 @@ async function resolveBusinessId(
         });
     }
 
-    return ownedBusiness.id;
+    return (ownedBusiness as any).id;
   }
 
   // Fallback: check business_members table in case business exists but owner_id is wrong
@@ -239,7 +240,7 @@ async function resolveBusinessId(
     .maybeSingle();
 
   if (membership?.business_id) {
-    return membership.business_id;
+    return (membership as any).business_id;
   }
 
   if (!autoCreate) {
@@ -276,7 +277,7 @@ async function resolveBusinessId(
         
         if (existingBusiness?.id) {
           console.info(`✅ [auth] Found existing business after constraint violation: ${existingBusiness.id}`);
-          return existingBusiness.id;
+          return (existingBusiness as any).id;
         }
       }
       
@@ -304,7 +305,7 @@ async function resolveBusinessId(
       .is("default_business_id", null);
 
     console.info(`✅ [auth] Default business created successfully: ${newBusiness.id}`);
-    return newBusiness.id;
+    return (newBusiness as any).id;
 
   } catch (error) {
     console.error('❌ [auth] Unexpected error in business creation:', error);
@@ -319,7 +320,7 @@ async function resolveBusinessId(
     
     if (fallbackBusiness?.id) {
       console.info(`✅ [auth] Using fallback business: ${fallbackBusiness.id}`);
-      return fallbackBusiness.id;
+      return (fallbackBusiness as any).id;
     }
     
     throw new Error(`Failed to resolve business ID: ${error}`);

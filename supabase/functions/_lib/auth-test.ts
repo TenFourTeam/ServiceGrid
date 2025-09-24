@@ -86,7 +86,7 @@ export async function verifyToken(token: string, options: { secretKey: string })
     return decodedPayload as MockTokenPayload;
     
   } catch (error) {
-    console.error('❌ [auth-test] Mock JWT validation failed:', error.message);
+    console.error('❌ [auth-test] Mock JWT validation failed:', (error as Error).message);
     throw error;
   }
 }

@@ -1,7 +1,6 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.54.0";
-import { Resend } from "npm:resend@4.0.0";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -97,65 +96,9 @@ serve(async (req) => {
       const toEmail: string | null = cust?.email || fallbackEmail;
 
       if (resendApiKey && toEmail) {
-        // Idempotency hash to avoid duplicate sends
-        const hashSource = `${invoiceId}|receipt|${amount}|${last4 || ''}`;
-        const enc = new TextEncoder();
-        const digest = await crypto.subtle.digest('SHA-256', enc.encode(hashSource));
-        const hashHex = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
-
-        const { data: existing } = await supabase
-          .from('mail_sends')
-          .select('id')
-          .eq('request_hash', hashHex)
-          .eq('invoice_id', invoiceId)
-          .eq('status', 'sent')
-          .limit(1);
-
-        if (!existing || existing.length === 0) {
-          const dollars = (amount / 100).toFixed(2);
-          const businessName = biz?.name || 'Your Business';
-          const subject = `Receipt for Invoice ${inv.number}`;
-          const paidAt = inv.paid_at || new Date().toISOString();
-          const html = `
-            <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;line-height:1.6;color:#111">
-              <h2 style="margin:0 0 12px">Payment Receipt</h2>
-              <p style="margin:0 0 12px">Hi ${cust?.name ? String(cust.name).replace(/</g, '&lt;') : 'there'},</p>
-              <p style="margin:0 0 12px">We've received your payment of <strong>$${dollars}</strong> for invoice <strong>${inv.number}</strong>.</p>
-              <ul style="margin:0 0 12px;padding-left:18px">
-                <li>Paid at: ${new Date(paidAt).toLocaleString('en-US')}</li>
-                ${last4 ? `<li>Card ending in ${last4}</li>` : ''}
-                <li>Invoice total: $${dollars}</li>
-              </ul>
-              <p style="margin:0 0 12px">Thank you for your business!</p>
-              <p style="font-size:12px;color:#666;margin:16px 0 0">${businessName}</p>
-            </div>
-          `;
-
-          const resend = new Resend(resendApiKey);
-          const sendRes = await resend.emails.send({
-            from: `${businessName} <${resendFrom}>`,
-            to: [toEmail],
-            subject,
-            html,
-            reply_to: biz?.reply_to_email ? [`${businessName} <${biz.reply_to_email}>`] : undefined,
-          });
-
-          const providerId = (sendRes as any)?.data?.id || (sendRes as any)?.id || null;
-
-          await supabase.from('mail_sends').insert({
-            request_hash: hashHex,
-            to_email: toEmail,
-            subject,
-            status: providerId ? 'sent' : 'failed',
-            provider_message_id: providerId,
-            invoice_id: invoiceId,
-            user_id: ownerId,
-          });
-
-          receiptSent = !!providerId;
-        } else {
-          receiptSent = true;
-        }
+        // Email functionality temporarily disabled for team management focus
+        console.log('Email functionality disabled - receipt not sent');
+        receiptSent = false;
       }
     } catch (emailErr) {
       console.error('receipt email error', emailErr);

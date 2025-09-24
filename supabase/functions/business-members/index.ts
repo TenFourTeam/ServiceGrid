@@ -1,4 +1,5 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.54.0';
 import { corsHeaders, json, requireCtx } from '../_lib/auth.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -48,8 +49,8 @@ Deno.serve(async (req) => {
         invited_at: member.invited_at,
         joined_at: member.joined_at,
         invited_by: member.invited_by,
-        email: member.profiles?.email,
-        name: member.profiles?.full_name,
+        email: (member.profiles as any)?.email,
+        name: (member.profiles as any)?.full_name,
       })) || [];
 
       console.log('[business-members] Fetched', formattedMembers.length, 'members');

@@ -1,8 +1,5 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "npm:resend@4.0.0";
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { requireCtx, corsHeaders } from "../_lib/auth.ts";
-
-const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
 interface WorkOrderConfirmationRequest {
   type: 'single' | 'bulk';
@@ -237,12 +234,9 @@ const handler = async (req: Request): Promise<Response> => {
           </div>
         `;
 
-        const { error: emailError } = await resend.emails.send({
-          from: job.businesses.reply_to_email || 'noreply@resend.dev',
-          to: [job.customers.email],
-          subject: `Appointment Confirmation - ${job.businesses.name}`,
-          html: emailHtml,
-        });
+        // Email functionality temporarily disabled
+        console.log(`[send-work-order-confirmations] Email functionality disabled for job ${job.id}`);
+        const emailError = null;
 
         if (emailError) {
           console.error(`[send-work-order-confirmations] Email error for job ${job.id}:`, emailError);
