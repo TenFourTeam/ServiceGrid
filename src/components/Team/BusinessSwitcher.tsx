@@ -10,33 +10,37 @@ import {
   DropdownMenuLabel
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown, Building2, Crown, Users, Check } from "lucide-react";
-import { useUserBusinesses } from "@/queries/useUserBusinesses";
-import { useBusinessSwitcher } from "@/hooks/useBusinessSwitcher";
-import { useBusinessContext } from "@/hooks/useBusinessContext";
+import { useOrganization, useOrganizationList } from '@clerk/clerk-react';
+import { useCurrentBusiness } from "@/contexts/CurrentBusinessContext";
+import { toast } from "sonner";
 
 export function BusinessSwitcher() {
   const [isOpen, setIsOpen] = useState(false);
-  const { data: businesses, isLoading } = useUserBusinesses();
-  const { switchBusiness, isSwitching } = useBusinessSwitcher();
-  const { businessName, businessId } = useBusinessContext();
+  const { organization } = useOrganization();
+  const { userMemberships, setActive, isLoaded } = useOrganizationList();
+  const { setCurrentBusinessId } = useCurrentBusiness();
 
-  const handleSwitch = async (targetBusinessId: string) => {
-    if (targetBusinessId === businessId) return;
+  const handleSwitch = async (targetOrganizationId: string) => {
+    if (targetOrganizationId === organization?.id) return;
     
     try {
-      await switchBusiness.mutateAsync(targetBusinessId);
+      await setCurrentBusinessId(targetOrganizationId);
       setIsOpen(false);
+      toast.success('Business switched successfully');
     } catch (error) {
       console.error('Failed to switch business:', error);
+      toast.error('Failed to switch business');
     }
   };
 
-  if (isLoading || !businesses || businesses.length <= 1) {
-    return null; // Only show if user has multiple businesses
+  if (!isLoaded || !userMemberships?.data || userMemberships.data.length <= 1) {
+    return null; // Only show if user has multiple organizations
   }
 
-  const currentBusiness = businesses.find(b => b.is_current);
-  const otherBusinesses = businesses.filter(b => !b.is_current);
+  const currentOrgId = organization?.id;
+  const otherOrganizations = userMemberships.data.filter(
+    membership => membership.organization.id !== currentOrgId
+  );
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
@@ -44,27 +48,17 @@ export function BusinessSwitcher() {
         <Button 
           variant="outline" 
           className="w-full justify-between"
-          disabled={isSwitching}
         >
           <div className="flex items-center gap-2 min-w-0">
             <Building2 className="h-4 w-4 flex-shrink-0" />
-            <span className="truncate">{businessName || 'Select Business'}</span>
-            {currentBusiness && (
+            <span className="truncate">{organization?.name || 'Select Business'}</span>
+            {organization && (
               <Badge 
-                variant={currentBusiness.role === 'owner' ? 'default' : 'secondary'} 
+                variant="default"
                 className="flex-shrink-0 flex items-center gap-1"
               >
-                {currentBusiness.role === 'owner' ? (
-                  <>
-                    <Crown className="h-3 w-3" />
-                    <span className="text-xs">Owner</span>
-                  </>
-                ) : (
-                  <>
-                    <Users className="h-3 w-3" />
-                    <span className="text-xs">Worker</span>
-                  </>
-                )}
+                <Crown className="h-3 w-3" />
+                <span className="text-xs">Active</span>
               </Badge>
             )}
           </div>
@@ -76,58 +70,50 @@ export function BusinessSwitcher() {
         <DropdownMenuLabel>Switch Business</DropdownMenuLabel>
         <DropdownMenuSeparator />
         
-        {currentBusiness && (
+        {organization && (
           <>
             <DropdownMenuItem className="flex items-center justify-between p-3">
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
                   <Building2 className="h-4 w-4" />
-                  <span className="font-medium">{currentBusiness.name}</span>
+                  <span className="font-medium">{organization.name}</span>
                 </div>
                 <Badge 
-                  variant={currentBusiness.role === 'owner' ? 'default' : 'secondary'}
+                  variant="default"
                   className="flex items-center gap-1"
                 >
-                  {currentBusiness.role === 'owner' ? (
-                    <Crown className="h-3 w-3" />
-                  ) : (
-                    <Users className="h-3 w-3" />
-                  )}
-                  {currentBusiness.role}
+                  <Crown className="h-3 w-3" />
+                  Active
                 </Badge>
               </div>
               <Check className="h-4 w-4 text-primary" />
             </DropdownMenuItem>
             
-            {otherBusinesses.length > 0 && <DropdownMenuSeparator />}
+            {otherOrganizations.length > 0 && <DropdownMenuSeparator />}
           </>
         )}
         
-        {otherBusinesses.map((business) => (
+        {otherOrganizations.map((membership) => (
           <DropdownMenuItem
-            key={business.id}
-            onClick={() => handleSwitch(business.id)}
+            key={membership.organization.id}
+            onClick={() => handleSwitch(membership.organization.id)}
             className="flex items-center justify-between p-3 cursor-pointer"
           >
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <Building2 className="h-4 w-4" />
-                <span className="font-medium">{business.name}</span>
+                <span className="font-medium">{membership.organization.name}</span>
               </div>
               <Badge 
-                variant={business.role === 'owner' ? 'default' : 'secondary'}
+                variant="secondary"
                 className="flex items-center gap-1"
               >
-                {business.role === 'owner' ? (
-                  <Crown className="h-3 w-3" />
-                ) : (
-                  <Users className="h-3 w-3" />
-                )}
-                {business.role}
+                <Users className="h-3 w-3" />
+                {membership.role}
               </Badge>
             </div>
             <div className="text-xs text-muted-foreground">
-              Joined {new Date(business.joined_at).toLocaleDateString()}
+              Member since {new Date(membership.createdAt).toLocaleDateString()}
             </div>
           </DropdownMenuItem>
         ))}

@@ -1,6 +1,5 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
-import { useAuth } from '@clerk/clerk-react';
-import { useUserBusinesses } from '@/queries/useUserBusinesses';
+import React, { createContext, useContext, ReactNode, useEffect } from 'react';
+import { useAuth, useOrganization, useOrganizationList } from '@clerk/clerk-react';
 
 interface CurrentBusinessContextType {
   currentBusinessId: string | null;
@@ -16,39 +15,57 @@ interface CurrentBusinessProviderProps {
 
 export function CurrentBusinessProvider({ children }: CurrentBusinessProviderProps) {
   const { isSignedIn, isLoaded } = useAuth();
-  const [currentBusinessId, setCurrentBusinessIdState] = useState<string | null>(null);
-  const [isInitializing, setIsInitializing] = useState(true);
+  const { organization, isLoaded: isOrgLoaded } = useOrganization();
+  const { setActive, userMemberships, isLoaded: isMembershipsLoaded } = useOrganizationList();
   
-  // Fetch user businesses when authenticated
-  const { data: businesses, isLoading: isLoadingBusinesses } = useUserBusinesses();
+  // Current business ID is the organization ID
+  const currentBusinessId = organization?.id || null;
+  
+  // System is initializing if Clerk isn't loaded or if we're signed in but orgs aren't loaded
+  const isInitializing = !isLoaded || (isSignedIn && (!isOrgLoaded || !isMembershipsLoaded));
 
-  const setCurrentBusinessId = useCallback((businessId: string | null) => {
-    console.log('[CurrentBusinessContext] Setting current business ID:', businessId);
-    setCurrentBusinessIdState(businessId);
-  }, []);
-
-  // Auto-initialize business context when user is authenticated and businesses are loaded
-  useEffect(() => {
-    if (!isLoaded) return; // Wait for Clerk to load
+  const setCurrentBusinessId = async (businessId: string | null) => {
+    console.log('[CurrentBusinessContext] Switching to organization:', businessId);
     
-    if (!isSignedIn) {
-      setCurrentBusinessIdState(null);
-      setIsInitializing(false);
+    if (!setActive) {
+      console.error('[CurrentBusinessContext] setActive not available');
       return;
     }
 
-    if (isLoadingBusinesses) return; // Wait for businesses to load
-
-    // If no business is currently selected and we have businesses available
-    if (!currentBusinessId && businesses && businesses.length > 0) {
-      // Find the current default business or use the first one
-      const defaultBusiness = businesses.find(b => b.is_current) || businesses[0];
-      console.log('[CurrentBusinessContext] Auto-initializing with business:', defaultBusiness);
-      setCurrentBusinessIdState(defaultBusiness.id);
+    try {
+      if (businessId) {
+        // Find the organization in our memberships
+        const targetOrg = userMemberships?.data?.find(
+          membership => membership.organization.id === businessId
+        )?.organization;
+        
+        if (targetOrg) {
+          await setActive({ organization: targetOrg });
+          console.log('[CurrentBusinessContext] Successfully switched to:', targetOrg.name);
+        } else {
+          console.error('[CurrentBusinessContext] Organization not found in memberships:', businessId);
+        }
+      } else {
+        // Set to null/personal account
+        await setActive({ organization: null });
+        console.log('[CurrentBusinessContext] Switched to personal account');
+      }
+    } catch (error) {
+      console.error('[CurrentBusinessContext] Failed to switch organization:', error);
     }
+  };
+
+  // Auto-initialize with first organization if user has no active org but has memberships
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn || isInitializing) return;
     
-    setIsInitializing(false);
-  }, [isLoaded, isSignedIn, isLoadingBusinesses, businesses, currentBusinessId]);
+    // If no organization is active but user has memberships, activate the first one
+    if (!organization && userMemberships?.data && userMemberships.data.length > 0) {
+      const firstOrg = userMemberships.data[0].organization;
+      console.log('[CurrentBusinessContext] Auto-activating first organization:', firstOrg.name);
+      setCurrentBusinessId(firstOrg.id);
+    }
+  }, [isLoaded, isSignedIn, isInitializing, organization, userMemberships]);
 
   return (
     <CurrentBusinessContext.Provider value={{

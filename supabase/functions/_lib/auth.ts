@@ -111,6 +111,10 @@ export async function requireCtx(req: Request, options: { autoCreate?: boolean }
 
   const clerkUserId = payload.sub as ClerkUserId;
   const email = (payload.email || payload["primary_email"] || "") as string;
+  
+  // Extract organization ID from Clerk JWT
+  const organizationId = payload.org_id as string | undefined;
+  console.info('🔍 [auth] Organization ID from JWT:', organizationId);
 
   // Create admin Supabase client
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -130,15 +134,21 @@ export async function requireCtx(req: Request, options: { autoCreate?: boolean }
     }
   });
 
-  // Resolve business context
-  const url = new URL(req.url);
-  const candidateBusinessId = req.headers.get("X-Business-Id") || url.searchParams.get("businessId") || null;
-
   // 1) Resolve internal UUID via profiles (Clerk -> UUID)
   const userUuid = await resolveUserUuid(supaAdmin, clerkUserId, email, options.autoCreate);
 
-  // 3) Resolve business using UUID (do NOT call the Clerk->UUID mapper again)
-  const businessId = await resolveBusinessId(supaAdmin, userUuid, candidateBusinessId, options.autoCreate);
+  // 2) For Clerk organizations, use organization ID as business ID
+  // If no organization, fall back to resolving business from database
+  let businessId: string;
+  if (organizationId) {
+    console.info('🔍 [auth] Using Clerk organization ID as business ID:', organizationId);
+    businessId = organizationId;
+  } else {
+    // Fallback to existing business resolution logic
+    const url = new URL(req.url);
+    const candidateBusinessId = req.headers.get("X-Business-Id") || url.searchParams.get("businessId") || null;
+    businessId = await resolveBusinessId(supaAdmin, userUuid, candidateBusinessId, options.autoCreate);
+  }
 
   return {
     clerkUserId,

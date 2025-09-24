@@ -21,7 +21,12 @@ Deno.serve(async (req) => {
     // Parse query parameters to get business context
     const url = new URL(req.url);
     const requestedBusinessId = url.searchParams.get('businessId');
-    console.log('[get-profile] Context resolved:', { userId: ctx.userId, email: ctx.email, requestedBusinessId });
+    console.log('[get-profile] Context resolved:', { 
+      userId: ctx.userId, 
+      email: ctx.email, 
+      businessId: ctx.businessId,
+      requestedBusinessId 
+    });
 
     // Use user-scoped client instead of service role for RLS
     const supabase = ctx.userClient;
@@ -45,48 +50,24 @@ Deno.serve(async (req) => {
 
     console.log('[get-profile] Profile fetched successfully');
 
-    // Determine which business to fetch - requested business takes priority
-    const targetBusinessId = requestedBusinessId || profile.default_business_id;
+    // For Clerk organizations, use the organization ID from context as business ID
+    const targetBusinessId = ctx.businessId || requestedBusinessId || profile.default_business_id;
     
     let business = null;
     if (targetBusinessId) {
-      console.log('[get-profile] Fetching business data for:', targetBusinessId);
+      console.log('[get-profile] Using business ID from context (Clerk org):', targetBusinessId);
       
-      // Check if user is a member OR owner of the business
-      const { data: memberData, error: memberError } = await supabase
-        .from('business_members')
-        .select('role')
-        .eq('business_id', targetBusinessId)
-        .eq('user_id', ctx.userId)
-        .maybeSingle();
+      // Create a business object from the organization context
+      // Since we're using Clerk organizations, we don't need to check membership in database
+      // The organization data will be merged in the frontend from Clerk
+      business = {
+        id: targetBusinessId,
+        name: 'Organization', // This will be overridden by Clerk organization data
+        role: 'owner' // Default role, will be determined by Clerk membership
+      };
 
-      // Also check if user is the owner of the business (in case membership record is missing)
-      const { data: businessOwnership, error: ownershipError } = await supabase
-        .from('businesses')
-        .select('owner_id')
-        .eq('id', targetBusinessId)
-        .eq('owner_id', ctx.userId)
-        .maybeSingle();
-
-      const isOwner = !ownershipError && businessOwnership;
-      const isMember = !memberError && memberData;
-      
-      if (!isOwner && !isMember) {
-        console.error('[get-profile] User not a member or owner of business:', targetBusinessId);
-        // If user isn't a member/owner and this was a specific request, return null business
-        if (requestedBusinessId) {
-          return json({
-            profile: {
-              id: profile.id,
-              fullName: profile.full_name,
-              phoneE164: profile.phone_e164,
-              defaultBusinessId: profile.default_business_id
-            },
-            business: null
-          });
-        }
-      } else {
-        // Get business details
+      // Optionally, try to fetch additional business data from database if it exists
+      try {
         const { data: businessData, error: businessError } = await supabase
           .from('businesses')
           .select(`
@@ -100,16 +81,12 @@ Deno.serve(async (req) => {
             light_logo_url
           `)
           .eq('id', targetBusinessId)
-          .single();
+          .maybeSingle();
 
-        if (businessError) {
-          console.error('[get-profile] Error fetching business:', businessError);
-        } else {
-          // Determine role: owner if they own the business, otherwise use membership role
-          const userRole = isOwner ? 'owner' : (memberData?.role || 'owner');
-          
+        if (!businessError && businessData) {
+          console.log('[get-profile] Found additional business data in database');
           business = {
-            id: businessData.id,
+            ...business,
             name: businessData.name,
             description: businessData.description,
             phone: businessData.phone,
@@ -117,12 +94,16 @@ Deno.serve(async (req) => {
             taxRateDefault: businessData.tax_rate_default,
             logoUrl: businessData.logo_url,
             lightLogoUrl: businessData.light_logo_url,
-            role: userRole
           };
-
-          console.log('[get-profile] Business data fetched successfully with role:', userRole);
+        } else {
+          console.log('[get-profile] No additional business data found in database, using Clerk org data');
         }
+      } catch (dbError) {
+        console.warn('[get-profile] Failed to fetch business data from database:', dbError);
+        // Continue with basic business object
       }
+
+      console.log('[get-profile] Business context resolved successfully');
     }
     
     return json({

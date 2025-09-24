@@ -1,7 +1,5 @@
-import { useAuth } from '@clerk/clerk-react';
+import { useAuth, useOrganization } from '@clerk/clerk-react';
 import { useProfile } from '@/queries/useProfile';
-import { useParams, useLocation } from 'react-router-dom';
-import { useCurrentBusiness } from '@/contexts/CurrentBusinessContext';
 import { useEffect } from 'react';
 import { updateBusinessMeta } from '@/utils/metaUpdater';
 
@@ -18,41 +16,56 @@ export type BusinessUI = {
 
 /**
  * Single source of truth for business data access
- * Consolidates business context and data in one hook
+ * Consolidates Clerk organization context and backend business data
  */
 export function useBusinessContext() {
   const { isSignedIn, isLoaded, userId } = useAuth();
-  const params = useParams();
-  const location = useLocation();
-  const { currentBusinessId } = useCurrentBusiness();
+  const { organization, isLoaded: isOrgLoaded, membership } = useOrganization();
+  
+  // Use organization ID as business ID for backend queries
+  const businessId = organization?.id || null;
   
   // Don't query profile until Clerk is fully loaded and user is authenticated
-  const shouldFetchProfile = isLoaded && isSignedIn;
-  // Use current business ID if set, otherwise use default business
-  const profileQuery = useProfile(currentBusinessId);
+  const shouldFetchProfile = isLoaded && isSignedIn && isOrgLoaded;
+  
+  // Use organization ID to fetch business data from backend
+  const profileQuery = useProfile(businessId);
   
   const business = profileQuery.data?.business as BusinessUI;
-  const role = business?.role || 'owner';
+  
+  // Merge organization data with backend business data
+  const mergedBusiness: BusinessUI | undefined = business ? {
+    ...business,
+    // Override with organization data where available
+    id: organization?.id || business.id,
+    name: organization?.name || business.name,
+    // Map membership role to business role
+    role: membership?.role === 'org:admin' ? 'owner' : 'worker'
+  } : organization ? {
+    // If no backend business data, use organization data
+    id: organization.id,
+    name: organization.name,
+    role: membership?.role === 'org:admin' ? 'owner' : 'worker'
+  } : undefined;
+  
+  const role = mergedBusiness?.role || 'owner';
   
   // Simplified error detection
   const hasError = profileQuery.isError;
   
-  // Get initialization state from context
-  const { isInitializing } = useCurrentBusiness();
-  
-  // Coordinated loading state - don't show as loading if Clerk isn't ready
-  const isLoadingBusiness = !isLoaded || isInitializing || (shouldFetchProfile && profileQuery.isLoading);
+  // Coordinated loading state
+  const isLoadingBusiness = !isLoaded || !isOrgLoaded || (shouldFetchProfile && profileQuery.isLoading);
   
   // Update meta tags when business data changes
   useEffect(() => {
-    if (business?.name) {
+    if (mergedBusiness?.name) {
       updateBusinessMeta({
-        name: business.name,
-        description: business.description,
-        logoUrl: (business.logoUrl || business.lightLogoUrl) as string
+        name: mergedBusiness.name,
+        description: mergedBusiness.description,
+        logoUrl: (mergedBusiness.logoUrl || mergedBusiness.lightLogoUrl) as string
       });
     }
-  }, [business?.name, business?.description, business?.logoUrl, business?.lightLogoUrl]);
+  }, [mergedBusiness?.name, mergedBusiness?.description, mergedBusiness?.logoUrl, mergedBusiness?.lightLogoUrl]);
   
   return {
     // Authentication state
@@ -60,16 +73,20 @@ export function useBusinessContext() {
     isLoaded,
     userId,
     
-    // Complete business data (now sourced from profile query)
-    business,
-    businessId: business?.id,
-    businessName: business?.name,
-    businessDescription: business?.description,
-    businessPhone: business?.phone,
-    businessReplyToEmail: business?.replyToEmail,
-    businessTaxRateDefault: business?.taxRateDefault,
-    businessLogoUrl: business?.logoUrl,
-    businessLightLogoUrl: business?.lightLogoUrl,
+    // Organization data
+    organization,
+    membership,
+    
+    // Complete business data (merged from organization and backend)
+    business: mergedBusiness,
+    businessId: mergedBusiness?.id,
+    businessName: mergedBusiness?.name,
+    businessDescription: mergedBusiness?.description,
+    businessPhone: mergedBusiness?.phone,
+    businessReplyToEmail: mergedBusiness?.replyToEmail,
+    businessTaxRateDefault: mergedBusiness?.taxRateDefault,
+    businessLogoUrl: mergedBusiness?.logoUrl,
+    businessLightLogoUrl: mergedBusiness?.lightLogoUrl,
     
     // Role and permissions
     role,
