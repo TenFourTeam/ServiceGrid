@@ -10,7 +10,7 @@ import {
   DropdownMenuLabel
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown, Building2, Crown, Users, Check } from "lucide-react";
-import { useUserBusinesses } from "@/hooks/useUserBusinesses";
+import { useUserBusinesses } from "@/queries/useUserBusinesses";
 import { useBusinessSwitcher } from "@/hooks/useBusinessSwitcher";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 
