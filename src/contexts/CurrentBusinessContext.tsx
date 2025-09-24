@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
-import { useAuth } from '@clerk/clerk-react';
-import { useUserBusinesses } from '@/hooks/useUserBusinesses';
+import { useAuth, useOrganizationList } from '@clerk/clerk-react';
 
 interface CurrentBusinessContextType {
   currentBusinessId: string | null;
@@ -19,45 +18,38 @@ export function CurrentBusinessProvider({ children }: CurrentBusinessProviderPro
   const [currentBusinessId, setCurrentBusinessIdState] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   
-  // Fetch user businesses when authenticated
-  const { data: businesses, isLoading: isLoadingBusinesses } = useUserBusinesses();
+  // Fetch user organizations from Clerk when authenticated
+  const { userMemberships, isLoaded: isOrganizationsLoaded } = useOrganizationList();
 
   const setCurrentBusinessId = useCallback((businessId: string | null) => {
     console.log('[CurrentBusinessContext] Setting current business ID:', businessId);
     setCurrentBusinessIdState(businessId);
   }, []);
 
-  // Auto-initialize business context when user is authenticated and businesses are loaded
+  // Auto-initialize currentBusinessId when organizations are loaded
   useEffect(() => {
-    if (!isLoaded) return; // Wait for Clerk to load
-    
-    if (!isSignedIn) {
-      setCurrentBusinessIdState(null);
-      setIsInitializing(false);
-      return;
-    }
-
-    if (isLoadingBusinesses) return; // Wait for businesses to load
-
-    // If no business is currently selected and we have businesses available
-    if (!currentBusinessId && businesses && Array.isArray(businesses) && businesses.length > 0) {
-      // Find the current default business or use the first one
-      const defaultBusiness = businesses.find(b => b.is_current) || businesses[0];
-      console.log('[CurrentBusinessContext] Auto-initializing with business:', defaultBusiness);
-      if (defaultBusiness?.id) {
-        setCurrentBusinessIdState(defaultBusiness.id);
+    if (isSignedIn && userMemberships?.data && isOrganizationsLoaded && !currentBusinessId) {
+      // Use the first organization as the current business
+      const currentOrg = userMemberships.data[0];
+      if (currentOrg) {
+        setCurrentBusinessId(currentOrg.organization.id);
+        setIsInitializing(false);
       }
+    } else if (!isSignedIn) {
+      // Clear business context when user is not signed in
+      setCurrentBusinessId(null);
+      setIsInitializing(false);
     }
-    
-    setIsInitializing(false);
-  }, [isLoaded, isSignedIn, isLoadingBusinesses, businesses, currentBusinessId]);
+  }, [isSignedIn, userMemberships?.data, isOrganizationsLoaded, currentBusinessId, setCurrentBusinessId]);
+
+  const contextValue = {
+    currentBusinessId,
+    setCurrentBusinessId,
+    isInitializing: isInitializing || !isOrganizationsLoaded
+  };
 
   return (
-    <CurrentBusinessContext.Provider value={{
-      currentBusinessId,
-      setCurrentBusinessId,
-      isInitializing
-    }}>
+    <CurrentBusinessContext.Provider value={contextValue}>
       {children}
     </CurrentBusinessContext.Provider>
   );

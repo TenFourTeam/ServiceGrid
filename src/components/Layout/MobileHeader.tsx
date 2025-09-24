@@ -3,13 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Menu, Settings, LogOut, Shield, FileText, Calendar as CalendarIcon, Receipt, Users, Wrench, Clock, ClipboardList, UserPlus } from "lucide-react";
 import { useNavigate, NavLink, useLocation } from "react-router-dom";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
-import { useUserBusinesses } from "@/hooks/useUserBusinesses";
+import { useOrganizationList } from "@clerk/clerk-react";
 import { useBusinessSwitcher } from "@/hooks/useBusinessSwitcher";
 import { useUser } from "@clerk/clerk-react";
 import { useProfile } from "@/queries/useProfile";
 import BusinessLogo from "@/components/BusinessLogo";
-import { SignOutButton } from "@/components/Auth/SignOutButton";
 import { Separator } from "@/components/ui/separator";
+import { BusinessSwitcher } from "@/components/Team/BusinessSwitcher";
+import { SignOutButton } from "@/components/Auth/SignOutButton";
 
 interface MobileHeaderProps {
   title?: string;
@@ -35,14 +36,12 @@ export default function MobileHeader({ title }: MobileHeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { businessName, businessLogoUrl, businessLightLogoUrl, businessId, role } = useBusinessContext();
-  const { data: userBusinesses } = useUserBusinesses();
+  const { userMemberships } = useOrganizationList();
   const { switchBusiness, isSwitching } = useBusinessSwitcher();
   const { user } = useUser();
   const { data: profile } = useProfile();
 
-  // Find the business where the user is an owner
-  const ownedBusiness = userBusinesses?.find(b => b.role === 'owner');
-  const isInOwnBusiness = businessId === ownedBusiness?.id;
+  // Remove business owner check and switching since we're using Clerk organizations
 
   // Filter items based on user role
   const visibleCoreItems = coreNavItems.filter(item => role === 'owner' || item.workerAccess);
@@ -82,20 +81,12 @@ export default function MobileHeader({ title }: MobileHeaderProps) {
 
               <Separator />
 
-              {!isInOwnBusiness && ownedBusiness && (
-                <>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={() => switchBusiness.mutate(ownedBusiness.id)}
-                    disabled={isSwitching}
-                  >
-                    <Shield className="mr-2 h-4 w-4" />
-                    My Business ({ownedBusiness.name})
-                  </Button>
-                  <Separator />
-                </>
-              )}
+                    {/* Business Switcher - only show if user has multiple organizations */}
+                    {userMemberships?.data && userMemberships.data.length > 1 && (
+                      <div className="mt-4">
+                        <BusinessSwitcher />
+                      </div>
+                    )}
 
               {/* Core Navigation - Group 1 */}
               <div className="space-y-2">

@@ -2,7 +2,7 @@ import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { BusinessMembersList } from "@/components/Business/BusinessMembersList";
 import { BusinessSwitcher } from "@/components/Team/BusinessSwitcher";
 import { WorkerLimitedAccess } from "@/components/Layout/WorkerLimitedAccess";
-import { useUserBusinesses } from "@/hooks/useUserBusinesses";
+import { useOrganizationList } from "@clerk/clerk-react";
 import { useBusinessLeaving } from "@/hooks/useBusinessLeaving";
 import AppLayout from '@/components/Layout/AppLayout';
 import { Card } from "@/components/ui/card";
@@ -25,13 +25,13 @@ import { useState } from "react";
 
 export default function Team() {
   const { businessId, businessName, role } = useBusinessContext();
-  const { data: businesses } = useUserBusinesses();
+  const { userMemberships } = useOrganizationList();
   const { switchBusiness } = useBusinessSwitcher();
   const { leaveBusiness, isLeaving } = useBusinessLeaving();
   const { t } = useLanguage();
   const [leavingBusinessId, setLeavingBusinessId] = useState<string | null>(null);
 
-  const allBusinesses = businesses || [];
+  const allBusinesses = userMemberships?.data || [];
 
   const handleSwitchBusiness = (targetBusinessId: string) => {
     switchBusiness.mutate(targetBusinessId);
@@ -69,27 +69,27 @@ export default function Team() {
 
           {allBusinesses.length > 0 ? (
             <div className="grid gap-3">
-              {allBusinesses.map((business) => (
+              {allBusinesses.map((org) => (
                 <div
-                  key={business.id}
+                  key={org.organization.id}
                   className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/20 transition-colors"
                 >
                   <div className="flex items-center gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium truncate">{business.name}</span>
+                        <span className="font-medium truncate">{org.organization.name}</span>
                         <span className="text-sm text-muted-foreground">
-                          • {business.role}
+                          • {org.role === 'org:admin' ? 'Owner' : 'Member'}
                         </span>
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        {t('team.joined')} {new Date(business.joined_at).toLocaleDateString()}
+                        {t('team.joined')} {new Date(org.createdAt).toLocaleDateString()}
                       </div>
                     </div>
                   </div>
                   
                   <div className="flex items-center gap-2">
-                    {business.is_current ? (
+                    {org.organization.id === businessId ? (
                       <Button
                         variant="outline"
                         size="sm"
@@ -102,7 +102,7 @@ export default function Team() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleSwitchBusiness(business.id)}
+                        onClick={() => handleSwitchBusiness(org.organization.id)}
                         className="flex items-center gap-2"
                         disabled={switchBusiness.isPending}
                       >
@@ -111,7 +111,7 @@ export default function Team() {
                       </Button>
                     )}
                     
-                    {business.role !== 'owner' && (
+                    {org.role !== 'org:admin' && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button
@@ -128,13 +128,13 @@ export default function Team() {
                           <AlertDialogHeader>
                             <AlertDialogTitle>{t('team.leaveDialog.title')}</AlertDialogTitle>
                             <AlertDialogDescription>
-                              {t('team.leaveDialog.description', { businessName: business.name })}
+                              {t('team.leaveDialog.description', { businessName: org.organization.name })}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>{t('team.leaveDialog.cancel')}</AlertDialogCancel>
                             <AlertDialogAction
-                              onClick={() => handleLeaveBusiness(business.id)}
+                              onClick={() => handleLeaveBusiness(org.organization.id)}
                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
                               {t('team.leaveDialog.confirm')}

@@ -5,7 +5,6 @@
 
 // Business and profile queries
 export { useProfile } from '@/queries/useProfile';
-export { useUserBusinesses, useCurrentDefaultBusiness } from '@/hooks/useUserBusinesses';
 
 // UNIFIED: Data hooks with count and full data (RECOMMENDED)
 export { useCustomersData } from '@/hooks/useCustomersData';
