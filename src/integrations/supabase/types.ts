@@ -117,7 +117,6 @@ export type Database = {
       businesses: {
         Row: {
           application_fee_bps: number
-          clerk_org_id: string | null
           created_at: string
           description: string | null
           est_prefix: string
@@ -142,7 +141,6 @@ export type Database = {
         }
         Insert: {
           application_fee_bps?: number
-          clerk_org_id?: string | null
           created_at?: string
           description?: string | null
           est_prefix?: string
@@ -167,7 +165,6 @@ export type Database = {
         }
         Update: {
           application_fee_bps?: number
-          clerk_org_id?: string | null
           created_at?: string
           description?: string | null
           est_prefix?: string
@@ -251,7 +248,6 @@ export type Database = {
           redeemed_by: string | null
           revoked_at: string | null
           role: Database["public"]["Enums"]["business_role"]
-          signup_context: Json | null
           token_hash: string
           updated_at: string
         }
@@ -266,7 +262,6 @@ export type Database = {
           redeemed_by?: string | null
           revoked_at?: string | null
           role?: Database["public"]["Enums"]["business_role"]
-          signup_context?: Json | null
           token_hash: string
           updated_at?: string
         }
@@ -281,7 +276,6 @@ export type Database = {
           redeemed_by?: string | null
           revoked_at?: string | null
           role?: Database["public"]["Enums"]["business_role"]
-          signup_context?: Json | null
           token_hash?: string
           updated_at?: string
         }
@@ -1141,7 +1135,6 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: {
           application_fee_bps: number
-          clerk_org_id: string | null
           created_at: string
           description: string | null
           est_prefix: string

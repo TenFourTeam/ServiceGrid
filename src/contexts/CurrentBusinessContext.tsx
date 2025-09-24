@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import { useAuth } from '@clerk/clerk-react';
-import { useProfile } from '@/queries/useProfile';
+import { useUserBusinesses } from '@/queries/useUserBusinesses';
 
 interface CurrentBusinessContextType {
   currentBusinessId: string | null;
@@ -19,15 +19,15 @@ export function CurrentBusinessProvider({ children }: CurrentBusinessProviderPro
   const [currentBusinessId, setCurrentBusinessIdState] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   
-  // Simple profile query to get default business
-  const { data: profileData, isLoading: isLoadingProfile } = useProfile();
+  // Fetch user businesses when authenticated
+  const { data: businesses, isLoading: isLoadingBusinesses } = useUserBusinesses();
 
   const setCurrentBusinessId = useCallback((businessId: string | null) => {
     console.log('[CurrentBusinessContext] Setting current business ID:', businessId);
     setCurrentBusinessIdState(businessId);
   }, []);
 
-  // Simple initialization - just use the user's default business
+  // Auto-initialize business context when user is authenticated and businesses are loaded
   useEffect(() => {
     if (!isLoaded) return; // Wait for Clerk to load
     
@@ -37,16 +37,18 @@ export function CurrentBusinessProvider({ children }: CurrentBusinessProviderPro
       return;
     }
 
-    if (isLoadingProfile) return; // Wait for profile to load
+    if (isLoadingBusinesses) return; // Wait for businesses to load
 
-    // Use the business from profile data
-    if (profileData?.business?.id && !currentBusinessId) {
-      console.log('[CurrentBusinessContext] Auto-initializing with business:', profileData.business.id);
-      setCurrentBusinessIdState(profileData.business.id);
+    // If no business is currently selected and we have businesses available
+    if (!currentBusinessId && businesses && businesses.length > 0) {
+      // Find the current default business or use the first one
+      const defaultBusiness = businesses.find(b => b.is_current) || businesses[0];
+      console.log('[CurrentBusinessContext] Auto-initializing with business:', defaultBusiness);
+      setCurrentBusinessIdState(defaultBusiness.id);
     }
     
     setIsInitializing(false);
-  }, [isLoaded, isSignedIn, isLoadingProfile, profileData?.business?.id, currentBusinessId]);
+  }, [isLoaded, isSignedIn, isLoadingBusinesses, businesses, currentBusinessId]);
 
   return (
     <CurrentBusinessContext.Provider value={{

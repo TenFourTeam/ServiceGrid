@@ -1,5 +1,6 @@
 import { useAuth } from '@clerk/clerk-react';
 import { useProfile } from '@/queries/useProfile';
+import { useParams, useLocation } from 'react-router-dom';
 import { useCurrentBusiness } from '@/contexts/CurrentBusinessContext';
 import { useEffect } from 'react';
 import { updateBusinessMeta } from '@/utils/metaUpdater';
@@ -17,12 +18,16 @@ export type BusinessUI = {
 
 /**
  * Single source of truth for business data access
- * Simple database-centric approach using profiles
+ * Consolidates business context and data in one hook
  */
 export function useBusinessContext() {
   const { isSignedIn, isLoaded, userId } = useAuth();
-  const { currentBusinessId, isInitializing } = useCurrentBusiness();
+  const params = useParams();
+  const location = useLocation();
+  const { currentBusinessId } = useCurrentBusiness();
   
+  // Don't query profile until Clerk is fully loaded and user is authenticated
+  const shouldFetchProfile = isLoaded && isSignedIn;
   // Use current business ID if set, otherwise use default business
   const profileQuery = useProfile(currentBusinessId);
   
@@ -32,8 +37,11 @@ export function useBusinessContext() {
   // Simplified error detection
   const hasError = profileQuery.isError;
   
-  // Simple loading state
-  const isLoadingBusiness = !isLoaded || isInitializing || (isSignedIn && profileQuery.isLoading);
+  // Get initialization state from context
+  const { isInitializing } = useCurrentBusiness();
+  
+  // Coordinated loading state - don't show as loading if Clerk isn't ready
+  const isLoadingBusiness = !isLoaded || isInitializing || (shouldFetchProfile && profileQuery.isLoading);
   
   // Update meta tags when business data changes
   useEffect(() => {
@@ -52,7 +60,7 @@ export function useBusinessContext() {
     isLoaded,
     userId,
     
-    // Business data from database
+    // Complete business data (now sourced from profile query)
     business,
     businessId: business?.id,
     businessName: business?.name,
@@ -63,12 +71,12 @@ export function useBusinessContext() {
     businessLogoUrl: business?.logoUrl,
     businessLightLogoUrl: business?.lightLogoUrl,
     
-    // Role and permissions from database
+    // Role and permissions
     role,
     userRole: role,
     canManage: role === 'owner',
     
-    // Loading states
+    // Loading states - coordinated between Clerk and profile query
     isLoadingBusiness,
     
     // Error states

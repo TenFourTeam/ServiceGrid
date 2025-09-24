@@ -1,6 +1,8 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { RequireRole } from "@/components/Auth/RequireRole";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
+import { useUserBusinesses } from "@/hooks/useUserBusinesses";
+import { useBusinessSwitcher } from "@/hooks/useBusinessSwitcher";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarHeader, SidebarSeparator, SidebarTrigger, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
 import { Calendar as CalendarIcon, FileText, Receipt, Users, Wrench, User as UserIcon, Settings as SettingsIcon, LifeBuoy, LogOut, Shield, Clock, UserPlus, ClipboardList } from "lucide-react";
 import BusinessLogo from "@/components/BusinessLogo";
@@ -63,6 +65,13 @@ export default function AppSidebar() {
     businessLightLogoUrl,
     businessName
   } = useBusinessContext();
+  const {
+    data: userBusinesses
+  } = useUserBusinesses();
+  const {
+    switchBusiness,
+    isSwitching
+  } = useBusinessSwitcher();
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -86,6 +95,10 @@ export default function AppSidebar() {
   const businessItems = getBusinessNavItems(t);
   const visibleCoreItems = coreItems.filter(item => role === 'owner' || item.workerAccess);
   const visibleBusinessItems = businessItems.filter(item => role === 'owner' || item.workerAccess);
+
+  // Find the business where the user is an owner
+  const ownedBusiness = userBusinesses?.find(b => b.role === 'owner');
+  const isInOwnBusiness = businessId === ownedBusiness?.id;
 
   // Always show actual business name instead of "My Business"
   const displayBusinessName = businessName;
@@ -172,6 +185,13 @@ export default function AppSidebar() {
                 {user?.primaryEmailAddress?.emailAddress || user?.emailAddresses?.[0]?.emailAddress || "Account"}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              {!isInOwnBusiness && ownedBusiness && <>
+                  <DropdownMenuItem onClick={() => switchBusiness.mutate(ownedBusiness.id)} disabled={isSwitching}>
+                    <Shield className="mr-2 h-4 w-4" /> 
+                    {t('sidebar.myBusiness')} ({ownedBusiness.name})
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>}
               <DropdownMenuItem onClick={() => navigate('/settings')}>
                 <SettingsIcon className="mr-2 h-4 w-4" /> {t('navigation.settings')}
               </DropdownMenuItem>
