@@ -3,18 +3,17 @@ import { queryKeys } from './keys';
 import { useAuth } from '@clerk/clerk-react';
 import { useAuthApi } from '@/hooks/useAuthApi';
 
-export function useProfile(currentBusinessId?: string | null) {
+export function useProfile() {
   const { userId } = useAuth();
   const authApi = useAuthApi();
 
   return useQuery({
-    queryKey: queryKeys.profile.byId(userId || '', currentBusinessId || ''),
+    queryKey: queryKeys.profile.byId(userId || '', ''),
     enabled: !!userId,
     queryFn: async () => {
-      console.info('[useProfile] fetching profile via edge function', { currentBusinessId });
+      console.info('[useProfile] fetching profile via edge function');
       
-      const url = currentBusinessId ? `get-profile?businessId=${currentBusinessId}` : 'get-profile';
-      const { data, error } = await authApi.invoke(url, {
+      const { data, error } = await authApi.invoke('get-profile', {
         method: 'GET',
       });
       

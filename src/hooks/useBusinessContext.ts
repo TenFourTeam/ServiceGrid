@@ -1,7 +1,6 @@
 import { useAuth } from '@clerk/clerk-react';
 import { useProfile } from '@/queries/useProfile';
 import { useParams, useLocation } from 'react-router-dom';
-import { useCurrentBusiness } from '@/contexts/CurrentBusinessContext';
 import { useEffect } from 'react';
 import { updateBusinessMeta } from '@/utils/metaUpdater';
 
@@ -24,12 +23,11 @@ export function useBusinessContext() {
   const { isSignedIn, isLoaded, userId } = useAuth();
   const params = useParams();
   const location = useLocation();
-  const { currentBusinessId } = useCurrentBusiness();
   
   // Don't query profile until Clerk is fully loaded and user is authenticated
   const shouldFetchProfile = isLoaded && isSignedIn;
-  // Use current business ID if set, otherwise use default business
-  const profileQuery = useProfile(currentBusinessId);
+  // Simple profile query without business ID parameter
+  const profileQuery = useProfile();
   
   const business = profileQuery.data?.business as BusinessUI;
   const role = business?.role || 'owner';
@@ -37,11 +35,8 @@ export function useBusinessContext() {
   // Simplified error detection
   const hasError = profileQuery.isError;
   
-  // Get initialization state from context
-  const { isInitializing } = useCurrentBusiness();
-  
   // Coordinated loading state - don't show as loading if Clerk isn't ready
-  const isLoadingBusiness = !isLoaded || isInitializing || (shouldFetchProfile && profileQuery.isLoading);
+  const isLoadingBusiness = !isLoaded || (shouldFetchProfile && profileQuery.isLoading);
   
   // Update meta tags when business data changes
   useEffect(() => {
