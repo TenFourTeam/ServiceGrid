@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import { useAuth } from '@clerk/clerk-react';
-import { useUserBusinesses } from '@/queries/useUserBusinesses';
+import { useProfile } from '@/queries/useProfile';
 
 interface CurrentBusinessContextType {
   currentBusinessId: string | null;
@@ -19,15 +19,15 @@ export function CurrentBusinessProvider({ children }: CurrentBusinessProviderPro
   const [currentBusinessId, setCurrentBusinessIdState] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   
-  // Fetch user businesses when authenticated
-  const { data: businesses, isLoading: isLoadingBusinesses } = useUserBusinesses();
+  // Simple profile query to get default business
+  const { data: profileData, isLoading: isLoadingProfile } = useProfile();
 
   const setCurrentBusinessId = useCallback((businessId: string | null) => {
     console.log('[CurrentBusinessContext] Setting current business ID:', businessId);
     setCurrentBusinessIdState(businessId);
   }, []);
 
-  // Auto-initialize business context when user is authenticated and businesses are loaded
+  // Simple initialization - just use the user's default business
   useEffect(() => {
     if (!isLoaded) return; // Wait for Clerk to load
     
@@ -37,18 +37,16 @@ export function CurrentBusinessProvider({ children }: CurrentBusinessProviderPro
       return;
     }
 
-    if (isLoadingBusinesses) return; // Wait for businesses to load
+    if (isLoadingProfile) return; // Wait for profile to load
 
-    // If no business is currently selected and we have businesses available
-    if (!currentBusinessId && businesses && businesses.length > 0) {
-      // Find the current default business or use the first one
-      const defaultBusiness = businesses.find(b => b.is_current) || businesses[0];
-      console.log('[CurrentBusinessContext] Auto-initializing with business:', defaultBusiness);
-      setCurrentBusinessIdState(defaultBusiness.id);
+    // Use the business from profile data
+    if (profileData?.business?.id && !currentBusinessId) {
+      console.log('[CurrentBusinessContext] Auto-initializing with business:', profileData.business.id);
+      setCurrentBusinessIdState(profileData.business.id);
     }
     
     setIsInitializing(false);
-  }, [isLoaded, isSignedIn, isLoadingBusinesses, businesses, currentBusinessId]);
+  }, [isLoaded, isSignedIn, isLoadingProfile, profileData?.business?.id, currentBusinessId]);
 
   return (
     <CurrentBusinessContext.Provider value={{
