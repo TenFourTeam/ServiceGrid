@@ -1,17 +1,35 @@
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { requireCtx } from "../_lib/auth.ts";
 
-serve(async (req: Request) => {
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+Deno.serve(async (req: Request) => {
+  console.log(`👥 get-all-users function called: ${req.method} ${req.url}`);
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   if (req.method !== 'GET') {
-    return json({ error: 'Method not allowed' }, { status: 405 });
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), { 
+      status: 405,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
   }
 
   try {
-    const { userId, supaAdmin } = await requireCtx(req);
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    
+    const supaAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { persistSession: false }
+    });
+
+    const { userId } = await requireCtx(req);
 
     console.log(`👥 Fetching all users for user selection`);
 
@@ -23,7 +41,10 @@ serve(async (req: Request) => {
 
     if (error) {
       console.error('Error fetching users:', error);
-      return json({ error: 'Failed to fetch users' }, { status: 500 });
+      return new Response(JSON.stringify({ error: 'Failed to fetch users' }), { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     // Filter out the current user from the list
@@ -31,10 +52,15 @@ serve(async (req: Request) => {
 
     console.log(`✅ Found ${filteredUsers.length} users for selection`);
 
-    return json({ users: filteredUsers });
+    return new Response(JSON.stringify({ users: filteredUsers }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
 
   } catch (error) {
     console.error('Error in get-all-users:', error);
-    return json({ error: 'Internal server error' }, { status: 500 });
+    return new Response(JSON.stringify({ error: 'Internal server error' }), { 
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
   }
 });
