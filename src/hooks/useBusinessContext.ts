@@ -1,4 +1,4 @@
-import { useAuth, useOrganization } from '@clerk/clerk-react';
+import { useAuth } from '@clerk/clerk-react';
 import { useProfile } from '@/queries/useProfile';
 import { useEffect } from 'react';
 import { updateBusinessMeta } from '@/utils/metaUpdater';
@@ -16,56 +16,38 @@ export type BusinessUI = {
 
 /**
  * Single source of truth for business data access
- * Consolidates Clerk organization context and backend business data
+ * Simple single-tenant business model
  */
 export function useBusinessContext() {
   const { isSignedIn, isLoaded, userId } = useAuth();
-  const { organization, isLoaded: isOrgLoaded, membership } = useOrganization();
-  
-  // Use organization ID as business ID for backend queries
-  const businessId = organization?.id || null;
   
   // Don't query profile until Clerk is fully loaded and user is authenticated
-  const shouldFetchProfile = isLoaded && isSignedIn && isOrgLoaded;
+  const shouldFetchProfile = isLoaded && isSignedIn;
   
-  // Use organization ID to fetch business data from backend
-  const profileQuery = useProfile(businessId);
+  // Backend will automatically resolve user's business
+  const profileQuery = useProfile();
   
   const business = profileQuery.data?.business as BusinessUI;
   
-  // Merge organization data with backend business data
-  const mergedBusiness: BusinessUI | undefined = business ? {
-    ...business,
-    // Override with organization data where available
-    id: organization?.id || business.id,
-    name: organization?.name || business.name,
-    // Map membership role to business role
-    role: membership?.role === 'org:admin' ? 'owner' : 'worker'
-  } : organization ? {
-    // If no backend business data, use organization data
-    id: organization.id,
-    name: organization.name,
-    role: membership?.role === 'org:admin' ? 'owner' : 'worker'
-  } : undefined;
-  
-  const role = mergedBusiness?.role || 'owner';
+  // Simple business data - no organization merging needed
+  const role = business?.role || 'owner';
   
   // Simplified error detection
   const hasError = profileQuery.isError;
   
-  // Coordinated loading state
-  const isLoadingBusiness = !isLoaded || !isOrgLoaded || (shouldFetchProfile && profileQuery.isLoading);
+  // Simple loading state
+  const isLoadingBusiness = !isLoaded || (shouldFetchProfile && profileQuery.isLoading);
   
   // Update meta tags when business data changes
   useEffect(() => {
-    if (mergedBusiness?.name) {
+    if (business?.name) {
       updateBusinessMeta({
-        name: mergedBusiness.name,
-        description: mergedBusiness.description,
-        logoUrl: (mergedBusiness.logoUrl || mergedBusiness.lightLogoUrl) as string
+        name: business.name,
+        description: business.description,
+        logoUrl: (business.logoUrl || business.lightLogoUrl) as string
       });
     }
-  }, [mergedBusiness?.name, mergedBusiness?.description, mergedBusiness?.logoUrl, mergedBusiness?.lightLogoUrl]);
+  }, [business?.name, business?.description, business?.logoUrl, business?.lightLogoUrl]);
   
   return {
     // Authentication state
@@ -73,27 +55,23 @@ export function useBusinessContext() {
     isLoaded,
     userId,
     
-    // Organization data
-    organization,
-    membership,
-    
-    // Complete business data (merged from organization and backend)
-    business: mergedBusiness,
-    businessId: mergedBusiness?.id,
-    businessName: mergedBusiness?.name,
-    businessDescription: mergedBusiness?.description,
-    businessPhone: mergedBusiness?.phone,
-    businessReplyToEmail: mergedBusiness?.replyToEmail,
-    businessTaxRateDefault: mergedBusiness?.taxRateDefault,
-    businessLogoUrl: mergedBusiness?.logoUrl,
-    businessLightLogoUrl: mergedBusiness?.lightLogoUrl,
+    // Business data from backend
+    business,
+    businessId: business?.id,
+    businessName: business?.name,
+    businessDescription: business?.description,
+    businessPhone: business?.phone,
+    businessReplyToEmail: business?.replyToEmail,
+    businessTaxRateDefault: business?.taxRateDefault,
+    businessLogoUrl: business?.logoUrl,
+    businessLightLogoUrl: business?.lightLogoUrl,
     
     // Role and permissions
     role,
     userRole: role,
     canManage: role === 'owner',
     
-    // Loading states - coordinated between Clerk and profile query
+    // Loading states
     isLoadingBusiness,
     
     // Error states
