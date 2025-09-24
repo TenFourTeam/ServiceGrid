@@ -11,165 +11,154 @@ jwt_expiry = 3600
 enabled = true
 domain = "divine-cow-23.clerk.accounts.dev"
 
-# Business page serving for link previews
+# Public endpoints (no authentication required)
 [functions.serve-business-page]
 verify_jwt = false
-
-# User and business management functions
-[functions.check-user-exists]
-verify_jwt = false
-
-[functions.add-team-member]
-verify_jwt = false
-
-[functions.user-businesses]
-verify_jwt = false
-
-[functions.leave-business]
-verify_jwt = false
-
-[functions.complete-profile-email]
-verify_jwt = true
 
 [functions.clerk-publishable-key]
 verify_jwt = false
 
-# Email functions
-[functions.resend-send-email]
+[functions.public-request-submit]
 verify_jwt = false
 
-[functions.send-lifecycle-email]
-verify_jwt = false
-
-[functions.team-send-email]
-verify_jwt = false
-
-# Invite system functions
-[functions.invite-worker]
-verify_jwt = false
-
-[functions.invite-redeem]
-verify_jwt = false
-
-# Public endpoints
 [functions.quote-events]
 verify_jwt = false
 
 [functions.job-confirm]
 verify_jwt = false
 
-# Batch operations
-[functions.jobs-status-batch]
-verify_jwt = false
-
-# File uploads (require authentication)
-[functions.upload-business-logo]
-verify_jwt = false
-
-[functions.upload-job-photo]
-verify_jwt = false
-
-# Business operations (require authentication)
-[functions.business-update]
-verify_jwt = false
-
-[functions.switch-business]
-verify_jwt = false
-
-[functions.business-role]
-verify_jwt = false
-
-# Payments & Stripe (require authentication)
-[functions.create-checkout]
-verify_jwt = false
-
-[functions.check-subscription]
-verify_jwt = false
-
-[functions.check-subscription-status]
-verify_jwt = false
-
-[functions.customer-portal]
-verify_jwt = false
-
-[functions.create-invoice-payment]
-verify_jwt = false
-
-[functions.verify-payment]
+[functions.stripe-webhooks]
 verify_jwt = false
 
 [functions.create-invoice-payment-public]
 verify_jwt = false
 
-# Stripe Connect (require authentication)
+# Authenticated endpoints (require valid JWT)
+[functions.check-user-exists]
+verify_jwt = true
+
+[functions.add-team-member]
+verify_jwt = true
+
+[functions.user-businesses]
+verify_jwt = true
+
+[functions.leave-business]
+verify_jwt = true
+
+[functions.complete-profile-email]
+verify_jwt = true
+
+[functions.resend-send-email]
+verify_jwt = true
+
+[functions.send-lifecycle-email]
+verify_jwt = true
+
+[functions.team-send-email]
+verify_jwt = true
+
+[functions.invite-worker]
+verify_jwt = true
+
+[functions.invite-redeem]
+verify_jwt = true
+
+[functions.jobs-status-batch]
+verify_jwt = true
+
+[functions.upload-business-logo]
+verify_jwt = true
+
+[functions.upload-job-photo]
+verify_jwt = true
+
+[functions.business-update]
+verify_jwt = true
+
+[functions.switch-business]
+verify_jwt = true
+
+[functions.business-role]
+verify_jwt = true
+
+[functions.create-checkout]
+verify_jwt = true
+
+[functions.check-subscription]
+verify_jwt = true
+
+[functions.check-subscription-status]
+verify_jwt = true
+
+[functions.customer-portal]
+verify_jwt = true
+
+[functions.create-invoice-payment]
+verify_jwt = true
+
+[functions.verify-payment]
+verify_jwt = true
+
 [functions.connect-onboarding-link]
-verify_jwt = false
+verify_jwt = true
 
 [functions.connect-account-status]
-verify_jwt = false
+verify_jwt = true
 
 [functions.connect-disconnect]
-verify_jwt = false
+verify_jwt = true
 
-# New unified CRUD functions
 [functions.get-profile]
-verify_jwt = false
+verify_jwt = true
 
 [functions.update-profile]
-verify_jwt = false
+verify_jwt = true
 
 [functions.customers-crud]
-verify_jwt = false
+verify_jwt = true
 
 [functions.jobs-crud]
-verify_jwt = false
+verify_jwt = true
 
 [functions.quotes-crud]
-verify_jwt = false
+verify_jwt = true
 
 [functions.invoices-crud]
-verify_jwt = false
+verify_jwt = true
 
 [functions.timesheet-crud]
-verify_jwt = false
+verify_jwt = true
 
 [functions.business-members]
-verify_jwt = false
+verify_jwt = true
 
 [functions.jobs-crud-assign]
-verify_jwt = false
+verify_jwt = true
 
 [functions.bulk-import-customers]
-verify_jwt = false
+verify_jwt = true
 
 [functions.customers-bulk-delete]
-verify_jwt = false
+verify_jwt = true
 
 [functions.requests-crud]
-verify_jwt = false
+verify_jwt = true
 
 [functions.audit-logs-crud]
-verify_jwt = false
+verify_jwt = true
 
 [functions.invite-manage]
-verify_jwt = false
+verify_jwt = true
 
 [functions.upload-request-photo]
-verify_jwt = false
-
-[functions.public-request-submit]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-work-order-confirmations]
-verify_jwt = false
-
-# Stripe webhooks (public, validates signature)
-[functions.stripe-webhooks]
-verify_jwt = false
+verify_jwt = true
 
 [functions.manage-quote-subscription]
-verify_jwt = false
+verify_jwt = true
 
-# Security monitoring (authenticated)
 [functions.security-monitor]
 verify_jwt = true
