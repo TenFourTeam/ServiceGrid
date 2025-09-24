@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
     console.log('🚀 [get-profile] === REQUEST START ===');
     
     const startAuth = Date.now();
-    const ctx = await requireCtxWithUserClient(req, { autoCreate: true });
+    const ctx = await requireCtxWithUserClient(req, { autoCreate: false });
     const endAuth = Date.now();
     console.log('🚀 [get-profile] Auth completed in', endAuth - startAuth, 'ms');
     console.log('🚀 [get-profile] Using user-scoped client for RLS queries');
