@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
 
 serve(async (req: Request) => {
