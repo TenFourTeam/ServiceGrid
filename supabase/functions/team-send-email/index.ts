@@ -1,8 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "npm:resend@2.0.0";
 import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -46,24 +43,10 @@ serve(async (req: Request) => {
       return json({ error: 'Business not found' }, { status: 403 });
     }
 
-    // Use RESEND_FROM_EMAIL as primary sender (matches working pattern from other functions)
-    const fromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'noreply@servicegrid.app';
-    const fromName = business.name || 'Team';
+    // Team email functionality disabled - using in-app notifications instead
+    console.log('Team email functionality disabled - using in-app notifications');
     
-    console.log('Sending team email with from:', `${fromName} <${fromEmail}>`);
-
-    // Send email using Resend
-    const emailResponse = await resend.emails.send({
-      from: `${fromName} <${fromEmail}>`,
-      to: [to],
-      subject,
-      html,
-    });
-
-    if (emailResponse.error) {
-      console.error('Failed to send team email:', emailResponse.error);
-      return json({ error: 'Failed to send email' }, { status: 500 });
-    }
+    const emailResponse = { data: { id: 'disabled' } };
 
     // Log audit action for team email
     await supaAdmin.rpc('log_audit_action', {
