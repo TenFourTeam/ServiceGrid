@@ -50,7 +50,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error("[stripe-webhooks] Error processing webhook:", error);
-    return new Response(`Webhook error: ${error.message}`, { status: 400 });
+    return new Response(`Webhook error: ${(error as any)?.message || 'Unknown error'}`, { status: 400 });
   }
 });
 

@@ -95,7 +95,7 @@ const handler = async (req: Request): Promise<Response> => {
       
       if (jobs && jobs.length > 0) {
         // Get all unique customer IDs and business ID
-        const customerIds = [...new Set(jobs.map(job => job.customer_id))];
+        const customerIds = [...new Set(jobs.map((job: any) => job.customer_id))];
         
         // Fetch all customers in batch
         const { data: customers, error: customersError } = await supaAdmin
@@ -121,13 +121,13 @@ const handler = async (req: Request): Promise<Response> => {
         }
         
         // Create customer lookup map
-        const customerMap = (customers || []).reduce((acc, customer) => {
+        const customerMap = (customers || []).reduce((acc: any, customer: any) => {
           acc[customer.id] = customer;
           return acc;
         }, {});
         
         // Combine job data with customer and business data
-        jobsToProcess = jobs.map(job => ({
+        jobsToProcess = jobs.map((job: any) => ({
           ...job,
           customers: customerMap[job.customer_id],
           businesses: business
@@ -240,7 +240,7 @@ const handler = async (req: Request): Promise<Response> => {
 
         if (emailError) {
           console.error(`[send-work-order-confirmations] Email error for job ${job.id}:`, emailError);
-          results.push({ jobId: job.id, success: false, error: emailError.message });
+          results.push({ jobId: job.id, success: false, error: (emailError as any)?.message || 'Unknown error' });
         } else {
           console.log(`[send-work-order-confirmations] Email sent successfully for job ${job.id}`);
           results.push({ jobId: job.id, success: true });
@@ -248,7 +248,7 @@ const handler = async (req: Request): Promise<Response> => {
         
       } catch (error) {
         console.error(`[send-work-order-confirmations] Error processing job ${job.id}:`, error);
-        results.push({ jobId: job.id, success: false, error: error.message });
+        results.push({ jobId: job.id, success: false, error: (error as any)?.message || 'Unknown error' });
       }
     }
 
@@ -269,7 +269,7 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message 
+        error: (error as any)?.message || 'Unknown error' 
       }),
       { 
         status: 500, 

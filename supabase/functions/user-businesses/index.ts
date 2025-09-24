@@ -61,7 +61,7 @@ serve(async (req: Request) => {
     }
 
     // Transform explicit memberships
-    const membershipBusinesses = memberships.map(membership => ({
+    const membershipBusinesses = memberships.map((membership: any) => ({
       id: membership.businesses.id,
       name: membership.businesses.name,
       logo_url: membership.businesses.logo_url,
@@ -71,7 +71,7 @@ serve(async (req: Request) => {
     }));
 
     // Transform owned businesses
-    const ownerBusinesses = ownedBusinesses.map(business => ({
+    const ownerBusinesses = ownedBusinesses.map((business: any) => ({
       id: business.id,
       name: business.name,
       logo_url: business.logo_url,
@@ -84,12 +84,12 @@ serve(async (req: Request) => {
     const businessMap = new Map();
     
     // Add memberships first
-    membershipBusinesses.forEach(business => {
+    membershipBusinesses.forEach((business: any) => {
       businessMap.set(business.id, business);
     });
     
     // Add owned businesses (will override if duplicate, ensuring owner role takes priority)
-    ownerBusinesses.forEach(business => {
+    ownerBusinesses.forEach((business: any) => {
       businessMap.set(business.id, business);
     });
 

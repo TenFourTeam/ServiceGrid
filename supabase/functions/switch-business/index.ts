@@ -33,7 +33,7 @@ serve(async (req: Request) => {
       console.log('[switch-business] Validated input:', { businessId: input.businessId });
     } catch (parseError) {
       console.error('[switch-business] Parsing/validation failed:', parseError);
-      return json({ error: 'Invalid request data', details: parseError.message }, { status: 400 });
+      return json({ error: 'Invalid request data', details: (parseError as any)?.message || 'Parse error' }, { status: 400 });
     }
 
     const { businessId } = input;

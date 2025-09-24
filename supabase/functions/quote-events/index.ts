@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.54.0';
+import { Resend } from 'https://esm.sh/resend@4.0.0';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -92,7 +93,7 @@ serve(async (req) => {
       // Validate quote and token
       const { data: q, error: qErr } = await supabase
         .from("quotes")
-        .select("id,status,public_token,number,customer_id,businesses(name,logo_url),customers(email,name)")
+        .select("id,status,public_token,number,customer_id,is_subscription,owner_id,business_id,address,total,businesses(name,logo_url),customers(email,name)")
         .eq("id", quote_id)
         .single();
 
@@ -168,10 +169,10 @@ serve(async (req) => {
 
         // Send follow-up email requesting details when edits are requested
         if (type === "edit") {
-          const custEmail = q?.customers?.email as string | null;
-          const custName = q?.customers?.name as string | null;
-          const businessName = q?.businesses?.name as string | null;
-          const businessLogoUrl = q?.businesses?.logo_url as string | null;
+          const custEmail = Array.isArray(q?.customers) ? (q?.customers as any)[0]?.email : (q?.customers as any)?.email as string | null;
+          const custName = Array.isArray(q?.customers) ? (q?.customers as any)[0]?.name : (q?.customers as any)?.name as string | null;
+          const businessName = Array.isArray(q?.businesses) ? (q?.businesses as any)[0]?.name : (q?.businesses as any)?.name as string | null;
+          const businessLogoUrl = Array.isArray(q?.businesses) ? (q?.businesses as any)[0]?.logo_url : (q?.businesses as any)?.logo_url as string | null;
           const quoteNumber = q?.number as string | null;
           try {
             const resendApiKey = Deno.env.get("RESEND_API_KEY");

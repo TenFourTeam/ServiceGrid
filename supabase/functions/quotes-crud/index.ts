@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
         }
 
         // Map line items to frontend format
-        const lineItems = (lineItemsData || []).map(item => ({
+        const lineItems = (lineItemsData || []).map((item: any) => ({
           id: item.id,
           name: item.name,
           qty: item.qty,
@@ -119,8 +119,8 @@ Deno.serve(async (req) => {
           publicToken: quote.public_token,
           viewCount: quote.view_count ?? 0,
           customerId: quote.customer_id,
-          customerName: quote.customers?.name,
-          customerEmail: quote.customers?.email,
+          customerName: (quote.customers as any)?.name,
+          customerEmail: (quote.customers as any)?.email,
           sentAt: quote.sent_at,
         })) || [];
 

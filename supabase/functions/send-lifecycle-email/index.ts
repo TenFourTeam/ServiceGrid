@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
+import { Resend } from 'https://esm.sh/resend@4.0.0';
 
 // Import email templates - simplified versions since we can't import from src
 function escapeHtml(text: string): string {
