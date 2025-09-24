@@ -180,9 +180,36 @@ serve(async (req: Request) => {
         .eq('id', userId)
         .single();
 
+      // Check if business uses Clerk organizations
+      const { data: businessDetails } = await supaAdmin
+        .from('businesses')
+        .select('uses_clerk_orgs, clerk_org_id')
+        .eq('id', invite.business_id)
+        .single();
+
       // Generate invitation URL and send email
       const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://preview--lawn-flow-dash.lovable.app';
-      const inviteUrl = `${frontendUrl}/invite?token=${token}`;
+      let inviteUrl = `${frontendUrl}/invite?token=${token}`;
+      
+      // For Clerk organizations, add signup context
+      if (businessDetails?.uses_clerk_orgs && businessDetails?.clerk_org_id) {
+        const signupContext = {
+          org_id: businessDetails.clerk_org_id,
+          invite_token_hash: tokenHash
+        };
+        
+        // Update invite with signup context
+        await supaAdmin
+          .from('invites')
+          .update({ 
+            signup_context: signupContext 
+          })
+          .eq('id', inviteId);
+        
+        // Create organization-aware signup URL
+        inviteUrl = `${frontendUrl}/clerk-auth?signup_context=${encodeURIComponent(JSON.stringify(signupContext))}&redirect_url=${encodeURIComponent(`${frontendUrl}/invite?token=${token}`)}`;
+      }
+      
       const business = invite.businesses;
 
       // Build professional email using template
@@ -287,18 +314,28 @@ serve(async (req: Request) => {
       return json({ error: 'Active invite already exists for this email' }, 409);
     }
 
-    const { data: existingMember } = await supaAdmin
-      .from('business_members')
+    // Check if user exists and is already a member (fix subquery bug)
+    const { data: existingProfile } = await supaAdmin
+      .from('profiles')
       .select('id')
-      .eq('business_id', businessId)
-      .in('user_id', [
-        supaAdmin.from('profiles').select('id').eq('email', email)
-      ])
+      .eq('email', email)
       .single();
 
-    if (existingMember) {
-      return json({ error: 'User is already a member of this business' }, 409);
+    if (existingProfile) {
+      const { data: existingMember } = await supaAdmin
+        .from('business_members')
+        .select('id')
+        .eq('business_id', businessId)
+        .eq('user_id', existingProfile.id)
+        .single();
+
+      if (existingMember) {
+        console.log(`❌ Email ${email} is already a member of business ${businessId}`);
+        return json({ error: 'User is already a member of this business' }, 409);
+      }
     }
+
+    console.log(`✅ Email ${email} is not a member yet, proceeding with invite creation...`);
 
     // Generate secure token
     const token = crypto.randomUUID();
@@ -307,6 +344,8 @@ serve(async (req: Request) => {
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const tokenHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+    console.log(`📧 Creating invite for email: ${email} in business: ${businessId}`);
 
     // Create invite
     const expiresAt = new Date();
@@ -326,13 +365,41 @@ serve(async (req: Request) => {
       .single();
 
     if (inviteError) {
-      console.error('Failed to create invite:', inviteError);
+      console.error('❌ Failed to create invite:', inviteError);
       return json({ error: 'Failed to create invite' }, 500);
     }
 
+    console.log(`✅ Invite created successfully with ID: ${invite.id}`);
+
+    // Check if business uses Clerk organizations
+    const { data: businessDetails } = await supaAdmin
+      .from('businesses')
+      .select('uses_clerk_orgs, clerk_org_id')
+      .eq('id', businessId)
+      .single();
+
     // Generate invitation URL and send email
-    const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://preview--lawn-flow-dash.lovable.app';
-    const inviteUrl = `${frontendUrl}/invite?token=${token}`;
+    const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://servicegrid.app';
+    let inviteUrl = `${frontendUrl}/invite?token=${token}`;
+    
+    // For Clerk organizations, add signup context
+    if (businessDetails?.uses_clerk_orgs && businessDetails?.clerk_org_id) {
+      const signupContext = {
+        org_id: businessDetails.clerk_org_id,
+        invite_token_hash: tokenHash
+      };
+      
+      // Update invite with signup context
+      await supaAdmin
+        .from('invites')
+        .update({ 
+          signup_context: signupContext 
+        })
+        .eq('id', invite.id);
+      
+      // Create organization-aware signup URL
+      inviteUrl = `${frontendUrl}/clerk-auth?signup_context=${encodeURIComponent(JSON.stringify(signupContext))}&redirect_url=${encodeURIComponent(`${frontendUrl}/invite?token=${token}`)}`;
+    }
     
     // Build professional email using template
     const emailContent = buildInviteEmail({

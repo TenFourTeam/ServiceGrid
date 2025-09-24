@@ -1,6 +1,18 @@
 // Shared authentication and business context resolution for Supabase Edge Functions
-import { verifyToken } from "https://esm.sh/@clerk/backend@1.7.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.54.0";
+
+// Conditionally import verifyToken based on test mode
+const TEST_MODE = Deno.env.get("TEST_MODE") === "true";
+let verifyToken: any;
+
+if (TEST_MODE) {
+  console.info('🧪 [auth] Running in TEST_MODE - using mock authentication');
+  const testAuth = await import("./auth-test.ts");
+  verifyToken = testAuth.verifyToken;
+} else {
+  const clerkBackend = await import("https://esm.sh/@clerk/backend@1.7.0");
+  verifyToken = clerkBackend.verifyToken;
+}
 
 type ClerkUserId = string; // e.g., 'user_abc123'
 type UserUuid = string;    // postgres uuid
@@ -99,6 +111,10 @@ export async function requireCtx(req: Request, options: { autoCreate?: boolean }
 
   const clerkUserId = payload.sub as ClerkUserId;
   const email = (payload.email || payload["primary_email"] || "") as string;
+  
+  // Extract Clerk organization context if present
+  const clerkOrgId = payload.org_id as string | undefined;
+  const clerkOrgRole = payload.org_role as string | undefined;
 
   // Create admin Supabase client
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -125,8 +141,15 @@ export async function requireCtx(req: Request, options: { autoCreate?: boolean }
   // 1) Resolve internal UUID via profiles (Clerk -> UUID)
   const userUuid = await resolveUserUuid(supaAdmin, clerkUserId, email, options.autoCreate);
 
-  // 3) Resolve business using UUID (do NOT call the Clerk->UUID mapper again)
-  const businessId = await resolveBusinessId(supaAdmin, userUuid, candidateBusinessId, options.autoCreate);
+  // 2) Check if we have Clerk organization context
+  let businessId: string;
+  if (clerkOrgId) {
+    // Use Clerk organization as business context
+    businessId = await resolveBusinessIdFromClerkOrg(supaAdmin, userUuid, clerkOrgId, clerkOrgRole, options.autoCreate);
+  } else {
+    // Fall back to existing system
+    businessId = await resolveBusinessId(supaAdmin, userUuid, candidateBusinessId, options.autoCreate);
+  }
 
   return {
     clerkUserId,
@@ -174,6 +197,46 @@ export async function requireCtxWithUserClient(req: Request, options: { autoCrea
     ...authCtx,
     userClient
   };
+}
+
+async function resolveBusinessIdFromClerkOrg(
+  supabase: ReturnType<typeof createClient>,
+  userUuid: UserUuid,
+  clerkOrgId: string,
+  clerkOrgRole?: string,
+  autoCreate: boolean = true
+): Promise<string> {
+  // Look for business with this Clerk org ID
+  const { data: clerkBusiness } = await supabase
+    .from("businesses")
+    .select("id")
+    .eq("clerk_org_id", clerkOrgId)
+    .maybeSingle();
+
+  if (clerkBusiness?.id) {
+    // Ensure user has membership in this business
+    const role = clerkOrgRole === 'org:admin' ? 'owner' : 'worker';
+    await supabase
+      .from("business_members")
+      .upsert({
+        business_id: clerkBusiness.id,
+        user_id: userUuid,
+        role,
+        joined_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id,business_id'
+      });
+
+    return clerkBusiness.id;
+  }
+
+  if (!autoCreate) {
+    throw new Error('Clerk organization not found in businesses and auto-creation disabled');
+  }
+
+  // This shouldn't happen in normal flow - Clerk orgs should be created via webhook
+  console.warn(`⚠️ [auth] Clerk org ${clerkOrgId} not found in businesses table`);
+  throw new Error('Organization not found. Please contact support.');
 }
 
 async function resolveBusinessId(

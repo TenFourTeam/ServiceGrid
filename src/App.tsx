@@ -27,6 +27,7 @@ const MemberTimesheetPage = lazy(() => import("./pages/MemberTimesheet"));
 const ReferralPage = lazy(() => import("./pages/Referral"));
 
 const ClerkAuthPage = lazy(() => import("./pages/ClerkAuth"));
+const OrganizationSignup = lazy(() => import("./components/Auth/OrganizationSignup").then(module => ({ default: module.OrganizationSignup })));
 const QuoteActionPage = lazy(() => import("./pages/QuoteAction"));
 const QuoteViewerPage = lazy(() => import("./pages/QuoteViewer"));
 const PaymentSuccessPage = lazy(() => import("./pages/PaymentSuccess"));
@@ -112,6 +113,7 @@ function App({ clerkKey }: AppProps) {
 
                 {/* Public pages that don't require auth checks */}
                 <Route path="/clerk-auth" element={<ClerkAuthPage />} />
+                <Route path="/organization-signup" element={<OrganizationSignup />} />
                 <Route path="/quote-action" element={<QuoteActionPage />} />
                 <Route path="/quote/:token" element={<QuoteViewerPage />} />
                 <Route path="/payment-success" element={<PaymentSuccessPage />} />

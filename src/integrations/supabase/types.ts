@@ -117,6 +117,7 @@ export type Database = {
       businesses: {
         Row: {
           application_fee_bps: number
+          clerk_org_id: string | null
           created_at: string
           description: string | null
           est_prefix: string
@@ -138,9 +139,11 @@ export type Database = {
           stripe_payouts_enabled: boolean
           tax_rate_default: number
           updated_at: string
+          uses_clerk_orgs: boolean | null
         }
         Insert: {
           application_fee_bps?: number
+          clerk_org_id?: string | null
           created_at?: string
           description?: string | null
           est_prefix?: string
@@ -162,9 +165,11 @@ export type Database = {
           stripe_payouts_enabled?: boolean
           tax_rate_default?: number
           updated_at?: string
+          uses_clerk_orgs?: boolean | null
         }
         Update: {
           application_fee_bps?: number
+          clerk_org_id?: string | null
           created_at?: string
           description?: string | null
           est_prefix?: string
@@ -186,6 +191,7 @@ export type Database = {
           stripe_payouts_enabled?: boolean
           tax_rate_default?: number
           updated_at?: string
+          uses_clerk_orgs?: boolean | null
         }
         Relationships: []
       }
@@ -248,6 +254,7 @@ export type Database = {
           redeemed_by: string | null
           revoked_at: string | null
           role: Database["public"]["Enums"]["business_role"]
+          signup_context: Json | null
           token_hash: string
           updated_at: string
         }
@@ -262,6 +269,7 @@ export type Database = {
           redeemed_by?: string | null
           revoked_at?: string | null
           role?: Database["public"]["Enums"]["business_role"]
+          signup_context?: Json | null
           token_hash: string
           updated_at?: string
         }
@@ -276,6 +284,7 @@ export type Database = {
           redeemed_by?: string | null
           revoked_at?: string | null
           role?: Database["public"]["Enums"]["business_role"]
+          signup_context?: Json | null
           token_hash?: string
           updated_at?: string
         }
@@ -1135,6 +1144,7 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: {
           application_fee_bps: number
+          clerk_org_id: string | null
           created_at: string
           description: string | null
           est_prefix: string
@@ -1156,6 +1166,7 @@ export type Database = {
           stripe_payouts_enabled: boolean
           tax_rate_default: number
           updated_at: string
+          uses_clerk_orgs: boolean | null
         }
       }
       generate_slug: {

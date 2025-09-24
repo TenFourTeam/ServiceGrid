@@ -41,12 +41,20 @@ export function QuoteActions({ quote, onSendQuote, onEditQuote }: QuoteActionsPr
     }
 
     try {
+      // Get quote details to extract first line item name
+      const { data: quoteDetails } = await authApi.invoke(`quotes-crud?id=${quote.id}`, {
+        method: 'GET'
+      });
+      
+      const firstLineItemName = quoteDetails?.lineItems?.[0]?.name;
+      const jobTitle = firstLineItemName || 'Work Order';
+
       const { data: result } = await authApi.invoke('jobs', {
         method: 'POST',
         body: {
           quoteId: quote.id,
           customerId: quote.customerId,
-          title: `Job from Quote ${quote.number}`,
+          title: jobTitle,
           total: quote.total,
           status: 'Scheduled',
         },

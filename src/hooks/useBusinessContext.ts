@@ -1,4 +1,4 @@
-import { useAuth } from '@clerk/clerk-react';
+import { useAuth, useOrganization, useUser } from '@clerk/clerk-react';
 import { useProfile } from '@/queries/useProfile';
 import { useParams, useLocation } from 'react-router-dom';
 import { useCurrentBusiness } from '@/contexts/CurrentBusinessContext';
@@ -22,6 +22,7 @@ export type BusinessUI = {
  */
 export function useBusinessContext() {
   const { isSignedIn, isLoaded, userId } = useAuth();
+  const { organization, isLoaded: orgLoaded, membership } = useOrganization();
   const params = useParams();
   const location = useLocation();
   const { currentBusinessId } = useCurrentBusiness();
@@ -34,14 +35,18 @@ export function useBusinessContext() {
   const business = profileQuery.data?.business as BusinessUI;
   const role = business?.role || 'owner';
   
+  // Check if current business uses Clerk organizations
+  const usesClerkOrgs = business?.uses_clerk_orgs === true;
+  
   // Simplified error detection
   const hasError = profileQuery.isError;
   
   // Get initialization state from context
   const { isInitializing } = useCurrentBusiness();
   
-  // Coordinated loading state - don't show as loading if Clerk isn't ready
-  const isLoadingBusiness = !isLoaded || isInitializing || (shouldFetchProfile && profileQuery.isLoading);
+  // Coordinated loading state - consider Clerk org loading for businesses using Clerk
+  const clerkOrgLoading = usesClerkOrgs && !orgLoaded;
+  const isLoadingBusiness = !isLoaded || isInitializing || clerkOrgLoading || (shouldFetchProfile && profileQuery.isLoading);
   
   // Update meta tags when business data changes
   useEffect(() => {
@@ -60,21 +65,29 @@ export function useBusinessContext() {
     isLoaded,
     userId,
     
-    // Complete business data (now sourced from profile query)
-    business,
+    // Complete business data (overlay: use Clerk org data if available and business uses Clerk)
+    business: usesClerkOrgs && organization ? {
+      ...business,
+      name: organization.name,
+      id: business?.id, // Keep database ID
+      clerk_org_id: organization.id, // Add Clerk org ID
+    } : business,
     businessId: business?.id,
-    businessName: business?.name,
+    businessName: usesClerkOrgs && organization ? organization.name : business?.name,
     businessDescription: business?.description,
     businessPhone: business?.phone,
     businessReplyToEmail: business?.replyToEmail,
     businessTaxRateDefault: business?.taxRateDefault,
-    businessLogoUrl: business?.logoUrl,
+    businessLogoUrl: usesClerkOrgs && organization ? organization.imageUrl : business?.logoUrl,
     businessLightLogoUrl: business?.lightLogoUrl,
     
-    // Role and permissions
-    role,
-    userRole: role,
-    canManage: role === 'owner',
+    // Role and permissions (overlay: use Clerk org role if available)
+    role: usesClerkOrgs && organization && membership ? 
+      (membership.role === 'org:admin' ? 'owner' : 'worker') : role,
+    userRole: usesClerkOrgs && organization && membership ? 
+      (membership.role === 'org:admin' ? 'owner' : 'worker') : role,
+    canManage: usesClerkOrgs && organization && membership ? 
+      membership.role === 'org:admin' : role === 'owner',
     
     // Loading states - coordinated between Clerk and profile query
     isLoadingBusiness,
@@ -82,6 +95,10 @@ export function useBusinessContext() {
     // Error states
     hasBusinessError: hasError,
     businessError: profileQuery.error,
+    
+    // Clerk organization overlay data
+    usesClerkOrgs,
+    clerkOrganization: organization,
     
     // Utilities
     refetchBusiness: profileQuery.refetch,

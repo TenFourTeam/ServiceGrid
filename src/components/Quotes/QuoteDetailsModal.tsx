@@ -247,12 +247,15 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
     setIsConvertingToJob(true);
 
     try {
+      const firstLineItemName = quote.lineItems?.[0]?.name;
+      const jobTitle = firstLineItemName || 'Work Order';
+
       const { data: result } = await authApi.invoke('jobs', {
         method: 'POST',
         body: {
           quoteId: quote.id,
           customerId: quote.customerId,
-          title: `Job from Quote ${quote.number}`,
+          title: jobTitle,
           total: quote.total,
           status: 'Scheduled',
         },
