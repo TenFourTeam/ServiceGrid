@@ -1,6 +1,6 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
-import { parsePhoneNumber, isValidPhoneNumber } from 'https://deno.land/x/phone/mod.ts';
+import { parsePhoneNumber } from "https://esm.sh/libphonenumber-js@1.12.12";
 
 interface CustomerImport {
   name: string;
@@ -15,7 +15,7 @@ function normalizeToE164(phone: string, defaultCountry: string = 'US'): string {
   try {
     const phoneNumber = parsePhoneNumber(phone, defaultCountry as any);
     if (phoneNumber && phoneNumber.isValid()) {
-      return phoneNumber.format('E.164');
+      return phoneNumber.number;
     }
   } catch (e) {
     console.warn('[phoneNormalization] Failed to parse phone:', phone, e);

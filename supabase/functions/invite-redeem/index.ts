@@ -8,14 +8,14 @@ serve(async (req: Request) => {
   }
 
   if (req.method !== 'POST') {
-    return json({ error: 'Method not allowed' }, 405);
+    return json({ error: 'Method not allowed' }, { status: 405 });
   }
 
   try {
     const { token } = await req.json();
 
     if (!token) {
-      return json({ error: 'Token is required' }, 400);
+      return json({ error: 'Token is required' }, { status: 400 });
     }
 
     // Create admin client
@@ -46,13 +46,13 @@ serve(async (req: Request) => {
 
     if (inviteError || !invite) {
       console.log('Invite not found or invalid:', inviteError);
-      return json({ error: 'Invalid or expired invite' }, 400);
+      return json({ error: 'Invalid or expired invite' }, { status: 400 });
     }
 
     // Get authenticated user from request
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return json({ error: 'Authentication required' }, 401);
+      return json({ error: 'Authentication required' }, { status: 401 });
     }
 
     // Create client with user token
@@ -69,7 +69,7 @@ serve(async (req: Request) => {
 
     const { data: { user }, error: userError } = await userClient.auth.getUser();
     if (userError || !user) {
-      return json({ error: 'Invalid authentication' }, 401);
+      return json({ error: 'Invalid authentication' }, { status: 401 });
     }
 
     console.log('Redeeming invite for user:', user.id);
@@ -95,7 +95,7 @@ serve(async (req: Request) => {
 
       if (profileError) {
         console.error('Failed to create profile:', profileError);
-        return json({ error: 'Failed to create user profile' }, 500);
+        return json({ error: 'Failed to create user profile' }, { status: 500 });
       }
 
       console.log('User profile created for:', user.id);
@@ -138,7 +138,7 @@ serve(async (req: Request) => {
 
     if (memberError) {
       console.error('Failed to add business member:', memberError);
-      return json({ error: 'Failed to join business' }, 500);
+      return json({ error: 'Failed to join business' }, { status: 500 });
     }
 
     // Mark invite as redeemed
@@ -174,6 +174,6 @@ serve(async (req: Request) => {
 
   } catch (error) {
     console.error('Error redeeming invite:', error);
-    return json({ error: 'Internal server error' }, 500);
+    return json({ error: 'Internal server error' }, { status: 500 });
   }
 });

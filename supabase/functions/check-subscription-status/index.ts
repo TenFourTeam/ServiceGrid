@@ -1,11 +1,5 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.54.0';
-import { getCurrentUserId } from '../_lib/auth.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -14,27 +8,13 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
-    // Authenticate user
-    const userId = await getCurrentUserId(req, supabase);
-    if (!userId) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    // Authenticate user and get context
+    const { userId, supaAdmin: supabase } = await requireCtx(req);
 
     const { customerId, businessId } = await req.json();
 
     if (!customerId || !businessId) {
-      return new Response(JSON.stringify({ error: 'Missing required parameters' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return json({ error: 'Missing required parameters' }, { status: 400 });
     }
 
     // Verify user has access to this business
@@ -46,10 +26,7 @@ serve(async (req) => {
       .single();
 
     if (!membership) {
-      return new Response(JSON.stringify({ error: 'Access denied' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return json({ error: 'Access denied' }, { status: 403 });
     }
 
     // Check for active subscription
@@ -63,26 +40,18 @@ serve(async (req) => {
 
     if (error) {
       console.error('Error checking subscription status:', error);
-      return new Response(JSON.stringify({ error: 'Database error' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return json({ error: 'Database error' }, { status: 500 });
     }
 
     const hasActiveSubscription = subscriptions && subscriptions.length > 0;
 
-    return new Response(JSON.stringify({ 
+    return json({ 
       hasActiveSubscription,
       subscriptionId: hasActiveSubscription ? subscriptions[0].stripe_subscription_id : null
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
     console.error('Error in check-subscription-status function:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return json({ error: 'Internal server error' }, { status: 500 });
   }
 });

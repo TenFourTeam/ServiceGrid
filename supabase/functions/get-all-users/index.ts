@@ -27,7 +27,7 @@ serve(async (req: Request) => {
     }
 
     // Filter out the current user from the list
-    const filteredUsers = users.filter(user => user.id !== userId);
+    const filteredUsers = users.filter((user: any) => user.id !== userId);
 
     console.log(`✅ Found ${filteredUsers.length} users for selection`);
 

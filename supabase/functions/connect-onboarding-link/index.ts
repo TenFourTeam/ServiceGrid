@@ -56,7 +56,7 @@ serve(async (req) => {
       const { error: upErr } = await supabase
         .from("businesses")
         .update({ stripe_account_id: accountId })
-        .eq("id", biz.id);
+        .eq("id", (biz as any).id);
       if (upErr) throw upErr;
     }
 

@@ -15,7 +15,7 @@ serve(async (req: Request) => {
       const businessId = url.searchParams.get('business_id');
 
       if (!businessId) {
-        return json({ error: 'Business ID is required' }, 400);
+        return json({ error: 'Business ID is required' }, { status: 400 });
       }
 
       // Verify user is owner of the business
@@ -28,7 +28,7 @@ serve(async (req: Request) => {
         .single();
 
       if (!membership) {
-        return json({ error: 'Not authorized to manage this business' }, 403);
+        return json({ error: 'Not authorized to manage this business' }, { status: 403 });
       }
 
       console.log(`🔍 Fetching invites for business: ${businessId}`);
@@ -51,7 +51,7 @@ serve(async (req: Request) => {
 
       if (error) {
         console.error('❌ Error fetching invites:', error);
-        return json({ error: 'Failed to fetch invites' }, 500);
+        return json({ error: 'Failed to fetch invites' }, { status: 500 });
       }
 
       console.log(`✅ Found ${invites?.length || 0} pending invites`);
@@ -65,7 +65,7 @@ serve(async (req: Request) => {
       const inviteId = url.searchParams.get('invite_id');
 
       if (!inviteId) {
-        return json({ error: 'Invite ID is required' }, 400);
+        return json({ error: 'Invite ID is required' }, { status: 400 });
       }
 
       // Get the invite and verify permissions
@@ -76,20 +76,20 @@ serve(async (req: Request) => {
         .single();
 
       if (inviteError || !invite) {
-        return json({ error: 'Invite not found' }, 404);
+        return json({ error: 'Invite not found' }, { status: 404 });
       }
 
       // Verify user can manage this business
       const { data: membership } = await supaAdmin
         .from('business_members')
         .select('role')
-        .eq('business_id', invite.business_id)
+        .eq('business_id', (invite as any).business_id)
         .eq('user_id', userId)
         .eq('role', 'owner')
         .single();
 
       if (!membership) {
-        return json({ error: 'Not authorized to manage this business' }, 403);
+        return json({ error: 'Not authorized to manage this business' }, { status: 403 });
       }
 
       const { error } = await supaAdmin
@@ -99,7 +99,7 @@ serve(async (req: Request) => {
 
       if (error) {
         console.error('Error revoking invite:', error);
-        return json({ error: 'Failed to revoke invite' }, 500);
+        return json({ error: 'Failed to revoke invite' }, { status: 500 });
       }
 
       // Log audit action
@@ -119,7 +119,7 @@ serve(async (req: Request) => {
       const { inviteId } = await req.json();
 
       if (!inviteId) {
-        return json({ error: 'Invite ID is required' }, 400);
+        return json({ error: 'Invite ID is required' }, { status: 400 });
       }
 
       // Get the invite and verify permissions
@@ -130,20 +130,20 @@ serve(async (req: Request) => {
         .single();
 
       if (inviteError || !invite) {
-        return json({ error: 'Invite not found' }, 404);
+        return json({ error: 'Invite not found' }, { status: 404 });
       }
 
       // Verify user can manage this business
       const { data: membership } = await supaAdmin
         .from('business_members')
         .select('role')
-        .eq('business_id', invite.business_id)
+        .eq('business_id', (invite as any).business_id)
         .eq('user_id', userId)
         .eq('role', 'owner')
         .single();
 
       if (!membership) {
-        return json({ error: 'Not authorized to manage this business' }, 403);
+        return json({ error: 'Not authorized to manage this business' }, { status: 403 });
       }
 
       // Generate new token and extend expiry
@@ -167,7 +167,7 @@ serve(async (req: Request) => {
 
       if (error) {
         console.error('Error updating invite:', error);
-        return json({ error: 'Failed to update invite' }, 500);
+        return json({ error: 'Failed to update invite' }, { status: 500 });
       }
 
       // Get inviter details
@@ -199,14 +199,14 @@ serve(async (req: Request) => {
     }
 
     if (req.method !== 'POST') {
-      return json({ error: 'Method not allowed' }, 405);
+      return json({ error: 'Method not allowed' }, { status: 405 });
     }
 
     // POST - Create new invite and send email
     const { businessId, email } = await req.json();
 
     if (!businessId || !email) {
-      return json({ error: 'Business ID and email are required' }, 400);
+      return json({ error: 'Business ID and email are required' }, { status: 400 });
     }
 
     // Verify the user can manage this business
@@ -219,7 +219,7 @@ serve(async (req: Request) => {
       .single();
 
     if (!membership) {
-      return json({ error: 'Not authorized to manage this business' }, 403);
+      return json({ error: 'Not authorized to manage this business' }, { status: 403 });
     }
 
     // Get business details and inviter info
@@ -230,7 +230,7 @@ serve(async (req: Request) => {
       .single();
 
     if (businessError || !business) {
-      return json({ error: 'Business not found or not owned by user' }, 403);
+      return json({ error: 'Business not found or not owned by user' }, { status: 403 });
     }
 
     // Get inviter details
@@ -253,7 +253,7 @@ serve(async (req: Request) => {
       .single();
 
     if (existingInvite) {
-      return json({ error: 'Active invite already exists for this email' }, 409);
+      return json({ error: 'Active invite already exists for this email' }, { status: 409 });
     }
 
     const { data: existingMember } = await supaAdmin
@@ -266,7 +266,7 @@ serve(async (req: Request) => {
       .single();
 
     if (existingMember) {
-      return json({ error: 'User is already a member of this business' }, 409);
+      return json({ error: 'User is already a member of this business' }, { status: 409 });
     }
 
     // Generate secure token
@@ -296,7 +296,7 @@ serve(async (req: Request) => {
 
     if (inviteError) {
       console.error('Failed to create invite:', inviteError);
-      return json({ error: 'Failed to create invite' }, 500);
+      return json({ error: 'Failed to create invite' }, { status: 500 });
     }
 
     // Generate invitation URL (no email for now)
@@ -323,6 +323,6 @@ serve(async (req: Request) => {
 
   } catch (error) {
     console.error('Error in invite-worker:', error);
-    return json({ error: 'Internal server error' }, 500);
+    return json({ error: 'Internal server error' }, { status: 500 });
   }
 });

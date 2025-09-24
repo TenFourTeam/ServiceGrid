@@ -22,7 +22,7 @@ export type AuthContext = {
   userId: UserUuid; // Keep for backwards compatibility
   email?: string;
   businessId: string;
-  supaAdmin: ReturnType<typeof createClient>;
+  supaAdmin: any;
 };
 
 export type AuthContextWithUserClient = {
@@ -30,9 +30,14 @@ export type AuthContextWithUserClient = {
   userId: UserUuid;
   email?: string;
   businessId: string;
-  supaAdmin: ReturnType<typeof createClient>;
-  userClient: ReturnType<typeof createClient>;
+  supaAdmin: any;
+  userClient: any;
 };
+
+export async function getCurrentUserId(req: Request): Promise<string> {
+  const { userId } = await requireCtx(req);
+  return userId;
+}
 
 export async function requireCtx(req: Request, options: { autoCreate?: boolean } = { autoCreate: true }): Promise<AuthContext> {
   console.info('🔍 [auth] === JWT DEBUGGING START ===');
@@ -190,8 +195,8 @@ export async function requireCtxWithUserClient(req: Request, options: { autoCrea
 }
 
 async function resolveBusinessId(
-  supabase: ReturnType<typeof createClient>, 
-  userUuid: UserUuid, 
+  supabase: any,
+  userUuid: UserUuid,
   candidate?: string | null,
   autoCreate: boolean = true
 ): Promise<string> {
@@ -327,7 +332,7 @@ async function resolveBusinessId(
   }
 }
 
-async function resolveUserUuid(supabase: ReturnType<typeof createClient>, clerkUserId: ClerkUserId, email: string, autoCreate: boolean = true): Promise<UserUuid> {
+async function resolveUserUuid(supabase: any, clerkUserId: ClerkUserId, email: string, autoCreate: boolean = true): Promise<UserUuid> {
   // Look up by clerk_user_id first
   const { data: profile, error: profileError } = await supabase
     .from("profiles")

@@ -54,7 +54,7 @@ serve(async (req: Request) => {
         .from('business_members')
         .select('id, role')
         .eq('business_id', businessId)
-        .eq('user_id', profile.id)
+        .eq('user_id', (profile as any).id)
         .single();
 
       if (existingMember) {

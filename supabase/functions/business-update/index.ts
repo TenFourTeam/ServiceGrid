@@ -41,7 +41,8 @@ Deno.serve(async (req: Request) => {
       });
     } catch (parseError) {
       console.error('[business-update] Parsing/validation failed:', parseError);
-      return json({ error: 'Invalid request data', details: parseError.message }, { status: 400 });
+      const errorMessage = parseError instanceof Error ? parseError.message : 'Unknown parse error';
+      return json({ error: 'Invalid request data', details: errorMessage }, { status: 400 });
     }
 
     // Update business in database

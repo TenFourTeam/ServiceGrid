@@ -25,7 +25,7 @@ serve(async (req: Request) => {
           .single();
 
         if (!membership) {
-          return json({ error: 'Not authorized to manage this business' }, 403);
+          return json({ error: 'Not authorized to manage this business' }, { status: 403 });
         }
 
         // Get pending invites
@@ -47,20 +47,20 @@ serve(async (req: Request) => {
 
         if (error) {
           console.error('Error fetching invites:', error);
-          return json({ error: 'Failed to fetch invites' }, 500);
+          return json({ error: 'Failed to fetch invites' }, { status: 500 });
         }
 
         return json({ invites: invites || [] });
       }
 
-      return json({ error: 'Invalid action or missing parameters' }, 400);
+      return json({ error: 'Invalid action or missing parameters' }, { status: 400 });
     }
 
     if (req.method === 'POST') {
       const { inviteId, action } = await req.json();
 
       if (!inviteId || !action) {
-        return json({ error: 'Invite ID and action are required' }, 400);
+        return json({ error: 'Invite ID and action are required' }, { status: 400 });
       }
 
       // Get the invite and verify permissions
@@ -71,20 +71,20 @@ serve(async (req: Request) => {
         .single();
 
       if (inviteError || !invite) {
-        return json({ error: 'Invite not found' }, 404);
+        return json({ error: 'Invite not found' }, { status: 404 });
       }
 
       // Verify user can manage this business
       const { data: membership } = await supaAdmin
         .from('business_members')
         .select('role')
-        .eq('business_id', invite.business_id)
+        .eq('business_id', (invite as any).business_id)
         .eq('user_id', userId)
         .eq('role', 'owner')
         .single();
 
       if (!membership) {
-        return json({ error: 'Not authorized to manage this business' }, 403);
+        return json({ error: 'Not authorized to manage this business' }, { status: 403 });
       }
 
       if (action === 'revoke') {
@@ -95,17 +95,17 @@ serve(async (req: Request) => {
 
         if (error) {
           console.error('Error revoking invite:', error);
-          return json({ error: 'Failed to revoke invite' }, 500);
+          return json({ error: 'Failed to revoke invite' }, { status: 500 });
         }
 
         // Log audit action
         await supaAdmin.rpc('log_audit_action', {
-          p_business_id: invite.business_id,
+          p_business_id: (invite as any).business_id,
           p_user_id: userId,
           p_action: 'invite_revoked',
           p_resource_type: 'business_member',
           p_resource_id: inviteId,
-          p_details: { email: invite.email }
+          p_details: { email: (invite as any).email }
         });
 
         return json({ message: 'Invite revoked successfully' });
@@ -133,17 +133,17 @@ serve(async (req: Request) => {
 
         if (error) {
           console.error('Error updating invite:', error);
-          return json({ error: 'Failed to update invite' }, 500);
+          return json({ error: 'Failed to update invite' }, { status: 500 });
         }
 
         // Log audit action
         await supaAdmin.rpc('log_audit_action', {
-          p_business_id: invite.business_id,
+          p_business_id: (invite as any).business_id,
           p_user_id: userId,
           p_action: 'invite_resent',
           p_resource_type: 'business_member',
           p_resource_id: inviteId,
-          p_details: { email: invite.email }
+          p_details: { email: (invite as any).email }
         });
 
         return json({ 
@@ -151,13 +151,13 @@ serve(async (req: Request) => {
         });
       }
 
-      return json({ error: 'Invalid action' }, 400);
+      return json({ error: 'Invalid action' }, { status: 400 });
     }
 
-    return json({ error: 'Method not allowed' }, 405);
+    return json({ error: 'Method not allowed' }, { status: 405 });
 
   } catch (error) {
     console.error('Error in invite management:', error);
-    return json({ error: 'Internal server error' }, 500);
+    return json({ error: 'Internal server error' }, { status: 500 });
   }
 });
