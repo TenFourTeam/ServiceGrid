@@ -146,16 +146,6 @@ export async function requireCtx(req: Request, options: { autoCreate?: boolean }
     supaAdmin
   };
 }
-  }
-
-  return {
-    clerkUserId,
-    userId: userUuid, // Return the resolved UUID, not the Clerk user ID
-    email: email?.toLowerCase() || undefined,
-    businessId,
-    supaAdmin
-  };
-}
 
 export async function requireCtxWithUserClient(req: Request, options: { autoCreate?: boolean } = { autoCreate: true }): Promise<AuthContextWithUserClient> {
   // Get the standard auth context using service role
