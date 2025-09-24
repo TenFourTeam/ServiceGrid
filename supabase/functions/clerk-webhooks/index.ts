@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.54.0";
+import { createClerkClient } from "https://esm.sh/@clerk/backend@1.15.6";
 import { corsHeaders, json } from "../_lib/auth.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -117,8 +118,8 @@ async function handleUserCreated(userData: any) {
 
   // Default flow: Create new organization and business for the user
   try {
-    const { default: clerkBackend } = await import("https://esm.sh/@clerk/backend@1.7.0");
-    const clerkClient = clerkBackend.createClerkClient({
+    // Create Clerk client using the static import
+    const clerkClient = createClerkClient({
       secretKey: Deno.env.get("CLERK_SECRET_KEY")!
     });
 
@@ -148,8 +149,7 @@ async function handleUserCreated(userData: any) {
         .insert({
           owner_id: profile.id,
           name: organization.name,
-          clerk_org_id: organization.id,
-          uses_clerk_orgs: true
+          clerk_org_id: organization.id
         })
         .select('id')
         .single();
@@ -177,7 +177,7 @@ async function handleUserCreated(userData: any) {
 
   } catch (error) {
     console.error('❌ [clerk-webhooks] Failed to create organization:', error);
-    // Fall back to creating regular business without Clerk org
+    // Fall back to creating regular business with Clerk org
     await createFallbackBusiness(clerkUserId, email, fullName);
   }
 }
@@ -245,7 +245,7 @@ async function handleMembershipChange(type: string, membershipData: any) {
 }
 
 async function createFallbackBusiness(clerkUserId: string, email: string, fullName?: string) {
-  console.log(`🔄 [clerk-webhooks] Creating fallback business without Clerk org`);
+  console.log(`🔄 [clerk-webhooks] Creating fallback business with basic Clerk integration`);
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -262,8 +262,7 @@ async function createFallbackBusiness(clerkUserId: string, email: string, fullNa
       .from('businesses')
       .insert({
         owner_id: profile.id,
-        name: 'My Business',
-        uses_clerk_orgs: false // Keep using legacy system
+        name: 'My Business'
       })
       .select('id')
       .single();

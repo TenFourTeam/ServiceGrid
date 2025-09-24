@@ -180,35 +180,35 @@ serve(async (req: Request) => {
         .eq('id', userId)
         .single();
 
-      // Check if business uses Clerk organizations
-      const { data: businessDetails } = await supaAdmin
-        .from('businesses')
-        .select('uses_clerk_orgs, clerk_org_id')
-        .eq('id', invite.business_id)
-        .single();
+    // Check if business uses Clerk organizations (always expect they do now)
+    const { data: businessDetails } = await supabase
+      .from('businesses')
+      .select('clerk_org_id')
+      .eq('id', invite.business_id)
+      .single();
 
-      // Generate invitation URL and send email
-      const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://preview--lawn-flow-dash.lovable.app';
-      let inviteUrl = `${frontendUrl}/invite?token=${token}`;
+    // Generate invitation URL and send email
+    const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://preview--lawn-flow-dash.lovable.app';
+    let inviteUrl = `${frontendUrl}/invite?token=${token}`;
+    
+    // For Clerk organizations, add signup context
+    if (businessDetails?.clerk_org_id) {
+      const signupContext = {
+        org_id: businessDetails.clerk_org_id,
+        invite_token_hash: tokenHash
+      };
       
-      // For Clerk organizations, add signup context
-      if (businessDetails?.uses_clerk_orgs && businessDetails?.clerk_org_id) {
-        const signupContext = {
-          org_id: businessDetails.clerk_org_id,
-          invite_token_hash: tokenHash
-        };
-        
-        // Update invite with signup context
-        await supaAdmin
-          .from('invites')
-          .update({ 
-            signup_context: signupContext 
-          })
-          .eq('id', inviteId);
-        
-        // Create organization-aware signup URL
-        inviteUrl = `${frontendUrl}/clerk-auth?signup_context=${encodeURIComponent(JSON.stringify(signupContext))}&redirect_url=${encodeURIComponent(`${frontendUrl}/invite?token=${token}`)}`;
-      }
+      // Update invite with signup context
+      await supaAdmin
+        .from('invites')
+        .update({ 
+          signup_context: signupContext 
+        })
+        .eq('id', inviteId);
+      
+      // Create organization-aware signup URL
+      inviteUrl = `${frontendUrl}/clerk-auth?signup_context=${encodeURIComponent(JSON.stringify(signupContext))}&redirect_url=${encodeURIComponent(`${frontendUrl}/invite?token=${token}`)}`;
+    }
       
       const business = invite.businesses;
 
@@ -371,10 +371,10 @@ serve(async (req: Request) => {
 
     console.log(`✅ Invite created successfully with ID: ${invite.id}`);
 
-    // Check if business uses Clerk organizations
+    // Check if business uses Clerk organizations (always expect they do now)
     const { data: businessDetails } = await supaAdmin
       .from('businesses')
-      .select('uses_clerk_orgs, clerk_org_id')
+      .select('clerk_org_id')
       .eq('id', businessId)
       .single();
 
@@ -383,7 +383,7 @@ serve(async (req: Request) => {
     let inviteUrl = `${frontendUrl}/invite?token=${token}`;
     
     // For Clerk organizations, add signup context
-    if (businessDetails?.uses_clerk_orgs && businessDetails?.clerk_org_id) {
+    if (businessDetails?.clerk_org_id) {
       const signupContext = {
         org_id: businessDetails.clerk_org_id,
         invite_token_hash: tokenHash
