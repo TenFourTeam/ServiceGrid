@@ -143,14 +143,6 @@ export function WeekCalendar({
   // Removed aggressive realtime subscription that was causing race conditions
   // React Query will handle cache updates naturally with its staleTime configuration
 
-  // Transform job titles for better display
-  const getDisplayTitle = (job: Job) => {
-    if (job.title?.startsWith('Job from Quote')) {
-      return 'Work Order'; // Fallback for existing jobs with generic titles
-    }
-    return job.title || 'Work Order';
-  };
-
   const dayJobs = useMemo(() => {
     const map: Record<string, Job[]> = {};
     days.forEach(d => map[dayKey(d)] = []);
@@ -689,7 +681,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                           <div className="flex items-center gap-1 text-xs font-medium leading-tight">
                             {startsAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} — {customer?.name || 'Unknown'}
                           </div>
-                          <div className="text-xs leading-tight mt-0.5 truncate ml-2.5">{getDisplayTitle(j)}</div>
+                          <div className="text-xs leading-tight mt-0.5 truncate ml-2.5">{j.title}</div>
                           {j.address && (
                             <div className="text-xs leading-tight mt-0.5 truncate ml-2.5 opacity-70">
                               {j.address}
@@ -697,7 +689,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                           )}
                           <div className="text-xs leading-tight mt-0.5 truncate ml-2.5">
                             <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-current/20">
-                              {j.status}
+                              {displayMode === 'scheduled' || displayMode === 'combined' ? 'Scheduled' : j.status}
                             </span>
                           </div>
                           {/* Resize handle - only show if resizable */}

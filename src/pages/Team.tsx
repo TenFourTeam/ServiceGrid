@@ -2,7 +2,7 @@ import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { BusinessMembersList } from "@/components/Business/BusinessMembersList";
 import { BusinessSwitcher } from "@/components/Team/BusinessSwitcher";
 import { WorkerLimitedAccess } from "@/components/Layout/WorkerLimitedAccess";
-import { useUserBusinesses } from "@/queries/useUserBusinesses";
+import { useUserBusinesses } from "@/hooks/useUserBusinesses";
 import { useBusinessLeaving } from "@/hooks/useBusinessLeaving";
 import AppLayout from '@/components/Layout/AppLayout';
 import { Card } from "@/components/ui/card";

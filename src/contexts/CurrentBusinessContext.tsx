@@ -1,5 +1,6 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import { useAuth } from '@clerk/clerk-react';
+import { useUserBusinesses } from '@/queries/useUserBusinesses';
 
 interface CurrentBusinessContextType {
   currentBusinessId: string | null;
@@ -14,16 +15,40 @@ interface CurrentBusinessProviderProps {
 }
 
 export function CurrentBusinessProvider({ children }: CurrentBusinessProviderProps) {
-  const { isLoaded } = useAuth();
+  const { isSignedIn, isLoaded } = useAuth();
+  const [currentBusinessId, setCurrentBusinessIdState] = useState<string | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
   
-  // In single-tenant model, we don't need business switching
-  const currentBusinessId = null;
-  const isInitializing = !isLoaded;
+  // Fetch user businesses when authenticated
+  const { data: businesses, isLoading: isLoadingBusinesses } = useUserBusinesses();
 
-  const setCurrentBusinessId = async (businessId: string | null) => {
-    console.log('[CurrentBusinessContext] Business switching not available in single-tenant mode');
-    // No-op in single tenant mode
-  };
+  const setCurrentBusinessId = useCallback((businessId: string | null) => {
+    console.log('[CurrentBusinessContext] Setting current business ID:', businessId);
+    setCurrentBusinessIdState(businessId);
+  }, []);
+
+  // Auto-initialize business context when user is authenticated and businesses are loaded
+  useEffect(() => {
+    if (!isLoaded) return; // Wait for Clerk to load
+    
+    if (!isSignedIn) {
+      setCurrentBusinessIdState(null);
+      setIsInitializing(false);
+      return;
+    }
+
+    if (isLoadingBusinesses) return; // Wait for businesses to load
+
+    // If no business is currently selected and we have businesses available
+    if (!currentBusinessId && businesses && businesses.length > 0) {
+      // Find the current default business or use the first one
+      const defaultBusiness = businesses.find(b => b.is_current) || businesses[0];
+      console.log('[CurrentBusinessContext] Auto-initializing with business:', defaultBusiness);
+      setCurrentBusinessIdState(defaultBusiness.id);
+    }
+    
+    setIsInitializing(false);
+  }, [isLoaded, isSignedIn, isLoadingBusinesses, businesses, currentBusinessId]);
 
   return (
     <CurrentBusinessContext.Provider value={{

@@ -130,12 +130,14 @@ export async function requireCtx(req: Request, options: { autoCreate?: boolean }
     }
   });
 
+  // Resolve business context
+  const url = new URL(req.url);
+  const candidateBusinessId = req.headers.get("X-Business-Id") || url.searchParams.get("businessId") || null;
+
   // 1) Resolve internal UUID via profiles (Clerk -> UUID)
   const userUuid = await resolveUserUuid(supaAdmin, clerkUserId, email, options.autoCreate);
 
-  // 2) Resolve business ID using original simple logic
-  const url = new URL(req.url);
-  const candidateBusinessId = req.headers.get("X-Business-Id") || url.searchParams.get("businessId") || null;
+  // 3) Resolve business using UUID (do NOT call the Clerk->UUID mapper again)
   const businessId = await resolveBusinessId(supaAdmin, userUuid, candidateBusinessId, options.autoCreate);
 
   return {

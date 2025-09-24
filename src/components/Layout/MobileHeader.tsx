@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, Settings, LogOut, Shield, FileText, Calendar as CalendarIcon, Receipt, Users, Wrench, Clock, ClipboardList, UserPlus } from "lucide-react";
 import { useNavigate, NavLink, useLocation } from "react-router-dom";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
-import { useUserBusinesses } from "@/queries/useUserBusinesses";
+import { useUserBusinesses } from "@/hooks/useUserBusinesses";
 import { useBusinessSwitcher } from "@/hooks/useBusinessSwitcher";
 import { useUser } from "@clerk/clerk-react";
 import { useProfile } from "@/queries/useProfile";

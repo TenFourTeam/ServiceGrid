@@ -2,18 +2,6 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@clerk/clerk-react';
 import { useAuthApi } from '@/hooks/useAuthApi';
 
-export interface UserBusiness {
-  id: string;
-  name: string;
-  role: 'owner' | 'worker';
-  logo_url?: string;
-  joined_at: string;
-  is_current: boolean;
-}
-
-/**
- * Hook to fetch all businesses the current user is a member of
- */
 export function useUserBusinesses() {
   const { userId } = useAuth();
   const authApi = useAuthApi();
@@ -30,7 +18,7 @@ export function useUserBusinesses() {
         throw new Error(error.message || 'Failed to fetch user businesses');
       }
       
-      return data as UserBusiness[];
+      return data?.businesses || [];
     },
     staleTime: 30_000,
     retry: 2,

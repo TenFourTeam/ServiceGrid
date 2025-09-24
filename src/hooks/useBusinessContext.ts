@@ -1,5 +1,7 @@
 import { useAuth } from '@clerk/clerk-react';
 import { useProfile } from '@/queries/useProfile';
+import { useParams, useLocation } from 'react-router-dom';
+import { useCurrentBusiness } from '@/contexts/CurrentBusinessContext';
 import { useEffect } from 'react';
 import { updateBusinessMeta } from '@/utils/metaUpdater';
 
@@ -16,27 +18,30 @@ export type BusinessUI = {
 
 /**
  * Single source of truth for business data access
- * Simple single-tenant business model
+ * Consolidates business context and data in one hook
  */
 export function useBusinessContext() {
   const { isSignedIn, isLoaded, userId } = useAuth();
+  const params = useParams();
+  const location = useLocation();
+  const { currentBusinessId } = useCurrentBusiness();
   
   // Don't query profile until Clerk is fully loaded and user is authenticated
   const shouldFetchProfile = isLoaded && isSignedIn;
-  
-  // Backend will automatically resolve user's business
-  const profileQuery = useProfile();
+  // Use current business ID if set, otherwise use default business
+  const profileQuery = useProfile(currentBusinessId);
   
   const business = profileQuery.data?.business as BusinessUI;
-  
-  // Simple business data - no organization merging needed
   const role = business?.role || 'owner';
   
   // Simplified error detection
   const hasError = profileQuery.isError;
   
-  // Simple loading state
-  const isLoadingBusiness = !isLoaded || (shouldFetchProfile && profileQuery.isLoading);
+  // Get initialization state from context
+  const { isInitializing } = useCurrentBusiness();
+  
+  // Coordinated loading state - don't show as loading if Clerk isn't ready
+  const isLoadingBusiness = !isLoaded || isInitializing || (shouldFetchProfile && profileQuery.isLoading);
   
   // Update meta tags when business data changes
   useEffect(() => {
@@ -55,7 +60,7 @@ export function useBusinessContext() {
     isLoaded,
     userId,
     
-    // Business data from backend
+    // Complete business data (now sourced from profile query)
     business,
     businessId: business?.id,
     businessName: business?.name,
@@ -71,7 +76,7 @@ export function useBusinessContext() {
     userRole: role,
     canManage: role === 'owner',
     
-    // Loading states
+    // Loading states - coordinated between Clerk and profile query
     isLoadingBusiness,
     
     // Error states

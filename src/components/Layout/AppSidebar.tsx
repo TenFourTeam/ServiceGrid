@@ -1,7 +1,7 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { RequireRole } from "@/components/Auth/RequireRole";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
-import { useUserBusinesses } from "@/queries/useUserBusinesses";
+import { useUserBusinesses } from "@/hooks/useUserBusinesses";
 import { useBusinessSwitcher } from "@/hooks/useBusinessSwitcher";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarHeader, SidebarSeparator, SidebarTrigger, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
 import { Calendar as CalendarIcon, FileText, Receipt, Users, Wrench, User as UserIcon, Settings as SettingsIcon, LifeBuoy, LogOut, Shield, Clock, UserPlus, ClipboardList } from "lucide-react";

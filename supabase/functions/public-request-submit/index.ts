@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.54.0';
 import { Resend } from "npm:resend@2.0.0";
-import { withRateLimit, RATE_LIMITS, getClientIP, RequestValidator } from "../_lib/rate-limiter.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -166,21 +165,11 @@ function generateRequestConfirmationEmail(
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  const ip = getClientIP(req);
-  const userAgent = req.headers.get("user-agent");
-  
-  console.log(`🔍 [public-request-submit] ${req.method} from IP: ${ip}`);
+  console.log('Public request submit - method:', req.method);
   
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
-  }
-
-  // Apply rate limiting - 5 requests per minute per IP
-  const rateLimitResponse = withRateLimit("public-request-submit", RATE_LIMITS.FORM_SUBMISSION, corsHeaders)(req);
-  if (rateLimitResponse) {
-    console.warn(`🚫 [public-request-submit] Rate limited IP: ${ip}`);
-    return rateLimitResponse;
   }
 
   if (req.method !== 'POST') {
@@ -188,31 +177,6 @@ const handler = async (req: Request): Promise<Response> => {
       status: 405,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
     });
-  }
-
-  // Enhanced security validation
-  const contentLengthError = RequestValidator.validateContentLength(req, 1024 * 1024); // 1MB max
-  if (contentLengthError) {
-    console.warn(`🚫 [public-request-submit] ${contentLengthError} from IP: ${ip}`);
-    return new Response(JSON.stringify({ error: contentLengthError }), {
-      status: 413,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
-    });
-  }
-
-  const contentTypeError = RequestValidator.validateContentType(req, ['application/json']);
-  if (contentTypeError) {
-    console.warn(`🚫 [public-request-submit] ${contentTypeError} from IP: ${ip}`);
-    return new Response(JSON.stringify({ error: contentTypeError }), {
-      status: 415,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
-    });
-  }
-
-  // Detect suspicious patterns
-  const warnings = RequestValidator.detectSuspiciousPatterns(userAgent, ip);
-  if (warnings.length > 0) {
-    console.warn(`⚠️ [public-request-submit] Suspicious request from ${ip}: ${warnings.join(", ")}`);
   }
 
   try {
@@ -225,9 +189,8 @@ const handler = async (req: Request): Promise<Response> => {
     const requestData: PublicRequestData = await req.json();
     console.log('Received request data:', { ...requestData, customer_email: '[REDACTED]' });
 
-    // Enhanced input validation and sanitization
+    // Validate required fields
     if (!requestData.business_id) {
-      console.warn(`🚫 [public-request-submit] Missing business_id from IP: ${ip}`);
       return new Response(JSON.stringify({ error: 'Business ID is required' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -235,27 +198,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     if (!requestData.customer_email || !requestData.title || !requestData.service_details) {
-      console.warn(`🚫 [public-request-submit] Missing required fields from IP: ${ip}`);
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      });
-    }
-
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(requestData.customer_email)) {
-      console.warn(`🚫 [public-request-submit] Invalid email from IP: ${ip}`);
-      return new Response(JSON.stringify({ error: 'Invalid email format' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      });
-    }
-
-    // Sanitize input lengths
-    if (requestData.title.length > 200 || requestData.service_details.length > 2000) {
-      console.warn(`🚫 [public-request-submit] Input too long from IP: ${ip}`);
-      return new Response(JSON.stringify({ error: 'Input field too long' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       });
@@ -270,7 +213,7 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (businessError || !business) {
-      console.warn(`🚫 [public-request-submit] Business not found: ${requestData.business_id} from IP: ${ip}`);
+      console.error('Business not found:', businessError);
       return new Response(JSON.stringify({ error: 'Business not found' }), {
         status: 404,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -404,7 +347,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    console.log(`✅ [public-request-submit] Request created successfully: ${request.id} from IP: ${ip}`);
+    console.log('Request created successfully:', request.id);
 
     // Send confirmation email to customer
     try {
