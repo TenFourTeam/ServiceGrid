@@ -1,5 +1,6 @@
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { BusinessMembersList } from "@/components/Business/BusinessMembersList";
+import { BusinessesMembershipSection } from "@/components/Team/BusinessesMembershipSection";
 import { WorkerLimitedAccess } from "@/components/Layout/WorkerLimitedAccess";
 import AppLayout from '@/components/Layout/AppLayout';
 import { Card } from "@/components/ui/card";
@@ -26,6 +27,9 @@ export default function Team() {
     <AppLayout title={t('team.title')}>
       <div className="space-y-6">
         <WorkerLimitedAccess />
+
+        {/* Businesses I'm a Member Of */}
+        <BusinessesMembershipSection />
 
         {/* Current Business Team */}
         <BusinessMembersList 

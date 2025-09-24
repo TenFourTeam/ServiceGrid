@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useBusinessMembersData, useBusinessMemberOperations } from "@/hooks/useBusinessMembers";
 import { usePendingInvites, useRevokeInvite, useResendInvite } from "@/hooks/useInvites";
-import { EnhancedInviteModal } from "@/components/Team/EnhancedInviteModal";
+import { UserSelectionInviteModal } from "@/components/Team/UserSelectionInviteModal";
 import { useTeamOperations } from "@/hooks/useTeamOperations";
 import { TeamSearchFilter } from "@/components/Team/TeamSearchFilter";
 import { TeamMemberActions } from "@/components/Team/TeamMemberActions";
@@ -432,8 +432,8 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
         </TabsContent>
       </Tabs>
 
-      {/* Enhanced Invite Modal */}
-      <EnhancedInviteModal
+      {/* User Selection Invite Modal */}
+      <UserSelectionInviteModal
         open={showInviteModal}
         onOpenChange={setShowInviteModal}
         businessId={businessId}
