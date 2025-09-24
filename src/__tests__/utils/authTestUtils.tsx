@@ -145,9 +145,9 @@ export function renderWithAuth(
     useUser: () => createMockUserState(finalUserState)
   }));
 
-  // Mock profile query
-  vi.doMock('@/queries/useProfile', () => ({
-    useProfile: () => ({ data: { business: createMockBusinessState(finalBusinessState) } })
+  // Mock business query
+  vi.doMock('@/queries/useBusiness', () => ({
+    useBusiness: () => createMockBusinessState(finalBusinessState)
   }));
 
   const wrapper = ({ children }: { children: React.ReactNode }) => (

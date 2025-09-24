@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import { useAuth } from '@clerk/clerk-react';
-import { useUserBusinesses } from '@/hooks/useUserBusinesses';
+import { useUserBusinesses } from '@/queries/useUserBusinesses';
 
 interface CurrentBusinessContextType {
   currentBusinessId: string | null;
