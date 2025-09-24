@@ -182,10 +182,6 @@ export default function AppSidebar() {
               <DropdownMenuSeparator />
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => navigate('/settings')}>
-                <Settings className="mr-2 h-4 w-4" />
-                {t('sidebar.settings')}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/settings')}>
                 <SettingsIcon className="mr-2 h-4 w-4" /> {t('navigation.settings')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate('/legal')}>

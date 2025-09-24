@@ -28,19 +28,27 @@ export function CurrentBusinessProvider({ children }: CurrentBusinessProviderPro
 
   // Auto-initialize currentBusinessId when organizations are loaded
   useEffect(() => {
-    if (isSignedIn && userMemberships?.data && isOrganizationsLoaded && !currentBusinessId) {
-      // Use the first organization as the current business
-      const currentOrg = userMemberships.data[0];
-      if (currentOrg) {
-        setCurrentBusinessId(currentOrg.organization.id);
-        setIsInitializing(false);
-      }
-    } else if (!isSignedIn) {
-      // Clear business context when user is not signed in
+    if (!isLoaded) return; // Wait for Clerk to load
+    
+    if (!isSignedIn) {
       setCurrentBusinessId(null);
       setIsInitializing(false);
+      return;
     }
-  }, [isSignedIn, userMemberships?.data, isOrganizationsLoaded, currentBusinessId, setCurrentBusinessId]);
+
+    if (!isOrganizationsLoaded) return; // Wait for organizations to load
+
+    // If no business is currently selected and we have organizations available
+    if (!currentBusinessId && userMemberships?.data && userMemberships.data.length > 0) {
+      const currentOrg = userMemberships.data[0];
+      if (currentOrg?.organization?.id) {
+        console.log('[CurrentBusinessContext] Auto-initializing with organization:', currentOrg.organization.name);
+        setCurrentBusinessId(currentOrg.organization.id);
+      }
+    }
+    
+    setIsInitializing(false);
+  }, [isLoaded, isSignedIn, isOrganizationsLoaded, userMemberships?.data, currentBusinessId, setCurrentBusinessId]);
 
   const contextValue = {
     currentBusinessId,
