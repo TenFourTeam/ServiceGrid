@@ -30,6 +30,7 @@ const queryKeys = {
   team: {
     members: (businessId: string) => ['business-members', businessId] as const,
     invites: (businessId: string) => ['pending-invites', businessId] as const,
+    userBusinesses: () => ['user-businesses'] as const,
   },
   
   // Unified data queries - simplified architecture

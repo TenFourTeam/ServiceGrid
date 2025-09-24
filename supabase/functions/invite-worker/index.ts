@@ -1,9 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
 import { buildInviteEmail } from "../_shared/inviteEmailTemplates.ts";
-import { Resend } from "npm:resend@2.0.0";
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -185,35 +182,7 @@ serve(async (req: Request) => {
       const inviteUrl = `${frontendUrl}/invite?token=${token}`;
       const business = invite.businesses;
 
-      // Build professional email using template
-      const emailContent = buildInviteEmail({
-        businessName: business.name,
-        businessLogoUrl: business.logo_url,
-        inviterName: inviter?.full_name || inviter?.email || 'Team Administrator',
-        inviteeEmail: invite.email,
-        inviteUrl,
-        role: invite.role,
-        expiresAt: newExpiresAt.toISOString()
-      });
-
-      // Send invitation email directly using Resend
-      const fromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'noreply@servicegrid.app';
-
-      const emailResponse = await resend.emails.send({
-        from: `${business.name} <${fromEmail}>`,
-        to: [invite.email],
-        subject: `Reminder: ${emailContent.subject}`,
-        html: emailContent.html,
-      });
-
-      if (emailResponse.error) {
-        console.error('Failed to send invitation email:', emailResponse.error);
-        return json({ error: 'Failed to send invitation email' }, 500);
-      }
-
-      console.log('Invitation email resent successfully:', emailResponse.data?.id);
-
-      // Log audit action
+      // Log audit action (no email for now)
       await supaAdmin.rpc('log_audit_action', {
         p_business_id: invite.business_id,
         p_user_id: userId,
@@ -224,7 +193,7 @@ serve(async (req: Request) => {
       });
 
       return json({ 
-        message: 'Invite resent successfully',
+        message: 'Invite updated successfully (email sending temporarily disabled)',
         invite_url: inviteUrl
       });
     }
@@ -330,37 +299,11 @@ serve(async (req: Request) => {
       return json({ error: 'Failed to create invite' }, 500);
     }
 
-    // Generate invitation URL and send email
+    // Generate invitation URL (no email for now)
     const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://preview--lawn-flow-dash.lovable.app';
     const inviteUrl = `${frontendUrl}/invite?token=${token}`;
     
-    // Build professional email using template
-    const emailContent = buildInviteEmail({
-      businessName: business.name,
-      businessLogoUrl: business.logo_url,
-      inviterName: inviter?.full_name || inviter?.email || 'Team Administrator',
-      inviteeEmail: email,
-      inviteUrl,
-      role: 'worker',
-      expiresAt: expiresAt.toISOString()
-    });
-    
-    // Send invitation email directly using Resend
-    const fromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'noreply@servicegrid.app';
-    
-    const emailResponse = await resend.emails.send({
-      from: `${business.name} <${fromEmail}>`,
-      to: [email],
-      subject: emailContent.subject,
-      html: emailContent.html,
-    });
-
-    if (emailResponse.error) {
-      console.error('Failed to send invitation email:', emailResponse.error);
-      return json({ error: 'Failed to send invitation email' }, 500);
-    }
-
-    console.log('Invitation email sent successfully:', emailResponse.data?.id);
+    console.log('Invitation created successfully (email sending temporarily disabled)');
 
     // Log audit action
     await supaAdmin.rpc('log_audit_action', {
@@ -372,11 +315,9 @@ serve(async (req: Request) => {
       p_details: { email, role: 'worker' }
     });
 
-    console.log('Invitation created successfully');
-
     return json({
       success: true,
-      message: 'Invitation sent successfully',
+      message: 'Invitation created successfully (email sending temporarily disabled)',
       invite_id: invite.id,
     });
 

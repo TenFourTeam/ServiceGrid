@@ -43,7 +43,7 @@ serve(async (req: Request) => {
       return json({ error: 'Failed to fetch business memberships' }, { status: 500 });
     }
 
-    // Get businesses where user is the owner
+    // Get businesses where user is the owner - match with profile ID
     const { data: ownedBusinesses, error: ownedError } = await supaAdmin
       .from('businesses')
       .select(`
@@ -52,7 +52,7 @@ serve(async (req: Request) => {
         logo_url,
         created_at
       `)
-      .eq('owner_id', userId)
+      .eq('owner_id', userId)  // Use userId (profile ID) instead of auth.uid()
       .order('created_at', { ascending: false });
 
     if (ownedError) {

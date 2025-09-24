@@ -1,8 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "npm:resend@2.0.0";
 import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -85,45 +82,6 @@ serve(async (req: Request) => {
     if (memberError) {
       console.error('Failed to add team member:', memberError);
       return json({ error: 'Failed to add team member' }, { status: 500 });
-    }
-
-    // Send notification email
-    const fromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'noreply@servicegrid.app';
-    const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://lovableproject.com';
-
-    try {
-      const emailResponse = await resend.emails.send({
-        from: `${business.name} <${fromEmail}>`,
-        to: [targetUser.email],
-        subject: `You've been added to ${business.name}'s team`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h1 style="color: #333;">You've been added to a team!</h1>
-            <p>Hi${targetUser.full_name ? ` ${targetUser.full_name}` : ''},</p>
-            <p>You've been added as a <strong>${role}</strong> to <strong>${business.name}</strong>'s team.</p>
-            <p>You can now access their business workspace and collaborate with the team.</p>
-            <div style="margin: 30px 0;">
-              <a href="${frontendUrl}/calendar" 
-                 style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-                Access Team Workspace
-              </a>
-            </div>
-            <p style="color: #666; font-size: 14px;">
-              You can switch between businesses you're a member of from the sidebar.
-            </p>
-          </div>
-        `
-      });
-
-      if (emailResponse.error) {
-        console.error('Failed to send notification email:', emailResponse.error);
-        // Don't fail the request if email fails
-      } else {
-        console.log('Notification email sent successfully:', emailResponse.data?.id);
-      }
-    } catch (emailError) {
-      console.error('Email sending failed:', emailError);
-      // Don't fail the request if email fails
     }
 
     // Log audit action

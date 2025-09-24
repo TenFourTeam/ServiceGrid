@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "npm:resend@2.0.0";
 import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
 
 // Import email templates - simplified versions since we can't import from src

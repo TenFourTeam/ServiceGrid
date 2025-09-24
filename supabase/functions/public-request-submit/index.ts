@@ -1,13 +1,10 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.54.0';
-import { Resend } from "npm:resend@2.0.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 interface PublicRequestData {
   business_id: string;
@@ -349,43 +346,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Request created successfully:', request.id);
 
-    // Send confirmation email to customer
-    try {
-      const customerName = requestData.customer_name?.trim() || 
-                          requestData.customer_email.split('@')[0] || 
-                          'Valued Customer';
-                          
-      const { subject, html } = generateRequestConfirmationEmail(
-        business.name,
-        business.logo_url,
-        customerName,
-        requestData.customer_email,
-        requestData.title,
-        requestData.service_details,
-        requestData.preferred_assessment_date,
-        requestData.preferred_times
-      );
-
-      const fromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'noreply@servicegrid.app';
-      
-      console.log('Sending confirmation email to:', requestData.customer_email);
-      
-      const emailResponse = await resend.emails.send({
-        from: `${business.name} <${fromEmail}>`,
-        to: [requestData.customer_email],
-        subject,
-        html,
-      });
-
-      if (emailResponse.error) {
-        console.error('Failed to send confirmation email:', emailResponse.error);
-      } else {
-        console.log('Confirmation email sent successfully:', emailResponse.data?.id);
-      }
-    } catch (emailError) {
-      console.error('Error sending confirmation email:', emailError);
-      // Don't fail the request if email fails
-    }
+    // Note: Email confirmation temporarily disabled
+    console.log('Request submitted successfully (email confirmation disabled)');
 
     return new Response(JSON.stringify({ 
       success: true, 
