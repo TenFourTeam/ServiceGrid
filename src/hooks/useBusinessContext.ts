@@ -1,4 +1,4 @@
-import { useAuth, useOrganization, useUser } from '@clerk/clerk-react';
+import { useAuth } from '@clerk/clerk-react';
 import { useProfile } from '@/queries/useProfile';
 import { useParams, useLocation } from 'react-router-dom';
 import { useCurrentBusiness } from '@/contexts/CurrentBusinessContext';
@@ -18,11 +18,10 @@ export type BusinessUI = {
 
 /**
  * Single source of truth for business data access
- * Always uses Clerk organizations - simplified authentication flow
+ * Consolidates business context and data in one hook
  */
 export function useBusinessContext() {
   const { isSignedIn, isLoaded, userId } = useAuth();
-  const { organization, isLoaded: orgLoaded, membership } = useOrganization();
   const params = useParams();
   const location = useLocation();
   const { currentBusinessId } = useCurrentBusiness();
@@ -41,20 +40,19 @@ export function useBusinessContext() {
   // Get initialization state from context
   const { isInitializing } = useCurrentBusiness();
   
-  // Coordinated loading state - always consider Clerk org loading
-  const isLoadingBusiness = !isLoaded || isInitializing || !orgLoaded || (shouldFetchProfile && profileQuery.isLoading);
+  // Coordinated loading state - don't show as loading if Clerk isn't ready
+  const isLoadingBusiness = !isLoaded || isInitializing || (shouldFetchProfile && profileQuery.isLoading);
   
   // Update meta tags when business data changes
   useEffect(() => {
-    const businessName = organization?.name || business?.name;
-    if (businessName) {
+    if (business?.name) {
       updateBusinessMeta({
-        name: businessName,
-        description: business?.description,
-        logoUrl: organization?.imageUrl || (business.logoUrl || business.lightLogoUrl) as string
+        name: business.name,
+        description: business.description,
+        logoUrl: (business.logoUrl || business.lightLogoUrl) as string
       });
     }
-  }, [organization?.name, business?.name, business?.description, business?.logoUrl, business?.lightLogoUrl, organization?.imageUrl]);
+  }, [business?.name, business?.description, business?.logoUrl, business?.lightLogoUrl]);
   
   return {
     // Authentication state
@@ -62,29 +60,21 @@ export function useBusinessContext() {
     isLoaded,
     userId,
     
-    // Complete business data - always overlay with Clerk organization data
-    business: organization ? {
-      ...business,
-      name: organization.name,
-      id: business?.id, // Keep database ID
-      clerk_org_id: organization.id, // Add Clerk org ID
-    } : business,
+    // Complete business data (now sourced from profile query)
+    business,
     businessId: business?.id,
-    businessName: organization?.name || business?.name,
+    businessName: business?.name,
     businessDescription: business?.description,
     businessPhone: business?.phone,
     businessReplyToEmail: business?.replyToEmail,
     businessTaxRateDefault: business?.taxRateDefault,
-    businessLogoUrl: organization?.imageUrl || business?.logoUrl,
+    businessLogoUrl: business?.logoUrl,
     businessLightLogoUrl: business?.lightLogoUrl,
     
-    // Role and permissions - always use Clerk organization role
-    role: organization && membership ? 
-      (membership.role === 'org:admin' ? 'owner' : 'worker') : role,
-    userRole: organization && membership ? 
-      (membership.role === 'org:admin' ? 'owner' : 'worker') : role,
-    canManage: organization && membership ? 
-      membership.role === 'org:admin' : role === 'owner',
+    // Role and permissions
+    role,
+    userRole: role,
+    canManage: role === 'owner',
     
     // Loading states - coordinated between Clerk and profile query
     isLoadingBusiness,
@@ -92,9 +82,6 @@ export function useBusinessContext() {
     // Error states
     hasBusinessError: hasError,
     businessError: profileQuery.error,
-    
-    // Clerk organization data
-    clerkOrganization: organization,
     
     // Utilities
     refetchBusiness: profileQuery.refetch,

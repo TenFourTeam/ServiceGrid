@@ -25,7 +25,7 @@ import QuoteErrorBoundary from '@/components/ErrorBoundaries/QuoteErrorBoundary'
 import { useLanguage } from '@/contexts/LanguageContext';
 
 import { useOnboardingActions } from '@/onboarding/hooks';
-import { useCallback } from 'react';
+
 import { toast } from 'sonner';
 import { formatMoney as formatCurrency } from '@/utils/format';
 import type { Customer, QuoteListItem, QuoteStatus, LineItem, Quote } from '@/types';
@@ -96,12 +96,6 @@ export default function QuotesPage() {
       return key;
     });
   }
-
-  const getCustomerName = useCallback((customerId: string): string => {
-    const customer = customers.find(c => c.id === customerId);
-    return customer?.name || 'Unknown Customer';
-  }, [customers]);
-
   const sortedQuotes = useMemo(() => {
     const arr = [...quotes];
     const baseCompare = (a: QuoteListItem, b: QuoteListItem) => {
@@ -113,6 +107,11 @@ export default function QuotesPage() {
     arr.sort((a, b) => (sortDir === 'asc' ? baseCompare(a, b) : -baseCompare(a, b)));
     return arr;
   }, [quotes, sortKey, sortDir, getCustomerName]);
+
+  function getCustomerName(customerId: string): string {
+    const customer = customers.find(c => c.id === customerId);
+    return customer?.name || 'Unknown Customer';
+  }
 
   function getCustomerEmail(customerId: string): string | undefined {
     const customer = customers.find(c => c.id === customerId);

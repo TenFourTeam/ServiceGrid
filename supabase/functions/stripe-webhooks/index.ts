@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.54.0';
-import { withRateLimit, RATE_LIMITS, getClientIP, RequestValidator } from "../_lib/rate-limiter.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
   apiVersion: "2023-10-16",
@@ -12,47 +11,13 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 );
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'stripe-signature, content-type',
-  'Access-Control-Allow-Methods': 'POST',
-};
-
 serve(async (req) => {
-  const ip = getClientIP(req);
-  
-  console.log(`🔍 [stripe-webhooks] ${req.method} from IP: ${ip}`);
-  
-  // Handle CORS preflight (though webhooks don't usually send OPTIONS)
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  // Apply rate limiting - 100 requests per minute for webhooks (higher limit for legitimate services)
-  const rateLimitResponse = withRateLimit("stripe-webhooks", RATE_LIMITS.WEBHOOK, corsHeaders)(req);
-  if (rateLimitResponse) {
-    console.warn(`🚫 [stripe-webhooks] Rate limited IP: ${ip}`);
-    return rateLimitResponse;
-  }
-
-  if (req.method !== 'POST') {
-    console.warn(`🚫 [stripe-webhooks] Invalid method ${req.method} from IP: ${ip}`);
-    return new Response('Method not allowed', { status: 405 });
-  }
-
   const signature = req.headers.get('stripe-signature');
   const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
 
   if (!signature || !webhookSecret) {
-    console.error(`🚫 [stripe-webhooks] Missing signature or webhook secret from IP: ${ip}`);
+    console.error("[stripe-webhooks] Missing signature or webhook secret");
     return new Response('Missing signature or webhook secret', { status: 400 });
-  }
-
-  // Enhanced security validation for webhooks
-  const contentTypeError = RequestValidator.validateContentType(req, ['application/json']);
-  if (contentTypeError) {
-    console.warn(`🚫 [stripe-webhooks] ${contentTypeError} from IP: ${ip}`);
-    return new Response('Invalid content type', { status: 415 });
   }
 
   try {
@@ -84,7 +49,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error(`🚫 [stripe-webhooks] Error processing webhook from IP ${ip}:`, error);
+    console.error("[stripe-webhooks] Error processing webhook:", error);
     return new Response(`Webhook error: ${error.message}`, { status: 400 });
   }
 });

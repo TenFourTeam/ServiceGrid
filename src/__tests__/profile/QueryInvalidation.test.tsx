@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach, afterAll } from 'vitest';
 import { renderHook } from '@testing-library/react';
+import { waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
@@ -81,7 +82,7 @@ describe('Query Invalidation', () => {
       });
       
       // Wait for mutation to complete
-      await vi.waitFor(() => {
+      await waitFor(() => {
         expect(result.current.updateProfile.isSuccess).toBe(true);
       });
       
@@ -104,7 +105,7 @@ describe('Query Invalidation', () => {
         phoneRaw: '5551234567'
       });
       
-      await vi.waitFor(() => {
+      await waitFor(() => {
         expect(result.current.updateProfile.isSuccess).toBe(true);
       });
       
@@ -126,7 +127,7 @@ describe('Query Invalidation', () => {
         phoneRaw: '5551234567'
       });
       
-      await vi.waitFor(() => {
+      await waitFor(() => {
         expect(result.current.updateProfile.isSuccess).toBe(true);
       });
       
@@ -160,7 +161,7 @@ describe('Query Invalidation', () => {
         phoneRaw: '5551234567'
       });
       
-      await vi.waitFor(() => {
+      await waitFor(() => {
         expect(result.current.updateProfile.isError).toBe(true);
       });
       
@@ -189,7 +190,7 @@ describe('Query Invalidation', () => {
         phoneRaw: '5551234567'
       });
       
-      await vi.waitFor(() => {
+      await waitFor(() => {
         expect(result.current.updateProfile.isSuccess).toBe(true);
       });
       
@@ -219,7 +220,7 @@ describe('Query Invalidation', () => {
         phoneRaw: 'invalid-phone'
       });
       
-      await vi.waitFor(() => {
+      await waitFor(() => {
         expect(result.current.updateProfile.isError).toBe(true);
       });
       
@@ -246,7 +247,7 @@ describe('Query Invalidation', () => {
         phoneRaw: '5551234567'
       });
       
-      await vi.waitFor(() => {
+      await waitFor(() => {
         expect(result.current.updateProfile.isError).toBe(true);
       });
       

@@ -45,7 +45,7 @@ describe('Money Calculations', () => {
             fc.record({
               quantity: fc.integer({ min: 1, max: 100 }),
               unit_price: fc.integer({ min: 1, max: 100000 }),
-              tax_rate: fc.float({ min: 0, max: 0.5 }).filter(n => Number.isFinite(n) && !Number.isNaN(n)),
+              tax_rate: fc.float({ min: 0, max: 0.5 }),
             }),
             { minLength: 1, maxLength: 10 }
           ),

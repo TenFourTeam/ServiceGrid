@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useAuth as useClerkAuth, useSignUp } from "@clerk/clerk-react";
+import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { EnhancedSignIn } from "@/components/Auth/EnhancedSignIn";
 
@@ -13,7 +13,6 @@ export default function ClerkAuthPage() {
 
 function ClerkAuthInner({ redirectTarget }: { redirectTarget: string }) {
   const { isSignedIn, isLoaded } = useClerkAuth();
-  const { signUp } = useSignUp();
   const navigate = useNavigate();
   const [authMode, setAuthMode] = useState<"sign-in" | "sign-up">("sign-in");
 
@@ -31,32 +30,9 @@ function ClerkAuthInner({ redirectTarget }: { redirectTarget: string }) {
 
   useEffect(() => {
     if (isSignedIn && isLoaded) {
-      // Clear any stored signup context on successful auth
-      localStorage.removeItem('clerk_signup_context');
       navigate(redirectTarget, { replace: true });
     }
   }, [isSignedIn, isLoaded, redirectTarget, navigate]);
-
-  // Check for organization signup context
-  useEffect(() => {
-    const signupContext = localStorage.getItem('clerk_signup_context');
-    if (signupContext && signUp) {
-      try {
-        const context = JSON.parse(signupContext);
-        console.log('🏢 [ClerkAuth] Found signup context, setting unsafe metadata:', context);
-        
-        // Store the signup context in user's unsafe metadata
-        // This will be accessible in the user.created webhook
-        signUp.unsafeMetadata = {
-          ...signUp.unsafeMetadata,
-          signup_context: context
-        };
-      } catch (error) {
-        console.error('❌ [ClerkAuth] Failed to parse signup context:', error);
-        localStorage.removeItem('clerk_signup_context');
-      }
-    }
-  }, [signUp]);
 
   return (
     <main className="container mx-auto max-w-md py-10 px-4">

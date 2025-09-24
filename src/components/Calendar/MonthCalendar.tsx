@@ -88,15 +88,7 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
           const overflow = dayJobs.length - visible.length;
           const isToday = isSameDay(d, new Date());
           const inMonth = isSameMonth(d, date);
-  // Transform job titles for better display
-  const getDisplayTitle = (job: Job) => {
-    if (job.title?.startsWith('Job from Quote')) {
-      return 'Work Order'; // Fallback for existing jobs with generic titles
-    }
-    return job.title || 'Work Order';
-  };
-
-  return (
+          return (
             <div
               key={key}
               role="button"
@@ -137,11 +129,12 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
                             {t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                           </span>
                           <span className="mx-1 opacity-70">•</span>
-                          <span className="truncate">{getDisplayTitle(j)}</span>
+                          <span className="truncate">{j.title || 'Job'}</span>
                           {j.isAssessment && <span className="text-[10px] opacity-80 ml-1">(Assessment)</span>}
                           {customersMap.get(j.customerId) && (
                              <span className="opacity-70"> — {(customersMap.get(j.customerId) ?? 'Customer') as string}</span>
                           )}
+                          {displayMode === 'combined' && <span className="text-[10px] opacity-60"> (S)</span>}
                         </button>
                       </li>
                     );
@@ -164,7 +157,7 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
                             {clockStart.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                           </span>
                           <span className="mx-1 opacity-70">•</span>
-                          <span className="truncate">{getDisplayTitle(j)}</span>
+                          <span className="truncate">{j.title || 'Job'}</span>
                           {customersMap.get(j.customerId) && (
                             <span className="opacity-70"> — {(customersMap.get(j.customerId) ?? 'Customer') as string}</span>
                           )}

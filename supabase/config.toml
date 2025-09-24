@@ -51,13 +51,6 @@ verify_jwt = false
 [functions.invite-redeem]
 verify_jwt = false
 
-[functions.invite-manage]
-verify_jwt = false
-
-# Clerk webhooks (public, validates Clerk signature)
-[functions.clerk-webhooks]
-verify_jwt = false
-
 # Public endpoints
 [functions.quote-events]
 verify_jwt = false
@@ -169,14 +162,3 @@ verify_jwt = false
 
 [functions.send-work-order-confirmations]
 verify_jwt = false
-
-# Stripe webhooks (public, validates signature)
-[functions.stripe-webhooks]
-verify_jwt = false
-
-[functions.manage-quote-subscription]
-verify_jwt = false
-
-# Security monitoring (authenticated)
-[functions.security-monitor]
-verify_jwt = true

@@ -36,5 +36,5 @@ export function usePreloadImages(urls?: string[]) {
       // Allow GC to reclaim if needed
       images.splice(0, images.length);
     };
-  }, [urls, urlsKey]);
+  }, [urlsKey]);
 }
