@@ -63,7 +63,7 @@ async function handleUserCreated(userData: any) {
   // Check if user was created with organization context (via invite link)
   const orgContext = userData.unsafe_metadata?.signup_context;
   
-  if (orgContext?.org_id && orgContext?.invite_token_hash) {
+  if (orgContext?.org_id && orgContext?.invite_token) {
     console.log(`🏢 [clerk-webhooks] User signed up with organization context: ${orgContext.org_id}`);
     
     // Find the invite and validate
@@ -110,31 +110,9 @@ async function handleUserCreated(userData: any) {
           })
           .eq('id', invite.id);
 
-        // Set the business as the user's default
-        await supabase
-          .from('profiles')
-          .update({ default_business_id: invite.business_id })
-          .eq('id', profile.id);
-
-        // Log the audit action
-        await supabase.rpc('log_audit_action', {
-          p_business_id: invite.business_id,
-          p_user_id: profile.id,
-          p_action: 'redeem_invite',
-          p_resource_type: 'invite',
-          p_resource_id: invite.id,
-          p_details: { 
-            invite_token: orgContext.invite_token?.substring(0, 8) + '...',
-            role: invite.role,
-            email: email 
-          }
-        });
-
         console.log(`✅ [clerk-webhooks] User added to existing organization as ${invite.role}`);
         return;
       }
-    } else {
-      console.log(`⚠️ [clerk-webhooks] Invalid invite or organization mismatch`);
     }
   }
 

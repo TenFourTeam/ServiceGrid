@@ -40,25 +40,23 @@ function ClerkAuthInner({ redirectTarget }: { redirectTarget: string }) {
   // Check for organization signup context
   useEffect(() => {
     const signupContext = localStorage.getItem('clerk_signup_context');
-    if (signupContext && signUp && !isSignedIn) {
+    if (signupContext && signUp) {
       try {
         const context = JSON.parse(signupContext);
         console.log('🏢 [ClerkAuth] Found signup context, setting unsafe metadata:', context);
         
         // Store the signup context in user's unsafe metadata
         // This will be accessible in the user.created webhook
-        signUp.update({
-          unsafeMetadata: {
-            ...signUp.unsafeMetadata,
-            signup_context: context
-          }
-        });
+        signUp.unsafeMetadata = {
+          ...signUp.unsafeMetadata,
+          signup_context: context
+        };
       } catch (error) {
         console.error('❌ [ClerkAuth] Failed to parse signup context:', error);
         localStorage.removeItem('clerk_signup_context');
       }
     }
-  }, [signUp, isSignedIn]);
+  }, [signUp]);
 
   return (
     <main className="container mx-auto max-w-md py-10 px-4">

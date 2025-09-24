@@ -51,9 +51,6 @@ verify_jwt = false
 [functions.invite-redeem]
 verify_jwt = false
 
-[functions.invite-validate]
-verify_jwt = false
-
 [functions.invite-manage]
 verify_jwt = false
 
@@ -159,6 +156,9 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.audit-logs-crud]
+verify_jwt = false
+
+[functions.invite-manage]
 verify_jwt = false
 
 [functions.upload-request-photo]
