@@ -33,16 +33,14 @@ export function TeamMemberActions({ member, businessId, isLastOwner }: TeamMembe
       return;
     }
 
+    console.log('[TeamMemberActions] Starting member removal:', member.id);
     try {
       await removeMember.mutateAsync({ memberId: member.id });
-      toast.success("Member removed", {
-        description: `${member.email} has been removed from the team`,
-      });
       setShowRemoveDialog(false);
+      console.log('[TeamMemberActions] Member removal completed:', member.id);
     } catch (error) {
-      toast.error("Failed to remove member", {
-        description: error instanceof Error ? error.message : "Unknown error",
-      });
+      console.error('[TeamMemberActions] Member removal failed:', error);
+      setShowRemoveDialog(false);
     }
   };
 

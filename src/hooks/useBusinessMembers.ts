@@ -89,6 +89,8 @@ export function useBusinessMemberOperations() {
 
   const removeMember = useMutation({
     mutationFn: async ({ memberId }: { memberId: string }) => {
+      console.log('[useBusinessMemberOperations] Starting member deletion:', memberId);
+      
       const { data, error } = await authApi.invoke('business-members', {
         method: "DELETE",
         body: { memberId },
@@ -100,16 +102,28 @@ export function useBusinessMemberOperations() {
       });
       
       if (error) {
+        console.error('[useBusinessMemberOperations] Edge function error:', error);
         throw new Error(error.message || 'Failed to remove team member');
       }
       
+      console.log('[useBusinessMemberOperations] Member deletion successful:', data);
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.data.members(businessId || '') });
+    onSuccess: (data, variables) => {
+      console.log('[useBusinessMemberOperations] Invalidating queries after member removal');
+      // Use more specific invalidation to prevent loops
+      queryClient.invalidateQueries({ 
+        queryKey: queryKeys.data.members(businessId || ''),
+        exact: true 
+      });
+      // Also invalidate user businesses to update member counts
+      queryClient.invalidateQueries({ 
+        queryKey: ['user-businesses'],
+        exact: true 
+      });
     },
     onError: (error: Error | unknown) => {
-      console.error('[useRemoveMember] error:', error);
+      console.error('[useBusinessMemberOperations] Mutation error:', error);
     },
   });
 
