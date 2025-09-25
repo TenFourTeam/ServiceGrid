@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.54.0';
-import { corsHeaders, json, requireCtxWithUserClient } from '../_lib/auth.ts';
+import { corsHeaders, json, requireCtx } from '../_lib/auth.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -14,18 +14,18 @@ Deno.serve(async (req) => {
     console.log('🚀 [get-profile] === REQUEST START ===');
     
     const startAuth = Date.now();
-    const ctx = await requireCtxWithUserClient(req, { autoCreate: false });
+    const ctx = await requireCtx(req);
     const endAuth = Date.now();
     console.log('🚀 [get-profile] Auth completed in', endAuth - startAuth, 'ms');
-    console.log('🚀 [get-profile] Using user-scoped client for RLS queries');
+    console.log('🚀 [get-profile] Using service role client with manual access control');
     
     // Parse query parameters to get business context
     const url = new URL(req.url);
     const requestedBusinessId = url.searchParams.get('businessId');
     console.log('[get-profile] Context resolved:', { userId: ctx.userId, email: ctx.email, requestedBusinessId });
 
-    // Use user-scoped client instead of service role for RLS
-    const supabase = ctx.userClient;
+    // Use service role client for all queries
+    const supabase = ctx.supaAdmin;
 
     // Get user profile
     const { data: profile, error: profileError } = await supabase
@@ -40,8 +40,9 @@ Deno.serve(async (req) => {
     }
 
     if (!profile) {
-      console.warn('[get-profile] Profile not found');
-      return json({ profile: null, business: null });
+      console.warn('[get-profile] Profile not found, this should have been auto-created by requireCtx');
+      // This should not happen if requireCtx is working properly with auto-creation
+      throw new Error('Profile not found after authentication context resolution');
     }
 
     console.log('[get-profile] Profile fetched successfully');
