@@ -1125,14 +1125,6 @@ export type Database = {
         Args: { p_business_id: string }
         Returns: boolean
       }
-      current_clerk_user_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      current_user_profile_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
       debug_auth_state: {
         Args: Record<PropertyKey, never>
         Returns: Json
