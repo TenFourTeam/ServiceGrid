@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.54.0';
-import { corsHeaders, json, requireCtx } from '../_lib/auth.ts';
+import { corsHeaders, json, getCurrentUserId } from '../_lib/auth.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -55,32 +55,40 @@ Deno.serve(async (req) => {
 
     console.log(`[manage-invite] Processing ${action} action for token hash: ${token_hash.substring(0, 10)}...`);
 
-    // Authentication context validation with detailed logging
-    console.log('[manage-invite] Starting authentication context resolution...');
-    const ctx = await requireCtx(req);
-    console.log('[manage-invite] Raw context resolved:', JSON.stringify(ctx, null, 2));
+    // User-only authentication (following user-pending-invites pattern)
+    console.log('[manage-invite] Starting user authentication...');
     
-    // Validate authentication context
-    if (!ctx.userId || !ctx.email) {
-      console.error('[manage-invite] Authentication context validation failed:', {
-        hasUserId: !!ctx.userId,
-        hasEmail: !!ctx.email,
-        userId: ctx.userId,
-        email: ctx.email
-      });
-      return json(
-        { error: 'Authentication required: Missing user context' },
-        { status: 401 }
-      );
+    // Get current user ID first
+    const clerkUserId = await getCurrentUserId(req);
+    console.log('[manage-invite] Clerk User ID:', clerkUserId);
+    
+    if (!clerkUserId) {
+      console.error('[manage-invite] No authenticated user found');
+      return json({ error: 'Authentication required' }, { status: 401 });
     }
+
+    // Initialize supabase admin client
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
     
-    console.log('[manage-invite] Authentication validated successfully:', {
-      userId: ctx.userId,
-      email: ctx.email
+    // Get user profile to get email and internal user ID
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('id, email')
+      .eq('clerk_user_id', clerkUserId)
+      .single();
+
+    if (profileError || !profile) {
+      console.error('[manage-invite] Failed to get user profile:', profileError);
+      return json({ error: 'User profile not found' }, { status: 401 });
+    }
+
+    console.log('[manage-invite] User authenticated:', {
+      userId: profile.id,
+      email: profile.email
     });
 
     // Find the invite using the token_hash directly (no re-hashing)
-    const { data: invite, error: inviteError } = await ctx.supaAdmin
+    const { data: invite, error: inviteError } = await supabaseAdmin
       .from('invites')
       .select('*')
       .eq('token_hash', token_hash)
@@ -95,8 +103,8 @@ Deno.serve(async (req) => {
     }
 
     // Verify the invite email matches the authenticated user's email
-    if (invite.email !== ctx.email) {
-      console.log(`[manage-invite] Email mismatch: invite=${invite.email}, user=${ctx.email}`);
+    if (invite.email !== profile.email) {
+      console.log(`[manage-invite] Email mismatch: invite=${invite.email}, user=${profile.email}`);
       return json({ error: 'This invite is not for your email address' }, { status: 403 });
     }
 
@@ -104,7 +112,7 @@ Deno.serve(async (req) => {
 
     if (action === 'decline') {
       // Mark invite as revoked
-      const { error: revokeError } = await ctx.supaAdmin
+      const { error: revokeError } = await supabaseAdmin
         .from('invites')
         .update({
           revoked_at: new Date().toISOString(),
@@ -118,12 +126,12 @@ Deno.serve(async (req) => {
       }
 
       // Log audit action
-      await ctx.supaAdmin.rpc('log_audit_action', {
+      await supabaseAdmin.rpc('log_audit_action', {
         p_business_id: invite.business_id,
-        p_user_id: ctx.userId,
+        p_user_id: profile.id,
         p_action: 'invite_declined',
         p_resource_type: 'business_member',
-        p_resource_id: ctx.userId,
+        p_resource_id: profile.id,
         p_details: { email: invite.email, role: invite.role }
       });
 
@@ -134,20 +142,20 @@ Deno.serve(async (req) => {
     // Handle accept action
     if (action === 'accept') {
       // Check if user is already a member of this business
-      const { data: existingMember } = await ctx.supaAdmin
+      const { data: existingMember } = await supabaseAdmin
         .from('business_members')
         .select('*')
         .eq('business_id', invite.business_id)
-        .eq('user_id', ctx.userId)
+        .eq('user_id', profile.id)
         .single();
 
       if (existingMember) {
         // Mark invite as redeemed even though user was already a member
-        await ctx.supaAdmin
+        await supabaseAdmin
           .from('invites')
           .update({
             redeemed_at: new Date().toISOString(),
-            redeemed_by: ctx.userId,
+            redeemed_by: profile.id,
             updated_at: new Date().toISOString(),
           })
           .eq('id', invite.id);
@@ -160,11 +168,11 @@ Deno.serve(async (req) => {
       }
 
       // Add user to business members
-      const { error: memberError } = await ctx.supaAdmin
+      const { error: memberError } = await supabaseAdmin
         .from('business_members')
         .insert({
           business_id: invite.business_id,
-          user_id: ctx.userId,
+          user_id: profile.id,
           role: invite.role,
           invited_by: invite.invited_by,
           joined_at: new Date().toISOString(),
@@ -177,11 +185,11 @@ Deno.serve(async (req) => {
       }
 
       // Mark invite as redeemed
-      const { error: redeemError } = await ctx.supaAdmin
+      const { error: redeemError } = await supabaseAdmin
         .from('invites')
         .update({
           redeemed_at: new Date().toISOString(),
-          redeemed_by: ctx.userId,
+          redeemed_by: profile.id,
           updated_at: new Date().toISOString(),
         })
         .eq('id', invite.id);
@@ -191,12 +199,12 @@ Deno.serve(async (req) => {
       }
 
       // Log audit action
-      await ctx.supaAdmin.rpc('log_audit_action', {
+      await supabaseAdmin.rpc('log_audit_action', {
         p_business_id: invite.business_id,
-        p_user_id: ctx.userId,
+        p_user_id: profile.id,
         p_action: 'invite_accepted',
         p_resource_type: 'business_member',
-        p_resource_id: ctx.userId,
+        p_resource_id: profile.id,
         p_details: { email: invite.email, role: invite.role }
       });
 
