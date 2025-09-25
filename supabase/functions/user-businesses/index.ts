@@ -22,7 +22,7 @@ serve(async (req: Request) => {
       .eq('id', userId)
       .single();
 
-    // Get businesses where user is an explicit member
+    // Get businesses where user is an explicit member (only accepted memberships)
     const { data: memberships, error: membershipError } = await supaAdmin
       .from('business_members')
       .select(`
@@ -36,6 +36,7 @@ serve(async (req: Request) => {
         )
       `)
       .eq('user_id', userId)
+      .not('joined_at', 'is', null)
       .order('joined_at', { ascending: false });
 
     if (membershipError) {
