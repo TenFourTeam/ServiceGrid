@@ -67,6 +67,17 @@ serve(async (req: Request) => {
       return json({ error: 'User is already a member of this business' }, { status: 400 });
     }
 
+    // Check for pending invites first
+    const { data: pendingInvites } = await ctx.supaAdmin
+      .from('invites')
+      .select('id, token_hash')
+      .eq('email', targetUser.email)
+      .eq('business_id', ctx.businessId)
+      .is('redeemed_at', null)
+      .is('revoked_at', null);
+
+    const hasInvites = pendingInvites && pendingInvites.length > 0;
+
     // Add user to business members
     const { error: memberError } = await ctx.supaAdmin
       .from('business_members')
@@ -76,7 +87,7 @@ serve(async (req: Request) => {
         role: role,
         invited_by: ctx.userId,
         joined_at: new Date().toISOString(),
-        joined_via_invite: false, // Direct addition, not via invite
+        joined_via_invite: hasInvites,
       });
 
     if (memberError) {
@@ -99,15 +110,7 @@ serve(async (req: Request) => {
     });
 
   // Clean up any pending invites for this user to this business
-  const { data: pendingInvites } = await ctx.supaAdmin
-    .from('invites')
-    .select('id, token_hash')
-    .eq('email', targetUser.email)
-    .eq('business_id', ctx.businessId)
-    .is('redeemed_at', null)
-    .is('revoked_at', null);
-
-  if (pendingInvites && pendingInvites.length > 0) {
+  if (hasInvites) {
     // Mark invites as redeemed
     await ctx.supaAdmin
       .from('invites')
@@ -144,7 +147,7 @@ serve(async (req: Request) => {
       name: targetUser.full_name,
       role: role,
       joined_at: new Date().toISOString(),
-      joined_via_invite: pendingInvites && pendingInvites.length > 0
+      joined_via_invite: hasInvites
     }
   });
 

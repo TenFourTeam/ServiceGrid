@@ -45,10 +45,10 @@ verify_jwt = false
 verify_jwt = false
 
 # Invite system functions
-[functions.invite-worker]
+[functions.create-invites]
 verify_jwt = false
 
-[functions.invite-redeem]
+[functions.invite-manage]
 verify_jwt = false
 
 # Public endpoints
