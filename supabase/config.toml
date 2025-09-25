@@ -162,3 +162,9 @@ verify_jwt = false
 
 [functions.send-work-order-confirmations]
 verify_jwt = false
+
+[functions.user-pending-invites]
+verify_jwt = false
+
+[functions.decline-invite]
+verify_jwt = false
