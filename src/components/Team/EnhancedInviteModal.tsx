@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useBusinessMemberOperations } from "@/hooks/useBusinessMembers";
 import { useTeamOperations } from "@/hooks/useTeamOperations";
-import { UserPlus, X, CheckCircle, AlertCircle } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { UserPlus, X } from "lucide-react";
+import { UserCard } from "./UserCard";
+import { toast } from "sonner";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 interface EnhancedInviteModalProps {
   open: boolean;
@@ -17,6 +19,7 @@ interface EnhancedInviteModalProps {
 export function EnhancedInviteModal({ open, onOpenChange, businessId }: EnhancedInviteModalProps) {
   const [emails, setEmails] = useState<string[]>([""]);
   const [emailStatuses, setEmailStatuses] = useState<Record<string, { checking: boolean; exists: boolean; alreadyMember: boolean; user?: any }>>({});
+  const [processingEmails, setProcessingEmails] = useState<Set<string>>(new Set());
   
   const { inviteWorker } = useBusinessMemberOperations();
   const { checkUserExists, addTeamMember } = useTeamOperations();
@@ -35,12 +38,20 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
     const newEmails = [...emails];
     newEmails[index] = value;
     setEmails(newEmails);
-
-    // Check user existence when email is complete and valid
-    if (value.includes('@') && value.trim() !== '') {
-      checkUserExistence(value.trim());
-    }
   };
+
+  // Debounced email checking
+  const debouncedEmails = useDebouncedValue(emails, 500);
+  
+  // Check user existence when debounced emails change
+  useEffect(() => {
+    debouncedEmails.forEach(email => {
+      const trimmedEmail = email.trim();
+      if (trimmedEmail.includes('@') && trimmedEmail !== '' && !emailStatuses[trimmedEmail]) {
+        checkUserExistence(trimmedEmail);
+      }
+    });
+  }, [debouncedEmails, emailStatuses]);
 
   const checkUserExistence = async (email: string) => {
     if (emailStatuses[email]?.checking) return;
@@ -74,32 +85,86 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
   };
 
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAddUser = useCallback(async (userId: string, email: string) => {
+    setProcessingEmails(prev => new Set(prev).add(email));
     
-    const validEmails = emails.filter(email => email.trim() && email.includes('@'));
-    if (validEmails.length === 0) {
-      return;
+    try {
+      await addTeamMember.mutateAsync({
+        userId,
+        businessId,
+        role: 'worker'
+      }, {
+        onSuccess: () => {
+          toast.success(`${emailStatuses[email]?.user?.name || email.split('@')[0]} added to team`);
+        },
+        onError: (error: any) => {
+          toast.error(error?.message || 'Failed to add team member');
+        }
+      });
+    } finally {
+      setProcessingEmails(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(email);
+        return newSet;
+      });
     }
+  }, [addTeamMember, businessId, emailStatuses]);
 
-    validEmails.forEach(email => {
+  const handleInviteUser = useCallback(async (email: string) => {
+    setProcessingEmails(prev => new Set(prev).add(email));
+    
+    try {
+      await inviteWorker.mutateAsync({
+        email,
+      }, {
+        onSuccess: () => {
+          toast.success(`Invitation sent to ${email}`);
+        },
+        onError: (error: any) => {
+          toast.error(error?.message || 'Failed to send invitation');
+        }
+      });
+    } finally {
+      setProcessingEmails(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(email);
+        return newSet;
+      });
+    }
+  }, [inviteWorker]);
+
+  const handleBatchProcess = async () => {
+    const validEmails = emails.filter(email => email.trim() && email.includes('@'));
+    if (validEmails.length === 0) return;
+
+    let addedCount = 0;
+    let invitedCount = 0;
+    let skippedCount = 0;
+
+    for (const email of validEmails) {
       const emailTrimmed = email.trim();
       const status = emailStatuses[emailTrimmed];
 
-      if (status?.exists && !status.alreadyMember && status.user) {
-        // User exists - add them directly
-        addTeamMember.mutate({
-          userId: status.user.id,
-          businessId,
-          role: 'worker'
-        });
-      } else if (!status?.alreadyMember) {
-        // User doesn't exist or status unknown - send email invitation
-        inviteWorker.mutate({
-          email: emailTrimmed,
-        });
+      if (status?.alreadyMember) {
+        skippedCount++;
+      } else if (status?.exists && status.user) {
+        await handleAddUser(status.user.id, emailTrimmed);
+        addedCount++;
+      } else {
+        await handleInviteUser(emailTrimmed);
+        invitedCount++;
       }
-    });
+    }
+
+    // Show summary toast
+    const messages = [];
+    if (addedCount > 0) messages.push(`${addedCount} user${addedCount > 1 ? 's' : ''} added`);
+    if (invitedCount > 0) messages.push(`${invitedCount} invitation${invitedCount > 1 ? 's' : ''} sent`);
+    if (skippedCount > 0) messages.push(`${skippedCount} already member${skippedCount > 1 ? 's' : ''}`);
+    
+    if (messages.length > 0) {
+      toast.success(messages.join(', '));
+    }
 
     handleClose();
   };
@@ -107,6 +172,7 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
   const handleClose = () => {
     setEmails([""]);
     setEmailStatuses({});
+    setProcessingEmails(new Set());
     onOpenChange(false);
   };
 
@@ -120,60 +186,31 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-            
-            {/* Email addresses */}
+        <div className="space-y-6">
+            {/* Email input section */}
             <div className="space-y-3">
-              <Label>Email Addresses</Label>
-              {emails.map((email, index) => {
-                const status = emailStatuses[email.trim()];
-                return (
-                  <div key={index} className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="email"
-                        placeholder={`team-member${emails.length > 1 ? index + 1 : ''}@company.com`}
-                        value={email}
-                        onChange={(e) => updateEmail(index, e.target.value)}
-                        className="flex-1"
-                      />
-                      {emails.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeEmail(index)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                    {email.trim() && email.includes('@') && status && (
-                      <div className="ml-2">
-                        {status.checking ? (
-                          <Badge variant="outline" className="text-xs">
-                            Checking...
-                          </Badge>
-                        ) : status.alreadyMember ? (
-                          <Badge variant="destructive" className="text-xs flex items-center gap-1">
-                            <AlertCircle className="h-3 w-3" />
-                            Already a member
-                          </Badge>
-                        ) : status.exists ? (
-                          <Badge variant="default" className="text-xs flex items-center gap-1">
-                            <CheckCircle className="h-3 w-3" />
-                            User found - will be added directly
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary" className="text-xs">
-                            Will send email invitation
-                          </Badge>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+              <Label>Add Team Members</Label>
+              {emails.map((email, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <Input
+                    type="email"
+                    placeholder={`team-member${emails.length > 1 ? index + 1 : ''}@company.com`}
+                    value={email}
+                    onChange={(e) => updateEmail(index, e.target.value)}
+                    className="flex-1"
+                  />
+                  {emails.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => removeEmail(index)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
               <Button
                 type="button"
                 variant="outline"
@@ -185,7 +222,29 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
               </Button>
             </div>
 
-
+            {/* User cards section */}
+            <div className="space-y-3">
+              {emails
+                .filter(email => email.trim() && email.includes('@'))
+                .map(email => {
+                  const trimmedEmail = email.trim();
+                  const status = emailStatuses[trimmedEmail];
+                  
+                  if (!status) return null;
+                  
+                  return (
+                    <UserCard
+                      key={trimmedEmail}
+                      email={trimmedEmail}
+                      status={status}
+                      onAddUser={(userId) => handleAddUser(userId, trimmedEmail)}
+                      onInviteUser={(email) => handleInviteUser(email)}
+                      isProcessing={processingEmails.has(trimmedEmail)}
+                    />
+                  );
+                })
+              }
+            </div>
 
             {/* Actions */}
             <div className="flex justify-end gap-2">
@@ -193,21 +252,21 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
                 Cancel
               </Button>
               <Button 
-                type="submit" 
-                disabled={inviteWorker.isPending || addTeamMember.isPending || checkUserExists.isPending}
+                onClick={handleBatchProcess}
+                disabled={processingEmails.size > 0 || emails.filter(e => e.trim() && e.includes('@')).length === 0}
                 className="flex items-center gap-2"
               >
-                {(inviteWorker.isPending || addTeamMember.isPending) ? (
+                {processingEmails.size > 0 ? (
                   "Processing..."
                 ) : (
                   <>
                     <UserPlus className="h-4 w-4" />
-                    Add Team Member{emails.filter(e => e.trim()).length > 1 ? 's' : ''}
+                    Process All ({emails.filter(e => e.trim() && e.includes('@')).length})
                   </>
                 )}
               </Button>
             </div>
-          </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

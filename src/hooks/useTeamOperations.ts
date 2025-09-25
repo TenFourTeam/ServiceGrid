@@ -60,12 +60,7 @@ export function useTeamOperations() {
       
       const { data, error } = await authApi.invoke('add-team-member', {
         method: 'POST',
-        body: { targetUserId: userId, businessId, role },
-        toast: {
-          loading: 'Adding team member...',
-          success: 'Team member added successfully',
-          error: 'Failed to add team member'
-        }
+        body: { targetUserId: userId, businessId, role }
       });
       
       if (error) {
