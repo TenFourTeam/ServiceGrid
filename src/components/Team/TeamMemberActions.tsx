@@ -92,7 +92,11 @@ export function TeamMemberActions({ member, businessId, isLastOwner }: TeamMembe
               </Button>
               <Button 
                 variant="destructive" 
-                onClick={handleRemove}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleRemove();
+                }}
                 disabled={removeMember.isPending}
               >
                 {removeMember.isPending ? "Removing..." : "Remove Member"}
