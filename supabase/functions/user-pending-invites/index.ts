@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
 
     console.log('[user-pending-invites] User email:', profile.email);
 
-    // Fetch pending invites for this user's email
+    // Fetch pending invites for this user's email (without joins to avoid schema cache issues)
     const { data: invites, error: invitesError } = await supabase
       .from('invites')
       .select(`
@@ -47,16 +47,7 @@ Deno.serve(async (req) => {
         expires_at,
         created_at,
         invited_by,
-        token_hash,
-        businesses!inner (
-          id,
-          name,
-          logo_url
-        ),
-        invited_by_profile:profiles!invited_by (
-          full_name,
-          email
-        )
+        token_hash
       `)
       .eq('email', profile.email)
       .is('redeemed_at', null)
@@ -69,7 +60,44 @@ Deno.serve(async (req) => {
     }
 
     console.log('[user-pending-invites] Found invites:', invites?.length || 0);
-    return json({ invites: invites || [] });
+
+    // If no invites, return empty array
+    if (!invites || invites.length === 0) {
+      return json({ invites: [] });
+    }
+
+    // Fetch business details for each invite
+    const businessIds = [...new Set(invites.map(invite => invite.business_id))];
+    const { data: businesses, error: businessError } = await supabase
+      .from('businesses')
+      .select('id, name, logo_url')
+      .in('id', businessIds);
+
+    if (businessError) {
+      console.error('[user-pending-invites] Business error:', businessError);
+      // Continue without business data if fetch fails
+    }
+
+    // Fetch invited_by profiles
+    const inviterIds = [...new Set(invites.map(invite => invite.invited_by))];
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, full_name, email')
+      .in('id', inviterIds);
+
+    if (profilesError) {
+      console.error('[user-pending-invites] Profiles error:', profilesError);
+      // Continue without profile data if fetch fails
+    }
+
+    // Join data in JavaScript
+    const enrichedInvites = invites.map(invite => ({
+      ...invite,
+      businesses: businesses?.find(b => b.id === invite.business_id) || { id: invite.business_id, name: 'Unknown Business', logo_url: null },
+      invited_by_profile: profiles?.find(p => p.id === invite.invited_by) || { full_name: null, email: 'Unknown' }
+    }));
+
+    return json({ invites: enrichedInvites });
 
   } catch (error: any) {
     console.error('[user-pending-invites] Error:', error);

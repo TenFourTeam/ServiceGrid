@@ -25,7 +25,7 @@ export function TeamMemberActions({ member, businessId, isLastOwner }: TeamMembe
     return null;
   }
 
-  const handleRemove = async () => {
+  const handleRemove = () => {
     if (isLastOwner) {
       toast.error("Cannot remove member", {
         description: "Cannot remove the last owner of the business",
@@ -34,14 +34,23 @@ export function TeamMemberActions({ member, businessId, isLastOwner }: TeamMembe
     }
 
     console.log('[TeamMemberActions] Starting member removal:', member.id);
-    try {
-      await removeMember.mutateAsync({ memberId: member.id });
-      setShowRemoveDialog(false);
-      console.log('[TeamMemberActions] Member removal completed:', member.id);
-    } catch (error) {
-      console.error('[TeamMemberActions] Member removal failed:', error);
-      setShowRemoveDialog(false);
-    }
+    
+    // Use mutate instead of mutateAsync to prevent UI freezing
+    removeMember.mutate({ memberId: member.id }, {
+      onSuccess: () => {
+        setShowRemoveDialog(false);
+        toast.success("Team member removed successfully");
+        console.log('[TeamMemberActions] Member removal completed:', member.id);
+      },
+      onError: (error) => {
+        console.error('[TeamMemberActions] Member removal failed:', error);
+        const errorMessage = error instanceof Error ? error.message : "There was an error removing the team member";
+        toast.error("Failed to remove member", {
+          description: errorMessage
+        });
+        setShowRemoveDialog(false);
+      }
+    });
   };
 
   return (
