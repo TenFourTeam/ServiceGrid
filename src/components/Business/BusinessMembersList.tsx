@@ -97,10 +97,6 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
   };
 
   const handleRevokeInvite = (inviteId: string, email: string) => {
-    if (!confirm(`Are you sure you want to revoke the invitation for ${email}?`)) {
-      return;
-    }
-
     revokeInvite.mutate({ inviteId });
   };
 
