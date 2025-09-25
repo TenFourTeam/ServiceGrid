@@ -11,21 +11,21 @@ serve(async (req: Request) => {
   }
 
   try {
-    const { userId, supaAdmin } = await requireCtx(req);
-    const { email, businessId } = await req.json();
+    const ctx = await requireCtx(req);
+    const { email } = await req.json();
 
-    if (!email || !businessId) {
-      return json({ error: 'Email and business ID are required' }, { status: 400 });
+    if (!email) {
+      return json({ error: 'Email is required' }, { status: 400 });
     }
 
     console.log(`🔍 Checking if user exists with email: ${email}`);
 
     // Verify the requesting user can manage this business
-    const { data: membership } = await supaAdmin
+    const { data: membership } = await ctx.supaAdmin
       .from('business_members')
       .select('role')
-      .eq('business_id', businessId)
-      .eq('user_id', userId)
+      .eq('business_id', ctx.businessId)
+      .eq('user_id', ctx.userId)
       .eq('role', 'owner')
       .single();
 
@@ -34,7 +34,7 @@ serve(async (req: Request) => {
     }
 
     // Check if a user with this email exists
-    const { data: profile, error: profileError } = await supaAdmin
+    const { data: profile, error: profileError } = await ctx.supaAdmin
       .from('profiles')
       .select('id, email, full_name')
       .eq('email', email.toLowerCase())
@@ -50,10 +50,10 @@ serve(async (req: Request) => {
 
     if (userExists) {
       // Check if they're already a member of this business
-      const { data: existingMember } = await supaAdmin
+      const { data: existingMember } = await ctx.supaAdmin
         .from('business_members')
         .select('id, role')
-        .eq('business_id', businessId)
+        .eq('business_id', ctx.businessId)
         .eq('user_id', (profile as any).id)
         .single();
 

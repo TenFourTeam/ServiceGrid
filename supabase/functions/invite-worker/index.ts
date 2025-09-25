@@ -8,22 +8,15 @@ serve(async (req: Request) => {
   }
 
   try {
-    const { userId, supaAdmin } = await requireCtx(req);
+    const ctx = await requireCtx(req);
 
     if (req.method === 'GET') {
-      const url = new URL(req.url);
-      const businessId = url.searchParams.get('business_id');
-
-      if (!businessId) {
-        return json({ error: 'Business ID is required' }, { status: 400 });
-      }
-
       // Verify user is owner of the business
-      const { data: membership } = await supaAdmin
+      const { data: membership } = await ctx.supaAdmin
         .from('business_members')
         .select('role')
-        .eq('business_id', businessId)
-        .eq('user_id', userId)
+        .eq('business_id', ctx.businessId)
+        .eq('user_id', ctx.userId)
         .eq('role', 'owner')
         .single();
 
@@ -31,10 +24,10 @@ serve(async (req: Request) => {
         return json({ error: 'Not authorized to manage this business' }, { status: 403 });
       }
 
-      console.log(`🔍 Fetching invites for business: ${businessId}`);
+      console.log(`🔍 Fetching invites for business: ${ctx.businessId}`);
       
       // Get pending invites - simplified query without foreign key
-      const { data: invites, error } = await supaAdmin
+      const { data: invites, error } = await ctx.supaAdmin
         .from('invites')
         .select(`
           id,
@@ -44,7 +37,7 @@ serve(async (req: Request) => {
           created_at,
           invited_by
         `)
-        .eq('business_id', businessId)
+        .eq('business_id', ctx.businessId)
         .is('redeemed_at', null)
         .is('revoked_at', null)
         .order('created_at', { ascending: false });
@@ -69,7 +62,7 @@ serve(async (req: Request) => {
       }
 
       // Get the invite and verify permissions
-      const { data: invite, error: inviteError } = await supaAdmin
+      const { data: invite, error: inviteError } = await ctx.supaAdmin
         .from('invites')
         .select('*')
         .eq('id', inviteId)
@@ -80,11 +73,11 @@ serve(async (req: Request) => {
       }
 
       // Verify user can manage this business
-      const { data: membership } = await supaAdmin
+      const { data: membership } = await ctx.supaAdmin
         .from('business_members')
         .select('role')
         .eq('business_id', (invite as any).business_id)
-        .eq('user_id', userId)
+        .eq('user_id', ctx.userId)
         .eq('role', 'owner')
         .single();
 
@@ -92,7 +85,7 @@ serve(async (req: Request) => {
         return json({ error: 'Not authorized to manage this business' }, { status: 403 });
       }
 
-      const { error } = await supaAdmin
+      const { error } = await ctx.supaAdmin
         .from('invites')
         .update({ revoked_at: new Date().toISOString() })
         .eq('id', inviteId);
@@ -103,9 +96,9 @@ serve(async (req: Request) => {
       }
 
       // Log audit action
-      await supaAdmin.rpc('log_audit_action', {
+      await ctx.supaAdmin.rpc('log_audit_action', {
         p_business_id: invite.business_id,
-        p_user_id: userId,
+        p_user_id: ctx.userId,
         p_action: 'invite_revoked',
         p_resource_type: 'business_member',
         p_resource_id: inviteId,
@@ -123,7 +116,7 @@ serve(async (req: Request) => {
       }
 
       // Get the invite and verify permissions
-      const { data: invite, error: inviteError } = await supaAdmin
+      const { data: invite, error: inviteError } = await ctx.supaAdmin
         .from('invites')
         .select('*, businesses!inner(name, logo_url)')
         .eq('id', inviteId)
@@ -134,11 +127,11 @@ serve(async (req: Request) => {
       }
 
       // Verify user can manage this business
-      const { data: membership } = await supaAdmin
+      const { data: membership } = await ctx.supaAdmin
         .from('business_members')
         .select('role')
         .eq('business_id', (invite as any).business_id)
-        .eq('user_id', userId)
+        .eq('user_id', ctx.userId)
         .eq('role', 'owner')
         .single();
 
@@ -157,7 +150,7 @@ serve(async (req: Request) => {
       const newExpiresAt = new Date();
       newExpiresAt.setDate(newExpiresAt.getDate() + 7);
 
-      const { error } = await supaAdmin
+      const { error } = await ctx.supaAdmin
         .from('invites')
         .update({
           token_hash: tokenHash,
@@ -171,10 +164,10 @@ serve(async (req: Request) => {
       }
 
       // Get inviter details
-      const { data: inviter } = await supaAdmin
+      const { data: inviter } = await ctx.supaAdmin
         .from('profiles')
         .select('email, full_name')
-        .eq('id', userId)
+        .eq('id', ctx.userId)
         .single();
 
       // Generate invitation URL and send email
@@ -183,9 +176,9 @@ serve(async (req: Request) => {
       const business = invite.businesses;
 
       // Log audit action (no email for now)
-      await supaAdmin.rpc('log_audit_action', {
+      await ctx.supaAdmin.rpc('log_audit_action', {
         p_business_id: invite.business_id,
-        p_user_id: userId,
+        p_user_id: ctx.userId,
         p_action: 'invite_resent',
         p_resource_type: 'business_member',
         p_resource_id: inviteId,
@@ -203,18 +196,18 @@ serve(async (req: Request) => {
     }
 
     // POST - Create new invite and send email
-    const { businessId, email } = await req.json();
+    const { email } = await req.json();
 
-    if (!businessId || !email) {
-      return json({ error: 'Business ID and email are required' }, { status: 400 });
+    if (!email) {
+      return json({ error: 'Email is required' }, { status: 400 });
     }
 
     // Verify the user can manage this business
-    const { data: membership } = await supaAdmin
+    const { data: membership } = await ctx.supaAdmin
       .from('business_members')
       .select('role')
-      .eq('business_id', businessId)
-      .eq('user_id', userId)
+      .eq('business_id', ctx.businessId)
+      .eq('user_id', ctx.userId)
       .eq('role', 'owner')
       .single();
 
@@ -223,10 +216,10 @@ serve(async (req: Request) => {
     }
 
     // Get business details and inviter info
-    const { data: business, error: businessError } = await supaAdmin
+    const { data: business, error: businessError } = await ctx.supaAdmin
       .from('businesses')
       .select('id, name, logo_url')
-      .eq('id', businessId)
+      .eq('id', ctx.businessId)
       .single();
 
     if (businessError || !business) {
@@ -234,18 +227,18 @@ serve(async (req: Request) => {
     }
 
     // Get inviter details
-    const { data: inviter, error: inviterError } = await supaAdmin
+    const { data: inviter, error: inviterError } = await ctx.supaAdmin
       .from('profiles')
       .select('email, full_name')
-      .eq('id', userId)
+      .eq('id', ctx.userId)
       .single();
 
 
     // Check for existing invite or membership
-    const { data: existingInvite } = await supaAdmin
+    const { data: existingInvite } = await ctx.supaAdmin
       .from('invites')
       .select('id')
-      .eq('business_id', businessId)
+      .eq('business_id', ctx.businessId)
       .eq('email', email)
       .is('redeemed_at', null)
       .is('revoked_at', null)
@@ -256,12 +249,12 @@ serve(async (req: Request) => {
       return json({ error: 'Active invite already exists for this email' }, { status: 409 });
     }
 
-    const { data: existingMember } = await supaAdmin
+    const { data: existingMember } = await ctx.supaAdmin
       .from('business_members')
       .select('id')
-      .eq('business_id', businessId)
+      .eq('business_id', ctx.businessId)
       .in('user_id', [
-        supaAdmin.from('profiles').select('id').eq('email', email)
+        ctx.supaAdmin.from('profiles').select('id').eq('email', email)
       ])
       .single();
 
@@ -281,15 +274,15 @@ serve(async (req: Request) => {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 days from now
 
-    const { data: invite, error: inviteError } = await supaAdmin
+    const { data: invite, error: inviteError } = await ctx.supaAdmin
       .from('invites')
       .insert({
-        business_id: businessId,
+        business_id: ctx.businessId,
         email,
         role: 'worker',
         token_hash: tokenHash,
         expires_at: expiresAt.toISOString(),
-        invited_by: userId,
+        invited_by: ctx.userId,
       })
       .select()
       .single();
@@ -306,9 +299,9 @@ serve(async (req: Request) => {
     console.log('Invitation created successfully (email sending temporarily disabled)');
 
     // Log audit action
-    await supaAdmin.rpc('log_audit_action', {
-      p_business_id: businessId,
-      p_user_id: userId,
+    await ctx.supaAdmin.rpc('log_audit_action', {
+      p_business_id: ctx.businessId,
+      p_user_id: ctx.userId,
       p_action: 'invite_sent',
       p_resource_type: 'business_member',
       p_resource_id: invite.id,
