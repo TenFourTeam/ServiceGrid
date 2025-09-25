@@ -102,35 +102,34 @@ export function useResendInvite(businessId: string) {
 export function useRedeemInvite() {
   const queryClient = useQueryClient();
   const authApi = useAuthApi();
-  
+
   return useMutation({
-    mutationFn: async ({ token }: { token: string }) => {
-      const { data, error } = await authApi.invoke("invite-redeem", {
-        method: "POST",
-        body: { token },
-        toast: {
-          success: "Invite redeemed successfully",
-          loading: "Redeeming invitation...",
-          error: "Failed to redeem invite"
-        }
+    mutationFn: async (token_hash: string) => {
+      const { data, error } = await authApi.invoke('manage-invite', {
+        method: 'POST',
+        body: { action: 'accept', token_hash }
       });
       
       if (error) {
-        throw new Error(error.message || 'Failed to redeem invite');
+        throw new Error(error.message || 'Failed to accept invite');
       }
       
       return data;
     },
     onSuccess: (data) => {
-      // Invalidate team queries to refresh member list
-      if (data?.businessId) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.data.members(data.businessId) });
-        queryClient.invalidateQueries({ queryKey: queryKeys.team.invites(data.businessId) });
+      // Invalidate member queries for the business that was joined
+      if (data.business_id) {
+        queryClient.invalidateQueries({ 
+          queryKey: queryKeys.team.members(data.business_id) 
+        });
+        queryClient.invalidateQueries({ 
+          queryKey: queryKeys.team.invites(data.business_id) 
+        });
       }
-      // Toast is handled by authApi
-    },
-    onError: (error: Error | unknown) => {
-      console.error('[useRedeemInvite] error:', error);
+      // Invalidate user businesses query
+      queryClient.invalidateQueries({ 
+        queryKey: ['user-businesses'] 
+      });
     },
   });
 }

@@ -1,40 +1,34 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check, X, Clock, Building2, User, Crown } from "lucide-react";
-import { useDeclineInvite, type UserPendingInvite } from "@/hooks/useUserPendingInvites";
-import { useRedeemInvite } from "@/hooks/useInvites";
-import { useQueryClient } from "@tanstack/react-query";
+import { UserPendingInvite, useManageInvite } from "@/hooks/useUserPendingInvites";
 import { toast } from "sonner";
-import { useState } from "react";
 
 interface UserInviteActionsProps {
   invite: UserPendingInvite;
 }
 
 export function UserInviteActions({ invite }: UserInviteActionsProps) {
-  const declineInvite = useDeclineInvite();
-  const redeemInvite = useRedeemInvite();
-  const queryClient = useQueryClient();
-  const [isAccepting, setIsAccepting] = useState(false);
+  const manageInvite = useManageInvite();
 
   const handleAccept = async () => {
     try {
-      setIsAccepting(true);
-      await redeemInvite.mutateAsync({ token: invite.token_hash });
+      await manageInvite.mutateAsync({ 
+        action: 'accept', 
+        token_hash: invite.token_hash 
+      });
       toast.success(`Successfully joined ${invite.businesses.name}`);
-      // Invalidate queries to refresh UI
-      queryClient.invalidateQueries({ queryKey: ['user-pending-invites'] });
-      queryClient.invalidateQueries({ queryKey: ['user-businesses'] });
     } catch (error: any) {
       toast.error(error?.message || 'Failed to accept invite');
-    } finally {
-      setIsAccepting(false);
     }
   };
 
   const handleDecline = async () => {
     try {
-      await declineInvite.mutateAsync(invite.id);
+      await manageInvite.mutateAsync({ 
+        action: 'decline', 
+        token_hash: invite.token_hash 
+      });
       toast.success('Invite declined');
     } catch (error: any) {
       toast.error(error?.message || 'Failed to decline invite');
@@ -93,7 +87,7 @@ export function UserInviteActions({ invite }: UserInviteActionsProps) {
           size="sm"
           variant="outline"
           onClick={handleDecline}
-          disabled={declineInvite.isPending || isAccepting}
+          disabled={manageInvite.isPending}
           className="flex items-center gap-1"
         >
           <X className="h-3 w-3" />
@@ -102,13 +96,13 @@ export function UserInviteActions({ invite }: UserInviteActionsProps) {
         <Button
           size="sm"
           onClick={handleAccept}
-          disabled={isAccepting || declineInvite.isPending}
+          disabled={manageInvite.isPending}
           className="flex items-center gap-1"
         >
-          {isAccepting ? (
+          {manageInvite.isPending ? (
             <>
               <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              Accepting...
+              Processing...
             </>
           ) : (
             <>

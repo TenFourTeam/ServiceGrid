@@ -45,21 +45,21 @@ export function useUserPendingInvites() {
 }
 
 /**
- * Hook to decline an invite
+ * Hook to manage invites (accept or decline)
  */
-export function useDeclineInvite() {
+export function useManageInvite() {
   const queryClient = useQueryClient();
   const authApi = useAuthApi();
 
   return useMutation({
-    mutationFn: async (inviteId: string) => {
-      const { data, error } = await authApi.invoke('decline-invite', {
+    mutationFn: async ({ action, token_hash }: { action: 'accept' | 'decline', token_hash: string }) => {
+      const { data, error } = await authApi.invoke('manage-invite', {
         method: 'POST',
-        body: { inviteId }
+        body: { action, token_hash }
       });
       
       if (error) {
-        throw new Error(error.message || 'Failed to decline invite');
+        throw new Error(error.message || `Failed to ${action} invite`);
       }
       
       return data;

@@ -46,7 +46,7 @@ export default function InviteAccept() {
 
     try {
       setStatus('loading');
-      const result = await redeemInvite.mutateAsync({ token });
+      const result = await redeemInvite.mutateAsync(token);
       
       setStatus('success');
       setMessage(result.message || 'You have successfully joined the team!');
