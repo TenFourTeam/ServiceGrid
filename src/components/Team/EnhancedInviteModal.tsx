@@ -96,6 +96,7 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
       }, {
         onSuccess: () => {
           toast.success(`${emailStatuses[email]?.user?.name || email.split('@')[0]} added to team`);
+          handleClose();
         },
         onError: (error: any) => {
           toast.error(error?.message || 'Failed to add team member');
@@ -119,6 +120,7 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
       }, {
         onSuccess: () => {
           toast.success(`Invitation sent to ${email}`);
+          handleClose();
         },
         onError: (error: any) => {
           toast.error(error?.message || 'Failed to send invitation');
