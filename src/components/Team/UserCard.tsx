@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CheckCircle, Mail, AlertCircle } from "lucide-react";
+import { CheckCircle, UserPlus, AlertCircle, Mail } from "lucide-react";
 
 interface UserCardProps {
   email: string;
@@ -18,6 +18,7 @@ interface UserCardProps {
       role?: string;
     };
   };
+  onAddUser?: (userId: string) => void;
   onInviteUser?: (email: string) => void;
   isProcessing?: boolean;
 }
@@ -25,6 +26,7 @@ interface UserCardProps {
 export function UserCard({ 
   email, 
   status, 
+  onAddUser, 
   onInviteUser, 
   isProcessing = false 
 }: UserCardProps) {
@@ -97,12 +99,12 @@ export function UserCard({
             </div>
             <Button
               size="sm"
-              onClick={() => onInviteUser?.(email)}
+              onClick={() => onAddUser?.(status.user!.id)}
               disabled={isProcessing}
               className="flex items-center gap-1"
             >
-              <Mail className="h-3 w-3" />
-              Send Invitation
+              <UserPlus className="h-3 w-3" />
+              Add to Team
             </Button>
           </div>
         </CardContent>

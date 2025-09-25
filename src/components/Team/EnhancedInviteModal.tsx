@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useBusinessMemberOperations } from "@/hooks/useBusinessMembers";
-import { useTeamOperations } from '@/hooks/useTeamOperations';
+import { useTeamOperations } from "@/hooks/useTeamOperations";
 import { UserPlus, X } from "lucide-react";
 import { UserCard } from "./UserCard";
 import { toast } from "sonner";
@@ -22,7 +22,7 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
   const [processingEmails, setProcessingEmails] = useState<Set<string>>(new Set());
   
   const { inviteWorker } = useBusinessMemberOperations();
-  const { checkUserExists } = useTeamOperations();
+  const { checkUserExists, addTeamMember } = useTeamOperations();
 
   const addEmail = () => {
     setEmails([...emails, ""]);
@@ -85,6 +85,31 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
   };
 
 
+  const handleAddUser = useCallback(async (userId: string, email: string) => {
+    setProcessingEmails(prev => new Set(prev).add(email));
+    
+    try {
+      await addTeamMember.mutateAsync({
+        userId,
+        businessId,
+        role: 'worker'
+      }, {
+        onSuccess: () => {
+          toast.success(`${emailStatuses[email]?.user?.name || email.split('@')[0]} added to team`);
+        },
+        onError: (error: any) => {
+          toast.error(error?.message || 'Failed to add team member');
+        }
+      });
+    } finally {
+      setProcessingEmails(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(email);
+        return newSet;
+      });
+    }
+  }, [addTeamMember, businessId, emailStatuses]);
+
   const handleInviteUser = useCallback(async (email: string) => {
     setProcessingEmails(prev => new Set(prev).add(email));
     
@@ -94,7 +119,6 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
       }, {
         onSuccess: () => {
           toast.success(`Invitation sent to ${email}`);
-          handleClose();
         },
         onError: (error: any) => {
           toast.error(error?.message || 'Failed to send invitation');
@@ -108,6 +132,42 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
       });
     }
   }, [inviteWorker]);
+
+  const handleBatchProcess = async () => {
+    const validEmails = emails.filter(email => email.trim() && email.includes('@'));
+    if (validEmails.length === 0) return;
+
+    let addedCount = 0;
+    let invitedCount = 0;
+    let skippedCount = 0;
+
+    for (const email of validEmails) {
+      const emailTrimmed = email.trim();
+      const status = emailStatuses[emailTrimmed];
+
+      if (status?.alreadyMember) {
+        skippedCount++;
+      } else if (status?.exists && status.user) {
+        await handleAddUser(status.user.id, emailTrimmed);
+        addedCount++;
+      } else {
+        await handleInviteUser(emailTrimmed);
+        invitedCount++;
+      }
+    }
+
+    // Show summary toast
+    const messages = [];
+    if (addedCount > 0) messages.push(`${addedCount} user${addedCount > 1 ? 's' : ''} added`);
+    if (invitedCount > 0) messages.push(`${invitedCount} invitation${invitedCount > 1 ? 's' : ''} sent`);
+    if (skippedCount > 0) messages.push(`${skippedCount} already member${skippedCount > 1 ? 's' : ''}`);
+    
+    if (messages.length > 0) {
+      toast.success(messages.join(', '));
+    }
+
+    handleClose();
+  };
 
   const handleClose = () => {
     setEmails([""]);
@@ -179,6 +239,7 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
                       key={trimmedEmail}
                       email={trimmedEmail}
                       status={status}
+                      onAddUser={(userId) => handleAddUser(userId, trimmedEmail)}
                       onInviteUser={(email) => handleInviteUser(email)}
                       isProcessing={processingEmails.has(trimmedEmail)}
                     />
@@ -191,6 +252,20 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={handleClose}>
                 Cancel
+              </Button>
+              <Button 
+                onClick={handleBatchProcess}
+                disabled={processingEmails.size > 0 || emails.filter(e => e.trim() && e.includes('@')).length === 0}
+                className="flex items-center gap-2"
+              >
+                {processingEmails.size > 0 ? (
+                  "Processing..."
+                ) : (
+                  <>
+                    <UserPlus className="h-4 w-4" />
+                    Process All ({emails.filter(e => e.trim() && e.includes('@')).length})
+                  </>
+                )}
               </Button>
             </div>
         </div>
