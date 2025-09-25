@@ -225,12 +225,14 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
             {/* User cards section */}
             <div className="space-y-3">
               {emails
-                .filter(email => email.trim() && email.includes('@'))
+                .filter(email => {
+                  const trimmedEmail = email.trim();
+                  const status = emailStatuses[trimmedEmail];
+                  return status && (status.checking || status.exists);
+                })
                 .map(email => {
                   const trimmedEmail = email.trim();
                   const status = emailStatuses[trimmedEmail];
-                  
-                  if (!status) return null;
                   
                   return (
                     <UserCard
