@@ -98,19 +98,55 @@ serve(async (req: Request) => {
       }
     });
 
-    console.log(`✅ Successfully added user ${targetUser.email} to business ${business.name}`);
+  // Clean up any pending invites for this user to this business
+  const { data: pendingInvites } = await ctx.supaAdmin
+    .from('invites')
+    .select('id, token_hash')
+    .eq('email', targetUser.email)
+    .eq('business_id', ctx.businessId)
+    .is('redeemed_at', null)
+    .is('revoked_at', null);
 
-    return json({
-      message: 'Team member added successfully',
-      member: {
-        id: targetUserId,
-        email: targetUser.email,
-        name: targetUser.full_name,
-        role: role,
-        joined_at: new Date().toISOString(),
-        joined_via_invite: false
+  if (pendingInvites && pendingInvites.length > 0) {
+    // Mark invites as redeemed
+    await ctx.supaAdmin
+      .from('invites')
+      .update({ 
+        redeemed_at: new Date().toISOString(),
+        redeemed_by: targetUserId
+      })
+      .in('id', pendingInvites.map((inv: any) => inv.id));
+    
+    console.log(`🧹 Auto-redeemed ${pendingInvites.length} pending invites for ${targetUser.email}`);
+    
+    // Log the cleanup action
+    await ctx.supaAdmin.rpc('log_audit_action', {
+      p_business_id: ctx.businessId,
+      p_user_id: ctx.userId,
+      p_action: 'invite_auto_redeemed',
+      p_resource_type: 'invite',
+      p_resource_id: pendingInvites[0].id,
+      p_details: { 
+        redeemed_invite_count: pendingInvites.length,
+        user_email: targetUser.email,
+        reason: 'direct_addition'
       }
     });
+  }
+
+  console.log(`✅ Successfully added user ${targetUser.email} to business ${business.name}`);
+
+  return json({
+    message: 'Team member added successfully',
+    member: {
+      id: targetUserId,
+      email: targetUser.email,
+      name: targetUser.full_name,
+      role: role,
+      joined_at: new Date().toISOString(),
+      joined_via_invite: pendingInvites && pendingInvites.length > 0
+    }
+  });
 
   } catch (error) {
     console.error('Error in add-team-member:', error);

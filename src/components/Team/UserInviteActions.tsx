@@ -15,7 +15,7 @@ export function UserInviteActions({ invite }: UserInviteActionsProps) {
     try {
       await manageInvite.mutateAsync({ 
         action: 'accept', 
-        token_hash: invite.token_hash 
+        invite: invite 
       });
       toast.success(`Successfully joined ${invite.businesses.name}`);
     } catch (error: any) {
@@ -27,7 +27,7 @@ export function UserInviteActions({ invite }: UserInviteActionsProps) {
     try {
       await manageInvite.mutateAsync({ 
         action: 'decline', 
-        token_hash: invite.token_hash 
+        invite: invite 
       });
       toast.success('Invite declined');
     } catch (error: any) {
