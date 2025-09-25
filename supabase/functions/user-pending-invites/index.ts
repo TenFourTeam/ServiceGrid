@@ -1,48 +1,37 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.54.0';
-import { requireCtx } from '../_lib/auth.ts';
+import { corsHeaders, json, requireCtx } from '../_lib/auth.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-serve(async (req) => {
-  // Handle CORS preflight requests
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Only allow GET requests
+    console.log(`[user-pending-invites] ${req.method} request received`);
+    
     if (req.method !== 'GET') {
-      return new Response(
-        JSON.stringify({ error: 'Method not allowed' }),
-        { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return json({ error: 'Method not allowed' }, { status: 405 });
     }
 
     const ctx = await requireCtx(req);
     console.log('[user-pending-invites] User context:', ctx);
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get user's profile to get their email
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('email')
-      .eq('clerk_user_id', ctx.userId)
+      .eq('clerk_user_id', ctx.clerkUserId)
       .single();
 
     if (profileError || !profile) {
       console.error('[user-pending-invites] Profile error:', profileError);
-      return new Response(
-        JSON.stringify({ error: 'User profile not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return json({ error: 'User profile not found' }, { status: 404 });
     }
 
     console.log('[user-pending-invites] User email:', profile.email);
@@ -76,24 +65,17 @@ serve(async (req) => {
 
     if (invitesError) {
       console.error('[user-pending-invites] Invites error:', invitesError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to fetch pending invites' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      throw new Error(`Failed to fetch pending invites: ${invitesError.message}`);
     }
 
     console.log('[user-pending-invites] Found invites:', invites?.length || 0);
+    return json({ invites: invites || [] });
 
-    return new Response(
-      JSON.stringify({ invites: invites || [] }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
-  } catch (error) {
-    console.error('[user-pending-invites] Unexpected error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  } catch (error: any) {
+    console.error('[user-pending-invites] Error:', error);
+    return json(
+      { error: error.message || 'Failed to fetch pending invites' },
+      { status: 500 }
     );
   }
 });
