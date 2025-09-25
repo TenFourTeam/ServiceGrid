@@ -18,16 +18,14 @@ interface UserCardProps {
       role?: string;
     };
   };
-  onAddUser?: (userId: string) => void;
-  onInviteUser?: (email: string) => void;
+  onSendMembershipRequest: (userId?: string) => void;
   isProcessing?: boolean;
 }
 
 export function UserCard({ 
   email, 
   status, 
-  onAddUser, 
-  onInviteUser, 
+  onSendMembershipRequest,
   isProcessing = false 
 }: UserCardProps) {
   const getInitials = (name?: string, email?: string) => {
@@ -99,12 +97,12 @@ export function UserCard({
             </div>
             <Button
               size="sm"
-              onClick={() => onAddUser?.(status.user!.id)}
+              onClick={() => onSendMembershipRequest(status.user!.id)}
               disabled={isProcessing}
               className="flex items-center gap-1"
             >
               <UserPlus className="h-3 w-3" />
-              Add to Team
+              Send Request
             </Button>
           </div>
         </CardContent>
@@ -129,16 +127,10 @@ export function UserCard({
               New user
             </Badge>
           </div>
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => onInviteUser?.(email)}
-            disabled={isProcessing}
-            className="flex items-center gap-1"
-          >
+          <div className="text-xs text-muted-foreground flex items-center gap-1">
             <Mail className="h-3 w-3" />
-            Send Invite
-          </Button>
+            User must sign up first
+          </div>
         </div>
       </CardContent>
     </Card>

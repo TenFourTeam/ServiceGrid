@@ -288,9 +288,13 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
                           {member.role === 'owner' && <Shield className="h-3 w-3" />}
                           {member.role}
                         </Badge>
-                        {member.joined_at && (
+                        {member.joined_at ? (
                           <Badge variant="outline" className="text-xs">
                             {t('team.membersList.badges.active')}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs text-orange-600 border-orange-300">
+                            Pending
                           </Badge>
                         )}
                       </div>
@@ -299,9 +303,9 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
                       {member.joined_at ? (
                         <span className="truncate">{t('team.membersList.memberInfo.joined')} {new Date(member.joined_at).toLocaleDateString()}</span>
                       ) : (
-                        <span className="flex items-center gap-1 truncate">
-                          <Mail className="h-3 w-3 flex-shrink-0" />
-                          {t('team.membersList.memberInfo.invited')} {new Date(member.invited_at).toLocaleDateString()}
+                        <span className="flex items-center gap-1 truncate text-orange-600">
+                          <Clock className="h-3 w-3 flex-shrink-0" />
+                          Pending membership request since {new Date(member.invited_at).toLocaleDateString()}
                         </span>
                       )}
                       {member.name && (
