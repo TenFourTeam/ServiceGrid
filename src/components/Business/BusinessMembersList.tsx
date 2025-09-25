@@ -9,11 +9,11 @@ import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useBusinessMembersData, useBusinessMemberOperations } from "@/hooks/useBusinessMembers";
 import { usePendingInvites, useRevokeInvite, useResendInvite } from "@/hooks/useInvites";
 import { EnhancedInviteModal } from "@/components/Team/EnhancedInviteModal";
-import { useTeamOperations } from "@/hooks/useTeamOperations";
+
 import { TeamSearchFilter } from "@/components/Team/TeamSearchFilter";
 import { TeamMemberActions } from "@/components/Team/TeamMemberActions";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { UserPlus, Mail, Clock, Send, X, Users, AlertCircle, Shield } from "lucide-react";
+import { UserPlus, Mail, Clock, X, Users, AlertCircle, Shield } from "lucide-react";
 import { RequireRole } from "@/components/Auth/RequireRole";
 
 interface BusinessMembersListProps {
@@ -25,7 +25,7 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [showInviteModal, setShowInviteModal] = useState(false);
-  const [userExistence, setUserExistence] = useState<Record<string, { exists: boolean; isAlreadyMember: boolean; isLoading: boolean }>>({});
+  
   const [filters, setFilters] = useState({
     search: "",
     role: null as string | null,
@@ -38,7 +38,7 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
   const { removeMember } = useBusinessMemberOperations();
   const revokeInvite = useRevokeInvite(businessId || '');
   const resendInvite = useResendInvite(businessId || '');
-  const { checkUserExists, addTeamMember } = useTeamOperations();
+  
 
   // Filtered and sorted data
   const filteredMembers = useMemo(() => {
@@ -80,40 +80,6 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
     );
   }, [invitesData?.invites, filters]);
 
-  // Check user existence for all pending invites
-  useEffect(() => {
-    if (filteredInvites.length > 0) {
-      filteredInvites.forEach(async (invite) => {
-        if (!userExistence[invite.email]) {
-          setUserExistence(prev => ({
-            ...prev,
-            [invite.email]: { exists: false, isAlreadyMember: false, isLoading: true }
-          }));
-
-          try {
-            const result = await checkUserExists.mutateAsync({
-              email: invite.email,
-              businessId: businessId || ''
-            });
-
-            setUserExistence(prev => ({
-              ...prev,
-              [invite.email]: {
-                exists: result.exists,
-                isAlreadyMember: result.alreadyMember,
-                isLoading: false
-              }
-            }));
-          } catch (error) {
-            setUserExistence(prev => ({
-              ...prev,
-              [invite.email]: { exists: false, isAlreadyMember: false, isLoading: false }
-            }));
-          }
-        }
-      });
-    }
-  }, [filteredInvites, businessId, checkUserExists, userExistence]);
 
   const ownerCount = members.filter(m => m.role === 'owner').length;
 
@@ -138,31 +104,8 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
     revokeInvite.mutate({ inviteId });
   };
 
-  const handleResendInvite = async (inviteId: string, email: string) => {
-    try {
-      const userCheck = await checkUserExists.mutateAsync({ 
-        email, 
-        businessId: businessId || '' 
-      });
-
-      if (userCheck.exists && !userCheck.alreadyMember && userCheck.user) {
-        addTeamMember.mutate({
-          userId: userCheck.user.id,
-          businessId: businessId || '',
-          role: 'worker'
-        }, {
-          onSuccess: () => {
-            revokeInvite.mutate({ inviteId });
-          }
-        });
-      } else if (userCheck.alreadyMember) {
-        revokeInvite.mutate({ inviteId });
-      } else {
-        resendInvite.mutate({ inviteId });
-      }
-    } catch (error: Error | unknown) {
-      console.error('[BusinessMembersList] resend error:', error);
-    }
+  const handleResendInvite = (inviteId: string) => {
+    resendInvite.mutate({ inviteId });
   };
 
   if (isLoading) {
@@ -352,15 +295,6 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
             <div className="space-y-3">
               {filteredInvites.map((invite) => {
                 const isExpired = new Date(invite.expires_at) < new Date();
-                const userStatus = userExistence[invite.email];
-                const buttonText = userStatus?.isLoading 
-                  ? t('team.membersList.inviteActions.checking')
-                  : userStatus?.isAlreadyMember 
-                    ? t('team.membersList.inviteActions.alreadyMember')
-                    : userStatus?.exists 
-                      ? t('team.membersList.inviteActions.add')
-                      : t('team.membersList.inviteActions.resend');
-                const isButtonDisabled = userStatus?.isLoading || userStatus?.isAlreadyMember || resendInvite.isPending || addTeamMember.isPending;
                 
                 return (
                   <div
@@ -397,20 +331,7 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
                     </div>
                     
                     <RequireRole role="owner" fallback={null}>
-                      <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 flex-shrink-0">
-                        {!isExpired && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleResendInvite(invite.id, invite.email)}
-                            disabled={isButtonDisabled}
-                            className="flex items-center gap-2 text-xs sm:text-sm"
-                          >
-                            <Send className="h-3 w-3 sm:h-4 sm:w-4" />
-                            <span className="hidden sm:inline">{buttonText}</span>
-                            <span className="sm:hidden">{buttonText.slice(0, 6)}</span>
-                          </Button>
-                        )}
+                      <div className="flex items-center gap-2 flex-shrink-0">
                         <Button
                           variant="outline"
                           size="sm"
