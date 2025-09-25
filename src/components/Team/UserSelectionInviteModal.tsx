@@ -20,7 +20,7 @@ export function UserSelectionInviteModal({ open, onOpenChange, businessId }: Use
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   
-  const { data: allUsersData, isLoading: loadingUsers } = useAllUsers();
+  const { data: allUsersData, isLoading: loadingUsers } = useAllUsers(businessId);
   const { addTeamMember, checkUserExists, isAddingMember } = useTeamOperations();
 
   const users = allUsersData?.users || [];
