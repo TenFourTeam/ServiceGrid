@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
-import { useBusinessMembersData, useBusinessMemberOperations } from "@/hooks/useBusinessMembers";
-import { usePendingInvites, useRevokeInvite, useResendInvite } from "@/hooks/useInvites";
+import { useBusinessMembersData } from "@/hooks/useBusinessMembers";
 import { EnhancedInviteModal } from "@/components/Team/EnhancedInviteModal";
 
 import { TeamSearchFilter } from "@/components/Team/TeamSearchFilter";
@@ -34,10 +33,6 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
   
 
   const { data: members, isLoading, count: membersCount } = useBusinessMembersData();
-  const { data: invitesData, isLoading: loadingInvites } = usePendingInvites(businessId);
-  const { removeMember } = useBusinessMemberOperations();
-  const revokeInvite = useRevokeInvite(businessId || '');
-  const resendInvite = useResendInvite(businessId || '');
   
 
   // Filtered and sorted data
@@ -67,18 +62,7 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
     });
   }, [members, filters]);
 
-  const filteredInvites = useMemo(() => {
-    if (!invitesData?.invites) return [];
-    
-    return invitesData.invites.filter(invite => {
-      const matchesSearch = !filters.search || 
-        invite.email.toLowerCase().includes(filters.search.toLowerCase());
-      
-      return matchesSearch;
-    }).sort((a, b) => 
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
-  }, [invitesData?.invites, filters]);
+  // Invite functionality removed - all team additions now go through user selection
 
 
   const ownerCount = members.filter(m => m.role === 'owner').length;
@@ -96,13 +80,7 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
     setFilters(prev => ({ ...prev, status }));
   };
 
-  const handleRevokeInvite = (inviteId: string, email: string) => {
-    revokeInvite.mutate({ inviteId });
-  };
-
-  const handleResendInvite = (inviteId: string) => {
-    resendInvite.mutate({ inviteId });
-  };
+  // Invite management functionality removed
 
   if (isLoading) {
     return (
@@ -172,19 +150,14 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
         )}
       </RequireRole>
 
-      <Tabs defaultValue="members" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="members" className="flex items-center gap-2">
+      <div className="w-full">
+        <div className="mb-4">
+          <h4 className="text-lg font-medium flex items-center gap-2">
             <Users className="h-4 w-4" />
             {t('team.membersList.tabs.members')} ({filteredMembers.length})
-          </TabsTrigger>
-          <TabsTrigger value="invites" className="flex items-center gap-2">
-            <Mail className="h-4 w-4" />
-            {t('team.membersList.tabs.pendingInvites')} ({filteredInvites.length})
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="members" className="space-y-3 mt-4">
+          </h4>
+        </div>
+        <div className="space-y-3 mt-4">
           {filteredMembers.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Users className="h-12 w-12 mx-auto mb-4 opacity-30" />
@@ -263,91 +236,8 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
               ))}
             </div>
           )}
-        </TabsContent>
-
-        <TabsContent value="invites" className="space-y-3 mt-4">
-          {loadingInvites ? (
-            <div className="text-center py-8">
-              <div className="text-muted-foreground">{t('team.membersList.emptyStates.loadingInvites')}</div>
-            </div>
-          ) : filteredInvites.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Mail className="h-12 w-12 mx-auto mb-4 opacity-30" />
-              {filters.search ? (
-                <>
-                  <p className="text-lg font-medium mb-2">{t('team.membersList.emptyStates.noInvitesSearch')}</p>
-                  <p className="text-sm">{t('team.membersList.emptyStates.noInvitesSearchDescription')}</p>
-                </>
-              ) : (
-                <>
-                  <p className="text-lg font-medium mb-2">{t('team.membersList.emptyStates.noInvites')}</p>
-                  <RequireRole role="owner" fallback={null}>
-                    <p className="text-sm">{t('team.membersList.emptyStates.noInvitesDescription')}</p>
-                  </RequireRole>
-                </>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {filteredInvites.map((invite) => {
-                const isExpired = new Date(invite.expires_at) < new Date();
-                
-                return (
-                  <div
-                    key={invite.id}
-                    className="flex items-start sm:items-center justify-between p-3 sm:p-4 border rounded-lg hover:bg-muted/20 transition-colors min-w-0 gap-3"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
-                        <span className="font-medium truncate min-w-0 text-sm sm:text-base">{invite.email}</span>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Badge 
-                            variant={isExpired ? "destructive" : "outline"} 
-                            className="flex items-center gap-1 text-xs"
-                          >
-                            <Clock className="h-3 w-3" />
-                            {isExpired ? t('team.membersList.badges.expired') : t('team.membersList.badges.pending')}
-                          </Badge>
-                          <Badge variant="secondary" className="text-xs">
-                            {invite.role}
-                          </Badge>
-                        </div>
-                      </div>
-                      <div className="text-xs sm:text-sm text-muted-foreground">
-                        <div className="truncate">
-                          {t('team.membersList.inviteInfo.sent')} {new Date(invite.created_at).toLocaleDateString()} • 
-                          {t('team.membersList.inviteInfo.expires')} {new Date(invite.expires_at).toLocaleDateString()}
-                        </div>
-                        {invite.profiles?.email && (
-                          <div className="truncate mt-1">
-                            {t('team.membersList.inviteInfo.invitedBy')} {invite.profiles.email}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <RequireRole role="owner" fallback={null}>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleRevokeInvite(invite.id, invite.email)}
-                          disabled={revokeInvite.isPending}
-                          className="flex items-center gap-2 text-destructive hover:text-destructive text-xs sm:text-sm"
-                        >
-                          <X className="h-3 w-3 sm:h-4 sm:w-4" />
-                          <span className="hidden sm:inline">{isExpired ? "Remove" : "Revoke"}</span>
-                          <span className="sm:hidden">{isExpired ? "Rem" : "Rev"}</span>
-                        </Button>
-                      </div>
-                    </RequireRole>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
 
       {/* Enhanced Invite Modal */}
       <EnhancedInviteModal

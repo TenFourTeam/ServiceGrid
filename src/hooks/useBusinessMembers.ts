@@ -66,27 +66,7 @@ export function useBusinessMemberOperations() {
   const { businessId } = useBusinessContext();
   const authApi = useAuthApi();
 
-  const inviteWorker = useMutation({
-    mutationFn: async ({ email }: { email: string }) => {
-      const { data, error } = await authApi.invoke('invite-worker', {
-        method: "POST",
-        body: { businessId, email }
-      });
-      
-      if (error) {
-        throw new Error(error.message || 'Failed to invite team member');
-      }
-      
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.data.members(businessId || '') });
-      queryClient.invalidateQueries({ queryKey: queryKeys.team.invites(businessId || '') });
-    },
-    onError: (error: Error | unknown) => {
-      console.error('[useInviteWorker] error:', error);
-    },
-  });
+  // Note: inviteWorker functionality removed - use UserSelectionInviteModal instead
 
   const removeMember = useMutation({
     mutationFn: async ({ memberId }: { memberId: string }) => {
@@ -144,7 +124,6 @@ export function useBusinessMemberOperations() {
   });
 
   return {
-    inviteWorker,
     removeMember,
   };
 }

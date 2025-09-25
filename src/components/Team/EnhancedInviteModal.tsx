@@ -1,14 +1,13 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useBusinessMemberOperations } from "@/hooks/useBusinessMembers";
-import { useTeamOperations } from "@/hooks/useTeamOperations";
-import { UserPlus, X } from "lucide-react";
-import { UserCard } from "./UserCard";
-import { toast } from "sonner";
-import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAllUsers } from "@/hooks/useAllUsers";
+import { UserPlus, Users, Search } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface EnhancedInviteModalProps {
   open: boolean;
@@ -17,135 +16,47 @@ interface EnhancedInviteModalProps {
 }
 
 export function EnhancedInviteModal({ open, onOpenChange, businessId }: EnhancedInviteModalProps) {
-  const [emails, setEmails] = useState<string[]>([""]);
-  const [emailStatuses, setEmailStatuses] = useState<Record<string, { checking: boolean; exists: boolean; alreadyMember: boolean; user?: any }>>({});
-  const [processingEmails, setProcessingEmails] = useState<Set<string>>(new Set());
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   
-  const { inviteWorker } = useBusinessMemberOperations();
-  const { checkUserExists, addTeamMember } = useTeamOperations();
+  const { data: allUsersData, isLoading: loadingUsers } = useAllUsers(businessId);
 
-  const addEmail = () => {
-    setEmails([...emails, ""]);
+  const users = allUsersData?.users || [];
+
+  // Filter users based on search
+  const filteredUsers = users.filter(user => 
+    user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleUserToggle = (userId: string) => {
+    setSelectedUsers(prev => 
+      prev.includes(userId) 
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    );
   };
 
-  const removeEmail = (index: number) => {
-    if (emails.length > 1) {
-      setEmails(emails.filter((_, i) => i !== index));
-    }
-  };
-
-  const updateEmail = (index: number, value: string) => {
-    const newEmails = [...emails];
-    newEmails[index] = value;
-    setEmails(newEmails);
-  };
-
-  // Debounced email checking
-  const debouncedEmails = useDebouncedValue(emails, 500);
-  
-  // Check user existence when debounced emails change
-  useEffect(() => {
-    debouncedEmails.forEach(email => {
-      const trimmedEmail = email.trim();
-      if (trimmedEmail.includes('@') && trimmedEmail !== '' && !emailStatuses[trimmedEmail]) {
-        checkUserExistence(trimmedEmail);
-      }
-    });
-  }, [debouncedEmails, emailStatuses]);
-
-  const checkUserExistence = async (email: string) => {
-    if (emailStatuses[email]?.checking) return;
-
-    setEmailStatuses(prev => ({
-      ...prev,
-      [email]: { checking: true, exists: false, alreadyMember: false }
-    }));
-
-    try {
-      const result = await checkUserExists.mutateAsync({
-        email,
-        businessId
-      });
-
-      setEmailStatuses(prev => ({
-        ...prev,
-        [email]: {
-          checking: false,
-          exists: result.exists,
-          alreadyMember: result.alreadyMember,
-          user: result.user
-        }
-      }));
-    } catch (error) {
-      setEmailStatuses(prev => ({
-        ...prev,
-        [email]: { checking: false, exists: false, alreadyMember: false }
-      }));
-    }
-  };
-
-
-  const handleAddUser = useCallback(async (userId: string, email: string) => {
-    setProcessingEmails(prev => new Set(prev).add(email));
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    try {
-      await addTeamMember.mutateAsync({
-        userId,
-        businessId,
-        role: 'worker'
-      }, {
-        onSuccess: () => {
-          toast.success(`${emailStatuses[email]?.user?.name || email.split('@')[0]} added to team`);
-          handleClose();
-        },
-        onError: (error: any) => {
-          toast.error(error?.message || 'Failed to add team member');
-        }
-      });
-    } finally {
-      setProcessingEmails(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(email);
-        return newSet;
-      });
-    }
-  }, [addTeamMember, businessId, emailStatuses]);
+    if (selectedUsers.length === 0) return;
 
-  const handleInviteUser = useCallback(async (email: string) => {
-    setProcessingEmails(prev => new Set(prev).add(email));
+    // TODO: Create invites for selected users instead of adding them directly
+    console.log('Creating invites for users:', selectedUsers);
     
-    try {
-      await inviteWorker.mutateAsync({
-        email,
-      }, {
-        onSuccess: () => {
-          toast.success(`Invitation sent to ${email}`);
-          handleClose();
-        },
-        onError: (error: any) => {
-          toast.error(error?.message || 'Failed to send invitation');
-        }
-      });
-    } finally {
-      setProcessingEmails(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(email);
-        return newSet;
-      });
-    }
-  }, [inviteWorker]);
-
+    handleClose();
+  };
 
   const handleClose = () => {
-    setEmails([""]);
-    setEmailStatuses({});
-    setProcessingEmails(new Set());
+    setSelectedUsers([]);
+    setSearchQuery("");
     onOpenChange(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="h-5 w-5" />
@@ -153,74 +64,85 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
-            {/* Email input section */}
-            <div className="space-y-3">
-              <Label>Add Team Members</Label>
-              {emails.map((email, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <Input
-                    type="email"
-                    placeholder={`team-member${emails.length > 1 ? index + 1 : ''}@company.com`}
-                    value={email}
-                    onChange={(e) => updateEmail(index, e.target.value)}
-                    className="flex-1"
-                  />
-                  {emails.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeEmail(index)}
+        <div className="flex flex-col gap-4 flex-1 min-h-0">
+          {/* Search */}
+          <div className="space-y-2">
+            <Label>Search Users</Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by email or name..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+
+          {/* Selected count */}
+          {selectedUsers.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">
+                {selectedUsers.length} user{selectedUsers.length !== 1 ? 's' : ''} selected
+              </Badge>
+            </div>
+          )}
+
+          {/* User list */}
+          <div className="space-y-2 flex-1 min-h-0">
+            <Label>Select Users to Invite</Label>
+            {loadingUsers ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-muted-foreground">Loading users...</div>
+              </div>
+            ) : filteredUsers.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                <Users className="h-12 w-12 mb-4 opacity-30" />
+                <p>No users found</p>
+                {searchQuery && (
+                  <p className="text-sm">Try adjusting your search terms</p>
+                )}
+              </div>
+            ) : (
+              <ScrollArea className="h-[300px] border rounded-lg">
+                <div className="p-2 space-y-2">
+                  {filteredUsers.map((user) => (
+                    <div
+                      key={user.id}
+                      className="flex items-center space-x-3 p-3 rounded-lg hover:bg-muted/50 cursor-pointer"
+                      onClick={() => handleUserToggle(user.id)}
                     >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
+                      <Checkbox
+                        checked={selectedUsers.includes(user.id)}
+                        onCheckedChange={() => handleUserToggle(user.id)}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{user.email}</p>
+                        {user.full_name && (
+                          <p className="text-xs text-muted-foreground truncate">{user.full_name}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={addEmail}
-                className="w-full"
-              >
-                <UserPlus className="h-4 w-4 mr-2" />
-                Add Another Email
-              </Button>
-            </div>
+              </ScrollArea>
+            )}
+          </div>
 
-            {/* User cards section */}
-            <div className="space-y-3">
-              {emails
-                .filter(email => {
-                  const trimmedEmail = email.trim();
-                  const status = emailStatuses[trimmedEmail];
-                  return status && (status.checking || status.exists);
-                })
-                .map(email => {
-                  const trimmedEmail = email.trim();
-                  const status = emailStatuses[trimmedEmail];
-                  
-                  return (
-                    <UserCard
-                      key={trimmedEmail}
-                      email={trimmedEmail}
-                      status={status}
-                      onAddUser={(userId) => handleAddUser(userId, trimmedEmail)}
-                      onInviteUser={(email) => handleInviteUser(email)}
-                      isProcessing={processingEmails.has(trimmedEmail)}
-                    />
-                  );
-                })
-              }
-            </div>
-
-            {/* Actions */}
-            <div className="flex justify-end">
-              <Button type="button" variant="outline" onClick={handleClose}>
-                Cancel
-              </Button>
-            </div>
+          {/* Actions */}
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button type="button" variant="outline" onClick={handleClose}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSubmit}
+              disabled={selectedUsers.length === 0}
+              className="flex items-center gap-2"
+            >
+              <UserPlus className="h-4 w-4" />
+              Send {selectedUsers.length} Invite{selectedUsers.length !== 1 ? 's' : ''}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

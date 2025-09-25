@@ -44,19 +44,9 @@ export function UserSelectionInviteModal({ open, onOpenChange, businessId }: Use
     
     if (selectedUsers.length === 0) return;
 
-    // Add each selected user to the business
-    for (const userId of selectedUsers) {
-      try {
-        await addTeamMember.mutateAsync({
-          userId,
-          businessId,
-          role: 'worker'
-        });
-      } catch (error) {
-        console.error('Failed to add user:', error);
-      }
-    }
-
+    // TODO: Create invites for selected users instead of adding them directly
+    console.log('Creating invites for users:', selectedUsers);
+    
     handleClose();
   };
 
@@ -152,11 +142,11 @@ export function UserSelectionInviteModal({ open, onOpenChange, businessId }: Use
               className="flex items-center gap-2"
             >
               {isAddingMember ? (
-                "Adding Members..."
+                "Sending Invites..."
               ) : (
                 <>
                   <UserPlus className="h-4 w-4" />
-                  Add {selectedUsers.length} Member{selectedUsers.length !== 1 ? 's' : ''}
+                  Send {selectedUsers.length} Invite{selectedUsers.length !== 1 ? 's' : ''}
                 </>
               )}
             </Button>
