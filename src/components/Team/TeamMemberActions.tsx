@@ -87,7 +87,7 @@ export function TeamMemberActions({ member, businessId, isLastOwner }: TeamMembe
             </p>
             
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowRemoveDialog(false)}>
+              <Button variant="outline" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowRemoveDialog(false); }}>
                 Cancel
               </Button>
               <Button 
