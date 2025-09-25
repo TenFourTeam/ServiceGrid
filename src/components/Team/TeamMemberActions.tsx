@@ -50,14 +50,21 @@ export function TeamMemberActions({ member, businessId, isLastOwner }: TeamMembe
     <RequireRole role="owner" fallback={null}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={(e) => e.stopPropagation()}
+          >
             <MoreVertical className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           
           <DropdownMenuItem 
-            onClick={() => setShowRemoveDialog(true)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowRemoveDialog(true);
+            }}
             className="text-destructive focus:text-destructive"
           >
             <Trash2 className="h-4 w-4 mr-2" />
