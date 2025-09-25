@@ -133,41 +133,6 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
     }
   }, [inviteWorker]);
 
-  const handleBatchProcess = async () => {
-    const validEmails = emails.filter(email => email.trim() && email.includes('@'));
-    if (validEmails.length === 0) return;
-
-    let addedCount = 0;
-    let invitedCount = 0;
-    let skippedCount = 0;
-
-    for (const email of validEmails) {
-      const emailTrimmed = email.trim();
-      const status = emailStatuses[emailTrimmed];
-
-      if (status?.alreadyMember) {
-        skippedCount++;
-      } else if (status?.exists && status.user) {
-        await handleAddUser(status.user.id, emailTrimmed);
-        addedCount++;
-      } else {
-        await handleInviteUser(emailTrimmed);
-        invitedCount++;
-      }
-    }
-
-    // Show summary toast
-    const messages = [];
-    if (addedCount > 0) messages.push(`${addedCount} user${addedCount > 1 ? 's' : ''} added`);
-    if (invitedCount > 0) messages.push(`${invitedCount} invitation${invitedCount > 1 ? 's' : ''} sent`);
-    if (skippedCount > 0) messages.push(`${skippedCount} already member${skippedCount > 1 ? 's' : ''}`);
-    
-    if (messages.length > 0) {
-      toast.success(messages.join(', '));
-    }
-
-    handleClose();
-  };
 
   const handleClose = () => {
     setEmails([""]);
@@ -249,23 +214,9 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
             </div>
 
             {/* Actions */}
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end">
               <Button type="button" variant="outline" onClick={handleClose}>
                 Cancel
-              </Button>
-              <Button 
-                onClick={handleBatchProcess}
-                disabled={processingEmails.size > 0 || emails.filter(e => e.trim() && e.includes('@')).length === 0}
-                className="flex items-center gap-2"
-              >
-                {processingEmails.size > 0 ? (
-                  "Processing..."
-                ) : (
-                  <>
-                    <UserPlus className="h-4 w-4" />
-                    Process All ({emails.filter(e => e.trim() && e.includes('@')).length})
-                  </>
-                )}
               </Button>
             </div>
         </div>
