@@ -1,32 +1,83 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.54.0";
-import { corsHeaders, json, requireCtx } from "../_lib/auth.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.54.0';
+import { corsHeaders, json, requireCtx } from '../_lib/auth.ts';
 
-serve(async (req: Request): Promise<Response> => {
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+Deno.serve(async (req) => {
+  // Add comprehensive logging from function entry
+  console.log(`[manage-invite] ===== Function Entry =====`);
+  console.log(`[manage-invite] ${req.method} request to ${req.url}`);
+  console.log(`[manage-invite] Function is accessible and responding!`);
+
   if (req.method === 'OPTIONS') {
+    console.log('[manage-invite] Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
 
   if (req.method !== 'POST') {
+    console.log('[manage-invite] Method not allowed:', req.method);
     return json({ error: 'Method not allowed' }, { status: 405 });
   }
 
   try {
-    const { action, token_hash } = await req.json();
+    // Enhanced request body parsing with detailed logging
+    let body;
+    try {
+      const rawBody = await req.text();
+      console.log('[manage-invite] Raw request body length:', rawBody.length);
+      console.log('[manage-invite] Raw request body:', rawBody);
+      
+      if (!rawBody || rawBody.trim() === '') {
+        console.error('[manage-invite] Empty request body received');
+        return json({ error: 'Request body is required' }, { status: 400 });
+      }
+      
+      body = JSON.parse(rawBody);
+      console.log('[manage-invite] Parsed request body:', JSON.stringify(body, null, 2));
+    } catch (jsonError) {
+      console.error('[manage-invite] JSON parsing error:', jsonError);
+      return json({ error: 'Invalid JSON in request body' }, { status: 400 });
+    }
+
+    const { action, token_hash } = body;
 
     if (!action || !['accept', 'decline'].includes(action)) {
+      console.error('[manage-invite] Invalid action:', action);
       return json({ error: 'Valid action (accept/decline) is required' }, { status: 400 });
     }
 
     if (!token_hash) {
+      console.error('[manage-invite] Missing token_hash');
       return json({ error: 'Token hash is required' }, { status: 400 });
     }
 
     console.log(`[manage-invite] Processing ${action} action for token hash: ${token_hash.substring(0, 10)}...`);
 
-    // Get authenticated user context
+    // Authentication context validation with detailed logging
+    console.log('[manage-invite] Starting authentication context resolution...');
     const ctx = await requireCtx(req);
-    console.log(`[manage-invite] User context: ${ctx.email}`);
+    console.log('[manage-invite] Raw context resolved:', JSON.stringify(ctx, null, 2));
+    
+    // Validate authentication context
+    if (!ctx.userId || !ctx.email) {
+      console.error('[manage-invite] Authentication context validation failed:', {
+        hasUserId: !!ctx.userId,
+        hasEmail: !!ctx.email,
+        userId: ctx.userId,
+        email: ctx.email
+      });
+      return json(
+        { error: 'Authentication required: Missing user context' },
+        { status: 401 }
+      );
+    }
+    
+    console.log('[manage-invite] Authentication validated successfully:', {
+      userId: ctx.userId,
+      email: ctx.email
+    });
 
     // Find the invite using the token_hash directly (no re-hashing)
     const { data: invite, error: inviteError } = await ctx.supaAdmin
