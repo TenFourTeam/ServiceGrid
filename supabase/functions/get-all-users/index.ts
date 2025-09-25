@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
 
     console.log('[get-all-users] Permission check passed. User is business owner.');
 
-    // Step 4: Get all profiles excluding current user and existing business members
+    // Get all profiles excluding current user and existing business members
     console.log('[get-all-users] Fetching available users for invitation...');
     const { data: users, error } = await supabase
       .from('profiles')

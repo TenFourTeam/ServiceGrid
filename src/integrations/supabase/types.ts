@@ -1220,9 +1220,7 @@ export type Database = {
         Returns: undefined
       }
       user_business_role: {
-        Args:
-          | { p_business_id: string }
-          | { p_business_id: string; p_user_id: string }
+        Args: { p_business_id: string; p_user_id: string }
         Returns: Database["public"]["Enums"]["business_role"]
       }
     }
