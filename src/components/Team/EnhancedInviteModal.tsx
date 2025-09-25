@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAllUsers } from "@/hooks/useAllUsers";
 import { UserPlus, Users, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useCreateInvites } from "@/hooks/useCreateInvites";
 
 interface EnhancedInviteModalProps {
   open: boolean;
@@ -20,6 +21,7 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
   const [searchQuery, setSearchQuery] = useState("");
   
   const { data: allUsersData, isLoading: loadingUsers } = useAllUsers(businessId);
+  const createInvites = useCreateInvites();
 
   const users = allUsersData?.users || [];
 
@@ -42,10 +44,16 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
     
     if (selectedUsers.length === 0) return;
 
-    // TODO: Create invites for selected users instead of adding them directly
-    console.log('Creating invites for users:', selectedUsers);
-    
-    handleClose();
+    try {
+      await createInvites.mutateAsync({
+        userIds: selectedUsers,
+        businessId,
+        role: 'worker'
+      });
+      handleClose();
+    } catch (error) {
+      console.error('Failed to create invites:', error);
+    }
   };
 
   const handleClose = () => {
@@ -136,7 +144,7 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
             </Button>
             <Button 
               onClick={handleSubmit}
-              disabled={selectedUsers.length === 0}
+              disabled={selectedUsers.length === 0 || createInvites.isPending}
               className="flex items-center gap-2"
             >
               <UserPlus className="h-4 w-4" />

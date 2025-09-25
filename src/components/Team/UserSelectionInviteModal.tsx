@@ -5,8 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useTeamOperations } from "@/hooks/useTeamOperations";
 import { useAllUsers } from "@/hooks/useAllUsers";
+import { useCreateInvites } from "@/hooks/useCreateInvites";
 import { UserPlus, Users, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -21,7 +21,7 @@ export function UserSelectionInviteModal({ open, onOpenChange, businessId }: Use
   const [searchQuery, setSearchQuery] = useState("");
   
   const { data: allUsersData, isLoading: loadingUsers } = useAllUsers(businessId);
-  const { addTeamMember, checkUserExists, isAddingMember } = useTeamOperations();
+  const createInvites = useCreateInvites();
 
   const users = allUsersData?.users || [];
 
@@ -44,10 +44,16 @@ export function UserSelectionInviteModal({ open, onOpenChange, businessId }: Use
     
     if (selectedUsers.length === 0) return;
 
-    // TODO: Create invites for selected users instead of adding them directly
-    console.log('Creating invites for users:', selectedUsers);
-    
-    handleClose();
+    try {
+      await createInvites.mutateAsync({
+        userIds: selectedUsers,
+        businessId,
+        role: 'worker'
+      });
+      handleClose();
+    } catch (error) {
+      console.error('Failed to create invites:', error);
+    }
   };
 
   const handleClose = () => {
@@ -138,10 +144,10 @@ export function UserSelectionInviteModal({ open, onOpenChange, businessId }: Use
             </Button>
             <Button 
               onClick={handleSubmit}
-              disabled={selectedUsers.length === 0 || isAddingMember}
+              disabled={selectedUsers.length === 0 || createInvites.isPending}
               className="flex items-center gap-2"
             >
-              {isAddingMember ? (
+              {createInvites.isPending ? (
                 "Sending Invites..."
               ) : (
                 <>
