@@ -1,9 +1,5 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.54.0';
 import { corsHeaders, json, requireCtx } from '../_lib/auth.ts';
-
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 Deno.serve(async (req) => {
   console.log(`[get-all-users] ===== Function Entry =====`);
@@ -20,31 +16,15 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Step 1: Authentication context validation with detailed logging
     console.log('[get-all-users] Starting authentication context resolution...');
     const ctx = await requireCtx(req);
-    console.log('[get-all-users] Raw context resolved:', JSON.stringify(ctx, null, 2));
-    
-    // Validate authentication context
-    if (!ctx.userId || !ctx.businessId) {
-      console.error('[get-all-users] Authentication context validation failed:', {
-        hasUserId: !!ctx.userId,
-        hasBusinessId: !!ctx.businessId,
-        userId: ctx.userId,
-        businessId: ctx.businessId
-      });
-      return json(
-        { error: 'Authentication required: Missing user or business context' },
-        { status: 401 }
-      );
-    }
-    
-    console.log('[get-all-users] Authentication validated successfully:', {
+    console.log('[get-all-users] Context resolved successfully:', {
       userId: ctx.userId,
-      businessId: ctx.businessId
+      businessId: ctx.businessId,
+      email: ctx.email
     });
 
-    // Step 2: Extract businessId from query parameters
+    // Use query parameter businessId if provided, otherwise use context businessId
     const url = new URL(req.url);
     const businessId = url.searchParams.get('businessId') || ctx.businessId;
     
@@ -55,20 +35,25 @@ Deno.serve(async (req) => {
 
     console.log('[get-all-users] Using businessId:', businessId);
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Use service role client from context
+    const supabase = ctx.supaAdmin;
 
-    // Step 3: Check if user is business owner (required for viewing all users)
-    console.log('[get-all-users] Checking user business role...');
-    const { data: userRole, error: roleError } = await supabase
-      .rpc('user_business_role', { p_business_id: businessId, p_user_id: ctx.userId });
+    // Check if user is business owner - direct query instead of RPC
+    console.log('[get-all-users] Checking user business membership...');
+    const { data: membership, error: membershipError } = await supabase
+      .from('business_members')
+      .select('role')
+      .eq('business_id', businessId)
+      .eq('user_id', ctx.userId)
+      .single();
     
-    if (roleError) {
-      console.error('[get-all-users] Role check error:', roleError);
-      return json({ error: 'Failed to verify permissions' }, { status: 500 });
+    if (membershipError) {
+      console.error('[get-all-users] Membership check error:', membershipError);
+      return json({ error: 'Failed to verify business membership' }, { status: 500 });
     }
 
-    if (userRole !== 'owner') {
-      console.error('[get-all-users] Permission denied. User role:', userRole);
+    if (!membership || membership.role !== 'owner') {
+      console.error('[get-all-users] Permission denied. User role:', membership?.role || 'none');
       return json({ error: 'Only business owners can view all users for invitations' }, { status: 403 });
     }
 
