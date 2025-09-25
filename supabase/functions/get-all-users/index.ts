@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
     // Step 3: Check if user is business owner (required for viewing all users)
     console.log('[get-all-users] Checking user business role...');
     const { data: userRole, error: roleError } = await supabase
-      .rpc('user_business_role', { p_business_id: businessId });
+      .rpc('user_business_role', { p_business_id: businessId, p_user_id: ctx.userId });
     
     if (roleError) {
       console.error('[get-all-users] Role check error:', roleError);

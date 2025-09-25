@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
     if (req.method === 'GET') {
       // Check user role to determine job filtering
       const { data: userRole } = await supabase
-        .rpc('user_business_role', { p_business_id: ctx.businessId });
+        .rpc('user_business_role', { p_business_id: ctx.businessId, p_user_id: ctx.userId });
 
       let jobsQuery = supabase
         .from('jobs')

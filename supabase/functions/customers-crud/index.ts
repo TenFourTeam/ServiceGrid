@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
     if (req.method === 'GET') {
       // Check if user can access customer contact information
       const { data: userRole } = await supabase
-        .rpc('user_business_role', { p_business_id: ctx.businessId });
+        .rpc('user_business_role', { p_business_id: ctx.businessId, p_user_id: ctx.userId });
       
       const canAccessContactInfo = userRole === 'owner';
       
