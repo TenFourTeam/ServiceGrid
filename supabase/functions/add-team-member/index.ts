@@ -67,7 +67,7 @@ serve(async (req: Request) => {
       return json({ error: 'User is already a member of this business' }, { status: 400 });
     }
 
-    // Add user to business members with pending status
+    // Add user to business members
     const { error: memberError } = await ctx.supaAdmin
       .from('business_members')
       .insert({
@@ -75,7 +75,7 @@ serve(async (req: Request) => {
         user_id: targetUserId,
         role: role,
         invited_by: ctx.userId,
-        joined_at: null, // Pending membership - user must accept
+        joined_at: new Date().toISOString(),
         joined_via_invite: false, // Direct addition, not via invite
       });
 
@@ -98,16 +98,16 @@ serve(async (req: Request) => {
       }
     });
 
-    console.log(`✅ Successfully sent membership request to ${targetUser.email} for business ${business.name}`);
+    console.log(`✅ Successfully added user ${targetUser.email} to business ${business.name}`);
 
     return json({
-      message: 'Membership request sent successfully',
+      message: 'Team member added successfully',
       member: {
         id: targetUserId,
         email: targetUser.email,
         name: targetUser.full_name,
         role: role,
-        joined_at: null, // Pending membership
+        joined_at: new Date().toISOString(),
         joined_via_invite: false
       }
     });

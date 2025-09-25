@@ -21,6 +21,7 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
   const [emailStatuses, setEmailStatuses] = useState<Record<string, { checking: boolean; exists: boolean; alreadyMember: boolean; user?: any }>>({});
   const [processingEmails, setProcessingEmails] = useState<Set<string>>(new Set());
   
+  const { inviteWorker } = useBusinessMemberOperations();
   const { checkUserExists, addTeamMember } = useTeamOperations();
 
   const addEmail = () => {
@@ -84,12 +85,7 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
   };
 
 
-  const handleSendMembershipRequest = useCallback(async (email: string, userId?: string) => {
-    if (!userId) {
-      console.warn('Cannot send membership request to non-existent user:', email);
-      return;
-    }
-    
+  const handleAddUser = useCallback(async (userId: string, email: string) => {
     setProcessingEmails(prev => new Set(prev).add(email));
     
     try {
@@ -99,10 +95,10 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
         role: 'worker'
       }, {
         onSuccess: () => {
-          toast.success(`Membership request sent to ${emailStatuses[email]?.user?.name || email.split('@')[0]}`);
+          toast.success(`${emailStatuses[email]?.user?.name || email.split('@')[0]} added to team`);
         },
         onError: (error: any) => {
-          toast.error(error?.message || 'Failed to send membership request');
+          toast.error(error?.message || 'Failed to add team member');
         }
       });
     } finally {
@@ -114,11 +110,35 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
     }
   }, [addTeamMember, businessId, emailStatuses]);
 
+  const handleInviteUser = useCallback(async (email: string) => {
+    setProcessingEmails(prev => new Set(prev).add(email));
+    
+    try {
+      await inviteWorker.mutateAsync({
+        email,
+      }, {
+        onSuccess: () => {
+          toast.success(`Invitation sent to ${email}`);
+        },
+        onError: (error: any) => {
+          toast.error(error?.message || 'Failed to send invitation');
+        }
+      });
+    } finally {
+      setProcessingEmails(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(email);
+        return newSet;
+      });
+    }
+  }, [inviteWorker]);
+
   const handleBatchProcess = async () => {
     const validEmails = emails.filter(email => email.trim() && email.includes('@'));
     if (validEmails.length === 0) return;
 
-    let processedCount = 0;
+    let addedCount = 0;
+    let invitedCount = 0;
     let skippedCount = 0;
 
     for (const email of validEmails) {
@@ -128,18 +148,19 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
       if (status?.alreadyMember) {
         skippedCount++;
       } else if (status?.exists && status.user) {
-        await handleSendMembershipRequest(emailTrimmed, status.user.id);
-        processedCount++;
+        await handleAddUser(status.user.id, emailTrimmed);
+        addedCount++;
       } else {
-        // Skip non-existent users in unified flow
-        skippedCount++;
+        await handleInviteUser(emailTrimmed);
+        invitedCount++;
       }
     }
 
     // Show summary toast
     const messages = [];
-    if (processedCount > 0) messages.push(`${processedCount} membership request${processedCount > 1 ? 's' : ''} sent`);
-    if (skippedCount > 0) messages.push(`${skippedCount} user${skippedCount > 1 ? 's' : ''} skipped`);
+    if (addedCount > 0) messages.push(`${addedCount} user${addedCount > 1 ? 's' : ''} added`);
+    if (invitedCount > 0) messages.push(`${invitedCount} invitation${invitedCount > 1 ? 's' : ''} sent`);
+    if (skippedCount > 0) messages.push(`${skippedCount} already member${skippedCount > 1 ? 's' : ''}`);
     
     if (messages.length > 0) {
       toast.success(messages.join(', '));
@@ -218,7 +239,8 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
                       key={trimmedEmail}
                       email={trimmedEmail}
                       status={status}
-                      onSendMembershipRequest={(userId) => handleSendMembershipRequest(trimmedEmail, userId)}
+                      onAddUser={(userId) => handleAddUser(userId, trimmedEmail)}
+                      onInviteUser={(email) => handleInviteUser(email)}
                       isProcessing={processingEmails.has(trimmedEmail)}
                     />
                   );
