@@ -310,18 +310,6 @@ async function resolveBusinessId(
       throw new Error(`Failed to create default business: ${businessError.message}`);
     }
 
-    // Create business membership with upsert
-    await supabase
-      .from("business_members")
-      .upsert({
-        business_id: newBusiness.id,
-        user_id: userUuid,
-        role: 'owner',
-        joined_at: new Date().toISOString()
-      }, {
-        onConflict: 'user_id,business_id'
-      });
-
     // Update profile default_business_id if not set
     await supabase
       .from("profiles")
