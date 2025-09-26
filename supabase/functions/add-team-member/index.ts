@@ -12,19 +12,23 @@ serve(async (req: Request) => {
 
   try {
     const ctx = await requireCtx(req);
-    const { targetUserId, role = 'worker' } = await req.json();
+    const { targetUserId, businessId, role = 'worker' } = await req.json();
 
     if (!targetUserId) {
       return json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    console.log(`➕ Adding user ${targetUserId} to business ${ctx.businessId} as ${role}`);
+    if (!businessId) {
+      return json({ error: 'Business ID is required' }, { status: 400 });
+    }
 
-    // Verify the requesting user can manage this business
+    console.log(`➕ Adding user ${targetUserId} to business ${businessId} as ${role}`);
+
+    // Verify the requesting user can manage the target business
     const { data: requestorMembership } = await ctx.supaAdmin
       .from('business_members')
       .select('role')
-      .eq('business_id', ctx.businessId)
+      .eq('business_id', businessId)
       .eq('user_id', ctx.userId)
       .eq('role', 'owner')
       .single();
@@ -37,7 +41,7 @@ serve(async (req: Request) => {
     const { data: business, error: businessError } = await ctx.supaAdmin
       .from('businesses')
       .select('id, name')
-      .eq('id', ctx.businessId)
+      .eq('id', businessId)
       .single();
 
     if (businessError || !business) {
@@ -59,7 +63,7 @@ serve(async (req: Request) => {
     const { data: existingMember } = await ctx.supaAdmin
       .from('business_members')
       .select('id')
-      .eq('business_id', ctx.businessId)
+      .eq('business_id', businessId)
       .eq('user_id', targetUserId)
       .single();
 
@@ -72,7 +76,7 @@ serve(async (req: Request) => {
       .from('invites')
       .select('id, token_hash')
       .eq('email', targetUser.email)
-      .eq('business_id', ctx.businessId)
+      .eq('business_id', businessId)
       .is('redeemed_at', null)
       .is('revoked_at', null);
 
@@ -82,7 +86,7 @@ serve(async (req: Request) => {
     const { error: memberError } = await ctx.supaAdmin
       .from('business_members')
       .insert({
-        business_id: ctx.businessId,
+        business_id: businessId,
         user_id: targetUserId,
         role: role,
         invited_by: ctx.userId,
@@ -97,7 +101,7 @@ serve(async (req: Request) => {
 
     // Log audit action
     await ctx.supaAdmin.rpc('log_audit_action', {
-      p_business_id: ctx.businessId,
+      p_business_id: businessId,
       p_user_id: ctx.userId,
       p_action: 'team_member_added',
       p_resource_type: 'business_member',
@@ -124,7 +128,7 @@ serve(async (req: Request) => {
     
     // Log the cleanup action
     await ctx.supaAdmin.rpc('log_audit_action', {
-      p_business_id: ctx.businessId,
+      p_business_id: businessId,
       p_user_id: ctx.userId,
       p_action: 'invite_auto_redeemed',
       p_resource_type: 'invite',
