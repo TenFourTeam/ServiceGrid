@@ -22,6 +22,9 @@ verify_jwt = false
 [functions.add-team-member]
 verify_jwt = false
 
+[functions.get-all-users]
+verify_jwt = false
+
 [functions.user-businesses]
 verify_jwt = false
 
