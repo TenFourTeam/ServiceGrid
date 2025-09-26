@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
           invited_at,
           joined_at,
           invited_by,
-          profiles!inner(email, full_name)
+          profiles!business_members_user_id_fkey(email, full_name)
         `)
         .eq('business_id', ctx.businessId)
         .order('joined_at', { ascending: true });
