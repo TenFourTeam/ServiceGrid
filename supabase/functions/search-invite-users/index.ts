@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
     console.log('[search-invite-users] Fetching pending invites...');
     const { data: pendingInvites, error: invitesError } = await supabase
       .from('invites')
-      .select('id')
+      .select('email')
       .eq('business_id', businessId)
       .is('redeemed_at', null)
       .is('revoked_at', null)
@@ -114,12 +114,12 @@ Deno.serve(async (req) => {
 
     // Create sets for efficient filtering
     const existingMemberIds = new Set(existingMembers?.map((m: any) => m.user_id) || []);
-    const pendingInviteIds = new Set(pendingInvites?.map((i: any) => i.id) || []);
+    const pendingInviteEmails = new Set(pendingInvites?.map((i: any) => i.email) || []);
 
     // Filter out existing members and users with pending invites
     const availableUsers = (allUsers || []).filter((user: any) => {
       const isExistingMember = existingMemberIds.has(user.id);
-      const hasPendingInvite = pendingInviteIds.has(user.id);
+      const hasPendingInvite = pendingInviteEmails.has(user.email);
       
       console.log(`[search-invite-users] User ${user.email} - existing member: ${isExistingMember}, pending invite: ${hasPendingInvite}`);
       
