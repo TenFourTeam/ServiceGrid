@@ -19,10 +19,7 @@ Deno.serve(async (req) => {
     console.log('🚀 [get-profile] Auth completed in', endAuth - startAuth, 'ms');
     console.log('🚀 [get-profile] Using service role client with manual access control');
     
-    // Parse query parameters to get business context
-    const url = new URL(req.url);
-    const requestedBusinessId = url.searchParams.get('businessId');
-    console.log('[get-profile] Context resolved:', { userId: ctx.userId, email: ctx.email, requestedBusinessId });
+    console.log('[get-profile] Context resolved:', { userId: ctx.userId, email: ctx.email });
 
     // Use service role client for all queries
     const supabase = ctx.supaAdmin;
@@ -41,89 +38,51 @@ Deno.serve(async (req) => {
 
     if (!profile) {
       console.warn('[get-profile] Profile not found, this should have been auto-created by requireCtx');
-      // This should not happen if requireCtx is working properly with auto-creation
       throw new Error('Profile not found after authentication context resolution');
     }
 
     console.log('[get-profile] Profile fetched successfully');
 
-    // Determine which business to fetch - requested business takes priority
-    const targetBusinessId = requestedBusinessId || profile.default_business_id;
-    
+    // Always fetch the user's primary business (owned business) only
     let business = null;
-    if (targetBusinessId) {
-      console.log('[get-profile] Fetching business data for:', targetBusinessId);
+    if (profile.default_business_id) {
+      console.log('[get-profile] Fetching primary business for:', profile.default_business_id);
       
-      // Check if user is a member OR owner of the business
-      const { data: memberData, error: memberError } = await supabase
-        .from('business_members')
-        .select('role')
-        .eq('business_id', targetBusinessId)
-        .eq('user_id', ctx.userId)
-        .maybeSingle();
-
-      // Also check if user is the owner of the business (in case membership record is missing)
-      const { data: businessOwnership, error: ownershipError } = await supabase
+      // Verify this is actually owned by the user
+      const { data: businessData, error: businessError } = await supabase
         .from('businesses')
-        .select('owner_id')
-        .eq('id', targetBusinessId)
+        .select(`
+          id,
+          name,
+          description,
+          phone,
+          reply_to_email,
+          tax_rate_default,
+          logo_url,
+          light_logo_url
+        `)
+        .eq('id', profile.default_business_id)
         .eq('owner_id', ctx.userId)
         .maybeSingle();
 
-      const isOwner = !ownershipError && businessOwnership;
-      const isMember = !memberError && memberData;
-      
-      if (!isOwner && !isMember) {
-        console.error('[get-profile] User not a member or owner of business:', targetBusinessId);
-        // If user isn't a member/owner and this was a specific request, return null business
-        if (requestedBusinessId) {
-          return json({
-            profile: {
-              id: profile.id,
-              fullName: profile.full_name,
-              phoneE164: profile.phone_e164,
-              defaultBusinessId: profile.default_business_id
-            },
-            business: null
-          });
-        }
+      if (businessError) {
+        console.error('[get-profile] Error fetching primary business:', businessError);
+      } else if (businessData) {
+        business = {
+          id: businessData.id,
+          name: businessData.name,
+          description: businessData.description,
+          phone: businessData.phone,
+          replyToEmail: businessData.reply_to_email,
+          taxRateDefault: businessData.tax_rate_default,
+          logoUrl: businessData.logo_url,
+          lightLogoUrl: businessData.light_logo_url,
+          role: 'owner' // Always owner for primary business
+        };
+
+        console.log('[get-profile] Primary business fetched successfully');
       } else {
-        // Get business details
-        const { data: businessData, error: businessError } = await supabase
-          .from('businesses')
-          .select(`
-            id,
-            name,
-            description,
-            phone,
-            reply_to_email,
-            tax_rate_default,
-            logo_url,
-            light_logo_url
-          `)
-          .eq('id', targetBusinessId)
-          .single();
-
-        if (businessError) {
-          console.error('[get-profile] Error fetching business:', businessError);
-        } else {
-          // Determine role: owner if they own the business, otherwise use membership role
-          const userRole = isOwner ? 'owner' : (memberData?.role || 'owner');
-          
-          business = {
-            id: businessData.id,
-            name: businessData.name,
-            description: businessData.description,
-            phone: businessData.phone,
-            replyToEmail: businessData.reply_to_email,
-            taxRateDefault: businessData.tax_rate_default,
-            logoUrl: businessData.logo_url,
-            lightLogoUrl: businessData.light_logo_url,
-            role: userRole
-          };
-
-          console.log('[get-profile] Business data fetched successfully with role:', userRole);
-        }
+        console.warn('[get-profile] Default business ID set but business not owned by user');
       }
     }
     

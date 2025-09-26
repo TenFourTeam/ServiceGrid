@@ -1,13 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useUserBusinesses } from "@/hooks/useUserBusinesses";
+import { useExternalMemberships } from "@/hooks/useExternalMemberships";
 import { useUserPendingInvites } from "@/hooks/useUserPendingInvites";
 import { UserInviteActions } from "./UserInviteActions";
-import { Building2, Crown, User, Mail } from "lucide-react";
+import { Building2, User, Mail } from "lucide-react";
 
 export function BusinessesMembershipSection() {
-  const { data: businesses, isLoading, error } = useUserBusinesses();
+  const { data: externalMemberships, isLoading, error } = useExternalMemberships();
   const { data: pendingInvites, isLoading: invitesLoading, error: invitesError } = useUserPendingInvites();
 
   if (isLoading) {
@@ -51,10 +51,10 @@ export function BusinessesMembershipSection() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Building2 className="h-5 w-5" />
-          Business Memberships
+          External Memberships
         </CardTitle>
         <p className="text-sm text-muted-foreground mt-1">
-          Manage your business memberships and pending invites
+          Businesses where you work as an employee and pending invites
         </p>
       </CardHeader>
       <CardContent>
@@ -62,7 +62,7 @@ export function BusinessesMembershipSection() {
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="members" className="flex items-center gap-2">
               <Building2 className="h-4 w-4" />
-              Members ({businesses?.length || 0})
+              External ({externalMemberships?.length || 0})
             </TabsTrigger>
             <TabsTrigger value="pending" className="flex items-center gap-2">
               <Mail className="h-4 w-4" />
@@ -79,15 +79,15 @@ export function BusinessesMembershipSection() {
               <div className="text-center py-8 text-muted-foreground">
                 <p>Failed to load businesses</p>
               </div>
-            ) : !businesses || businesses.length === 0 ? (
+            ) : !externalMemberships || externalMemberships.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Building2 className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                <p className="text-lg font-medium mb-2">No business memberships</p>
-                <p className="text-sm">You're not currently a member of any businesses</p>
+                <p className="text-lg font-medium mb-2">No external memberships</p>
+                <p className="text-sm">You're not currently working for any other businesses</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {businesses.map((business) => (
+                {externalMemberships.map((business) => (
                   <div
                     key={business.id}
                     className={`flex items-center justify-between p-4 border rounded-lg transition-colors ${
@@ -124,15 +124,11 @@ export function BusinessesMembershipSection() {
                     
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <Badge 
-                        variant={business.role === 'owner' ? 'default' : 'secondary'}
+                        variant="secondary"
                         className="flex items-center gap-1"
                       >
-                        {business.role === 'owner' ? (
-                          <Crown className="h-3 w-3" />
-                        ) : (
-                          <User className="h-3 w-3" />
-                        )}
-                        {business.role}
+                        <User className="h-3 w-3" />
+                        Worker
                       </Badge>
                     </div>
                   </div>

@@ -1,40 +1,24 @@
-import { useBusinessContext } from '@/hooks/useBusinessContext';
-import { BusinessMembersList } from "@/components/Business/BusinessMembersList";
+import { MyBusinessTeamSection } from "@/components/Team/MyBusinessTeamSection";
 import { BusinessesMembershipSection } from "@/components/Team/BusinessesMembershipSection";
 import { WorkerLimitedAccess } from "@/components/Layout/WorkerLimitedAccess";
+import { useSelectedBusiness } from "@/hooks/useSelectedBusiness";
 import AppLayout from '@/components/Layout/AppLayout';
-import { Card } from "@/components/ui/card";
-import { Users } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { useState } from "react";
 
 export default function Team() {
-  const { businessId, businessName, role } = useBusinessContext();
+  const { selectedBusiness, canManage } = useSelectedBusiness();
   const { t } = useLanguage();
 
   return (
     <AppLayout title={t('team.title')}>
       <div className="space-y-6">
-        <WorkerLimitedAccess />
+        {!canManage && <WorkerLimitedAccess />}
 
-        {/* Businesses I'm a Member Of */}
+        {/* My Business Team - Primary business management */}
+        <MyBusinessTeamSection />
+
+        {/* External Memberships - Worker businesses and pending invites */}
         <BusinessesMembershipSection />
-
-        {/* Current Business Team */}
-        <BusinessMembersList 
-          businessId={businessId || ''} 
-        />
       </div>
     </AppLayout>
   );
