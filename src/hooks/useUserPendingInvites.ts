@@ -72,14 +72,14 @@ export function useManageInvite() {
           method: 'GET'
         });
         
-        if (profileError || !profile) {
-          throw new Error('Failed to get user profile');
+        if (profileError || !profile || !profile.profile?.id) {
+          throw new Error('Failed to get user profile or profile ID');
         }
 
         const { data, error } = await authApi.invoke('add-team-member', {
           method: 'POST',
           body: { 
-            targetUserId: profile.id,
+            targetUserId: profile.profile.id,
             businessId: invite.business_id,
             role: invite.role 
           }
