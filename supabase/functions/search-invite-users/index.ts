@@ -1,5 +1,15 @@
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.54.0';
 import { corsHeaders, json, requireCtx } from '../_lib/auth.ts';
+
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
+});
 
 Deno.serve(async (req) => {
   console.log(`[search-invite-users] ===== Function Entry =====`);
@@ -35,9 +45,6 @@ Deno.serve(async (req) => {
     }
 
     console.log('[search-invite-users] Search parameters:', { businessId, searchQuery });
-
-    // Use service role client from context
-    const supabase = ctx.supaAdmin;
 
     // Check if user is business owner
     console.log('[search-invite-users] Checking user business membership...');
