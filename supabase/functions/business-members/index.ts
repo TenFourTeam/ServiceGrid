@@ -19,14 +19,10 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     if (req.method === 'GET') {
-      // Get business owner first
+      // Get business and owner profile separately to avoid foreign key issues
       const { data: business, error: businessError } = await supabase
         .from('businesses')
-        .select(`
-          id,
-          owner_id,
-          profiles!businesses_owner_id_fkey(email, full_name)
-        `)
+        .select('id, owner_id')
         .eq('id', ctx.businessId)
         .single();
 
@@ -35,8 +31,20 @@ Deno.serve(async (req) => {
         throw new Error(`Failed to fetch business: ${businessError.message}`);
       }
 
-      // Get worker members
-      const { data: workers, error: workersError, count: workersCount } = await supabase
+      // Get owner profile
+      const { data: ownerProfile, error: ownerError } = await supabase
+        .from('profiles')
+        .select('email, full_name')
+        .eq('id', business.owner_id)
+        .single();
+
+      if (ownerError) {
+        console.error('[business-members] Owner profile fetch error:', ownerError);
+        // Don't throw error, just log it - owner profile might not exist yet
+      }
+
+      // Get worker members with their profiles
+      const { data: workers, error: workersError } = await supabase
         .from('business_members')
         .select(`
           id,
@@ -46,8 +54,8 @@ Deno.serve(async (req) => {
           invited_at,
           joined_at,
           invited_by,
-          profiles!business_members_user_id_fkey(email, full_name)
-        `, { count: 'exact' })
+          profiles!inner(email, full_name)
+        `)
         .eq('business_id', ctx.businessId)
         .order('joined_at', { ascending: true });
 
@@ -69,8 +77,8 @@ Deno.serve(async (req) => {
           invited_at: null, // Owners aren't invited
           joined_at: null, // Owners don't join via invitation
           invited_by: null,
-          email: (business.profiles as any)?.email,
-          name: (business.profiles as any)?.full_name,
+          email: ownerProfile?.email || 'Unknown',
+          name: ownerProfile?.full_name || 'Business Owner',
         });
       }
 
@@ -83,8 +91,8 @@ Deno.serve(async (req) => {
         invited_at: worker.invited_at,
         joined_at: worker.joined_at,
         invited_by: worker.invited_by,
-        email: (worker.profiles as any)?.email,
-        name: (worker.profiles as any)?.full_name,
+        email: (worker.profiles as any)?.email || 'Unknown',
+        name: (worker.profiles as any)?.full_name || 'Unknown User',
       })) || [];
 
       allMembers.push(...formattedWorkers);

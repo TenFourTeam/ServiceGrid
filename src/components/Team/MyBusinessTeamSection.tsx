@@ -37,7 +37,9 @@ export function MyBusinessTeamSection() {
           <div className="text-center py-8 text-muted-foreground">
             <Building2 className="h-12 w-12 mx-auto mb-4 opacity-30" />
             <p className="text-lg font-medium mb-2">No primary business found</p>
-            <p className="text-sm">Unable to load your business team</p>
+            <p className="text-sm">
+              {error instanceof Error ? `Error: ${error.message}` : "Unable to load your business team"}
+            </p>
           </div>
         </CardContent>
       </Card>

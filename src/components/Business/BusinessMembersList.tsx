@@ -32,7 +32,7 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
   });
   
 
-  const { data: members, isLoading, count: membersCount } = useBusinessMembersData();
+  const { data: members, isLoading, count: membersCount, error } = useBusinessMembersData();
   
 
   // Filtered and sorted data
@@ -98,6 +98,20 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
       <Card className="p-6">
         <div className="flex items-center justify-center py-8">
           <div className="text-muted-foreground">{t('team.membersList.loadingMembers')}</div>
+        </div>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="p-6">
+        <div className="text-center py-8 text-muted-foreground">
+          <Users className="h-12 w-12 mx-auto mb-4 opacity-30" />
+          <p className="text-lg font-medium mb-2">Unable to load team members</p>
+          <p className="text-sm">
+            {error instanceof Error ? error.message : "Please try refreshing the page"}
+          </p>
         </div>
       </Card>
     );
