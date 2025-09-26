@@ -1,19 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.54.0';
-import { corsHeaders, json } from '../_lib/auth.ts';
-
-// Direct Clerk token verification to avoid business resolution
-const TEST_MODE = Deno.env.get("TEST_MODE") === "true";
-let verifyToken: any;
-
-if (TEST_MODE) {
-  console.info('🧪 [manage-invite] Running in TEST_MODE - using mock authentication');
-  const testAuth = await import("../_lib/auth-test.ts");
-  verifyToken = testAuth.verifyToken;
-} else {
-  const clerkBackend = await import("https://esm.sh/@clerk/backend@1.7.0");
-  verifyToken = clerkBackend.verifyToken;
-}
+import { corsHeaders, json, requireCtx } from '../_lib/auth.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -68,64 +55,25 @@ Deno.serve(async (req) => {
 
     console.log(`[manage-invite] Processing ${action} action for token hash: ${token_hash.substring(0, 10)}...`);
 
-    // Direct Clerk token verification (bypassing business resolution)
-    console.log('[manage-invite] Starting direct Clerk authentication...');
+    // Use requireCtx for proven authentication without business context
+    console.log('[manage-invite] Starting authentication with requireCtx...');
     
-    // Extract and verify Clerk token directly
-    const authHeader = req.headers.get("authorization") || req.headers.get("Authorization");
-    console.info('🔍 [auth] Auth header present:', !!authHeader);
-    
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      console.error('❌ [auth] Missing or invalid authorization header');
-      return json({ error: 'Authentication required' }, { status: 401 });
-    }
+    const ctx = await requireCtx(req, { autoCreate: false });
+    console.log('[manage-invite] User authenticated:', {
+      userId: ctx.userId,
+      email: ctx.email
+    });
 
-    const token = authHeader.replace(/^Bearer\s+/i, "");
-    console.info('🔍 [auth] Token extracted, length:', token.length);
-    
-    const secretKey = Deno.env.get("CLERK_SECRET_KEY");
-    if (!secretKey) {
-      console.error('❌ [auth] Missing CLERK_SECRET_KEY');
-      return json({ error: 'Server configuration error' }, { status: 500 });
-    }
+    // Get user profile to get the internal user ID (ctx.userId is the profile ID)
+    const profile = {
+      id: ctx.userId,
+      email: ctx.email
+    };
 
-    let payload: any;
-    try {
-      console.info('🔍 [auth] Starting Clerk token verification...');
-      payload = await verifyToken(token, { secretKey });
-      console.info('✅ [auth] Token verification successful');
-    } catch (error) {
-      console.error('❌ [auth] Token verification failed:', error);
-      return json({ error: 'Invalid authentication token' }, { status: 401 });
-    }
-
-    const clerkUserId = payload.sub;
-    console.log('[manage-invite] Clerk User ID:', clerkUserId);
-    
-    if (!clerkUserId) {
-      console.error('[manage-invite] No user ID in verified token');
-      return json({ error: 'Authentication required' }, { status: 401 });
-    }
+    console.log('[manage-invite] Using profile from context:', profile);
 
     // Initialize supabase admin client
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-    
-    // Get user profile to get email and internal user ID
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .select('id, email')
-      .eq('clerk_user_id', clerkUserId)
-      .single();
-
-    if (profileError || !profile) {
-      console.error('[manage-invite] Failed to get user profile:', profileError);
-      return json({ error: 'User profile not found' }, { status: 401 });
-    }
-
-    console.log('[manage-invite] User authenticated:', {
-      userId: profile.id,
-      email: profile.email
-    });
 
     // Find the invite using the token_hash directly (no re-hashing)
     const { data: invite, error: inviteError } = await supabaseAdmin
