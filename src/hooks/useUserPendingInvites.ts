@@ -53,44 +53,17 @@ export function useManageInvite() {
 
   return useMutation({
     mutationFn: async ({ action, invite }: { action: 'accept' | 'decline', invite: UserPendingInvite }) => {
-      if (action === 'decline') {
-        // For decline, we still use the original manage-invite function
-        const { data, error } = await authApi.invoke('manage-invite', {
-          method: 'POST',
-          body: { action: 'decline', token_hash: invite.token_hash }
-        });
-        
-        if (error) {
-          throw new Error(error.message || 'Failed to decline invite');
-        }
-        
-        return data;
-      } else {
-        // For accept, we use add-team-member to consolidate the flow
-        // First get the current user's profile to get their user ID
-        const { data: profile, error: profileError } = await authApi.invoke('get-profile', {
-          method: 'GET'
-        });
-        
-        if (profileError || !profile || !profile.profile?.id) {
-          throw new Error('Failed to get user profile or profile ID');
-        }
-
-        const { data, error } = await authApi.invoke('add-team-member', {
-          method: 'POST',
-          body: { 
-            targetUserId: profile.profile.id,
-            businessId: invite.business_id,
-            role: invite.role 
-          }
-        });
-        
-        if (error) {
-          throw new Error(error.message || 'Failed to accept invite');
-        }
-        
-        return data;
+      // Use manage-invite for both accept and decline actions
+      const { data, error } = await authApi.invoke('manage-invite', {
+        method: 'POST',
+        body: { action, token_hash: invite.token_hash }
+      });
+      
+      if (error) {
+        throw new Error(error.message || `Failed to ${action} invite`);
       }
+      
+      return data;
     },
     onSuccess: () => {
       // Invalidate pending invites to refresh the list
