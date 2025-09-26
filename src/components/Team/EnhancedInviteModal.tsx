@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useAllUsers } from "@/hooks/useAllUsers";
+import { useInviteUserSearch, InviteUser } from "@/hooks/useInviteUserSearch";
 import { UserPlus, Users, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useCreateInvites } from "@/hooks/useCreateInvites";
@@ -20,16 +20,10 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   
-  const { data: allUsersData, isLoading: loadingUsers } = useAllUsers(businessId);
+  const { data: searchData, isLoading: loadingUsers } = useInviteUserSearch(businessId, searchQuery);
   const createInvites = useCreateInvites();
 
-  const users = allUsersData?.users || [];
-
-  // Filter users based on search
-  const filteredUsers = users.filter(user => 
-    user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const users = searchData?.users || [];
 
   const handleUserToggle = (userId: string) => {
     setSelectedUsers(prev => 
@@ -103,7 +97,7 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
               <div className="flex items-center justify-center py-8">
                 <div className="text-muted-foreground">Loading users...</div>
               </div>
-            ) : filteredUsers.length === 0 ? (
+            ) : users.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
                 <Users className="h-12 w-12 mb-4 opacity-30" />
                 <p>No users found</p>
@@ -114,7 +108,7 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
             ) : (
               <ScrollArea className="h-[300px] border rounded-lg">
                 <div className="p-2 space-y-2">
-                  {filteredUsers.map((user) => (
+                  {users.map((user: InviteUser) => (
                     <div
                       key={user.id}
                       className="flex items-center space-x-3 p-3 rounded-lg hover:bg-muted/50 cursor-pointer"

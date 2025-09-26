@@ -22,7 +22,7 @@ verify_jwt = false
 [functions.add-team-member]
 verify_jwt = false
 
-[functions.get-all-users]
+[functions.search-invite-users]
 verify_jwt = false
 
 [functions.user-businesses]
