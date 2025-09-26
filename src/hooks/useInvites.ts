@@ -22,9 +22,9 @@ export function useRedeemInvite() {
 
   return useMutation({
     mutationFn: async (token_hash: string) => {
-      const { data, error } = await authApi.invoke('manage-invite', {
+      const { data, error } = await authApi.invoke('accept-invite', {
         method: 'POST',
-        body: { action: 'accept', token_hash }
+        body: { token_hash }
       });
       
       if (error) {
@@ -43,9 +43,15 @@ export function useRedeemInvite() {
           queryKey: queryKeys.team.invites(data.business_id) 
         });
       }
-      // Invalidate user businesses query
+      // Invalidate user businesses query to refresh external memberships
       queryClient.invalidateQueries({ 
         queryKey: ['user-businesses'] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ['external-memberships'] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ['primary-business'] 
       });
     },
   });

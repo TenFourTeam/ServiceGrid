@@ -71,13 +71,19 @@ serve(async (req: Request) => {
 
     const hasInvites = pendingInvites && pendingInvites.length > 0;
 
-    // Add user to business members
+    // Only allow worker role in business_members now (owners are in businesses.owner_id)
+    if (role !== 'worker') {
+      console.error('[add-team-member] Only worker role is allowed in business_members');
+      return json({ error: 'Only worker role is allowed for team members' }, { status: 400 });
+    }
+
+    // Add user to business members as worker
     const { error: memberError } = await ctx.supaAdmin
       .from('business_members')
       .insert({
         business_id: businessId,
         user_id: targetUserId,
-        role: role,
+        role: 'worker', // Always worker - owners are in businesses.owner_id
         invited_by: ctx.userId,
         joined_at: new Date().toISOString(),
         joined_via_invite: hasInvites,
@@ -97,7 +103,7 @@ serve(async (req: Request) => {
       p_resource_id: targetUserId,
       p_details: { 
         added_user_email: targetUser.email,
-        role: role,
+        role: 'worker',
         method: 'direct_addition'
       }
     });
@@ -138,7 +144,7 @@ serve(async (req: Request) => {
       id: targetUserId,
       email: targetUser.email,
       name: targetUser.full_name,
-      role: role,
+      role: 'worker',
       joined_at: new Date().toISOString(),
       joined_via_invite: hasInvites
     }
