@@ -39,7 +39,7 @@ export async function getCurrentUserId(req: Request): Promise<string> {
   return userId;
 }
 
-export async function requireCtx(req: Request, options: { autoCreate?: boolean } = { autoCreate: true }): Promise<AuthContext> {
+export async function requireCtx(req: Request, options: { autoCreate?: boolean, businessId?: string } = { autoCreate: true }): Promise<AuthContext> {
   console.info('🔍 [auth] === JWT DEBUGGING START ===');
   console.info('🔍 [auth] Request URL:', req.url);
   console.info('🔍 [auth] Request method:', req.method);
@@ -144,7 +144,7 @@ export async function requireCtx(req: Request, options: { autoCreate?: boolean }
   const userUuid = await resolveUserUuid(supaAdmin, clerkUserId, email, options.autoCreate);
 
   // 3) Resolve business using UUID (do NOT call the Clerk->UUID mapper again)
-  const businessId = await resolveBusinessId(supaAdmin, userUuid, candidateBusinessId, options.autoCreate);
+  const businessId = await resolveBusinessId(supaAdmin, userUuid, candidateBusinessId, options.autoCreate, options.businessId);
 
   return {
     clerkUserId,
@@ -155,7 +155,7 @@ export async function requireCtx(req: Request, options: { autoCreate?: boolean }
   };
 }
 
-export async function requireCtxWithUserClient(req: Request, options: { autoCreate?: boolean } = { autoCreate: true }): Promise<AuthContextWithUserClient> {
+export async function requireCtxWithUserClient(req: Request, options: { autoCreate?: boolean, businessId?: string } = { autoCreate: true }): Promise<AuthContextWithUserClient> {
   // Get the standard auth context using service role
   const authCtx = await requireCtx(req, options);
   
@@ -198,8 +198,28 @@ async function resolveBusinessId(
   supabase: any,
   userUuid: UserUuid,
   candidate?: string | null,
-  autoCreate: boolean = true
+  autoCreate: boolean = true,
+  overrideBusinessId?: string
 ): Promise<string> {
+  // If businessId override is provided, validate user has access and return it
+  if (overrideBusinessId) {
+    console.info(`🔄 [auth] Using business ID override: ${overrideBusinessId}`);
+    
+    // Check if user has membership in the specified business
+    const { data: membership } = await supabase
+      .from("business_members")
+      .select("role")
+      .eq("user_id", userUuid)
+      .eq("business_id", overrideBusinessId)
+      .maybeSingle();
+    
+    if (!membership) {
+      throw new Error(`User ${userUuid} does not have access to business ${overrideBusinessId}`);
+    }
+    
+    console.info(`✅ [auth] Validated user access to business ${overrideBusinessId} with role: ${membership.role}`);
+    return overrideBusinessId;
+  }
   // First check directly in businesses table by owner_id - this is the source of truth
   const { data: ownedBusiness } = await supabase
     .from("businesses")

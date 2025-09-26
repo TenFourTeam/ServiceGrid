@@ -11,8 +11,10 @@ serve(async (req: Request) => {
   }
 
   try {
-    const ctx = await requireCtx(req);
     const { targetUserId, businessId, role = 'worker' } = await req.json();
+    
+    // Use businessId override to ensure we're operating on the correct business
+    const ctx = await requireCtx(req, { businessId });
 
     if (!targetUserId) {
       return json({ error: 'User ID is required' }, { status: 400 });
@@ -23,19 +25,6 @@ serve(async (req: Request) => {
     }
 
     console.log(`➕ Adding user ${targetUserId} to business ${businessId} as ${role}`);
-
-    // Verify the requesting user can manage the target business
-    const { data: requestorMembership } = await ctx.supaAdmin
-      .from('business_members')
-      .select('role')
-      .eq('business_id', businessId)
-      .eq('user_id', ctx.userId)
-      .eq('role', 'owner')
-      .single();
-
-    if (!requestorMembership) {
-      return json({ error: 'Not authorized to manage this business' }, { status: 403 });
-    }
 
     // Get business details for email
     const { data: business, error: businessError } = await ctx.supaAdmin
