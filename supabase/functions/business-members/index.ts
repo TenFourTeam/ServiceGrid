@@ -19,8 +19,24 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     if (req.method === 'GET') {
-      // Get all members for this business
-      const { data: members, error, count } = await supabase
+      // Get business owner first
+      const { data: business, error: businessError } = await supabase
+        .from('businesses')
+        .select(`
+          id,
+          owner_id,
+          profiles!businesses_owner_id_fkey(email, full_name)
+        `)
+        .eq('id', ctx.businessId)
+        .single();
+
+      if (businessError) {
+        console.error('[business-members] Business fetch error:', businessError);
+        throw new Error(`Failed to fetch business: ${businessError.message}`);
+      }
+
+      // Get worker members
+      const { data: workers, error: workersError, count: workersCount } = await supabase
         .from('business_members')
         .select(`
           id,
@@ -33,28 +49,48 @@ Deno.serve(async (req) => {
           profiles!business_members_user_id_fkey(email, full_name)
         `, { count: 'exact' })
         .eq('business_id', ctx.businessId)
-        .order('role', { ascending: false }) // owners first
         .order('joined_at', { ascending: true });
 
-      if (error) {
-        console.error('[business-members] GET error:', error);
-        throw new Error(`Failed to fetch members: ${error.message}`);
+      if (workersError) {
+        console.error('[business-members] Workers fetch error:', workersError);
+        throw new Error(`Failed to fetch workers: ${workersError.message}`);
       }
 
-      const formattedMembers = members?.map(member => ({
-        id: member.id,
-        business_id: member.business_id,
-        user_id: member.user_id,
-        role: member.role,
-        invited_at: member.invited_at,
-        joined_at: member.joined_at,
-        invited_by: member.invited_by,
-        email: (member.profiles as any)?.email,
-        name: (member.profiles as any)?.full_name,
+      // Combine owner + workers
+      const allMembers = [];
+      
+      // Add owner first
+      if (business) {
+        allMembers.push({
+          id: `owner-${business.owner_id}`, // Special ID for owner
+          business_id: business.id,
+          user_id: business.owner_id,
+          role: 'owner',
+          invited_at: null, // Owners aren't invited
+          joined_at: null, // Owners don't join via invitation
+          invited_by: null,
+          email: (business.profiles as any)?.email,
+          name: (business.profiles as any)?.full_name,
+        });
+      }
+
+      // Add workers
+      const formattedWorkers = workers?.map(worker => ({
+        id: worker.id,
+        business_id: worker.business_id,
+        user_id: worker.user_id,
+        role: worker.role,
+        invited_at: worker.invited_at,
+        joined_at: worker.joined_at,
+        invited_by: worker.invited_by,
+        email: (worker.profiles as any)?.email,
+        name: (worker.profiles as any)?.full_name,
       })) || [];
 
-      console.log('[business-members] Fetched', formattedMembers.length, 'members');
-      return json({ members: formattedMembers, count: count || 0 });
+      allMembers.push(...formattedWorkers);
+
+      console.log('[business-members] Fetched', allMembers.length, 'members (1 owner +', formattedWorkers.length, 'workers)');
+      return json({ members: allMembers, count: allMembers.length });
     }
 
 
@@ -77,14 +113,13 @@ Deno.serve(async (req) => {
       }
 
       // Verify user is business owner
-      const { data: membership } = await supabase
-        .from('business_members')
-        .select('role')
-        .eq('business_id', ctx.businessId)
-        .eq('user_id', ctx.userId)
+      const { data: business } = await supabase
+        .from('businesses')
+        .select('owner_id')
+        .eq('id', ctx.businessId)
         .single();
 
-      if (!membership || membership.role !== 'owner') {
+      if (!business || business.owner_id !== ctx.userId) {
         return json({ error: 'Only business owners can remove members' }, { status: 403 });
       }
 

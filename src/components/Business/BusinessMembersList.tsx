@@ -52,20 +52,31 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
       
       return matchesSearch && matchesRole && matchesStatus;
     }).sort((a, b) => {
-      // Sort owners first, then by join date
+      // Owner always first, then workers by join/invite date
       if (a.role === 'owner' && b.role !== 'owner') return -1;
       if (b.role === 'owner' && a.role !== 'owner') return 1;
       
-      const aDate = a.joined_at || a.invited_at;
-      const bDate = b.joined_at || b.invited_at;
-      return new Date(bDate).getTime() - new Date(aDate).getTime();
+      // For workers, sort by join date (joined members first, then pending by invite date)
+      if (a.role === 'worker' && b.role === 'worker') {
+        const aIsJoined = !!a.joined_at;
+        const bIsJoined = !!b.joined_at;
+        
+        if (aIsJoined && !bIsJoined) return -1;
+        if (!aIsJoined && bIsJoined) return 1;
+        
+        const aDate = a.joined_at || a.invited_at;
+        const bDate = b.joined_at || b.invited_at;
+        return new Date(bDate).getTime() - new Date(aDate).getTime();
+      }
+      
+      return 0;
     });
   }, [members, filters]);
 
   // Invite functionality removed - all team additions now go through user selection
 
 
-  const ownerCount = members.filter(m => m.role === 'owner').length;
+  const ownerCount = members?.filter(m => m.role === 'owner').length || 0;
 
   // Event handlers
   const handleSearchChange = (search: string) => {

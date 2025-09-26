@@ -47,21 +47,20 @@ Deno.serve(async (req) => {
     console.log('[search-invite-users] Search parameters:', { businessId, searchQuery });
 
     // Check if user is business owner
-    console.log('[search-invite-users] Checking user business membership...');
-    const { data: membership, error: membershipError } = await supabase
-      .from('business_members')
-      .select('role')
-      .eq('business_id', businessId)
-      .eq('user_id', ctx.userId)
+    console.log('[search-invite-users] Checking business ownership...');
+    const { data: business, error: businessError } = await supabase
+      .from('businesses')
+      .select('owner_id')
+      .eq('id', businessId)
       .single();
     
-    if (membershipError) {
-      console.error('[search-invite-users] Membership check error:', membershipError);
-      return json({ error: 'Failed to verify business membership' }, { status: 500 });
+    if (businessError) {
+      console.error('[search-invite-users] Business check error:', businessError);
+      return json({ error: 'Failed to verify business ownership' }, { status: 500 });
     }
 
-    if (!membership || membership.role !== 'owner') {
-      console.error('[search-invite-users] Permission denied. User role:', membership?.role || 'none');
+    if (!business || business.owner_id !== ctx.userId) {
+      console.error('[search-invite-users] Permission denied. User is not business owner');
       return json({ error: 'Only business owners can search for users to invite' }, { status: 403 });
     }
 
