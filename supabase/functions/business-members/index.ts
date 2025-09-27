@@ -53,8 +53,7 @@ Deno.serve(async (req) => {
         role,
         invited_at: created_at,
         accepted_at,
-        invited_by,
-        profiles!invites_email_fkey(id, email, full_name)
+        invited_by
       `)
       .eq('business_id', ctx.businessId)
       .not('accepted_at', 'is', null)
@@ -64,6 +63,23 @@ Deno.serve(async (req) => {
     if (invitesError) {
       console.error('[business-members] Error fetching accepted invites:', invitesError);
       return json({ error: 'Failed to fetch worker members' }, { status: 500, headers: corsHeaders });
+    }
+
+    // Get profiles for invite emails
+    let workerProfiles: any[] = [];
+    if (acceptedInvites && acceptedInvites.length > 0) {
+      const inviteEmails = acceptedInvites.map((invite: any) => invite.email);
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, email, full_name')
+        .in('email', inviteEmails);
+
+      if (profilesError) {
+        console.error('[business-members] Error fetching worker profiles:', profilesError);
+        return json({ error: 'Failed to fetch worker profiles' }, { status: 500, headers: corsHeaders });
+      }
+
+      workerProfiles = profiles || [];
     }
 
     // Combine owner and workers into a single members list
@@ -82,18 +98,21 @@ Deno.serve(async (req) => {
         name: ownerProfile.full_name
       },
       // Worker members (from accepted invites)
-      ...(acceptedInvites || []).map((invite: any) => ({
-        id: `worker-${invite.profiles.id}`,
-        business_id: invite.business_id,
-        user_id: invite.profiles.id,
-        role: 'worker' as const,
-        invited_at: invite.invited_at,
-        joined_at: invite.accepted_at,
-        invited_by: invite.invited_by,
-        joined_via_invite: true,
-        email: invite.profiles.email,
-        name: invite.profiles.full_name
-      }))
+      ...(acceptedInvites || []).map((invite: any) => {
+        const profile = workerProfiles.find((p: any) => p.email === invite.email);
+        return {
+          id: `worker-${profile?.id || 'unknown'}`,
+          business_id: invite.business_id,
+          user_id: profile?.id || null,
+          role: 'worker' as const,
+          invited_at: invite.invited_at,
+          joined_at: invite.accepted_at,
+          invited_by: invite.invited_by,
+          joined_via_invite: true,
+          email: invite.email,
+          name: profile?.full_name || invite.email
+        };
+      })
     ];
 
       console.log('[business-members] Fetched', members.length, 'members (1 owner +', (acceptedInvites?.length || 0), 'workers)');
