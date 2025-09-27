@@ -19,21 +19,28 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     if (req.method === 'GET') {
-    // Fetch business details and owner
+    // Fetch business details
     const { data: business, error: businessError } = await supabase
       .from('businesses')
-      .select(`
-        id,
-        name,
-        owner_id,
-        profiles!businesses_owner_id_fkey(id, email, full_name, clerk_user_id)
-      `)
+      .select('id, name, owner_id, created_at')
       .eq('id', ctx.businessId)
       .single();
 
     if (businessError) {
       console.error('[business-members] Error fetching business:', businessError);
       return json({ error: 'Failed to fetch business details' }, { status: 500, headers: corsHeaders });
+    }
+
+    // Fetch owner profile separately
+    const { data: ownerProfile, error: ownerError } = await supabase
+      .from('profiles')
+      .select('id, email, full_name, clerk_user_id')
+      .eq('id', business.owner_id)
+      .single();
+
+    if (ownerError) {
+      console.error('[business-members] Error fetching owner profile:', ownerError);
+      return json({ error: 'Failed to fetch owner profile' }, { status: 500, headers: corsHeaders });
     }
 
     // Fetch worker members from accepted invites
@@ -63,16 +70,16 @@ Deno.serve(async (req) => {
     const members = [
       // Owner member
       {
-        id: `owner-${business.profiles.id}`,
+        id: `owner-${ownerProfile.id}`,
         business_id: ctx.businessId,
-        user_id: business.profiles.id,
+        user_id: ownerProfile.id,
         role: 'owner' as const,
         invited_at: null, // Owners aren't invited
         joined_at: null, // Owners don't "join"
         invited_by: null,
         joined_via_invite: false,
-        email: business.profiles.email,
-        name: business.profiles.full_name
+        email: ownerProfile.email,
+        name: ownerProfile.full_name
       },
       // Worker members (from accepted invites)
       ...(acceptedInvites || []).map((invite: any) => ({
