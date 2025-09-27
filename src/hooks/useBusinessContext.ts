@@ -1,6 +1,5 @@
 import { useAuth } from '@clerk/clerk-react';
 import { useProfile } from '@/queries/useProfile';
-import { useParams, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import { updateBusinessMeta } from '@/utils/metaUpdater';
 
@@ -11,26 +10,22 @@ export type BusinessUI = {
   phone?: string;
   replyToEmail?: string;
   taxRateDefault?: number;
-  role?: 'owner' | 'worker';
+  role: 'owner'; // Always owner in simplified model
   [key: string]: unknown;
 };
 
 /**
- * Single source of truth for business data access
- * Consolidates business context and data in one hook
+ * Simplified business context - single business per user (always owner)
+ * Users can only access their own business or work in other businesses via invites
  */
 export function useBusinessContext() {
   const { isSignedIn, isLoaded, userId } = useAuth();
-  const params = useParams();
-  const location = useLocation();
   
   // Don't query profile until Clerk is fully loaded and user is authenticated
   const shouldFetchProfile = isLoaded && isSignedIn;
-  // Simple profile query without business ID parameter
   const profileQuery = useProfile();
   
   const business = profileQuery.data?.business as BusinessUI;
-  const role = business?.role || 'owner';
   
   // Simplified error detection
   const hasError = profileQuery.isError;
@@ -55,7 +50,7 @@ export function useBusinessContext() {
     isLoaded,
     userId,
     
-    // Complete business data (now sourced from profile query)
+    // Single business data - user's owned business
     business,
     businessId: business?.id,
     businessName: business?.name,
@@ -66,12 +61,12 @@ export function useBusinessContext() {
     businessLogoUrl: business?.logoUrl,
     businessLightLogoUrl: business?.lightLogoUrl,
     
-    // Role and permissions
-    role,
-    userRole: role,
-    canManage: role === 'owner',
+    // Role and permissions - always owner of their business
+    role: 'owner' as const,
+    userRole: 'owner' as const,
+    canManage: true, // Always true for owned business
     
-    // Loading states - coordinated between Clerk and profile query
+    // Loading states
     isLoadingBusiness,
     
     // Error states
