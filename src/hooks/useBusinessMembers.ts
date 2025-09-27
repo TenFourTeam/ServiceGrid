@@ -52,14 +52,13 @@ export function useBusinessMembersData(opts?: UseBusinessMembersDataOptions) {
         rawData: data, 
         dataType: typeof data,
         dataKeys: data ? Object.keys(data) : null,
-        hasDataProperty: data ? 'data' in data : false,
         dataData: data?.data,
         dataCount: data?.count
       });
       
       const processedResult = {
-        members: data?.data || [],
-        count: data?.count || 0
+        members: data?.data?.data || [],
+        count: data?.data?.count || 0
       };
       
       console.info("[useBusinessMembersData] PROCESSED RESULT:", {
