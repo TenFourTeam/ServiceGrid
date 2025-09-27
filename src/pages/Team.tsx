@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useNavigate } from "react-router-dom";
 import { useState, useMemo } from "react";
+import React from "react";
 import { Users, UserPlus, AlertTriangle, AlertCircle, Shield, Mail } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { RequireRole } from "@/components/Auth/RequireRole";
@@ -19,6 +20,23 @@ export default function Team() {
   const { t } = useLanguage();
   const { role, businessId } = useBusinessContext();
   const { data: members, isLoading, error } = useBusinessMembersData();
+  
+  // DEBUG: Log team data
+  console.info("[Team.tsx] DEBUG - Raw members data:", { 
+    members, 
+    membersLength: members?.length, 
+    membersArray: members,
+    isLoading, 
+    error: error?.message,
+    businessId,
+    role 
+  });
+  
+  // Force a refetch to trigger debugging
+  React.useEffect(() => {
+    console.info("[Team.tsx] DEBUG - Component mounted, forcing cache invalidation");
+    // This will cause the query to refetch and trigger our debugging logs
+  }, []);
   
   const navigate = useNavigate();
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -31,9 +49,18 @@ export default function Team() {
 
   // Filtered and sorted data
   const filteredMembers = useMemo(() => {
-    if (!members || members.length === 0) return [];
+    console.info("[Team.tsx] DEBUG - Filtering members:", { 
+      inputMembers: members, 
+      membersLength: members?.length,
+      filters 
+    });
     
-    return members.filter(member => {
+    if (!members || members.length === 0) {
+      console.info("[Team.tsx] DEBUG - No members to filter, returning empty array");
+      return [];
+    }
+    
+    const filtered = members.filter(member => {
       const matchesSearch = !filters.search || 
         member.email?.toLowerCase().includes(filters.search.toLowerCase()) ||
         member.name?.toLowerCase().includes(filters.search.toLowerCase());
@@ -45,7 +72,9 @@ export default function Team() {
         (filters.status === 'pending' && !member.joined_at);
       
       return matchesSearch && matchesRole && matchesStatus;
-    }).sort((a, b) => {
+    });
+    
+    const sorted = filtered.sort((a, b) => {
       // Owner always first, then workers by join/invite date
       if (a.role === 'owner' && b.role !== 'owner') return -1;
       if (b.role === 'owner' && a.role !== 'owner') return 1;
@@ -65,6 +94,14 @@ export default function Team() {
       
       return 0;
     });
+    
+    console.info("[Team.tsx] DEBUG - Final filtered members:", { 
+      filteredCount: sorted.length, 
+      filtered: sorted,
+      originalCount: members.length 
+    });
+    
+    return sorted;
   }, [members, filters]);
 
   const ownerCount = members?.filter(m => m.role === 'owner').length || 0;
