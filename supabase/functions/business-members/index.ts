@@ -46,17 +46,29 @@ Deno.serve(async (req) => {
     // Fetch workers (users with business permissions)
     const { data: businessPermissions, error: permissionsError } = await supabase
       .from('business_permissions')
-      .select(`
-        user_id,
-        granted_at,
-        granted_by,
-        profiles!business_permissions_user_id_fkey(id, email, full_name)
-      `)
+      .select('user_id, granted_at, granted_by')
       .eq('business_id', ctx.businessId);
 
     if (permissionsError) {
       console.error('[business-members] Error fetching business permissions:', permissionsError);
       return json({ error: 'Failed to fetch worker members' }, { status: 500, headers: corsHeaders });
+    }
+
+    // Fetch worker profiles separately
+    let workerProfiles: { id: string; email: string; full_name: string }[] = [];
+    if (businessPermissions && businessPermissions.length > 0) {
+      const userIds = businessPermissions.map(p => p.user_id);
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, email, full_name')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.error('[business-members] Error fetching worker profiles:', profilesError);
+        return json({ error: 'Failed to fetch worker profiles' }, { status: 500, headers: corsHeaders });
+      }
+      
+      workerProfiles = profiles || [];
     }
 
     // Combine owner and workers into a single members list
@@ -74,19 +86,22 @@ Deno.serve(async (req) => {
         email: ownerProfile.email,
         name: ownerProfile.full_name
       },
-      // Worker members (from business permissions)
-      ...(businessPermissions || []).map((permission: any) => ({
-        id: `worker-${permission.profiles.id}`,
-        business_id: business.id,
-        user_id: permission.profiles.id,
-        role: 'worker' as const,
-        invited_at: null,
-        joined_at: permission.granted_at,
-        invited_by: permission.granted_by,
-        joined_via_invite: true,
-        email: permission.profiles.email,
-        name: permission.profiles.full_name
-      }))
+      // Worker members (combine permissions with profiles)
+      ...(businessPermissions || []).map((permission: any) => {
+        const profile = workerProfiles.find(p => p.id === permission.user_id);
+        return {
+          id: `worker-${permission.user_id}`,
+          business_id: business.id,
+          user_id: permission.user_id,
+          role: 'worker' as const,
+          invited_at: null,
+          joined_at: permission.granted_at,
+          invited_by: permission.granted_by,
+          joined_via_invite: true,
+          email: profile?.email || '',
+          name: profile?.full_name || ''
+        };
+      })
     ];
 
       console.log('[business-members] Fetched', members.length, 'members (1 owner +', (businessPermissions?.length || 0), 'workers)');
