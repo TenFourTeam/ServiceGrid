@@ -20,7 +20,7 @@ interface BusinessMembersListProps {
 }
 
 export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
-  const { role } = useBusinessContext();
+  const { role, businessId: contextBusinessId, isAuthenticated } = useBusinessContext();
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -33,6 +33,18 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
   
 
   const { data: members, isLoading, count: membersCount, error } = useBusinessMembersData({ businessId });
+
+  // DEBUG: Log component state and data
+  console.log("[BusinessMembersList] DEBUG - Component state:", {
+    propBusinessId: businessId,
+    contextBusinessId,
+    isAuthenticated,
+    role,
+    isLoading,
+    hasError: !!error,
+    membersReceived: members?.length || 0,
+    errorMessage: error?.message
+  });
   
 
   // Filtered and sorted data
@@ -119,6 +131,18 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
 
   return (
     <Card className="p-4 sm:p-6 max-w-full overflow-hidden">
+      {/* DEBUG INFO - Remove this after debugging */}
+      <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs">
+        <strong>DEBUG INFO:</strong><br/>
+        Prop businessId: {businessId}<br/>
+        Context businessId: {contextBusinessId}<br/>
+        Authenticated: {isAuthenticated ? 'Yes' : 'No'}<br/>
+        Loading: {isLoading ? 'Yes' : 'No'}<br/>
+        Error: {error ? error.message : 'None'}<br/>
+        Members count: {members?.length || 0}<br/>
+        Members data: {JSON.stringify(members?.slice(0, 2), null, 2)}
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6 min-w-0 gap-4">
         <div className="min-w-0 flex-1">

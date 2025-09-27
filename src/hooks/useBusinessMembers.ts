@@ -33,24 +33,53 @@ export function useBusinessMembersData(opts?: UseBusinessMembersDataOptions) {
   const businessId = opts?.businessId || contextBusinessId;
   const enabled = isAuthenticated && !!businessId && (opts?.enabled ?? true);
 
+  // DEBUG: Log authentication and setup state
+  console.log("[useBusinessMembersData] DEBUG - Authentication state:", {
+    isAuthenticated,
+    contextBusinessId,
+    explicitBusinessId: opts?.businessId,
+    finalBusinessId: businessId,
+    enabled,
+    authApiExists: !!authApi
+  });
+
   const query = useQuery({
     queryKey: queryKeys.data.members(businessId || ''),
     enabled,
     queryFn: async () => {
-      console.info("[useBusinessMembersData] fetching members via edge function");
-      
-      const { data, error } = await authApi.invoke('business-members', {
-        method: 'GET'
+      console.info("[useBusinessMembersData] Starting edge function call");
+      console.log("[useBusinessMembersData] DEBUG - Edge function call details:", {
+        businessId,
+        authApiMethod: 'business-members',
+        timestamp: new Date().toISOString()
       });
       
-      if (error) {
-        console.error("[useBusinessMembersData] error:", error);
-        throw new Error(error.message || 'Failed to fetch business members');
+      try {
+        const { data, error } = await authApi.invoke('business-members', {
+          method: 'GET'
+        });
+        
+        console.log("[useBusinessMembersData] DEBUG - Edge function response:", {
+          hasData: !!data,
+          hasError: !!error,
+          dataStructure: data ? Object.keys(data) : null,
+          memberCount: data?.data?.length || 0,
+          error: error
+        });
+        
+        if (error) {
+          console.error("[useBusinessMembersData] Edge function error:", error);
+          throw new Error(error.message || 'Failed to fetch business members');
+        }
+        
+        console.info("[useBusinessMembersData] Successfully fetched", data?.data?.length || 0, "members");
+        console.log("[useBusinessMembersData] DEBUG - Member data preview:", data?.data?.slice(0, 2));
+        
+        return { members: data?.data || [], count: data?.count || 0 };
+      } catch (err) {
+        console.error("[useBusinessMembersData] Exception during edge function call:", err);
+        throw err;
       }
-      
-      console.info("[useBusinessMembersData] fetched", data?.data?.length || 0, "members");
-      
-      return { members: data?.data || [], count: data?.count || 0 };
     },
     staleTime: 30_000,
   });
