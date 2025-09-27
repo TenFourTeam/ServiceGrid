@@ -33,14 +33,6 @@ export function useBusinessMembersData(opts?: UseBusinessMembersDataOptions) {
   const businessId = opts?.businessId || contextBusinessId;
   const enabled = isAuthenticated && !!businessId && (opts?.enabled ?? true);
 
-  console.log("🔍 [useBusinessMembersData] DEBUGGING START:", {
-    isAuthenticated,
-    contextBusinessId,
-    businessId,
-    enabled,
-    optsEnabled: opts?.enabled,
-    optsBusinessId: opts?.businessId
-  });
 
   const query = useQuery({
     queryKey: queryKeys.data.members(businessId || ''),
@@ -82,16 +74,7 @@ export function useBusinessMembersData(opts?: UseBusinessMembersDataOptions) {
     retry: 2,
   });
 
-  console.log("🔍 [useBusinessMembersData] QUERY STATE:", {
-    isLoading: query.isLoading,
-    isError: query.isError,
-    error: query.error,
-    data: query.data,
-    members: query.data?.members,
-    count: query.data?.count
-  });
-
-  const result = {
+  return {
     data: query.data?.members ?? [],
     count: query.data?.count ?? 0,
     isLoading: query.isLoading,
@@ -99,10 +82,6 @@ export function useBusinessMembersData(opts?: UseBusinessMembersDataOptions) {
     error: query.error,
     refetch: query.refetch,
   };
-
-  console.log("🔍 [useBusinessMembersData] RETURNING:", result);
-  
-  return result;
 }
 
 export function useBusinessMemberOperations() {

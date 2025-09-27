@@ -21,31 +21,11 @@ export type BusinessUI = {
 export function useBusinessContext() {
   const { isSignedIn, isLoaded, userId } = useAuth();
   
-  console.log("🔍 [useBusinessContext] AUTH STATE:", {
-    isSignedIn,
-    isLoaded,
-    userId
-  });
-  
   // Don't query profile until Clerk is fully loaded and user is authenticated
   const shouldFetchProfile = isLoaded && isSignedIn;
   const profileQuery = useProfile();
   
-  console.log("🔍 [useBusinessContext] PROFILE QUERY:", {
-    shouldFetchProfile,
-    isLoading: profileQuery.isLoading,
-    isError: profileQuery.isError,
-    data: profileQuery.data,
-    business: profileQuery.data?.business
-  });
-  
   const business = profileQuery.data?.business as BusinessUI;
-  
-  console.log("🔍 [useBusinessContext] BUSINESS EXTRACTED:", {
-    business,
-    businessId: business?.id,
-    businessName: business?.name
-  });
   
   // Simplified error detection
   const hasError = profileQuery.isError;
@@ -64,7 +44,7 @@ export function useBusinessContext() {
     }
   }, [business?.name, business?.description, business?.logoUrl, business?.lightLogoUrl]);
   
-  const result = {
+  return {
     // Authentication state
     isAuthenticated: isSignedIn,
     isLoaded,
@@ -96,8 +76,4 @@ export function useBusinessContext() {
     // Utilities
     refetchBusiness: profileQuery.refetch,
   };
-
-  console.log("🔍 [useBusinessContext] RETURNING:", result);
-
-  return result;
 }

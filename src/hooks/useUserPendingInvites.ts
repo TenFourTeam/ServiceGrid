@@ -53,10 +53,11 @@ export function useManageInvite() {
 
   return useMutation({
     mutationFn: async ({ action, invite }: { action: 'accept' | 'decline', invite: UserPendingInvite }) => {
-      // Use manage-invite for both accept and decline actions
-      const { data, error } = await authApi.invoke('manage-invite', {
+      const functionName = action === 'accept' ? 'accept-invite' : 'decline-invite';
+      
+      const { data, error } = await authApi.invoke(functionName, {
         method: 'POST',
-        body: { action, token_hash: invite.token_hash }
+        body: { inviteId: invite.id }
       });
       
       if (error) {
