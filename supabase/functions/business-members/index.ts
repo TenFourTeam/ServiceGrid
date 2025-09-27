@@ -19,86 +19,78 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     if (req.method === 'GET') {
-      // Get business and owner profile separately to avoid foreign key issues
-      const { data: business, error: businessError } = await supabase
-        .from('businesses')
-        .select('id, owner_id')
-        .eq('id', ctx.businessId)
-        .single();
+    // Fetch business details and owner
+    const { data: business, error: businessError } = await supabase
+      .from('businesses')
+      .select(`
+        id,
+        name,
+        owner_id,
+        profiles!businesses_owner_id_fkey(id, email, full_name, clerk_user_id)
+      `)
+      .eq('id', ctx.businessId)
+      .single();
 
-      if (businessError) {
-        console.error('[business-members] Business fetch error:', businessError);
-        throw new Error(`Failed to fetch business: ${businessError.message}`);
-      }
+    if (businessError) {
+      console.error('[business-members] Error fetching business:', businessError);
+      return json({ error: 'Failed to fetch business details' }, { status: 500, headers: corsHeaders });
+    }
 
-      // Get owner profile
-      const { data: ownerProfile, error: ownerError } = await supabase
-        .from('profiles')
-        .select('email, full_name')
-        .eq('id', business.owner_id)
-        .single();
+    // Fetch worker members from accepted invites
+    const { data: acceptedInvites, error: invitesError } = await supabase
+      .from('invites')
+      .select(`
+        id,
+        business_id,
+        email,
+        role,
+        invited_at: created_at,
+        accepted_at,
+        invited_by,
+        profiles!invites_email_fkey(id, email, full_name)
+      `)
+      .eq('business_id', ctx.businessId)
+      .not('accepted_at', 'is', null)
+      .is('revoked_at', null)
+      .gt('expires_at', new Date().toISOString());
 
-      if (ownerError) {
-        console.error('[business-members] Owner profile fetch error:', ownerError);
-        // Don't throw error, just log it - owner profile might not exist yet
-      }
+    if (invitesError) {
+      console.error('[business-members] Error fetching accepted invites:', invitesError);
+      return json({ error: 'Failed to fetch worker members' }, { status: 500, headers: corsHeaders });
+    }
 
-      // Get worker members with their profiles
-      const { data: workers, error: workersError } = await supabase
-        .from('business_members')
-        .select(`
-          id,
-          business_id,
-          user_id,
-          role,
-          invited_at,
-          joined_at,
-          invited_by,
-          profiles!business_members_user_id_fkey(email, full_name)
-        `)
-        .eq('business_id', ctx.businessId)
-        .order('joined_at', { ascending: true });
+    // Combine owner and workers into a single members list
+    const members = [
+      // Owner member
+      {
+        id: `owner-${business.profiles.id}`,
+        business_id: ctx.businessId,
+        user_id: business.profiles.id,
+        role: 'owner' as const,
+        invited_at: null, // Owners aren't invited
+        joined_at: null, // Owners don't "join"
+        invited_by: null,
+        joined_via_invite: false,
+        email: business.profiles.email,
+        name: business.profiles.full_name
+      },
+      // Worker members (from accepted invites)
+      ...(acceptedInvites || []).map((invite: any) => ({
+        id: `worker-${invite.profiles.id}`,
+        business_id: invite.business_id,
+        user_id: invite.profiles.id,
+        role: 'worker' as const,
+        invited_at: invite.invited_at,
+        joined_at: invite.accepted_at,
+        invited_by: invite.invited_by,
+        joined_via_invite: true,
+        email: invite.profiles.email,
+        name: invite.profiles.full_name
+      }))
+    ];
 
-      if (workersError) {
-        console.error('[business-members] Workers fetch error:', workersError);
-        throw new Error(`Failed to fetch workers: ${workersError.message}`);
-      }
-
-      // Combine owner + workers
-      const allMembers = [];
-      
-      // Add owner first
-      if (business) {
-        allMembers.push({
-          id: `owner-${business.owner_id}`, // Special ID for owner
-          business_id: business.id,
-          user_id: business.owner_id,
-          role: 'owner',
-          invited_at: null, // Owners aren't invited
-          joined_at: null, // Owners don't join via invitation
-          invited_by: null,
-          email: ownerProfile?.email || 'Unknown',
-          name: ownerProfile?.full_name || 'Business Owner',
-        });
-      }
-
-      // Add workers
-      const formattedWorkers = workers?.map(worker => ({
-        id: worker.id,
-        business_id: worker.business_id,
-        user_id: worker.user_id,
-        role: worker.role,
-        invited_at: worker.invited_at,
-        joined_at: worker.joined_at,
-        invited_by: worker.invited_by,
-        email: (worker.profiles as any)?.email || 'Unknown',
-        name: (worker.profiles as any)?.full_name || 'Unknown User',
-      })) || [];
-
-      allMembers.push(...formattedWorkers);
-
-      console.log('[business-members] Fetched', allMembers.length, 'members (1 owner +', formattedWorkers.length, 'workers)');
-      return json({ members: allMembers, count: allMembers.length });
+      console.log('[business-members] Fetched', members.length, 'members (1 owner +', (acceptedInvites?.length || 0), 'workers)');
+      return json({ members, count: members.length });
     }
 
 
@@ -114,34 +106,73 @@ Deno.serve(async (req) => {
         return json({ error: 'Invalid JSON in request body' }, { status: 400 });
       }
 
-      const { memberId } = body;
+    const { memberId } = body;
 
-      if (!memberId) {
-        return json({ error: 'Member ID is required' }, { status: 400 });
-      }
+    if (!memberId) {
+      return json({ error: 'Member ID is required' }, { status: 400 });
+    }
 
-      // Verify user is business owner
-      const { data: business } = await supabase
-        .from('businesses')
-        .select('owner_id')
-        .eq('id', ctx.businessId)
-        .single();
+    console.log('[business-members] Starting member removal:', memberId);
+    
+    // Verify that the authenticated user is the owner of the business
+    const { data: business, error: businessError } = await supabase
+      .from('businesses')
+      .select('owner_id')
+      .eq('id', ctx.businessId)
+      .single();
 
-      if (!business || business.owner_id !== ctx.userId) {
-        return json({ error: 'Only business owners can remove members' }, { status: 403 });
-      }
+    if (businessError || !business) {
+      console.error('[business-members] Error fetching business:', businessError);
+      return json({ error: 'Business not found' }, { status: 404, headers: corsHeaders });
+    }
 
-      // Remove member
-      const { error } = await supabase
-        .from('business_members')
-        .delete()
-        .eq('id', memberId)
-        .eq('business_id', ctx.businessId);
+    if (business.owner_id !== ctx.userId) {
+      return json({ error: 'Only business owners can remove members' }, { status: 403, headers: corsHeaders });
+    }
 
-      if (error) {
-        console.error('[business-members] DELETE error:', error);
-        throw new Error(`Failed to remove member: ${error.message}`);
-      }
+    // Extract user ID from memberId (format: "worker-{userId}")
+    if (!memberId.startsWith('worker-')) {
+      return json({ error: 'Cannot remove business owner' }, { status: 400, headers: corsHeaders });
+    }
+    
+    const userId = memberId.replace('worker-', '');
+
+    // Find and revoke the accepted invite for this user
+    const { data: userProfile, error: profileError } = await supabase
+      .from('profiles')
+      .select('email')
+      .eq('id', userId)
+      .single();
+
+    if (profileError || !userProfile) {
+      console.error('[business-members] Error finding user profile:', profileError);
+      return json({ error: 'User profile not found' }, { status: 404, headers: corsHeaders });
+    }
+
+    const { data: invite, error: findError } = await supabase
+      .from('invites')
+      .select('id')
+      .eq('business_id', ctx.businessId)
+      .eq('email', userProfile.email)
+      .not('accepted_at', 'is', null)
+      .is('revoked_at', null)
+      .single();
+
+    if (findError || !invite) {
+      console.error('[business-members] Error finding invite:', findError);
+      return json({ error: 'Member invite not found' }, { status: 404, headers: corsHeaders });
+    }
+
+    // Revoke the invite
+    const { error: revokeError } = await supabase
+      .from('invites')
+      .update({ revoked_at: new Date().toISOString() })
+      .eq('id', invite.id);
+
+    if (revokeError) {
+      console.error('[business-members] Error revoking invite:', revokeError);
+      return json({ error: 'Failed to remove team member' }, { status: 500, headers: corsHeaders });
+    }
 
       console.log('[business-members] Member removed:', memberId);
       return json({ success: true });

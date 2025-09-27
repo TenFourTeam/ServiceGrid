@@ -29,14 +29,18 @@ Deno.serve(async (req) => {
       if (targetUserId) {
         // If viewing another user's timesheet, verify the requester is an owner
         if (targetUserId !== ctx.userId) {
-          const { data: memberData, error: roleError } = await supabase
-            .from('business_members')
-            .select('role')
-            .eq('business_id', ctx.businessId)
-            .eq('user_id', ctx.userId)
+          const { data: business, error: businessError } = await supabase
+            .from('businesses')
+            .select('owner_id')
+            .eq('id', ctx.businessId)
             .single();
-          
-          if (roleError || !memberData || memberData.role !== 'owner') {
+
+          if (businessError) {
+            console.error('[timesheet-crud] Error fetching business:', businessError);
+            return json({ error: 'Failed to verify business ownership' }, { status: 500, headers: corsHeaders });
+          }
+
+          if (business.owner_id !== ctx.userId) {
             throw new Error('Only business owners can view other members\' timesheets');
           }
         }
@@ -52,15 +56,35 @@ Deno.serve(async (req) => {
           throw new Error('Target user not found');
         }
         
-        // Verify the target user is a member of this business
-        const { data: targetMemberData, error: targetMemberError } = await supabase
-          .from('business_members')
-          .select('user_id')
-          .eq('business_id', ctx.businessId)
-          .eq('user_id', targetUserId)
+        // Verify the target user has accepted an invite to this business OR is the owner
+        const { data: business, error: businessError } = await supabase
+          .from('businesses')
+          .select('owner_id')
+          .eq('id', ctx.businessId)
           .single();
-          
-        if (targetMemberError || !targetMemberData) {
+
+        if (businessError || !business) {
+          throw new Error('Business not found');
+        }
+
+        const isOwner = business.owner_id === targetUserId;
+        let hasAcceptedInvite = false;
+
+        if (!isOwner) {
+          const { data: acceptedInvite, error: inviteError } = await supabase
+            .from('invites')
+            .select('accepted_at')
+            .eq('business_id', ctx.businessId)
+            .eq('email', userInfo.email)
+            .not('accepted_at', 'is', null)
+            .is('revoked_at', null)
+            .gt('expires_at', new Date().toISOString())
+            .single();
+
+          hasAcceptedInvite = !!acceptedInvite && !inviteError;
+        }
+
+        if (!isOwner && !hasAcceptedInvite) {
           throw new Error('Target user is not a member of this business');
         }
         
@@ -137,14 +161,18 @@ Deno.serve(async (req) => {
         const { clockInTime, clockOutTime, notes: editNotes, targetUserId } = body;
         
         // Check if user is owner
-        const { data: memberData, error: roleError } = await supabase
-          .from('business_members')
-          .select('role')
-          .eq('business_id', ctx.businessId)
-          .eq('user_id', ctx.userId)
+        const { data: business, error: businessError } = await supabase
+          .from('businesses')
+          .select('owner_id')
+          .eq('id', ctx.businessId)
           .single();
-        
-        if (roleError || !memberData || memberData.role !== 'owner') {
+
+        if (businessError) {
+          console.error('[timesheet-crud] Error fetching business:', businessError);
+          return json({ error: 'Failed to verify business ownership' }, { status: 500, headers: corsHeaders });
+        }
+
+        if (business.owner_id !== ctx.userId) {
           throw new Error('Only business owners can edit timesheet entries');
         }
 

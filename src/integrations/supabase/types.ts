@@ -53,67 +53,6 @@ export type Database = {
         }
         Relationships: []
       }
-      business_members: {
-        Row: {
-          business_id: string
-          created_at: string
-          id: string
-          invited_at: string
-          invited_by: string | null
-          joined_at: string | null
-          joined_via_invite: boolean
-          role: Database["public"]["Enums"]["business_role"]
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          business_id: string
-          created_at?: string
-          id?: string
-          invited_at?: string
-          invited_by?: string | null
-          joined_at?: string | null
-          joined_via_invite?: boolean
-          role?: Database["public"]["Enums"]["business_role"]
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          business_id?: string
-          created_at?: string
-          id?: string
-          invited_at?: string
-          invited_by?: string | null
-          joined_at?: string | null
-          joined_via_invite?: boolean
-          role?: Database["public"]["Enums"]["business_role"]
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "business_members_business_id_fkey"
-            columns: ["business_id"]
-            isOneToOne: false
-            referencedRelation: "businesses"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "business_members_invited_by_fkey"
-            columns: ["invited_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "business_members_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       businesses: {
         Row: {
           application_fee_bps: number

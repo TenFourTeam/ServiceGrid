@@ -91,16 +91,19 @@ Deno.serve(async (req) => {
 
     console.log(`[search-invite-users] Found ${allUsers?.length || 0} profiles matching search criteria`);
 
-    // Get existing business members to filter out
-    console.log('[search-invite-users] Fetching existing business members...');
-    const { data: existingMembers, error: membersError } = await supabase
-      .from('business_members')
-      .select('user_id')
-      .eq('business_id', businessId);
+    // Fetch users with accepted invites for this business
+    console.log('[search-invite-users] Fetching users with accepted invites...');
+    const { data: acceptedInvites, error: acceptedError } = await supabase
+      .from('invites')
+      .select('email')
+      .eq('business_id', businessId)
+      .not('accepted_at', 'is', null)
+      .is('revoked_at', null)
+      .gt('expires_at', new Date().toISOString());
 
-    if (membersError) {
-      console.error('[search-invite-users] Business members fetch error:', membersError);
-      return json({ error: 'Failed to fetch business members' }, { status: 500 });
+    if (acceptedError) {
+      console.error('[search-invite-users] Error fetching accepted invites:', acceptedError);
+      return json({ error: 'Failed to fetch accepted invites' }, { status: 500, headers: corsHeaders });
     }
 
     // Get pending invites to filter out
@@ -109,7 +112,7 @@ Deno.serve(async (req) => {
       .from('invites')
       .select('email')
       .eq('business_id', businessId)
-      .is('redeemed_at', null)
+      .is('accepted_at', null)
       .is('revoked_at', null)
       .gt('expires_at', new Date().toISOString());
 
@@ -118,18 +121,19 @@ Deno.serve(async (req) => {
       return json({ error: 'Failed to fetch pending invites' }, { status: 500 });
     }
 
-    // Create sets for efficient filtering
-    const existingMemberIds = new Set(existingMembers?.map((m: any) => m.user_id) || []);
-    const pendingInviteEmails = new Set(pendingInvites?.map((i: any) => i.email) || []);
+    // Filter out the business owner and users with accepted invites or pending invites
+    const acceptedInviteEmails = new Set((acceptedInvites || []).map((i: any) => i.email));
+    const pendingInviteEmails = new Set((pendingInvites || []).map((i: any) => i.email));
 
     // Filter out existing members and users with pending invites
     const availableUsers = (allUsers || []).filter((user: any) => {
-      const isExistingMember = existingMemberIds.has(user.id);
+      const isOwner = user.id === business.owner_id;
+      const hasAcceptedInvite = acceptedInviteEmails.has(user.email);
       const hasPendingInvite = pendingInviteEmails.has(user.email);
       
-      console.log(`[search-invite-users] User ${user.email} - existing member: ${isExistingMember}, pending invite: ${hasPendingInvite}`);
+      console.log(`[search-invite-users] User ${user.email} - owner: ${isOwner}, accepted invite: ${hasAcceptedInvite}, pending invite: ${hasPendingInvite}`);
       
-      return !isExistingMember && !hasPendingInvite;
+      return !isOwner && !hasAcceptedInvite && !hasPendingInvite;
     });
 
     console.log(`[search-invite-users] Filtered to ${availableUsers.length} available users for invitation`);
@@ -139,7 +143,7 @@ Deno.serve(async (req) => {
       users: availableUsers,
       metadata: {
         totalProfiles: allUsers?.length || 0,
-        existingMembers: existingMembers?.length || 0,
+        existingMembers: 1 + (acceptedInvites?.length || 0), // Owner + accepted invites
         pendingInvites: pendingInvites?.length || 0,
         availableForInvite: availableUsers.length,
         searchQuery: searchQuery || null

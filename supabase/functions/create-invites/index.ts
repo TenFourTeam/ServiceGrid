@@ -93,47 +93,48 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // Check if any users are already members
-    const { data: existingMembers } = await supabase
-      .from('business_members')
-      .select('user_id')
-      .eq('business_id', businessId)
-      .in('user_id', userIds);
-
-    const existingMemberIds = existingMembers?.map(m => m.user_id) || [];
-    const newUserIds = userIds.filter(id => !existingMemberIds.includes(id));
-
-    if (newUserIds.length === 0) {
-      return new Response(JSON.stringify({ error: 'All selected users are already members of this business' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Check for existing pending invites
-    const { data: existingInvites } = await supabase
+    // Fetch existing accepted invites and pending invites to avoid duplicates
+    const { data: acceptedInvites, error: acceptedError } = await supabase
       .from('invites')
       .select('email')
       .eq('business_id', businessId)
-      .in('email', users.filter(u => newUserIds.includes(u.id)).map(u => u.email))
-      .is('redeemed_at', null)
-      .is('revoked_at', null)
-      .gt('expires_at', new Date().toISOString());
+      .not('accepted_at', 'is', null)
+      .is('revoked_at', null);
 
-    const existingInviteEmails = existingInvites?.map(i => i.email) || [];
-    const usersToInvite = users.filter(u => 
-      newUserIds.includes(u.id) && !existingInviteEmails.includes(u.email)
-    );
+    if (acceptedError) {
+      console.error('[create-invites] Error fetching accepted invites:', acceptedError);
+    }
 
-    if (usersToInvite.length === 0) {
-      return new Response(JSON.stringify({ error: 'All users either have pending invites or are already members' }), {
+    const { data: pendingInvites, error: pendingError } = await supabase
+      .from('invites')
+      .select('email')
+      .eq('business_id', businessId)
+      .is('accepted_at', null)
+      .is('revoked_at', null);
+
+    if (pendingError) {
+      console.error('[create-invites] Error fetching pending invites:', pendingError);
+    }
+
+    // Filter users to avoid duplicates
+    const acceptedInviteEmails = new Set((acceptedInvites || []).map(i => i.email));
+    const pendingInviteEmails = new Set((pendingInvites || []).map(i => i.email));
+    
+    const eligibleUsers = users?.filter(user => 
+      user.id !== business.owner_id && // Don't invite the business owner
+      !acceptedInviteEmails.has(user.email) && // Don't invite users with accepted invites
+      !pendingInviteEmails.has(user.email) // Don't invite users with pending invites
+    ) || [];
+
+    if (eligibleUsers.length === 0) {
+      return new Response(JSON.stringify({ error: 'All users either have accepted invites, pending invites, or are the business owner' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Create invites for the filtered users
-    const invitePromises = usersToInvite.map(async (user) => {
+    // Create invites for the eligible users
+    const invitePromises = eligibleUsers.map(async (user) => {
       const tokenHash = crypto.randomUUID();
       
       const { data: invite, error: inviteError } = await supabase
@@ -167,7 +168,7 @@ const handler = async (req: Request): Promise<Response> => {
       p_action: 'create_invites',
       p_resource_type: 'invite',
       p_details: { 
-        invited_users: usersToInvite.map(u => u.email),
+        invited_users: eligibleUsers.map(u => u.email),
         role: role,
         invite_count: invites.length
       }
@@ -182,8 +183,8 @@ const handler = async (req: Request): Promise<Response> => {
         expires_at: i.expires_at
       })),
       skipped: {
-        existing_members: existingMemberIds.length,
-        pending_invites: existingInviteEmails.length
+        existing_members: acceptedInviteEmails.size + 1, // +1 for business owner
+        pending_invites: pendingInviteEmails.size
       }
     }), {
       status: 200,
