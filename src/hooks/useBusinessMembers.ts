@@ -57,8 +57,8 @@ export function useBusinessMembersData(opts?: UseBusinessMembersDataOptions) {
       });
       
       const processedResult = {
-        members: data?.data?.data || [],
-        count: data?.data?.count || 0
+        members: data?.data || [],
+        count: data?.count || 0
       };
       
       console.info("[useBusinessMembersData] PROCESSED RESULT:", {
