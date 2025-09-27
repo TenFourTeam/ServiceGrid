@@ -77,13 +77,17 @@ export function useBusinessMembersData(opts?: UseBusinessMembersDataOptions) {
         console.info("[useBusinessMembersData] Successfully fetched", data?.data?.length || 0, "members");
         console.log("[useBusinessMembersData] DEBUG - Member data preview:", data?.data?.slice(0, 2));
         
-        return { members: data?.data || [], count: data?.count || 0 };
+        const result = { members: data?.data || [], count: data?.count || 0 };
+        console.log("[useBusinessMembersData] DEBUG - Final result being returned:", result);
+        
+        return result;
       } catch (err) {
         console.error("[useBusinessMembersData] Exception during edge function call:", err);
         throw err;
       }
     },
     staleTime: 30_000,
+    gcTime: 5 * 60 * 1000, // 5 minutes
   });
 
   return {
