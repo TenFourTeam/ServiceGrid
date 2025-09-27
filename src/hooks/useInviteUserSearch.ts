@@ -8,7 +8,8 @@ export interface InviteUser {
 }
 
 export interface InviteUserSearchResponse {
-  users: InviteUser[];
+  data: InviteUser[];
+  count: number;
   metadata: {
     totalProfiles: number;
     existingMembers: number;
@@ -40,7 +41,7 @@ export function useInviteUserSearch(businessId?: string, searchQuery = '') {
         throw new Error(error.message || 'Failed to search for users');
       }
       
-      return data || { users: [], metadata: { totalProfiles: 0, existingMembers: 0, pendingInvites: 0, availableForInvite: 0, searchQuery: null } };
+      return data || { data: [], count: 0, metadata: { totalProfiles: 0, existingMembers: 0, pendingInvites: 0, availableForInvite: 0, searchQuery: null } };
     },
     staleTime: 30_000, // Cache for 30 seconds
     enabled: !!businessId, // Only run query when businessId is available

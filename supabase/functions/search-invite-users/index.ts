@@ -150,7 +150,8 @@ Deno.serve(async (req) => {
     console.log(`[search-invite-users] Available users:`, availableUsers.map((u: any) => u.email));
 
     return json({
-      users: availableUsers,
+      data: availableUsers,
+      count: availableUsers.length,
       metadata: {
         totalProfiles: allUsers?.length || 0,
         existingMembers: existingPermissions?.length || 0,

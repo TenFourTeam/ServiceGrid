@@ -23,7 +23,7 @@ export function EnhancedInviteModal({ open, onOpenChange, businessId }: Enhanced
   const { data: searchData, isLoading: loadingUsers } = useInviteUserSearch(businessId, searchQuery);
   const createInvites = useCreateInvites();
 
-  const users = searchData?.users || [];
+  const users = searchData?.data || [];
 
   const handleUserToggle = (userId: string) => {
     setSelectedUsers(prev => 

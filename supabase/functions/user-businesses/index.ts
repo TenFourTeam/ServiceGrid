@@ -77,7 +77,10 @@ serve(async (req: Request) => {
 
     console.log(`✅ Found ${businesses.length} businesses for user`);
     
-    return json(businesses, { headers: corsHeaders });
+    return json({
+      data: businesses,
+      count: businesses.length
+    }, { headers: corsHeaders });
 
   } catch (error) {
     console.error('Error in user-businesses:', error);

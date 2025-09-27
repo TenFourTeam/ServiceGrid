@@ -6,7 +6,11 @@
 // Business and profile queries
 export { useProfile } from '@/queries/useProfile';
 
-// UNIFIED: Data hooks with count and full data (RECOMMENDED)
+// User business access queries
+export { useUserBusinesses } from '@/hooks/useUserBusinesses';
+export { useUserPendingInvites } from '@/hooks/useUserPendingInvites';
+
+// UNIFIED: Data hooks with standardized { data: array, count: number } format (RECOMMENDED)
 export { useCustomersData } from '@/hooks/useCustomersData';
 export { useJobsData } from '@/hooks/useJobsData';
 export { useQuotesData } from '@/hooks/useQuotesData';
