@@ -33,97 +33,30 @@ export function useBusinessMembersData(opts?: UseBusinessMembersDataOptions) {
   const businessId = opts?.businessId || contextBusinessId;
   const enabled = isAuthenticated && !!businessId && (opts?.enabled ?? true);
 
-  // DEBUG: Log authentication and setup state
-  console.log("[useBusinessMembersData] DEBUG - Authentication state:", {
-    isAuthenticated,
-    contextBusinessId,
-    explicitBusinessId: opts?.businessId,
-    finalBusinessId: businessId,
-    enabled,
-    authApiExists: !!authApi
-  });
-
-  // DEBUG: Log query setup details
-  console.log("[useBusinessMembersData] DEBUG - Query configuration:", {
-    queryKey: queryKeys.data.members(businessId || ''),
-    enabled,
-    businessIdExists: !!businessId,
-    businessIdValue: businessId,
-    authApiExists: !!authApi,
-    timestamp: new Date().toISOString()
-  });
-
   const query = useQuery({
     queryKey: queryKeys.data.members(businessId || ''),
     enabled,
     queryFn: async () => {
-      console.log("[useBusinessMembersData] QUERYKEY:", queryKeys.data.members(businessId || ''));
-      console.log("[useBusinessMembersData] ENABLED CHECK:", { enabled, businessId, isAuthenticated });
-      console.info("[useBusinessMembersData] Starting edge function call");
-      console.log("[useBusinessMembersData] DEBUG - Edge function call details:", {
-        businessId,
-        authApiMethod: 'business-members',
-        timestamp: new Date().toISOString()
+      console.info("[useBusinessMembersData] fetching members via edge function");
+      
+      const { data, error } = await authApi.invoke('business-members', {
+        method: 'GET'
       });
       
-      try {
-        const { data, error } = await authApi.invoke('business-members', {
-          method: 'GET'
-        });
-        
-        console.log("[useBusinessMembersData] DEBUG - Raw edge function response:", data);
-        console.log("[useBusinessMembersData] DEBUG - Edge function response structure:", {
-          hasData: !!data,
-          hasError: !!error,
-          dataStructure: data ? Object.keys(data) : null,
-          dataProperty: data?.data ? 'exists' : 'missing',
-          countProperty: data?.count !== undefined ? data.count : 'missing',
-          memberCount: data?.data?.length || 0,
-          error: error
-        });
-        
-        if (error) {
-          console.error("[useBusinessMembersData] Edge function error:", error);
-          throw new Error(error.message || 'Failed to fetch business members');
-        }
-        
-        console.info("[useBusinessMembersData] Successfully fetched", data?.data?.length || 0, "members");
-        console.log("[useBusinessMembersData] DEBUG - Member data preview:", data?.data?.slice(0, 2));
-        
-        const result = { members: data?.data || [], count: data?.count || 0 };
-        console.log("[useBusinessMembersData] DEBUG - Final result being returned:", result);
-        console.log("[useBusinessMembersData] DEBUG - Result members array:", result.members);
-        console.log("[useBusinessMembersData] DEBUG - Result count:", result.count);
-        console.log("[useBusinessMembersData] DEBUG - About to return to React Query:", {
-          resultType: typeof result,
-          resultKeys: Object.keys(result),
-          membersLength: result.members?.length,
-          membersIsArray: Array.isArray(result.members)
-        });
-        
-        return result;
-      } catch (err) {
-        console.error("[useBusinessMembersData] Exception during edge function call:", err);
-        throw err;
+      if (error) {
+        console.error("[useBusinessMembersData] error:", error);
+        throw new Error(error.message || 'Failed to fetch business members');
       }
+      
+      console.info("[useBusinessMembersData] fetched", data?.data?.length || 0, "members");
+      
+      return {
+        members: data?.data || [],
+        count: data?.count || 0
+      };
     },
     staleTime: 30_000,
     gcTime: 5 * 60 * 1000, // 5 minutes
-  });
-
-  // DEBUG: Log React Query state after query creation
-  console.log("[useBusinessMembersData] DEBUG - React Query state:", {
-    isLoading: query.isLoading,
-    isError: query.isError,
-    hasData: !!query.data,
-    dataKeys: query.data ? Object.keys(query.data) : null,
-    members: query.data?.members,
-    memberCount: query.data?.count,
-    queryStatus: query.status,
-    fetchStatus: query.fetchStatus,
-    isFetching: query.isFetching,
-    isPending: query.isPending,
-    error: query.error?.message
   });
 
   return {
