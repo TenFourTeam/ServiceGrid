@@ -162,6 +162,12 @@ export async function requireCtx(req: Request, options: { autoCreate?: boolean, 
       
       if (businessError) throw businessError;
       businessId = newBusiness.id;
+      
+      // Update profile to link the new business as default
+      await supaAdmin
+        .from('profiles')
+        .update({ default_business_id: newBusiness.id })
+        .eq('id', userUuid);
     } else {
       throw new Error('No business found');
     }
