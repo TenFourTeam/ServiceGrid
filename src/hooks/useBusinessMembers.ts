@@ -82,6 +82,14 @@ export function useBusinessMembersData(opts?: UseBusinessMembersDataOptions) {
         
         const result = { members: data?.data || [], count: data?.count || 0 };
         console.log("[useBusinessMembersData] DEBUG - Final result being returned:", result);
+        console.log("[useBusinessMembersData] DEBUG - Result members array:", result.members);
+        console.log("[useBusinessMembersData] DEBUG - Result count:", result.count);
+        console.log("[useBusinessMembersData] DEBUG - About to return to React Query:", {
+          resultType: typeof result,
+          resultKeys: Object.keys(result),
+          membersLength: result.members?.length,
+          membersIsArray: Array.isArray(result.members)
+        });
         
         return result;
       } catch (err) {
