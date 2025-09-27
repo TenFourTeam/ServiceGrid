@@ -3,22 +3,20 @@ import { useAuthApi } from '@/hooks/useAuthApi';
 
 export interface UserPendingInvite {
   id: string;
-  business_id: string;
-  role: 'owner' | 'worker';
-  email: string;
-  expires_at: string;
-  created_at: string;
-  invited_by: string;
-  token_hash: string;
-  businesses: {
+  business: {
     id: string;
     name: string;
+    owner_id: string;
     logo_url?: string;
   };
-  invited_by_profile: {
-    full_name?: string;
+  invited_by: {
+    id?: string;
+    name?: string;
     email: string;
   };
+  role: 'owner' | 'worker';
+  expires_at: string;
+  created_at: string;
 }
 
 /**
@@ -38,7 +36,7 @@ export function useUserPendingInvites() {
         throw new Error(error.message || 'Failed to fetch pending invites');
       }
       
-      return data?.invites || [];
+      return data?.data || [];
     },
     staleTime: 30_000,
   });
@@ -56,7 +54,7 @@ export function useManageInvite() {
       // Use manage-invite for both accept and decline actions
       const { data, error } = await authApi.invoke('manage-invite', {
         method: 'POST',
-        body: { action, token_hash: invite.token_hash }
+        body: { action, inviteId: invite.id }
       });
       
       if (error) {

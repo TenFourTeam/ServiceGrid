@@ -17,7 +17,7 @@ export function UserInviteActions({ invite }: UserInviteActionsProps) {
         action: 'accept', 
         invite: invite 
       });
-      toast.success(`Successfully joined ${invite.businesses.name}`);
+      toast.success(`Successfully joined ${invite.business.name}`);
     } catch (error: any) {
       toast.error(error?.message || 'Failed to accept invite');
     }
@@ -40,10 +40,10 @@ export function UserInviteActions({ invite }: UserInviteActionsProps) {
   return (
     <div className="flex items-center justify-between p-4 border rounded-lg">
       <div className="flex items-center gap-3 flex-1 min-w-0">
-        {invite.businesses.logo_url ? (
+        {invite.business.logo_url ? (
           <img 
-            src={invite.businesses.logo_url} 
-            alt={`${invite.businesses.name} logo`}
+            src={invite.business.logo_url} 
+            alt={`${invite.business.name} logo`}
             className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
           />
         ) : (
@@ -54,7 +54,7 @@ export function UserInviteActions({ invite }: UserInviteActionsProps) {
         
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <h3 className="font-medium truncate">{invite.businesses.name}</h3>
+            <h3 className="font-medium truncate">{invite.business.name}</h3>
             <Badge 
               variant={invite.role === 'owner' ? 'default' : 'secondary'}
               className="flex items-center gap-1 text-xs"
@@ -74,7 +74,7 @@ export function UserInviteActions({ invite }: UserInviteActionsProps) {
             )}
           </div>
           <p className="text-sm text-muted-foreground">
-            Invited by {invite.invited_by_profile?.full_name || invite.invited_by_profile?.email}
+            Invited by {invite.invited_by?.name || invite.invited_by?.email}
           </p>
           <p className="text-xs text-muted-foreground">
             Expires {new Date(invite.expires_at).toLocaleDateString()}
