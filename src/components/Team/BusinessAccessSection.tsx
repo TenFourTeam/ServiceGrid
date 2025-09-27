@@ -29,8 +29,8 @@ export function BusinessAccessSection() {
     );
   }
 
-  const hasBusinesses = businesses && businesses.length > 0;
-  const hasPendingInvites = pendingInvites && pendingInvites.length > 0;
+  const hasBusinesses = Array.isArray(businesses) && businesses.length > 0;
+  const hasPendingInvites = Array.isArray(pendingInvites) && pendingInvites.length > 0;
 
   if (!hasBusinesses && !hasPendingInvites) {
     return null;
@@ -55,7 +55,7 @@ export function BusinessAccessSection() {
               <Users className="h-4 w-4" />
               Your Businesses ({businesses.length})
             </h4>
-            {businesses.map((business) => (
+            {(businesses || []).map((business) => (
               <div
                 key={business.id}
                 className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/20 transition-colors"

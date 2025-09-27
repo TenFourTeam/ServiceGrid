@@ -27,7 +27,8 @@ export function useUserBusinesses() {
         throw new Error(error.message || 'Failed to fetch user businesses');
       }
       
-      return data || [];
+      // The API returns the businesses array directly
+      return Array.isArray(data) ? data : [];
     },
     staleTime: 30_000,
   });
