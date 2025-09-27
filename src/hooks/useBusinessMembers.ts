@@ -48,12 +48,27 @@ export function useBusinessMembersData(opts?: UseBusinessMembersDataOptions) {
         throw new Error(error.message || 'Failed to fetch business members');
       }
       
-      console.info("[useBusinessMembersData] fetched", data?.data?.length || 0, "members");
+      console.info("[useBusinessMembersData] RAW RESPONSE:", { 
+        rawData: data, 
+        dataType: typeof data,
+        dataKeys: data ? Object.keys(data) : null,
+        hasDataProperty: data ? 'data' in data : false,
+        dataData: data?.data,
+        dataCount: data?.count
+      });
       
-      return {
+      const processedResult = {
         members: data?.data || [],
         count: data?.count || 0
       };
+      
+      console.info("[useBusinessMembersData] PROCESSED RESULT:", {
+        membersLength: processedResult.members.length,
+        membersArray: processedResult.members,
+        count: processedResult.count
+      });
+      
+      return processedResult;
     },
     staleTime: 0, // Never use stale data
     gcTime: 5 * 60 * 1000, // 5 minutes
