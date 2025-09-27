@@ -47,6 +47,8 @@ export function useBusinessMembersData(opts?: UseBusinessMembersDataOptions) {
     queryKey: queryKeys.data.members(businessId || ''),
     enabled,
     queryFn: async () => {
+      console.log("[useBusinessMembersData] QUERYKEY:", queryKeys.data.members(businessId || ''));
+      console.log("[useBusinessMembersData] ENABLED CHECK:", { enabled, businessId, isAuthenticated });
       console.info("[useBusinessMembersData] Starting edge function call");
       console.log("[useBusinessMembersData] DEBUG - Edge function call details:", {
         businessId,
