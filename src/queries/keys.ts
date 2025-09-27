@@ -127,7 +127,7 @@ const invalidationHelpers = {
   },
   
   team: (queryClient: QueryClient, businessId: string) => {
-    queryClient.invalidateQueries({ queryKey: queryKeys.team.members(businessId) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.data.members(businessId) });
     queryClient.invalidateQueries({ queryKey: queryKeys.team.invites(businessId) });
   },
   
