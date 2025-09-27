@@ -32,10 +32,6 @@ export function BusinessAccessSection() {
   const hasBusinesses = Array.isArray(businesses) && businesses.length > 0;
   const hasPendingInvites = Array.isArray(pendingInvites) && pendingInvites.length > 0;
 
-  if (!hasBusinesses && !hasPendingInvites) {
-    return null;
-  }
-
   return (
     <Card>
       <CardHeader>
@@ -107,6 +103,29 @@ export function BusinessAccessSection() {
             {pendingInvites.map((invite) => (
               <UserInviteActions key={invite.id} invite={invite} />
             ))}
+          </div>
+        )}
+
+        {/* Empty States */}
+        {!hasBusinesses && !hasPendingInvites && (
+          <div className="text-center py-6 text-muted-foreground">
+            <Building2 className="h-12 w-12 mx-auto mb-3 opacity-50" />
+            <p className="text-sm font-medium mb-1">No business access found</p>
+            <p className="text-xs">
+              You don't belong to any businesses yet and have no pending invitations.
+            </p>
+          </div>
+        )}
+
+        {!hasBusinesses && hasPendingInvites && (
+          <div className="text-center py-3 text-muted-foreground border-t">
+            <p className="text-xs">No active business memberships</p>
+          </div>
+        )}
+
+        {hasBusinesses && !hasPendingInvites && (
+          <div className="text-center py-3 text-muted-foreground border-t">
+            <p className="text-xs">No pending invitations</p>
           </div>
         )}
       </CardContent>
