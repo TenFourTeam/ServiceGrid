@@ -55,8 +55,11 @@ export function useBusinessMembersData(opts?: UseBusinessMembersDataOptions) {
         count: data?.count || 0
       };
     },
-    staleTime: 30_000,
+    staleTime: 0, // Never use stale data
     gcTime: 5 * 60 * 1000, // 5 minutes
+    refetchInterval: 5000, // Poll every 5 seconds
+    refetchOnMount: true, // Always fetch on mount
+    refetchOnWindowFocus: true, // Refetch on window focus
   });
 
   return {
