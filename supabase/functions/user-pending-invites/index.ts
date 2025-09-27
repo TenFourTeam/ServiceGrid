@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
         expires_at,
         created_at,
         invited_by,
-        businesses!invites_business_id_fkey(id, name, owner_id, logo_url),
+        businesses!invites_business_id_fkey(id, name, owner_id),
         profiles!invites_invited_by_fkey(id, full_name, email)
       `)
       .eq('invited_user_id', ctx.userId)
@@ -54,8 +54,7 @@ Deno.serve(async (req) => {
       business: {
         id: (invite.businesses as any).id,
         name: (invite.businesses as any).name,
-        owner_id: (invite.businesses as any).owner_id,
-        logo_url: (invite.businesses as any).logo_url
+        owner_id: (invite.businesses as any).owner_id
       },
       invited_by: {
         id: (invite.profiles as any).id,
