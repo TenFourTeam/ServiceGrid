@@ -32,7 +32,7 @@ export function BusinessMembersList({ businessId }: BusinessMembersListProps) {
   });
   
 
-  const { data: members, isLoading, count: membersCount, error } = useBusinessMembersData();
+  const { data: members, isLoading, count: membersCount, error } = useBusinessMembersData({ businessId });
   
 
   // Filtered and sorted data

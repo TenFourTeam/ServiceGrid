@@ -19,14 +19,18 @@ export interface BusinessMember {
 
 interface UseBusinessMembersDataOptions {
   enabled?: boolean;
+  businessId?: string;
 }
 
 /**
  * Edge Function business members hook - unified Clerk authentication
  */
 export function useBusinessMembersData(opts?: UseBusinessMembersDataOptions) {
-  const { isAuthenticated, businessId } = useBusinessContext();
+  const { isAuthenticated, businessId: contextBusinessId } = useBusinessContext();
   const authApi = useAuthApi();
+  
+  // Use explicit businessId if provided, fallback to context
+  const businessId = opts?.businessId || contextBusinessId;
   const enabled = isAuthenticated && !!businessId && (opts?.enabled ?? true);
 
   const query = useQuery({
