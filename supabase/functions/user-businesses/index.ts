@@ -15,6 +15,18 @@ serve(async (req: Request) => {
 
     console.log(`🏢 Fetching businesses for user: ${userId}`);
 
+    // Get user email first for invite lookups
+    const { data: userProfile, error: profileError } = await supaAdmin
+      .from('profiles')
+      .select('email')
+      .eq('id', userId)
+      .single();
+
+    if (profileError || !userProfile) {
+      console.error('Profile query error:', profileError);
+      return json({ error: 'User profile not found' }, { status: 404 });
+    }
+
     const businesses = [];
 
     // 1. Get primary business (owned business) - single source of truth via businesses.owner_id
@@ -41,36 +53,36 @@ serve(async (req: Request) => {
       });
     }
 
-    // 2. Get external memberships (worker businesses only from business_members)
-    const { data: memberBusinesses, error: memberError } = await supaAdmin
-      .from('business_members')
+    // 2. Get external memberships (worker businesses from accepted invites)
+    const { data: acceptedInvites, error: inviteError } = await supaAdmin
+      .from('invites')
       .select(`
         business_id,
-        role,
-        joined_at,
+        accepted_at,
         businesses!inner (
           id,
           name,
           logo_url
         )
       `)
-      .eq('user_id', userId);
+      .eq('email', userProfile.email)
+      .not('accepted_at', 'is', null);
 
-    if (memberError) {
-      console.error('Member businesses query error:', memberError);
+    if (inviteError) {
+      console.error('Accepted invites query error:', inviteError);
       return json({ error: 'Failed to fetch worker businesses' }, { status: 500 });
     }
 
-    // Add worker businesses
-    if (memberBusinesses) {
-      for (const membership of memberBusinesses) {
-        const business = membership.businesses as any;
+    // Add worker businesses from accepted invites
+    if (acceptedInvites) {
+      for (const invite of acceptedInvites) {
+        const business = invite.businesses as any;
         businesses.push({
           id: business.id,
           name: business.name,
           logo_url: business.logo_url,
-          role: membership.role, // Always 'worker' now due to constraint
-          joined_at: membership.joined_at,
+          role: 'worker', // Always worker for external businesses
+          joined_at: invite.accepted_at,
           is_current: false // External memberships are not current
         });
       }

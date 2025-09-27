@@ -12,7 +12,7 @@ export interface ExternalMembership {
 
 /**
  * Hook to fetch external business memberships where user is a worker
- * Excludes the primary business (owned business)
+ * Now uses accepted invites instead of business_members table
  */
 export function useExternalMemberships() {
   const authApi = useAuthApi();
@@ -27,7 +27,7 @@ export function useExternalMemberships() {
       if (error) {
         throw new Error(error.message || 'Failed to fetch external memberships');
       }
-      
+
       const businesses = data || [];
       
       // Filter to only worker memberships (exclude owned businesses)

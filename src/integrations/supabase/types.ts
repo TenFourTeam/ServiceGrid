@@ -241,6 +241,7 @@ export type Database = {
       }
       invites: {
         Row: {
+          accepted_at: string | null
           business_id: string
           created_at: string
           email: string
@@ -256,6 +257,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          accepted_at?: string | null
           business_id: string
           created_at?: string
           email: string
@@ -271,6 +273,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          accepted_at?: string | null
           business_id?: string
           created_at?: string
           email?: string

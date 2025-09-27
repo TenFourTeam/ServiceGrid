@@ -117,30 +117,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if user is already a member
-    console.log('[accept-invite] Checking if user is already a member');
-    const { data: existingMembership } = await supabaseAdmin
-      .from('business_members')
-      .select('*')
-      .eq('business_id', invite.business_id)
-      .eq('user_id', ctx.userId)
-      .single();
-
-    if (existingMembership) {
-      console.log('[accept-invite] User is already a member - marking invite as redeemed');
-      
-      // Mark invite as redeemed even though user was already a member
-      await supabaseAdmin
-        .from('invites')
-        .update({
-          redeemed_at: new Date().toISOString(),
-          redeemed_by: ctx.userId
-        })
-        .eq('id', invite.id);
-
+    // Check if invite is already accepted (using new accepted_at column)
+    if (invite.accepted_at) {
+      console.log('[accept-invite] Invite already accepted');
       return new Response(
         JSON.stringify({ 
-          message: 'You are already a member of this business',
+          message: 'Invite has already been accepted',
           business_id: invite.business_id 
         }),
         { 
@@ -150,39 +132,27 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create worker membership (role is always 'worker' now)
-    console.log('[accept-invite] Creating worker membership');
-    const { error: membershipError } = await supabaseAdmin
-      .from('business_members')
-      .insert({
-        business_id: invite.business_id,
-        user_id: ctx.userId,
-        role: 'worker', // Always worker - owners are in businesses.owner_id
-        joined_at: new Date().toISOString(),
-        joined_via_invite: true,
-        invited_by: invite.invited_by
-      });
+    // Accept the invite by setting accepted_at timestamp
+    console.log('[accept-invite] Accepting invite - setting accepted_at timestamp');
+    const { error: acceptError } = await supabaseAdmin
+      .from('invites')
+      .update({
+        accepted_at: new Date().toISOString(),
+        redeemed_at: new Date().toISOString(),
+        redeemed_by: ctx.userId
+      })
+      .eq('id', invite.id);
 
-    if (membershipError) {
-      console.error('[accept-invite] Failed to create membership:', membershipError);
+    if (acceptError) {
+      console.error('[accept-invite] Failed to accept invite:', acceptError);
       return new Response(
-        JSON.stringify({ error: 'Failed to join business' }), 
+        JSON.stringify({ error: 'Failed to accept invite' }), 
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
     }
-
-    // Mark invite as redeemed
-    console.log('[accept-invite] Marking invite as redeemed');
-    await supabaseAdmin
-      .from('invites')
-      .update({
-        redeemed_at: new Date().toISOString(),
-        redeemed_by: ctx.userId
-      })
-      .eq('id', invite.id);
 
     // Log audit action
     console.log('[accept-invite] Logging audit action');
