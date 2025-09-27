@@ -61,11 +61,14 @@ export function useBusinessMembersData(opts?: UseBusinessMembersDataOptions) {
           method: 'GET'
         });
         
-        console.log("[useBusinessMembersData] DEBUG - Edge function response:", {
+        console.log("[useBusinessMembersData] DEBUG - Raw edge function response:", data);
+        console.log("[useBusinessMembersData] DEBUG - Edge function response structure:", {
           hasData: !!data,
           hasError: !!error,
           dataStructure: data ? Object.keys(data) : null,
-          memberCount: data?.length || 0,
+          dataProperty: data?.data ? 'exists' : 'missing',
+          countProperty: data?.count !== undefined ? data.count : 'missing',
+          memberCount: data?.data?.length || 0,
           error: error
         });
         
@@ -74,10 +77,10 @@ export function useBusinessMembersData(opts?: UseBusinessMembersDataOptions) {
           throw new Error(error.message || 'Failed to fetch business members');
         }
         
-        console.info("[useBusinessMembersData] Successfully fetched", data?.length || 0, "members");
-        console.log("[useBusinessMembersData] DEBUG - Member data preview:", data?.slice(0, 2));
+        console.info("[useBusinessMembersData] Successfully fetched", data?.data?.length || 0, "members");
+        console.log("[useBusinessMembersData] DEBUG - Member data preview:", data?.data?.slice(0, 2));
         
-        const result = { members: data || [], count: data?.length || 0 };
+        const result = { members: data?.data || [], count: data?.count || 0 };
         console.log("[useBusinessMembersData] DEBUG - Final result being returned:", result);
         
         return result;
