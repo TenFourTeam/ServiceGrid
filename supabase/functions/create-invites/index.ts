@@ -72,94 +72,80 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // Get user emails for the provided user IDs
-    const { data: users, error: usersError } = await supabase
+    // Check which users already have permissions or pending invites
+    const { data: existingPermissions, error: permissionsError } = await supabase
+      .from('business_permissions')
+      .select('user_id')
+      .eq('business_id', businessId)
+      .in('user_id', userIds);
+
+    if (permissionsError) {
+      console.error('[create-invites] Error checking existing permissions:', permissionsError);
+      return json({ error: 'Failed to check existing permissions' }, { status: 500, headers: corsHeaders });
+    }
+
+    const { data: pendingInvites, error: invitesError } = await supabase
+      .from('invites')
+      .select('invited_user_id')
+      .eq('business_id', businessId)
+      .in('invited_user_id', userIds)
+      .is('accepted_at', null)
+      .is('revoked_at', null)
+      .gt('expires_at', new Date().toISOString());
+
+    if (invitesError) {
+      console.error('[create-invites] Error checking pending invites:', invitesError);
+      return json({ error: 'Failed to check pending invites' }, { status: 500, headers: corsHeaders });
+    }
+
+    const existingUserIds = new Set(existingPermissions?.map(p => p.user_id) || []);
+    const pendingUserIds = new Set(pendingInvites?.map(i => i.invited_user_id) || []);
+    
+    // Filter out users who already have permissions or pending invites
+    const eligibleUserIds = userIds.filter(userId => 
+      !existingUserIds.has(userId) && !pendingUserIds.has(userId)
+    );
+
+    if (eligibleUserIds.length === 0) {
+      return json({
+        message: 'No new invites to create',
+        invites: [],
+        skipped: {
+          existing_members: existingUserIds.size,
+          pending_invites: pendingUserIds.size
+        }
+      }, { headers: corsHeaders });
+    }
+
+    // Get user profiles for the invites
+    const { data: userProfiles, error: profilesError } = await supabase
       .from('profiles')
       .select('id, email')
-      .in('id', userIds);
+      .in('id', eligibleUserIds);
 
-    if (usersError) {
-      console.error('[create-invites] Error fetching users:', usersError);
-      return new Response(JSON.stringify({ error: 'Failed to fetch user information' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    if (profilesError) {
+      console.error('[create-invites] Error fetching user profiles:', profilesError);
+      return json({ error: 'Failed to fetch user profiles' }, { status: 500, headers: corsHeaders });
     }
 
-    if (!users || users.length === 0) {
-      return new Response(JSON.stringify({ error: 'No valid users found' }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    // Create invites
+    const invitesToCreate = eligibleUserIds.map(userId => ({
+      business_id: businessId,
+      invited_user_id: userId,
+      role: role,
+      invited_by: ctx.userId,
+      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days from now
+    }));
 
-    // Fetch existing accepted invites and pending invites to avoid duplicates
-    const { data: acceptedInvites, error: acceptedError } = await supabase
+    const { data: createdInvites, error: createError } = await supabase
       .from('invites')
-      .select('email')
-      .eq('business_id', businessId)
-      .not('accepted_at', 'is', null)
-      .is('revoked_at', null);
+      .insert(invitesToCreate)
+      .select();
 
-    if (acceptedError) {
-      console.error('[create-invites] Error fetching accepted invites:', acceptedError);
+    if (createError) {
+      console.error('[create-invites] Error creating invites:', createError);
+      return json({ error: 'Failed to create invites' }, { status: 500, headers: corsHeaders });
     }
-
-    const { data: pendingInvites, error: pendingError } = await supabase
-      .from('invites')
-      .select('email')
-      .eq('business_id', businessId)
-      .is('accepted_at', null)
-      .is('revoked_at', null);
-
-    if (pendingError) {
-      console.error('[create-invites] Error fetching pending invites:', pendingError);
-    }
-
-    // Filter users to avoid duplicates
-    const acceptedInviteEmails = new Set((acceptedInvites || []).map(i => i.email));
-    const pendingInviteEmails = new Set((pendingInvites || []).map(i => i.email));
-    
-    const eligibleUsers = users?.filter(user => 
-      user.id !== business.owner_id && // Don't invite the business owner
-      !acceptedInviteEmails.has(user.email) && // Don't invite users with accepted invites
-      !pendingInviteEmails.has(user.email) // Don't invite users with pending invites
-    ) || [];
-
-    if (eligibleUsers.length === 0) {
-      return new Response(JSON.stringify({ error: 'All users either have accepted invites, pending invites, or are the business owner' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Create invites for the eligible users
-    const invitePromises = eligibleUsers.map(async (user) => {
-      const tokenHash = crypto.randomUUID();
-      
-      const { data: invite, error: inviteError } = await supabase
-        .from('invites')
-        .insert({
-          business_id: businessId,
-          email: user.email,
-          role: role,
-          invited_by: ctx.userId,
-          token_hash: tokenHash,
-          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
-        })
-        .select()
-        .single();
-
-      if (inviteError) {
-        console.error('[create-invites] Error creating invite for user:', user.email, inviteError);
-        throw inviteError;
-      }
-
-      console.log('[create-invites] Created invite for user:', user.email);
-      return invite;
-    });
-
-    const invites = await Promise.all(invitePromises);
 
     // Log audit action
     await supabase.rpc('log_audit_action', {
@@ -168,28 +154,31 @@ const handler = async (req: Request): Promise<Response> => {
       p_action: 'create_invites',
       p_resource_type: 'invite',
       p_details: { 
-        invited_users: eligibleUsers.map(u => u.email),
+        invited_users: userProfiles?.map(u => u.email) || [],
         role: role,
-        invite_count: invites.length
+        invite_count: createdInvites?.length || 0
       }
     });
 
-    return new Response(JSON.stringify({
-      message: `Successfully created ${invites.length} invite(s)`,
-      invites: invites.map(i => ({
-        id: i.id,
-        email: i.email,
-        role: i.role,
-        expires_at: i.expires_at
-      })),
+    // Return created invites with email info
+    const invitesWithEmails = createdInvites?.map(invite => {
+      const profile = userProfiles?.find(p => p.id === invite.invited_user_id);
+      return {
+        id: invite.id,
+        email: profile?.email || 'Unknown',
+        role: invite.role,
+        expires_at: invite.expires_at
+      };
+    }) || [];
+
+    return json({
+      message: `Successfully created ${invitesWithEmails.length} invites`,
+      invites: invitesWithEmails,
       skipped: {
-        existing_members: acceptedInviteEmails.size + 1, // +1 for business owner
-        pending_invites: pendingInviteEmails.size
+        existing_members: existingUserIds.size,
+        pending_invites: pendingUserIds.size
       }
-    }), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    }, { headers: corsHeaders });
 
   } catch (error: any) {
     console.error('[create-invites] Error:', error);

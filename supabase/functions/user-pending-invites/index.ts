@@ -22,82 +22,54 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get user's profile to get their email
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('email')
-      .eq('clerk_user_id', ctx.clerkUserId)
-      .single();
-
-    if (profileError || !profile) {
-      console.error('[user-pending-invites] Profile error:', profileError);
-      return json({ error: 'User profile not found' }, { status: 404 });
-    }
-
-    console.log('[user-pending-invites] User email:', profile.email);
-
-    // Fetch pending invites for this user's email (without joins to avoid schema cache issues)
+    // Get pending invites for the current user
     const { data: invites, error: invitesError } = await supabase
       .from('invites')
       .select(`
         id,
         business_id,
         role,
-        email,
         expires_at,
         created_at,
         invited_by,
-        token_hash
+        businesses!invites_business_id_fkey(id, name, owner_id),
+        profiles!invites_invited_by_fkey(id, full_name, email)
       `)
-      .eq('email', profile.email)
-      .is('redeemed_at', null)
+      .eq('invited_user_id', ctx.userId)
+      .is('accepted_at', null)
       .is('revoked_at', null)
-      .gt('expires_at', new Date().toISOString());
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false });
 
     if (invitesError) {
       console.error('[user-pending-invites] Invites error:', invitesError);
       throw new Error(`Failed to fetch pending invites: ${invitesError.message}`);
     }
 
-    console.log('[user-pending-invites] Found invites:', invites?.length || 0);
+    console.log('[user-pending-invites] Found', invites?.length || 0, 'pending invites');
 
-    // If no invites, return empty array
-    if (!invites || invites.length === 0) {
-      return json({ invites: [] });
-    }
-
-    // Fetch business details for each invite
-    const businessIds = [...new Set(invites.map(invite => invite.business_id))];
-    const { data: businesses, error: businessError } = await supabase
-      .from('businesses')
-      .select('id, name, logo_url')
-      .in('id', businessIds);
-
-    if (businessError) {
-      console.error('[user-pending-invites] Business error:', businessError);
-      // Continue without business data if fetch fails
-    }
-
-    // Fetch invited_by profiles
-    const inviterIds = [...new Set(invites.map(invite => invite.invited_by))];
-    const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select('id, full_name, email')
-      .in('id', inviterIds);
-
-    if (profilesError) {
-      console.error('[user-pending-invites] Profiles error:', profilesError);
-      // Continue without profile data if fetch fails
-    }
-
-    // Join data in JavaScript
-    const enrichedInvites = invites.map(invite => ({
-      ...invite,
-      businesses: businesses?.find(b => b.id === invite.business_id) || { id: invite.business_id, name: 'Unknown Business', logo_url: null },
-      invited_by_profile: profiles?.find(p => p.id === invite.invited_by) || { full_name: null, email: 'Unknown' }
+    // Format the response
+    const formattedInvites = (invites || []).map(invite => ({
+      id: invite.id,
+      business: {
+        id: (invite.businesses as any).id,
+        name: (invite.businesses as any).name,
+        owner_id: (invite.businesses as any).owner_id
+      },
+      invited_by: {
+        id: (invite.profiles as any).id,
+        name: (invite.profiles as any).full_name,
+        email: (invite.profiles as any).email
+      },
+      role: invite.role,
+      expires_at: invite.expires_at,
+      created_at: invite.created_at
     }));
 
-    return json({ invites: enrichedInvites });
+    return json({
+      data: formattedInvites,
+      count: formattedInvites.length
+    }, { headers: corsHeaders });
 
   } catch (error: any) {
     console.error('[user-pending-invites] Error:', error);

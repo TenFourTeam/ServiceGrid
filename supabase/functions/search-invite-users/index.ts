@@ -66,23 +66,25 @@ Deno.serve(async (req) => {
 
     console.log('[search-invite-users] Permission check passed. User is business owner.');
 
-    // Build the query to get users that are NOT already members of this business
-    let query = supabase
+    // Get all profiles that have their own businesses (excluding the current user)
+    let profileQuery = supabase
       .from('profiles')
       .select(`
         id,
         email,
-        full_name
+        full_name,
+        businesses!businesses_owner_id_fkey(id)
       `)
-      .neq('id', ctx.userId); // Exclude current user
+      .not('id', 'eq', ctx.userId)
+      .not('businesses.id', 'is', null); // Only users who own businesses
 
-    // Add search filtering if provided
-    if (searchQuery.trim()) {
-      query = query.or(`email.ilike.%${searchQuery}%,full_name.ilike.%${searchQuery}%`);
+    // Apply search filter if provided
+    if (searchQuery) {
+      profileQuery = profileQuery.or(`email.ilike.%${searchQuery}%,full_name.ilike.%${searchQuery}%`);
     }
 
-    console.log('[search-invite-users] Fetching all profiles with search filter...');
-    const { data: allUsers, error: profilesError } = await query.order('email');
+    console.log('[search-invite-users] Fetching profiles with businesses...');
+    const { data: allUsers, error: profilesError } = await profileQuery;
 
     if (profilesError) {
       console.error('[search-invite-users] Profiles fetch error:', profilesError);
@@ -91,26 +93,25 @@ Deno.serve(async (req) => {
 
     console.log(`[search-invite-users] Found ${allUsers?.length || 0} profiles matching search criteria`);
 
-    // Fetch users with accepted invites for this business
-    console.log('[search-invite-users] Fetching users with accepted invites...');
-    const { data: acceptedInvites, error: acceptedError } = await supabase
-      .from('invites')
-      .select('email')
-      .eq('business_id', businessId)
-      .not('accepted_at', 'is', null)
-      .is('revoked_at', null)
-      .gt('expires_at', new Date().toISOString());
+    // Get users who already have permissions to this business
+    console.log('[search-invite-users] Fetching existing business permissions...');
+    const { data: existingPermissions, error: permissionsError } = await supabase
+      .from('business_permissions')
+      .select('user_id')
+      .eq('business_id', businessId);
 
-    if (acceptedError) {
-      console.error('[search-invite-users] Error fetching accepted invites:', acceptedError);
-      return json({ error: 'Failed to fetch accepted invites' }, { status: 500, headers: corsHeaders });
+    if (permissionsError) {
+      console.error('[search-invite-users] Error fetching existing permissions:', permissionsError);
+      return json({ error: 'Failed to check existing permissions' }, { status: 500, headers: corsHeaders });
     }
 
-    // Get pending invites to filter out
+    const existingUserIds = new Set(existingPermissions?.map(p => p.user_id) || []);
+
+    // Get users with pending invites
     console.log('[search-invite-users] Fetching pending invites...');
     const { data: pendingInvites, error: invitesError } = await supabase
       .from('invites')
-      .select('email')
+      .select('invited_user_id')
       .eq('business_id', businessId)
       .is('accepted_at', null)
       .is('revoked_at', null)
@@ -121,29 +122,25 @@ Deno.serve(async (req) => {
       return json({ error: 'Failed to fetch pending invites' }, { status: 500 });
     }
 
-    // Filter out the business owner and users with accepted invites or pending invites
-    const acceptedInviteEmails = new Set((acceptedInvites || []).map((i: any) => i.email));
-    const pendingInviteEmails = new Set((pendingInvites || []).map((i: any) => i.email));
+    const pendingUserIds = new Set(pendingInvites?.map(i => i.invited_user_id) || []);
 
-    // Filter out existing members and users with pending invites
-    const availableUsers = (allUsers || []).filter((user: any) => {
-      const isOwner = user.id === business.owner_id;
-      const hasAcceptedInvite = acceptedInviteEmails.has(user.email);
-      const hasPendingInvite = pendingInviteEmails.has(user.email);
-      
-      console.log(`[search-invite-users] User ${user.email} - owner: ${isOwner}, accepted invite: ${hasAcceptedInvite}, pending invite: ${hasPendingInvite}`);
-      
-      return !isOwner && !hasAcceptedInvite && !hasPendingInvite;
-    });
+    // Filter out users who already have permissions or pending invites
+    const availableUsers = (allUsers || [])
+      .filter(profile => !existingUserIds.has(profile.id) && !pendingUserIds.has(profile.id))
+      .map(profile => ({
+        id: profile.id,
+        email: profile.email,
+        full_name: profile.full_name
+      }));
 
     console.log(`[search-invite-users] Filtered to ${availableUsers.length} available users for invitation`);
     console.log(`[search-invite-users] Available users:`, availableUsers.map((u: any) => u.email));
 
-    return json({ 
+    return json({
       users: availableUsers,
       metadata: {
         totalProfiles: allUsers?.length || 0,
-        existingMembers: 1 + (acceptedInvites?.length || 0), // Owner + accepted invites
+        existingMembers: existingPermissions?.length || 0,
         pendingInvites: pendingInvites?.length || 0,
         availableForInvite: availableUsers.length,
         searchQuery: searchQuery || null

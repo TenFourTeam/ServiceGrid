@@ -53,6 +53,58 @@ export type Database = {
         }
         Relationships: []
       }
+      business_permissions: {
+        Row: {
+          business_id: string
+          created_at: string
+          granted_at: string
+          granted_by: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          granted_at?: string
+          granted_by: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          granted_at?: string
+          granted_by?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_permissions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_permissions_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_permissions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       businesses: {
         Row: {
           application_fee_bps: number
@@ -183,54 +235,55 @@ export type Database = {
           accepted_at: string | null
           business_id: string
           created_at: string
-          email: string
           expires_at: string
           id: string
           invited_by: string
+          invited_user_id: string
           redeemed_at: string | null
           redeemed_by: string | null
           revoked_at: string | null
           role: Database["public"]["Enums"]["business_role"]
-          signup_context: Json | null
-          token_hash: string
           updated_at: string
         }
         Insert: {
           accepted_at?: string | null
           business_id: string
           created_at?: string
-          email: string
           expires_at?: string
           id?: string
           invited_by: string
+          invited_user_id: string
           redeemed_at?: string | null
           redeemed_by?: string | null
           revoked_at?: string | null
           role?: Database["public"]["Enums"]["business_role"]
-          signup_context?: Json | null
-          token_hash: string
           updated_at?: string
         }
         Update: {
           accepted_at?: string | null
           business_id?: string
           created_at?: string
-          email?: string
           expires_at?: string
           id?: string
           invited_by?: string
+          invited_user_id?: string
           redeemed_at?: string | null
           redeemed_by?: string | null
           revoked_at?: string | null
           role?: Database["public"]["Enums"]["business_role"]
-          signup_context?: Json | null
-          token_hash?: string
           updated_at?: string
         }
         Relationships: [
           {
             foreignKeyName: "invites_invited_by_fkey"
             columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invites_invited_user_id_fkey"
+            columns: ["invited_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1122,6 +1175,10 @@ export type Database = {
       }
       has_active_subscription: {
         Args: { p_business_id: string; p_customer_id: string }
+        Returns: boolean
+      }
+      has_business_permission: {
+        Args: { p_business_id: string; p_user_id: string }
         Returns: boolean
       }
       is_business_member: {

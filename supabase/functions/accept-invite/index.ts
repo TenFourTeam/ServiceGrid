@@ -27,12 +27,12 @@ Deno.serve(async (req) => {
 
   try {
     // Parse request body
-    const { token_hash } = await req.json();
+    const { inviteId } = await req.json();
     
-    if (!token_hash) {
-      console.log('[accept-invite] Missing token_hash in request');
+    if (!inviteId) {
+      console.log('[accept-invite] Missing inviteId in request');
       return new Response(
-        JSON.stringify({ error: 'Missing token_hash' }), 
+        JSON.stringify({ error: 'Missing inviteId' }), 
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`[accept-invite] Processing invite with token_hash: ${token_hash.substring(0, 10)}...`);
+    console.log(`[accept-invite] Processing invite: ${inviteId}`);
 
     // Authenticate user
     const ctx = await requireCtx(req);
@@ -52,12 +52,13 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Find the invite
+    // Get the invite and verify it belongs to the current user
     console.log('[accept-invite] Looking up invite');
     const { data: invite, error: inviteError } = await supabaseAdmin
       .from('invites')
-      .select('*')
-      .eq('token_hash', token_hash)
+      .select('id, business_id, role, invited_user_id, expires_at, accepted_at, revoked_at, invited_by')
+      .eq('id', inviteId)
+      .eq('invited_user_id', ctx.userId)
       .single();
 
     if (inviteError || !invite) {
@@ -71,11 +72,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Validate invite
-    if (invite.redeemed_at) {
-      console.log('[accept-invite] Invite already redeemed');
+    // Check if invite is valid
+    if (invite.accepted_at) {
       return new Response(
-        JSON.stringify({ error: 'Invite has already been redeemed' }), 
+        JSON.stringify({ error: 'Invite has already been accepted' }), 
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -84,7 +84,6 @@ Deno.serve(async (req) => {
     }
 
     if (invite.revoked_at) {
-      console.log('[accept-invite] Invite has been revoked');
       return new Response(
         JSON.stringify({ error: 'Invite has been revoked' }), 
         { 
@@ -95,7 +94,6 @@ Deno.serve(async (req) => {
     }
 
     if (new Date(invite.expires_at) < new Date()) {
-      console.log('[accept-invite] Invite has expired');
       return new Response(
         JSON.stringify({ error: 'Invite has expired' }), 
         { 
@@ -105,48 +103,84 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Verify email matches
-    if (invite.email !== ctx.email) {
-      console.log(`[accept-invite] Email mismatch: invite for ${invite.email}, user is ${ctx.email}`);
+    // Check if user already has permission to this business
+    const { data: existingPermission, error: permissionError } = await supabaseAdmin
+      .from('business_permissions')
+      .select('id')
+      .eq('user_id', ctx.userId)
+      .eq('business_id', invite.business_id)
+      .maybeSingle();
+
+    if (permissionError) {
+      console.error('[accept-invite] Error checking existing permissions:', permissionError);
       return new Response(
-        JSON.stringify({ error: 'This invite is for a different email address' }), 
+        JSON.stringify({ error: 'Failed to check existing permissions' }), 
         { 
-          status: 403, 
+          status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
     }
 
-    // Check if invite is already accepted (using new accepted_at column)
-    if (invite.accepted_at) {
-      console.log('[accept-invite] Invite already accepted');
+    if (existingPermission) {
       return new Response(
-        JSON.stringify({ 
-          message: 'Invite has already been accepted',
-          business_id: invite.business_id 
-        }),
+        JSON.stringify({ error: 'User already has access to this business' }), 
         { 
-          status: 200, 
+          status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
     }
 
-    // Accept the invite by setting accepted_at timestamp
-    console.log('[accept-invite] Accepting invite - setting accepted_at timestamp');
-    const { error: acceptError } = await supabaseAdmin
+    // Accept the invite and create business permission
+    const now = new Date().toISOString();
+
+    // Mark invite as accepted
+    const { error: updateError } = await supabaseAdmin
       .from('invites')
-      .update({
-        accepted_at: new Date().toISOString(),
-        redeemed_at: new Date().toISOString(),
+      .update({ 
+        accepted_at: now,
+        redeemed_at: now,
         redeemed_by: ctx.userId
       })
-      .eq('id', invite.id);
+      .eq('id', inviteId);
 
-    if (acceptError) {
-      console.error('[accept-invite] Failed to accept invite:', acceptError);
+    if (updateError) {
+      console.error('[accept-invite] Error updating invite:', updateError);
       return new Response(
         JSON.stringify({ error: 'Failed to accept invite' }), 
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Create business permission
+    const { error: permissionCreateError } = await supabaseAdmin
+      .from('business_permissions')
+      .insert({
+        user_id: ctx.userId,
+        business_id: invite.business_id,
+        granted_by: ctx.userId, // Self-granted via invite acceptance
+        granted_at: now
+      });
+
+    if (permissionCreateError) {
+      console.error('[accept-invite] Error creating business permission:', permissionCreateError);
+      
+      // Rollback invite acceptance
+      await supabaseAdmin
+        .from('invites')
+        .update({ 
+          accepted_at: null,
+          redeemed_at: null,
+          redeemed_by: null
+        })
+        .eq('id', inviteId);
+
+      return new Response(
+        JSON.stringify({ error: 'Failed to create business permission' }), 
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -171,10 +205,9 @@ Deno.serve(async (req) => {
 
     console.log('[accept-invite] Successfully accepted invite');
     return new Response(
-      JSON.stringify({ 
-        message: 'Successfully joined business as worker',
-        business_id: invite.business_id,
-        role: 'worker'
+      JSON.stringify({
+        message: 'Invite accepted successfully',
+        business_id: invite.business_id
       }),
       { 
         status: 200, 
