@@ -89,7 +89,7 @@ export function useBusinessMemberOperations() {
   const { businessId } = useBusinessContext();
   const authApi = useAuthApi();
 
-  // Note: inviteWorker functionality removed - use UserSelectionInviteModal instead
+  // Note: inviteWorker functionality removed - use EnhancedInviteModal instead
 
   const removeMember = useMutation({
     mutationFn: async ({ memberId }: { memberId: string }) => {
