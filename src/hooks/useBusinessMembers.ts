@@ -33,6 +33,15 @@ export function useBusinessMembersData(opts?: UseBusinessMembersDataOptions) {
   const businessId = opts?.businessId || contextBusinessId;
   const enabled = isAuthenticated && !!businessId && (opts?.enabled ?? true);
 
+  console.log("🔍 [useBusinessMembersData] DEBUGGING START:", {
+    isAuthenticated,
+    contextBusinessId,
+    businessId,
+    enabled,
+    optsEnabled: opts?.enabled,
+    optsBusinessId: opts?.businessId
+  });
+
   const query = useQuery({
     queryKey: queryKeys.data.members(businessId || ''),
     enabled,
@@ -69,14 +78,20 @@ export function useBusinessMembersData(opts?: UseBusinessMembersDataOptions) {
       
       return processedResult;
     },
-    staleTime: 0, // Never use stale data
-    gcTime: 5 * 60 * 1000, // 5 minutes
-    refetchInterval: 5000, // Poll every 5 seconds
-    refetchOnMount: true, // Always fetch on mount
-    refetchOnWindowFocus: true, // Refetch on window focus
+    staleTime: 30_000, // Simplified from 0 to match profile query
+    retry: 2,
   });
 
-  return {
+  console.log("🔍 [useBusinessMembersData] QUERY STATE:", {
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
+    data: query.data,
+    members: query.data?.members,
+    count: query.data?.count
+  });
+
+  const result = {
     data: query.data?.members ?? [],
     count: query.data?.count ?? 0,
     isLoading: query.isLoading,
@@ -84,6 +99,10 @@ export function useBusinessMembersData(opts?: UseBusinessMembersDataOptions) {
     error: query.error,
     refetch: query.refetch,
   };
+
+  console.log("🔍 [useBusinessMembersData] RETURNING:", result);
+  
+  return result;
 }
 
 export function useBusinessMemberOperations() {

@@ -15,8 +15,25 @@ import { RequireRole } from "@/components/Auth/RequireRole";
 
 export default function Team() {
   const { t } = useLanguage();
-  const { data: members, isLoading, error } = useBusinessMembersData();
-  const { role, businessId } = useBusinessContext();
+  
+  // Get business context first for debugging
+  const businessContext = useBusinessContext();
+  const { role, businessId } = businessContext;
+  
+  console.log("🔍 [Team] BUSINESS CONTEXT:", businessContext);
+
+  // Fetch team members data
+  const membersData = useBusinessMembersData();
+  const { data: members, isLoading, error } = membersData;
+  
+  console.log("🔍 [Team] MEMBERS DATA:", {
+    membersData,
+    members,
+    membersLength: members?.length,
+    isLoading,
+    error
+  });
+  
   const navigate = useNavigate();
   const [showInviteModal, setShowInviteModal] = useState(false);
   
@@ -28,9 +45,18 @@ export default function Team() {
 
   // Filtered and sorted data
   const filteredMembers = useMemo(() => {
-    if (!members) return [];
+    console.log("🔍 [Team] FILTERING MEMBERS:", {
+      members,
+      membersLength: members?.length,
+      filters
+    });
     
-    return members.filter(member => {
+    if (!members || members.length === 0) {
+      console.log("🔍 [Team] NO MEMBERS TO FILTER");
+      return [];
+    }
+    
+    const filtered = members.filter(member => {
       const matchesSearch = !filters.search || 
         member.email?.toLowerCase().includes(filters.search.toLowerCase()) ||
         member.name?.toLowerCase().includes(filters.search.toLowerCase());
@@ -62,6 +88,13 @@ export default function Team() {
       
       return 0;
     });
+    
+    console.log("🔍 [Team] FILTERED MEMBERS:", {
+      filtered,
+      filteredLength: filtered.length
+    });
+    
+    return filtered;
   }, [members, filters]);
 
   const ownerCount = members?.filter(m => m.role === 'owner').length || 0;
