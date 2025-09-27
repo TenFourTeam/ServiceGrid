@@ -18,14 +18,15 @@ serve(async (req) => {
     }
 
     // Verify user has access to this business
-    const { data: membership } = await supabase
-      .from('business_members')
-      .select('role')
-      .eq('business_id', businessId)
-      .eq('user_id', userId)
-      .single();
+    const { data: hasAccess, error: accessError } = await supabase
+      .rpc('is_business_member', { p_business_id: businessId });
 
-    if (!membership) {
+    if (accessError) {
+      console.error('Error checking business access:', accessError);
+      return json({ error: 'Access check failed' }, { status: 500 });
+    }
+
+    if (!hasAccess) {
       return json({ error: 'Access denied' }, { status: 403 });
     }
 
