@@ -13,11 +13,10 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "typecheck": "tsc --noEmit",
-    "test:unit": "vitest run tests/unit", 
+    "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
     "test:e2e:install": "playwright install",
     "test:e2e:smoke": "playwright test --project=smoke-chromium"
-
   },
   "dependencies": {
     "@axe-core/playwright": "^4.10.2",

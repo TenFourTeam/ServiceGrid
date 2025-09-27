@@ -4,15 +4,14 @@ import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { EnhancedInviteModal } from "@/components/Team/EnhancedInviteModal";
 import { TeamSearchFilter } from "@/components/Team/TeamSearchFilter";
 import { TeamMemberActions } from "@/components/Team/TeamMemberActions";
-import { UserInviteActions } from "@/components/Team/UserInviteActions";
-import { useUserPendingInvites } from "@/hooks/useUserPendingInvites";
+import { BusinessAccessSection } from "@/components/Team/BusinessAccessSection";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useNavigate } from "react-router-dom";
 import { useState, useMemo } from "react";
-import { Users, UserPlus, AlertTriangle, Mail, Shield, AlertCircle } from "lucide-react";
+import { Users, UserPlus, AlertTriangle, AlertCircle, Shield, Mail } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { RequireRole } from "@/components/Auth/RequireRole";
 
@@ -20,7 +19,6 @@ export default function Team() {
   const { t } = useLanguage();
   const { role, businessId } = useBusinessContext();
   const { data: members, isLoading, error } = useBusinessMembersData();
-  const { data: pendingInvites, isLoading: invitesLoading } = useUserPendingInvites();
   
   const navigate = useNavigate();
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -84,7 +82,7 @@ export default function Team() {
     setFilters(prev => ({ ...prev, status }));
   };
 
-  if (isLoading || invitesLoading) {
+  if (isLoading) {
     return (
       <AppLayout title={t('team.title')}>
         <Card>
@@ -151,25 +149,8 @@ export default function Team() {
           )}
         </div>
 
-        {/* Pending Invites Section */}
-        {pendingInvites && pendingInvites.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Mail className="h-5 w-5" />
-                Pending Invites ({pendingInvites.length})
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                You have been invited to join these businesses
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {pendingInvites.map((invite) => (
-                <UserInviteActions key={invite.id} invite={invite} />
-              ))}
-            </CardContent>
-          </Card>
-        )}
+        {/* Business Access Section */}
+        <BusinessAccessSection />
 
         <Card className="p-4 sm:p-6 max-w-full overflow-hidden">
           {/* Header */}
