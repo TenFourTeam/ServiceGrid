@@ -72,8 +72,8 @@ Deno.serve(async (req) => {
       .select('id, email, full_name')
       .not('id', 'eq', ctx.userId);
 
-    // Apply search filter if provided
-    if (searchQuery) {
+    // Apply search filter if provided - but only if searchQuery has content
+    if (searchQuery && searchQuery.trim()) {
       profileQuery = profileQuery.or(`email.ilike.%${searchQuery}%,full_name.ilike.%${searchQuery}%`);
     }
 

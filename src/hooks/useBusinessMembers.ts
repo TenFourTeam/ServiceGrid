@@ -44,9 +44,9 @@ export function useBusinessMembersData(opts?: UseBusinessMembersDataOptions) {
         throw new Error(error.message || 'Failed to fetch business members');
       }
       
-      console.info("[useBusinessMembersData] fetched", data?.members?.length || 0, "members");
+      console.info("[useBusinessMembersData] fetched", data?.data?.length || 0, "members");
       
-      return { members: data?.members || [], count: data?.count || 0 };
+      return { members: data?.data || [], count: data?.count || 0 };
     },
     staleTime: 30_000,
   });
