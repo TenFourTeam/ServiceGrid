@@ -43,6 +43,16 @@ export function useBusinessMembersData(opts?: UseBusinessMembersDataOptions) {
     authApiExists: !!authApi
   });
 
+  // DEBUG: Log query setup details
+  console.log("[useBusinessMembersData] DEBUG - Query configuration:", {
+    queryKey: queryKeys.data.members(businessId || ''),
+    enabled,
+    businessIdExists: !!businessId,
+    businessIdValue: businessId,
+    authApiExists: !!authApi,
+    timestamp: new Date().toISOString()
+  });
+
   const query = useQuery({
     queryKey: queryKeys.data.members(businessId || ''),
     enabled,
@@ -99,6 +109,21 @@ export function useBusinessMembersData(opts?: UseBusinessMembersDataOptions) {
     },
     staleTime: 30_000,
     gcTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // DEBUG: Log React Query state after query creation
+  console.log("[useBusinessMembersData] DEBUG - React Query state:", {
+    isLoading: query.isLoading,
+    isError: query.isError,
+    hasData: !!query.data,
+    dataKeys: query.data ? Object.keys(query.data) : null,
+    members: query.data?.members,
+    memberCount: query.data?.count,
+    queryStatus: query.status,
+    fetchStatus: query.fetchStatus,
+    isFetching: query.isFetching,
+    isPending: query.isPending,
+    error: query.error?.message
   });
 
   return {
