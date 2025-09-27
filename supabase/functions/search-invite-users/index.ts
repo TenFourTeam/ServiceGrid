@@ -66,30 +66,43 @@ Deno.serve(async (req) => {
 
     console.log('[search-invite-users] Permission check passed. User is business owner.');
 
-    // Get all profiles that have their own businesses (excluding the current user)
+    // Get all profiles (excluding the current user)
     let profileQuery = supabase
       .from('profiles')
-      .select(`
-        id,
-        email,
-        full_name,
-        businesses!businesses_owner_id_fkey(id)
-      `)
-      .not('id', 'eq', ctx.userId)
-      .not('businesses.id', 'is', null); // Only users who own businesses
+      .select('id, email, full_name')
+      .not('id', 'eq', ctx.userId);
 
     // Apply search filter if provided
     if (searchQuery) {
       profileQuery = profileQuery.or(`email.ilike.%${searchQuery}%,full_name.ilike.%${searchQuery}%`);
     }
 
-    console.log('[search-invite-users] Fetching profiles with businesses...');
-    const { data: allUsers, error: profilesError } = await profileQuery;
+    console.log('[search-invite-users] Fetching profiles...');
+    const { data: allProfiles, error: profilesError } = await profileQuery;
 
     if (profilesError) {
       console.error('[search-invite-users] Profiles fetch error:', profilesError);
       return json({ error: 'Failed to fetch user profiles' }, { status: 500 });
     }
+
+    console.log(`[search-invite-users] Found ${allProfiles?.length || 0} profiles matching search criteria`);
+
+    // Get businesses owned by these users
+    console.log('[search-invite-users] Fetching businesses owned by profiles...');
+    const profileIds = (allProfiles || []).map(p => p.id);
+    const { data: businesses, error: businessesError } = await supabase
+      .from('businesses')
+      .select('id, owner_id')
+      .in('owner_id', profileIds);
+
+    if (businessesError) {
+      console.error('[search-invite-users] Business fetch error:', businessesError);
+      return json({ error: 'Failed to fetch businesses' }, { status: 500 });
+    }
+
+    // Filter to only include users who own businesses
+    const businessOwnerIds = new Set((businesses || []).map(b => b.owner_id));
+    const allUsers = (allProfiles || []).filter(profile => businessOwnerIds.has(profile.id));
 
     console.log(`[search-invite-users] Found ${allUsers?.length || 0} profiles matching search criteria`);
 
