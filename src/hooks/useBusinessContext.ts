@@ -70,14 +70,48 @@ export function useBusinessContext(targetBusinessId?: string) {
     enabled: shouldFetch && !!businessIdToQuery,
     staleTime: 30_000,
   });
+
+  // Query target business data when accessing a different business
+  const targetBusinessQuery = useQuery({
+    queryKey: ['target-business', targetBusinessId],
+    queryFn: async () => {
+      if (!targetBusinessId || !authApi) return null;
+      
+      try {
+        const { data, error } = await authApi.invoke('user-businesses', {
+          method: 'GET'
+        });
+        
+        if (error) {
+          console.error('[useBusinessContext] Target business query error:', error);
+          return null;
+        }
+        
+        // Find the target business in the user's accessible businesses
+        const targetBusiness = data?.data?.find((b: any) => b.id === targetBusinessId);
+        return targetBusiness || null;
+      } catch (err) {
+        console.error('[useBusinessContext] Target business query failed:', err);
+        return null;
+      }
+    },
+    enabled: shouldFetch && !!targetBusinessId && targetBusinessId !== userOwnedBusiness?.id,
+    staleTime: 30_000,
+  });
   
-  // For now, use the user's owned business data
-  const business = userOwnedBusiness;
+  // Determine which business data to use
+  const business = targetBusinessId && targetBusinessId !== userOwnedBusiness?.id 
+    ? targetBusinessQuery.data 
+    : userOwnedBusiness;
   const role = roleQuery.data;
   
   // Coordinated loading state
-  const isLoadingBusiness = !isLoaded || (shouldFetch && (profileQuery.isLoading || roleQuery.isLoading));
-  const hasError = profileQuery.isError || roleQuery.isError;
+  const isLoadingBusiness = !isLoaded || (shouldFetch && (
+    profileQuery.isLoading || 
+    roleQuery.isLoading || 
+    (targetBusinessQuery.isLoading && targetBusinessId && targetBusinessId !== userOwnedBusiness?.id)
+  ));
+  const hasError = profileQuery.isError || roleQuery.isError || targetBusinessQuery.isError;
   
   // Update meta tags when business data changes
   useEffect(() => {
@@ -117,12 +151,13 @@ export function useBusinessContext(targetBusinessId?: string) {
     
     // Error states
     hasBusinessError: hasError,
-    businessError: profileQuery.error || roleQuery.error,
+    businessError: profileQuery.error || roleQuery.error || targetBusinessQuery.error,
     
     // Utilities
     refetchBusiness: () => {
       profileQuery.refetch();
       roleQuery.refetch();
+      targetBusinessQuery.refetch();
     },
   };
 }
