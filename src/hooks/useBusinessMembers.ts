@@ -45,10 +45,14 @@ export function useBusinessMembersData(opts?: UseBusinessMembersDataOptions) {
       if (error) {
         throw new Error(error.message || 'Failed to fetch business members');
       }
+
+      // Debug: Log the actual response structure
+      console.log('[useBusinessMembers] Raw response:', { data, error });
+      console.log('[useBusinessMembers] Data keys:', data ? Object.keys(data) : 'no data');
       
       return {
-        members: data?.data || [],
-        count: data?.count || 0
+        members: data?.data?.data || [],
+        count: data?.data?.count || 0
       };
     },
     staleTime: 30_000, // Simplified from 0 to match profile query
