@@ -286,7 +286,6 @@ export default function Team() {
                         <TeamMemberActions
                           member={member}
                           businessId={businessId || ''}
-                          isLastOwner={member.role === 'owner' && ownerCount === 1}
                         />
                       </div>
                     </div>

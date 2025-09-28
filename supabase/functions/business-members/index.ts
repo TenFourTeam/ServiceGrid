@@ -144,11 +144,21 @@ Deno.serve(async (req) => {
         return ok({ error: 'Invalid JSON in request body' }, 400);
       }
 
-      const { memberId } = body;
-      if (!memberId) {
-        return ok({ error: 'Member ID is required' }, 400);
+      // Parse input: accept either memberId="worker-<uuid>" or userId
+      const { memberId, userId: bodyUserId } = body as { memberId?: string; userId?: string };
+      let targetUserId: string | null = null;
+
+      if (bodyUserId) {
+        targetUserId = bodyUserId;
+      } else if (memberId && memberId.startsWith('worker-')) {
+        targetUserId = memberId.slice('worker-'.length);
+      } else {
+        return ok({ error: 'Provide memberId="worker-<uuid>" or userId' }, 400);
       }
-      console.log('[business-members] Starting member removal:', memberId);
+
+      if (!targetUserId) return ok({ error: 'Target userId not resolved' }, 400);
+
+      console.log('[business-members] Starting member removal:', { memberId, targetUserId });
 
       // Verify ownership
       const { data: business, error: businessError } = await supabase
@@ -163,27 +173,107 @@ Deno.serve(async (req) => {
       }
 
       if (business.owner_id !== ctx.userId) {
-        return ok({ error: 'Only business owners can remove members' }, 403);      }
+        return ok({ error: 'Only business owners can remove members' }, 403);
+      }
 
-      if (!memberId.startsWith('worker-')) {
+      // Prevent removing the business owner explicitly (defense-in-depth)
+      if (business.owner_id === targetUserId) {
         return ok({ error: 'Cannot remove business owner' }, 400);
       }
 
-      const userId = memberId.replace('worker-', '');
+      // Ensure the target is actually a member; if not, 404
+      const { data: membershipRow, error: membershipErr } = await supabase
+        .from('business_permissions')
+        .select('user_id')
+        .eq('business_id', ctx.businessId)
+        .eq('user_id', targetUserId)
+        .maybeSingle();
 
+      if (membershipErr) {
+        console.error('[business-members] membership lookup failed:', membershipErr);
+        return ok({ error: 'Failed to verify membership' }, 500);
+      }
+      if (!membershipRow) {
+        return ok({ error: 'Member not found' }, 404);
+      }
+
+      // Remove permission
       const { error: deleteError } = await supabase
         .from('business_permissions')
         .delete()
         .eq('business_id', ctx.businessId)
-        .eq('user_id', userId);
+        .eq('user_id', targetUserId);
 
       if (deleteError) {
         console.error('[business-members] Error removing business permission:', deleteError);
         return ok({ error: 'Failed to remove member' }, 500);
       }
 
-      console.log('[business-members] Member removed:', memberId);
-      return ok({ message: 'Member removed successfully', data: { memberId } });
+      // Optional cleanups (best-effort; ignore missing tables)
+      const softTry = async <T>(p: Promise<T>) => {
+        try { return await p; } catch (e: any) {
+          // Ignore "relation does not exist" or similar
+          const msg = String(e?.message || e);
+          if (!/relation .* does not exist/i.test(msg)) console.warn('[cleanup]', msg);
+          return null;
+        }
+      };
+
+      // Get target profile for audit logging
+      const { data: targetProfile } = await supabase
+        .from('profiles')
+        .select('email, full_name')
+        .eq('id', targetUserId)
+        .maybeSingle();
+
+      // Clean up pending invites by email if profile exists
+      if (targetProfile?.email) {
+        await softTry(
+          (async () => {
+            const { error } = await supabase.from('invites')
+              .delete()
+              .eq('business_id', ctx.businessId)
+              .eq('invited_user_id', targetUserId)
+              .is('redeemed_at', null);
+            return { error };
+          })()
+        );
+      }
+
+      // Unassign from job assignments
+      await softTry(
+        (async () => {
+          const { error } = await supabase.from('job_assignments')
+            .delete()
+            .eq('user_id', targetUserId);
+          return { error };
+        })()
+      );
+
+      // Optional: append audit event
+      await softTry(
+        (async () => {
+          const { error } = await supabase.from('audit_logs').insert({
+            business_id: ctx.businessId,
+            user_id: ctx.userId,
+            action: 'member.removed',
+            resource_type: 'business_member',
+            resource_id: targetUserId,
+            details: { 
+              memberId: memberId ?? `worker-${targetUserId}`, 
+              email: targetProfile?.email || null, 
+              name: targetProfile?.full_name || null 
+            }
+          });
+          return { error };
+        })()
+      );
+
+      console.log('[business-members] Member removed successfully:', targetUserId);
+      return ok({
+        message: 'Member removed successfully',
+        data: { userId: targetUserId, memberId: memberId ?? `worker-${targetUserId}` }
+      });
     }
 
     return ok({ error: 'Method not allowed' }, 405);
