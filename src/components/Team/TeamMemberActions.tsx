@@ -1,9 +1,8 @@
-import { useState } from "react";
+import { useState, startTransition } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useBusinessMemberOperations } from "@/hooks/useBusinessMembers";
-import { toast } from "sonner";
+import { useRemoveMember } from "@/hooks/useRemoveMember";
 import { MoreVertical, Trash2 } from "lucide-react";
 import type { BusinessMember } from "@/hooks/useBusinessMembers";
 import { RequireRole } from "@/components/Auth/RequireRole";
@@ -16,24 +15,29 @@ interface TeamMemberActionsProps {
 
 export function TeamMemberActions({ member, businessId, isLastOwner }: TeamMemberActionsProps) {
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
-  
-  
-  const { removeMember } = useBusinessMemberOperations();
+  const removeMutation = useRemoveMember(businessId);
 
   // Don't show actions for owners
   if (member.role === 'owner') {
     return null;
   }
 
+  const isRemovingThis = removeMutation.isPending && removeMutation.variables?.id === member.id;
+  const canRemove = member.role === 'worker' && !isLastOwner;
+
   const handleRemove = () => {
+    if (!canRemove) return;
+    
     console.log('[TeamMemberActions] Starting member removal:', member.id);
     
-    // Remove the member - success/error handling is in the mutation
-    removeMember.mutate({ memberId: member.id }, {
-      onSettled: () => {
-        // Close dialog regardless of success/error (toast handled by mutation)
-        setShowRemoveDialog(false);
-      }
+    removeMutation.mutate(member, {
+      onSuccess: () => {
+        // Close UI chrome *after* success so no overlay captures clicks
+        startTransition(() => setShowRemoveDialog(false));
+      },
+      onError: () => {
+        // Keep dialog open on error so user can retry
+      },
     });
   };
 
@@ -88,9 +92,9 @@ export function TeamMemberActions({ member, businessId, isLastOwner }: TeamMembe
                   e.stopPropagation();
                   handleRemove();
                 }}
-                disabled={removeMember.isPending}
+                disabled={!canRemove || isRemovingThis}
               >
-                {removeMember.isPending ? "Removing..." : "Remove Member"}
+                {isRemovingThis ? "Removing..." : "Remove Member"}
               </Button>
             </div>
           </div>
