@@ -17,17 +17,24 @@ export function useRemoveMember(businessId: string) {
         throw new Error('Only workers can be removed');
       }
 
+      console.log('[useRemoveMember] Sending request:', {
+        businessId,
+        memberId: member.id,
+        memberRole: member.role
+      });
+
       const { data, error } = await authApi.invoke('business-members', {
         method: 'DELETE',
         headers: {
-          'Content-Type': 'application/json',
           'x-business-id': businessId,
         },
         body: { memberId: member.id },
       });
 
+      console.log('[useRemoveMember] Response:', { data, error });
+
       if (error) {
-        const msg = error.message || 'Remove failed';
+        const msg = error.message || error || 'Remove failed';
         throw new Error(msg);
       }
       
