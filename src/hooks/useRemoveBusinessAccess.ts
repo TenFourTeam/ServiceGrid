@@ -25,16 +25,14 @@ export function useRemoveBusinessAccess() {
 
       console.log('[useRemoveBusinessAccess] Sending request:', {
         businessId: business.id,
-        memberId: `worker-${profile.profile.id}`,
         businessRole: business.role
       });
 
-      const { data, error } = await authApi.invoke('business-members', {
+      const { data, error } = await authApi.invoke('leave-business', {
         method: 'DELETE',
         headers: {
           'x-business-id': business.id,
         },
-        body: { memberId: `worker-${profile.profile.id}` },
       });
 
       console.log('[useRemoveBusinessAccess] Response:', { data, error });
