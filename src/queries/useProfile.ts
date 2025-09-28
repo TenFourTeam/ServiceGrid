@@ -43,6 +43,7 @@ export function useProfile() {
           taxRateDefault: data.business.taxRateDefault,
           logoUrl: data.business.logoUrl,
           lightLogoUrl: data.business.lightLogoUrl,
+          createdAt: data.business.createdAt,
           role: data.business.role
         } : null
       };

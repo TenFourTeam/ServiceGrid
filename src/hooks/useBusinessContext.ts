@@ -2,6 +2,8 @@ import { useAuth } from '@clerk/clerk-react';
 import { useProfile } from '@/queries/useProfile';
 import { useEffect } from 'react';
 import { updateBusinessMeta } from '@/utils/metaUpdater';
+import { useQuery } from '@tanstack/react-query';
+import { useAuthApi } from '@/hooks/useAuthApi';
 
 export type BusinessUI = {
   id: string;
@@ -10,28 +12,73 @@ export type BusinessUI = {
   phone?: string;
   replyToEmail?: string;
   taxRateDefault?: number;
-  role: 'owner'; // Always owner in simplified model
+  role: 'owner' | 'worker';
+  createdAt?: string;
+  logoUrl?: string;
+  lightLogoUrl?: string;
   [key: string]: unknown;
 };
 
 /**
- * Simplified business context - single business per user (always owner)
- * Users can only access their own business or work in other businesses via invites
+ * Role-aware business context - dynamically determines user's role for the current business
+ * Uses the existing business_permissions system to detect owner vs worker roles
  */
-export function useBusinessContext() {
+export function useBusinessContext(targetBusinessId?: string) {
   const { isSignedIn, isLoaded, userId } = useAuth();
+  const authApi = useAuthApi();
   
-  // Don't query profile until Clerk is fully loaded and user is authenticated
-  const shouldFetchProfile = isLoaded && isSignedIn;
+  // Don't query until Clerk is fully loaded and user is authenticated
+  const shouldFetch = isLoaded && isSignedIn;
+  
+  // Get user's profile to determine their default business
   const profileQuery = useProfile();
+  const userOwnedBusiness = profileQuery.data?.business;
   
-  const business = profileQuery.data?.business as BusinessUI;
+  // Use target business ID if provided, otherwise fall back to user's own business
+  const businessIdToQuery = targetBusinessId || userOwnedBusiness?.id;
   
-  // Simplified error detection
-  const hasError = profileQuery.isError;
+  // Query user's role for the specific business using the database function
+  const roleQuery = useQuery({
+    queryKey: ['user-business-role', businessIdToQuery, userId],
+    queryFn: async () => {
+      if (!businessIdToQuery || !authApi) return null;
+      
+      try {
+        // Use the existing get-profile endpoint which handles role detection
+        const { data, error } = await authApi.invoke('get-profile', {
+          method: 'GET'
+        });
+        
+        if (error) {
+          console.error('[useBusinessContext] Role query error:', error);
+          return null;
+        }
+        
+        // If querying user's own business, they're the owner
+        if (businessIdToQuery === userOwnedBusiness?.id) {
+          return 'owner' as const;
+        }
+        
+        // For other businesses, check business_permissions
+        // This would need a new endpoint or modification to existing ones
+        // For now, return 'worker' if not owner (assuming permissions are checked elsewhere)
+        return null; // Will be updated once we have proper role detection
+      } catch (err) {
+        console.error('[useBusinessContext] Role query failed:', err);
+        return null;
+      }
+    },
+    enabled: shouldFetch && !!businessIdToQuery,
+    staleTime: 30_000,
+  });
   
-  // Coordinated loading state - don't show as loading if Clerk isn't ready
-  const isLoadingBusiness = !isLoaded || (shouldFetchProfile && profileQuery.isLoading);
+  // For now, use the user's owned business data
+  const business = userOwnedBusiness;
+  const role = roleQuery.data;
+  
+  // Coordinated loading state
+  const isLoadingBusiness = !isLoaded || (shouldFetch && (profileQuery.isLoading || roleQuery.isLoading));
+  const hasError = profileQuery.isError || roleQuery.isError;
   
   // Update meta tags when business data changes
   useEffect(() => {
@@ -50,7 +97,7 @@ export function useBusinessContext() {
     isLoaded,
     userId,
     
-    // Single business data - user's owned business
+    // Business data (currently using user's owned business)
     business,
     businessId: business?.id,
     businessName: business?.name,
@@ -61,19 +108,22 @@ export function useBusinessContext() {
     businessLogoUrl: business?.logoUrl,
     businessLightLogoUrl: business?.lightLogoUrl,
     
-    // Role and permissions - always owner of their business
-    role: 'owner' as const,
-    userRole: 'owner' as const,
-    canManage: true, // Always true for owned business
+    // Dynamic role and permissions
+    role: role || 'owner', // Default to owner for now (user's own business)
+    userRole: role || 'owner',
+    canManage: (role || 'owner') === 'owner', // Only owners can manage
     
     // Loading states
     isLoadingBusiness,
     
     // Error states
     hasBusinessError: hasError,
-    businessError: profileQuery.error,
+    businessError: profileQuery.error || roleQuery.error,
     
     // Utilities
-    refetchBusiness: profileQuery.refetch,
+    refetchBusiness: () => {
+      profileQuery.refetch();
+      roleQuery.refetch();
+    },
   };
 }

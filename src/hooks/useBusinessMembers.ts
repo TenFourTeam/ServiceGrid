@@ -74,7 +74,7 @@ export function useBusinessMembersData(opts?: UseBusinessMembersDataOptions) {
     retry: 2,
   });
 
-  const result = {
+  return {
     data: query.data?.members ?? [],
     count: query.data?.count ?? 0,
     isLoading: query.isLoading,
@@ -82,16 +82,6 @@ export function useBusinessMembersData(opts?: UseBusinessMembersDataOptions) {
     error: query.error,
     refetch: query.refetch,
   };
-  
-  console.info("[useBusinessMembers] FINAL HOOK RESULT:", {
-    resultData: result.data,
-    resultCount: result.count,
-    isLoading: result.isLoading,
-    isError: result.isError,
-    queryData: query.data
-  });
-  
-  return result;
 }
 
 export function useBusinessMemberOperations() {

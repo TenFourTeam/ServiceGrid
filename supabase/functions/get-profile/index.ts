@@ -59,7 +59,8 @@ Deno.serve(async (req) => {
           reply_to_email,
           tax_rate_default,
           logo_url,
-          light_logo_url
+          light_logo_url,
+          created_at
         `)
         .eq('id', profile.default_business_id)
         .eq('owner_id', ctx.userId)
@@ -77,6 +78,7 @@ Deno.serve(async (req) => {
           taxRateDefault: businessData.tax_rate_default,
           logoUrl: businessData.logo_url,
           lightLogoUrl: businessData.light_logo_url,
+          createdAt: businessData.created_at,
           role: 'owner' // Always owner for primary business
         };
 
