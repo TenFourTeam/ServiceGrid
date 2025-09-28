@@ -113,35 +113,42 @@ export function useBusinessMemberOperations() {
     },
     onMutate: async ({ memberId }) => {
       // Cancel any outgoing refetches to prevent race conditions
-      await queryClient.cancelQueries({ queryKey: queryKeys.data.members(businessId || '') });
+      const queryKey = ['business-members', businessId];
+      await queryClient.cancelQueries({ queryKey });
       
       // Snapshot the previous value for rollback
-      const previousMembers = queryClient.getQueryData(queryKeys.data.members(businessId || ''));
+      const previousMembers = queryClient.getQueryData(queryKey);
       
-      // Optimistically update by removing the member
-      queryClient.setQueryData(queryKeys.data.members(businessId || ''), (old: any) => {
-        if (!old?.members) return old;
-        return {
-          ...old,
-          members: old.members.filter((member: BusinessMember) => member.id !== memberId),
-          count: Math.max(0, (old.count || 0) - 1)
-        };
+      // Optimistically update by removing the member (works with flat array)
+      queryClient.setQueryData(queryKey, (old: BusinessMember[] | undefined) => {
+        if (!Array.isArray(old)) return old;
+        return old.filter((member: BusinessMember) => member.id !== memberId);
       });
       
       return { previousMembers };
     },
     onSuccess: () => {
-      // Invalidate related queries that need fresh data
+      // Invalidate the business members query to ensure fresh data
       queryClient.invalidateQueries({ 
-        queryKey: ['user-businesses'],
-        exact: true 
+        queryKey: ['business-members', businessId] 
       });
+      // Also invalidate user businesses in case role changed
+      queryClient.invalidateQueries({ 
+        queryKey: ['user-businesses'] 
+      });
+      
+      toast.success("Team member removed successfully");
     },
     onError: (error: Error | unknown, variables, context) => {
       // Rollback optimistic update on error
       if (context?.previousMembers) {
-        queryClient.setQueryData(queryKeys.data.members(businessId || ''), context.previousMembers);
+        queryClient.setQueryData(['business-members', businessId], context.previousMembers);
       }
+      
+      const errorMessage = error instanceof Error ? error.message : "There was an error removing the team member";
+      toast.error("Failed to remove member", {
+        description: errorMessage
+      });
     },
   });
 
