@@ -4,7 +4,7 @@ import { corsHeaders, json, requireCtx } from '../_lib/auth.ts';
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-const ok = (data: unknown, status = 200) => json(data, { status, headers: corsHeaders });
+const ok = (data: unknown, status = 200) => json(data, { status });
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {

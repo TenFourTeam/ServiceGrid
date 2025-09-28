@@ -103,13 +103,27 @@ export function createAuthEdgeApi(getToken: (options?: { template?: string }) =>
         }
 
         const startInvoke = Date.now();
-        const { data, error } = await supabase.functions.invoke(functionUrl, {
+        const response = await supabase.functions.invoke(functionUrl, {
           body: bodyToSend,
           headers,
           method: (requestOptions.method as "POST" | "PUT" | "PATCH" | "DELETE" | "GET") || "POST",
-        }) as { data: any; error: any };
+        });
         const endInvoke = Date.now();
         console.info(`🔧 [AuthEdgeApi] Function call took ${endInvoke - startInvoke}ms`);
+
+        // Handle potential mislabeled JSON responses robustly
+        let data = response.data;
+        const error = response.error;
+        
+        // If data is a string that looks like JSON, try to parse it
+        if (typeof data === 'string' && /^\s*[{[]/.test(data)) {
+          try {
+            data = JSON.parse(data);
+            console.info(`🔧 [AuthEdgeApi] Parsed string response as JSON for ${functionName}`);
+          } catch (parseError) {
+            console.warn(`⚠️ [AuthEdgeApi] Failed to parse string response as JSON:`, parseError);
+          }
+        }
 
         // Dismiss loading toast
         if (toastId) {

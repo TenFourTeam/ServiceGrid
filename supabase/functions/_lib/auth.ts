@@ -367,8 +367,15 @@ export const corsHeaders = {
 
 // JSON response helper with CORS
 export function json(data: unknown, init: ResponseInit = {}) {
+  const baseHeaders = { "Content-Type": "application/json", ...corsHeaders };
+  
+  // Safely merge incoming headers without overriding Content-Type
+  const extraHeaders = init.headers instanceof Headers
+    ? Object.fromEntries(init.headers.entries())
+    : (init.headers as Record<string, string> | undefined) ?? {};
+
   return new Response(JSON.stringify(data), {
-    headers: { "Content-Type": "application/json", ...corsHeaders },
     ...init,
+    headers: { ...baseHeaders, ...extraHeaders },
   });
 }
