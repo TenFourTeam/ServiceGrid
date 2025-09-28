@@ -2,7 +2,6 @@ import AppLayout from "@/components/Layout/AppLayout";
 import { useBusinessMembersData } from "@/hooks/useBusinessMembers";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { EnhancedInviteModal } from "@/components/Team/EnhancedInviteModal";
-import { TeamSearchFilter } from "@/components/Team/TeamSearchFilter";
 import { TeamMemberActions } from "@/components/Team/TeamMemberActions";
 import { BusinessAccessSection } from "@/components/Team/BusinessAccessSection";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,34 +21,14 @@ export default function Team() {
   
   const navigate = useNavigate();
   const [showInviteModal, setShowInviteModal] = useState(false);
-  
-  const [filters, setFilters] = useState({
-    search: "",
-    role: null as string | null,
-    status: null as string | null,
-  });
 
-  // Filtered and sorted data
-  const filteredMembers = useMemo(() => {
+  // Sorted data
+  const sortedMembers = useMemo(() => {
     if (!members || members.length === 0) {
       return [];
     }
     
-    const filtered = members.filter(member => {
-      const matchesSearch = !filters.search || 
-        member.email?.toLowerCase().includes(filters.search.toLowerCase()) ||
-        member.name?.toLowerCase().includes(filters.search.toLowerCase());
-      
-      const matchesRole = !filters.role || member.role === filters.role;
-      
-      const matchesStatus = !filters.status || 
-        (filters.status === 'active' && member.joined_at) ||
-        (filters.status === 'pending' && !member.joined_at);
-      
-      return matchesSearch && matchesRole && matchesStatus;
-    });
-    
-    const sorted = filtered.sort((a, b) => {
+    return [...members].sort((a, b) => {
       // Owner always first, then workers by join/invite date
       if (a.role === 'owner' && b.role !== 'owner') return -1;
       if (b.role === 'owner' && a.role !== 'owner') return 1;
@@ -69,24 +48,9 @@ export default function Team() {
       
       return 0;
     });
-    
-    return sorted;
-  }, [members, filters]);
+  }, [members]);
 
   const ownerCount = members?.filter(m => m.role === 'owner').length || 0;
-
-  // Event handlers
-  const handleSearchChange = (search: string) => {
-    setFilters(prev => ({ ...prev, search }));
-  };
-
-  const handleRoleFilter = (role: string | null) => {
-    setFilters(prev => ({ ...prev, role }));
-  };
-
-  const handleStatusFilter = (status: string | null) => {
-    setFilters(prev => ({ ...prev, status }));
-  };
 
   if (isLoading) {
     return (
@@ -165,24 +129,15 @@ export default function Team() {
                 {t('team.title')}
               </h3>
               <p className="text-sm text-muted-foreground mt-1 truncate">
-                Manage team members • {members.length} member{members.length !== 1 ? 's' : ''}
+                Manage team members • {members?.length || 0} member{(members?.length || 0) !== 1 ? 's' : ''}
               </p>
             </div>
           </div>
 
-          {/* Search and Filters */}
-          <div className="mb-6">
-            <TeamSearchFilter
-              onSearch={handleSearchChange}
-              onFilterRole={handleRoleFilter}
-              onFilterStatus={handleStatusFilter}
-              activeFilters={filters}
-            />
-          </div>
 
           {/* Seat limit warning */}
           <RequireRole role="owner" fallback={null}>
-            {members.length >= 5 && (
+            {(members?.length || 0) >= 5 && (
               <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg overflow-hidden">
                 <div className="flex items-center gap-2 min-w-0">
                   <AlertCircle className="h-4 w-4 text-orange-600 flex-shrink-0" />
@@ -191,7 +146,7 @@ export default function Team() {
                       Team size limit reached
                     </p>
                     <p className="text-xs text-orange-700 truncate">
-                      Using {members.length} of 5 seats
+                      Using {members?.length || 0} of 5 seats
                     </p>
                   </div>
                   <Button variant="outline" size="sm" className="border-orange-300 text-orange-700 hover:bg-orange-100 flex-shrink-0 hidden sm:flex">
@@ -206,30 +161,21 @@ export default function Team() {
             <div className="mb-4">
               <h4 className="text-lg font-medium flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                Team Members ({filteredMembers.length})
+                Team Members ({sortedMembers.length})
               </h4>
             </div>
             <div className="space-y-3 mt-4">
-              {filteredMembers.length === 0 ? (
+              {sortedMembers.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <Users className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                  {filters.search || filters.role || filters.status ? (
-                    <>
-                      <p className="text-lg font-medium mb-2">No matching members found</p>
-                      <p className="text-sm">Try adjusting your search or filters</p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-lg font-medium mb-2">No team members yet</p>
-                      <RequireRole role="owner" fallback={null}>
-                        <p className="text-sm">Invite workers to collaborate on jobs</p>
-                      </RequireRole>
-                    </>
-                  )}
+                  <p className="text-lg font-medium mb-2">No team members yet</p>
+                  <RequireRole role="owner" fallback={null}>
+                    <p className="text-sm">Invite workers to collaborate on jobs</p>
+                  </RequireRole>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {filteredMembers.map((member) => (
+                  {sortedMembers.map((member) => (
                     <div
                       key={member.id}
                       className={`flex items-start sm:items-center justify-between p-3 sm:p-4 border rounded-lg transition-colors min-w-0 gap-3 ${
