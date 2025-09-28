@@ -2,7 +2,7 @@ import { useState } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useBusinessMemberOperations } from "@/hooks/useBusinessMemberOperations";
+import { useBusinessMemberOperations } from "@/hooks/useBusinessMembers";
 import { toast } from "sonner";
 import { MoreVertical, Trash2 } from "lucide-react";
 import type { BusinessMember } from "@/hooks/useBusinessMembers";
@@ -11,21 +11,31 @@ import { RequireRole } from "@/components/Auth/RequireRole";
 interface TeamMemberActionsProps {
   member: BusinessMember;
   businessId: string;
+  isLastOwner: boolean;
 }
 
-export function TeamMemberActions({ member, businessId }: TeamMemberActionsProps) {
+export function TeamMemberActions({ member, businessId, isLastOwner }: TeamMemberActionsProps) {
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
+  
   
   const { removeMember } = useBusinessMemberOperations();
 
-  // Don't show actions for owners - server already prevents owner removal
+  // Don't show actions for owners
   if (member.role === 'owner') {
     return null;
   }
 
   const handleRemove = () => {
+    if (isLastOwner) {
+      toast.error("Cannot remove member", {
+        description: "Cannot remove the last owner of the business",
+      });
+      return;
+    }
+
     console.log('[TeamMemberActions] Starting member removal:', member.id);
     
+    // Use mutate instead of mutateAsync to prevent UI freezing
     removeMember.mutate({ memberId: member.id }, {
       onSuccess: () => {
         setShowRemoveDialog(false);
