@@ -71,17 +71,14 @@ Deno.serve(async (req) => {
         let hasAcceptedInvite = false;
 
         if (!isOwner) {
-          const { data: acceptedInvite, error: inviteError } = await supabase
-            .from('invites')
-            .select('accepted_at')
+          const { data: businessPermission, error: permissionError } = await supabase
+            .from('business_permissions')
+            .select('id')
             .eq('business_id', ctx.businessId)
-            .eq('email', userInfo.email)
-            .not('accepted_at', 'is', null)
-            .is('revoked_at', null)
-            .gt('expires_at', new Date().toISOString())
+            .eq('user_id', targetUserId)
             .single();
 
-          hasAcceptedInvite = !!acceptedInvite && !inviteError;
+          hasAcceptedInvite = !!businessPermission && !permissionError;
         }
 
         if (!isOwner && !hasAcceptedInvite) {
