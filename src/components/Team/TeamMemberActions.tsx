@@ -34,13 +34,14 @@ export function TeamMemberActions({ member, businessId, isLastOwner }: TeamMembe
           <Button 
             variant="ghost" 
             size="sm"
+            onClick={(e) => e.stopPropagation()}
           >
             <MoreVertical className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem 
-            onClick={handleRemove}
+            onClick={(e) => { e.stopPropagation(); handleRemove(); }}
             disabled={!canRemove || isRemovingThis}
             className="text-destructive focus:text-destructive"
           >
