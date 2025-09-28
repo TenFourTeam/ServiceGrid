@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { UserInviteActions } from "@/components/Team/UserInviteActions";
+import { BusinessAccessActions } from "@/components/Team/BusinessAccessActions";
 import { useUserBusinesses } from "@/hooks/useUserBusinesses";
 import { useUserPendingInvites } from "@/hooks/useUserPendingInvites";
 import { Building2, Crown, Users, Mail, Clock } from "lucide-react";
@@ -87,6 +88,8 @@ export function BusinessAccessSection() {
                     </span>
                   </div>
                 </div>
+                
+                <BusinessAccessActions business={business} />
               </div>
             ))}
           </div>
