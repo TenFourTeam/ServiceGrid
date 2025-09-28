@@ -53,16 +53,16 @@ const getBusinessNavItems = (t: (key: string) => string) => [{
   icon: Receipt,
   workerAccess: false
 }];
-export default function AppSidebar() {
+export default function AppSidebar({ businessId }: { businessId?: string }) {
   const {
-    businessId,
+    businessId: contextBusinessId,
     role,
     canManage,
     business,
     businessLogoUrl,
     businessLightLogoUrl,
     businessName
-  } = useBusinessContext();
+  } = useBusinessContext(businessId);
 
   const location = useLocation();
   const navigate = useNavigate();

@@ -14,11 +14,13 @@ import { useOnboardingState } from '@/onboarding/streamlined';
 import { useOnboardingActions } from '@/onboarding/hooks';
 import { useSessionStorage } from '@/hooks/useSessionStorage';
 import { RoleIndicator } from '@/components/Layout/RoleIndicator';
+import { BusinessSwitcher } from '@/components/Layout/BusinessSwitcher';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-export default function AppLayout({ children, title }: { children: ReactNode; title?: string }) {
+export default function AppLayout({ children, title, businessId }: { children: ReactNode; title?: string; businessId?: string }) {
   const [showIntentPicker, setShowIntentPicker] = useState(false);
   const isMobile = useIsMobile();
+  const { role } = useBusinessContext(businessId);
   
   // Session-based dismissal state for intent picker modal
   const [intentPickerDismissed, setIntentPickerDismissed] = useSessionStorage('intentPickerDismissed', false);
@@ -96,15 +98,18 @@ export default function AppLayout({ children, title }: { children: ReactNode; ti
   return (
     <SidebarProvider>
       <div className="min-h-screen w-full max-w-full overflow-x-hidden flex">
-        <AppSidebar />
+        <AppSidebar businessId={businessId} />
         <SidebarInset className="flex-1 flex flex-col min-h-0 max-w-full overflow-x-hidden">
           <SubscriptionBanner />
           <div className="p-4 md:p-6 flex flex-col flex-1 min-h-0 max-w-full overflow-x-hidden">
           <header className="mb-4 md:mb-6 min-w-0">
-            <div className="flex items-center justify-between min-w-0">
-              <h1 className="text-xl md:text-2xl font-bold truncate min-w-0">{title ?? 'Dashboard'}</h1>
-              <RoleIndicator size="default" />
-            </div>
+              <div className="flex items-center justify-between min-w-0">
+                <h1 className="text-xl md:text-2xl font-bold truncate min-w-0">{title ?? 'Dashboard'}</h1>
+                <div className="flex items-center gap-2">
+                  <BusinessSwitcher businessId={businessId} />
+                  <RoleIndicator size="default" />
+                </div>
+              </div>
           </header>
           <div className="flex-1 min-w-0">
             <PageFade key={String(title)}>

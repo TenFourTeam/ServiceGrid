@@ -6,9 +6,10 @@ import type { UserBusiness } from "@/hooks/useUserBusinesses";
 
 interface BusinessAccessActionsProps {
   business: UserBusiness;
+  onClick?: (e: React.MouseEvent) => void;
 }
 
-export function BusinessAccessActions({ business }: BusinessAccessActionsProps) {
+export function BusinessAccessActions({ business, onClick }: BusinessAccessActionsProps) {
   const removeMutation = useRemoveBusinessAccess();
 
   // Don't show actions for owners or current business
@@ -28,7 +29,10 @@ export function BusinessAccessActions({ business }: BusinessAccessActionsProps) 
         <Button 
           variant="ghost" 
           size="sm"
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onClick?.(e);
+          }}
         >
           <MoreVertical className="h-4 w-4" />
         </Button>

@@ -7,10 +7,22 @@ import { BusinessAccessActions } from "@/components/Team/BusinessAccessActions";
 import { useUserBusinesses } from "@/hooks/useUserBusinesses";
 import { useUserPendingInvites } from "@/hooks/useUserPendingInvites";
 import { Building2, Crown, Users, Mail, Clock } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export function BusinessAccessSection() {
   const { data: businesses, isLoading: businessesLoading } = useUserBusinesses();
   const { data: pendingInvites, isLoading: invitesLoading } = useUserPendingInvites();
+  const navigate = useNavigate();
+
+  const handleBusinessClick = (business: any) => {
+    if (business.is_current) {
+      // Navigate to calendar without business parameter for current business
+      navigate('/calendar');
+    } else {
+      // Navigate to calendar with business parameter for other businesses
+      navigate(`/calendar?businessId=${business.id}`);
+    }
+  };
 
   if (businessesLoading || invitesLoading) {
     return (
@@ -55,7 +67,8 @@ export function BusinessAccessSection() {
             {(businesses || []).map((business) => (
               <div
                 key={business.id}
-                className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/20 transition-colors"
+                className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/20 transition-colors cursor-pointer"
+                onClick={() => handleBusinessClick(business)}
               >
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={business.logo_url || undefined} alt={business.name} />
@@ -89,7 +102,7 @@ export function BusinessAccessSection() {
                   </div>
                 </div>
                 
-                <BusinessAccessActions business={business} />
+                <BusinessAccessActions business={business} onClick={(e) => e.stopPropagation()} />
               </div>
             ))}
           </div>

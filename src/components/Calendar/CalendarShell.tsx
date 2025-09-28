@@ -14,6 +14,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useIsPhone } from "@/hooks/use-phone";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
+import { useSearchParams } from "react-router-dom";
 type CalendarDisplayMode = 'scheduled' | 'clocked' | 'combined';
 
 export default function CalendarShell({
