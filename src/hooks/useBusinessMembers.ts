@@ -38,37 +38,18 @@ export function useBusinessMembersData(opts?: UseBusinessMembersDataOptions) {
     queryKey: queryKeys.data.members(businessId || ''),
     enabled,
     queryFn: async () => {
-      console.info("[useBusinessMembersData] fetching members via edge function");
-      
       const { data, error } = await authApi.invoke('business-members', {
         method: 'GET'
       });
       
       if (error) {
-        console.error("[useBusinessMembersData] error:", error);
         throw new Error(error.message || 'Failed to fetch business members');
       }
       
-      console.info("[useBusinessMembersData] RAW RESPONSE:", { 
-        rawData: data, 
-        dataType: typeof data,
-        dataKeys: data ? Object.keys(data) : null,
-        dataData: data?.data,
-        dataCount: data?.count
-      });
-      
-      const processedResult = {
+      return {
         members: data?.data || [],
         count: data?.count || 0
       };
-      
-      console.info("[useBusinessMembersData] PROCESSED RESULT:", {
-        membersLength: processedResult.members.length,
-        membersArray: processedResult.members,
-        count: processedResult.count
-      });
-      
-      return processedResult;
     },
     staleTime: 30_000, // Simplified from 0 to match profile query
     retry: 2,
@@ -93,19 +74,15 @@ export function useBusinessMemberOperations() {
 
   const removeMember = useMutation({
     mutationFn: async ({ memberId }: { memberId: string }) => {
-      console.log('[useBusinessMemberOperations] Starting member deletion:', memberId);
-      
       const { data, error } = await authApi.invoke('business-members', {
         method: "DELETE",
         body: { memberId }
       });
       
       if (error) {
-        console.error('[useBusinessMemberOperations] Edge function error:', error);
         throw new Error(error.message || 'Failed to remove team member');
       }
       
-      console.log('[useBusinessMemberOperations] Member deletion successful:', data);
       return data;
     },
     onMutate: async ({ memberId }) => {
@@ -127,18 +104,14 @@ export function useBusinessMemberOperations() {
       
       return { previousMembers };
     },
-    onSuccess: (data, variables) => {
-      console.log('[useBusinessMemberOperations] Member removal completed successfully');
-      // Don't invalidate business-members since we already updated optimistically
-      // Only invalidate related queries that need fresh data
+    onSuccess: () => {
+      // Invalidate related queries that need fresh data
       queryClient.invalidateQueries({ 
         queryKey: ['user-businesses'],
         exact: true 
       });
     },
     onError: (error: Error | unknown, variables, context) => {
-      console.error('[useBusinessMemberOperations] Mutation error:', error);
-      
       // Rollback optimistic update on error
       if (context?.previousMembers) {
         queryClient.setQueryData(queryKeys.data.members(businessId || ''), context.previousMembers);

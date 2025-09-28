@@ -37,15 +37,20 @@ export function useBusinessContext(targetBusinessId?: string) {
   // Use target business ID if provided, otherwise fall back to user's own business
   const businessIdToQuery = targetBusinessId || userOwnedBusiness?.id;
   
-  // Query user's role for the specific business using the database function
+  // Query user's role for the specific business
   const roleQuery = useQuery({
     queryKey: ['user-business-role', businessIdToQuery, userId],
     queryFn: async () => {
       if (!businessIdToQuery || !authApi) return null;
       
       try {
-        // Use the existing get-profile endpoint which handles role detection
-        const { data, error } = await authApi.invoke('get-profile', {
+        // If querying user's own business, they're the owner
+        if (businessIdToQuery === userOwnedBusiness?.id) {
+          return 'owner' as const;
+        }
+        
+        // For other businesses, check business_permissions via supabase query
+        const { data, error } = await authApi.invoke('user-businesses', {
           method: 'GET'
         });
         
@@ -54,15 +59,9 @@ export function useBusinessContext(targetBusinessId?: string) {
           return null;
         }
         
-        // If querying user's own business, they're the owner
-        if (businessIdToQuery === userOwnedBusiness?.id) {
-          return 'owner' as const;
-        }
-        
-        // For other businesses, check business_permissions
-        // This would need a new endpoint or modification to existing ones
-        // For now, return 'worker' if not owner (assuming permissions are checked elsewhere)
-        return null; // Will be updated once we have proper role detection
+        // Check if user has permissions for this business
+        const hasPermission = data?.businesses?.some((b: any) => b.id === businessIdToQuery);
+        return hasPermission ? 'worker' as const : null;
       } catch (err) {
         console.error('[useBusinessContext] Role query failed:', err);
         return null;
@@ -109,9 +108,9 @@ export function useBusinessContext(targetBusinessId?: string) {
     businessLightLogoUrl: business?.lightLogoUrl,
     
     // Dynamic role and permissions
-    role: role || 'owner', // Default to owner for now (user's own business)
-    userRole: role || 'owner',
-    canManage: (role || 'owner') === 'owner', // Only owners can manage
+    role: role, // Can be 'owner', 'worker', or null
+    userRole: role,
+    canManage: role === 'owner', // Only owners can manage
     
     // Loading states
     isLoadingBusiness,
