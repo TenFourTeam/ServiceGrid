@@ -144,15 +144,13 @@ export default function Team() {
               Manage your team members and permissions
             </p>
           </div>
-          {role === 'owner' && (
-            <Button 
-              onClick={() => setShowInviteModal(true)}
-              className="flex items-center gap-2"
-            >
-              <UserPlus className="h-4 w-4" />
-              Invite Worker
-            </Button>
-          )}
+          <Button 
+            onClick={() => setShowInviteModal(true)}
+            className="flex items-center gap-2"
+          >
+            <UserPlus className="h-4 w-4" />
+            Invite Worker
+          </Button>
         </div>
 
         {/* Business Access Section */}
@@ -170,17 +168,6 @@ export default function Team() {
                 Manage team members • {members.length} member{members.length !== 1 ? 's' : ''}
               </p>
             </div>
-            <RequireRole role="owner" fallback={null}>
-              <Button
-                onClick={() => setShowInviteModal(true)}
-                className="gap-2 flex-shrink-0"
-                size="sm"
-              >
-                <UserPlus className="h-4 w-4" />
-                <span className="hidden sm:inline">Invite Worker</span>
-                <span className="sm:hidden">Invite</span>
-              </Button>
-            </RequireRole>
           </div>
 
           {/* Search and Filters */}

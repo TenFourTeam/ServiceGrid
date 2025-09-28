@@ -60,7 +60,7 @@ export function useBusinessContext(targetBusinessId?: string) {
         }
         
         // Check if user has permissions for this business
-        const hasPermission = data?.businesses?.some((b: any) => b.id === businessIdToQuery);
+        const hasPermission = data?.data?.some((b: any) => b.id === businessIdToQuery);
         return hasPermission ? 'worker' as const : null;
       } catch (err) {
         console.error('[useBusinessContext] Role query failed:', err);
