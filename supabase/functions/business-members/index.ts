@@ -1,9 +1,10 @@
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.54.0';
 import { corsHeaders, json, requireCtx } from '../_lib/auth.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+const ok = (data: unknown, status = 200) => json(data, { status, headers: corsHeaders });
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -12,175 +13,183 @@ Deno.serve(async (req) => {
 
   try {
     console.log(`[business-members] ${req.method} request received`);
-    
+
     const ctx = await requireCtx(req);
     console.log('[business-members] Context resolved:', { userId: ctx.userId, businessId: ctx.businessId });
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     if (req.method === 'GET') {
-    // Fetch business details
-    const { data: business, error: businessError } = await supabase
-      .from('businesses')
-      .select('id, name, owner_id, created_at')
-      .eq('id', ctx.businessId)
-      .single();
+      // Fetch business (owner + created_at)
+      const { data: business, error: businessError } = await supabase
+        .from('businesses')
+        .select('id, name, owner_id, created_at')
+        .eq('id', ctx.businessId)
+        .single();
 
-    if (businessError) {
-      console.error('[business-members] Error fetching business:', businessError);
-      return json({ error: 'Failed to fetch business details' }, { status: 500, headers: corsHeaders });
-    }
+      if (businessError || !business) {
+        console.error('[business-members] Error fetching business:', businessError);
+        return ok({ error: 'Business not found' }, 404);
+      }
 
-    // Fetch owner profile separately
-    const { data: ownerProfile, error: ownerError } = await supabase
-      .from('profiles')
-      .select('id, email, full_name, clerk_user_id')
-      .eq('id', business.owner_id)
-      .single();
+      // Ensure caller is owner OR a member (defense-in-depth since service role bypasses RLS)
+      const isOwner = business.owner_id === ctx.userId;
+      let isMember = false;
+      if (!isOwner) {
+        const { data: membershipRow, error: membershipErr } = await supabase
+          .from('business_permissions')
+          .select('user_id')
+          .eq('business_id', ctx.businessId)
+          .eq('user_id', ctx.userId)
+          .maybeSingle();
 
-    if (ownerError) {
-      console.error('[business-members] Error fetching owner profile:', ownerError);
-      return json({ error: 'Failed to fetch owner profile' }, { status: 500, headers: corsHeaders });
-    }
+        if (membershipErr) {
+          console.error('[business-members] Error checking membership:', membershipErr);
+          return ok({ error: 'Failed to verify membership' }, 500);
+        }
+        isMember = !!membershipRow;
+      }
 
-    // Fetch workers (users with business permissions)
-    const { data: businessPermissions, error: permissionsError } = await supabase
-      .from('business_permissions')
-      .select('user_id, granted_at, granted_by')
-      .eq('business_id', ctx.businessId);
+      if (!isOwner && !isMember) {
+        return ok({ error: 'Forbidden' }, 403);
+      }
 
-    if (permissionsError) {
-      console.error('[business-members] Error fetching business permissions:', permissionsError);
-      return json({ error: 'Failed to fetch worker members' }, { status: 500, headers: corsHeaders });
-    }
-
-    // Fetch worker profiles separately
-    let workerProfiles: { id: string; email: string; full_name: string }[] = [];
-    if (businessPermissions && businessPermissions.length > 0) {
-      const userIds = businessPermissions.map(p => p.user_id);
-      const { data: profiles, error: profilesError } = await supabase
+      // Fetch owner profile (remove the bad column name)
+      const { data: ownerProfile, error: ownerError } = await supabase
         .from('profiles')
         .select('id, email, full_name')
-        .in('id', userIds);
+        .eq('id', business.owner_id)
+        .single();
 
-      if (profilesError) {
-        console.error('[business-members] Error fetching worker profiles:', profilesError);
-        return json({ error: 'Failed to fetch worker profiles' }, { status: 500, headers: corsHeaders });
+      if (ownerError || !ownerProfile) {
+        console.error('[business-members] Error fetching owner profile:', ownerError);
+        // Fallback: still return owner with minimal info
+        return ok({ error: 'Failed to fetch owner profile' }, 500);
       }
-      
-      workerProfiles = profiles || [];
-    }
 
-    // Combine owner and workers into a single members list
-    const members = [
-      // Owner member
-      {
-        id: `owner-${ownerProfile.id}`,
-        business_id: ctx.businessId,
-        user_id: ownerProfile.id,
-        role: 'owner' as const,
-        invited_at: null, // Owners aren't invited
-        joined_at: null, // Owners don't "join"
-        invited_by: null,
-        joined_via_invite: false,
-        email: ownerProfile.email,
-        name: ownerProfile.full_name
-      },
-      // Worker members (combine permissions with profiles)
-      ...(businessPermissions || []).map((permission: any) => {
-        const profile = workerProfiles.find(p => p.id === permission.user_id);
-        return {
-          id: `worker-${permission.user_id}`,
+      // Fetch permissions
+      const { data: businessPermissions, error: permissionsError } = await supabase
+        .from('business_permissions')
+        .select('user_id, granted_at, granted_by')
+        .eq('business_id', ctx.businessId);
+
+      if (permissionsError) {
+        console.error('[business-members] Error fetching business permissions:', permissionsError);
+        return ok({ error: 'Failed to fetch worker members' }, 500);
+      }
+
+      // Fetch worker profiles, excluding owner to avoid duplication
+      const workerUserIds = (businessPermissions ?? [])
+        .map(p => p.user_id)
+        .filter((uid) => uid !== ownerProfile.id);
+
+      let workerProfiles: { id: string; email: string; full_name: string }[] = [];
+      if (workerUserIds.length > 0) {
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, email, full_name')
+          .in('id', workerUserIds);
+
+        if (profilesError) {
+          console.error('[business-members] Error fetching worker profiles:', profilesError);
+          return ok({ error: 'Failed to fetch worker profiles' }, 500);
+        }
+        workerProfiles = profiles ?? [];
+      }
+
+      // Shape members
+      const members = [
+        {
+          id: `owner-${ownerProfile.id}`,
           business_id: business.id,
-          user_id: permission.user_id,
-          role: 'worker' as const,
+          user_id: ownerProfile.id,
+          role: 'owner' as const,
           invited_at: null,
-          joined_at: permission.granted_at,
-          invited_by: permission.granted_by,
-          joined_via_invite: true,
-          email: profile?.email || '',
-          name: profile?.full_name || ''
-        };
-      })
-    ];
+          joined_at: business.created_at, // better than null
+          invited_by: null,
+          joined_via_invite: false,
+          email: ownerProfile.email,
+          name: ownerProfile.full_name
+        },
+        ...(businessPermissions ?? [])
+          .filter((p) => p.user_id !== ownerProfile.id)
+          .map((permission: any) => {
+            const profile = workerProfiles.find(p => p.id === permission.user_id);
+            return {
+              id: `worker-${permission.user_id}`,
+              business_id: business.id,
+              user_id: permission.user_id,
+              role: 'worker' as const,
+              invited_at: null,
+              joined_at: permission.granted_at,
+              invited_by: permission.granted_by,
+              joined_via_invite: true,
+              email: profile?.email ?? '',
+              name: profile?.full_name ?? ''
+            };
+          })
+      ];
 
-      console.log('[business-members] Fetched', members.length, 'members (1 owner +', (businessPermissions?.length || 0), 'workers)');
-      return json({ 
-        data: members,
-        count: members.length
-      }, { headers: corsHeaders });
+      console.log('[business-members] Fetched', members.length, 'members (1 owner +', workerUserIds.length, 'workers)');
+      return ok({ data: members, count: members.length });
     }
-
 
     if (req.method === 'DELETE') {
-      let body;
+      let body: any;
       try {
         body = await req.json();
-        if (!body) {
-          throw new Error('Request body is empty');
-        }
+        if (!body) throw new Error('Request body is empty');
       } catch (jsonError) {
         console.error('[business-members] JSON parsing error:', jsonError);
-        return json({ error: 'Invalid JSON in request body' }, { status: 400 });
+        return ok({ error: 'Invalid JSON in request body' }, 400);
       }
 
-    const { memberId } = body;
+      const { memberId } = body;
+      if (!memberId) {
+        return ok({ error: 'Member ID is required' }, 400);
+      }
+      console.log('[business-members] Starting member removal:', memberId);
 
-    if (!memberId) {
-      return json({ error: 'Member ID is required' }, { status: 400 });
-    }
+      // Verify ownership
+      const { data: business, error: businessError } = await supabase
+        .from('businesses')
+        .select('owner_id')
+        .eq('id', ctx.businessId)
+        .single();
 
-    console.log('[business-members] Starting member removal:', memberId);
-    
-    // Verify that the authenticated user is the owner of the business
-    const { data: business, error: businessError } = await supabase
-      .from('businesses')
-      .select('owner_id')
-      .eq('id', ctx.businessId)
-      .single();
+      if (businessError || !business) {
+        console.error('[business-members] Error fetching business:', businessError);
+        return ok({ error: 'Business not found' }, 404);
+      }
 
-    if (businessError || !business) {
-      console.error('[business-members] Error fetching business:', businessError);
-      return json({ error: 'Business not found' }, { status: 404, headers: corsHeaders });
-    }
+      if (business.owner_id !== ctx.userId) {
+        return ok({ error: 'Only business owners can remove members' }, 403);      }
 
-    if (business.owner_id !== ctx.userId) {
-      return json({ error: 'Only business owners can remove members' }, { status: 403, headers: corsHeaders });
-    }
+      if (!memberId.startsWith('worker-')) {
+        return ok({ error: 'Cannot remove business owner' }, 400);
+      }
 
-    // Extract user ID from memberId (format: "worker-{userId}")
-    if (!memberId.startsWith('worker-')) {
-      return json({ error: 'Cannot remove business owner' }, { status: 400, headers: corsHeaders });
-    }
-    
-    const userId = memberId.replace('worker-', '');
+      const userId = memberId.replace('worker-', '');
 
-    // Remove the business permission
-    const { error: deleteError } = await supabase
-      .from('business_permissions')
-      .delete()
-      .eq('business_id', ctx.businessId)
-      .eq('user_id', userId);
+      const { error: deleteError } = await supabase
+        .from('business_permissions')
+        .delete()
+        .eq('business_id', ctx.businessId)
+        .eq('user_id', userId);
 
-    if (deleteError) {
-      console.error('[business-members] Error removing business permission:', deleteError);
-      return json({ error: 'Failed to remove member' }, { status: 500, headers: corsHeaders });
-    }
+      if (deleteError) {
+        console.error('[business-members] Error removing business permission:', deleteError);
+        return ok({ error: 'Failed to remove member' }, 500);
+      }
 
       console.log('[business-members] Member removed:', memberId);
-      return json({ 
-        message: 'Member removed successfully',
-        data: { memberId }
-      }, { headers: corsHeaders });
+      return ok({ message: 'Member removed successfully', data: { memberId } });
     }
 
-    return json({ error: 'Method not allowed' }, { status: 405 });
+    return ok({ error: 'Method not allowed' }, 405);
 
   } catch (error: any) {
     console.error('[business-members] Error:', error);
-    return json(
-      { error: error.message || 'Failed to process request' },
-      { status: 500 }
-    );
+    return ok({ error: error.message || 'Failed to process request' }, 500);
   }
 });
