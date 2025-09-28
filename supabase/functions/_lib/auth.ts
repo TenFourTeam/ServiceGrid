@@ -138,39 +138,91 @@ export async function requireCtx(req: Request, options: { autoCreate?: boolean, 
 
   const userUuid = await resolveUserUuid(supaAdmin, clerkUserId, email, options.autoCreate);
 
-  // Get business ID - try parameter first, then user's primary business
-  let businessId: string;
-  if (options?.businessId) {
-    businessId = options.businessId;
+  // Business resolution with full chain
+  const url = new URL(req.url);
+  const explicitBizId = 
+    options?.businessId ||
+    req.headers.get('x-business-id') ||
+    url.searchParams.get('businessId') ||
+    undefined;
+
+  let businessId: string | undefined;
+
+  // 1) Explicit selection via parameter/header/query
+  if (explicitBizId) {
+    businessId = explicitBizId;
+    console.info(`[auth] Using explicit business ID: ${businessId}`);
   } else {
-    // Get user's primary business (owner business only)
-    const { data: business } = await supaAdmin
+    // 2) User default business
+    const { data: profileDefault } = await supaAdmin
+      .from('profiles')
+      .select('default_business_id')
+      .eq('id', userUuid)
+      .maybeSingle();
+
+    if (profileDefault?.default_business_id) {
+      businessId = profileDefault.default_business_id;
+      console.info(`[auth] Using default business ID: ${businessId}`);
+    }
+  }
+
+  // 3) Ownership lookup
+  if (!businessId) {
+    const { data: owned } = await supaAdmin
       .from('businesses')
       .select('id')
       .eq('owner_id', userUuid)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    
+    if (owned?.id) {
+      businessId = owned.id;
+      console.info(`[auth] Using owned business ID: ${businessId}`);
+    }
+  }
+
+  // 4) Membership lookup
+  if (!businessId) {
+    const { data: membership } = await supaAdmin
+      .from('business_permissions')
+      .select('business_id')
+      .eq('user_id', userUuid)
+      .order('granted_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    
+    if (membership?.business_id) {
+      businessId = membership.business_id;
+      console.info(`[auth] Using membership business ID: ${businessId}`);
+    }
+  }
+
+  // 5) Auto-create (optional)
+  if (!businessId) {
+    if (!options?.autoCreate) {
+      throw new Error('No business found and auto-creation disabled');
+    }
+    
+    const { data: newBusiness, error: businessError } = await supaAdmin
+      .from('businesses')
+      .insert({ name: 'My Business', owner_id: userUuid })
+      .select('id')
       .single();
     
-    if (business) {
-      businessId = business.id;
-    } else if (options?.autoCreate) {
-      // Create new business if none exists
-      const { data: newBusiness, error: businessError } = await supaAdmin
-        .from('businesses')
-        .insert({ name: 'My Business', owner_id: userUuid })
-        .select('id')
-        .single();
-      
-      if (businessError) throw businessError;
-      businessId = newBusiness.id;
-      
-      // Update profile to link the new business as default
-      await supaAdmin
-        .from('profiles')
-        .update({ default_business_id: newBusiness.id })
-        .eq('id', userUuid);
-    } else {
-      throw new Error('No business found');
-    }
+    if (businessError) throw businessError;
+    businessId = newBusiness.id;
+    console.info(`[auth] Created new business ID: ${businessId}`);
+    
+    // Update profile to link the new business as default
+    await supaAdmin
+      .from('profiles')
+      .update({ default_business_id: newBusiness.id })
+      .eq('id', userUuid);
+  }
+
+  if (!businessId) {
+    throw new Error('Failed to resolve business ID');
   }
 
   return {

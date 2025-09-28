@@ -18,7 +18,7 @@ import { RequireRole } from "@/components/Auth/RequireRole";
 export default function Team() {
   const { t } = useLanguage();
   const { role, businessId } = useBusinessContext();
-  const { data: members, isLoading, error } = useBusinessMembersData();
+  const { data: members, isLoading, error } = useBusinessMembersData({ businessId, enabled: !!businessId });
   
   const navigate = useNavigate();
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -262,10 +262,15 @@ export default function Team() {
                         <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
                           {member.joined_at ? (
                             <span className="truncate">Joined {new Date(member.joined_at).toLocaleDateString()}</span>
-                          ) : (
+                          ) : member.invited_at ? (
                             <span className="flex items-center gap-1 truncate">
                               <Mail className="h-3 w-3 flex-shrink-0" />
                               Invited {new Date(member.invited_at).toLocaleDateString()}
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1 truncate">
+                              <Mail className="h-3 w-3 flex-shrink-0" />
+                              Pending
                             </span>
                           )}
                           {member.name && (

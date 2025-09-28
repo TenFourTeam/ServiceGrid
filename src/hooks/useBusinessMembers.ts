@@ -33,13 +33,24 @@ export function useBusinessMembersData(opts?: UseBusinessMembersDataOptions) {
   const businessId = opts?.businessId || contextBusinessId;
   const enabled = isAuthenticated && !!businessId && (opts?.enabled ?? true);
 
+  // Debug logging
+  console.log('[useBusinessMembers] Hook setup:', { 
+    businessId, 
+    contextBusinessId: contextBusinessId,
+    isAuthenticated, 
+    enabled,
+    optsEnabled: opts?.enabled 
+  });
+
 
   const query = useQuery({
-    queryKey: queryKeys.data.members(businessId || ''),
+    queryKey: ['business-members', businessId],
     enabled,
     queryFn: async () => {
+      console.log('[useBusinessMembers] Executing query for businessId:', businessId);
       const { data, error } = await authApi.invoke('business-members', {
-        method: 'GET'
+        method: 'GET',
+        headers: { 'x-business-id': businessId! }
       });
       
       if (error) {
@@ -50,18 +61,29 @@ export function useBusinessMembersData(opts?: UseBusinessMembersDataOptions) {
       console.log('[useBusinessMembers] Raw response:', { data, error });
       console.log('[useBusinessMembers] Data keys:', data ? Object.keys(data) : 'no data');
       
-      return {
-        members: data?.data?.data || [],
-        count: data?.data?.count || 0
-      };
+      // Normalize response - handle various nesting levels
+      const payload = data?.data ?? data;
+      const members = Array.isArray(payload) 
+        ? payload 
+        : Array.isArray(payload?.data) 
+        ? payload.data 
+        : [];
+
+      console.log('[useBusinessMembers] Normalized members:', members?.length || 0);
+      
+      return members.map((member: any) => ({
+        ...member,
+        invited_at: member.invited_at ?? null,
+        joined_at: member.joined_at ?? null,
+      }));
     },
     staleTime: 30_000, // Simplified from 0 to match profile query
     retry: 2,
   });
 
   return {
-    data: query.data?.members ?? [],
-    count: query.data?.count ?? 0,
+    data: query.data ?? [],
+    count: query.data?.length ?? 0,
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,
