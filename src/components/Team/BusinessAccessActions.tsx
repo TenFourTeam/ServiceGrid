@@ -16,10 +16,10 @@ export function BusinessAccessActions({ business }: BusinessAccessActionsProps) 
     return null;
   }
 
-  const isRemovingThis = removeMutation.isPending && removeMutation.variables?.businessId === business.id;
+  const isRemovingThis = removeMutation.isPending && removeMutation.variables?.id === business.id;
 
   const handleRemove = () => {
-    removeMutation.mutate({ businessId: business.id });
+    removeMutation.mutate(business);
   };
 
   return (

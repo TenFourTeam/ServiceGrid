@@ -1,59 +1,83 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthApi } from '@/hooks/useAuthApi';
 import { toast } from 'sonner';
+import type { UserBusiness } from '@/hooks/useUserBusinesses';
+import { useProfile } from '@/queries/useProfile';
 
-interface RemoveBusinessAccessParams {
-  businessId: string;
-}
+// Canonical query key for user businesses
+export const qkUserBusinesses = () => ['user-businesses'] as const;
 
 export function useRemoveBusinessAccess() {
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
   const authApi = useAuthApi();
+  const key = qkUserBusinesses();
+  const { data: profile } = useProfile();
 
   return useMutation({
-    mutationFn: async ({ businessId }: RemoveBusinessAccessParams) => {
-      const { data, error } = await authApi.invoke('remove-business-access', {
-        method: 'POST',
-        body: { businessId }
+    mutationFn: async (business: UserBusiness) => {
+      if (business.role !== 'worker') {
+        throw new Error('Only workers can leave businesses');
+      }
+
+      if (!profile?.profile?.id) {
+        throw new Error('User profile not found');
+      }
+
+      console.log('[useRemoveBusinessAccess] Sending request:', {
+        businessId: business.id,
+        memberId: `worker-${profile.profile.id}`,
+        businessRole: business.role
       });
-      
+
+      const { data, error } = await authApi.invoke('business-members', {
+        method: 'DELETE',
+        headers: {
+          'x-business-id': business.id,
+        },
+        body: { memberId: `worker-${profile.profile.id}` },
+      });
+
+      console.log('[useRemoveBusinessAccess] Response:', { data, error });
+
       if (error) {
-        throw new Error(error.message || 'Failed to remove business access');
+        const msg = error.message || error || 'Leave business failed';
+        throw new Error(msg);
       }
       
-      return data;
+      return business; // echo back for optimistic update bookkeeping
     },
-    onMutate: async ({ businessId }) => {
-      // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ['user-businesses'] });
+
+    // Optimistic removal
+    onMutate: async (business) => {
+      await qc.cancelQueries({ queryKey: key });
+      const prev = qc.getQueryData<UserBusiness[]>(key) ?? [];
+      qc.setQueryData<UserBusiness[]>(key, (old = []) => old.filter(b => b.id !== business.id));
+      return { prev };
+    },
+
+    onError: (err, _business, ctx) => {
+      if (ctx?.prev) qc.setQueryData<UserBusiness[]>(key, ctx.prev);
       
-      // Snapshot previous value
-      const previousData = queryClient.getQueryData(['user-businesses']);
-      
-      // Optimistically remove the business from cache
-      queryClient.setQueryData(['user-businesses'], (old: any) => {
-        if (!Array.isArray(old)) return old;
-        return old.filter(business => business.id !== businessId);
+      const errorMessage = err instanceof Error ? err.message : "There was an error leaving the business";
+      toast.error("Failed to leave business", {
+        description: errorMessage
       });
-      
-      return { previousData };
     },
-    onError: (error, variables, context) => {
-      // Rollback optimistic update
-      if (context?.previousData) {
-        queryClient.setQueryData(['user-businesses'], context.previousData);
-      }
-      
-      toast.error(error.message || "Failed to leave business");
-    },
+
     onSuccess: () => {
+      // Keep it simple: revalidate active observers; data stays visible due to placeholderData
+      qc.invalidateQueries({ queryKey: key, refetchType: 'active' });
+      
+      // Also invalidate profile in case default business changed
+      qc.invalidateQueries({ queryKey: ['profile'] });
+      qc.invalidateQueries({ queryKey: ['user-pending-invites'] });
+      
       toast.success("You have left the business");
     },
+
     onSettled: () => {
-      // Refetch to ensure data consistency
-      queryClient.invalidateQueries({ queryKey: ['user-businesses'] });
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
-      queryClient.invalidateQueries({ queryKey: ['user-pending-invites'] });
+      // Belt-and-suspenders: ensure we refetch if needed
+      qc.refetchQueries({ queryKey: key, type: 'active' });
     },
   });
 }
