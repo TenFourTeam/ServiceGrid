@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Clock, Play, Square, ClipboardList } from 'lucide-react';
 import { useTimesheet } from '@/hooks/useTimesheet';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useSearchParams } from 'react-router-dom';
 import AppLayout from '@/components/Layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +14,9 @@ import { TimesheetEntryEdit } from '@/components/Timesheet/TimesheetEntryEdit';
 
 export default function Timesheet() {
   const { t } = useLanguage();
+  const [searchParams] = useSearchParams();
+  const businessId = searchParams.get('businessId') || undefined;
+  
   const { 
     entries, 
     isLoading, 
@@ -25,7 +29,7 @@ export default function Timesheet() {
     isClockingIn, 
     isClockingOut,
     isEditingEntry
-  } = useTimesheet();
+  } = useTimesheet(businessId);
   
   const [notes, setNotes] = useState('');
   const [editingEntry, setEditingEntry] = useState<string | null>(null);
@@ -70,8 +74,8 @@ export default function Timesheet() {
   const totalHoursTodayFormatted = `${Math.floor(totalHoursToday / 60)}h ${totalHoursToday % 60}m`;
 
   return (
-    <AppLayout title={t('timesheet.title')}>
-      <div className="space-y-6 max-w-4xl">
+    <AppLayout title={t('timesheet.title')} businessId={businessId}>
+      <div key={businessId} className="space-y-6 max-w-4xl">
         {/* Current Status */}
         <Card>
           <CardHeader>

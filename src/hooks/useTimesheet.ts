@@ -15,8 +15,8 @@ export interface TimesheetEntry {
   updated_at: string;
 }
 
-export function useTimesheet() {
-  const { businessId, role } = useBusinessContext();
+export function useTimesheet(targetBusinessId?: string) {
+  const { businessId, role } = useBusinessContext(targetBusinessId);
   const queryClient = useQueryClient();
   const authApi = useAuthApi();
 
@@ -27,7 +27,10 @@ export function useTimesheet() {
       if (!businessId) return [];
       
       const { data, error } = await authApi.invoke('timesheet-crud', {
-        method: 'GET'
+        method: 'GET',
+        headers: {
+          'x-business-id': businessId
+        }
       });
 
       if (error) {
@@ -51,7 +54,10 @@ export function useTimesheet() {
 
       const { data, error } = await authApi.invoke('timesheet-crud', {
         method: 'POST',
-        body: { notes }
+        body: { notes },
+        headers: {
+          'x-business-id': businessId
+        }
       });
 
       if (error) throw new Error(error.message || 'Failed to clock in');
@@ -72,7 +78,10 @@ export function useTimesheet() {
     mutationFn: async ({ entryId, notes }: { entryId: string; notes?: string }) => {
       const { data, error } = await authApi.invoke('timesheet-crud', {
         method: 'PUT',
-        body: { entryId, notes, action: 'clock_out' }
+        body: { entryId, notes, action: 'clock_out' },
+        headers: {
+          'x-business-id': businessId
+        }
       });
 
       if (error) throw new Error(error.message || 'Failed to clock out');
@@ -103,7 +112,10 @@ export function useTimesheet() {
     }) => {
       const { data, error } = await authApi.invoke('timesheet-crud', {
         method: 'PUT',
-        body: { entryId, clockInTime, clockOutTime, notes, action: 'edit' }
+        body: { entryId, clockInTime, clockOutTime, notes, action: 'edit' },
+        headers: {
+          'x-business-id': businessId
+        }
       });
 
       if (error) throw new Error(error.message || 'Failed to edit entry');

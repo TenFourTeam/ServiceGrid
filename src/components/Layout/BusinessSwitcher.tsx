@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ChevronDown, Building2, Crown, Users } from "lucide-react";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useUserBusinesses } from "@/hooks/useUserBusinesses";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 
 interface BusinessSwitcherProps {
   businessId?: string;
@@ -17,12 +17,14 @@ export function BusinessSwitcher({ businessId, className = "" }: BusinessSwitche
   const { data: userBusinesses } = useUserBusinesses();
   const navigate = useNavigate();
   const [params] = useSearchParams();
+  const location = useLocation();
   
   const handleSwitchBusiness = (targetBusinessId: string, isCurrent: boolean) => {
+    const currentPath = location.pathname;
     if (isCurrent) {
-      navigate('/calendar');
+      navigate(currentPath);
     } else {
-      navigate(`/calendar?businessId=${targetBusinessId}`);
+      navigate(`${currentPath}?businessId=${targetBusinessId}`);
     }
   };
 

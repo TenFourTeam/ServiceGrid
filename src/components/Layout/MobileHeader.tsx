@@ -32,13 +32,19 @@ const businessNavItems = [
 export default function MobileHeader({ title }: MobileHeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { businessName, businessLogoUrl, businessLightLogoUrl, businessId, role } = useBusinessContext();
+  const { businessName, businessLogoUrl, businessLightLogoUrl, businessId, role, business } = useBusinessContext();
   const { user } = useUser();
   const { data: profile } = useProfile();
 
   // Filter items based on user role
   const visibleCoreItems = coreNavItems.filter(item => role === 'owner' || item.workerAccess);
   const visibleBusinessItems = businessNavItems.filter(item => role === 'owner' || item.workerAccess);
+
+  const buildUrl = (path: string) => {
+    return businessId && !business?.is_current 
+      ? `${path}?businessId=${businessId}`
+      : path;
+  };
 
   const isActivePath = (path: string) => location.pathname.startsWith(path);
 
@@ -85,7 +91,7 @@ export default function MobileHeader({ title }: MobileHeaderProps) {
                         ? "bg-accent text-accent-foreground"
                         : "hover:bg-muted/50"
                     }`}
-                    onClick={() => navigate(item.url)}
+                    onClick={() => navigate(buildUrl(item.url))}
                   >
                     <item.icon className="mr-2 h-4 w-4" />
                     {item.title}
@@ -108,7 +114,7 @@ export default function MobileHeader({ title }: MobileHeaderProps) {
                             ? "bg-accent text-accent-foreground"
                             : "hover:bg-muted/50"
                         }`}
-                        onClick={() => navigate(item.url)}
+                        onClick={() => navigate(buildUrl(item.url))}
                       >
                         <item.icon className="mr-2 h-4 w-4" />
                         {item.title}

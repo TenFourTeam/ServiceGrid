@@ -92,6 +92,12 @@ export default function AppSidebar({ businessId }: { businessId?: string }) {
 
   // Warm the cache for the logo ASAP
   usePreloadImage((businessLightLogoUrl || businessLogoUrl) as string);
+  const buildUrl = (path: string) => {
+    return contextBusinessId && !business?.is_current 
+      ? `${path}?businessId=${contextBusinessId}`
+      : path;
+  };
+
   const isActivePath = (path: string) => location.pathname.startsWith(path);
   return <Sidebar collapsible="icon">
       <SidebarHeader>
@@ -123,7 +129,7 @@ export default function AppSidebar({ businessId }: { businessId?: string }) {
             <SidebarMenu>
               {visibleCoreItems.map(item => <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton asChild isActive={isActivePath(item.url)}>
-                    <NavLink to={item.url} end className={({
+                    <NavLink to={buildUrl(item.url)} end className={({
                   isActive
                 }) => isActive ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"}>
                       <item.icon className="mr-2 h-4 w-4" />
@@ -143,7 +149,7 @@ export default function AppSidebar({ businessId }: { businessId?: string }) {
                 <SidebarMenu>
                   {visibleBusinessItems.map(item => <SidebarMenuItem key={item.url}>
                       <SidebarMenuButton asChild isActive={isActivePath(item.url)}>
-                        <NavLink to={item.url} end className={({
+                        <NavLink to={buildUrl(item.url)} end className={({
                       isActive
                     }) => isActive ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"}>
                           <item.icon className="mr-2 h-4 w-4" />
