@@ -42,7 +42,10 @@ export function useJobsData(opts?: UseJobsDataOptions) {
       });
       
       const { data, error } = await authApi.invoke('jobs-crud', {
-        method: 'GET'
+        method: 'GET',
+        headers: {
+          'x-business-id': businessId
+        }
       });
       
       if (error) {
