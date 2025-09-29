@@ -18,16 +18,18 @@ import { useSearchParams } from "react-router-dom";
 type CalendarDisplayMode = 'scheduled' | 'clocked' | 'combined';
 
 export default function CalendarShell({
-  selectedJobId
+  selectedJobId,
+  businessId: routeBusinessId
 }: {
   selectedJobId?: string;
+  businessId?: string;
 }) {
   const [view, setView] = useState<"month" | "week" | "day">("week");
   const [displayMode, setDisplayMode] = useState<CalendarDisplayMode>('scheduled');
   const [date, setDate] = useState<Date>(startOfDay(new Date()));
   const { data: jobs, refetch: refetchJobs } = useJobsData();
   const { data: businessMembers } = useBusinessMembersData();
-  const { role, userId, businessId, businessName } = useBusinessContext();
+  const { role, userId, businessId, businessName } = useBusinessContext(routeBusinessId);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const isMobile = useIsMobile();
   const isPhone = useIsPhone();
