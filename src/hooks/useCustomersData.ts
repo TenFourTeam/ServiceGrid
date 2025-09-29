@@ -25,7 +25,10 @@ export function useCustomersData(opts?: UseCustomersDataOptions) {
       console.info("[useCustomersData] fetching customers via edge function");
       
       const { data, error } = await authApi.invoke('customers-crud', {
-        method: 'GET'
+        method: 'GET',
+        headers: {
+          'x-business-id': businessId
+        }
       });
       
       if (error) {

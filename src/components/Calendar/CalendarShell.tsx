@@ -27,11 +27,23 @@ export default function CalendarShell({
   const [date, setDate] = useState<Date>(startOfDay(new Date()));
   const { data: jobs, refetch: refetchJobs } = useJobsData();
   const { data: businessMembers } = useBusinessMembersData();
-  const { role, userId } = useBusinessContext();
+  const { role, userId, businessId, businessName } = useBusinessContext();
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const isMobile = useIsMobile();
   const isPhone = useIsPhone();
   const { t } = useLanguage();
+  
+  // Debug business context changes
+  useEffect(() => {
+    console.log("[CalendarShell] Business context changed:", {
+      businessId,
+      businessName,
+      role,
+      userId,
+      memberCount: businessMembers?.length || 0,
+      memberNames: businessMembers?.map(m => m.name || m.email) || []
+    });
+  }, [businessId, businessName, role, userId, businessMembers]);
   
   // Default to showing the owner's own calendar
   useEffect(() => {

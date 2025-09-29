@@ -41,7 +41,10 @@ export function useRequestsData() {
       console.info("[useRequestsData] fetching requests via edge function");
       
       const { data, error } = await authApi.invoke('requests-crud', {
-        method: 'GET'
+        method: 'GET',
+        headers: {
+          'x-business-id': businessId
+        }
       });
 
       if (error) {

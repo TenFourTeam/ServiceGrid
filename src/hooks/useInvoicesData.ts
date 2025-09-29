@@ -23,7 +23,10 @@ export function useInvoicesData(opts?: UseInvoicesDataOptions) {
       console.info("[useInvoicesData] fetching invoices via edge function");
       
       const { data, error } = await authApi.invoke('invoices-crud', {
-        method: 'GET'
+        method: 'GET',
+        headers: {
+          'x-business-id': businessId
+        }
       });
       
       if (error) {

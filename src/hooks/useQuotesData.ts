@@ -24,7 +24,10 @@ export function useQuotesData(opts?: UseQuotesDataOptions) {
       console.info("[useQuotesData] fetching quotes via edge function");
       
       const { data, error } = await authApi.invoke('quotes-crud', {
-        method: 'GET'
+        method: 'GET',
+        headers: {
+          'x-business-id': businessId
+        }
       });
       
       if (error) {
