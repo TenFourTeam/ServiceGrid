@@ -10,6 +10,8 @@ import { useAuthApi } from "@/hooks/useAuthApi";
 import { queryKeys } from '@/queries/keys';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useBusinessMembersData } from '@/hooks/useBusinessMembers';
+import { useJobAssignments } from '@/hooks/useJobAssignments';
 import { 
   Drawer,
   DrawerContent,
@@ -27,6 +29,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { CustomerCombobox } from '@/components/Quotes/CustomerCombobox';
 import { CustomerBottomModal } from '@/components/Customers/CustomerBottomModal';
+import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 
 interface JobBottomModalProps {
@@ -63,8 +66,11 @@ export function JobBottomModal({
   const [jobType, setJobType] = useState<JobType>('scheduled');
   const [isCreating, setIsCreating] = useState(false);
   const [showCreateCustomer, setShowCreateCustomer] = useState(false);
+  const [assignedMemberIds, setAssignedMemberIds] = useState<string[]>([]);
 
   const { data: customers } = useCustomersData();
+  const { data: allMembers } = useBusinessMembersData();
+  const { assignMembers } = useJobAssignments();
   const queryClient = useQueryClient();
   const { businessId, userId } = useBusinessContext();
   const authApi = useAuthApi();
@@ -117,6 +123,7 @@ export function JobBottomModal({
     setFiles([]);
     setJobType('scheduled');
     setIsCreating(false);
+    setAssignedMemberIds([]);
   };
 
   const onCreate = async () => {
@@ -236,6 +243,19 @@ export function JobBottomModal({
       }
 
       const createdJob: Job = jobData.job;
+
+      // Assign selected team members to the job
+      if (assignedMemberIds.length > 0) {
+        try {
+          await assignMembers.mutateAsync({ 
+            jobId: createdJob.id, 
+            userIds: assignedMemberIds 
+          });
+        } catch (assignError) {
+          console.error('Failed to assign members:', assignError);
+          toast.error('Job created but failed to assign members');
+        }
+      }
 
       // Replace optimistic job with real job data
       queryClient.setQueryData(jobsQueryKey, (oldData: { jobs: Job[], count: number } | undefined) => {
@@ -530,6 +550,38 @@ export function JobBottomModal({
               placeholder={t('jobs.form.notesPlaceholder')}
               rows={3}
             />
+          </div>
+
+          {/* Team Member Assignment */}
+          <div className="space-y-2">
+            <Label>{t('jobs.form.assignMembers')}</Label>
+            {allMembers && allMembers.length > 0 ? (
+              <div className="space-y-2 max-h-[200px] overflow-y-auto border rounded-md p-3">
+                {allMembers.map(member => (
+                  <div key={member.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`member-${member.id}`}
+                      checked={assignedMemberIds.includes(member.user_id)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setAssignedMemberIds(prev => [...prev, member.user_id]);
+                        } else {
+                          setAssignedMemberIds(prev => prev.filter(id => id !== member.user_id));
+                        }
+                      }}
+                    />
+                    <label 
+                      htmlFor={`member-${member.id}`} 
+                      className="text-sm cursor-pointer flex-1"
+                    >
+                      {member.name || member.email} ({member.role})
+                    </label>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">{t('jobs.form.noMembersAvailable')}</p>
+            )}
           </div>
 
           {/* Photo Upload */}

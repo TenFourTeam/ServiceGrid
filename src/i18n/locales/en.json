@@ -272,7 +272,9 @@
       "amountPlaceholder": "0.00",
       "notes": "Notes",
       "notesPlaceholder": "Job notes...",
-      "photos": "Photos"
+      "photos": "Photos",
+      "assignMembers": "Assign Team Members",
+      "noMembersAvailable": "No team members available"
     },
     "types": {
       "scheduled": "Scheduled",
