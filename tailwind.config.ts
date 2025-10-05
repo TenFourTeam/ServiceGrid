@@ -50,6 +50,10 @@ export default {
 					DEFAULT: 'hsl(var(--status-scheduled))',
 					foreground: 'hsl(var(--status-scheduled-foreground))'
 				},
+				'status-time-materials': {
+					DEFAULT: 'hsl(var(--status-time-materials))',
+					foreground: 'hsl(var(--status-time-materials-foreground))'
+				},
 				'status-in-progress': {
 					DEFAULT: 'hsl(var(--status-in-progress))',
 					foreground: 'hsl(var(--status-in-progress-foreground))'

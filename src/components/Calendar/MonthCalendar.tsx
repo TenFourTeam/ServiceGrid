@@ -115,7 +115,7 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
                   if (displayMode === 'scheduled' || displayMode === 'combined') {
                     const t = safeCreateDate(j.startsAt);
                     if (!t) return []; // Skip if invalid date
-                    const statusColors = getJobStatusColors(j.status, j.isAssessment);
+                    const statusColors = getJobStatusColors(j.status, j.isAssessment, j.jobType);
                     blocks.push(
                       <li key={`${j.id}-scheduled`} className="truncate">
                         <button

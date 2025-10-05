@@ -644,7 +644,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                         const isHighlighted = highlightJobId === j.id;
                         const isBeingDragged = isDragging === j.id;
                         const isBeingResized = isResizing === j.id;
-                        const statusColors = getJobStatusColors(j.status, j.isAssessment);
+                        const statusColors = getJobStatusColors(j.status, j.isAssessment, j.jobType);
                         const currentTime = new Date();
                         const canDrag = canDragJob(j.status, currentTime, startsAt);
                         const canResize = canResizeJob(j.status, currentTime, startsAt, effectiveEndsAt);

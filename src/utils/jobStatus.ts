@@ -1,12 +1,21 @@
-import { JobStatus } from "@/types";
+import { JobStatus, JobType } from "@/types";
 
-export function getJobStatusColors(status: JobStatus, isAssessment?: boolean) {
+export function getJobStatusColors(status: JobStatus, isAssessment?: boolean, jobType?: JobType) {
   // Assessment jobs get special styling regardless of status
   if (isAssessment) {
     return {
       bg: 'bg-status-assessment',
       text: 'text-status-assessment-foreground',
       border: 'border-status-assessment/20'
+    };
+  }
+  
+  // Time & Materials jobs get special styling when scheduled
+  if (jobType === 'time_and_materials' && status === 'Scheduled') {
+    return {
+      bg: 'bg-status-time-materials',
+      text: 'text-status-time-materials-foreground',
+      border: 'border-status-time-materials/20'
     };
   }
   

@@ -43,6 +43,11 @@ All colors MUST be HSL.
     /* Job Status semantic tokens */
     --status-scheduled: 217 91% 60%; /* Blue */
     --status-scheduled-foreground: 210 40% 98%;
+    
+    /* Time & Materials Job semantic tokens */
+    --status-time-materials: 280 100% 70%; /* Purple/Magenta */
+    --status-time-materials-foreground: 210 40% 98%;
+    
     --status-in-progress: 43 96% 56%; /* Yellow */
     --status-in-progress-foreground: 25 95% 15%;
     --status-completed: 142.1 70.6% 45.3%; /* Green */
