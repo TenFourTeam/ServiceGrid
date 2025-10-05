@@ -77,9 +77,6 @@ export function BusinessSwitcher({ businessId, className = "" }: BusinessSwitche
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="font-medium truncate">{userBusiness.name}</span>
-                  {businessId === userBusiness.id && (
-                    <Badge variant="default" className="text-xs">Active</Badge>
-                  )}
                 </div>
                 <div className="text-xs text-muted-foreground flex items-center gap-1">
                   {userBusiness.role === 'owner' ? (
