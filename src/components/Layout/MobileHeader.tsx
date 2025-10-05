@@ -9,6 +9,7 @@ import BusinessLogo from "@/components/BusinessLogo";
 import { SignOutButton } from "@/components/Auth/SignOutButton";
 import { Separator } from "@/components/ui/separator";
 import { BusinessSwitcher } from "@/components/Layout/BusinessSwitcher";
+import { useIsPhone } from "@/hooks/use-phone";
 
 interface MobileHeaderProps {
   title?: string;
@@ -36,6 +37,7 @@ export default function MobileHeader({ title }: MobileHeaderProps) {
   const { businessName, businessLogoUrl, businessLightLogoUrl, businessId, role, business } = useBusinessContext();
   const { user } = useUser();
   const { data: profile } = useProfile();
+  const isPhone = useIsPhone();
 
   // Filter items based on user role
   const visibleCoreItems = coreNavItems.filter(item => role === 'owner' || item.workerAccess);
@@ -64,12 +66,15 @@ export default function MobileHeader({ title }: MobileHeaderProps) {
           </div>
         </div>
 
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <Menu className="h-5 w-5" />
-            </Button>
-          </SheetTrigger>
+        <div className="flex items-center gap-2">
+          {!isPhone && <BusinessSwitcher businessId={businessId} />}
+          
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
           <SheetContent side="right">
             <div className="flex flex-col h-full">
               <div className="space-y-4">
@@ -184,9 +189,10 @@ export default function MobileHeader({ title }: MobileHeaderProps) {
             </div>
           </SheetContent>
         </Sheet>
+        </div>
       </div>
       
-      <BusinessSwitcher businessId={businessId} className="w-full" />
+      {isPhone && <BusinessSwitcher businessId={businessId} className="w-full" />}
     </header>
   );
 }
