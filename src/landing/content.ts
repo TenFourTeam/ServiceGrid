@@ -9,7 +9,7 @@ export const content = {
       title: "Schedule, quote, and invoice without the back-and-forth",
       subtitle:
         "ServiceGrid keeps your day moving: drag-and-drop scheduling, one-click quotes, and instant payments in a single lightweight app.",
-      primaryCta: { label: "Try for free", href: "#" },
+      primaryCta: { label: "Try for free (no credit card required)", href: "#" },
       secondaryCta: { label: "", href: "#" },
     },
     B: {
@@ -17,7 +17,7 @@ export const content = {
       title: "Your lawn routes, quotes, and cashflow—on autopilot",
       subtitle:
         "Stop juggling tools. See today’s work, send prices clients accept, and get paid faster—without extra clicks.",
-      primaryCta: { label: "Try for free", href: "#" },
+      primaryCta: { label: "Try for free (no credit card required)", href: "#" },
       secondaryCta: { label: "", href: "#" },
     },
   },
@@ -102,8 +102,8 @@ export const content = {
   ],
   cta: {
     heading: "Ready to run on autopilot?",
-    primaryA: { label: "Try for free", href: "#" },
-    primaryB: { label: "Try for free", href: "#" },
+    primaryA: { label: "Try for free (no credit card required)", href: "#" },
+    primaryB: { label: "Try for free (no credit card required)", href: "#" },
     subcopy: "No credit card required",
   },
 } as const;

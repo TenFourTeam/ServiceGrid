@@ -19,7 +19,7 @@ export function TopNav() {
             </SignInButton>
             <SignUpButton mode="modal" forceRedirectUrl="/calendar">
               <Button variant="primary" size="sm" className="hover-scale attention-ring [--ring:var(--brand-600)] text-xs sm:text-sm px-2 sm:px-3">
-                <span className="hidden xs:inline">Try for free</span>
+                <span className="hidden xs:inline">Try for free (no credit card required)</span>
                 <span className="xs:hidden">Try free</span>
               </Button>
             </SignUpButton>
