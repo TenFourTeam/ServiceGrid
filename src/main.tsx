@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import './index.css';
@@ -23,89 +23,47 @@ function ErrorScreen({ message }: { message: string }) {
   return <div style={{ padding: 24 }}>Auth configuration error: {message}</div>;
 }
 
-function Boot() {
-  const [state, setState] = useState<{
-    key: string | null;
-    error: string | null;
-    isLoading: boolean;
-  }>({
-    key: null,
-    error: null,
-    isLoading: true
-  });
-
-  useEffect(() => {
-    let mounted = true;
-    let hasRun = false; // Prevent multiple runs
-    
-    const fetchClerkKey = async () => {
-      if (hasRun) return; // Prevent duplicate calls
-      hasRun = true;
-      
-      try {
-        const res = await fetch('https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/clerk-publishable-key');
-        
-        if (!res.ok) {
-          let msg = 'Failed to load Clerk key';
-          try { 
-            const j = await res.json(); 
-            if (j?.error) msg = j.error; 
-          } catch {}
-          throw new Error(msg);
-        }
-        
-        const data = await res.json();
-        const fetchedKey = data.publishableKey;
-        
-        if (!fetchedKey) {
-          throw new Error('Missing authentication configuration');
-        }
-        
-        if (mounted) {
-          setState(prev => {
-            // Only update if we don't already have a key
-            if (prev.key) return prev;
-            return { key: fetchedKey, error: null, isLoading: false };
-          });
-        }
-      } catch (e: Error | unknown) {
-        if (mounted) {
-          setState(prev => {
-            // Only update if we don't already have a key or error
-            if (prev.key || prev.error) return prev;
-            return { key: null, error: (e instanceof Error ? e.message : null) || 'Failed to load Clerk key', isLoading: false };
-          });
-        }
-      }
-    };
-
-    fetchClerkKey();
-
-    return () => {
-      mounted = false;
-    };
-  }, []); // Empty dependency array ensures this runs only once
-
-  if (state.isLoading) {
-    return <LoadingScreen />;
-  }
-
-  if (state.error) {
-    return <ErrorScreen message={state.error} />;
-  }
-
-  if (!state.key) {
-    return <ErrorScreen message="Missing authentication configuration" />;
-  }
-
-  return <App clerkKey={state.key} />;
-}
-
 const rootElement = document.getElementById('root')!;
+const root = createRoot(rootElement);
 
-// Use a global flag to prevent multiple root creations during HMR
-if (!(window as any).__root__) {
-  (window as any).__root__ = createRoot(rootElement);
+// Fetch Clerk key at module level to avoid React state-driven re-renders
+let hasStarted = false;
+
+async function initializeApp() {
+  // Prevent multiple initializations
+  if (hasStarted) return;
+  hasStarted = true;
+
+  // Show loading screen immediately
+  root.render(<LoadingScreen />);
+
+  try {
+    const res = await fetch('https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/clerk-publishable-key');
+    
+    if (!res.ok) {
+      let msg = 'Failed to load Clerk key';
+      try { 
+        const j = await res.json(); 
+        if (j?.error) msg = j.error; 
+      } catch {}
+      throw new Error(msg);
+    }
+    
+    const data = await res.json();
+    const clerkKey = data.publishableKey;
+    
+    if (!clerkKey) {
+      throw new Error('Missing authentication configuration');
+    }
+
+    // Render app with Clerk key - this happens only once
+    root.render(<App clerkKey={clerkKey} />);
+    
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to load authentication configuration';
+    root.render(<ErrorScreen message={message} />);
+  }
 }
 
-(window as any).__root__.render(<Boot />);
+// Start initialization
+initializeApp();
