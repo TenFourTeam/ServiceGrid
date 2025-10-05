@@ -1,5 +1,5 @@
 import React from 'react';
-import { createRoot } from 'react-dom/client';
+import { createRoot, Root } from 'react-dom/client';
 import App from './App';
 import './index.css';
 import './i18n/config';
@@ -23,18 +23,31 @@ function ErrorScreen({ message }: { message: string }) {
   return <div style={{ padding: 24 }}>Auth configuration error: {message}</div>;
 }
 
-const rootElement = document.getElementById('root')!;
-const root = createRoot(rootElement);
+// Store root instance globally to persist across HMR updates
+declare global {
+  interface Window {
+    __APP_ROOT__?: Root;
+    __CLERK_KEY__?: string;
+  }
+}
 
-// Fetch Clerk key at module level to avoid React state-driven re-renders
-let hasStarted = false;
+const rootElement = document.getElementById('root')!;
+
+// Get or create root - reuse existing root to prevent duplicate ClerkProviders
+if (!window.__APP_ROOT__) {
+  window.__APP_ROOT__ = createRoot(rootElement);
+}
+
+const root = window.__APP_ROOT__;
 
 async function initializeApp() {
-  // Prevent multiple initializations
-  if (hasStarted) return;
-  hasStarted = true;
+  // If we already have the Clerk key cached, use it immediately
+  if (window.__CLERK_KEY__) {
+    root.render(<App clerkKey={window.__CLERK_KEY__} />);
+    return;
+  }
 
-  // Show loading screen immediately
+  // Show loading screen
   root.render(<LoadingScreen />);
 
   try {
@@ -56,7 +69,10 @@ async function initializeApp() {
       throw new Error('Missing authentication configuration');
     }
 
-    // Render app with Clerk key - this happens only once
+    // Cache the key globally
+    window.__CLERK_KEY__ = clerkKey;
+
+    // Render app with Clerk key
     root.render(<App clerkKey={clerkKey} />);
     
   } catch (error) {
@@ -67,3 +83,11 @@ async function initializeApp() {
 
 // Start initialization
 initializeApp();
+
+// Handle HMR (Hot Module Replacement) cleanup
+if (import.meta.hot) {
+  import.meta.hot.accept(() => {
+    console.log('[HMR] Module reloaded, re-rendering with cached key');
+    initializeApp();
+  });
+}
