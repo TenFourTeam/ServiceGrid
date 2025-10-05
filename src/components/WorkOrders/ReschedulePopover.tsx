@@ -43,9 +43,13 @@ export default function ReschedulePopover({ job, onDone, asDropdownItem = false 
       starts.setHours(h || 0, m || 0, 0, 0);
       const ends = addMinutes(starts, durationMins);
 
-      const { error } = await authApi.invoke("jobs?id=" + job.id, {
-        method: "PATCH",
-        body: { startsAt: starts.toISOString(), endsAt: ends.toISOString() },
+      const { error } = await authApi.invoke('jobs-crud', {
+        method: "PUT",
+        body: { 
+          id: job.id,
+          startsAt: starts.toISOString(), 
+          endsAt: ends.toISOString() 
+        },
         toast: {
           success: t('workOrders.reschedule.messages.updated'),
           loading: t('workOrders.reschedule.title'),
@@ -74,9 +78,13 @@ export default function ReschedulePopover({ job, onDone, asDropdownItem = false 
     try {
       setSubmitting(true);
       
-      const { error } = await authApi.invoke("jobs?id=" + job.id, {
-        method: "PATCH",
-        body: { startsAt: null, endsAt: null },
+      const { error } = await authApi.invoke('jobs-crud', {
+        method: "PUT",
+        body: { 
+          id: job.id,
+          startsAt: null, 
+          endsAt: null 
+        },
         toast: {
           success: t('workOrders.reschedule.messages.unscheduled'),
           loading: t('workOrders.reschedule.unschedule'),
