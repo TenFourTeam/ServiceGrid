@@ -101,5 +101,11 @@ function Boot() {
   return <App clerkKey={state.key} />;
 }
 
-const root = document.getElementById('root')!;
-createRoot(root).render(<Boot />);
+const rootElement = document.getElementById('root')!;
+
+// Use a global flag to prevent multiple root creations during HMR
+if (!(window as any).__root__) {
+  (window as any).__root__ = createRoot(rootElement);
+}
+
+(window as any).__root__.render(<Boot />);
