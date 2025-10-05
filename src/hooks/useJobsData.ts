@@ -42,8 +42,8 @@ export function useJobsData(businessId?: string, opts?: UseJobsDataOptions) {
   const query = useQuery({
     queryKey,
     enabled,
-    staleTime: 0, // Always consider data stale when business changes
-    refetchOnMount: 'always', // Always refetch on mount
+    staleTime: 30000, // 30 seconds - allow optimistic updates to settle
+    refetchOnMount: true, // Refetch on mount but not aggressively
     queryFn: async () => {
       console.log("[useJobsData] DEBUG - Starting fetch with context:", {
         effectiveBusinessId,
@@ -103,7 +103,10 @@ export function useJobsData(businessId?: string, opts?: UseJobsDataOptions) {
         table: 'jobs' 
       }, (payload) => {
         console.log("[useJobsData] Realtime jobs change:", payload);
-        invalidationHelpers.jobs(queryClient, effectiveBusinessId);
+        // Delay invalidation to allow optimistic updates to settle
+        setTimeout(() => {
+          invalidationHelpers.jobs(queryClient, effectiveBusinessId);
+        }, 200);
       })
       .on('postgres_changes', { 
         event: '*', 
@@ -111,7 +114,10 @@ export function useJobsData(businessId?: string, opts?: UseJobsDataOptions) {
         table: 'job_assignments' 
       }, (payload) => {
         console.log("[useJobsData] Realtime job_assignments change:", payload);
-        invalidationHelpers.jobs(queryClient, effectiveBusinessId);
+        // Delay invalidation to allow optimistic updates to settle
+        setTimeout(() => {
+          invalidationHelpers.jobs(queryClient, effectiveBusinessId);
+        }, 200);
       })
       .subscribe();
 

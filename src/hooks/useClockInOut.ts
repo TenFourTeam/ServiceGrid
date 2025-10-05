@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@/queries/keys";
+import { queryKeys, invalidationHelpers } from "@/queries/keys";
 import { toast } from "sonner";
 import { useAuthApi } from "@/hooks/useAuthApi";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
@@ -7,7 +7,7 @@ import { Job } from "@/types";
 
 export function useClockInOut() {
   const queryClient = useQueryClient();
-  const { businessId } = useBusinessContext();
+  const { businessId, userId } = useBusinessContext();
   const authApi = useAuthApi();
 
   const clockInOut = useMutation({
@@ -37,7 +37,7 @@ export function useClockInOut() {
     },
     onMutate: async ({ jobId, isClockingIn }) => {
       // Use the correct query key with businessId
-      const queryKey = queryKeys.data.jobs(businessId || '');
+      const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
       
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey });
@@ -71,8 +71,12 @@ export function useClockInOut() {
     onSuccess: (data, variables) => {
       const { isClockingIn } = variables;
       
-      // Don't invalidate immediately - let optimistic update persist
-      // The data should already be up to date from the optimistic update
+      // Delayed invalidation to sync with backend without disrupting optimistic update
+      setTimeout(() => {
+        if (businessId) {
+          invalidationHelpers.jobs(queryClient, businessId);
+        }
+      }, 2000);
       
       toast.success(isClockingIn ? "Job Started - Time tracking started" : "Job Stopped - Time tracking stopped");
     },
