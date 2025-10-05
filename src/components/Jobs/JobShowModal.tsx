@@ -611,14 +611,14 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
           {isMobile ? (
             <div className="flex flex-col gap-2">
               {/* Time tracking actions first */}
-              {job.jobType === 'time_and_materials' && !job.isClockedIn && (
+              {job.jobType === 'time_and_materials' && (
                 <Button
                   variant="outline"
-                  onClick={() => clockInOut({ jobId: job.id, isClockingIn: true })}
+                  onClick={() => clockInOut({ jobId: job.id, isClockingIn: !job.isClockedIn })}
                   disabled={isClockingInOut}
                   className="w-full"
                 >
-                  {isClockingInOut ? t('workOrders.modal.starting') : t('workOrders.modal.startJob')}
+                  {isClockingInOut ? (job.isClockedIn ? 'Stopping...' : t('workOrders.modal.starting')) : (job.isClockedIn ? 'Stop Job' : t('workOrders.modal.startJob'))}
                 </Button>
               )}
               
@@ -727,16 +727,16 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                     size="sm"
                     disabled={isSendingConfirmation}
                   >
-                    {isSendingConfirmation ? 'Sending...' : 'Send Confirmation'}
+                  {isSendingConfirmation ? 'Sending...' : 'Send Confirmation'}
                   </Button>
-                  {job.jobType === 'time_and_materials' && !job.isClockedIn && (
+                  {job.jobType === 'time_and_materials' && (
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => clockInOut({ jobId: job.id, isClockingIn: true })}
+                      onClick={() => clockInOut({ jobId: job.id, isClockingIn: !job.isClockedIn })}
                       disabled={isClockingInOut}
                     >
-                      {isClockingInOut ? t('workOrders.modal.starting') : t('workOrders.modal.startJob')}
+                      {isClockingInOut ? (job.isClockedIn ? 'Stopping...' : t('workOrders.modal.starting')) : (job.isClockedIn ? 'Stop Job' : t('workOrders.modal.startJob'))}
                     </Button>
                   )}
                   {role === 'owner' && (

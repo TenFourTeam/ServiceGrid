@@ -19,7 +19,6 @@ import { supabase } from '@/integrations/supabase/client';
 import JobShowModal from '@/components/Jobs/JobShowModal';
 
 import { getJobStatusColors, canDragJob, canResizeJob, validateJobTiming, checkJobTimeConflict } from '@/utils/jobStatus';
-import { useJobStatusManager } from '@/hooks/useJobStatusManager';
 const START_ANCHOR_HOUR = 5; // visual start at 5:00
 const TOTAL_MIN = 24 * 60;
 function dayKey(d: Date) {
@@ -49,9 +48,6 @@ export function WeekCalendar({
   const { data: customers } = useCustomersData();
   const queryClient = useQueryClient();
   const isPhone = useIsPhone();
-  
-  // Initialize automatic job status management
-  const { checkAndUpdateJobStatuses } = useJobStatusManager();
   
   const [newJobOpen, setNewJobOpen] = useState(false);
   const [pendingSlot, setPendingSlot] = useState<{ start: Date; end: Date } | null>(null);
@@ -172,11 +168,9 @@ export function WeekCalendar({
   useEffect(() => {
     const id = setInterval(() => {
       setNow(new Date());
-      // Trigger status updates when time changes
-      checkAndUpdateJobStatuses();
     }, 60_000);
     return () => clearInterval(id);
-  }, [checkAndUpdateJobStatuses]);
+  }, []);
   function isSameDay(a: Date, b: Date) {
     return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
   }
