@@ -683,7 +683,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                           )}
                           <div className="text-xs leading-tight mt-0.5 truncate ml-2.5">
                             <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-current/20">
-                              {displayMode === 'scheduled' || displayMode === 'combined' ? 'Scheduled' : j.status}
+                              {j.status}
                             </span>
                           </div>
                           {/* Resize handle - only show if resizable */}

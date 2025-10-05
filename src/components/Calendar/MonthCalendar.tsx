@@ -134,7 +134,6 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
                           {customersMap.get(j.customerId) && (
                              <span className="opacity-70"> — {(customersMap.get(j.customerId) ?? 'Customer') as string}</span>
                           )}
-                          {displayMode === 'combined' && <span className="text-[10px] opacity-60"> (S)</span>}
                         </button>
                       </li>
                     );
