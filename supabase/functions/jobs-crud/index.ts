@@ -197,7 +197,7 @@ Deno.serve(async (req) => {
         return json({ error: 'Invalid JSON in request body' }, { status: 400 });
       }
       
-      const { id, title, status, startsAt, endsAt, address, notes, photos, isClockedIn, clockInTime, clockOutTime, isAssessment, requestId, quoteId } = body;
+      const { id, title, status, startsAt, endsAt, address, notes, photos, isClockedIn, clockInTime, clockOutTime, isAssessment, requestId, quoteId, jobType } = body;
 
       const updateData: any = {};
       if (title !== undefined) updateData.title = title;
@@ -213,6 +213,7 @@ Deno.serve(async (req) => {
       if (isAssessment !== undefined) updateData.is_assessment = isAssessment;
       if (requestId !== undefined) updateData.request_id = requestId;
       if (quoteId !== undefined) updateData.quote_id = quoteId;
+      if (jobType !== undefined) updateData.job_type = jobType;
 
       // Auto-set ends_at for completed jobs if not provided
       if (status === 'Completed' && endsAt === undefined) {
