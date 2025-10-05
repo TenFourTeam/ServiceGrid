@@ -105,10 +105,7 @@ export default function AppLayout({ children, title, businessId }: { children: R
           <header className="mb-4 md:mb-6 min-w-0">
               <div className="flex items-center justify-between min-w-0">
                 <h1 className="text-xl md:text-2xl font-bold truncate min-w-0">{title ?? 'Dashboard'}</h1>
-                <div className="flex items-center gap-2">
-                  <BusinessSwitcher businessId={businessId} />
-                  <RoleIndicator size="default" />
-                </div>
+                <BusinessSwitcher businessId={businessId} />
               </div>
           </header>
           <div className="flex-1 min-w-0">
