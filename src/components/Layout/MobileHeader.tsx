@@ -13,6 +13,7 @@ import { useIsPhone } from "@/hooks/use-phone";
 
 interface MobileHeaderProps {
   title?: string;
+  businessId?: string;
 }
 
 // Core navigation items (Group 1)
@@ -31,10 +32,10 @@ const businessNavItems = [
   { title: "Invoices", url: "/invoices", icon: Receipt, workerAccess: false },
 ];
 
-export default function MobileHeader({ title }: MobileHeaderProps) {
+export default function MobileHeader({ title, businessId }: MobileHeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { businessName, businessLogoUrl, businessLightLogoUrl, businessId, role, business } = useBusinessContext();
+  const { businessName, businessLogoUrl, businessLightLogoUrl, role, business } = useBusinessContext(businessId);
   const { user } = useUser();
   const { data: profile } = useProfile();
   const isPhone = useIsPhone();

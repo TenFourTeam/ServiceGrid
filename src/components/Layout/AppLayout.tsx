@@ -63,7 +63,7 @@ export default function AppLayout({ children, title, businessId }: { children: R
   if (isMobile) {
     return (
       <div className="min-h-screen w-full max-w-full overflow-x-hidden flex flex-col">
-        <MobileHeader title={title} />
+        <MobileHeader title={title} businessId={businessId} />
         <SubscriptionBanner />
         <main className="flex-1 flex flex-col min-h-0 max-w-full overflow-x-hidden pb-20">
           <div className="flex-1 max-w-full px-4">
