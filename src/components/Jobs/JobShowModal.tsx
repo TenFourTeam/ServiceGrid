@@ -215,9 +215,12 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
         };
       });
       
-      const { error } = await authApi.invoke(`jobs?id=${job.id}`, {
-        method: 'PATCH',
-        body: { status: 'Completed' },
+      const { error } = await authApi.invoke('jobs-crud', {
+        method: 'PUT',
+        body: { 
+          id: job.id,
+          status: 'Completed' 
+        },
         toast: {
           success: t('workOrders.modal.complete'),
           loading: job.isClockedIn ? 'Completing & clocking out...' : t('workOrders.modal.completing'),
@@ -320,9 +323,10 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
         });
         
         // Update job with new photos
-        const { error: updateError } = await authApi.invoke(`jobs?id=${job.id}`, {
-          method: 'PATCH',
+        const { error: updateError } = await authApi.invoke('jobs-crud', {
+          method: 'PUT',
           body: {
+            id: job.id,
             photos: allPhotos,
           }
         });
@@ -523,9 +527,12 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                 if (notesTimer.current) window.clearTimeout(notesTimer.current);
                 notesTimer.current = window.setTimeout(async ()=>{
                     try {
-                      const { error } = await authApi.invoke(`jobs?id=${job.id}`, {
-                        method: 'PATCH',
-                        body: { notes: val }
+                      const { error } = await authApi.invoke('jobs-crud', {
+                        method: 'PUT',
+                        body: { 
+                          id: job.id,
+                          notes: val 
+                        }
                       });
                       
                       if (!error && businessId) {
@@ -673,8 +680,9 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                     variant="destructive" 
                     onClick={async () => {
                       try {
-                        const { error } = await authApi.invoke(`jobs?id=${job.id}`, { 
+                        const { error } = await authApi.invoke('jobs-crud', { 
                           method: 'DELETE',
+                          body: { id: job.id },
                           toast: {
                             success: t('workOrders.modal.delete'),
                             loading: t('workOrders.modal.delete'),
@@ -770,8 +778,9 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                       )}
                       <Button variant="destructive" size="sm" onClick={async () => {
                         try {
-                          const { error } = await authApi.invoke(`jobs?id=${job.id}`, { 
+                          const { error } = await authApi.invoke('jobs-crud', { 
                             method: 'DELETE',
+                            body: { id: job.id },
                             toast: {
                               success: t('workOrders.modal.delete'),
                               loading: t('workOrders.modal.delete'),
@@ -844,9 +853,12 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
               // Find the selected quote and store it optimistically
               const selectedQuote = quotes.find(q => q.id === quoteId);
               
-              const { error: linkError } = await authApi.invoke(`jobs?id=${job.id}`, {
-                method: 'PATCH',
-                body: { quoteId }
+              const { error: linkError } = await authApi.invoke('jobs-crud', {
+                method: 'PUT',
+                body: { 
+                  id: job.id,
+                  quoteId 
+                }
               });
               
               if (linkError) {
