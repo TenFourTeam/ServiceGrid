@@ -36,7 +36,7 @@ export function useOnboardingState(): OnboardingState {
   // Direct query consumption - no context layer
   const { data: profile, isLoading: profileLoading, isFetching: profileFetching } = useProfile();
   const { count: customersCount, isLoading: customersLoading } = useCustomersData();
-  const { count: jobsCount, isLoading: jobsLoading } = useJobsData();
+  const { count: jobsCount, isLoading: jobsLoading } = useJobsData(businessId);
   const { count: quotesCount, isLoading: quotesLoading } = useQuotesData();
   const { data: stripeStatus, isLoading: stripeLoading } = useStripeConnectStatus();
   const { data: subscription, isLoading: subscriptionLoading } = useSubscriptionStatus();

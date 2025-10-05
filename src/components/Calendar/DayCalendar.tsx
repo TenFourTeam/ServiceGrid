@@ -1,18 +1,18 @@
 import { useMemo, useState } from "react";
 import { endOfDay, startOfDay } from "date-fns";
 import { useJobsData, useCustomersData } from "@/queries/unified";
+import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { formatMoney } from "@/utils/format";
 import { safeCreateDate, filterJobsWithValidDates } from "@/utils/validation";
 import JobShowModal from "@/components/Jobs/JobShowModal";
 import { JobBottomModal } from "@/components/Jobs/JobBottomModal";
 import type { Job } from "@/types";
-import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { getJobStatusColors } from "@/utils/jobStatus";
 
 export default function DayCalendar({ date, displayMode = 'scheduled', selectedMemberId }: { date: Date; displayMode?: 'scheduled' | 'clocked' | 'combined'; selectedMemberId?: string | null; }) {
-  const { data: allJobs } = useJobsData();
+  const { businessId, role } = useBusinessContext();
+  const { data: allJobs } = useJobsData(businessId);
   const { data: customers } = useCustomersData();
-  const { role } = useBusinessContext();
   
   const dayStart = startOfDay(date);
   const dayEnd = endOfDay(date);

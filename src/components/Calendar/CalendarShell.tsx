@@ -28,9 +28,9 @@ export default function CalendarShell({
   const [view, setView] = useState<"month" | "week" | "day">("week");
   const [displayMode, setDisplayMode] = useState<CalendarDisplayMode>('scheduled');
   const [date, setDate] = useState<Date>(startOfDay(new Date()));
-  const { data: jobs, refetch: refetchJobs } = useJobsData();
-  const { data: businessMembers } = useBusinessMembersData();
   const { role, userId, businessId, businessName } = useBusinessContext(routeBusinessId);
+  const { data: jobs, refetch: refetchJobs } = useJobsData(businessId);
+  const { data: businessMembers } = useBusinessMembersData();
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const isMobile = useIsMobile();
   const isPhone = useIsPhone();

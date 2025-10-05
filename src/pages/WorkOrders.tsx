@@ -41,7 +41,8 @@ const statusColors: Record<string, string> = {
 };
 
 function useFilteredJobs() {
-  const { data: jobs = [] } = useJobsData();
+  const { businessId } = useBusinessContext();
+  const { data: jobs = [] } = useJobsData(businessId);
   const { data: customers = [] } = useCustomersData();
   const { data: invoices = [] } = useInvoicesData();
   const [q, setQ] = useState('');

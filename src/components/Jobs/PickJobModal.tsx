@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useJobsData } from '@/hooks/useJobsData';
 import { useCustomersData } from '@/queries/unified';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { Loader2 } from "lucide-react";
 import { formatMoney } from '@/utils/format';
 
@@ -17,7 +18,8 @@ interface PickJobModalProps {
 }
 
 export default function PickJobModal({ open, onOpenChange, onSelect, customerId }: PickJobModalProps) {
-  const { data: jobs } = useJobsData();
+  const { businessId } = useBusinessContext();
+  const { data: jobs } = useJobsData(businessId);
   const { data: customers } = useCustomersData();
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);

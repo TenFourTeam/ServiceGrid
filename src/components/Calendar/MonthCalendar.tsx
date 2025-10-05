@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react";
 import { addDays, endOfMonth, endOfWeek, format, isSameDay, isSameMonth, parseISO, startOfMonth, startOfWeek } from "date-fns";
 import { useJobsData, useCustomersData } from "@/queries/unified";
+import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { formatMoney } from "@/utils/format";
 import { safeCreateDate, safeToISOString, filterJobsWithValidDates } from "@/utils/validation";
 import JobShowModal from "@/components/Jobs/JobShowModal";
 import { JobBottomModal } from "@/components/Jobs/JobBottomModal";
 import type { Job } from "@/types";
-import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { getJobStatusColors } from "@/utils/jobStatus";
 
 function useMonthGrid(date: Date) {
@@ -19,9 +19,9 @@ function useMonthGrid(date: Date) {
 
 export default function MonthCalendar({ date, onDateChange, displayMode = 'scheduled', selectedMemberId }: { date: Date; onDateChange: (d: Date) => void; displayMode?: 'scheduled' | 'clocked' | 'combined'; selectedMemberId?: string | null; }) {
   const { start, end, days } = useMonthGrid(date);
-  const { data: allJobs } = useJobsData();
+  const { businessId, role } = useBusinessContext();
+  const { data: allJobs } = useJobsData(businessId);
   const { data: customers } = useCustomersData();
-  const { role } = useBusinessContext();
   
   
   const jobs = useMemo(() => {

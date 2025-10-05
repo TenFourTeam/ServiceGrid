@@ -13,17 +13,26 @@ interface UseJobsDataOptions {
 
 /**
  * Edge Function jobs hook - unified Clerk authentication
+ * @param businessId - Explicit businessId to fetch jobs for (bypasses context)
+ * @param opts - Additional options like enabled flag
  */
-export function useJobsData(opts?: UseJobsDataOptions) {
-  const { isAuthenticated, businessId, userId, role } = useBusinessContext();
+export function useJobsData(businessId?: string, opts?: UseJobsDataOptions) {
+  const context = useBusinessContext();
   const authApi = useAuthApi();
-  const enabled = isAuthenticated && !!businessId && (opts?.enabled ?? true);
+  
+  // Use provided businessId or fall back to context
+  const effectiveBusinessId = businessId || context.businessId;
+  const userId = context.userId;
+  const role = context.role;
+  const isAuthenticated = context.isAuthenticated;
+  
+  const enabled = isAuthenticated && !!effectiveBusinessId && (opts?.enabled ?? true);
   const queryClient = useQueryClient();
 
-  const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
+  const queryKey = queryKeys.data.jobs(effectiveBusinessId || '', userId || '');
   console.log("[useJobsData] DEBUG - Query setup:", {
     queryKey,
-    businessId,
+    effectiveBusinessId,
     userId,
     role,
     enabled,
@@ -37,7 +46,7 @@ export function useJobsData(opts?: UseJobsDataOptions) {
     refetchOnMount: 'always', // Always refetch on mount
     queryFn: async () => {
       console.log("[useJobsData] DEBUG - Starting fetch with context:", {
-        businessId,
+        effectiveBusinessId,
         userId,
         role,
         timestamp: new Date().toISOString()
@@ -46,7 +55,7 @@ export function useJobsData(opts?: UseJobsDataOptions) {
       const { data, error } = await authApi.invoke('jobs-crud', {
         method: 'GET',
         headers: {
-          'x-business-id': businessId
+          'x-business-id': effectiveBusinessId
         }
       });
       
@@ -74,17 +83,17 @@ export function useJobsData(opts?: UseJobsDataOptions) {
 
   // Force refetch when business changes
   useEffect(() => {
-    if (businessId && isAuthenticated && enabled) {
-      console.log("[useJobsData] Business ID changed, refetching jobs for:", businessId);
+    if (effectiveBusinessId && isAuthenticated && enabled) {
+      console.log("[useJobsData] Business ID changed, refetching jobs for:", effectiveBusinessId);
       query.refetch();
     }
-  }, [businessId]);
+  }, [effectiveBusinessId]);
 
   // Realtime subscription for instant updates
   useEffect(() => {
-    if (!isAuthenticated || !businessId) return;
+    if (!isAuthenticated || !effectiveBusinessId) return;
 
-    console.log("[useJobsData] Setting up realtime subscription for businessId:", businessId);
+    console.log("[useJobsData] Setting up realtime subscription for businessId:", effectiveBusinessId);
     
     const channel = supabase
       .channel('jobs-realtime')
@@ -94,7 +103,7 @@ export function useJobsData(opts?: UseJobsDataOptions) {
         table: 'jobs' 
       }, (payload) => {
         console.log("[useJobsData] Realtime jobs change:", payload);
-        invalidationHelpers.jobs(queryClient, businessId);
+        invalidationHelpers.jobs(queryClient, effectiveBusinessId);
       })
       .on('postgres_changes', { 
         event: '*', 
@@ -102,7 +111,7 @@ export function useJobsData(opts?: UseJobsDataOptions) {
         table: 'job_assignments' 
       }, (payload) => {
         console.log("[useJobsData] Realtime job_assignments change:", payload);
-        invalidationHelpers.jobs(queryClient, businessId);
+        invalidationHelpers.jobs(queryClient, effectiveBusinessId);
       })
       .subscribe();
 
@@ -110,7 +119,7 @@ export function useJobsData(opts?: UseJobsDataOptions) {
       console.log("[useJobsData] Cleaning up realtime subscription");
       supabase.removeChannel(channel);
     };
-  }, [isAuthenticated, businessId, queryClient]);
+  }, [isAuthenticated, effectiveBusinessId, queryClient]);
 
   return {
     data: query.data?.jobs ?? [],

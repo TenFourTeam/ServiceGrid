@@ -48,11 +48,11 @@ export default function InvoiceModal({
   initialCustomerId,
   onSuccess 
 }: InvoiceModalProps) {
-  const { data: customers = [] } = useCustomersData();
-  const { data: jobs = [] } = useJobsData();
   const isMobile = useIsMobile();
-  const { data: quotes = [] } = useQuotesData();
   const { business, businessName, businessLogoUrl, businessLightLogoUrl, businessId } = useBusinessContext();
+  const { data: customers = [] } = useCustomersData();
+  const { data: jobs = [] } = useJobsData(businessId);
+  const { data: quotes = [] } = useQuotesData();
   const authApi = useAuthApi();
   const queryClient = useQueryClient();
   const recordPaymentMutation = useRecordPayment();

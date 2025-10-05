@@ -18,8 +18,8 @@ interface JobStatusUpdate {
  * Hook that manages automatic job status transitions based on time
  */
 export function useJobStatusManager() {
-  const { data: jobs, refetch } = useJobsData();
   const { businessId, isAuthenticated } = useBusinessContext();
+  const { data: jobs, refetch } = useJobsData(businessId);
   const authApi = useAuthApi();
   const queryClient = useQueryClient();
 
