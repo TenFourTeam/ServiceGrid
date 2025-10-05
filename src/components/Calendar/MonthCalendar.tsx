@@ -65,8 +65,19 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(job as Job);
     }
+    
+    // Calculate columns for overlapping jobs when showing all members
+    if (!selectedMemberId) {
+      const { calculateJobColumns } = require('@/utils/jobOverlap');
+      map.forEach((dayJobs, key) => {
+        if (dayJobs.length > 0) {
+          map.set(key, calculateJobColumns(dayJobs));
+        }
+      });
+    }
+    
     return map;
-  }, [jobs]);
+  }, [jobs, selectedMemberId]);
 
   return (
     <section aria-label="Month grid" className="rounded-lg border overflow-hidden">
@@ -108,66 +119,129 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
                 <span className="font-medium" aria-label={format(d, 'PPPP')}>{format(d, "d")}</span>
               </div>
               <ul className="space-y-1">
-                {visible.flatMap((j) => {
-                  const blocks: JSX.Element[] = [];
+                {(() => {
+                  // Group jobs by time to render overlapping ones together
+                  const groupedJobs: Job[][] = [];
+                  visible.forEach(j => {
+                    const jobWithPos = j as any;
+                    const hasColumnInfo = typeof jobWithPos.column === 'number';
+                    
+                    if (!hasColumnInfo || jobWithPos.column === 0) {
+                      // Start a new group
+                      groupedJobs.push([j]);
+                    } else {
+                      // Add to the last group
+                      if (groupedJobs.length > 0) {
+                        groupedJobs[groupedJobs.length - 1].push(j);
+                      } else {
+                        groupedJobs.push([j]);
+                      }
+                    }
+                  });
                   
-                  // Scheduled time block
-                  if (displayMode === 'scheduled' || displayMode === 'combined') {
-                    const t = safeCreateDate(j.startsAt);
-                    if (!t) return []; // Skip if invalid date
-                    const statusColors = getJobStatusColors(j.status, j.isAssessment, j.jobType);
-                    blocks.push(
-                      <li key={`${j.id}-scheduled`} className="truncate">
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); setActiveJob(j as Job); setOpen(true); }}
-                          className={`w-full truncate rounded px-2 py-1 text-xs border ${statusColors.bg} ${statusColors.text} ${statusColors.border} hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-primary ${displayMode === 'combined' ? 'opacity-60' : ''}`}
-                          aria-label={`Open job ${j.title || 'Job'} at ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
-                        >
-                          <span className={`mr-2 inline-block h-2 w-2 rounded-full align-middle ${j.isAssessment ? 'bg-status-assessment-foreground' : j.status === 'Completed' ? 'bg-success' : 'bg-primary'}`} aria-hidden="true" />
-                          <span className="font-medium">
-                            {t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                          </span>
-                          <span className="mx-1 opacity-70">•</span>
-                          <span className="truncate">{j.title || 'Job'}</span>
-                          {j.isAssessment && <span className="text-[10px] opacity-80 ml-1">(Assessment)</span>}
-                          {customersMap.get(j.customerId) && (
-                             <span className="opacity-70"> — {(customersMap.get(j.customerId) ?? 'Customer') as string}</span>
-                          )}
-                        </button>
+                  return groupedJobs.flatMap((group, groupIdx) => {
+                    // If only one job in group, render normally
+                    if (group.length === 1) {
+                      return group.flatMap((j) => {
+                        const blocks: JSX.Element[] = [];
+                        
+                        // Scheduled time block
+                        if (displayMode === 'scheduled' || displayMode === 'combined') {
+                          const t = safeCreateDate(j.startsAt);
+                          if (!t) return []; // Skip if invalid date
+                          const statusColors = getJobStatusColors(j.status, j.isAssessment, j.jobType);
+                          blocks.push(
+                            <li key={`${j.id}-scheduled`} className="truncate">
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setActiveJob(j as Job); setOpen(true); }}
+                                className={`w-full truncate rounded px-2 py-1 text-xs border ${statusColors.bg} ${statusColors.text} ${statusColors.border} hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-primary ${displayMode === 'combined' ? 'opacity-60' : ''}`}
+                                aria-label={`Open job ${j.title || 'Job'} at ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
+                              >
+                                <span className={`mr-2 inline-block h-2 w-2 rounded-full align-middle ${j.isAssessment ? 'bg-status-assessment-foreground' : j.status === 'Completed' ? 'bg-success' : 'bg-primary'}`} aria-hidden="true" />
+                                <span className="font-medium">
+                                  {t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                                </span>
+                                <span className="mx-1 opacity-70">•</span>
+                                <span className="truncate">{j.title || 'Job'}</span>
+                                {j.isAssessment && <span className="text-[10px] opacity-80 ml-1">(Assessment)</span>}
+                                {customersMap.get(j.customerId) && (
+                                   <span className="opacity-70"> — {(customersMap.get(j.customerId) ?? 'Customer') as string}</span>
+                                )}
+                              </button>
+                            </li>
+                          );
+                        }
+                        
+                        // Clocked time block
+                        if ((displayMode === 'clocked' || displayMode === 'combined') && j.clockInTime && j.clockOutTime) {
+                          const clockStart = safeCreateDate(j.clockInTime);
+                          if (!clockStart) return []; // Skip if invalid date
+                          blocks.push(
+                            <li key={`${j.id}-clocked`} className="truncate">
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setActiveJob(j as Job); setOpen(true); }}
+                                className="w-full truncate rounded px-2 py-1 text-xs border bg-[hsl(var(--clocked-time))] text-[hsl(var(--clocked-time-foreground))] border-[hsl(var(--clocked-time))] hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-primary"
+                                aria-label={`Open worked time for ${j.title || 'Job'} at ${clockStart.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
+                              >
+                                <span className="mr-2 inline-block h-2 w-2 rounded-full bg-white align-middle" aria-hidden="true" />
+                                <span className="font-medium">
+                                  {clockStart.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                                </span>
+                                <span className="mx-1 opacity-70">•</span>
+                                <span className="truncate">{j.title || 'Job'}</span>
+                                {customersMap.get(j.customerId) && (
+                                  <span className="opacity-70"> — {(customersMap.get(j.customerId) ?? 'Customer') as string}</span>
+                                )}
+                                <span className="text-[10px] opacity-80"> (W)</span>
+                              </button>
+                            </li>
+                          );
+                        }
+                        
+                        return blocks;
+                      });
+                    }
+                    
+                    // Multiple overlapping jobs - render in a flex row
+                    return (
+                      <li key={`group-${groupIdx}`} className="flex gap-0.5">
+                        {group.flatMap((j) => {
+                          const jobWithPos = j as any;
+                          const totalCols = jobWithPos.totalColumns || 1;
+                          const widthPercent = Math.floor(100 / totalCols);
+                          
+                          const blocks: JSX.Element[] = [];
+                          
+                          // Scheduled time block
+                          if (displayMode === 'scheduled' || displayMode === 'combined') {
+                            const t = safeCreateDate(j.startsAt);
+                            if (!t) return []; // Skip if invalid date
+                            const statusColors = getJobStatusColors(j.status, j.isAssessment, j.jobType);
+                            blocks.push(
+                              <button
+                                key={`${j.id}-scheduled`}
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setActiveJob(j as Job); setOpen(true); }}
+                                className={`truncate rounded px-1 py-1 text-xs border ${statusColors.bg} ${statusColors.text} ${statusColors.border} hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-primary ${displayMode === 'combined' ? 'opacity-60' : ''}`}
+                                style={{ width: `${widthPercent}%` }}
+                                aria-label={`Open job ${j.title || 'Job'} at ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
+                              >
+                                <span className={`mr-1 inline-block h-2 w-2 rounded-full align-middle ${j.isAssessment ? 'bg-status-assessment-foreground' : j.status === 'Completed' ? 'bg-success' : 'bg-primary'}`} aria-hidden="true" />
+                                <span className="font-medium text-[10px]">
+                                  {t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                                </span>
+                              </button>
+                            );
+                          }
+                          
+                          return blocks;
+                        })}
                       </li>
                     );
-                  }
-                  
-                  // Clocked time block
-                  if ((displayMode === 'clocked' || displayMode === 'combined') && j.clockInTime && j.clockOutTime) {
-                    const clockStart = safeCreateDate(j.clockInTime);
-                    if (!clockStart) return []; // Skip if invalid date
-                    blocks.push(
-                      <li key={`${j.id}-clocked`} className="truncate">
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); setActiveJob(j as Job); setOpen(true); }}
-                          className="w-full truncate rounded px-2 py-1 text-xs border bg-[hsl(var(--clocked-time))] text-[hsl(var(--clocked-time-foreground))] border-[hsl(var(--clocked-time))] hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-primary"
-                          aria-label={`Open worked time for ${j.title || 'Job'} at ${clockStart.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
-                        >
-                          <span className="mr-2 inline-block h-2 w-2 rounded-full bg-white align-middle" aria-hidden="true" />
-                          <span className="font-medium">
-                            {clockStart.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                          </span>
-                          <span className="mx-1 opacity-70">•</span>
-                          <span className="truncate">{j.title || 'Job'}</span>
-                          {customersMap.get(j.customerId) && (
-                            <span className="opacity-70"> — {(customersMap.get(j.customerId) ?? 'Customer') as string}</span>
-                          )}
-                          <span className="text-[10px] opacity-80"> (W)</span>
-                        </button>
-                      </li>
-                    );
-                  }
-                  
-                  return blocks;
-                })}
+                  });
+                })()}
                 {overflow > 0 && (
                   <li className="text-xs opacity-70">+{overflow} more</li>
                 )}

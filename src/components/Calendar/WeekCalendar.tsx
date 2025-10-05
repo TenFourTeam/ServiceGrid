@@ -161,6 +161,17 @@ export function WeekCalendar({
         if (map[key]) map[key].push(j as Job);
       }
     });
+    
+    // Calculate columns for overlapping jobs when showing all members
+    if (!selectedMemberId) {
+      Object.keys(map).forEach(key => {
+        if (map[key].length > 0) {
+          const { calculateJobColumns } = require('@/utils/jobOverlap');
+          map[key] = calculateJobColumns(map[key]);
+        }
+      });
+    }
+    
     return map;
   }, [jobs, selectedMemberId, days]);
   const [activeJob, setActiveJob] = useState<Job | null>(() => selectedJobId ? jobs.find(j => j.id === selectedJobId) as Job ?? null : null);
@@ -649,9 +660,15 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                         const canDrag = canDragJob(j.status, currentTime, startsAt);
                         const canResize = canResizeJob(j.status, currentTime, startsAt, effectiveEndsAt);
                         
+                        // Calculate column-based positioning if job has column info
+                        const jobWithPos = j as any;
+                        const hasColumnInfo = typeof jobWithPos.column === 'number' && typeof jobWithPos.totalColumns === 'number';
+                        const columnWidth = hasColumnInfo ? `${(1 / jobWithPos.totalColumns) * 100}%` : 'calc(100% - 1rem)';
+                        const columnLeft = hasColumnInfo ? `${(jobWithPos.column / jobWithPos.totalColumns) * 100}%` : '0.5rem';
+                        
                         blocks.push(<div
                           key={`${j.id}-scheduled`}
-                          className={`absolute left-2 right-2 rounded-md p-2 select-none transition-all ${
+                          className={`absolute rounded-md p-2 select-none transition-all ${
                             isHighlighted ? 'ring-2 ring-primary/50 scale-[1.02]' : ''
                           } ${
                             statusColors.bg
@@ -667,6 +684,8 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                           style={{
                             top: `${top}%`,
                             height: `${Math.max(height, 4)}%`,
+                            left: columnLeft,
+                            width: columnWidth,
                             zIndex: isHighlighted ? 10 : 1
                           }}
                           onPointerDown={canDrag ? (e) => onDragStart(e, j) : undefined}

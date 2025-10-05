@@ -21,7 +21,7 @@ export default function DayCalendar({ date, displayMode = 'scheduled', selectedM
     // Filter jobs with valid dates first
     const validJobs = filterJobsWithValidDates(allJobs);
     
-    return validJobs
+    let filteredJobs = validJobs
       .filter(j => {
         if (!j.startsAt) return false;
         const jobStart = safeCreateDate(j.startsAt);
@@ -48,6 +48,14 @@ export default function DayCalendar({ date, displayMode = 'scheduled', selectedM
         if (!dateA || !dateB) return 0;
         return dateA.getTime() - dateB.getTime();
       });
+    
+    // Calculate columns for overlapping jobs when showing all members
+    if (!selectedMemberId && filteredJobs.length > 0) {
+      const { calculateJobColumns } = require('@/utils/jobOverlap');
+      filteredJobs = calculateJobColumns(filteredJobs as Job[]);
+    }
+    
+    return filteredJobs;
   }, [allJobs, dayStart, dayEnd, selectedMemberId]);
   
   const customersMap = useMemo(() => new Map(customers.map(c => [c.id, c.name])), [customers]);
@@ -67,7 +75,7 @@ export default function DayCalendar({ date, displayMode = 'scheduled', selectedM
       {jobs.length === 0 && (
         <p className="text-sm opacity-70">No jobs scheduled for this day.</p>
       )}
-      <ul className="space-y-2">
+      <ul className="space-y-2 flex flex-col">
         {jobs.flatMap((j) => {
           const blocks: JSX.Element[] = [];
           
