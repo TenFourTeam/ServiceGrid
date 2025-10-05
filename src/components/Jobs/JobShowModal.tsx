@@ -52,9 +52,18 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
   const { clockInOut, isLoading: isClockingInOut } = useClockInOut();
   const { t } = useLanguage();
   
+  // Read fresh job data from cache to ensure optimistic updates are reflected
+  const cachedJobsData = queryClient.getQueryData<JobsCacheData>(
+    queryKeys.data.jobs(businessId || '', userId || '')
+  );
+  const cachedJob = cachedJobsData?.jobs?.find(j => j.id === job.id);
+  
+  // Use cached job if available (includes optimistic updates), otherwise use prop
+  const displayJob = cachedJob || job;
+  
   useEffect(() => {
-    setLocalNotes(job.notes ?? "");
-  }, [job.id, job.notes]);
+    setLocalNotes(displayJob.notes ?? "");
+  }, [displayJob.id, displayJob.notes]);
 
   // Clear optimistic state when modal closes
   useEffect(() => {
@@ -191,7 +200,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
     
     try {
       // If job is clocked in, clock out first
-      if (job.isClockedIn) {
+      if (displayJob.isClockedIn) {
         await clockInOut({ jobId: job.id, isClockingIn: false });
         // Wait a moment for the clock out to complete
         await new Promise(resolve => setTimeout(resolve, 500));
@@ -223,7 +232,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
         },
         toast: {
           success: t('workOrders.modal.complete'),
-          loading: job.isClockedIn ? 'Completing & clocking out...' : t('workOrders.modal.completing'),
+          loading: displayJob.isClockedIn ? 'Completing & clocking out...' : t('workOrders.modal.completing'),
           error: t('workOrders.modal.complete')
         }
       });
@@ -376,7 +385,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
             </div>
             <div>
               <div className="text-sm text-muted-foreground">{t('workOrders.modal.status')}</div>
-              <div className="font-medium">{job.status}</div>
+              <div className="font-medium">{displayJob.status}</div>
             </div>
             <div>
               <div className="text-sm text-muted-foreground">{t('workOrders.modal.starts')}</div>
@@ -390,11 +399,11 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
               <>
                 <div>
                   <div className="text-sm text-muted-foreground">{t('workOrders.modal.clockIn')}</div>
-                  <div>{job.clockInTime ? formatDateTime(job.clockInTime) : '—'}</div>
+                  <div>{displayJob.clockInTime ? formatDateTime(displayJob.clockInTime) : '—'}</div>
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground">{t('workOrders.modal.clockOut')}</div>
-                  <div>{job.clockOutTime ? formatDateTime(job.clockOutTime) : '—'}</div>
+                  <div>{displayJob.clockOutTime ? formatDateTime(displayJob.clockOutTime) : '—'}</div>
                 </div>
               </>
             )}
@@ -611,14 +620,14 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
           {isMobile ? (
             <div className="flex flex-col gap-2">
               {/* Time tracking actions first */}
-              {job.jobType === 'time_and_materials' && (
+              {displayJob.jobType === 'time_and_materials' && (
                 <Button
                   variant="outline"
-                  onClick={() => clockInOut({ jobId: job.id, isClockingIn: !job.isClockedIn })}
+                  onClick={() => clockInOut({ jobId: job.id, isClockingIn: !displayJob.isClockedIn })}
                   disabled={isClockingInOut}
                   className="w-full"
                 >
-                  {isClockingInOut ? (job.isClockedIn ? 'Stopping...' : t('workOrders.modal.starting')) : (job.isClockedIn ? 'Stop Job' : t('workOrders.modal.startJob'))}
+                  {isClockingInOut ? (displayJob.isClockedIn ? 'Stopping...' : t('workOrders.modal.starting')) : (displayJob.isClockedIn ? 'Stop Job' : t('workOrders.modal.startJob'))}
                 </Button>
               )}
               
@@ -653,12 +662,12 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                   <Button 
                     variant="outline" 
                     onClick={handleCompleteJob}
-                    disabled={job.status === 'Completed' || isCompletingJob || isClockingInOut}
+                    disabled={displayJob.status === 'Completed' || isCompletingJob || isClockingInOut}
                     className="w-full"
                   >
-                    {isCompletingJob ? (job.isClockedIn ? 'Completing & Clocking Out...' : t('workOrders.modal.completing')) : 
-                     job.status === 'Completed' ? t('workOrders.modal.completed') : 
-                     (job.isClockedIn ? 'Complete & Clock Out' : t('workOrders.modal.complete'))}
+                    {isCompletingJob ? (displayJob.isClockedIn ? 'Completing & Clocking Out...' : t('workOrders.modal.completing')) : 
+                     displayJob.status === 'Completed' ? t('workOrders.modal.completed') : 
+                     (displayJob.isClockedIn ? 'Complete & Clock Out' : t('workOrders.modal.complete'))}
                   </Button>
                   
                   {/* Edit action before destructive action */}
@@ -729,14 +738,14 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                   >
                   {isSendingConfirmation ? 'Sending...' : 'Send Confirmation'}
                   </Button>
-                  {job.jobType === 'time_and_materials' && (
+                  {displayJob.jobType === 'time_and_materials' && (
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => clockInOut({ jobId: job.id, isClockingIn: !job.isClockedIn })}
+                      onClick={() => clockInOut({ jobId: job.id, isClockingIn: !displayJob.isClockedIn })}
                       disabled={isClockingInOut}
                     >
-                      {isClockingInOut ? (job.isClockedIn ? 'Stopping...' : t('workOrders.modal.starting')) : (job.isClockedIn ? 'Stop Job' : t('workOrders.modal.startJob'))}
+                      {isClockingInOut ? (displayJob.isClockedIn ? 'Stopping...' : t('workOrders.modal.starting')) : (displayJob.isClockedIn ? 'Stop Job' : t('workOrders.modal.startJob'))}
                     </Button>
                   )}
                   {role === 'owner' && (
