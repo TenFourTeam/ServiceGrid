@@ -398,9 +398,10 @@ function onDragStart(e: React.PointerEvent, job: Job) {
       }
       
       try {
-        const { error } = await authApi.invoke(`jobs?id=${job.id}`, {
-          method: 'PATCH',
+        const { error } = await authApi.invoke('jobs-crud', {
+          method: 'PUT',
           body: {
+            id: job.id,
             startsAt: latest.startsAt,
             endsAt: latest.endsAt,
           },
@@ -491,9 +492,10 @@ function onDragStart(e: React.PointerEvent, job: Job) {
       setIsResizing(null);
       
       try {
-        const { error } = await authApi.invoke(`jobs?id=${job.id}`, {
-          method: 'PATCH',
+        const { error } = await authApi.invoke('jobs-crud', {
+          method: 'PUT',
           body: {
+            id: job.id,
             endsAt: latestEnd,
           },
           toast: {
