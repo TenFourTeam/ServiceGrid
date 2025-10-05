@@ -6,6 +6,7 @@ import { ChevronDown, Building2, Crown, Users } from "lucide-react";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useUserBusinesses } from "@/hooks/useUserBusinesses";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface BusinessSwitcherProps {
   businessId?: string;
@@ -18,8 +19,13 @@ export function BusinessSwitcher({ businessId, className = "" }: BusinessSwitche
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const location = useLocation();
+  const queryClient = useQueryClient();
   
   const handleSwitchBusiness = (targetBusinessId: string, isCurrent: boolean) => {
+    console.log("[BusinessSwitcher] Switching business, clearing all data caches");
+    // Clear all data caches when switching businesses
+    queryClient.removeQueries({ queryKey: ['data'] });
+    
     const currentPath = location.pathname;
     if (isCurrent) {
       navigate(currentPath);

@@ -15,6 +15,7 @@ import { useIsPhone } from "@/hooks/use-phone";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useSearchParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 type CalendarDisplayMode = 'scheduled' | 'clocked' | 'combined';
 
 export default function CalendarShell({
@@ -34,6 +35,15 @@ export default function CalendarShell({
   const isMobile = useIsMobile();
   const isPhone = useIsPhone();
   const { t } = useLanguage();
+  const queryClient = useQueryClient();
+  
+  // Clear cache when business changes
+  useEffect(() => {
+    if (businessId) {
+      console.log("[CalendarShell] Business changed, clearing jobs cache for:", businessId);
+      queryClient.removeQueries({ queryKey: ['data', 'jobs'] });
+    }
+  }, [businessId, queryClient]);
   
   // Debug business context changes
   useEffect(() => {
