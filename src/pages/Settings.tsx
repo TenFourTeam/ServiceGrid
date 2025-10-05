@@ -324,7 +324,7 @@ export default function SettingsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Payouts</CardTitle>
+              <CardTitle>{t('settings.subscription.payouts')}</CardTitle>
             </CardHeader>
             <CardContent>
               <ConnectBanner

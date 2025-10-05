@@ -41,7 +41,8 @@
       "monthly": "Plan Mensual",
       "yearly": "Plan Anual",
       "manageSubscription": "Administrar Suscripción",
-      "connectStripe": "Conectar Stripe"
+      "connectStripe": "Conectar Stripe",
+      "payouts": "Conectar tu cuenta bancaria"
     }
   },
   "navigation": {
