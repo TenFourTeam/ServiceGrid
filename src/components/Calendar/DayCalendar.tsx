@@ -8,6 +8,7 @@ import JobShowModal from "@/components/Jobs/JobShowModal";
 import { JobBottomModal } from "@/components/Jobs/JobBottomModal";
 import type { Job } from "@/types";
 import { getJobStatusColors } from "@/utils/jobStatus";
+import { calculateJobColumns } from "@/utils/jobOverlap";
 
 export default function DayCalendar({ date, displayMode = 'scheduled', selectedMemberId }: { date: Date; displayMode?: 'scheduled' | 'clocked' | 'combined'; selectedMemberId?: string | null; }) {
   const { businessId, role } = useBusinessContext();
@@ -51,7 +52,6 @@ export default function DayCalendar({ date, displayMode = 'scheduled', selectedM
     
     // Calculate columns for overlapping jobs when showing all members
     if (!selectedMemberId && filteredJobs.length > 0) {
-      const { calculateJobColumns } = require('@/utils/jobOverlap');
       filteredJobs = calculateJobColumns(filteredJobs as Job[]);
     }
     

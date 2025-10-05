@@ -19,6 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 import JobShowModal from '@/components/Jobs/JobShowModal';
 
 import { getJobStatusColors, canDragJob, canResizeJob, validateJobTiming, checkJobTimeConflict } from '@/utils/jobStatus';
+import { calculateJobColumns } from '@/utils/jobOverlap';
 const START_ANCHOR_HOUR = 5; // visual start at 5:00
 const TOTAL_MIN = 24 * 60;
 function dayKey(d: Date) {
@@ -166,7 +167,6 @@ export function WeekCalendar({
     if (!selectedMemberId) {
       Object.keys(map).forEach(key => {
         if (map[key].length > 0) {
-          const { calculateJobColumns } = require('@/utils/jobOverlap');
           map[key] = calculateJobColumns(map[key]);
         }
       });

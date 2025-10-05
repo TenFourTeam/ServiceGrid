@@ -8,6 +8,7 @@ import JobShowModal from "@/components/Jobs/JobShowModal";
 import { JobBottomModal } from "@/components/Jobs/JobBottomModal";
 import type { Job } from "@/types";
 import { getJobStatusColors } from "@/utils/jobStatus";
+import { calculateJobColumns } from "@/utils/jobOverlap";
 
 function useMonthGrid(date: Date) {
   const start = startOfWeek(startOfMonth(date), { weekStartsOn: 1 });
@@ -68,7 +69,6 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
     
     // Calculate columns for overlapping jobs when showing all members
     if (!selectedMemberId) {
-      const { calculateJobColumns } = require('@/utils/jobOverlap');
       map.forEach((dayJobs, key) => {
         if (dayJobs.length > 0) {
           map.set(key, calculateJobColumns(dayJobs));
