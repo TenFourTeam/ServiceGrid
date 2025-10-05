@@ -105,6 +105,10 @@ export function useBusinessContext(targetBusinessId?: string) {
     : userOwnedBusiness;
   const role = roleQuery.data;
   
+  // CRITICAL: Use targetBusinessId immediately if provided to prevent race condition
+  // This ensures API calls get the correct businessId before the query resolves
+  const businessId = targetBusinessId || business?.id;
+  
   // Coordinated loading state
   const isLoadingBusiness = !isLoaded || (shouldFetch && (
     profileQuery.isLoading || 
@@ -132,7 +136,7 @@ export function useBusinessContext(targetBusinessId?: string) {
     
     // Business data (currently using user's owned business)
     business,
-    businessId: business?.id,
+    businessId: businessId,
     businessName: business?.name,
     businessDescription: business?.description,
     businessPhone: business?.phone,
