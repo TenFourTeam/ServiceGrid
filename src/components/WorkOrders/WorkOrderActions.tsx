@@ -69,9 +69,13 @@ export function WorkOrderActions({
     });
     
     try {
-      const { error } = await authApi.invoke(`jobs?id=${job.id}`, {
-        method: 'PATCH',
-        body: { status: 'Completed', endsAt: currentTime },
+      const { error } = await authApi.invoke('jobs-crud', {
+        method: 'PUT',
+        body: { 
+          id: job.id,
+          status: 'Completed', 
+          endsAt: currentTime 
+        },
         toast: {
           success: t('workOrders.modal.complete'),
           loading: t('workOrders.modal.completing'),
@@ -186,8 +190,9 @@ export function WorkOrderActions({
     setIsDeleting(true);
     
     try {
-      const { error } = await authApi.invoke(`jobs?id=${job.id}`, {
+      const { error } = await authApi.invoke('jobs-crud', {
         method: 'DELETE',
+        body: { id: job.id },
         toast: {
           success: t('workOrders.modal.delete'),
           loading: t('workOrders.modal.delete'),
