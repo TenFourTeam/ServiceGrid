@@ -73,9 +73,8 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
   // Populate form with initial data when provided or restore from storage
   useEffect(() => {
     if (initialData) {
-      // For existing quotes, prefer stored draft data if available and it's a draft quote
-      const shouldUseStoredData = storedData && initialData.status === 'Draft';
-      const dataToUse = shouldUseStoredData ? storedData : {
+      // NEVER use stored data for existing quotes - always use the actual quote data
+      setData({
         customerId: initialData.customerId || '',
         address: initialData.address || '',
         lineItems: initialData.lineItems || [],
@@ -88,16 +87,17 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
         depositRequired: initialData.depositRequired || false,
         depositPercent: initialData.depositPercent || 0,
         isSubscription: initialData.isSubscription || false,
-      };
+      });
+      setDiscountInput(formatCurrencyInputNoSymbol(initialData.discount || 0));
       
-      setData(dataToUse);
-      setDiscountInput(formatCurrencyInputNoSymbol(dataToUse.discount || 0));
+      // Clear any stored draft data when opening an existing quote
+      removeStoredData();
     } else if (storedData && mode === 'create') {
       // For new quotes, restore from storage if available
       setData(storedData);
       setDiscountInput(formatCurrencyInputNoSymbol(storedData.discount || 0));
     }
-  }, [initialData, defaultTaxRate, storedData, mode]);
+  }, [initialData, defaultTaxRate, mode, removeStoredData]);
 
   // Auto-save to session storage when data changes (only for drafts)
   useEffect(() => {
@@ -108,15 +108,26 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
     }
   }, [debouncedData, mode, initialData?.status, setStoredData]);
 
-  // Auto-populate address when customer is selected
+  // Clear stored data when switching between different quotes
   useEffect(() => {
-    if (data.customerId && customers.length > 0 && !initialData) {
+    return () => {
+      // Cleanup function runs when component unmounts or when initialData.id changes
+      if (initialData?.id) {
+        removeStoredData();
+      }
+    };
+  }, [initialData?.id, removeStoredData]);
+
+  // Auto-populate address when customer changes
+  useEffect(() => {
+    if (data.customerId && customers.length > 0) {
       const selectedCustomer = customers.find(c => c.id === data.customerId);
-      if (selectedCustomer?.address && !data.address) {
+      // Always update address when customer changes (if customer has address)
+      if (selectedCustomer?.address) {
         setData(prev => ({ ...prev, address: selectedCustomer.address || '' }));
       }
     }
-  }, [data.customerId, customers, initialData, data.address]);
+  }, [data.customerId, customers]);
 
   const [discountInput, setDiscountInput] = useState('');
   const lineItemIdCounter = useState(() => ({ current: 1 }))[0];
