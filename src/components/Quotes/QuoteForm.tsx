@@ -127,7 +127,7 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
         setData(prev => ({ ...prev, address: selectedCustomer.address || '' }));
       }
     }
-  }, [data.customerId, customers]);
+  }, [data.customerId]);
 
   const [discountInput, setDiscountInput] = useState('');
   const lineItemIdCounter = useState(() => ({ current: 1 }))[0];
