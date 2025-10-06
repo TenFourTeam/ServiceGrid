@@ -23,6 +23,72 @@ Deno.serve(async (req) => {
     if (req.method === 'GET') {
       const url = new URL(req.url);
       const quoteId = url.searchParams.get('id');
+      const publicToken = url.searchParams.get('token');
+
+      // Handle public quote fetch by token (no auth required)
+      if (publicToken && quoteId) {
+        console.log('[quotes-crud] Public quote fetch by token');
+        
+        const { data, error } = await supabase
+          .from('quotes')
+          .select(`
+            id, number, total, status, created_at, updated_at,
+            customer_id, address, tax_rate, discount, subtotal,
+            terms, payment_terms, frequency, deposit_required, deposit_percent,
+            sent_at, is_subscription
+          `)
+          .eq('id', quoteId)
+          .eq('public_token', publicToken)
+          .single();
+
+        if (error) {
+          console.error('[quotes-crud] Public quote fetch error:', error);
+          return json({ error: 'Quote not found' }, 404);
+        }
+
+        // Fetch line items
+        const { data: lineItemsData, error: lineItemsError } = await supabase
+          .from('quote_line_items')
+          .select('id, name, qty, unit, unit_price, line_total, position')
+          .eq('quote_id', quoteId)
+          .order('position');
+
+        if (lineItemsError) {
+          console.error('[quotes-crud] Line items fetch error:', lineItemsError);
+        }
+
+        const quote = {
+          id: data.id,
+          number: data.number,
+          customerId: data.customer_id,
+          address: data.address,
+          lineItems: (lineItemsData || []).map((item: any) => ({
+            id: item.id,
+            name: item.name,
+            qty: item.qty,
+            unit: item.unit,
+            unitPrice: item.unit_price,
+            lineTotal: item.line_total
+          })),
+          taxRate: data.tax_rate,
+          discount: data.discount,
+          subtotal: data.subtotal,
+          total: data.total,
+          status: data.status,
+          terms: data.terms,
+          paymentTerms: data.payment_terms,
+          frequency: data.frequency,
+          depositRequired: data.deposit_required,
+          depositPercent: data.deposit_percent,
+          sentAt: data.sent_at,
+          createdAt: data.created_at,
+          updatedAt: data.updated_at,
+          isSubscription: data.is_subscription,
+        };
+
+        console.log('[quotes-crud] Public quote fetched:', data.id);
+        return json(quote);
+      }
 
       if (quoteId) {
         // Fetch individual quote by ID

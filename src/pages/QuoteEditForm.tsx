@@ -43,8 +43,8 @@ export default function QuoteEditForm() {
       }
 
       try {
-        const url = buildEdgeFunctionUrl('quote-events', {
-          type: 'view',
+        const url = buildEdgeFunctionUrl('quotes-crud', {
+          id: quoteId,
           token
         });
         const response = await fetch(url);
@@ -54,7 +54,7 @@ export default function QuoteEditForm() {
         }
         
         const data = await response.json();
-        setQuote(data.quote);
+        setQuote(data);
         setLoading(false);
       } catch (err: any) {
         console.error('Failed to fetch quote:', err);
