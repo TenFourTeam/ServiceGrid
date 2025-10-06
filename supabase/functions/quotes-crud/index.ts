@@ -470,10 +470,11 @@ function buildQuoteEmailHTML(params: {
 }): string {
   const { businessName, businessLogoUrl, customerName, quote, lineItems, message, baseUrl } = params;
   
-  // Generate action URLs
-  const approveUrl = `${baseUrl}/quote-action?type=approve&quote_id=${quote.id}&token=${quote.public_token}`;
-  const editUrl = `${baseUrl}/quote-action?type=edit&quote_id=${quote.id}&token=${quote.public_token}`;
-  const pixelUrl = `${baseUrl}/api/quote-events?type=open&quote_id=${quote.id}&token=${quote.public_token}`;
+  // Generate action URLs - point directly to edge function
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const approveUrl = `${supabaseUrl}/functions/v1/quote-events?type=approve&quote_id=${quote.id}&token=${quote.public_token}`;
+  const editUrl = `${supabaseUrl}/functions/v1/quote-events?type=edit&quote_id=${quote.id}&token=${quote.public_token}`;
+  const pixelUrl = `${supabaseUrl}/functions/v1/quote-events?type=open&quote_id=${quote.id}&token=${quote.public_token}`;
   
   // Header
   const headerLogo = businessLogoUrl 
