@@ -490,7 +490,33 @@ Deno.serve(async (req) => {
         console.log('[invoices-crud] Invoice fetched after link:', data.id);
       }
 
-      return json({ invoice: data });
+      // Transform to camelCase to match GET endpoint format
+      const transformedInvoice = {
+        id: data.id,
+        number: data.number,
+        total: data.total,
+        subtotal: data.subtotal,
+        taxRate: data.tax_rate,
+        discount: data.discount,
+        status: data.status,
+        dueAt: data.due_at,
+        paidAt: data.paid_at,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+        publicToken: data.public_token,
+        customerId: data.customer_id,
+        jobId: data.job_id,
+        quoteId: data.quote_id,
+        address: data.address,
+        paymentTerms: data.payment_terms,
+        frequency: data.frequency,
+        depositRequired: data.deposit_required || false,
+        depositPercent: data.deposit_percent,
+        notesInternal: data.notes_internal,
+        terms: data.terms
+      };
+
+      return json({ invoice: transformedInvoice });
     }
 
     if (req.method === 'DELETE') {
