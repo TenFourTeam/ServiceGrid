@@ -440,17 +440,29 @@ Deno.serve(async (req) => {
         }
       }
 
-      // If linking to a job and invoice has no notes, inherit job notes
-      if (jobId && !updateData.notes_internal) {
-        const { data: jobData } = await supabase
-          .from('jobs')
-          .select('notes')
-          .eq('id', jobId)
+      // If linking to a job, check if invoice has notes and inherit job notes if empty
+      if (jobId) {
+        // First fetch the current invoice to check its notes_internal
+        const { data: currentInvoice } = await supabase
+          .from('invoices')
+          .select('notes_internal')
+          .eq('id', id)
           .eq('business_id', ctx.businessId)
           .single();
         
-        if (jobData?.notes) {
-          updateData.notes_internal = jobData.notes;
+        // If invoice notes are empty and notesInternal wasn't explicitly sent in this update
+        if ((!currentInvoice?.notes_internal || currentInvoice.notes_internal.trim() === '') 
+            && notesInternal === undefined) {
+          const { data: jobData } = await supabase
+            .from('jobs')
+            .select('notes')
+            .eq('id', jobId)
+            .eq('business_id', ctx.businessId)
+            .single();
+          
+          if (jobData?.notes) {
+            updateData.notes_internal = jobData.notes;
+          }
         }
       }
 
