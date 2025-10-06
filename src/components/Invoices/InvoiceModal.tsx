@@ -768,9 +768,6 @@ export default function InvoiceModal({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">{relatedJob.title || 'Work Order'}</span>
-                  <Badge variant={relatedJob.status === 'Completed' ? 'default' : 'secondary'} className="text-xs">
-                    {relatedJob.status}
-                  </Badge>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
@@ -866,7 +863,7 @@ export default function InvoiceModal({
           <div className="bg-muted/30 rounded-md p-3 space-y-3">
             <div>
               <div className="text-xs font-medium text-muted-foreground mb-1">Internal Notes</div>
-              <div className="text-sm whitespace-pre-wrap">{invoice.notesInternal || 'None'}</div>
+              <div className="text-sm whitespace-pre-wrap">{invoice.notesInternal || relatedJob?.notes || 'None'}</div>
             </div>
             <div>
               <div className="text-xs font-medium text-muted-foreground mb-1">Terms & Conditions</div>
