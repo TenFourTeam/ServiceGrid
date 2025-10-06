@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Drawer, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { formatMoney, formatDate } from '@/utils/format';
 import { useAuthApi } from '@/hooks/useAuthApi';
@@ -415,17 +416,11 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
               </div>
 
               {/* Customer Feedback Section */}
-              {quote.customerNotes && quote.status === 'Edits Requested' && (
-                <div className="mt-6 p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg">
-                  <div className="flex items-start gap-2">
-                    <div className="flex-1">
-                      <div className="text-sm font-medium text-orange-900 dark:text-orange-100 mb-2">
-                        📝 Customer Feedback
-                      </div>
-                      <div className="text-sm text-orange-800 dark:text-orange-200 whitespace-pre-wrap">
-                        {quote.customerNotes}
-                      </div>
-                    </div>
+              {quote.customerNotes && (
+                <div className="mt-6 space-y-2">
+                  <Label>Customer Feedback</Label>
+                  <div className="p-3 bg-muted rounded-md text-sm whitespace-pre-wrap">
+                    {quote.customerNotes}
                   </div>
                 </div>
               )}
