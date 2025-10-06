@@ -43,7 +43,7 @@ export default function QuoteEditForm() {
       }
 
       try {
-        const url = buildEdgeFunctionUrl('quotes-crud', {
+        const url = buildEdgeFunctionUrl('quote-view', {
           id: quoteId,
           token
         });
