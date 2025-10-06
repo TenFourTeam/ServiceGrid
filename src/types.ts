@@ -94,6 +94,7 @@ export interface Quote {
   terms?: string;
   approvedAt?: ISODate;
   approvedBy?: string; // typed name
+  customerNotes?: string; // Customer feedback when requesting edits
   createdAt: ISODate;
   updatedAt: ISODate;
   publicToken: string;

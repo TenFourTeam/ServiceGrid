@@ -257,7 +257,7 @@ export default function QuoteViewer() {
                     variant="outline" 
                     className="flex-1"
                     onClick={() => {
-                      const editUrl = `/quote-action?type=edit&quote_id=${encodeURIComponent(quote.id)}&token=${encodeURIComponent(quote.publicToken)}`;
+                      const editUrl = `/quote-edit/${encodeURIComponent(quote.id)}/${encodeURIComponent(quote.publicToken)}`;
                       window.location.href = editUrl;
                     }}
                   >

@@ -29,6 +29,7 @@ const ReferralPage = lazy(() => import("./pages/Referral"));
 const ClerkAuthPage = lazy(() => import("./pages/ClerkAuth"));
 const QuoteActionPage = lazy(() => import("./pages/QuoteAction"));
 const QuoteViewerPage = lazy(() => import("./pages/QuoteViewer"));
+const QuoteEditFormPage = lazy(() => import("./pages/QuoteEditForm"));
 const PaymentSuccessPage = lazy(() => import("./pages/PaymentSuccess"));
 const PaymentCanceledPage = lazy(() => import("./pages/PaymentCanceled"));
 const InvoicePayPage = lazy(() => import("./pages/InvoicePay"));
@@ -114,6 +115,7 @@ function App({ clerkKey }: AppProps) {
                 <Route path="/clerk-auth" element={<ClerkAuthPage />} />
                 <Route path="/quote-action" element={<QuoteActionPage />} />
                 <Route path="/quote/:token" element={<QuoteViewerPage />} />
+                <Route path="/quote-edit/:quoteId/:token" element={<QuoteEditFormPage />} />
                 <Route path="/payment-success" element={<PaymentSuccessPage />} />
                 <Route path="/payment-canceled" element={<PaymentCanceledPage />} />
                 <Route path="/invoice-pay" element={<InvoicePayPage />} />

@@ -46,7 +46,11 @@ export default function QuoteActionPage() {
           quote_id: quoteId,
           token
         });
-        const response = await fetch(url);
+        // Use GET for approve, POST for edit (though this page now mainly used after form submission)
+        const response = await fetch(url, {
+          method: type === 'edit' ? 'POST' : 'GET',
+          headers: type === 'edit' ? { 'Content-Type': 'application/json' } : undefined,
+        });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         setStatus('ok');
       } catch (e) {

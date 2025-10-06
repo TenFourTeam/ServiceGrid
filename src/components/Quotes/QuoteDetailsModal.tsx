@@ -389,29 +389,47 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
           />
 
           {currentMode === 'view' && quote && (
-            <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <div className="text-sm text-muted-foreground">{t('quotes.modal.customer')}</div>
-                <div className="font-medium">{customerName}</div>
-                {customerEmail && (
-                  <div className="text-sm text-muted-foreground">{customerEmail}</div>
+            <>
+              <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <div className="text-sm text-muted-foreground">{t('quotes.modal.customer')}</div>
+                  <div className="font-medium">{customerName}</div>
+                  {customerEmail && (
+                    <div className="text-sm text-muted-foreground">{customerEmail}</div>
+                  )}
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">{t('quotes.modal.total')}</div>
+                  <div className="font-medium text-lg">{formatMoney(quote.total)}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">{t('quotes.modal.created')}</div>
+                  <div>{formatDate(quote.createdAt)}</div>
+                </div>
+                {quote.sentAt && (
+                  <div>
+                    <div className="text-sm text-muted-foreground">{t('quotes.modal.sent')}</div>
+                    <div>{formatDate(quote.sentAt)}</div>
+                  </div>
                 )}
               </div>
-              <div>
-                <div className="text-sm text-muted-foreground">{t('quotes.modal.total')}</div>
-                <div className="font-medium text-lg">{formatMoney(quote.total)}</div>
-              </div>
-              <div>
-                <div className="text-sm text-muted-foreground">{t('quotes.modal.created')}</div>
-                <div>{formatDate(quote.createdAt)}</div>
-              </div>
-              {quote.sentAt && (
-                <div>
-                  <div className="text-sm text-muted-foreground">{t('quotes.modal.sent')}</div>
-                  <div>{formatDate(quote.sentAt)}</div>
+
+              {/* Customer Feedback Section */}
+              {quote.customerNotes && quote.status === 'Edits Requested' && (
+                <div className="mt-6 p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-orange-900 dark:text-orange-100 mb-2">
+                        📝 Customer Feedback
+                      </div>
+                      <div className="text-sm text-orange-800 dark:text-orange-200 whitespace-pre-wrap">
+                        {quote.customerNotes}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
-            </div>
+            </>
           )}
         </div>
 

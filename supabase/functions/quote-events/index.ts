@@ -47,7 +47,6 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
-  // Enforce allowed origins on CORS/fetch requests only (allow direct navigation)
   const origin = req.headers.get("Origin") || req.headers.get("origin");
   const allowed = (Deno.env.get("ALLOWED_ORIGINS") || "").split(",").map((s) => s.trim()).filter(Boolean);
   if (origin && allowed.length && !allowed.includes("*") && !allowed.includes(origin)) {
@@ -62,6 +61,17 @@ serve(async (req) => {
 
     if (!type || !quote_id || !token) {
       return okJSON({ error: "Missing required params: type, quote_id, token" }, 400);
+    }
+
+    // For POST requests (edit with customer notes), parse the body
+    let customer_notes: string | undefined;
+    if (req.method === "POST" && type === "edit") {
+      try {
+        const body = await req.json();
+        customer_notes = body.customer_notes;
+      } catch (e) {
+        console.error("Failed to parse request body:", e);
+      }
     }
 
     const meta = {
@@ -85,12 +95,10 @@ serve(async (req) => {
     }
 
     if (type === "open") {
-      // return a tracking pixel
       return pixel();
     }
 
     if (type === "approve" || type === "edit") {
-      // Validate quote and token
       const { data: q, error: qErr } = await supabase
         .from("quotes")
         .select("id,status,public_token,number,customer_id,is_subscription,owner_id,business_id,address,total,businesses(name,logo_url),customers(email,name)")
@@ -110,9 +118,19 @@ serve(async (req) => {
       const already = ["Approved", "Edits Requested", "Declined"].includes(q.status);
       if (!already) {
         const newStatus = type === "approve" ? "Approved" : "Edits Requested";
+        const updateData: any = { 
+          status: newStatus, 
+          updated_at: new Date().toISOString() 
+        };
+        
+        // Add customer notes if provided
+        if (type === "edit" && customer_notes) {
+          updateData.customer_notes = customer_notes;
+        }
+        
         const { error: upErr } = await supabase
           .from("quotes")
-          .update({ status: newStatus, updated_at: new Date().toISOString() })
+          .update(updateData)
           .eq("id", quote_id);
         if (upErr) console.error("quotes update error:", upErr);
 
@@ -121,23 +139,19 @@ serve(async (req) => {
           console.log("Quote is a subscription, creating Stripe subscription...");
           
           try {
-            // Call the manage-quote-subscription function
             const subscriptionResponse = await supabase.functions.invoke('manage-quote-subscription', {
               body: { quoteId: quote_id }
             });
 
             if (subscriptionResponse.error) {
               console.error("Failed to create subscription:", subscriptionResponse.error);
-              // Don't fail the approval, just log the error
             } else {
               console.log("Subscription created successfully:", subscriptionResponse.data);
             }
           } catch (subscriptionError) {
             console.error("Error creating subscription:", subscriptionError);
-            // Don't fail the approval, just log the error
           }
         } else if (type === "approve") {
-          // For non-subscription quotes, create a regular unscheduled work order
           console.log("Creating unscheduled work order for approved quote...");
           
           try {
@@ -167,8 +181,8 @@ serve(async (req) => {
           }
         }
 
-        // Send follow-up email requesting details when edits are requested
-        if (type === "edit") {
+        // Send follow-up email only if customer didn't provide notes in the form
+        if (type === "edit" && !customer_notes) {
           const custEmail = Array.isArray(q?.customers) ? (q?.customers as any)[0]?.email : (q?.customers as any)?.email as string | null;
           const custName = Array.isArray(q?.customers) ? (q?.customers as any)[0]?.name : (q?.customers as any)?.name as string | null;
           const businessName = Array.isArray(q?.businesses) ? (q?.businesses as any)[0]?.name : (q?.businesses as any)?.name as string | null;
@@ -188,7 +202,7 @@ serve(async (req) => {
                   ${header}
                   <div style="padding:16px">
                     <p>Hi ${safeName},</p>
-                    <p>Thanks for requesting edits to Quote ${quoteNumber ?? ""}. Please reply to this email with the details of the changes you’d like and we’ll update the quote right away.</p>
+                    <p>Thanks for requesting edits to Quote ${quoteNumber ?? ""}. Please reply to this email with the details of the changes you'd like and we'll update the quote right away.</p>
                     <p>Best regards,<br/>${businessName || "Our Team"}</p>
                   </div>
                 </div>
@@ -225,7 +239,7 @@ serve(async (req) => {
               <div class="hdr"><strong>Quote Action</strong></div>
               <div class="card">
                 <div class="title"><span class="icon"></span>${already ? "This action was already recorded." : (type === "approve" ? "Thanks! Your approval has been recorded." : "Thanks! Your edit request has been recorded.")}</div>
-                <p class="desc">${already ? "You can safely close this page now." : (type === "approve" ? "You can safely close this page now." : "We’ll reach out shortly to confirm the changes you’d like.")}</p>
+                <p class="desc">${already ? "You can safely close this page now." : (type === "approve" ? "You can safely close this page now." : "We'll reach out shortly to confirm the changes you'd like.")}</p>
               </div>
               <div class="foot">Powered by Supabase Edge Functions</div>
             </div>

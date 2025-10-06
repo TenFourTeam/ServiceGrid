@@ -839,6 +839,7 @@ export type Database = {
           business_id: string
           created_at: string
           customer_id: string
+          customer_notes: string | null
           deposit_percent: number | null
           deposit_required: boolean
           discount: number
@@ -871,6 +872,7 @@ export type Database = {
           business_id: string
           created_at?: string
           customer_id: string
+          customer_notes?: string | null
           deposit_percent?: number | null
           deposit_required?: boolean
           discount?: number
@@ -903,6 +905,7 @@ export type Database = {
           business_id?: string
           created_at?: string
           customer_id?: string
+          customer_notes?: string | null
           deposit_percent?: number | null
           deposit_required?: boolean
           discount?: number
