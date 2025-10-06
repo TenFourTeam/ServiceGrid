@@ -113,10 +113,10 @@ export default function ReschedulePopover({ job, onDone, asDropdownItem = false 
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild={!asDropdownItem}>
         {asDropdownItem ? (
-          <>
+          <div className="flex items-center gap-2">
             <CalendarIcon className="h-4 w-4" />
             {job.startsAt ? t('workOrders.reschedule.title') : t('workOrders.reschedule.schedule')}
-          </>
+          </div>
         ) : (
           <Button size="sm" variant="outline">{job.startsAt ? t('workOrders.reschedule.title') : t('workOrders.reschedule.schedule')}</Button>
         )}
