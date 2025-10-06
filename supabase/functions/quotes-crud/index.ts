@@ -473,7 +473,7 @@ function buildQuoteEmailHTML(params: {
   // Generate action URLs - use /quote-action route for branded confirmation pages
   const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://servicegrid.app';
   const approveUrl = `${frontendUrl}/quote-action?type=approve&quote_id=${quote.id}&token=${quote.public_token}`;
-  const editUrl = `${frontendUrl}/quote-action?type=edit&quote_id=${quote.id}&token=${quote.public_token}`;
+  const editUrl = `${frontendUrl}/quote-edit/${quote.id}/${quote.public_token}`;
   const pixelUrl = `${frontendUrl}/quote-action?type=open&quote_id=${quote.id}&token=${quote.public_token}`;
   
   // Header
@@ -560,7 +560,7 @@ function buildQuoteEmailHTML(params: {
         <td>
           <a href="${approveUrl}" style="display:inline-block;background:#111827;color:#f8fafc;padding:12px 16px;border-radius:8px;text-decoration:none;font-weight:600;">Approve</a>
           <span style="display:inline-block;width:8px;"></span>
-          <a href="${editUrl}" style="display:inline-block;background:#f1f5f9;color:#111827;padding:12px 16px;border-radius:8px;text-decoration:none;font-weight:600;border:1px solid #e5e7eb;">Request Edits</a>
+          <a href="${editUrl}" style="display:inline-block;background:#f1f5f9;color:#111827;padding:12px 16px;border-radius:8px;text-decoration:none;font-weight:600;border:1px solid #e5e7eb;">Request Changes</a>
         </td>
       </tr>
     </table>
