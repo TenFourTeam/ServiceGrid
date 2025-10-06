@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
             id, number, total, status, updated_at, public_token, view_count,
             customer_id, address, tax_rate, discount, subtotal,
             terms, payment_terms, frequency, deposit_required, deposit_percent,
-            notes_internal, files, sent_at, created_at,
+            notes_internal, customer_notes, files, sent_at, created_at,
             customers!inner(name, email)
           `)
           .eq('id', quoteId)
@@ -80,6 +80,7 @@ Deno.serve(async (req) => {
           status: data.status,
           files: data.files || [],
           notesInternal: data.notes_internal,
+          customerNotes: data.customer_notes,
           terms: data.terms,
           paymentTerms: data.payment_terms,
           frequency: data.frequency,
