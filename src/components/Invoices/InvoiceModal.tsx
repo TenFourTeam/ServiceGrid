@@ -64,13 +64,12 @@ export default function InvoiceModal({
   const [showJobModal, setShowJobModal] = useState(false);
   const [showJobPicker, setShowJobPicker] = useState(false);
   const [showQuotePicker, setShowQuotePicker] = useState(false);
-  const [linkedJobId, setLinkedJobId] = useState<string | null>(null);
-  const [linkedQuoteId, setLinkedQuoteId] = useState<string | null>(null);
+  const [currentInvoice, setCurrentInvoice] = useState<Invoice | null>(invoice);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   
   const { data: payments = [] } = useInvoicePayments({ 
-    invoiceId: invoice?.id,
-    enabled: !!invoice && mode === 'view' 
+    invoiceId: currentInvoice?.id,
+    enabled: !!currentInvoice && mode === 'view' 
   });
   
   // Form state
@@ -92,55 +91,53 @@ export default function InvoiceModal({
   const [paymentAmountInput, setPaymentAmountInput] = useState('');
 
   const customerName = useMemo(() => {
-    const customer = customers.find(c => c.id === (invoice?.customerId || customerId));
+    const customer = customers.find(c => c.id === (currentInvoice?.customerId || customerId));
     return customer?.name || 'Unknown';
-  }, [customers, invoice?.customerId, customerId]);
+  }, [customers, currentInvoice?.customerId, customerId]);
 
   const customerEmail = useMemo(() => {
-    const customer = customers.find(c => c.id === (invoice?.customerId || customerId));
+    const customer = customers.find(c => c.id === (currentInvoice?.customerId || customerId));
     return customer?.email || '';
-  }, [customers, invoice?.customerId, customerId]);
-
-  const currentJobId = linkedJobId === null ? null : (linkedJobId || invoice?.jobId);
-  const currentQuoteId = linkedQuoteId === null ? null : (linkedQuoteId || invoice?.quoteId);
+  }, [customers, currentInvoice?.customerId, customerId]);
   
   const relatedJob = useMemo(() => {
-    if (!currentJobId) return null;
-    return jobs.find(job => job.id === currentJobId) || null;
-  }, [jobs, currentJobId]);
+    if (!currentInvoice?.jobId) return null;
+    return jobs.find(job => job.id === currentInvoice.jobId) || null;
+  }, [jobs, currentInvoice?.jobId]);
 
   const relatedQuote = useMemo(() => {
-    if (!currentQuoteId) return null;
-    return quotes.find(quote => quote.id === currentQuoteId) || null;
-  }, [quotes, currentQuoteId]);
+    if (!currentInvoice?.quoteId) return null;
+    return quotes.find(quote => quote.id === currentInvoice.quoteId) || null;
+  }, [quotes, currentInvoice?.quoteId]);
 
   // Email templates
   const defaultEmailHTML = useMemo(() => {
-    if (!invoice) return '';
+    if (!currentInvoice) return '';
     const { html } = generateInvoiceEmail({
       businessName,
       businessLogoUrl: businessLogoUrl as string,
-      invoice
+      invoice: currentInvoice
     });
     return html;
-  }, [invoice, businessName, businessLogoUrl]);
+  }, [currentInvoice, businessName, businessLogoUrl]);
 
   const defaultSubject = useMemo(() => {
-    if (!invoice) return '';
-    return `Invoice ${invoice.number} from ${businessName}`;
-  }, [invoice, businessName]);
+    if (!currentInvoice) return '';
+    return `Invoice ${currentInvoice.number} from ${businessName}`;
+  }, [currentInvoice, businessName]);
 
   const previewHtml = useMemo(() => {
-    if (!invoice || !defaultEmailHTML) return '';
+    if (!currentInvoice || !defaultEmailHTML) return '';
     const safe = escapeHtml(message).replace(/\n/g, '<br />');
     const introBlock = `<div style="margin-bottom:12px; line-height:1.6; font-size:14px; color:#111827;">${safe}</div>`;
     const hr = `<hr style="border:none; border-top:1px solid #e5e7eb; margin:12px 0;" />`;
     return `${introBlock}${hr}${defaultEmailHTML}`;
-  }, [message, defaultEmailHTML, invoice]);
+  }, [message, defaultEmailHTML, currentInvoice]);
 
   // Reset form when modal opens/closes or invoice changes
   useEffect(() => {
     if (open && invoice) {
+      setCurrentInvoice(invoice);
       setCustomerId(invoice.customerId);
       setStatus(invoice.status);
       setDueDate(invoice.dueAt ? new Date(invoice.dueAt) : undefined);
@@ -153,9 +150,8 @@ export default function InvoiceModal({
       setPaymentAmountInput(formatCurrencyInputNoSymbol(invoice.total));
       setPaymentDate(new Date());
       setPaymentMethod('Cash');
-      setLinkedJobId(null);
-      setLinkedQuoteId(null);
     } else if (open && !invoice && initialCustomerId) {
+      setCurrentInvoice(null);
       setCustomerId(initialCustomerId);
       setStatus('Draft');
       setDueDate(undefined);
@@ -168,8 +164,8 @@ export default function InvoiceModal({
       setPaymentAmountInput('0.00');
       setPaymentDate(new Date());
       setPaymentMethod('Cash');
-      setLinkedJobId(null);
-      setLinkedQuoteId(null);
+    } else if (!open) {
+      setCurrentInvoice(null);
     }
     setMode(initialMode);
   }, [open, invoice, initialCustomerId, initialMode, customerEmail, defaultSubject, business?.taxRateDefault]);
@@ -194,18 +190,18 @@ export default function InvoiceModal({
         terms: formData.terms,
         dueAt: formData.dueDate?.toISOString(),
         lineItems: formData.lineItems,
-        jobId: currentJobId,
-        quoteId: currentQuoteId,
+        jobId: currentInvoice?.jobId,
+        quoteId: currentInvoice?.quoteId,
         status: 'Draft'
       };
 
-      if (invoice) {
+      if (currentInvoice) {
         // Update existing invoice
         await authApi.invoke('invoices-crud', {
           method: 'PUT',
-          body: { id: invoice.id, ...data },
+          body: { id: currentInvoice.id, ...data },
           toast: {
-            success: `Invoice ${invoice.number} updated successfully`,
+            success: `Invoice ${currentInvoice.number} updated successfully`,
             loading: 'Updating invoice...',
             error: 'Failed to update invoice'
           }
@@ -248,20 +244,20 @@ export default function InvoiceModal({
   };
 
   const handleSendEmail = async () => {
-    if (!invoice || !to.trim()) return;
+    if (!currentInvoice || !to.trim()) return;
 
     setLoading(true);
     try {
       // Generate payment URL using public token
-      const payUrl = invoice.publicToken 
-        ? `${window.location.origin}/invoice-pay?token=${invoice.publicToken}`
+      const payUrl = currentInvoice.publicToken 
+        ? `${window.location.origin}/invoice-pay?token=${currentInvoice.publicToken}`
         : undefined;
 
       const { html: emailContent } = generateInvoiceEmail({
         businessName: businessName || 'Your Business',
         businessLogoUrl: businessLogoUrl as string,
         customerName,
-        invoice,
+        invoice: currentInvoice,
         payUrl
       });
 
@@ -273,7 +269,7 @@ export default function InvoiceModal({
           to: to.trim(),
           subject: subject || defaultSubject,
           html: finalHtml,
-          invoice_id: invoice.id,
+          invoice_id: currentInvoice.id,
         },
         toast: {
           success: 'Invoice sent successfully',
@@ -295,14 +291,14 @@ export default function InvoiceModal({
   };
 
   const handlePayOnline = async () => {
-    if (!invoice) return;
+    if (!currentInvoice) return;
 
     try {
       setLoading(true);
       
       const { data: response } = await authApi.invoke('create-invoice-payment', {
         method: 'POST',
-        body: { invoiceId: invoice.id },
+        body: { invoiceId: currentInvoice.id },
         toast: {
           loading: 'Creating payment link...',
           error: 'Failed to create payment link'
@@ -320,12 +316,12 @@ export default function InvoiceModal({
   };
 
   const handleRecordPayment = async () => {
-    if (!invoice) return;
+    if (!currentInvoice) return;
 
     try {
       setLoading(true);
       await recordPaymentMutation.mutateAsync({
-        invoiceId: invoice.id,
+        invoiceId: currentInvoice.id,
         amount: paymentAmount,
         method: paymentMethod,
         paidAt: paymentDate.toISOString()
@@ -341,10 +337,10 @@ export default function InvoiceModal({
   };
 
   const handleDelete = async () => {
-    if (!invoice) return;
+    if (!currentInvoice) return;
 
     try {
-      await deleteInvoice.mutateAsync(invoice.id);
+      await deleteInvoice.mutateAsync(currentInvoice.id);
       setShowDeleteDialog(false);
       onOpenChange(false);
     } catch (error) {
@@ -353,17 +349,17 @@ export default function InvoiceModal({
   };
 
   const handleMarkSent = async () => {
-    if (!invoice || !businessId) return;
+    if (!currentInvoice || !businessId) return;
 
     try {
       await authApi.invoke('invoices-crud', {
         method: 'PUT',
         body: {
-          id: invoice.id,
+          id: currentInvoice.id,
           status: 'Sent',
         },
         toast: {
-          success: `Invoice ${invoice.number} marked as sent`,
+          success: `Invoice ${currentInvoice.number} marked as sent`,
           loading: 'Updating invoice status...',
           error: 'Failed to update invoice status'
         }
@@ -377,12 +373,12 @@ export default function InvoiceModal({
   };
 
   const handleLinkJob = async (jobId: string) => {
-    if (!invoice || !businessId) return;
+    if (!currentInvoice || !businessId) return;
     
     try {
-      await authApi.invoke('invoices-crud', {
+      const { data } = await authApi.invoke('invoices-crud', {
         method: 'PUT',
-        body: { id: invoice.id, jobId },
+        body: { id: currentInvoice.id, jobId },
         toast: {
           success: 'Work order linked successfully',
           loading: 'Linking work order...',
@@ -390,7 +386,11 @@ export default function InvoiceModal({
         }
       });
 
-      setLinkedJobId(jobId);
+      // Update local invoice data with server response
+      if (data?.invoice) {
+        setCurrentInvoice(data.invoice);
+      }
+      
       invalidationHelpers.invoices(queryClient, businessId);
       setShowJobPicker(false);
     } catch (error) {
@@ -399,12 +399,12 @@ export default function InvoiceModal({
   };
 
   const handleUnlinkJob = async () => {
-    if (!invoice || !businessId) return;
+    if (!currentInvoice || !businessId) return;
 
     try {
-      await authApi.invoke('invoices-crud', {
+      const { data } = await authApi.invoke('invoices-crud', {
         method: 'PUT',
-        body: { id: invoice.id, jobId: null },
+        body: { id: currentInvoice.id, jobId: null },
         toast: {
           success: 'Work order unlinked successfully',
           loading: 'Unlinking work order...',
@@ -412,7 +412,11 @@ export default function InvoiceModal({
         }
       });
 
-      setLinkedJobId(null);
+      // Update local invoice data with server response
+      if (data?.invoice) {
+        setCurrentInvoice(data.invoice);
+      }
+      
       invalidationHelpers.invoices(queryClient, businessId);
     } catch (error) {
       console.error('Failed to unlink job:', error);
@@ -420,12 +424,12 @@ export default function InvoiceModal({
   };
 
   const handleLinkQuote = async (quoteId: string) => {
-    if (!invoice || !businessId) return;
+    if (!currentInvoice || !businessId) return;
 
     try {
-      await authApi.invoke('invoices-crud', {
+      const { data } = await authApi.invoke('invoices-crud', {
         method: 'PUT',
-        body: { id: invoice.id, quoteId },
+        body: { id: currentInvoice.id, quoteId },
         toast: {
           success: 'Quote linked successfully',
           loading: 'Linking quote...',
@@ -433,7 +437,11 @@ export default function InvoiceModal({
         }
       });
 
-      setLinkedQuoteId(quoteId);
+      // Update local invoice data with server response
+      if (data?.invoice) {
+        setCurrentInvoice(data.invoice);
+      }
+      
       invalidationHelpers.invoices(queryClient, businessId);
       setShowQuotePicker(false);
     } catch (error) {
@@ -442,12 +450,12 @@ export default function InvoiceModal({
   };
 
   const handleUnlinkQuote = async () => {
-    if (!invoice || !businessId) return;
+    if (!currentInvoice || !businessId) return;
 
     try {
-      await authApi.invoke('invoices-crud', {
+      const { data } = await authApi.invoke('invoices-crud', {
         method: 'PUT',
-        body: { id: invoice.id, quoteId: null },
+        body: { id: currentInvoice.id, quoteId: null },
         toast: {
           success: 'Quote unlinked successfully',
           loading: 'Unlinking quote...',
@@ -455,7 +463,11 @@ export default function InvoiceModal({
         }
       });
 
-      setLinkedQuoteId(null);
+      // Update local invoice data with server response
+      if (data?.invoice) {
+        setCurrentInvoice(data.invoice);
+      }
+      
       invalidationHelpers.invoices(queryClient, businessId);
     } catch (error) {
       console.error('Failed to unlink quote:', error);
@@ -463,22 +475,22 @@ export default function InvoiceModal({
   };
 
   const getModalTitle = () => {
-    if (!invoice && mode === 'create') return 'Create Invoice';
-    if (!invoice) return 'Invoice';
+    if (!currentInvoice && mode === 'create') return 'Create Invoice';
+    if (!currentInvoice) return 'Invoice';
     
     switch (mode) {
-      case 'send': return `Send Invoice ${invoice.number}`;
-      case 'edit': return `Edit Invoice ${invoice.number}`;
-      case 'mark_paid': return `Record Payment - Invoice ${invoice.number}`;
-      default: return `Invoice ${invoice.number}`;
+      case 'send': return `Send Invoice ${currentInvoice.number}`;
+      case 'edit': return `Edit Invoice ${currentInvoice.number}`;
+      case 'mark_paid': return `Record Payment - Invoice ${currentInvoice.number}`;
+      default: return `Invoice ${currentInvoice.number}`;
     }
   };
 
   const getModalDescription = () => {
     if (mode === 'send') return `Send invoice to ${customerName}`;
     if (mode === 'mark_paid') return `Record payment for ${customerName}`;
-    if (!invoice) return 'Create a new invoice';
-    return `${customerName} • ${invoice.status}${invoice.dueAt ? ` • Due ${formatDate(invoice.dueAt)}` : ''}`;
+    if (!currentInvoice) return 'Create a new invoice';
+    return `${customerName} • ${currentInvoice.status}${currentInvoice.dueAt ? ` • Due ${formatDate(currentInvoice.dueAt)}` : ''}`;
   };
 
   const renderContent = () => {
@@ -487,7 +499,7 @@ export default function InvoiceModal({
         <div className="space-y-4">
           <div className="flex items-center justify-between p-4 bg-muted/30 rounded-md">
             <span className="text-sm font-medium">Invoice Total</span>
-            <span className="text-lg font-semibold">{formatMoney(invoice?.total || 0)}</span>
+            <span className="text-lg font-semibold">{formatMoney(currentInvoice?.total || 0)}</span>
           </div>
 
           <div className="space-y-2">
@@ -609,24 +621,24 @@ export default function InvoiceModal({
       let initialData: Partial<InvoiceFormData> | undefined;
 
       try {
-        initialData = invoice ? {
-          customerId: invoice.customerId || '',
-          address: invoice.address || '',
-          lineItems: invoice.lineItems || [],
-          taxRate: invoice.taxRate || 0,
-          discount: invoice.discount || 0,
-          paymentTerms: invoice.paymentTerms,
-          frequency: invoice.frequency,
-          depositRequired: Boolean(invoice.depositRequired),
-          depositPercent: invoice.depositPercent || 50,
-          notesInternal: invoice.notesInternal || (relatedJob?.notes || ''),
-          terms: invoice.terms || '',
-          dueDate: invoice.dueAt ? (
-            typeof invoice.dueAt === 'string' ? new Date(invoice.dueAt) : invoice.dueAt
+        initialData = currentInvoice ? {
+          customerId: currentInvoice.customerId || '',
+          address: currentInvoice.address || '',
+          lineItems: currentInvoice.lineItems || [],
+          taxRate: currentInvoice.taxRate || 0,
+          discount: currentInvoice.discount || 0,
+          paymentTerms: currentInvoice.paymentTerms,
+          frequency: currentInvoice.frequency,
+          depositRequired: Boolean(currentInvoice.depositRequired),
+          depositPercent: currentInvoice.depositPercent || 50,
+          notesInternal: currentInvoice.notesInternal || (relatedJob?.notes || ''),
+          terms: currentInvoice.terms || '',
+          dueDate: currentInvoice.dueAt ? (
+            typeof currentInvoice.dueAt === 'string' ? new Date(currentInvoice.dueAt) : currentInvoice.dueAt
           ) : undefined
         } : undefined;
       } catch (error) {
-        console.error('Error initializing invoice form data:', error, invoice);
+        console.error('Error initializing invoice form data:', error, currentInvoice);
         initialData = undefined;
       }
 
@@ -644,7 +656,7 @@ export default function InvoiceModal({
     }
 
     // View mode
-    if (!invoice) {
+    if (!currentInvoice) {
       return <div className="text-sm text-muted-foreground">No invoice selected.</div>;
     }
 
@@ -664,17 +676,17 @@ export default function InvoiceModal({
                 <span>{customerEmail}</span>
               </div>
             )}
-            {invoice.address && (
+            {currentInvoice.address && (
               <div className="flex items-start justify-between text-sm">
                 <span className="text-muted-foreground">Address</span>
-                <span className="text-right">{invoice.address}</span>
+                <span className="text-right">{currentInvoice.address}</span>
               </div>
             )}
           </div>
         </div>
 
         {/* Line Items */}
-        {invoice.lineItems && invoice.lineItems.length > 0 && (
+        {currentInvoice.lineItems && currentInvoice.lineItems.length > 0 && (
           <div className="space-y-3">
             <h3 className="text-sm font-medium text-muted-foreground">Line Items</h3>
             <div className="border rounded-md">
@@ -684,7 +696,7 @@ export default function InvoiceModal({
                 <div className="col-span-2 text-right">Rate</div>
                 <div className="col-span-2 text-right">Amount</div>
               </div>
-              {invoice.lineItems.map((item: any, index: number) => (
+              {currentInvoice.lineItems.map((item: any, index: number) => (
                 <div key={item.id || index} className="grid grid-cols-12 gap-2 p-3 text-sm border-b last:border-b-0">
                   <div className="col-span-6">{item.name}</div>
                   <div className="col-span-2 text-right">{item.qty}</div>
@@ -702,33 +714,33 @@ export default function InvoiceModal({
           <div className="bg-muted/30 rounded-md p-3 space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Subtotal</span>
-              <span>{formatMoney(invoice.subtotal)}</span>
+              <span>{formatMoney(currentInvoice.subtotal)}</span>
             </div>
             
-            {invoice.taxRate > 0 && (
+            {currentInvoice.taxRate > 0 && (
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Tax ({(invoice.taxRate * 100).toFixed(1)}%)</span>
-                <span>{formatMoney(Math.round(invoice.subtotal * invoice.taxRate))}</span>
+                <span className="text-muted-foreground">Tax ({(currentInvoice.taxRate * 100).toFixed(1)}%)</span>
+                <span>{formatMoney(Math.round(currentInvoice.subtotal * currentInvoice.taxRate))}</span>
               </div>
             )}
             
-            {invoice.discount > 0 && (
+            {currentInvoice.discount > 0 && (
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Discount</span>
-                <span>-{formatMoney(invoice.discount)}</span>
+                <span>-{formatMoney(currentInvoice.discount)}</span>
               </div>
             )}
 
-            {invoice.depositRequired && invoice.depositPercent && (
+            {currentInvoice.depositRequired && currentInvoice.depositPercent && (
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Deposit ({invoice.depositPercent}%)</span>
-                <span>{formatMoney(Math.round(invoice.total * invoice.depositPercent / 100))}</span>
+                <span className="text-muted-foreground">Deposit ({currentInvoice.depositPercent}%)</span>
+                <span>{formatMoney(Math.round(currentInvoice.total * currentInvoice.depositPercent / 100))}</span>
               </div>
             )}
             
             <div className="flex items-center justify-between text-lg font-semibold pt-2 border-t">
               <span>Total</span>
-              <span>{formatMoney(invoice.total)}</span>
+              <span>{formatMoney(currentInvoice.total)}</span>
             </div>
           </div>
         </div>
@@ -737,37 +749,37 @@ export default function InvoiceModal({
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-muted-foreground">Invoice Details</h3>
           <div className="bg-muted/30 rounded-md p-3 space-y-2">
-            {invoice.createdAt && (
+            {currentInvoice.createdAt && (
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Issued Date</span>
-                <span>{formatDate(invoice.createdAt)}</span>
+                <span>{formatDate(currentInvoice.createdAt)}</span>
               </div>
             )}
             
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Due Date</span>
-              <span>{invoice.dueAt ? formatDate(invoice.dueAt) : 'Not set'}</span>
+              <span>{currentInvoice.dueAt ? formatDate(currentInvoice.dueAt) : 'Not set'}</span>
             </div>
 
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Payment Terms</span>
-              <span>{invoice.paymentTerms ? invoice.paymentTerms.replace(/_/g, ' ') : 'None'}</span>
+              <span>{currentInvoice.paymentTerms ? currentInvoice.paymentTerms.replace(/_/g, ' ') : 'None'}</span>
             </div>
 
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Frequency</span>
-              <span>{invoice.frequency ? invoice.frequency.replace(/_/g, ' ') : 'None'}</span>
+              <span>{currentInvoice.frequency ? currentInvoice.frequency.replace(/_/g, ' ') : 'None'}</span>
             </div>
 
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Deposit Required</span>
-              <span>{invoice.depositRequired ? `Yes (${invoice.depositPercent || 0}%)` : 'No'}</span>
+              <span>{currentInvoice.depositRequired ? `Yes (${currentInvoice.depositPercent || 0}%)` : 'No'}</span>
             </div>
 
-            {invoice.status === 'Paid' && invoice.paidAt && (
+            {currentInvoice.status === 'Paid' && currentInvoice.paidAt && (
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Paid Date</span>
-                <span>{formatDate(invoice.paidAt)}</span>
+                <span>{formatDate(currentInvoice.paidAt)}</span>
               </div>
             )}
           </div>
@@ -879,11 +891,11 @@ export default function InvoiceModal({
           <div className="bg-muted/30 rounded-md p-3 space-y-3">
             <div>
               <div className="text-xs font-medium text-muted-foreground mb-1">Internal Notes</div>
-              <div className="text-sm whitespace-pre-wrap">{invoice.notesInternal || 'None'}</div>
+              <div className="text-sm whitespace-pre-wrap">{currentInvoice.notesInternal || 'None'}</div>
             </div>
             <div>
               <div className="text-xs font-medium text-muted-foreground mb-1">Terms & Conditions</div>
-              <div className="text-sm whitespace-pre-wrap">{invoice.terms || 'None'}</div>
+              <div className="text-sm whitespace-pre-wrap">{currentInvoice.terms || 'None'}</div>
             </div>
           </div>
         </div>
@@ -963,12 +975,12 @@ export default function InvoiceModal({
     }
 
     // View mode actions
-    if (!invoice) {
+    if (!currentInvoice) {
       return null;
     }
 
-    const canMarkAsPaid = invoice.status !== 'Paid';
-    const canDelete = invoice.status === 'Draft'; // Only allow deleting draft invoices
+    const canMarkAsPaid = currentInvoice.status !== 'Paid';
+    const canDelete = currentInvoice.status === 'Draft'; // Only allow deleting draft invoices
 
     if (isMobile) {
       return (
