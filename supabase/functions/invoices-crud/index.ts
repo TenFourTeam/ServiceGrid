@@ -470,22 +470,48 @@ Deno.serve(async (req) => {
         }
 
         console.log('[invoices-crud] Successfully linked/unlinked quote/job');
+        
+        // Remove job_id and quote_id from updateData since RPC already handled them
+        delete updateData.job_id;
+        delete updateData.quote_id;
       }
 
-      const { data, error } = await supabase
-        .from('invoices')
-        .update(updateData)
-        .eq('id', id)
-        .eq('business_id', ctx.businessId)
-        .select('id, number, total, subtotal, tax_rate, discount, status, due_at, paid_at, created_at, updated_at, public_token, job_id, quote_id, customer_id, address, payment_terms, frequency, deposit_required, deposit_percent, notes_internal, terms')
-        .single();
+      let data;
+      // Only perform update if there are fields to update beyond job_id/quote_id
+      if (Object.keys(updateData).length > 0) {
+        const { data: updatedData, error } = await supabase
+          .from('invoices')
+          .update(updateData)
+          .eq('id', id)
+          .eq('business_id', ctx.businessId)
+          .select('id, number, total, subtotal, tax_rate, discount, status, due_at, paid_at, created_at, updated_at, public_token, job_id, quote_id, customer_id, address, payment_terms, frequency, deposit_required, deposit_percent, notes_internal, terms')
+          .single();
 
-      if (error) {
-        console.error('[invoices-crud] PUT error:', error);
-        throw new Error(`Failed to update invoice: ${error.message}`);
+        if (error) {
+          console.error('[invoices-crud] PUT error:', error);
+          throw new Error(`Failed to update invoice: ${error.message}`);
+        }
+        
+        data = updatedData;
+        console.log('[invoices-crud] Invoice updated:', data.id);
+      } else {
+        // No other fields to update, just fetch current state
+        const { data: currentData, error } = await supabase
+          .from('invoices')
+          .select('id, number, total, subtotal, tax_rate, discount, status, due_at, paid_at, created_at, updated_at, public_token, job_id, quote_id, customer_id, address, payment_terms, frequency, deposit_required, deposit_percent, notes_internal, terms')
+          .eq('id', id)
+          .eq('business_id', ctx.businessId)
+          .single();
+
+        if (error) {
+          console.error('[invoices-crud] GET error:', error);
+          throw new Error(`Failed to fetch invoice: ${error.message}`);
+        }
+        
+        data = currentData;
+        console.log('[invoices-crud] Invoice fetched after link:', data.id);
       }
 
-      console.log('[invoices-crud] Invoice updated:', data.id);
       return json({ invoice: data });
     }
 
