@@ -20,9 +20,17 @@ export function generateQuoteEmail({
   quote,
   baseUrl = window.location.origin
 }: QuoteEmailConfig) {
-  // Generate action URLs
-  const approveUrl = `${baseUrl}/quote-action?type=approve&quote_id=${encodeURIComponent(quote.id)}&token=${encodeURIComponent(quote.publicToken)}`;
-  const editUrl = `${baseUrl}/quote-action?type=edit&quote_id=${encodeURIComponent(quote.id)}&token=${encodeURIComponent(quote.publicToken)}`;
+  // Generate action URLs - email buttons go directly to the edge function
+  const approveUrl = buildEdgeFunctionUrl('quote-events', {
+    type: 'approve',
+    quote_id: quote.id,
+    token: quote.publicToken
+  });
+  const editUrl = buildEdgeFunctionUrl('quote-events', {
+    type: 'edit',
+    quote_id: quote.id,
+    token: quote.publicToken
+  });
   const viewUrl = `${baseUrl}/quote/${encodeURIComponent(quote.publicToken)}`;
   
   // Generate tracking pixel URL
