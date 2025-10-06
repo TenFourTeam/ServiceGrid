@@ -1,7 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { queryKeys } from "@/queries/keys";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useAuthApi } from "@/hooks/useAuthApi";
+import { supabase } from "@/integrations/supabase/client";
 
 import type { QuoteListItem } from '@/types';
 
@@ -15,6 +17,7 @@ interface UseQuotesDataOptions {
 export function useQuotesData(opts?: UseQuotesDataOptions) {
   const { isAuthenticated, businessId } = useBusinessContext();
   const authApi = useAuthApi();
+  const queryClient = useQueryClient();
   const enabled = isAuthenticated && !!businessId && (opts?.enabled ?? true);
 
   const query = useQuery({
@@ -41,6 +44,36 @@ export function useQuotesData(opts?: UseQuotesDataOptions) {
     },
     staleTime: 30_000,
   });
+
+  // Real-time subscription for instant updates
+  useEffect(() => {
+    if (!enabled || !businessId) return;
+
+    console.info("[useQuotesData] Setting up realtime subscription for business:", businessId);
+
+    const channel = supabase
+      .channel('quotes-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'quotes',
+          filter: `business_id=eq.${businessId}`
+        },
+        (payload) => {
+          console.info("[useQuotesData] Quote updated via realtime:", payload.new);
+          // Invalidate and refetch quotes when any quote is updated
+          queryClient.invalidateQueries({ queryKey: queryKeys.data.quotes(businessId) });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.info("[useQuotesData] Cleaning up realtime subscription");
+      supabase.removeChannel(channel);
+    };
+  }, [enabled, businessId, queryClient]);
 
   return {
     data: query.data?.quotes ?? [],

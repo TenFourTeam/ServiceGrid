@@ -106,9 +106,6 @@ export default function QuoteEditForm() {
         throw new Error(`Failed to submit request (${response.status})`);
       }
 
-      // Invalidate quotes cache so business owner sees updated status immediately
-      queryClient.invalidateQueries({ queryKey: ['data', 'quotes'] });
-
       // Redirect to confirmation page
       navigate(`/quote-action?type=edit&quote_id=${encodeURIComponent(quoteId)}&token=${encodeURIComponent(token)}`);
     } catch (err: any) {
