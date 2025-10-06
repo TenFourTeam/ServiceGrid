@@ -223,7 +223,7 @@ export function WorkOrderActions({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="bg-background border shadow-md z-50">
         {/* Schedule/Reschedule */}
-        <DropdownMenuItem asChild className="gap-2">
+        <DropdownMenuItem className="gap-2" onSelect={(e) => e.preventDefault()}>
           <ReschedulePopover 
             job={job} 
             asDropdownItem={true}
