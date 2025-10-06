@@ -114,6 +114,8 @@ const invalidationHelpers = {
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary() });
     // Cross-entity: invoices can affect jobs
     queryClient.invalidateQueries({ queryKey: queryKeys.data.jobs(businessId) });
+    // Cross-entity: invoices can be linked to quotes, so refetch quotes too
+    queryClient.invalidateQueries({ queryKey: queryKeys.data.quotes(businessId) });
   },
   
   requests: (queryClient: QueryClient, businessId: string) => {
