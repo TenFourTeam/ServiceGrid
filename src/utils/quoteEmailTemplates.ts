@@ -1,13 +1,12 @@
 import type { Quote } from "@/types";
 import { generateQuoteEmail as buildQuoteEmailFromEngine, combineMessageWithEmail } from "./emailTemplateEngine";
-import { buildEdgeFunctionUrl } from "./env";
+import { buildEdgeFunctionUrl, getAppUrl } from "./env";
 
 interface QuoteEmailConfig {
   businessName: string;
   businessLogoUrl?: string;
   customerName?: string;
   quote: Quote;
-  baseUrl?: string;
 }
 
 /**
@@ -17,9 +16,10 @@ export function generateQuoteEmail({
   businessName,
   businessLogoUrl,
   customerName,
-  quote,
-  baseUrl = window.location.origin
+  quote
 }: QuoteEmailConfig) {
+  const baseUrl = getAppUrl();
+  
   // Generate action URLs - email buttons go directly to the edge function
   const approveUrl = buildEdgeFunctionUrl('quote-events', {
     type: 'approve',
