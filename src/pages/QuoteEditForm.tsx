@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,10 +10,12 @@ import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { formatMoney } from '@/utils/format';
 import { buildEdgeFunctionUrl } from '@/utils/env';
+import { queryKeys } from '@/queries/keys';
 
 export default function QuoteEditForm() {
   const { quoteId, token } = useParams<{ quoteId: string; token: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [quote, setQuote] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -102,6 +105,9 @@ export default function QuoteEditForm() {
       if (!response.ok) {
         throw new Error(`Failed to submit request (${response.status})`);
       }
+
+      // Invalidate quotes cache so business owner sees updated status immediately
+      queryClient.invalidateQueries({ queryKey: ['data', 'quotes'] });
 
       // Redirect to confirmation page
       navigate(`/quote-action?type=edit&quote_id=${encodeURIComponent(quoteId)}&token=${encodeURIComponent(token)}`);
