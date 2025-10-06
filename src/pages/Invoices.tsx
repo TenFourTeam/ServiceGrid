@@ -76,6 +76,7 @@ export default function InvoicesPage() {
       businessId: '',
       customerId: row.customerId,
       jobId: row.jobId || undefined,
+      quoteId: row.quoteId || undefined,
       lineItems: [] as any[],
       taxRate: row.taxRate ?? 0,
       discount: row.discount,
