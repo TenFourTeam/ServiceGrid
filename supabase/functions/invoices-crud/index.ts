@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
         .from('invoices')
         .select(`
           id, number, total, subtotal, tax_rate, discount, status, due_at, paid_at, 
-          created_at, updated_at, public_token, job_id,
+          created_at, updated_at, public_token, job_id, quote_id,
           customer_id, address, payment_terms, frequency, 
           deposit_required, deposit_percent, notes_internal, terms,
           customers!inner(name, email)
