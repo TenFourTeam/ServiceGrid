@@ -379,19 +379,10 @@ export default function InvoiceModal({
   const handleLinkJob = async (jobId: string) => {
     if (!invoice || !businessId) return;
     
-    const job = jobs.find(j => j.id === jobId);
-    
     try {
-      const updateData: any = { jobId };
-      
-      // Inherit notes from job if invoice notes are empty
-      if (job?.notes && !invoice.notesInternal) {
-        updateData.notesInternal = job.notes;
-      }
-      
       await authApi.invoke('invoices-crud', {
         method: 'PUT',
-        body: { id: invoice.id, ...updateData },
+        body: { id: invoice.id, jobId },
         toast: {
           success: 'Work order linked successfully',
           loading: 'Linking work order...',

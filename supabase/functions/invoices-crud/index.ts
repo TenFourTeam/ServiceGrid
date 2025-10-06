@@ -439,6 +439,20 @@ Deno.serve(async (req) => {
         }
       }
 
+      // If linking to a job and invoice has no notes, inherit job notes
+      if (jobId && !updateData.notes_internal) {
+        const { data: jobData } = await supabase
+          .from('jobs')
+          .select('notes')
+          .eq('id', jobId)
+          .eq('business_id', ctx.businessId)
+          .single();
+        
+        if (jobData?.notes) {
+          updateData.notes_internal = jobData.notes;
+        }
+      }
+
       // Handle quote/job linking using secure database function
       if (jobId !== undefined || quoteId !== undefined) {
         console.log('[invoices-crud] Linking/unlinking quote/job for invoice:', id);
@@ -463,7 +477,7 @@ Deno.serve(async (req) => {
         .update(updateData)
         .eq('id', id)
         .eq('business_id', ctx.businessId)
-        .select()
+        .select('id, number, total, subtotal, tax_rate, discount, status, due_at, paid_at, created_at, updated_at, public_token, job_id, quote_id, customer_id, address, payment_terms, frequency, deposit_required, deposit_percent, notes_internal, terms')
         .single();
 
       if (error) {
