@@ -396,7 +396,8 @@ Deno.serve(async (req) => {
     if (depositPercent !== undefined) updateData.deposit_percent = depositPercent;
     if (notesInternal !== undefined) updateData.notes_internal = notesInternal;
     if (terms !== undefined) updateData.terms = terms;
-    // Note: jobId and quoteId are handled separately via the database function below
+    if (jobId !== undefined) updateData.job_id = jobId;
+    if (quoteId !== undefined) updateData.quote_id = quoteId;
 
       // Handle line items update if provided
       if (lineItems && Array.isArray(lineItems)) {
@@ -451,29 +452,6 @@ Deno.serve(async (req) => {
         if (jobData?.notes) {
           updateData.notes_internal = jobData.notes;
         }
-      }
-
-      // Handle quote/job linking using secure database function
-      if (jobId !== undefined || quoteId !== undefined) {
-        console.log('[invoices-crud] Linking/unlinking quote/job for invoice:', id);
-        
-        const { error: linkError } = await supabase.rpc('link_invoice_relations', {
-          p_invoice_id: id,
-          p_quote_id: quoteId || null,
-          p_job_id: jobId || null,
-          p_user_id: ctx.userId
-        });
-
-        if (linkError) {
-          console.error('[invoices-crud] Error linking quote/job:', linkError);
-          throw new Error(`Failed to link quote/job: ${linkError.message}`);
-        }
-
-        console.log('[invoices-crud] Successfully linked/unlinked quote/job');
-        
-        // Remove job_id and quote_id from updateData since RPC already handled them
-        delete updateData.job_id;
-        delete updateData.quote_id;
       }
 
       let data;
