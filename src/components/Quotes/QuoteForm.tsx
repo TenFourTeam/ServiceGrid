@@ -46,8 +46,8 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
   const [showCreateCustomer, setShowCreateCustomer] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   
-  // Create storage key based on mode and quote ID
-  const storageKey = initialData?.id ? `quote-draft-${initialData.id}` : 'quote-draft-new';
+  // Only use session storage for new quote creation
+  const storageKey = mode === 'create' ? 'quote-draft-new' : null;
   
   const [data, setData] = useState<QuoteFormData>({
     customerId: '',
@@ -64,8 +64,11 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
     isSubscription: false,
   });
 
-  // Session storage for draft persistence
-  const [storedData, setStoredData, removeStoredData] = useSessionStorage<QuoteFormData | null>(storageKey, null);
+  // Session storage for draft persistence (only used in create mode)
+  const [storedData, setStoredData, removeStoredData] = useSessionStorage<QuoteFormData | null>(
+    storageKey || 'quote-no-storage',
+    null
+  );
   
   // Debounced value for auto-saving
   const debouncedData = useDebouncedValue(data, 1000);
@@ -73,7 +76,7 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
   // Populate form with initial data when provided or restore from storage
   useEffect(() => {
     if (initialData) {
-      // NEVER use stored data for existing quotes - always use the actual quote data
+      // Always use initialData for existing quotes
       setData({
         customerId: initialData.customerId || '',
         address: initialData.address || '',
@@ -89,34 +92,20 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
         isSubscription: initialData.isSubscription || false,
       });
       setDiscountInput(formatCurrencyInputNoSymbol(initialData.discount || 0));
-      
-      // Clear any stored draft data when opening an existing quote
-      removeStoredData();
-    } else if (storedData && mode === 'create') {
-      // For new quotes, restore from storage if available
+    } else if (storedData && mode === 'create' && storageKey) {
+      // Only restore from storage in create mode
       setData(storedData);
       setDiscountInput(formatCurrencyInputNoSymbol(storedData.discount || 0));
     }
-  }, [initialData, defaultTaxRate, mode, removeStoredData]);
+  }, [initialData, defaultTaxRate, mode, storageKey]);
 
-  // Auto-save to session storage when data changes (only for drafts)
+  // Auto-save to session storage when data changes (only for new quotes)
   useEffect(() => {
-    const shouldAutoSave = (mode === 'create') || (initialData?.status === 'Draft');
-    if (shouldAutoSave && debouncedData && (debouncedData.customerId || debouncedData.lineItems.length > 0)) {
+    if (mode === 'create' && storageKey && debouncedData && (debouncedData.customerId || debouncedData.lineItems.length > 0)) {
       setStoredData(debouncedData);
       setLastSaved(new Date());
     }
-  }, [debouncedData, mode, initialData?.status, setStoredData]);
-
-  // Clear stored data when switching between different quotes
-  useEffect(() => {
-    return () => {
-      // Cleanup function runs when component unmounts or when initialData.id changes
-      if (initialData?.id) {
-        removeStoredData();
-      }
-    };
-  }, [initialData?.id, removeStoredData]);
+  }, [debouncedData, mode, storageKey, setStoredData]);
 
   // Auto-populate address when customer changes
   useEffect(() => {

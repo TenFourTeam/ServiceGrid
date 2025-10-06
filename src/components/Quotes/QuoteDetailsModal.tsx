@@ -72,6 +72,7 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
     
     if (!open) {
       setQuote(null);
+      setLoading(false);
       return;
     }
 
@@ -371,6 +372,7 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
 
         <div className="px-4 pb-4 overflow-y-auto">
           <QuoteForm
+            key={currentMode === 'create' ? 'create-new' : quote?.id || 'no-quote'}
             customers={customers}
             defaultTaxRate={defaultTaxRate}
             onSubmit={handleSubmit}
@@ -382,7 +384,7 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
               }
             }}
             disabled={isSubmitting}
-            initialData={quote || undefined}
+            initialData={currentMode === 'create' ? undefined : (quote || undefined)}
             mode={currentMode}
           />
 
