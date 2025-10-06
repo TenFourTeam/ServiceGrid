@@ -23,6 +23,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { CustomerCombobox } from '@/components/Quotes/CustomerCombobox';
 import { CustomerBottomModal } from '@/components/Customers/CustomerBottomModal';
+import { JobMemberAssignments } from '@/components/Jobs/JobMemberAssignments';
 import { cn } from '@/lib/utils';
 
 interface JobEditModalProps {
@@ -325,6 +326,9 @@ export function JobEditModal({
                 className="min-h-[80px]"
               />
             </div>
+
+            {/* Team Assignment */}
+            {job && <JobMemberAssignments job={job} />}
           </div>
 
           <DrawerFooter>

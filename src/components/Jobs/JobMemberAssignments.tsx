@@ -1,19 +1,22 @@
 import { useState } from "react";
 import { Check, UserPlus, X } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useJobAssignments } from "@/hooks/useJobAssignments";
 import { useBusinessMembersData } from "@/hooks/useBusinessMembers";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
-import type { Job, BusinessMember } from "@/types";
+import { queryKeys } from "@/queries/keys";
+import type { Job, BusinessMember, JobsCacheData } from "@/types";
 
 interface JobMemberAssignmentsProps {
   job: Job;
 }
 
 export function JobMemberAssignments({ job }: JobMemberAssignmentsProps) {
-  const { canManage } = useBusinessContext();
+  const queryClient = useQueryClient();
+  const { canManage, businessId, userId } = useBusinessContext();
   const { data: allMembers, isLoading: membersLoading } = useBusinessMembersData();
   const { assignMembers, unassignMembers } = useJobAssignments();
   const [showAssignment, setShowAssignment] = useState(false);
@@ -31,7 +34,14 @@ export function JobMemberAssignments({ job }: JobMemberAssignmentsProps) {
     );
   }
 
-  const assignedMembers = job.assignedMembers || [];
+  // Get cached job data for instant updates
+  const cachedJobsData = queryClient.getQueryData<JobsCacheData>(
+    queryKeys.data.jobs(businessId || '', userId || '')
+  );
+  const cachedJob = cachedJobsData?.jobs?.find(j => j.id === job.id);
+  const displayJob = cachedJob || job;
+  
+  const assignedMembers = displayJob.assignedMembers || [];
   const unassignedMembers = allMembers.filter(member => 
     !assignedMembers.some(assigned => assigned.user_id === member.user_id)
   );

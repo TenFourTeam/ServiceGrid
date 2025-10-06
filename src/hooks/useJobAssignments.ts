@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useAuthApi } from "@/hooks/useAuthApi";
 import { queryKeys } from "@/queries/keys";
+import type { JobsCacheData, BusinessMember } from "@/types";
 
 export interface JobAssignmentRequest {
   jobId: string;
@@ -34,12 +35,41 @@ export function useJobAssignments() {
       
       return data;
     },
+    onMutate: async ({ jobId, userIds }) => {
+      const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
+      await queryClient.cancelQueries({ queryKey });
+      
+      const previousData = queryClient.getQueryData<JobsCacheData>(queryKey);
+      
+      queryClient.setQueryData<JobsCacheData>(queryKey, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          jobs: old.jobs.map((job) => {
+            if (job.id === jobId) {
+              const existingMembers = job.assignedMembers || [];
+              const newMembers: BusinessMember[] = userIds.map(user_id => ({ user_id } as BusinessMember));
+              return {
+                ...job,
+                assignedMembers: [...existingMembers, ...newMembers]
+              };
+            }
+            return job;
+          })
+        };
+      });
+      
+      return { previousData };
+    },
     onSuccess: () => {
-      // Invalidate jobs data to refresh the assignments for all users in this business
       queryClient.invalidateQueries({ queryKey: ['data', 'jobs', businessId] });
     },
-    onError: (error: Error | unknown) => {
+    onError: (error: Error | unknown, _variables, context) => {
       console.error('[useJobAssignments.assignMembers] error:', error);
+      if (context?.previousData) {
+        const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
+        queryClient.setQueryData(queryKey, context.previousData);
+      }
     },
   });
 
@@ -61,12 +91,40 @@ export function useJobAssignments() {
       
       return data;
     },
+    onMutate: async ({ jobId, userIds }) => {
+      const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
+      await queryClient.cancelQueries({ queryKey });
+      
+      const previousData = queryClient.getQueryData<JobsCacheData>(queryKey);
+      
+      queryClient.setQueryData<JobsCacheData>(queryKey, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          jobs: old.jobs.map((job) => {
+            if (job.id === jobId) {
+              const existingMembers = job.assignedMembers || [];
+              return {
+                ...job,
+                assignedMembers: existingMembers.filter(m => !userIds.includes(m.user_id))
+              };
+            }
+            return job;
+          })
+        };
+      });
+      
+      return { previousData };
+    },
     onSuccess: () => {
-      // Invalidate jobs data to refresh the assignments for all users in this business
       queryClient.invalidateQueries({ queryKey: ['data', 'jobs', businessId] });
     },
-    onError: (error: Error | unknown) => {
+    onError: (error: Error | unknown, _variables, context) => {
       console.error('[useJobAssignments.unassignMembers] error:', error);
+      if (context?.previousData) {
+        const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
+        queryClient.setQueryData(queryKey, context.previousData);
+      }
     },
   });
 
