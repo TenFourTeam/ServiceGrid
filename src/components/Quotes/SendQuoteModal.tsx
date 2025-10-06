@@ -116,15 +116,14 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
     }
     setSending(true);
     try {
-      const finalHtml = combineMessageWithEmail(message, html);
       console.info('[SendQuoteModal] sending quote email', { quoteId: quote.id, to });
-      await authApi.invoke("resend-send-email", { 
-        method: 'POST',
+      await authApi.invoke("quotes-crud?action=send-email", { 
+        method: 'PATCH',
         body: {
+          quoteId: quote.id,
           to, 
-          subject: subject || defaultSubject, 
-          html: finalHtml, 
-          quote_id: quote.id 
+          subject: subject || defaultSubject,
+          message
         },
         toast: {
           success: "Quote sent successfully",
