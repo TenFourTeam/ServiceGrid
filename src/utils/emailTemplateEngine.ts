@@ -130,7 +130,7 @@ export function generateQuoteEmail(props: QuoteEmailProps) {
 
   const actions = createActionButtons([
     { label: 'Approve', url: approveUrl, primary: true },
-    { label: 'Request Edits', url: editUrl }
+    { label: 'Request Changes', url: editUrl }
   ]);
 
   const content = `
