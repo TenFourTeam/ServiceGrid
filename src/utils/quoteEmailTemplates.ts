@@ -20,25 +20,13 @@ export function generateQuoteEmail({
 }: QuoteEmailConfig) {
   const baseUrl = getAppUrl();
   
-  // Generate action URLs - email buttons go directly to the edge function
-  const approveUrl = buildEdgeFunctionUrl('quote-events', {
-    type: 'approve',
-    quote_id: quote.id,
-    token: quote.publicToken
-  });
-  const editUrl = buildEdgeFunctionUrl('quote-events', {
-    type: 'edit',
-    quote_id: quote.id,
-    token: quote.publicToken
-  });
+  // Generate action URLs - use servicegrid.app proxy to hide Supabase infrastructure
+  const approveUrl = `${baseUrl}/api/quote-events?type=approve&quote_id=${quote.id}&token=${quote.publicToken}`;
+  const editUrl = `${baseUrl}/api/quote-events?type=edit&quote_id=${quote.id}&token=${quote.publicToken}`;
   const viewUrl = `${baseUrl}/quote/${encodeURIComponent(quote.publicToken)}`;
   
   // Generate tracking pixel URL
-  const pixelUrl = buildEdgeFunctionUrl('quote-events', {
-    type: 'open',
-    quote_id: quote.id,
-    token: quote.publicToken
-  });
+  const pixelUrl = `${baseUrl}/api/quote-events?type=open&quote_id=${quote.id}&token=${quote.publicToken}`;
   
   // Build email content
   const emailContent = buildQuoteEmailFromEngine({

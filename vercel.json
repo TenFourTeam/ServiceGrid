@@ -36,6 +36,10 @@
   ],
   "rewrites": [
     {
+      "source": "/api/quote-events",
+      "destination": "https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/quote-events"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

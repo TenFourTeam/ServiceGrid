@@ -470,11 +470,11 @@ function buildQuoteEmailHTML(params: {
 }): string {
   const { businessName, businessLogoUrl, customerName, quote, lineItems, message, baseUrl } = params;
   
-  // Generate action URLs - point directly to edge function
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-  const approveUrl = `${supabaseUrl}/functions/v1/quote-events?type=approve&quote_id=${quote.id}&token=${quote.public_token}`;
-  const editUrl = `${supabaseUrl}/functions/v1/quote-events?type=edit&quote_id=${quote.id}&token=${quote.public_token}`;
-  const pixelUrl = `${supabaseUrl}/functions/v1/quote-events?type=open&quote_id=${quote.id}&token=${quote.public_token}`;
+  // Generate action URLs - use servicegrid.app proxy to hide Supabase infrastructure
+  const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://servicegrid.app';
+  const approveUrl = `${frontendUrl}/api/quote-events?type=approve&quote_id=${quote.id}&token=${quote.public_token}`;
+  const editUrl = `${frontendUrl}/api/quote-events?type=edit&quote_id=${quote.id}&token=${quote.public_token}`;
+  const pixelUrl = `${frontendUrl}/api/quote-events?type=open&quote_id=${quote.id}&token=${quote.public_token}`;
   
   // Header
   const headerLogo = businessLogoUrl 
