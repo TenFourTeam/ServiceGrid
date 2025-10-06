@@ -867,7 +867,7 @@ export default function InvoiceModal({
             </div>
             <div>
               <div className="text-xs font-medium text-muted-foreground mb-1">Terms & Conditions</div>
-              <div className="text-sm whitespace-pre-wrap">{invoice.terms || 'None'}</div>
+              <div className="text-sm whitespace-pre-wrap">{invoice.terms || relatedQuote?.terms || 'None'}</div>
             </div>
           </div>
         </div>

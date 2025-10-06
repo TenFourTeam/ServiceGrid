@@ -466,6 +466,32 @@ Deno.serve(async (req) => {
         }
       }
 
+      // If linking to a quote, check if invoice has terms and inherit quote terms if empty
+      if (quoteId) {
+        // First fetch the current invoice to check its terms
+        const { data: currentInvoice } = await supabase
+          .from('invoices')
+          .select('terms')
+          .eq('id', id)
+          .eq('business_id', ctx.businessId)
+          .single();
+        
+        // If invoice terms are empty and terms wasn't explicitly sent in this update
+        if ((!currentInvoice?.terms || currentInvoice.terms.trim() === '') 
+            && terms === undefined) {
+          const { data: quoteData } = await supabase
+            .from('quotes')
+            .select('terms')
+            .eq('id', quoteId)
+            .eq('business_id', ctx.businessId)
+            .single();
+          
+          if (quoteData?.terms) {
+            updateData.terms = quoteData.terms;
+          }
+        }
+      }
+
       let data;
       // Only perform update if there are fields to update beyond job_id/quote_id
       if (Object.keys(updateData).length > 0) {
