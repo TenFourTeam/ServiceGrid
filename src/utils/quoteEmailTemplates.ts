@@ -22,7 +22,7 @@ export function generateQuoteEmail({
   
   // Generate action URLs - use /quote-action route for branded confirmation pages
   const approveUrl = `${baseUrl}/quote-action?type=approve&quote_id=${quote.id}&token=${quote.publicToken}`;
-  const editUrl = `${baseUrl}/quote-action?type=edit&quote_id=${quote.id}&token=${quote.publicToken}`;
+  const editUrl = `${baseUrl}/quote-edit/${quote.id}/${quote.publicToken}`;
   const viewUrl = `${baseUrl}/quote/${encodeURIComponent(quote.publicToken)}`;
   
   // Generate tracking pixel URL - goes directly to edge function
