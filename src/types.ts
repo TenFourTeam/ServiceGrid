@@ -132,6 +132,9 @@ export interface Job {
   assignedMembers?: BusinessMember[]; // NEW: assigned team members
   isAssessment?: boolean; // NEW: marks if this is an assessment job
   requestId?: string; // NEW: links back to the originating request
+  confirmationToken?: string; // NEW: confirmation token for work order confirmations
+  confirmationStatus?: 'pending' | 'confirmed' | 'expired' | null; // NEW: confirmation status
+  confirmedAt?: ISODate; // NEW: when confirmation was received
   createdAt: ISODate;
   updatedAt: ISODate;
 }

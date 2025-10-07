@@ -327,6 +327,7 @@
       "unscheduled": "Sin Programar",
       "today": "Hoy",
       "upcoming": "Próximos",
+      "awaitingConfirmation": "Esperando Confirmación",
       "completed": "Completados"
     },
     "table": {
@@ -335,7 +336,13 @@
       "address": "Dirección",
       "scheduled": "Programado",
       "status": "Estado",
+      "confirmation": "Confirmación",
       "amount": "Monto"
+    },
+    "confirmation": {
+      "pending": "Esperando Confirmación",
+      "confirmed": "Confirmado",
+      "expired": "Expirado"
     },
     "status": {
       "scheduled": "Programado",

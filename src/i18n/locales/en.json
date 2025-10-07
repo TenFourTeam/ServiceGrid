@@ -327,6 +327,7 @@
       "unscheduled": "Unscheduled",
       "today": "Today", 
       "upcoming": "Upcoming",
+      "awaitingConfirmation": "Awaiting Confirmation",
       "completed": "Completed"
     },
     "table": {
@@ -335,7 +336,13 @@
       "address": "Address",
       "scheduled": "Scheduled",
       "status": "Status",
+      "confirmation": "Confirmation",
       "amount": "Amount"
+    },
+    "confirmation": {
+      "pending": "Awaiting Confirmation",
+      "confirmed": "Confirmed",
+      "expired": "Expired"
     },
     "status": {
       "scheduled": "Scheduled",

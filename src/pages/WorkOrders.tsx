@@ -46,7 +46,7 @@ function useFilteredJobs() {
   const { data: customers = [] } = useCustomersData();
   const { data: invoices = [] } = useInvoicesData();
   const [q, setQ] = useState('');
-  const [sort, setSort] = useState<'all' | 'unscheduled' | 'today' | 'upcoming' | 'completed'>('all');
+  const [sort, setSort] = useState<'all' | 'unscheduled' | 'today' | 'upcoming' | 'completed' | 'awaiting-confirmation'>('all');
   const [tableSort, setTableSort] = useState<{ column: string; direction: 'asc' | 'desc' } | null>(null);
 
   const todayStart = useMemo(() => {
@@ -94,6 +94,11 @@ function useFilteredJobs() {
       list = list.filter(j => j.status !== 'Completed' && isValidDate(j.startsAt) && new Date(j.startsAt!) > todayEnd);
     } else if (sort === 'completed') {
       list = list.filter(j => j.status === 'Completed' && isValidDate(j.startsAt) && new Date(j.startsAt!) >= sevenDaysAgo);
+    } else if (sort === 'awaiting-confirmation') {
+      list = list.filter(j => 
+        j.confirmationStatus === 'pending' && 
+        j.status !== 'Completed'
+      );
     }
     if (qLower) {
       list = list.filter(j => {
@@ -131,6 +136,10 @@ function useFilteredJobs() {
             aValue = a.total || 0;
             bValue = b.total || 0;
             break;
+          case 'confirmation':
+            aValue = a.confirmationStatus || 'zzz';
+            bValue = b.confirmationStatus || 'zzz';
+            break;
         }
 
         if (typeof aValue === 'number' && typeof bValue === 'number') {
@@ -151,6 +160,10 @@ function useFilteredJobs() {
     today: jobs.filter(j => j.status !== 'Completed' && isValidDate(j.startsAt) && new Date(j.startsAt!) >= todayStart && new Date(j.startsAt!) <= todayEnd).length,
     upcoming: jobs.filter(j => j.status !== 'Completed' && isValidDate(j.startsAt) && new Date(j.startsAt!) > todayEnd).length,
     completed: jobs.filter(j => j.status === 'Completed' && isValidDate(j.startsAt) && new Date(j.startsAt!) >= sevenDaysAgo).length,
+    awaitingConfirmation: jobs.filter(j => 
+      j.confirmationStatus === 'pending' && 
+      j.status !== 'Completed'
+    ).length,
   }), [jobs, sevenDaysAgo, todayStart, todayEnd]);
 
   const hasInvoice = (jobId: string) => invoices.some(i=> i.jobId === jobId);
@@ -184,6 +197,46 @@ function StatusChip({ status, t }: { status: Job['status'], t: (key: string) => 
   return <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${styles}`}>{t(statusKey)}</span>;
 }
 
+function ConfirmationBadge({ 
+  confirmationStatus, 
+  t 
+}: { 
+  confirmationStatus?: 'pending' | 'confirmed' | 'expired' | null;
+  t: (key: string) => string;
+}) {
+  if (!confirmationStatus) return null;
+  
+  const config = {
+    pending: {
+      icon: '⏳',
+      text: t('workOrders.confirmation.pending'),
+      className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300'
+    },
+    confirmed: {
+      icon: '✓',
+      text: t('workOrders.confirmation.confirmed'),
+      className: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
+    },
+    expired: {
+      icon: '✕',
+      text: t('workOrders.confirmation.expired'),
+      className: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300'
+    }
+  };
+  
+  const { icon, text, className } = config[confirmationStatus];
+  
+  return (
+    <span 
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${className}`}
+      title={text}
+    >
+      <span>{icon}</span>
+      <span className="hidden sm:inline">{text}</span>
+    </span>
+  );
+}
+
 function WorkOrderRow({ job, uninvoiced, customerName, when, onOpen, onOpenJobEditModal, t, userRole, existingInvoice }: {
   job: Job;
   uninvoiced: boolean;
@@ -204,11 +257,17 @@ function WorkOrderRow({ job, uninvoiced, customerName, when, onOpen, onOpenJobEd
       onClick={onOpen} 
       className="relative p-4 border rounded-md bg-card shadow-sm cursor-pointer hover:bg-accent/30 transition-colors"
     >
-      {/* Status badge in top-right corner */}
-      <div className="absolute top-2 right-2">
+      {/* Status and Confirmation badges in top-right corner */}
+      <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
         <Badge className={statusColors[job.status]}>
           {t(statusKey)}
         </Badge>
+        {job.confirmationToken && (
+          <ConfirmationBadge 
+            confirmationStatus={job.confirmationStatus} 
+            t={t} 
+          />
+        )}
       </div>
       
       {/* Actions menu halfway up right edge */}
@@ -345,6 +404,7 @@ export default function WorkOrdersPage() {
                 <option value="unscheduled">{t('workOrders.filters.unscheduled')} ({counts.unscheduled})</option>
                 <option value="today">{t('workOrders.filters.today')} ({counts.today})</option>
                 <option value="upcoming">{t('workOrders.filters.upcoming')} ({counts.upcoming})</option>
+                <option value="awaiting-confirmation">{t('workOrders.filters.awaitingConfirmation')} ({counts.awaitingConfirmation})</option>
                 <option value="completed">{t('workOrders.filters.completed')} ({counts.completed})</option>
               </select>
             </div>
@@ -435,6 +495,12 @@ export default function WorkOrdersPage() {
                         {t('workOrders.table.status')} {tableSort?.column === 'status' && (tableSort.direction === 'asc' ? '▲' : '▼')}
                       </TableHead>
                       <TableHead 
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleTableSort('confirmation')}
+                      >
+                        {t('workOrders.table.confirmation')} {tableSort?.column === 'confirmation' && (tableSort.direction === 'asc' ? '▲' : '▼')}
+                      </TableHead>
+                      <TableHead 
                         className="cursor-pointer hover:bg-muted/50 text-right"
                         onClick={() => handleTableSort('amount')}
                       >
@@ -469,6 +535,16 @@ export default function WorkOrdersPage() {
                           <TableCell>{when}</TableCell>
                           <TableCell>
                             <StatusChip status={j.status} t={t} />
+                          </TableCell>
+                          <TableCell>
+                            {j.confirmationToken ? (
+                              <ConfirmationBadge 
+                                confirmationStatus={j.confirmationStatus} 
+                                t={t} 
+                              />
+                            ) : (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
                           </TableCell>
                           <TableCell className="text-right">{formatMoney(j.total || 0)}</TableCell>
                           <TableCell onClick={(e) => e.stopPropagation()}>
