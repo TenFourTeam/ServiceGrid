@@ -205,7 +205,7 @@ const handler = async (req: Request): Promise<Response> => {
           hour12: true
         }) : null;
 
-        const confirmationUrl = `${Deno.env.get('FRONTEND_URL')}/job-confirmation?token=${confirmationToken}`;
+        const confirmationUrl = `${Deno.env.get('FRONTEND_URL')}/job-action?type=confirm&job_id=${job.id}&token=${confirmationToken}`;
         
         // Generate email using shared template
         const { subject, html: emailHtml } = generateWorkOrderConfirmationEmail({

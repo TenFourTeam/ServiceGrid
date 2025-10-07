@@ -20,89 +20,66 @@ const handler = async (req: Request): Promise<Response> => {
     );
 
     const url = new URL(req.url);
-    const token = req.method === 'GET' ? url.searchParams.get('token') : null;
+    const type = url.searchParams.get('type');
+    const jobId = url.searchParams.get('job_id');
+    const token = url.searchParams.get('token');
 
     if (req.method === 'GET') {
-      // Fetch job details by confirmation token
-      if (!token) {
+      // Handle job confirmation via GET request (new flow, like quote-events)
+      if (!type || !jobId || !token) {
         return new Response(
-          JSON.stringify({ error: 'Missing confirmation token' }),
+          JSON.stringify({ error: 'Missing required parameters' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      const { data: job, error: jobError } = await supabaseAdmin
-        .from('jobs')
-        .select(`
-          *,
-          business:businesses!jobs_business_id_fkey(name, phone, reply_to_email),
-          customer:customers!jobs_customer_id_fkey(name, email, phone, address)
-        `)
-        .eq('confirmation_token', token)
-        .single();
+      if (type === 'confirm') {
+        // Verify token and update job status
+        const { data: job, error: fetchError } = await supabaseAdmin
+          .from('jobs')
+          .select('id, business_id, status, confirmation_token')
+          .eq('id', jobId)
+          .eq('confirmation_token', token)
+          .single();
 
-      if (jobError || !job) {
-        console.error('Job fetch error:', jobError);
+        if (fetchError || !job) {
+          console.error('Job fetch error for confirmation:', fetchError);
+          return new Response(
+            JSON.stringify({ error: 'Job not found or confirmation link expired' }),
+            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Update job status to Schedule Approved
+        const { data: updatedJob, error: updateError } = await supabaseAdmin
+          .from('jobs')
+          .update({ 
+            status: 'Schedule Approved',
+            confirmed_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', job.id)
+          .select()
+          .single();
+
+        if (updateError) {
+          console.error('Job update error:', updateError);
+          return new Response(
+            JSON.stringify({ error: 'Failed to confirm appointment' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        console.log(`Job ${job.id} confirmed successfully`);
         return new Response(
-          JSON.stringify({ error: 'Job not found or confirmation link expired' }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ success: true, job: updatedJob }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
       return new Response(
-        JSON.stringify({ job }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-
-    } else if (req.method === 'POST') {
-      // Update job status to Schedule Approved
-      const { token: postToken } = await req.json();
-
-      if (!postToken) {
-        return new Response(
-          JSON.stringify({ error: 'Missing confirmation token' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      // First, find the job
-      const { data: job, error: fetchError } = await supabaseAdmin
-        .from('jobs')
-        .select('id, business_id, status')
-        .eq('confirmation_token', postToken)
-        .single();
-
-      if (fetchError || !job) {
-        console.error('Job fetch error for confirmation:', fetchError);
-        return new Response(
-          JSON.stringify({ error: 'Job not found or confirmation link expired' }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      // Update job status to Schedule Approved
-      const { data: updatedJob, error: updateError } = await supabaseAdmin
-        .from('jobs')
-        .update({ 
-          status: 'Schedule Approved',
-          confirmed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', job.id)
-        .select()
-        .single();
-
-      if (updateError) {
-        console.error('Job update error:', updateError);
-        return new Response(
-          JSON.stringify({ error: 'Failed to confirm appointment' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      return new Response(
-        JSON.stringify({ success: true, job: updatedJob }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Invalid action type' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
