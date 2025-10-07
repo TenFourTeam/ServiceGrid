@@ -177,3 +177,16 @@ verify_jwt = false
 
 [functions.quote-view]
 verify_jwt = false
+
+# Referral system functions
+[functions.create-referral-code]
+verify_jwt = false
+
+[functions.get-referral-stats]
+verify_jwt = false
+
+[functions.track-referral]
+verify_jwt = false
+
+[functions.complete-referral]
+verify_jwt = false
