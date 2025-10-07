@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.54.0';
 import { Resend } from 'npm:resend@4.0.0';
 import { corsHeaders, json, requireCtx } from '../_lib/auth.ts';
+import { generateQuoteEmail, combineMessageWithEmail } from '../_shared/quoteEmailTemplate.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -380,16 +381,53 @@ Deno.serve(async (req) => {
           throw new Error(`Failed to fetch business data: ${businessError.message}`);
         }
 
-        // 4. Generate email HTML
-        const emailHtml = buildQuoteEmailHTML({
+        // 4. Transform data to match Quote type and generate email HTML
+        const quoteForEmail = {
+          id: quoteData.id,
+          number: quoteData.number,
+          total: quoteData.total,
+          subtotal: quoteData.subtotal,
+          taxRate: quoteData.tax_rate,
+          discount: quoteData.discount,
+          status: quoteData.status,
+          address: quoteData.address,
+          terms: quoteData.terms,
+          paymentTerms: quoteData.payment_terms,
+          frequency: quoteData.frequency,
+          depositRequired: quoteData.deposit_required,
+          depositPercent: quoteData.deposit_percent,
+          publicToken: quoteData.public_token,
+          createdAt: quoteData.created_at,
+          lineItems: (lineItems || []).map((item: any) => ({
+            id: item.id,
+            name: item.name,
+            qty: item.qty,
+            unit: item.unit,
+            unitPrice: item.unit_price,
+            lineTotal: item.line_total
+          }))
+        };
+
+        const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://servicegrid.app';
+        
+        // Generate base email
+        const { html: baseHtml, subject: defaultSubject } = generateQuoteEmail({
           businessName: businessData.name,
           businessLogoUrl: businessData.light_logo_url || businessData.logo_url,
           customerName: (quoteData.customers as any)?.name,
-          quote: quoteData,
-          lineItems: lineItems || [],
-          message: message,
-          baseUrl: Deno.env.get('FRONTEND_URL') || 'https://yourdomain.com'
+          quote: quoteForEmail,
+          approveUrl: `${frontendUrl}/quote-action?type=approve&quote_id=${quoteData.id}&token=${quoteData.public_token}`,
+          editUrl: `${frontendUrl}/quote-edit/${quoteData.id}/${quoteData.public_token}`,
+          pixelUrl: `${frontendUrl}/quote-action?type=open&quote_id=${quoteData.id}&token=${quoteData.public_token}`
         });
+
+        // Combine with custom message if provided
+        const emailHtml = message?.trim() 
+          ? combineMessageWithEmail(message, baseHtml)
+          : baseHtml;
+
+        // Use provided subject or default
+        const emailSubject = subject || defaultSubject;
 
         // 5. Send email via Resend
         const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
@@ -400,7 +438,7 @@ Deno.serve(async (req) => {
           const result = await resend.emails.send({
             from: Deno.env.get('RESEND_FROM_EMAIL') || 'onboarding@resend.dev',
             to: [to],
-            subject: subject,
+            subject: emailSubject,
             html: emailHtml
           });
           emailResult = result.data;
@@ -459,140 +497,3 @@ Deno.serve(async (req) => {
     );
   }
 });
-
-function buildQuoteEmailHTML(params: {
-  businessName: string;
-  businessLogoUrl?: string;
-  customerName?: string;
-  quote: any;
-  lineItems: any[];
-  message?: string;
-  baseUrl: string;
-}): string {
-  const { businessName, businessLogoUrl, customerName, quote, lineItems, message, baseUrl } = params;
-  
-  // Generate action URLs - use /quote-action route for branded confirmation pages
-  const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://servicegrid.app';
-  const approveUrl = `${frontendUrl}/quote-action?type=approve&quote_id=${quote.id}&token=${quote.public_token}`;
-  const editUrl = `${frontendUrl}/quote-edit/${quote.id}/${quote.public_token}`;
-  const pixelUrl = `${frontendUrl}/quote-action?type=open&quote_id=${quote.id}&token=${quote.public_token}`;
-  
-  // Header
-  const headerLogo = businessLogoUrl 
-    ? `<img src="${businessLogoUrl}" alt="${businessName}" style="height:32px;border-radius:4px;" />`
-    : `<span style="font-weight:600;font-size:16px;color:#f8fafc;">${businessName}</span>`;
-  
-  const header = `
-    <tr>
-      <td style="background:#111827;padding:16px 20px;">
-        <table width="100%">
-          <tr>
-            <td>${headerLogo}</td>
-            <td align="right" style="color:#f8fafc;font-weight:600;">Quote ${quote.number}</td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  `;
-  
-  // Service address
-  const addressHtml = quote.address ? `
-    <div style="margin:8px 0;">
-      <div style="font-weight:600;margin-bottom:4px;">Service address</div>
-      <div style="font-size:14px;color:#374151;">${quote.address.replace(/\n/g, '<br>')}</div>
-    </div>
-  ` : '';
-  
-  // Line items table
-  const itemsRows = lineItems.map(item => `
-    <tr>
-      <td style="padding:12px 8px;border-bottom:1px solid #e5e7eb;">${item.name}</td>
-      <td style="padding:12px 8px;border-bottom:1px solid #e5e7eb;text-align:center;">${item.qty}${item.unit ? ' ' + item.unit : ''}</td>
-      <td style="padding:12px 8px;border-bottom:1px solid #e5e7eb;text-align:right;">$${(item.unit_price / 100).toFixed(2)}</td>
-      <td style="padding:12px 8px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:600;">$${(item.line_total / 100).toFixed(2)}</td>
-    </tr>
-  `).join('');
-  
-  const itemsTable = `
-    <table width="100%" style="margin-top:8px;">
-      <thead>
-        <tr>
-          <th align="left" style="padding:8px;border-bottom:1px solid #e5e7eb;font-size:12px;text-transform:uppercase;color:#6b7280;">Description</th>
-          <th align="center" style="padding:8px;border-bottom:1px solid #e5e7eb;font-size:12px;text-transform:uppercase;color:#6b7280;">Qty</th>
-          <th align="right" style="padding:8px;border-bottom:1px solid #e5e7eb;font-size:12px;text-transform:uppercase;color:#6b7280;">Price</th>
-          <th align="right" style="padding:8px;border-bottom:1px solid #e5e7eb;font-size:12px;text-transform:uppercase;color:#6b7280;">Amount</th>
-        </tr>
-      </thead>
-      <tbody>${itemsRows}</tbody>
-    </table>
-  `;
-  
-  // Totals
-  const taxAmount = Math.max(0, (quote.total ?? 0) - ((quote.subtotal ?? 0) - (quote.discount ?? 0)));
-  const totalsTable = `
-    <table width="100%" style="margin-top:12px;">
-      <tr>
-        <td style="padding:8px;text-align:right;color:#374151;">Subtotal</td>
-        <td width="160" style="padding:8px;text-align:right;font-weight:600;">$${(quote.subtotal / 100).toFixed(2)}</td>
-      </tr>
-      ${quote.discount > 0 ? `
-        <tr>
-          <td style="padding:8px;text-align:right;color:#374151;">Discount</td>
-          <td style="padding:8px;text-align:right;font-weight:600;">-$${(quote.discount / 100).toFixed(2)}</td>
-        </tr>
-      ` : ''}
-      ${taxAmount > 0 ? `
-        <tr>
-          <td style="padding:8px;text-align:right;color:#374151;">Tax (${(quote.tax_rate * 100).toFixed(1)}%)</td>
-          <td style="padding:8px;text-align:right;font-weight:600;">$${(taxAmount / 100).toFixed(2)}</td>
-        </tr>
-      ` : ''}
-      <tr>
-        <td style="padding:12px 8px;text-align:right;font-weight:700;border-top:1px solid #e5e7eb;">Total</td>
-        <td style="padding:12px 8px;text-align:right;font-weight:700;border-top:1px solid #e5e7eb;">$${(quote.total / 100).toFixed(2)}</td>
-      </tr>
-    </table>
-  `;
-  
-  // Action buttons
-  const buttons = `
-    <table width="100%" style="margin-top:16px;">
-      <tr>
-        <td>
-          <a href="${approveUrl}" style="display:inline-block;background:#111827;color:#f8fafc;padding:12px 16px;border-radius:8px;text-decoration:none;font-weight:600;">Approve</a>
-          <span style="display:inline-block;width:8px;"></span>
-          <a href="${editUrl}" style="display:inline-block;background:#f1f5f9;color:#111827;padding:12px 16px;border-radius:8px;text-decoration:none;font-weight:600;border:1px solid #e5e7eb;">Request Changes</a>
-        </td>
-      </tr>
-    </table>
-  `;
-  
-  // Custom message
-  const messageHtml = message?.trim() ? `
-    <div style="margin-bottom:12px;line-height:1.6;font-size:14px;color:#111827;">${message.replace(/\n/g, '<br>')}</div>
-    <hr style="border:none;border-top:1px solid #e5e7eb;margin:12px 0;" />
-  ` : '';
-  
-  // Combine all parts
-  return `
-    <table width="100%" style="background:#f1f5f9;padding:24px 0;font-family:sans-serif;">
-      <tr>
-        <td align="center">
-          <table width="600" style="max-width:600px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
-            ${header}
-            <tr>
-              <td style="padding:20px;">
-                ${messageHtml}
-                ${addressHtml}
-                ${itemsTable}
-                ${totalsTable}
-                ${buttons}
-              </td>
-            </tr>
-          </table>
-          <img src="${pixelUrl}" width="1" height="1" style="display:block;opacity:0;" alt="" />
-        </td>
-      </tr>
-    </table>
-  `;
-}
