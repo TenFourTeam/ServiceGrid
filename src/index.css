@@ -41,8 +41,11 @@ All colors MUST be HSL.
     --destructive-foreground: 210 40% 98%;
 
     /* Job Status semantic tokens */
-    --status-scheduled: 217 91% 60%; /* Blue */
-    --status-scheduled-foreground: 210 40% 98%;
+    --status-scheduled: 210 40% 96.1%; /* Neutral/White */
+    --status-scheduled-foreground: 222.2 47.4% 11.2%;
+    
+    --status-approved: 217 91% 60%; /* Blue */
+    --status-approved-foreground: 210 40% 98%;
     
     /* Time & Materials Job semantic tokens */
     --status-time-materials: 280 100% 70%; /* Purple/Magenta */
