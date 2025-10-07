@@ -27,7 +27,7 @@ import JobShowModal from '@/components/Jobs/JobShowModal';
 import { JobBottomModal } from '@/components/Jobs/JobBottomModal';
 import { JobEditModal } from '@/components/Jobs/JobEditModal';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Plus } from 'lucide-react';
+import { Plus, CheckCircle, Clock } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { WorkOrderActions } from '@/components/WorkOrders/WorkOrderActions';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
@@ -110,7 +110,9 @@ function useFilteredJobs() {
       list = list.filter(j => j.status === 'Completed' && isValidDate(j.startsAt) && new Date(j.startsAt!) >= sevenDaysAgo);
     } else if (sort === 'awaiting-confirmation') {
       list = list.filter(j => 
-        j.confirmationStatus === 'pending' && 
+        j.status === 'Scheduled' && 
+        j.confirmationToken && 
+        !j.confirmedAt &&
         j.status !== 'Completed'
       );
     }
@@ -151,8 +153,9 @@ function useFilteredJobs() {
             bValue = b.total || 0;
             break;
           case 'confirmation':
-            aValue = a.confirmationStatus || 'zzz';
-            bValue = b.confirmationStatus || 'zzz';
+            // Sort by: confirmed (1) > pending (2) > no confirmation (3)
+            aValue = a.confirmedAt ? '1' : (a.confirmationToken ? '2' : '3');
+            bValue = b.confirmedAt ? '1' : (b.confirmationToken ? '2' : '3');
             break;
         }
 
@@ -175,8 +178,9 @@ function useFilteredJobs() {
     upcoming: jobs.filter(j => j.status !== 'Completed' && isValidDate(j.startsAt) && new Date(j.startsAt!) > todayEnd).length,
     completed: jobs.filter(j => j.status === 'Completed' && isValidDate(j.startsAt) && new Date(j.startsAt!) >= sevenDaysAgo).length,
     awaitingConfirmation: jobs.filter(j => 
-      j.confirmationStatus === 'pending' && 
-      j.status !== 'Completed'
+      j.status === 'Scheduled' && 
+      j.confirmationToken && 
+      !j.confirmedAt
     ).length,
     tomorrowWithDates: jobs.filter(j => 
       isValidDate(j.startsAt) && 
@@ -218,43 +222,36 @@ function StatusChip({ status, t }: { status: Job['status'], t: (key: string) => 
 }
 
 function ConfirmationBadge({ 
-  confirmationStatus, 
+  job, 
   t 
 }: { 
-  confirmationStatus?: 'pending' | 'confirmed' | 'expired' | null;
+  job: Job;
   t: (key: string) => string;
 }) {
-  if (!confirmationStatus) return null;
+  // No confirmation sent yet
+  if (!job.confirmationToken) return null;
   
-  const config = {
-    pending: {
-      icon: '⏳',
-      text: t('workOrders.confirmation.pending'),
-      className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300'
-    },
-    confirmed: {
-      icon: '✓',
-      text: t('workOrders.confirmation.confirmed'),
-      className: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
-    },
-    expired: {
-      icon: '✕',
-      text: t('workOrders.confirmation.expired'),
-      className: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300'
-    }
-  };
+  // Customer confirmed
+  if (job.confirmedAt || job.status === 'Schedule Approved') {
+    return (
+      <Badge variant="outline" className="gap-1.5 bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300">
+        <CheckCircle className="h-3 w-3" />
+        <span className="hidden sm:inline">{t('workOrders.confirmation.confirmed')}</span>
+      </Badge>
+    );
+  }
   
-  const { icon, text, className } = config[confirmationStatus];
+  // Awaiting confirmation (job is Scheduled with token but no confirmedAt)
+  if (job.status === 'Scheduled') {
+    return (
+      <Badge variant="outline" className="gap-1.5 bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300">
+        <Clock className="h-3 w-3" />
+        <span className="hidden sm:inline">{t('workOrders.confirmation.pending')}</span>
+      </Badge>
+    );
+  }
   
-  return (
-    <span 
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${className}`}
-      title={text}
-    >
-      <span>{icon}</span>
-      <span className="hidden sm:inline">{text}</span>
-    </span>
-  );
+  return null;
 }
 
 function WorkOrderRow({ job, uninvoiced, customerName, when, onOpen, onOpenJobEditModal, t, userRole, existingInvoice }: {
@@ -284,7 +281,7 @@ function WorkOrderRow({ job, uninvoiced, customerName, when, onOpen, onOpenJobEd
         </Badge>
         {job.confirmationToken && (
           <ConfirmationBadge 
-            confirmationStatus={job.confirmationStatus} 
+            job={job} 
             t={t} 
           />
         )}
@@ -561,7 +558,7 @@ export default function WorkOrdersPage() {
                           <TableCell>
                             {j.confirmationToken ? (
                               <ConfirmationBadge 
-                                confirmationStatus={j.confirmationStatus} 
+                                job={j as Job} 
                                 t={t} 
                               />
                             ) : (

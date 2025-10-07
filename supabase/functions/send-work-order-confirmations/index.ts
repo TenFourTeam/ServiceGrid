@@ -174,8 +174,7 @@ const handler = async (req: Request): Promise<Response> => {
             const { error: updateError } = await supaAdmin
               .from('jobs')
               .update({ 
-                confirmation_token: confirmationToken,
-                confirmation_status: 'pending'
+                confirmation_token: confirmationToken
               })
               .eq('id', job.id);
           

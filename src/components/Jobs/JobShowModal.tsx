@@ -24,7 +24,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 interface JobShowModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  job: Pick<Job, "id" | "customerId" | "startsAt" | "endsAt" | "status" | "jobType" | "isClockedIn" | "businessId" | "ownerId" | "createdAt" | "updatedAt"> & Partial<Pick<Job, "notes" | "address" | "total" | "photos" | "quoteId" | "clockInTime" | "clockOutTime" | "assignedMembers" | "confirmationToken" | "confirmationStatus" | "confirmedAt">>;
+  job: Pick<Job, "id" | "customerId" | "startsAt" | "endsAt" | "status" | "jobType" | "isClockedIn" | "businessId" | "ownerId" | "createdAt" | "updatedAt"> & Partial<Pick<Job, "notes" | "address" | "total" | "photos" | "quoteId" | "clockInTime" | "clockOutTime" | "assignedMembers" | "confirmationToken" | "confirmedAt">>;
   onOpenJobEditModal?: (job: Job) => void;
 }
 

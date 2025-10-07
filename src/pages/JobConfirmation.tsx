@@ -67,7 +67,7 @@ export default function JobConfirmation() {
         const job = data.job;
         
         // Check if already confirmed
-        if (job.confirmation_status === 'confirmed') {
+        if (job.confirmed_at || job.status === 'Schedule Approved') {
           setConfirmed(true);
         }
 
