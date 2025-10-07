@@ -222,10 +222,10 @@ Deno.serve(async (req) => {
           console.error('[invoices-crud] Business fetch error:', businessError);
         }
         
-        // Generate payment URL
-        const FRONTEND_URL = Deno.env.get('FRONTEND_URL') || 'https://app.example.com';
-        const payUrl = invoiceData.public_token 
-          ? `${FRONTEND_URL}/invoice-pay?token=${invoiceData.public_token}`
+        // Generate payment URL using Origin header
+        const origin = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/');
+        const payUrl = invoiceData.public_token && origin
+          ? `${origin}/invoice-pay?token=${invoiceData.public_token}`
           : undefined;
         
         // Transform data to match Invoice type (snake_case to camelCase)

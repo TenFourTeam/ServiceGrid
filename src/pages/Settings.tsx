@@ -11,7 +11,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useAuthApi } from '@/hooks/useAuthApi';
 import ConnectBanner from '@/components/Stripe/ConnectBanner';
-import { useStripeConnectStatus } from '@/hooks/useStripeConnectStatus';
+import { useStripeConnect } from '@/hooks/useStripeConnect';
+import { useSubscriptions } from '@/hooks/useSubscriptions';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useLogoOperations } from '@/hooks/useLogoOperations';
 import { useSettingsForm } from '@/hooks/useSettingsForm';
@@ -26,9 +27,8 @@ export default function SettingsPage() {
   const authApi = useAuthApi();
   const [darkFile, setDarkFile] = useState<File | null>(null);
   const [lightFile, setLightFile] = useState<File | null>(null);
-  const [sub, setSub] = useState<any>(null);
-  const [subLoading, setSubLoading] = useState(false);
-  const { data: connectStatus, isLoading: statusLoading } = useStripeConnectStatus();
+  const { status: connectStatus, isLoading: statusLoading, getOnboardingLink, disconnect } = useStripeConnect();
+  const { status: subscription, isLoading: subLoading, createCheckout, getPortalLink } = useSubscriptions();
   const { uploadLogo, isUploading: isUploadingLogo } = useLogoOperations();
   
   // Profile form state management
@@ -55,106 +55,32 @@ export default function SettingsPage() {
     
     uploadLogo.mutate({ file, kind });
   }
-  const refreshSubscription = useCallback(async () => {
-    try {
-      setSubLoading(true);
-      const { data, error } = await authApi.invoke('check-subscription', {
-        method: 'POST',
-        toast: {
-          error: 'Failed to refresh subscription'
-        }
-      });
-      
-      if (error) {
-        throw new Error(error.message || 'Failed to refresh subscription');
-      }
-      
-      setSub(data || null);
-    } catch (e: Error | unknown) {
-      console.error('[refreshSubscription] error:', e);
-    } finally {
-      setSubLoading(false);
-    }
-  }, [authApi]);
   async function startCheckout(plan: 'monthly' | 'yearly') {
     try {
-      const { data, error } = await authApi.invoke('create-checkout', {
-        method: 'POST',
-        body: { plan },
-        toast: {
-          loading: 'Creating checkout session...',
-          error: 'Failed to start checkout'
-        }
-      });
-      
-      if (error) {
-        throw new Error(error.message || 'Failed to start checkout');
-      }
-      
-      const url = data?.url as string | undefined;
-      if (!url) throw new Error('No checkout URL');
-      window.open(url, '_blank');
+      const url = await createCheckout.mutateAsync(plan);
+      if (url) window.open(url, '_blank');
     } catch (e: Error | unknown) {
       console.error('[startCheckout] error:', e);
     }
   }
+  
   async function openPortal() {
     try {
-      const { data, error } = await authApi.invoke('customer-portal', {
-        method: 'POST',
-        toast: {
-          loading: 'Opening customer portal...',
-          error: 'Failed to open portal'
-        }
-      });
-      
-      if (error) {
-        throw new Error(error.message || 'Failed to open portal');
-      }
-      
-      const url = data?.url as string | undefined;
-      if (!url) throw new Error('No portal URL');
-      window.open(url, '_blank');
+      const url = await getPortalLink.mutateAsync();
+      if (url) window.open(url, '_blank');
     } catch (e: any) {
       console.error('[openPortal] error:', e);
     }
   }
+  
   async function handleStripeConnect() {
     try {
-      const { data, error } = await authApi.invoke('connect-onboarding-link', {
-        method: 'POST',
-        toast: {
-          loading: 'Creating Stripe onboarding link...',
-          error: 'Failed to start Stripe onboarding'
-        }
-      });
-      
-      if (error) {
-        throw new Error(error.message || 'Failed to start Stripe onboarding');
-      }
-      
-      const url = data?.url as string | undefined;
+      const url = await getOnboardingLink.mutateAsync();
       if (url) window.open(url, '_blank');
     } catch (e: any) {
       console.error('[handleStripeConnect] error:', e);
     }
   }
-  useEffect(() => {
-    // Auto-refresh subscription on mount and after checkout redirect
-    if (!isSignedIn) return;
-    (async () => {
-      try {
-        const params = new URLSearchParams(window.location.search);
-        if (params.get('checkout') === 'success' || params.get('checkout') === 'canceled') {
-          await refreshSubscription();
-        } else {
-          await refreshSubscription();
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    })();
-  }, [isSignedIn, refreshSubscription]);
   const isOwner = role === 'owner';
   const pageTitle = isOwner ? t('settings.title') : t('settings.profile.title');
   
@@ -359,9 +285,8 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm text-muted-foreground">Status</div>
-                  <div className="text-sm">{sub?.subscribed ? `Active • ${sub?.subscription_tier || ''}` : 'Not subscribed'}</div>
+                  <div className="text-sm">{subscription?.subscribed ? `Active • ${subscription?.subscription_tier || ''}` : 'Not subscribed'}</div>
                 </div>
-                
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button size="sm" onClick={() => startCheckout('monthly')}>Start Monthly ($50)</Button>

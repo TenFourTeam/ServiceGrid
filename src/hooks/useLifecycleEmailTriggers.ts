@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { useBusinessContext } from './useBusinessContext';
 import { useProfile } from '@/queries/useProfile';
-import { useStripeConnectStatus } from './useStripeConnectStatus';
+import { useStripeConnect } from './useStripeConnect';
 import { useAuthApi } from './useAuthApi';
 import { lifecycleEmailTriggers, daysSinceSignup, daysSinceLastLogin } from '@/utils/lifecycleEmails';
 
@@ -14,7 +14,7 @@ export function useLifecycleEmailTriggers(enableAutoTriggers: boolean = false) {
   const { user } = useUser();
   const { business, businessName, isLoadingBusiness } = useBusinessContext();
   const { data: profile } = useProfile();
-  const { data: stripeStatus } = useStripeConnectStatus();
+  const { status: stripeStatus } = useStripeConnect();
   const authApi = useAuthApi();
   const hasTriggeredWelcome = useRef(false);
   const hasTriggeredStripeConnected = useRef(false);

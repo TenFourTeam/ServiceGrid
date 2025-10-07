@@ -2,7 +2,16 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { queryKeys } from "@/queries/keys";
 import { useAuthApi } from "@/hooks/useAuthApi";
-import type { ConnectStatus } from "@/hooks/useStripeConnectStatus";
+
+export interface ConnectStatus {
+  stripeAccountId: string | null;
+  chargesEnabled: boolean;
+  payoutsEnabled: boolean;
+  detailsSubmitted: boolean;
+  bank: { bankName?: string; last4?: string } | null;
+  schedule: { interval: string; delay_days: number | null } | null;
+  applicationFeeBps: number;
+}
 
 export function useStripeConnect(opts?: { enabled?: boolean }) {
   const { businessId } = useBusinessContext();

@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { X, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
+import { useSubscriptions } from '@/queries/unified';
 import { useNavigate } from 'react-router-dom';
 
 export function SubscriptionBanner() {
   const [dismissed, setDismissed] = useState(false);
-  const { data: subscription } = useSubscriptionStatus();
+  const { status: subscription } = useSubscriptions();
   const navigate = useNavigate();
 
   if (!subscription || subscription.subscribed || dismissed) {

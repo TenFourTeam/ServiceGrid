@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useMemo, useState, useEffect } from "react";
-import { useCustomersData } from "@/queries/unified";
+import { useCustomersData, useSubscriptions } from "@/queries/unified";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { Quote } from "@/types";
@@ -29,6 +29,7 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
   const { t } = useLanguage();
   const { business, businessName, businessLogoUrl, businessLightLogoUrl, businessId } = useBusinessContext();
   const { data: customers = [] } = useCustomersData();
+  const { manageQuoteSubscription } = useSubscriptions();
   const queryClient = useQueryClient();
   const authApi = useAuthApi();
   const [to, setTo] = useState(toEmail ?? "");
@@ -65,19 +66,21 @@ export default function SendQuoteModal({ open, onOpenChange, quote, toEmail, cus
 
       setSubscriptionLoading(true);
       try {
-        const { data, error } = await authApi.invoke('check-subscription-status', {
-          method: 'POST',
-          body: {
+        // Use the new unified hook to check for active subscriptions
+        const result = await authApi.invoke('subscriptions-crud', {
+          method: 'GET',
+          queryParams: { 
+            action: 'check_customer_subscription',
             customerId: quote.customerId,
             businessId: businessId
           }
         });
 
-        if (error) {
-          console.error('Failed to check subscription status:', error);
+        if (result.error) {
+          console.error('Failed to check subscription status:', result.error);
           setHasActiveSubscription(false);
         } else {
-          setHasActiveSubscription(data?.hasActiveSubscription || false);
+          setHasActiveSubscription(result.data?.hasActiveSubscription || false);
         }
       } catch (error) {
         console.error('Error checking subscription status:', error);

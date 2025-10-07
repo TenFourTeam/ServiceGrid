@@ -24,10 +24,10 @@ export default function InvoicePay() {
         return;
       }
       try {
-        const response = await fetch("https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/create-invoice-payment-public", {
+        const response = await fetch("https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/payments-crud", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ invoice_id: invoiceId, token }),
+          body: JSON.stringify({ action: 'create_public_checkout', invoice_id: invoiceId, token }),
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();

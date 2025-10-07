@@ -13,7 +13,7 @@ import { CalendarIcon, Send, DollarSign, Briefcase } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { formatDate, formatMoney, formatCurrencyInputNoSymbol, parseCurrencyInput, sanitizeMoneyTyping } from '@/utils/format';
-import { useCustomersData, useQuotesData } from '@/queries/unified';
+import { useCustomersData, useQuotesData, usePayments } from '@/queries/unified';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useRecordPayment, useDeleteInvoice, useSendInvoice } from '@/hooks/useInvoiceOperations';
 import { useInvoicePayments } from '@/hooks/useInvoicePayments';
@@ -53,6 +53,7 @@ export default function InvoiceModal({
   const { data: customers = [] } = useCustomersData();
   const { data: jobs = [] } = useJobsData(businessId);
   const { data: quotes = [] } = useQuotesData();
+  const { createCheckout } = usePayments();
   const authApi = useAuthApi();
   const queryClient = useQueryClient();
   const recordPaymentMutation = useRecordPayment();
@@ -262,18 +263,9 @@ export default function InvoiceModal({
 
     try {
       setLoading(true);
-      
-      const { data: response } = await authApi.invoke('create-invoice-payment', {
-        method: 'POST',
-        body: { invoiceId: invoice.id },
-        toast: {
-          loading: 'Creating payment link...',
-          error: 'Failed to create payment link'
-        }
-      });
-
-      if (response.url) {
-        window.open(response.url, '_blank');
+      const url = await createCheckout.mutateAsync(invoice.id);
+      if (url) {
+        window.open(url, '_blank');
       }
     } catch (error) {
       console.error('Failed to initiate payment:', error);
