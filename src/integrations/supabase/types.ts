@@ -508,7 +508,9 @@ export type Database = {
           business_id: string
           clock_in_time: string | null
           clock_out_time: string | null
+          confirmation_status: string | null
           confirmation_token: string | null
+          confirmed_at: string | null
           created_at: string
           customer_id: string
           ends_at: string | null
@@ -535,7 +537,9 @@ export type Database = {
           business_id: string
           clock_in_time?: string | null
           clock_out_time?: string | null
+          confirmation_status?: string | null
           confirmation_token?: string | null
+          confirmed_at?: string | null
           created_at?: string
           customer_id: string
           ends_at?: string | null
@@ -562,7 +566,9 @@ export type Database = {
           business_id?: string
           clock_in_time?: string | null
           clock_out_time?: string | null
+          confirmation_status?: string | null
           confirmation_token?: string | null
+          confirmed_at?: string | null
           created_at?: string
           customer_id?: string
           ends_at?: string | null

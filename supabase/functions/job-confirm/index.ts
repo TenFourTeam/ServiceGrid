@@ -84,6 +84,8 @@ const handler = async (req: Request): Promise<Response> => {
         .from('jobs')
         .update({ 
           status: 'Schedule Approved',
+          confirmation_status: 'confirmed',
+          confirmed_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
         .eq('id', job.id)

@@ -148,10 +148,13 @@ const handler = async (req: Request): Promise<Response> => {
         
         // Store confirmation token in job record
         console.log(`[send-work-order-confirmations] Updating job ${job.id} with confirmation token`);
-        const { error: updateError } = await supaAdmin
-          .from('jobs')
-          .update({ confirmation_token: confirmationToken })
-          .eq('id', job.id);
+            const { error: updateError } = await supaAdmin
+              .from('jobs')
+              .update({ 
+                confirmation_token: confirmationToken,
+                confirmation_status: 'pending'
+              })
+              .eq('id', job.id);
           
         if (updateError) {
           console.error(`[send-work-order-confirmations] Failed to update job ${job.id}:`, updateError);
