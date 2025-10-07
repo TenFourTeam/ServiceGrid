@@ -25,6 +25,7 @@ const TeamPage = lazy(() => import("./pages/Team"));
 const TimesheetPage = lazy(() => import("./pages/Timesheet"));
 const MemberTimesheetPage = lazy(() => import("./pages/MemberTimesheet"));
 const ReferralPage = lazy(() => import("./pages/Referral"));
+const ReferralLanding = lazy(() => import("./pages/ReferralLanding"));
 
 const ClerkAuthPage = lazy(() => import("./pages/ClerkAuth"));
 const QuoteActionPage = lazy(() => import("./pages/QuoteAction"));
@@ -121,6 +122,7 @@ function App({ clerkKey }: AppProps) {
                 <Route path="/payment-canceled" element={<PaymentCanceledPage />} />
                 <Route path="/invoice-pay" element={<InvoicePayPage />} />
                 <Route path="/invite" element={<InvitePage />} />
+                <Route path="/invite/referral" element={<ReferralLanding />} />
                 <Route path="/request/:businessId" element={<PublicRequestFormPage />} />
                 
                  <Route path="*" element={<NotFound />} />

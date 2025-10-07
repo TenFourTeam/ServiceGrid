@@ -1,20 +1,36 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useUser } from '@clerk/clerk-react';
 import AppLayout from '@/components/Layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { UserPlus, Share, Gift, Copy, Check } from 'lucide-react';
+import { UserPlus, Share, Gift, Copy, Check, TrendingUp, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getAppUrl } from '@/utils/env';
+import { useReferralStats } from '@/hooks/useReferralStats';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useAuthApi } from '@/hooks/useAuthApi';
 
 export default function ReferralPage() {
   const { user } = useUser();
   const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
+  const { data: stats, isLoading } = useReferralStats();
+  const authApi = useAuthApi();
   
   const referralLink = `${getAppUrl()}/invite/referral?ref=${user?.id || 'user'}`;
+
+  // Initialize referral code on mount
+  useEffect(() => {
+    if (user) {
+      authApi.invoke('create-referral-code', {
+        method: 'POST'
+      }).catch(error => {
+        console.error('Failed to initialize referral code:', error);
+      });
+    }
+  }, [user, authApi]);
   
   const handleCopyLink = async () => {
     try {
@@ -120,6 +136,96 @@ export default function ReferralPage() {
             <p className="text-xs text-muted-foreground">
               {t('referral.referralLink.description')}
             </p>
+          </CardContent>
+        </Card>
+
+        {/* Referral Stats */}
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              Your Referral Stats
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[...Array(4)].map((_, i) => (
+                  <Skeleton key={i} className="h-24 w-full" />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-primary">
+                    {stats?.total_clicks || 0}
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    Link Clicks
+                  </div>
+                </div>
+                
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-primary">
+                    {stats?.total_signups || 0}
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    Successful Signups
+                  </div>
+                </div>
+                
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-primary">
+                    {stats?.pending_referrals || 0}
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    Pending
+                  </div>
+                </div>
+                
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-primary">
+                    {stats?.completed_referrals || 0}
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    Completed
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {stats && stats.referrals && stats.referrals.length > 0 && (
+              <div className="mt-6">
+                <h4 className="font-medium mb-3 flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Recent Referrals
+                </h4>
+                <div className="space-y-2">
+                  {stats.referrals.slice(0, 5).map((referral) => (
+                    <div 
+                      key={referral.id}
+                      className="flex items-center justify-between p-3 bg-muted/30 rounded-lg"
+                    >
+                      <div>
+                        <div className="text-sm font-medium">
+                          {referral.referred_email || 'Pending signup'}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {new Date(referral.created_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div className={`text-xs px-2 py-1 rounded-full ${
+                        referral.status === 'completed' 
+                          ? 'bg-green-500/20 text-green-700 dark:text-green-300'
+                          : 'bg-yellow-500/20 text-yellow-700 dark:text-yellow-300'
+                      }`}>
+                        {referral.status}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 

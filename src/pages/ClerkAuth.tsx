@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { useAuth as useClerkAuth } from "@clerk/clerk-react";
+import { useAuth as useClerkAuth, useUser } from "@clerk/clerk-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { EnhancedSignIn } from "@/components/Auth/EnhancedSignIn";
+import { useAuthApi } from "@/hooks/useAuthApi";
 
 export default function ClerkAuthPage() {
   const location = useLocation();
@@ -13,8 +14,11 @@ export default function ClerkAuthPage() {
 
 function ClerkAuthInner({ redirectTarget }: { redirectTarget: string }) {
   const { isSignedIn, isLoaded } = useClerkAuth();
+  const { user } = useUser();
   const navigate = useNavigate();
+  const authApi = useAuthApi();
   const [authMode, setAuthMode] = useState<"sign-in" | "sign-up">("sign-in");
+  const [referralProcessed, setReferralProcessed] = useState(false);
 
   useEffect(() => {
     document.title = `${authMode === "sign-in" ? "Sign In" : "Create Account"} • ServiceGrid`;
@@ -28,11 +32,40 @@ function ClerkAuthInner({ redirectTarget }: { redirectTarget: string }) {
     }
   }, [authMode]);
 
+  // Handle referral completion after signup
   useEffect(() => {
-    if (isSignedIn && isLoaded) {
-      navigate(redirectTarget, { replace: true });
-    }
-  }, [isSignedIn, isLoaded, redirectTarget, navigate]);
+    const handleReferral = async () => {
+      if (isSignedIn && isLoaded && user && !referralProcessed) {
+        const referralCode = sessionStorage.getItem('referral_code');
+        
+        if (referralCode) {
+          console.log('Processing referral for new user:', { referralCode, userId: user.id });
+          
+          try {
+            await authApi.invoke('complete-referral', {
+              method: 'POST',
+              body: {
+                referral_code: referralCode,
+                user_email: user.primaryEmailAddress?.emailAddress,
+                user_id: user.id
+              }
+            });
+            
+            // Clear the referral code from storage
+            sessionStorage.removeItem('referral_code');
+            console.log('Referral completed successfully');
+          } catch (error) {
+            console.error('Failed to complete referral:', error);
+          }
+        }
+        
+        setReferralProcessed(true);
+        navigate(redirectTarget, { replace: true });
+      }
+    };
+
+    handleReferral();
+  }, [isSignedIn, isLoaded, user, redirectTarget, navigate, authApi, referralProcessed]);
 
   return (
     <main className="container mx-auto max-w-md py-10 px-4">
