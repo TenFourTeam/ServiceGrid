@@ -4,8 +4,6 @@ import { useAuthApi } from './useAuthApi';
 interface ReferralStats {
   total_clicks: number;
   total_signups: number;
-  pending_referrals: number;
-  completed_referrals: number;
   referrals: Array<{
     id: string;
     referred_email: string | null;

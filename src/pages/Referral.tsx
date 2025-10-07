@@ -157,7 +157,7 @@ export default function ReferralPage() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="bg-muted/50 rounded-lg p-4">
                   <div className="text-2xl font-bold text-primary">
                     {stats?.total_clicks || 0}
@@ -173,24 +173,6 @@ export default function ReferralPage() {
                   </div>
                   <div className="text-sm text-muted-foreground mt-1">
                     Successful Signups
-                  </div>
-                </div>
-                
-                <div className="bg-muted/50 rounded-lg p-4">
-                  <div className="text-2xl font-bold text-primary">
-                    {stats?.pending_referrals || 0}
-                  </div>
-                  <div className="text-sm text-muted-foreground mt-1">
-                    Pending
-                  </div>
-                </div>
-                
-                <div className="bg-muted/50 rounded-lg p-4">
-                  <div className="text-2xl font-bold text-primary">
-                    {stats?.completed_referrals || 0}
-                  </div>
-                  <div className="text-sm text-muted-foreground mt-1">
-                    Completed
                   </div>
                 </div>
               </div>

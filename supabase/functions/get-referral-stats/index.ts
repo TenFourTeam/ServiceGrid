@@ -24,7 +24,7 @@ serve(async (req: Request) => {
     // Get all referrals for this user
     const { data: referrals, error } = await supabase
       .from('referrals')
-      .select('*')
+      .select('id, referral_code, status, click_count, created_at, completed_at, referred_email')
       .eq('referrer_user_id', payload.userId)
       .order('created_at', { ascending: false });
 
@@ -36,11 +36,15 @@ serve(async (req: Request) => {
       );
     }
 
+    // Calculate total clicks (sum of all click_count values)
+    const totalClicks = referrals?.reduce((sum, r) => sum + (r.click_count || 0), 0) || 0;
+    
+    // Calculate total signups (count of completed referrals)
+    const totalSignups = referrals?.filter(r => r.status === 'completed').length || 0;
+
     const stats = {
-      total_clicks: referrals?.length || 0,
-      total_signups: referrals?.filter(r => r.status === 'completed').length || 0,
-      pending_referrals: referrals?.filter(r => r.status === 'pending').length || 0,
-      completed_referrals: referrals?.filter(r => r.status === 'completed').length || 0,
+      total_clicks: totalClicks,
+      total_signups: totalSignups,
       referrals: referrals || []
     };
 

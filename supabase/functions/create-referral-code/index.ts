@@ -42,13 +42,14 @@ serve(async (req: Request) => {
       );
     }
 
-    // Create a new referral entry for tracking
+    // Create a new referral entry for tracking (with click_count initialized to 0)
     const { data: newReferral, error } = await supabase
       .from('referrals')
       .insert({
         referrer_user_id: payload.userId,
         referral_code: referralCode,
-        status: 'pending'
+        status: 'pending',
+        click_count: 0
       })
       .select()
       .single();

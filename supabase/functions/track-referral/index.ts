@@ -22,14 +22,14 @@ serve(async (req: Request) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Create or update referral tracking (count clicks)
+    // Find the referral record and increment click count
     const { data: existingReferral, error: fetchError } = await supabase
       .from('referrals')
-      .select('*')
+      .select('id, click_count')
       .eq('referral_code', referral_code)
-      .single();
+      .maybeSingle();
 
-    if (fetchError && fetchError.code !== 'PGRST116') {
+    if (fetchError) {
       console.error('Error fetching referral:', fetchError);
       return new Response(
         JSON.stringify({ error: 'Failed to track referral' }),
@@ -37,12 +37,34 @@ serve(async (req: Request) => {
       );
     }
 
-    console.log('Tracked referral click:', { referral_code, existing: !!existingReferral });
+    if (!existingReferral) {
+      console.log('Referral code not found:', referral_code);
+      return new Response(
+        JSON.stringify({ error: 'Referral code not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Increment the click count
+    const { error: updateError } = await supabase
+      .from('referrals')
+      .update({ click_count: (existingReferral.click_count || 0) + 1 })
+      .eq('id', existingReferral.id);
+
+    if (updateError) {
+      console.error('Error updating click count:', updateError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to update click count' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Tracked referral click:', { referral_code, new_count: (existingReferral.click_count || 0) + 1 });
 
     return new Response(
       JSON.stringify({ 
         success: true,
-        referral_exists: !!existingReferral 
+        click_count: (existingReferral.click_count || 0) + 1
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

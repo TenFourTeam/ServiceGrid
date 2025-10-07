@@ -992,6 +992,7 @@ export type Database = {
       }
       referrals: {
         Row: {
+          click_count: number | null
           completed_at: string | null
           created_at: string
           id: string
@@ -1003,6 +1004,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          click_count?: number | null
           completed_at?: string | null
           created_at?: string
           id?: string
@@ -1014,6 +1016,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          click_count?: number | null
           completed_at?: string | null
           created_at?: string
           id?: string
