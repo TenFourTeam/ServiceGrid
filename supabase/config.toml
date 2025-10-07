@@ -188,5 +188,11 @@ verify_jwt = false
 [functions.track-referral]
 verify_jwt = false
 
-[functions.complete-referral]
+[functions.payments-crud]
+verify_jwt = false
+
+[functions.stripe-connect-crud]
+verify_jwt = false
+
+[functions.subscriptions-crud]
 verify_jwt = false

@@ -10,8 +10,8 @@ import {
   useCustomersData,
   useJobsData, 
   useQuotesData,
-  useStripeConnectStatus,
-  useSubscriptionStatus 
+  useStripeConnect,
+  useSubscriptions 
 } from '@/queries/unified';
 
 export interface OnboardingState {
@@ -38,8 +38,8 @@ export function useOnboardingState(): OnboardingState {
   const { count: customersCount, isLoading: customersLoading } = useCustomersData();
   const { count: jobsCount, isLoading: jobsLoading } = useJobsData(businessId);
   const { count: quotesCount, isLoading: quotesLoading } = useQuotesData();
-  const { data: stripeStatus, isLoading: stripeLoading } = useStripeConnectStatus();
-  const { data: subscription, isLoading: subscriptionLoading } = useSubscriptionStatus();
+  const { status: stripeStatus, isLoading: stripeLoading } = useStripeConnect();
+  const { status: subscription, isLoading: subscriptionLoading } = useSubscriptions();
 
   return useMemo(() => {
     const loading = isLoadingBusiness || profileLoading || customersLoading || 

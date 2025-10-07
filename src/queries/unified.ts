@@ -20,6 +20,7 @@ export { useBusinessMembersData, useBusinessMemberOperations } from '@/hooks/use
 
 // Optimized data hooks - unified count + data pattern
 
-// Billing queries
-export { useStripeConnectStatus } from '@/hooks/useStripeConnectStatus';
-export { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
+// Billing queries - UNIFIED CRUD
+export { useStripeConnect } from '@/hooks/useStripeConnect';
+export { useSubscriptions } from '@/hooks/useSubscriptions';
+export { usePayments } from '@/hooks/usePayments';
