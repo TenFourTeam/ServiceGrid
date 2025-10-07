@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { formatDate, formatMoney, formatCurrencyInputNoSymbol, parseCurrencyInput, sanitizeMoneyTyping } from '@/utils/format';
 import { useCustomersData, useQuotesData } from '@/queries/unified';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
-import { useRecordPayment, useDeleteInvoice } from '@/hooks/useInvoiceOperations';
+import { useRecordPayment, useDeleteInvoice, useSendInvoice } from '@/hooks/useInvoiceOperations';
 import { useInvoicePayments } from '@/hooks/useInvoicePayments';
 import { useJobsData } from '@/hooks/useJobsData';
 import { useAuthApi } from '@/hooks/useAuthApi';
@@ -238,50 +238,22 @@ export default function InvoiceModal({
     }
   };
 
+  const sendInvoice = useSendInvoice();
+
   const handleSendEmail = async () => {
     if (!invoice || !to.trim()) return;
 
-    setLoading(true);
     try {
-      // Generate payment URL using public token
-      const payUrl = invoice.publicToken 
-        ? `${window.location.origin}/invoice-pay?token=${invoice.publicToken}`
-        : undefined;
-
-      const { html: emailContent } = generateInvoiceEmail({
-        businessName: businessName || 'Your Business',
-        businessLogoUrl: businessLogoUrl as string,
-        customerName,
-        invoice: invoice,
-        payUrl
+      await sendInvoice.mutateAsync({
+        invoiceId: invoice.id,
+        recipientEmail: to.trim(),
+        subject: subject || defaultSubject,
+        message: message.trim() || undefined
       });
 
-      const finalHtml = message.trim() ? `${message.replace(/\n/g, '<br>')}<hr style="border:none; border-top:1px solid #e5e7eb; margin:12px 0;">${emailContent}` : emailContent;
-
-      await authApi.invoke('resend-send-email', {
-        method: 'POST',
-        body: {
-          to: to.trim(),
-          subject: subject || defaultSubject,
-          html: finalHtml,
-          invoice_id: invoice.id,
-        },
-        toast: {
-          success: 'Invoice sent successfully',
-          loading: 'Sending invoice...',
-          error: 'Failed to send invoice'
-        }
-      });
-
-      if (businessId) {
-        invalidationHelpers.invoices(queryClient, businessId);
-      }
-      
       onOpenChange(false);
     } catch (error) {
       console.error('Failed to send invoice:', error);
-    } finally {
-      setLoading(false);
     }
   };
 

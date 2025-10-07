@@ -161,6 +161,169 @@ Deno.serve(async (req) => {
     if (req.method === 'POST') {
       const body = await req.json();
       
+      // Handle send invoice email action
+      if (body.action === 'send') {
+        console.log('[invoices-crud] Sending invoice email:', body.invoiceId);
+        
+        const { invoiceId, recipientEmail, subject, message } = body;
+        
+        // Validate required fields
+        if (!invoiceId || !recipientEmail || !subject) {
+          return json({ error: 'Missing required fields: invoiceId, recipientEmail, subject' }, { status: 400 });
+        }
+        
+        // Fetch invoice with all details
+        const { data: invoiceData, error: invoiceError } = await supabase
+          .from('invoices')
+          .select(`
+            id, number, status, total, subtotal, tax_rate, discount, due_at, created_at,
+            address, payment_terms, frequency, deposit_required, deposit_percent, terms,
+            public_token, customer_id, business_id
+          `)
+          .eq('id', invoiceId)
+          .eq('business_id', ctx.businessId)
+          .single();
+        
+        if (invoiceError || !invoiceData) {
+          console.error('[invoices-crud] Invoice fetch error:', invoiceError);
+          return json({ error: 'Invoice not found' }, { status: 404 });
+        }
+        
+        // Fetch line items
+        const { data: lineItemsData, error: lineItemsError } = await supabase
+          .from('invoice_line_items')
+          .select('name, qty, unit, unit_price, line_total')
+          .eq('invoice_id', invoiceId)
+          .order('position');
+        
+        if (lineItemsError) {
+          console.error('[invoices-crud] Line items fetch error:', lineItemsError);
+        }
+        
+        // Fetch customer
+        const { data: customerData, error: customerError } = await supabase
+          .from('customers')
+          .select('name, email')
+          .eq('id', invoiceData.customer_id)
+          .single();
+        
+        if (customerError) {
+          console.error('[invoices-crud] Customer fetch error:', customerError);
+        }
+        
+        // Fetch business info
+        const { data: businessData, error: businessError } = await supabase
+          .from('businesses')
+          .select('name, logo_url')
+          .eq('id', ctx.businessId)
+          .single();
+        
+        if (businessError) {
+          console.error('[invoices-crud] Business fetch error:', businessError);
+        }
+        
+        // Generate payment URL
+        const FRONTEND_URL = Deno.env.get('FRONTEND_URL') || 'https://app.example.com';
+        const payUrl = invoiceData.public_token 
+          ? `${FRONTEND_URL}/invoice-pay?token=${invoiceData.public_token}`
+          : undefined;
+        
+        // Transform data to match Invoice type (snake_case to camelCase)
+        const invoice = {
+          id: invoiceData.id,
+          number: invoiceData.number,
+          status: invoiceData.status,
+          total: invoiceData.total,
+          subtotal: invoiceData.subtotal,
+          taxRate: invoiceData.tax_rate,
+          discount: invoiceData.discount,
+          dueAt: invoiceData.due_at,
+          createdAt: invoiceData.created_at,
+          address: invoiceData.address,
+          paymentTerms: invoiceData.payment_terms,
+          frequency: invoiceData.frequency,
+          depositRequired: invoiceData.deposit_required,
+          depositPercent: invoiceData.deposit_percent,
+          terms: invoiceData.terms,
+          lineItems: lineItemsData?.map(li => ({
+            name: li.name,
+            qty: li.qty,
+            unit: li.unit,
+            unitPrice: li.unit_price,
+            lineTotal: li.line_total
+          })) || []
+        };
+        
+        // Generate email HTML using shared template
+        const { generateInvoiceEmail, combineMessageWithEmail } = await import('../_shared/invoiceEmailTemplate.ts');
+        
+        const { html: emailHtml } = generateInvoiceEmail({
+          businessName: businessData?.name || 'Your Business',
+          businessLogoUrl: businessData?.logo_url,
+          customerName: customerData?.name,
+          invoice: invoice,
+          payUrl: payUrl
+        });
+        
+        // Combine with custom message if provided
+        const finalHtml = message ? combineMessageWithEmail(message, emailHtml) : emailHtml;
+        
+        // Send email via Resend
+        const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
+        const RESEND_FROM_EMAIL = Deno.env.get('RESEND_FROM_EMAIL') || 'onboarding@resend.dev';
+        
+        if (!RESEND_API_KEY) {
+          console.error('[invoices-crud] RESEND_API_KEY not configured');
+          return json({ error: 'Email service not configured' }, { status: 500 });
+        }
+        
+        const resendResponse = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${RESEND_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            from: RESEND_FROM_EMAIL,
+            to: recipientEmail,
+            subject: subject,
+            html: finalHtml
+          })
+        });
+        
+        const resendData = await resendResponse.json();
+        
+        if (!resendResponse.ok) {
+          console.error('[invoices-crud] Resend error:', resendData);
+          return json({ error: 'Failed to send email', details: resendData }, { status: 500 });
+        }
+        
+        console.log('[invoices-crud] Email sent successfully:', resendData.id);
+        
+        // Log to mail_sends table
+        const requestHash = crypto.randomUUID();
+        await supabase.from('mail_sends').insert({
+          user_id: ctx.userId,
+          invoice_id: invoiceId,
+          request_hash: requestHash,
+          to_email: recipientEmail,
+          subject: subject,
+          status: 'sent',
+          provider_message_id: resendData.id
+        });
+        
+        // Update invoice status to Sent if it was Draft
+        if (invoiceData.status === 'Draft') {
+          await supabase
+            .from('invoices')
+            .update({ status: 'Sent' })
+            .eq('id', invoiceId)
+            .eq('business_id', ctx.businessId);
+        }
+        
+        return json({ success: true, messageId: resendData.id });
+      }
+      
       // Handle record payment action
       if (body.action === 'record_payment') {
         console.log('[invoices-crud] Recording payment for invoice:', body.invoiceId);
