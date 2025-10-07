@@ -24,7 +24,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 interface JobShowModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  job: Pick<Job, "id" | "customerId" | "startsAt" | "endsAt" | "status" | "jobType" | "isClockedIn" | "businessId" | "ownerId" | "createdAt" | "updatedAt"> & Partial<Pick<Job, "notes" | "address" | "total" | "photos" | "quoteId" | "clockInTime" | "clockOutTime" | "assignedMembers">>;
+  job: Pick<Job, "id" | "customerId" | "startsAt" | "endsAt" | "status" | "jobType" | "isClockedIn" | "businessId" | "ownerId" | "createdAt" | "updatedAt"> & Partial<Pick<Job, "notes" | "address" | "total" | "photos" | "quoteId" | "clockInTime" | "clockOutTime" | "assignedMembers" | "confirmationToken" | "confirmationStatus" | "confirmedAt">>;
   onOpenJobEditModal?: (job: Job) => void;
 }
 
@@ -263,6 +263,11 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
       return;
     }
     
+    if (job.confirmationToken) {
+      toast.error('Confirmation already sent for this job. Use "Resend Confirmation" to send again.');
+      return;
+    }
+    
     setIsSendingConfirmation(true);
     
     try {
@@ -279,8 +284,49 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
       if (error) {
         throw new Error(error.message || 'Failed to send confirmation');
       }
+      
+      if (businessId) {
+        invalidationHelpers.jobs(queryClient, businessId);
+      }
     } catch (error) {
       console.error('Failed to send confirmation:', error);
+    } finally {
+      setIsSendingConfirmation(false);
+    }
+  }
+
+  async function handleResendConfirmation() {
+    if (!job.startsAt) {
+      toast.error('Please schedule the job before resending confirmation');
+      return;
+    }
+    
+    if (!window.confirm('Resend confirmation email to customer?')) {
+      return;
+    }
+    
+    setIsSendingConfirmation(true);
+    
+    try {
+      const { error } = await authApi.invoke('send-work-order-confirmations', {
+        method: 'POST',
+        body: { type: 'single', jobId: job.id, resend: true },
+        toast: {
+          success: 'Work order confirmation resent successfully',
+          loading: 'Resending confirmation...',
+          error: 'Failed to resend confirmation'
+        }
+      });
+      
+      if (error) {
+        throw new Error(error.message || 'Failed to resend confirmation');
+      }
+      
+      if (businessId) {
+        invalidationHelpers.jobs(queryClient, businessId);
+      }
+    } catch (error) {
+      console.error('Failed to resend confirmation:', error);
     } finally {
       setIsSendingConfirmation(false);
     }
@@ -639,11 +685,14 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
               {/* Secondary actions */}
               <Button 
                 variant="outline" 
-                onClick={handleSendConfirmation}
+                onClick={job.confirmationToken ? handleResendConfirmation : handleSendConfirmation}
                 className="w-full"
-                disabled={isSendingConfirmation}
+                disabled={isSendingConfirmation || !job.startsAt}
+                title={!job.startsAt ? "Please schedule the job before sending confirmation" : ""}
               >
-                {isSendingConfirmation ? 'Sending...' : 'Send Confirmation'}
+                {isSendingConfirmation 
+                  ? (job.confirmationToken ? 'Resending...' : 'Sending...') 
+                  : (job.confirmationToken ? 'Resend Confirmation' : 'Send Confirmation')}
               </Button>
               
               {role === 'owner' && (
@@ -737,12 +786,14 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                   )}
                   <Button 
                     variant="outline" 
-                    onClick={handleSendConfirmation}
+                    onClick={job.confirmationToken ? handleResendConfirmation : handleSendConfirmation}
                     size="sm"
                     disabled={isSendingConfirmation || !job.startsAt}
                     title={!job.startsAt ? "Please schedule the job before sending confirmation" : ""}
                   >
-                  {isSendingConfirmation ? 'Sending...' : 'Send Confirmation'}
+                  {isSendingConfirmation 
+                    ? (job.confirmationToken ? 'Resending...' : 'Sending...') 
+                    : (job.confirmationToken ? 'Resend Confirmation' : 'Send Confirmation')}
                   </Button>
                   {displayJob.jobType === 'time_and_materials' && (
                     <Button

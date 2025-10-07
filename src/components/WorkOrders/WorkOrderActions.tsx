@@ -45,7 +45,7 @@ export function WorkOrderActions({
   const canComplete = isOwner && job.status !== 'Completed';
   const canCreateInvoice = isOwner && !existingInvoice && job.status === 'Completed';
   const canViewInvoice = existingInvoice;
-  const canSendConfirmation = isOwner && job.customerId && job.address && job.startsAt;
+  const canSendConfirmation = isOwner && job.customerId && job.address && job.startsAt && !job.confirmationToken;
 
   const handleCompleteJob = async () => {
     setIsCompletingJob(true);
@@ -160,6 +160,11 @@ export function WorkOrderActions({
       return;
     }
     
+    if (job.confirmationToken) {
+      toast.error('Confirmation already sent for this job. Use "Resend Confirmation" to send again.');
+      return;
+    }
+    
     setIsSendingConfirmation(true);
     
     try {
@@ -180,8 +185,54 @@ export function WorkOrderActions({
       if (error) {
         throw new Error(error.message || 'Failed to send confirmation');
       }
+      
+      if (businessId) {
+        invalidationHelpers.jobs(queryClient, businessId);
+      }
     } catch (error) {
       console.error('Error sending confirmation:', error);
+    } finally {
+      setIsSendingConfirmation(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!job.startsAt) {
+      toast.error('Please schedule the job before resending confirmation');
+      return;
+    }
+    
+    if (!window.confirm('Resend confirmation email to customer?')) {
+      return;
+    }
+    
+    setIsSendingConfirmation(true);
+    
+    try {
+      const { data, error } = await authApi.invoke('send-work-order-confirmations', {
+        method: 'POST',
+        body: {
+          type: 'single',
+          jobId: job.id,
+          businessId,
+          resend: true
+        },
+        toast: {
+          success: 'Confirmation email resent successfully',
+          loading: 'Resending confirmation...',
+          error: 'Failed to resend confirmation email'
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to resend confirmation');
+      }
+      
+      if (businessId) {
+        invalidationHelpers.jobs(queryClient, businessId);
+      }
+    } catch (error) {
+      console.error('Error resending confirmation:', error);
     } finally {
       setIsSendingConfirmation(false);
     }
@@ -248,17 +299,30 @@ export function WorkOrderActions({
           </DropdownMenuItem>
         )}
 
-        {/* Send Confirmation - Show for jobs with customer and address */}
+        {/* Send/Resend Confirmation - Show for jobs with customer and address */}
         {isOwner && (
-          <DropdownMenuItem 
-            onClick={handleSendConfirmation} 
-            disabled={isSendingConfirmation || !canSendConfirmation}
-            className="gap-2"
-            title={!job.startsAt ? "Job must be scheduled first" : ""}
-          >
-            <Mail className="h-4 w-4" />
-            {isSendingConfirmation ? 'Sending...' : 'Send Confirmation'}
-          </DropdownMenuItem>
+          <>
+            {!job.confirmationToken ? (
+              <DropdownMenuItem 
+                onClick={handleSendConfirmation} 
+                disabled={isSendingConfirmation || !canSendConfirmation}
+                className="gap-2"
+                title={!job.startsAt ? "Job must be scheduled first" : ""}
+              >
+                <Mail className="h-4 w-4" />
+                {isSendingConfirmation ? 'Sending...' : 'Send Confirmation'}
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem 
+                onClick={handleResendConfirmation} 
+                disabled={isSendingConfirmation}
+                className="gap-2"
+              >
+                <Mail className="h-4 w-4" />
+                {isSendingConfirmation ? 'Resending...' : 'Resend Confirmation'}
+              </DropdownMenuItem>
+            )}
+          </>
         )}
         
         <DropdownMenuSeparator />

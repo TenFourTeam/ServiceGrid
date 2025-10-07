@@ -5,6 +5,7 @@ import { generateWorkOrderConfirmationEmail } from "../_shared/workOrderConfirma
 interface WorkOrderConfirmationRequest {
   type: 'single' | 'bulk';
   jobId?: string; // For single job confirmation
+  resend?: boolean; // For resending confirmations
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -15,24 +16,29 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     // Authenticate request and get business context
     const { businessId, supaAdmin } = await requireCtx(req);
-    const { type, jobId }: Omit<WorkOrderConfirmationRequest, 'businessId'> = await req.json();
+    const { type, jobId, resend }: Omit<WorkOrderConfirmationRequest, 'businessId'> = await req.json();
     
-    console.log('[send-work-order-confirmations] Request:', { type, jobId, businessId });
+    console.log('[send-work-order-confirmations] Request:', { type, jobId, resend, businessId });
 
     let jobsToProcess = [];
     
     if (type === 'single' && jobId) {
-      // Get single job - only if not already confirmed
-      console.log(`[send-work-order-confirmations] Fetching single job ${jobId} without joins first`);
+      // Get single job - allow resending if resend flag is true
+      console.log(`[send-work-order-confirmations] Fetching single job ${jobId} (resend: ${resend})`);
       
-      // First get just the job data
-      const { data: job, error: jobError } = await supaAdmin
+      // Build query conditionally based on resend flag
+      let query = supaAdmin
         .from('jobs')
         .select('*')
         .eq('id', jobId)
-        .eq('business_id', businessId)
-        .is('confirmation_token', null)
-        .single();
+        .eq('business_id', businessId);
+      
+      // Only filter by null token if NOT resending
+      if (!resend) {
+        query = query.is('confirmation_token', null);
+      }
+      
+      const { data: job, error: jobError } = await query.single();
       
       if (jobError) {
         console.error(`[send-work-order-confirmations] Error fetching single job:`, jobError);
