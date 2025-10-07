@@ -112,34 +112,121 @@ export function generateQuoteEmail(props: QuoteEmailProps) {
   
   const header = createEmailHeader(businessName, businessLogoUrl, `Quote ${quote.number}`);
   
+  // Quote Details Section
+  const quoteDetails = `
+    <div style="margin-bottom:24px;">
+      <div style="font-weight:600; color:#6b7280; text-transform:uppercase; font-size:11px; letter-spacing:0.5px; margin-bottom:12px;">Quote Details</div>
+      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:16px;">
+        <table style="width:100%; border-collapse:collapse;">
+          <tr>
+            <td style="padding:4px 0; font-size:13px; color:#6b7280;">Quote Number:</td>
+            <td style="padding:4px 0; font-size:14px; font-weight:600; color:#111827;">${escapeHtml(quote.number)}</td>
+          </tr>
+          <tr>
+            <td style="padding:4px 0; font-size:13px; color:#6b7280;">Quote Date:</td>
+            <td style="padding:4px 0; font-size:13px; color:#374151;">${new Date(quote.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+          </tr>
+          <tr>
+            <td style="padding:4px 0; font-size:13px; color:#6b7280;">Status:</td>
+            <td style="padding:4px 0; font-size:13px; color:#374151;">${escapeHtml(quote.status)}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  `;
+  
   const serviceAddressHtml = quote.address ? `
-    <div style="margin:8px 0 0;">
-      <div style="font-weight:600; margin-bottom:4px; color:#111827;">Service address</div>
-      <div style="font-size:14px; line-height:1.6; color:#374151;">${escapeHtml(quote.address).replace(/\n/g, '<br />')}</div>
+    <div style="margin-bottom:24px;">
+      <div style="font-weight:600; color:#6b7280; text-transform:uppercase; font-size:11px; letter-spacing:0.5px; margin-bottom:12px;">Service Address</div>
+      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:16px;">
+        <div style="font-size:14px; line-height:1.6; color:#374151;">${escapeHtml(quote.address).replace(/\n/g, '<br />')}</div>
+      </div>
     </div>
   ` : '';
 
-  const itemsTable = createLineItemsTable(quote.lineItems);
-  const totalsTable = createTotalsTable({
-    subtotal: quote.subtotal,
-    discount: quote.discount,
-    taxAmount: Math.max(0, (quote.total ?? 0) - ((quote.subtotal ?? 0) - (quote.discount ?? 0))),
-    taxRate: quote.taxRate,
-    total: quote.total
-  });
+  // Line Items Section
+  const lineItemsSection = `
+    <div style="margin-bottom:24px;">
+      <div style="font-weight:600; color:#6b7280; text-transform:uppercase; font-size:11px; letter-spacing:0.5px; margin-bottom:12px;">Services & Materials</div>
+      <div style="border:1px solid #e2e8f0; border-radius:8px; overflow:hidden;">
+        ${createLineItemsTable(quote.lineItems)}
+      </div>
+    </div>
+  `;
+
+  // Payment & Billing Section
+  const paymentBillingHtml = (quote.paymentTerms || quote.frequency || quote.depositRequired) ? `
+    <div style="margin-bottom:24px;">
+      <div style="font-weight:600; color:#6b7280; text-transform:uppercase; font-size:11px; letter-spacing:0.5px; margin-bottom:12px;">Payment & Billing</div>
+      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:16px;">
+        <table style="width:100%; border-collapse:collapse;">
+          ${quote.paymentTerms ? `
+            <tr>
+              <td style="padding:4px 0; font-size:13px; color:#6b7280;">Payment Terms:</td>
+              <td style="padding:4px 0; font-size:13px; color:#374151;">${quote.paymentTerms.replace(/_/g, ' ')}</td>
+            </tr>
+          ` : ''}
+          ${quote.frequency ? `
+            <tr>
+              <td style="padding:4px 0; font-size:13px; color:#6b7280;">Billing Frequency:</td>
+              <td style="padding:4px 0; font-size:13px; color:#374151;">${quote.frequency.replace(/_/g, ' ')}</td>
+            </tr>
+          ` : `
+            <tr>
+              <td style="padding:4px 0; font-size:13px; color:#6b7280;">Billing Frequency:</td>
+              <td style="padding:4px 0; font-size:13px; color:#374151;">One-time</td>
+            </tr>
+          `}
+          ${quote.depositRequired && quote.depositPercent ? `
+            <tr>
+              <td style="padding:4px 0; font-size:13px; color:#6b7280;">Deposit Required:</td>
+              <td style="padding:4px 0; font-size:13px; color:#374151;">${quote.depositPercent}% (${formatMoney(Math.round((quote.total || 0) * quote.depositPercent / 100))})</td>
+            </tr>
+          ` : ''}
+        </table>
+      </div>
+    </div>
+  ` : '';
+
+  // Totals Section
+  const totalsSection = `
+    <div style="margin-bottom:24px;">
+      <div style="font-weight:600; color:#6b7280; text-transform:uppercase; font-size:11px; letter-spacing:0.5px; margin-bottom:12px;">Pricing Summary</div>
+      ${createTotalsTable({
+        subtotal: quote.subtotal,
+        discount: quote.discount,
+        taxAmount: Math.max(0, (quote.total ?? 0) - ((quote.subtotal ?? 0) - (quote.discount ?? 0))),
+        taxRate: quote.taxRate,
+        total: quote.total
+      })}
+    </div>
+  `;
+
+  // Terms & Conditions Section
+  const termsSection = quote.terms ? `
+    <div style="margin-bottom:24px; padding:16px; background:#f9fafb; border:1px solid #e2e8f0; border-radius:8px; border-left:3px solid #3b82f6;">
+      <div style="font-weight:600; color:#111827; margin-bottom:8px;">Terms & Conditions</div>
+      <div style="font-size:13px; color:#6b7280; line-height:1.5;">
+        ${escapeHtml(quote.terms).replace(/\n/g, '<br>')}
+      </div>
+    </div>
+  ` : '';
 
   const actions = createActionButtons([
-    { label: 'Approve', url: approveUrl, primary: true },
+    { label: 'Approve Quote', url: approveUrl, primary: true },
     { label: 'Request Changes', url: editUrl }
   ]);
 
   const content = `
     ${header}
     <tr>
-      <td style="padding:20px;">
+      <td style="padding:32px 24px;">
+        ${quoteDetails}
         ${serviceAddressHtml}
-        ${itemsTable}
-        ${totalsTable}
+        ${lineItemsSection}
+        ${paymentBillingHtml}
+        ${totalsSection}
+        ${termsSection}
         ${actions}
       </td>
     </tr>

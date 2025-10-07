@@ -116,44 +116,65 @@ export default function QuoteViewer() {
             </Badge>
           </div>
 
-          {/* Quote Details */}
+          {/* Quote Details Grid */}
           <div className="grid gap-6 md:grid-cols-2">
             {/* Customer Info */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Customer</CardTitle>
+                <CardTitle className="text-lg">Customer Information</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="font-medium">Customer ID: {quote.customerId}</div>
-                {quote.address && (
-                  <div className="text-sm text-muted-foreground">
-                    {quote.address}
-                  </div>
-                )}
+              <CardContent className="space-y-2">
+                <div className="text-sm text-muted-foreground">Customer ID: {quote.customerId}</div>
               </CardContent>
             </Card>
 
-            {/* Job Details */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Service Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {quote.terms && (
-                  <div className="text-sm text-muted-foreground">
-                    {quote.terms}
-                  </div>
-                )}
-                {quote.notesInternal && (
-                  <div className="text-sm text-muted-foreground">
-                    Notes: {quote.notesInternal}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            {/* Service Address */}
+            {quote.address && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Service Address</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-sm whitespace-pre-wrap">{quote.address}</div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
-          {/* Line Items */}
+          {/* Payment & Billing Details */}
+          {(quote.paymentTerms || quote.frequency || quote.depositRequired) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Payment & Billing</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {quote.paymentTerms && (
+                    <div>
+                      <div className="text-sm font-medium text-muted-foreground mb-1">Payment Terms</div>
+                      <div className="text-sm">{quote.paymentTerms.replace(/_/g, ' ')}</div>
+                    </div>
+                  )}
+                  <div>
+                    <div className="text-sm font-medium text-muted-foreground mb-1">Billing Frequency</div>
+                    <div className="text-sm">
+                      {quote.frequency ? quote.frequency.replace(/_/g, ' ') : 'One-time'}
+                    </div>
+                  </div>
+                  {quote.depositRequired && quote.depositPercent && (
+                    <div>
+                      <div className="text-sm font-medium text-muted-foreground mb-1">Deposit Required</div>
+                      <div className="text-sm">
+                        {quote.depositPercent}% ({formatMoney(Math.round((quote.total || 0) * quote.depositPercent / 100))})
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Line Items & Pricing */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Services & Materials</CardTitle>
@@ -203,6 +224,20 @@ export default function QuoteViewer() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Terms & Conditions */}
+          {quote.terms && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Terms & Conditions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm whitespace-pre-wrap text-muted-foreground">
+                  {quote.terms}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Subscription Warning */}
           {quote.status === 'Sent' && quote.isSubscription && (

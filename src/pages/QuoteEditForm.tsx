@@ -183,28 +183,140 @@ export default function QuoteEditForm() {
             </p>
           </div>
 
-          {/* Quote Summary */}
+          {/* Quote Overview */}
           {quote && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>Quote {quote.number}</span>
-                  <Badge variant="secondary">{quote.status}</Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Total Amount</span>
-                    <span className="font-semibold text-lg">{formatMoney(quote.total)}</span>
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>Quote {quote.number}</span>
+                    <Badge variant="secondary">{quote.status}</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Total Amount</span>
+                      <span className="font-bold text-2xl">{formatMoney(quote.total)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Created</span>
+                      <span>{new Date(quote.createdAt).toLocaleDateString()}</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Created</span>
-                    <span>{new Date(quote.createdAt).toLocaleDateString()}</span>
+                </CardContent>
+              </Card>
+
+              {/* Service Address */}
+              {quote.address && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Service Address</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-sm whitespace-pre-wrap">{quote.address}</div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Payment & Billing Details */}
+              {(quote.paymentTerms || quote.frequency || quote.depositRequired) && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Payment & Billing</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid gap-4 sm:grid-cols-2 text-sm">
+                      {quote.paymentTerms && (
+                        <div>
+                          <div className="font-medium text-muted-foreground mb-1">Payment Terms</div>
+                          <div>{quote.paymentTerms.replace(/_/g, ' ')}</div>
+                        </div>
+                      )}
+                      <div>
+                        <div className="font-medium text-muted-foreground mb-1">Billing Frequency</div>
+                        <div>
+                          {quote.frequency ? quote.frequency.replace(/_/g, ' ') : 'One-time'}
+                        </div>
+                      </div>
+                      {quote.depositRequired && quote.depositPercent && (
+                        <div>
+                          <div className="font-medium text-muted-foreground mb-1">Deposit Required</div>
+                          <div>
+                            {quote.depositPercent}% ({formatMoney(Math.round((quote.total || 0) * quote.depositPercent / 100))})
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Line Items Breakdown */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Services & Materials</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {quote.lineItems.map((item: any, index: number) => (
+                      <div key={index} className="flex justify-between items-start py-2 border-b last:border-b-0">
+                        <div className="flex-1">
+                          <div className="font-medium">{item.name}</div>
+                          <div className="text-sm text-muted-foreground">
+                            Qty: {item.qty} × {formatMoney(item.unitPrice)}
+                          </div>
+                        </div>
+                        <div className="font-medium">
+                          {formatMoney(item.lineTotal)}
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Pricing Breakdown */}
+                    <div className="space-y-2 pt-3 border-t">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Subtotal</span>
+                        <span>{formatMoney(quote.subtotal)}</span>
+                      </div>
+                      
+                      {quote.taxRate > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Tax ({(quote.taxRate * 100).toFixed(1)}%)</span>
+                          <span>{formatMoney(Math.round(quote.subtotal * quote.taxRate))}</span>
+                        </div>
+                      )}
+                      
+                      {quote.discount > 0 && (
+                        <div className="flex justify-between text-sm text-green-600">
+                          <span>Discount</span>
+                          <span>-{formatMoney(quote.discount)}</span>
+                        </div>
+                      )}
+                      
+                      <div className="flex justify-between font-bold text-lg pt-2 border-t">
+                        <span>Total</span>
+                        <span>{formatMoney(quote.total)}</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+
+              {/* Terms & Conditions */}
+              {quote.terms && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Terms & Conditions</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-sm whitespace-pre-wrap text-muted-foreground">
+                      {quote.terms}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </>
           )}
 
           {/* Feedback Form */}
