@@ -1,8 +1,7 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { queryKeys, invalidationHelpers } from "@/queries/keys";
+import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/queries/keys";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useAuthApi } from "@/hooks/useAuthApi";
-import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from 'react';
 
 import type { Job } from '@/types';
@@ -27,7 +26,6 @@ export function useJobsData(businessId?: string, opts?: UseJobsDataOptions) {
   const isAuthenticated = context.isAuthenticated;
   
   const enabled = isAuthenticated && !!effectiveBusinessId && (opts?.enabled ?? true);
-  const queryClient = useQueryClient();
 
   const queryKey = queryKeys.data.jobs(effectiveBusinessId || '', userId || '');
   console.log("[useJobsData] DEBUG - Query setup:", {
@@ -88,44 +86,6 @@ export function useJobsData(businessId?: string, opts?: UseJobsDataOptions) {
       query.refetch();
     }
   }, [effectiveBusinessId]);
-
-  // Realtime subscription for instant updates
-  useEffect(() => {
-    if (!isAuthenticated || !effectiveBusinessId) return;
-
-    console.log("[useJobsData] Setting up realtime subscription for businessId:", effectiveBusinessId);
-    
-    const channel = supabase
-      .channel('jobs-realtime')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'jobs' 
-      }, (payload) => {
-        console.log("[useJobsData] Realtime jobs change:", payload);
-        // Delay invalidation to allow optimistic updates to settle
-        setTimeout(() => {
-          invalidationHelpers.jobs(queryClient, effectiveBusinessId);
-        }, 200);
-      })
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'job_assignments' 
-      }, (payload) => {
-        console.log("[useJobsData] Realtime job_assignments change:", payload);
-        // Delay invalidation to allow optimistic updates to settle
-        setTimeout(() => {
-          invalidationHelpers.jobs(queryClient, effectiveBusinessId);
-        }, 200);
-      })
-      .subscribe();
-
-    return () => {
-      console.log("[useJobsData] Cleaning up realtime subscription");
-      supabase.removeChannel(channel);
-    };
-  }, [isAuthenticated, effectiveBusinessId, queryClient]);
 
   return {
     data: query.data?.jobs ?? [],
