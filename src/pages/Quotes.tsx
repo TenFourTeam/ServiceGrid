@@ -397,7 +397,7 @@ export default function QuotesPage() {
         quoteId={selectedQuoteId}
         onSendQuote={setSendQuoteItem}
         mode={detailsModalMode}
-        defaultTaxRate={businessTaxRateDefault || 0.1}
+        defaultTaxRate={businessTaxRateDefault ?? 0}
       />
       </QuoteErrorBoundary>
     </AppLayout>

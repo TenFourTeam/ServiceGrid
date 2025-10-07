@@ -13,7 +13,7 @@ export function toBusinessUI(db: { id?: string; name?: string; description?: str
     description: db.description || '',
     logoUrl: logo_url || '',
     lightLogoUrl: light_logo_url || '',
-    taxRateDefault: tax_rate_default || 0.1,
+    taxRateDefault: tax_rate_default ?? 0,
     phone: db.phone || '',
   };
 }
