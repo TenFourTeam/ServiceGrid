@@ -43,7 +43,7 @@ const statusColors: Record<string, string> = {
 
 function useFilteredJobs() {
   const { businessId } = useBusinessContext();
-  const { data: jobs = [] } = useJobsData(businessId);
+  const { data: jobs = [], isLoading, isError, error } = useJobsData(businessId);
   const { data: customers = [] } = useCustomersData();
   const { data: invoices = [] } = useInvoicesData();
   const [q, setQ] = useState('');
@@ -198,7 +198,7 @@ function useFilteredJobs() {
     });
   };
 
-  return { q, setQ, sort, setSort, jobs: filtered, counts, hasInvoice, getInvoiceForJob, tableSort, handleTableSort };
+  return { q, setQ, sort, setSort, jobs: filtered, counts, hasInvoice, getInvoiceForJob, tableSort, handleTableSort, isLoading, isError, error };
 }
 
 function StatusChip({ status, t }: { status: Job['status'], t: (key: string) => string }) {
@@ -276,8 +276,7 @@ function WorkOrderRow({ job, uninvoiced, customerName, when, onOpen, onOpenJobEd
 export default function WorkOrdersPage() {
   const { data: customers = [] } = useCustomersData();
   const { isSignedIn, getToken } = useClerkAuth();
-  const { isLoading, error } = useJobsData();
-  const { q, setQ, sort, setSort, jobs, counts, hasInvoice, tableSort, handleTableSort } = useFilteredJobs();
+  const { q, setQ, sort, setSort, jobs, counts, hasInvoice, tableSort, handleTableSort, isLoading, isError, error } = useFilteredJobs();
   const navigate = useNavigate();
   const lastSyncKeyRef = useRef<string | null>(null);
   const [activeJob, setActiveJob] = useState<Job | null>(null);

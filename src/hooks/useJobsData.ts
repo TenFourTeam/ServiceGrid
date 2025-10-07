@@ -41,7 +41,6 @@ export function useJobsData(businessId?: string, opts?: UseJobsDataOptions) {
     queryKey,
     enabled,
     staleTime: 30000, // 30 seconds - allow optimistic updates to settle
-    refetchOnMount: true, // Refetch on mount but not aggressively
     queryFn: async () => {
       console.log("[useJobsData] DEBUG - Starting fetch with context:", {
         effectiveBusinessId,
@@ -78,14 +77,6 @@ export function useJobsData(businessId?: string, opts?: UseJobsDataOptions) {
     },
     refetchOnWindowFocus: true, // Get fresh data when user returns to tab
   });
-
-  // Force refetch when business changes
-  useEffect(() => {
-    if (effectiveBusinessId && isAuthenticated && enabled) {
-      console.log("[useJobsData] Business ID changed, refetching jobs for:", effectiveBusinessId);
-      query.refetch();
-    }
-  }, [effectiveBusinessId]);
 
   return {
     data: query.data?.jobs ?? [],
