@@ -22,6 +22,31 @@ serve(async (req: Request) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Look up the profile UUID from the Clerk user ID
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('clerk_user_id', user_id)
+      .maybeSingle();
+
+    if (profileError) {
+      console.error('Error looking up profile:', profileError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to look up user profile' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!profile) {
+      console.log('Profile not found for Clerk user:', user_id);
+      return new Response(
+        JSON.stringify({ error: 'User profile not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const profileUuid = profile.id;
+
     // Find the referral by code
     const { data: existingReferral, error: fetchError } = await supabase
       .from('referrals')
@@ -41,7 +66,7 @@ serve(async (req: Request) => {
           .insert({
             referral_code,
             referrer_user_id: referral_code, // This should ideally be looked up
-            referred_user_id: user_id,
+            referred_user_id: profileUuid,
             referred_email: user_email,
             status: 'completed',
             completed_at: new Date().toISOString()
@@ -74,7 +99,7 @@ serve(async (req: Request) => {
     const { data: updatedReferral, error: updateError } = await supabase
       .from('referrals')
       .update({
-        referred_user_id: user_id,
+        referred_user_id: profileUuid,
         referred_email: user_email,
         status: 'completed',
         completed_at: new Date().toISOString()

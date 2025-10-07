@@ -16,15 +16,12 @@ export default function ReferralLanding() {
       sessionStorage.setItem('referral_code', referralCode);
       console.log('Stored referral code:', referralCode);
       
-      // Track the referral click
+      // Track the referral click (non-blocking)
       supabase.functions.invoke('track-referral', {
         body: { referral_code: referralCode }
-      }).then(({ data, error }) => {
-        if (error) {
-          console.error('Failed to track referral click:', error);
-        } else {
-          console.log('Referral click tracked:', data);
-        }
+      }).catch((error) => {
+        // Silently log tracking failures - don't block the user experience
+        console.log('Referral tracking skipped:', error);
       });
     }
   }, [referralCode]);

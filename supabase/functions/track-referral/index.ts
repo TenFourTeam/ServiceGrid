@@ -38,10 +38,32 @@ serve(async (req: Request) => {
     }
 
     if (!existingReferral) {
-      console.log('Referral code not found:', referral_code);
+      console.log('Referral code not found, creating pending record:', referral_code);
+      
+      // Create a pending referral record
+      const { data: newReferral, error: createError } = await supabase
+        .from('referrals')
+        .insert({
+          referral_code,
+          referrer_user_id: referral_code, // Will be updated when referrer creates their code
+          click_count: 1,
+          status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        console.error('Error creating pending referral:', createError);
+        return new Response(
+          JSON.stringify({ success: true, click_count: 1, created: true }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log('Created pending referral:', newReferral);
       return new Response(
-        JSON.stringify({ error: 'Referral code not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: true, click_count: 1, created: true }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
