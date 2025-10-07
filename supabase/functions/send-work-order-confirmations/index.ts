@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { requireCtx, corsHeaders } from "../_lib/auth.ts";
+import { generateWorkOrderConfirmationEmail } from "../_shared/workOrderConfirmationTemplate.ts";
 
 interface WorkOrderConfirmationRequest {
   type: 'single' | 'bulk';
@@ -181,62 +182,77 @@ const handler = async (req: Request): Promise<Response> => {
 
         const confirmationUrl = `${Deno.env.get('FRONTEND_URL')}/job-confirmation?token=${confirmationToken}`;
         
-        const emailHtml = `
-          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="text-align: center; margin-bottom: 32px;">
-              <h1 style="color: #1f2937; font-size: 24px; margin: 0;">${job.businesses.name}</h1>
-            </div>
-            
-            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
-              <h2 style="color: #1f2937; font-size: 20px; margin: 0 0 16px 0;">Service Appointment Scheduled</h2>
-              
-              <div style="margin-bottom: 16px;">
-                <strong style="color: #374151;">Service:</strong> ${job.title || 'Service Appointment'}
-              </div>
-              
-              <div style="margin-bottom: 16px;">
-                <strong style="color: #374151;">Date:</strong> ${formattedDate}
-              </div>
-              
-              <div style="margin-bottom: 16px;">
-                <strong style="color: #374151;">Time:</strong> ${formattedStartTime}${formattedEndTime ? ` - ${formattedEndTime}` : ''}
-              </div>
-              
-              ${job.address ? `
-                <div style="margin-bottom: 16px;">
-                  <strong style="color: #374151;">Address:</strong> ${job.address}
-                </div>
-              ` : ''}
-              
-              ${job.notes ? `
-                <div>
-                  <strong style="color: #374151;">Notes:</strong> ${job.notes}
-                </div>
-              ` : ''}
-            </div>
-            
-            <div style="text-align: center; margin: 32px 0;">
-              <p style="color: #6b7280; margin-bottom: 24px;">
-                Please confirm your appointment to help us serve you better.
-              </p>
-              
-              <a href="${confirmationUrl}" 
-                 style="display: inline-block; background: #3b82f6; color: white; text-decoration: none; padding: 12px 32px; border-radius: 6px; font-weight: 600;">
-                Confirm Appointment
-              </a>
-            </div>
-            
-            <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; text-align: center; color: #6b7280; font-size: 14px;">
-              <p>Need to reschedule or have questions?</p>
-              ${job.businesses.phone ? `<p>Call us: ${job.businesses.phone}</p>` : ''}
-              ${job.businesses.reply_to_email ? `<p>Email us: ${job.businesses.reply_to_email}</p>` : ''}
-            </div>
-          </div>
-        `;
+        // Generate email using shared template
+        const { subject, html: emailHtml } = generateWorkOrderConfirmationEmail({
+          businessName: job.businesses.name,
+          businessPhone: job.businesses.phone,
+          businessEmail: job.businesses.reply_to_email,
+          jobTitle: job.title || 'Service Appointment',
+          formattedDate,
+          formattedStartTime,
+          formattedEndTime,
+          address: job.address,
+          notes: job.notes,
+          confirmationUrl,
+        });
 
-        // Email functionality temporarily disabled
-        console.log(`[send-work-order-confirmations] Email functionality disabled for job ${job.id}`);
-        const emailError = null;
+        // Send email via Resend API
+        const resendApiKey = Deno.env.get('RESEND_API_KEY');
+        if (!resendApiKey) {
+          throw new Error('RESEND_API_KEY not configured');
+        }
+
+        let emailError = null;
+        let providerMessageId = null;
+        try {
+          const response = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${resendApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              from: Deno.env.get('RESEND_FROM_EMAIL') || 'onboarding@resend.dev',
+              to: [job.customers.email],
+              subject,
+              html: emailHtml,
+            }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            emailError = new Error(errorData.message || 'Failed to send email');
+            console.error(`[send-work-order-confirmations] Resend API error:`, errorData);
+          } else {
+            const result = await response.json();
+            providerMessageId = result.id;
+            console.log(`[send-work-order-confirmations] Email sent successfully:`, result);
+          }
+        } catch (error) {
+          emailError = error;
+          console.error(`[send-work-order-confirmations] Email send error:`, error);
+        }
+
+        // Log to mail_sends table for tracking
+        try {
+          const requestHash = crypto.randomUUID();
+          
+          await supaAdmin
+            .from('mail_sends')
+            .insert({
+              job_id: job.id,
+              to_email: job.customers.email,
+              subject,
+              status: emailError ? 'failed' : 'sent',
+              error_message: emailError ? (emailError as any)?.message : null,
+              provider_message_id: providerMessageId,
+              request_hash: requestHash,
+              user_id: job.owner_id
+            });
+        } catch (logError) {
+          console.error(`[send-work-order-confirmations] Failed to log to mail_sends:`, logError);
+          // Don't fail the whole operation if logging fails
+        }
 
         if (emailError) {
           console.error(`[send-work-order-confirmations] Email error for job ${job.id}:`, emailError);
