@@ -333,8 +333,8 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { userId } = await requireCtx(req);
-    const ownerId = userId;
+    const ctx = await requireCtx(req);
+    const ownerId = ctx.userId;
 
     let payload: {
       type: string;
@@ -395,12 +395,47 @@ serve(async (req: Request): Promise<Response> => {
 
     if ((sendRes as any)?.error) {
       console.error('Resend send error:', (sendRes as any)?.error);
+      
+      // Log failed email to mail_sends
+      try {
+        await ctx.supabase.from('mail_sends').insert({
+          user_id: ownerId,
+          to_email: data.userEmail,
+          subject: emailTemplate.subject,
+          status: 'failed',
+          error_code: 'RESEND_ERROR',
+          error_message: (sendRes as any)?.error?.message || 'Unknown error',
+          request_hash: crypto.randomUUID(),
+        });
+      } catch (logError) {
+        console.error('[send-lifecycle-email] Failed to log error to mail_sends:', logError);
+      }
+      
       return json({ error: (sendRes as any)?.error?.message || 'Email send failed' }, { status: 500 });
     }
 
     const messageId = (sendRes as any)?.data?.id ?? null;
     
     console.info('[send-lifecycle-email] Email sent:', type, data.userEmail, messageId);
+
+    // Log successful email to mail_sends
+    try {
+      const requestHash = crypto.randomUUID();
+      
+      await ctx.supabase.from('mail_sends').insert({
+        user_id: ownerId,
+        to_email: data.userEmail,
+        subject: emailTemplate.subject,
+        status: 'sent',
+        provider_message_id: messageId,
+        request_hash: requestHash,
+      });
+      
+      console.log('[send-lifecycle-email] Logged to mail_sends:', requestHash);
+    } catch (logError) {
+      console.error('[send-lifecycle-email] Failed to log to mail_sends:', logError);
+      // Don't fail the operation if logging fails
+    }
 
     return json({ 
       success: true, 
@@ -411,6 +446,22 @@ serve(async (req: Request): Promise<Response> => {
 
   } catch (e: any) {
     console.error('Unexpected send error:', e);
+    
+    // Log failed email to mail_sends
+    try {
+      await ctx.supabase.from('mail_sends').insert({
+        user_id: ownerId,
+        to_email: data.userEmail,
+        subject: emailTemplate?.subject || 'Lifecycle Email',
+        status: 'failed',
+        error_code: e?.name || 'UNKNOWN_ERROR',
+        error_message: e?.message || 'Unknown error',
+        request_hash: crypto.randomUUID(),
+      });
+    } catch (logError) {
+      console.error('[send-lifecycle-email] Failed to log error to mail_sends:', logError);
+    }
+    
     return json({ error: e?.message || 'Send failed' }, { status: 500 });
   }
 
