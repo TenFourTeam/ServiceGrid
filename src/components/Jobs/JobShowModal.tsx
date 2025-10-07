@@ -258,6 +258,11 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
   }
 
   async function handleSendConfirmation() {
+    if (!job.startsAt) {
+      toast.error('Please schedule the job before sending confirmation');
+      return;
+    }
+    
     setIsSendingConfirmation(true);
     
     try {
@@ -734,7 +739,8 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                     variant="outline" 
                     onClick={handleSendConfirmation}
                     size="sm"
-                    disabled={isSendingConfirmation}
+                    disabled={isSendingConfirmation || !job.startsAt}
+                    title={!job.startsAt ? "Please schedule the job before sending confirmation" : ""}
                   >
                   {isSendingConfirmation ? 'Sending...' : 'Send Confirmation'}
                   </Button>

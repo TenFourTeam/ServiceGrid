@@ -40,6 +40,21 @@ const handler = async (req: Request): Promise<Response> => {
       }
       
       if (job) {
+        // Validate that job has a scheduled date
+        if (!job.starts_at) {
+          console.error(`[send-work-order-confirmations] Job ${jobId} has no scheduled date`);
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: 'Cannot send confirmation for a job without a scheduled date. Please schedule the job first.' 
+            }),
+            { 
+              status: 400, 
+              headers: { 'Content-Type': 'application/json', ...corsHeaders } 
+            }
+          );
+        }
+        
         // Now get customer data separately
         const { data: customer, error: customerError } = await supaAdmin
           .from('customers')
@@ -127,12 +142,14 @@ const handler = async (req: Request): Promise<Response> => {
           return acc;
         }, {});
         
-        // Combine job data with customer and business data
-        jobsToProcess = jobs.map((job: any) => ({
-          ...job,
-          customers: customerMap[job.customer_id],
-          businesses: business
-        }));
+        // Combine job data with customer and business data, filtering out jobs without scheduled dates
+        jobsToProcess = jobs
+          .filter((job: any) => job.starts_at !== null)
+          .map((job: any) => ({
+            ...job,
+            customers: customerMap[job.customer_id],
+            businesses: business
+          }));
       } else {
         jobsToProcess = [];
       }

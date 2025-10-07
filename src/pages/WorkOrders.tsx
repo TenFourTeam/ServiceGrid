@@ -61,6 +61,20 @@ function useFilteredJobs() {
     return date;
   }, []);
   
+  const tomorrowStart = useMemo(() => {
+    const date = new Date();
+    date.setDate(date.getDate() + 1);
+    date.setHours(0,0,0,0);
+    return date;
+  }, []);
+  
+  const tomorrowEnd = useMemo(() => {
+    const date = new Date();
+    date.setDate(date.getDate() + 1);
+    date.setHours(23,59,59,999);
+    return date;
+  }, []);
+  
   const sevenDaysAgo = useMemo(() => {
     return new Date(Date.now() - 7*24*3600*1000);
   }, []);
@@ -164,7 +178,13 @@ function useFilteredJobs() {
       j.confirmationStatus === 'pending' && 
       j.status !== 'Completed'
     ).length,
-  }), [jobs, sevenDaysAgo, todayStart, todayEnd]);
+    tomorrowWithDates: jobs.filter(j => 
+      isValidDate(j.startsAt) && 
+      new Date(j.startsAt!) >= tomorrowStart && 
+      new Date(j.startsAt!) <= tomorrowEnd &&
+      !j.confirmationToken
+    ).length,
+  }), [jobs, sevenDaysAgo, todayStart, todayEnd, tomorrowStart, tomorrowEnd]);
 
   const hasInvoice = (jobId: string) => invoices.some(i=> i.jobId === jobId);
   const getInvoiceForJob = (jobId: string) => invoices.find(i=> i.jobId === jobId);
@@ -378,8 +398,10 @@ export default function WorkOrdersPage() {
                 }}
                 variant="outline"
                 className="w-full sm:w-auto"
+                disabled={counts.tomorrowWithDates === 0}
+                title={counts.tomorrowWithDates === 0 ? "No jobs scheduled for tomorrow with valid dates" : `Send confirmations to ${counts.tomorrowWithDates} scheduled jobs`}
               >
-                Send Tomorrow's Confirmations
+                Send Tomorrow's Confirmations {counts.tomorrowWithDates > 0 ? `(${counts.tomorrowWithDates})` : ''}
               </Button>
               <Button onClick={() => setCreateJobOpen(true)} className="w-full sm:w-auto">
                 <Plus className="h-4 w-4 mr-2" />

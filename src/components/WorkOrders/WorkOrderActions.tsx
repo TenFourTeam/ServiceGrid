@@ -45,7 +45,7 @@ export function WorkOrderActions({
   const canComplete = isOwner && job.status !== 'Completed';
   const canCreateInvoice = isOwner && !existingInvoice && job.status === 'Completed';
   const canViewInvoice = existingInvoice;
-  const canSendConfirmation = isOwner && job.customerId && job.address;
+  const canSendConfirmation = isOwner && job.customerId && job.address && job.startsAt;
 
   const handleCompleteJob = async () => {
     setIsCompletingJob(true);
@@ -155,6 +155,11 @@ export function WorkOrderActions({
   };
 
   const handleSendConfirmation = async () => {
+    if (!job.startsAt) {
+      toast.error('Please schedule the job before sending confirmation');
+      return;
+    }
+    
     setIsSendingConfirmation(true);
     
     try {
@@ -244,11 +249,12 @@ export function WorkOrderActions({
         )}
 
         {/* Send Confirmation - Show for jobs with customer and address */}
-        {canSendConfirmation && (
+        {isOwner && (
           <DropdownMenuItem 
             onClick={handleSendConfirmation} 
-            disabled={isSendingConfirmation}
+            disabled={isSendingConfirmation || !canSendConfirmation}
             className="gap-2"
+            title={!job.startsAt ? "Job must be scheduled first" : ""}
           >
             <Mail className="h-4 w-4" />
             {isSendingConfirmation ? 'Sending...' : 'Send Confirmation'}
