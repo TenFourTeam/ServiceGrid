@@ -57,6 +57,29 @@ export default function QuoteEditForm() {
         }
         
         const data = await response.json();
+        
+        // Check if quote has already been finalized
+        if (data.status === 'Approved') {
+          setError('This quote has already been approved. If you need to make changes, please contact us directly.');
+          setQuote(data);
+          setLoading(false);
+          return;
+        }
+        
+        if (data.status === 'Declined') {
+          setError('This quote has been declined. Please contact us if you\'d like to discuss alternatives.');
+          setQuote(data);
+          setLoading(false);
+          return;
+        }
+        
+        if (data.status === 'Edits Requested') {
+          setError('You\'ve already requested changes to this quote. We\'ll be in touch shortly with an updated version.');
+          setQuote(data);
+          setLoading(false);
+          return;
+        }
+        
         setQuote(data);
         setLoading(false);
       } catch (err: any) {
@@ -229,7 +252,7 @@ export default function QuoteEditForm() {
                   </Button>
                   <Button
                     type="submit"
-                    disabled={submitting || !customerNotes.trim()}
+                    disabled={submitting || !customerNotes.trim() || (error !== null && quote?.status !== 'Sent' && quote?.status !== 'Viewed')}
                     className="flex-1"
                   >
                     {submitting ? 'Submitting...' : 'Submit Feedback'}

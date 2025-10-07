@@ -238,8 +238,42 @@ export default function QuoteViewer() {
             </Alert>
           )}
 
-          {/* Actions */}
-          {quote.status === 'Sent' && (
+          {/* Status Messages for Finalized Quotes */}
+          {quote.status === 'Approved' && (
+            <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/50">
+              <AlertDescription className="text-green-800 dark:text-green-200">
+                <p className="font-medium">✓ This quote has been approved</p>
+                <p className="text-sm mt-1">
+                  If you need to make changes, please contact us directly.
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {quote.status === 'Edits Requested' && (
+            <Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/50">
+              <AlertDescription className="text-blue-800 dark:text-blue-200">
+                <p className="font-medium">✓ You've already requested changes to this quote</p>
+                <p className="text-sm mt-1">
+                  We'll review your feedback and send you an updated quote shortly.
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {quote.status === 'Declined' && (
+            <Alert className="border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950/50">
+              <AlertDescription className="text-gray-800 dark:text-gray-200">
+                <p className="font-medium">This quote has been declined</p>
+                <p className="text-sm mt-1">
+                  Please contact us if you'd like to discuss alternatives.
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Actions - Only show for Sent or Viewed status */}
+          {(quote.status === 'Sent' || quote.status === 'Viewed') && (
             <Card>
               <CardContent className="pt-6">
                 <div className="flex flex-col sm:flex-row gap-3">
