@@ -27,7 +27,7 @@ import JobShowModal from '@/components/Jobs/JobShowModal';
 import { JobBottomModal } from '@/components/Jobs/JobBottomModal';
 import { JobEditModal } from '@/components/Jobs/JobEditModal';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Plus, CheckCircle, Clock } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { WorkOrderActions } from '@/components/WorkOrders/WorkOrderActions';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
@@ -152,11 +152,6 @@ function useFilteredJobs() {
             aValue = a.total || 0;
             bValue = b.total || 0;
             break;
-          case 'confirmation':
-            // Sort by: confirmed (1) > pending (2) > no confirmation (3)
-            aValue = a.confirmedAt ? '1' : (a.confirmationToken ? '2' : '3');
-            bValue = b.confirmedAt ? '1' : (b.confirmationToken ? '2' : '3');
-            break;
         }
 
         if (typeof aValue === 'number' && typeof bValue === 'number') {
@@ -221,38 +216,6 @@ function StatusChip({ status, t }: { status: Job['status'], t: (key: string) => 
   return <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${styles}`}>{t(statusKey)}</span>;
 }
 
-function ConfirmationBadge({ 
-  job, 
-  t 
-}: { 
-  job: Job;
-  t: (key: string) => string;
-}) {
-  // No confirmation sent yet
-  if (!job.confirmationToken) return null;
-  
-  // Customer confirmed
-  if (job.confirmedAt || job.status === 'Schedule Approved') {
-    return (
-      <Badge variant="outline" className="gap-1.5 bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300">
-        <CheckCircle className="h-3 w-3" />
-        <span className="hidden sm:inline">{t('workOrders.confirmation.confirmed')}</span>
-      </Badge>
-    );
-  }
-  
-  // Awaiting confirmation (job is Scheduled with token but no confirmedAt)
-  if (job.status === 'Scheduled') {
-    return (
-      <Badge variant="outline" className="gap-1.5 bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300">
-        <Clock className="h-3 w-3" />
-        <span className="hidden sm:inline">{t('workOrders.confirmation.pending')}</span>
-      </Badge>
-    );
-  }
-  
-  return null;
-}
 
 function WorkOrderRow({ job, uninvoiced, customerName, when, onOpen, onOpenJobEditModal, t, userRole, existingInvoice }: {
   job: Job;
@@ -274,17 +237,11 @@ function WorkOrderRow({ job, uninvoiced, customerName, when, onOpen, onOpenJobEd
       onClick={onOpen} 
       className="relative p-4 border rounded-md bg-card shadow-sm cursor-pointer hover:bg-accent/30 transition-colors"
     >
-      {/* Status and Confirmation badges in top-right corner */}
-      <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
+      {/* Status badge in top-right corner */}
+      <div className="absolute top-2 right-2">
         <Badge className={statusColors[job.status]}>
           {t(statusKey)}
         </Badge>
-        {job.confirmationToken && (
-          <ConfirmationBadge 
-            job={job} 
-            t={t} 
-          />
-        )}
       </div>
       
       {/* Actions menu halfway up right edge */}
@@ -514,12 +471,6 @@ export default function WorkOrdersPage() {
                         {t('workOrders.table.status')} {tableSort?.column === 'status' && (tableSort.direction === 'asc' ? '▲' : '▼')}
                       </TableHead>
                       <TableHead 
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => handleTableSort('confirmation')}
-                      >
-                        {t('workOrders.table.confirmation')} {tableSort?.column === 'confirmation' && (tableSort.direction === 'asc' ? '▲' : '▼')}
-                      </TableHead>
-                      <TableHead 
                         className="cursor-pointer hover:bg-muted/50 text-right"
                         onClick={() => handleTableSort('amount')}
                       >
@@ -554,16 +505,6 @@ export default function WorkOrdersPage() {
                           <TableCell>{when}</TableCell>
                           <TableCell>
                             <StatusChip status={j.status} t={t} />
-                          </TableCell>
-                          <TableCell>
-                            {j.confirmationToken ? (
-                              <ConfirmationBadge 
-                                job={j as Job} 
-                                t={t} 
-                              />
-                            ) : (
-                              <span className="text-xs text-muted-foreground">—</span>
-                            )}
                           </TableCell>
                           <TableCell className="text-right">{formatMoney(j.total || 0)}</TableCell>
                           <TableCell onClick={(e) => e.stopPropagation()}>
