@@ -284,7 +284,7 @@ Deno.serve(async (req) => {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            from: RESEND_FROM_EMAIL,
+            from: `${businessData?.name || 'Your Business'} <${RESEND_FROM_EMAIL}>`,
             to: recipientEmail,
             subject: subject,
             html: finalHtml

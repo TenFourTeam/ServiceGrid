@@ -436,7 +436,7 @@ Deno.serve(async (req) => {
 
         try {
           const result = await resend.emails.send({
-            from: Deno.env.get('RESEND_FROM_EMAIL') || 'onboarding@resend.dev',
+            from: `${businessData.name} <${Deno.env.get('RESEND_FROM_EMAIL') || 'onboarding@resend.dev'}>`,
             to: [to],
             subject: emailSubject,
             html: emailHtml
