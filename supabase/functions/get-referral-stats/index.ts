@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { corsHeaders, getAuthenticatedUser } from "../_lib/auth.ts";
+import { corsHeaders, requireCtx } from "../_lib/auth.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -11,8 +11,8 @@ serve(async (req: Request) => {
   }
 
   try {
-    const payload = await getAuthenticatedUser(req);
-    if (!payload?.profileId) {
+    const payload = await requireCtx(req);
+    if (!payload?.userId) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -25,7 +25,7 @@ serve(async (req: Request) => {
     const { data: referrals, error } = await supabase
       .from('referrals')
       .select('*')
-      .eq('referrer_user_id', payload.profileId)
+      .eq('referrer_user_id', payload.userId)
       .order('created_at', { ascending: false });
 
     if (error) {

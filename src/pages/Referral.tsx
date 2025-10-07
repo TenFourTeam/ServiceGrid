@@ -11,26 +11,28 @@ import { getAppUrl } from '@/utils/env';
 import { useReferralStats } from '@/hooks/useReferralStats';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthApi } from '@/hooks/useAuthApi';
+import { useProfile } from '@/queries/useProfile';
 
 export default function ReferralPage() {
   const { user } = useUser();
   const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
   const { data: stats, isLoading } = useReferralStats();
+  const { data: profileData } = useProfile();
   const authApi = useAuthApi();
   
-  const referralLink = `${getAppUrl()}/invite/referral?ref=${user?.id || 'user'}`;
+  const referralLink = `${getAppUrl()}/invite/referral?ref=${profileData?.profile?.id || ''}`;
 
   // Initialize referral code on mount
   useEffect(() => {
-    if (user) {
+    if (profileData?.profile?.id) {
       authApi.invoke('create-referral-code', {
         method: 'POST'
       }).catch(error => {
         console.error('Failed to initialize referral code:', error);
       });
     }
-  }, [user, authApi]);
+  }, [profileData?.profile?.id, authApi]);
   
   const handleCopyLink = async () => {
     try {

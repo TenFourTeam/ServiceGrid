@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { corsHeaders, getAuthenticatedUser } from "../_lib/auth.ts";
+import { corsHeaders, requireCtx } from "../_lib/auth.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -11,8 +11,8 @@ serve(async (req: Request) => {
   }
 
   try {
-    const payload = await getAuthenticatedUser(req);
-    if (!payload?.profileId) {
+    const payload = await requireCtx(req);
+    if (!payload?.userId) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -22,13 +22,13 @@ serve(async (req: Request) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Use user's profile ID as the referral code for simplicity
-    const referralCode = payload.profileId;
+    const referralCode = payload.userId;
 
     // Check if referral code already exists
     const { data: existing } = await supabase
       .from('referrals')
       .select('referral_code')
-      .eq('referrer_user_id', payload.profileId)
+      .eq('referrer_user_id', payload.userId)
       .eq('referral_code', referralCode)
       .maybeSingle();
 
@@ -46,7 +46,7 @@ serve(async (req: Request) => {
     const { data: newReferral, error } = await supabase
       .from('referrals')
       .insert({
-        referrer_user_id: payload.profileId,
+        referrer_user_id: payload.userId,
         referral_code: referralCode,
         status: 'pending'
       })

@@ -30,9 +30,6 @@ export function getSupabaseAnonKey(): string {
  * Get the application base URL for generating links
  */
 export function getAppUrl(): string {
-  if (typeof window !== 'undefined') {
-    return window.location.origin;
-  }
   return import.meta.env.VITE_APP_URL || 'https://servicegrid.app';
 }
 
