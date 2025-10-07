@@ -30,6 +30,7 @@ Deno.serve(async (req) => {
           job_type, photos, is_clocked_in, clock_in_time, clock_out_time,
           recurrence, created_at, updated_at,
           customer_id, quote_id, is_assessment, request_id,
+          confirmation_token, confirmation_status, confirmed_at,
           customers!inner(name, email, phone),
           job_assignments(
             user_id,
@@ -95,6 +96,9 @@ Deno.serve(async (req) => {
         ownerId: job.owner_id,
         isAssessment: job.is_assessment,
         requestId: job.request_id,
+        confirmationToken: job.confirmation_token,
+        confirmationStatus: job.confirmation_status,
+        confirmedAt: job.confirmed_at,
         customerName: job.customers?.name,
         customerEmail: job.customers?.email,
         customerPhone: job.customers?.phone,
