@@ -7,13 +7,14 @@ import { Button } from '@/components/ui/button';
 import { UserPlus, Share, Gift, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getAppUrl } from '@/utils/env';
 
 export default function ReferralPage() {
   const { user } = useUser();
   const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
   
-  const referralLink = `${window.location.origin}/invite/referral?ref=${user?.id || 'user'}`;
+  const referralLink = `${getAppUrl()}/invite/referral?ref=${user?.id || 'user'}`;
   
   const handleCopyLink = async () => {
     try {
