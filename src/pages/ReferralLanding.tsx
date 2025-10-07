@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UserPlus, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function ReferralLanding() {
   const [searchParams] = useSearchParams();
@@ -14,6 +15,17 @@ export default function ReferralLanding() {
     if (referralCode) {
       sessionStorage.setItem('referral_code', referralCode);
       console.log('Stored referral code:', referralCode);
+      
+      // Track the referral click
+      supabase.functions.invoke('track-referral', {
+        body: { referral_code: referralCode }
+      }).then(({ data, error }) => {
+        if (error) {
+          console.error('Failed to track referral click:', error);
+        } else {
+          console.log('Referral click tracked:', data);
+        }
+      });
     }
   }, [referralCode]);
 
