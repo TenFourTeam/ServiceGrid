@@ -937,7 +937,7 @@ export default function InvoiceModal({
           )}
 
           <Button variant="outline" onClick={() => setMode('send')} className="w-full">
-            Email Preview
+            Send Email
           </Button>
           
           {/* Edit action before destructive action */}
@@ -970,7 +970,7 @@ export default function InvoiceModal({
           )}
 
           <Button variant="outline" onClick={() => setMode('send')}>
-            Email Preview
+            Send Email
           </Button>
         </div>
 

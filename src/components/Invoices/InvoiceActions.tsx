@@ -51,7 +51,7 @@ export function InvoiceActions({
         <DropdownMenuContent align="end" className="bg-background border shadow-md">
           <DropdownMenuItem onClick={() => onEmailPreview(invoice)} className="gap-2">
             <Send className="h-4 w-4" />
-            Email Preview
+            Send Email
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           {canEdit && (
