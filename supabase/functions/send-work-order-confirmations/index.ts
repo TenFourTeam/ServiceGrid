@@ -205,10 +205,8 @@ const handler = async (req: Request): Promise<Response> => {
           hour12: true
         }) : null;
 
-        // Generate confirmation URL using the same pattern as quotes
-        const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-        const baseUrl = supabaseUrl.replace(/\.supabase\.co$/, '.lovableproject.com');
-        const confirmationUrl = `${baseUrl}/job-action?type=confirm&job_id=${job.id}&token=${confirmationToken}`;
+        // Use servicegrid.app for confirmation URLs (matching quote approval pattern)
+        const confirmationUrl = `https://servicegrid.app/job-action?type=confirm&job_id=${job.id}&token=${confirmationToken}`;
         console.log(`[send-work-order-confirmations] Generated confirmation URL: ${confirmationUrl}`);
         
         // Generate email using shared template
