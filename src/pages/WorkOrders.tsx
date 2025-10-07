@@ -36,6 +36,7 @@ import { formatMoney as formatCurrency } from '@/utils/format';
 
 const statusColors: Record<string, string> = {
   'Scheduled': 'bg-green-100 text-green-800',
+  'Schedule Approved': 'bg-green-100 text-green-800',
   'In Progress': 'bg-blue-100 text-blue-800',
   'Completed': 'bg-gray-100 text-gray-800'
 };
@@ -229,6 +230,7 @@ function WorkOrderRow({ job, uninvoiced, customerName, when, onOpen, onOpenJobEd
   existingInvoice?: any;
 }) {
   const statusKey = job.status === 'Scheduled' ? 'workOrders.status.scheduled' 
+    : job.status === 'Schedule Approved' ? 'workOrders.status.scheduleApproved'
     : job.status === 'In Progress' ? 'workOrders.status.inProgress'
     : 'workOrders.status.completed';
 
