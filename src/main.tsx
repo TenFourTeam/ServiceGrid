@@ -81,6 +81,26 @@ async function initializeApp() {
   }
 }
 
+// Suppress DataCloneError from blocked tracking scripts on custom domain
+window.addEventListener('error', (event) => {
+  if (event.error?.name === 'DataCloneError' || 
+      event.message?.includes('DataCloneError') ||
+      event.message?.includes('cdn.gpteng.co')) {
+    console.warn('Lovable tracking blocked on custom domain (expected)');
+    event.preventDefault(); // Prevent error from propagating
+    return true;
+  }
+});
+
+// Also handle unhandled promise rejections
+window.addEventListener('unhandledrejection', (event) => {
+  if (event.reason?.name === 'DataCloneError' ||
+      event.reason?.message?.includes('cdn.gpteng.co')) {
+    console.warn('Lovable tracking promise rejected (expected on custom domain)');
+    event.preventDefault();
+  }
+});
+
 // Start initialization
 initializeApp();
 
