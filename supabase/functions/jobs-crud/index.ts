@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
         total: job.total,
         address: job.address,
         notes: job.notes,
-        jobType: job.job_type,
+        jobType: job.job_type || 'appointment', // Defensive default
         photos: job.photos,
         isClockedIn: job.is_clocked_in,
         clockInTime: job.clock_in_time,

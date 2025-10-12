@@ -655,10 +655,21 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                         const isHighlighted = highlightJobId === j.id;
                         const isBeingDragged = isDragging === j.id;
                         const isBeingResized = isResizing === j.id;
-                        const statusColors = getJobStatusColors(j.status, j.isAssessment, j.jobType);
+                        
+                        // Validate and normalize job before rendering
+                        const safeJob = {
+                          ...j,
+                          jobType: (j.jobType === 'appointment' || j.jobType === 'time_and_materials') 
+                            ? j.jobType 
+                            : 'appointment', // Force valid value
+                          isAssessment: j.isAssessment || false,
+                          status: j.status || 'Scheduled'
+                        };
+                        
+                        const statusColors = getJobStatusColors(safeJob.status, safeJob.isAssessment, safeJob.jobType);
                         const currentTime = new Date();
-                        const canDrag = canDragJob(j.status, currentTime, startsAt);
-                        const canResize = canResizeJob(j.status, currentTime, startsAt, effectiveEndsAt);
+                        const canDrag = canDragJob(safeJob.status, currentTime, startsAt);
+                        const canResize = canResizeJob(safeJob.status, currentTime, startsAt, effectiveEndsAt);
                         
                         // Calculate column-based positioning if job has column info
                         const jobWithPos = j as any;

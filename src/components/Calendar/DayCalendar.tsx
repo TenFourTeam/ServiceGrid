@@ -84,20 +84,27 @@ export default function DayCalendar({ date, displayMode = 'scheduled', selectedM
             const s = safeCreateDate(j.startsAt);
             const e = safeCreateDate(j.endsAt);
             if (!s) return []; // Skip if invalid start date
-            const statusColors = getJobStatusColors((j as Job).status, (j as Job).isAssessment, (j as Job).jobType);
+            
+            // Validate and normalize job
+            const job = j as Job;
+            const safeJobType = (job.jobType === 'appointment' || job.jobType === 'time_and_materials') 
+              ? job.jobType 
+              : 'appointment';
+            
+            const statusColors = getJobStatusColors(job.status, job.isAssessment, safeJobType);
             
             blocks.push(
-              <li key={`${(j as Job).id}-scheduled`} className={`${statusColors.bg} ${statusColors.text} ${statusColors.border} rounded px-3 py-2 border ${displayMode === 'combined' ? 'opacity-60' : ''} cursor-pointer hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-primary`} onClick={(e) => { e.stopPropagation(); setActiveJob(j as Job); setOpen(true); }}>
+              <li key={`${job.id}-scheduled`} className={`${statusColors.bg} ${statusColors.text} ${statusColors.border} rounded px-3 py-2 border ${displayMode === 'combined' ? 'opacity-60' : ''} cursor-pointer hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-primary`} onClick={(e) => { e.stopPropagation(); setActiveJob(job); setOpen(true); }}>
                 <div className="flex items-center gap-2 text-sm font-medium">
-                  <span className={`inline-block h-2 w-2 rounded-full ${(j as Job).isAssessment ? 'bg-status-assessment-foreground' : (j as Job).status === 'Completed' ? 'bg-success' : 'bg-primary'}`} aria-hidden="true" />
+                  <span className={`inline-block h-2 w-2 rounded-full ${job.isAssessment ? 'bg-status-assessment-foreground' : job.status === 'Completed' ? 'bg-success' : 'bg-primary'}`} aria-hidden="true" />
                   <span>{s.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
                   <span className="opacity-70">–</span>
                   <span>{e ? e.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'End time'}</span>
-                  {(j as Job).isAssessment && <span className="text-xs opacity-80">(Assessment)</span>}
+                  {job.isAssessment && <span className="text-xs opacity-80">(Assessment)</span>}
                 </div>
-                <div className="text-sm font-medium truncate">{(j as Job).title || 'Job'}</div>
-                <div className="text-xs opacity-70 truncate">{(customersMap.get((j as Job).customerId) ?? 'Customer') as string}</div>
-                {(j as Job).address && <div className="text-xs opacity-70">{(j as Job).address}</div>}
+                <div className="text-sm font-medium truncate">{job.title || 'Job'}</div>
+                <div className="text-xs opacity-70 truncate">{(customersMap.get(job.customerId) ?? 'Customer') as string}</div>
+                {job.address && <div className="text-xs opacity-70">{job.address}</div>}
               </li>
             );
           }

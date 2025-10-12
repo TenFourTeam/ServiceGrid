@@ -125,7 +125,7 @@ export interface Job {
   total?: Money;
   photos?: string[]; // public URLs for job photos
   uploadingPhotos?: boolean; // optimistic state for photo uploads
-  jobType: JobType;
+  jobType?: JobType; // Optional to handle legacy data
   clockInTime?: ISODate | null;
   clockOutTime?: ISODate | null;
   isClockedIn: boolean;

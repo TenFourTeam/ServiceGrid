@@ -149,7 +149,13 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
                         if (displayMode === 'scheduled' || displayMode === 'combined') {
                           const t = safeCreateDate(j.startsAt);
                           if (!t) return []; // Skip if invalid date
-                          const statusColors = getJobStatusColors(j.status, j.isAssessment, j.jobType);
+                          
+                          // Validate and normalize job
+                          const safeJobType = (j.jobType === 'appointment' || j.jobType === 'time_and_materials') 
+                            ? j.jobType 
+                            : 'appointment';
+                          
+                          const statusColors = getJobStatusColors(j.status, j.isAssessment, safeJobType);
                           blocks.push(
                             <li key={`${j.id}-scheduled`} className="truncate">
                               <button
@@ -218,7 +224,13 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
                           if (displayMode === 'scheduled' || displayMode === 'combined') {
                             const t = safeCreateDate(j.startsAt);
                             if (!t) return []; // Skip if invalid date
-                            const statusColors = getJobStatusColors(j.status, j.isAssessment, j.jobType);
+                            
+                            // Validate and normalize job
+                            const safeJobType = (j.jobType === 'appointment' || j.jobType === 'time_and_materials') 
+                              ? j.jobType 
+                              : 'appointment';
+                            
+                            const statusColors = getJobStatusColors(j.status, j.isAssessment, safeJobType);
                             blocks.push(
                               <button
                                 key={`${j.id}-scheduled`}

@@ -1,6 +1,9 @@
 import { JobStatus, JobType } from "@/types";
 
 export function getJobStatusColors(status: JobStatus, isAssessment?: boolean, jobType?: JobType) {
+  // Defensive: ensure valid jobType
+  const safeJobType: JobType = jobType === 'time_and_materials' ? 'time_and_materials' : 'appointment';
+  
   // Assessment jobs get special styling regardless of status
   if (isAssessment) {
     return {
@@ -11,7 +14,7 @@ export function getJobStatusColors(status: JobStatus, isAssessment?: boolean, jo
   }
   
   // Time & Materials jobs get special styling when scheduled
-  if (jobType === 'time_and_materials' && status === 'Scheduled') {
+  if (safeJobType === 'time_and_materials' && status === 'Scheduled') {
     return {
       bg: 'bg-status-time-materials',
       text: 'text-status-time-materials-foreground',
