@@ -41,13 +41,12 @@ export function QuoteActions({ quote, onSendQuote, onEditQuote }: QuoteActionsPr
     }
 
     try {
-      const { data: result } = await authApi.invoke('jobs', {
+      const { data: result } = await authApi.invoke('jobs-crud', {
         method: 'POST',
         body: {
           quoteId: quote.id,
           customerId: quote.customerId,
           title: `Job from Quote ${quote.number}`,
-          total: quote.total,
           status: 'Scheduled',
         },
         toast: {
