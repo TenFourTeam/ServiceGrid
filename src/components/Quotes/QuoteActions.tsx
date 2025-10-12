@@ -9,10 +9,10 @@ import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useLifecycleEmailIntegration } from '@/hooks/useLifecycleEmailIntegration';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useQueryClient } from '@tanstack/react-query';
-import { queryKeys } from '@/queries/keys';
+import { queryKeys, invalidationHelpers } from '@/queries/keys';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useDeleteQuote } from '@/hooks/useQuoteOperations';
-import type { QuoteListItem, InvoicesCacheData } from '@/types';
+import type { QuoteListItem, InvoicesCacheData, Job } from '@/types';
 import { useState } from 'react';
 
 interface QuoteActionsProps {
@@ -56,6 +56,25 @@ export function QuoteActions({ quote, onSendQuote, onEditQuote }: QuoteActionsPr
           onSuccess: triggerJobScheduled
         }
       });
+
+      // Optimistically update the jobs cache with the new job
+      if (result?.job && businessId) {
+        queryClient.setQueryData(
+          queryKeys.data.jobs(businessId), 
+          (oldData: { jobs: Job[], count: number } | undefined) => {
+            if (oldData) {
+              return {
+                jobs: [result.job, ...oldData.jobs],
+                count: oldData.count + 1
+              };
+            }
+            return { jobs: [result.job], count: 1 };
+          }
+        );
+        
+        // Also invalidate to ensure data stays fresh
+        invalidationHelpers.jobs(queryClient, businessId);
+      }
 
       if (result) {
         navigate('/work-orders');
