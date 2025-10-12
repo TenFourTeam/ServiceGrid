@@ -101,8 +101,15 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
     }
   }, [open]);
 
+  // Initialize linkedQuoteId from job.quoteId when modal opens
+  useEffect(() => {
+    if (open && job.quoteId && linkedQuoteId === null) {
+      setLinkedQuoteId(job.quoteId);
+    }
+  }, [open, job.quoteId, linkedQuoteId]);
+
   const customerName = useMemo(() => customers.find(c => c.id === job.customerId)?.name || t('workOrders.modal.customer'), [customers, job.customerId, t]);
-  const currentQuoteId = linkedQuoteId === null ? null : (linkedQuoteId || (job as any).quoteId);
+  const currentQuoteId = linkedQuoteId ?? job.quoteId ?? null;
   const linkedQuote = useMemo(() => {
     // Use optimistic quote object first, then fall back to cache lookup
     return linkedQuoteObject || (currentQuoteId ? quotes.find(q => q.id === currentQuoteId) : null);
