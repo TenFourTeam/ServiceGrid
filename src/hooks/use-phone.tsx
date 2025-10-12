@@ -3,7 +3,11 @@ import * as React from "react"
 const PHONE_BREAKPOINT = 896
 
 export function useIsPhone() {
-  const [isPhone, setIsPhone] = React.useState<boolean | undefined>(undefined)
+  const [isPhone, setIsPhone] = React.useState<boolean>(() => {
+    // Initialize immediately with correct value to prevent hydration mismatch
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth < PHONE_BREAKPOINT;
+  })
 
   React.useEffect(() => {
     const mql = window.matchMedia(`(max-width: ${PHONE_BREAKPOINT - 1}px)`)
@@ -15,5 +19,5 @@ export function useIsPhone() {
     return () => mql.removeEventListener("change", onChange)
   }, [])
 
-  return !!isPhone
+  return isPhone
 }
