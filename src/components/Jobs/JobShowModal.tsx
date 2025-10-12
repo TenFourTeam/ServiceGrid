@@ -52,6 +52,34 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
   const { clockInOut, isLoading: isClockingInOut } = useClockInOut();
   const { t } = useLanguage();
   
+  // Fetch full quote details when job has quoteId
+  useEffect(() => {
+    if (!open || !job.quoteId || !businessId) return;
+    
+    const fetchFullQuote = async () => {
+      try {
+        const { data, error } = await authApi.invoke('quotes-crud', {
+          method: 'GET',
+          queryParams: { id: job.quoteId },
+          headers: { 'x-business-id': businessId }
+        });
+        
+        if (error) {
+          console.error('[JobShowModal] Failed to fetch quote:', error);
+          return;
+        }
+        
+        if (data?.quote) {
+          setLinkedQuoteObject(data.quote);
+        }
+      } catch (err) {
+        console.error('[JobShowModal] Error fetching quote:', err);
+      }
+    };
+    
+    fetchFullQuote();
+  }, [open, job.quoteId, businessId, authApi]);
+  
   // Read fresh job data from cache to ensure optimistic updates are reflected
   const cachedJobsData = queryClient.getQueryData<JobsCacheData>(
     queryKeys.data.jobs(businessId || '', userId || '')
