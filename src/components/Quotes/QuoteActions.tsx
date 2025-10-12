@@ -58,7 +58,7 @@ export function QuoteActions({ quote, onSendQuote, onEditQuote }: QuoteActionsPr
       });
 
       if (result) {
-        navigate('/calendar');
+        navigate('/work-orders');
       }
     } catch (error) {
       console.error('Failed to convert quote to job:', error);
