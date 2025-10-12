@@ -107,7 +107,7 @@ export interface Estimate extends Quote {
 }
 
 export type JobStatus = 'Scheduled' | 'Schedule Approved' | 'In Progress' | 'Completed';
-export type JobType = 'scheduled' | 'time_and_materials';
+export type JobType = 'appointment' | 'time_and_materials';
 
 export interface Job {
   id: ID;

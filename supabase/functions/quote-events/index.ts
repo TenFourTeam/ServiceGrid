@@ -166,7 +166,7 @@ serve(async (req) => {
                 address: q.address,
                 status: 'Scheduled',
                 total: q.total,
-                job_type: 'scheduled',
+                job_type: 'appointment',
                 is_clocked_in: false,
                 is_recurring: false
               });

@@ -467,7 +467,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
             </div>
             <div>
               <div className="text-sm text-muted-foreground">{t('workOrders.modal.type')}</div>
-              <div className="font-medium capitalize">{job.jobType?.replace('_', ' ') || t('jobs.types.scheduled')}</div>
+              <div className="font-medium capitalize">{job.jobType?.replace('_', ' ') || t('jobs.types.appointment')}</div>
             </div>
             <div>
               <div className="text-sm text-muted-foreground">{t('workOrders.modal.status')}</div>
@@ -756,7 +756,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                   <Button 
                     variant="outline" 
                     onClick={handleCreateInvoice}
-                    disabled={isCreatingInvoice || (job.jobType === 'scheduled' && !currentQuoteId && !existingInvoice)}
+                    disabled={isCreatingInvoice || (job.jobType === 'appointment' && !currentQuoteId && !existingInvoice)}
                     className="w-full"
                   >
                     {isCreatingInvoice ? t('workOrders.modal.creatingInvoice') : existingInvoice ? t('workOrders.modal.viewInvoice') : t('workOrders.modal.createInvoice')}
@@ -858,7 +858,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                       <Button 
                         variant="outline" 
                         onClick={handleCreateInvoice}
-                        disabled={isCreatingInvoice || (job.jobType === 'scheduled' && !currentQuoteId && !existingInvoice)}
+                        disabled={isCreatingInvoice || (job.jobType === 'appointment' && !currentQuoteId && !existingInvoice)}
                         size="sm"
                       >
                         {isCreatingInvoice ? t('workOrders.modal.creatingInvoice') : existingInvoice ? t('workOrders.modal.viewInvoice') : t('workOrders.modal.createInvoice')}

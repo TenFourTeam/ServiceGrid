@@ -278,7 +278,7 @@
       "noMembersAvailable": "No hay miembros del equipo disponibles"
     },
     "types": {
-      "scheduled": "Programado",
+      "appointment": "Cita",
       "timeAndMaterials": "Tiempo y Materiales",
       "selectType": "Seleccionar tipo de trabajo"
     },

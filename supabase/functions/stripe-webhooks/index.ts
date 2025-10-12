@@ -170,7 +170,7 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
       address: quote.address,
       status: 'Scheduled',
       total: quote.total,
-      job_type: 'scheduled',
+      job_type: 'appointment',
       is_clocked_in: false,
       is_recurring: true
     })

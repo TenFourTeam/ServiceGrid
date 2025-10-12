@@ -63,7 +63,7 @@ export function JobBottomModal({
   const [notes, setNotes] = useState('');
   const [amount, setAmount] = useState('');
   const [files, setFiles] = useState<File[]>([]);
-  const [jobType, setJobType] = useState<JobType>('scheduled');
+  const [jobType, setJobType] = useState<JobType>('appointment');
   const [isCreating, setIsCreating] = useState(false);
   const [showCreateCustomer, setShowCreateCustomer] = useState(false);
   const [assignedMemberIds, setAssignedMemberIds] = useState<string[]>([]);
@@ -121,7 +121,7 @@ export function JobBottomModal({
     setNotes('');
     setAmount('');
     setFiles([]);
-    setJobType('scheduled');
+    setJobType('appointment');
     setIsCreating(false);
     setAssignedMemberIds([]);
   };
@@ -420,10 +420,10 @@ export function JobBottomModal({
               <SelectTrigger>
                 <SelectValue placeholder={t('jobs.types.selectType')} />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="scheduled">{t('jobs.types.scheduled')}</SelectItem>
-                <SelectItem value="time_and_materials">{t('jobs.types.timeAndMaterials')}</SelectItem>
-              </SelectContent>
+                <SelectContent>
+                  <SelectItem value="appointment">{t('jobs.types.appointment')}</SelectItem>
+                  <SelectItem value="time_and_materials">{t('jobs.types.timeAndMaterials')}</SelectItem>
+                </SelectContent>
             </Select>
           </div>
 

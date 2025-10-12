@@ -278,7 +278,7 @@
       "noMembersAvailable": "No team members available"
     },
     "types": {
-      "scheduled": "Scheduled",
+      "appointment": "Appointment",
       "timeAndMaterials": "Time & Materials",
       "selectType": "Select job type"
     },

@@ -46,7 +46,7 @@ export function JobEditModal({
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
   const [amount, setAmount] = useState('');
-  const [jobType, setJobType] = useState<JobType>('scheduled');
+  const [jobType, setJobType] = useState<JobType>('appointment');
   const [showCreateCustomer, setShowCreateCustomer] = useState(false);
 
   const { data: customers } = useCustomersData();
@@ -60,7 +60,7 @@ export function JobEditModal({
       setAddress(job.address || '');
       setNotes(job.notes || '');
       setAmount(job.total ? (job.total / 100).toString() : '');
-      setJobType(job.jobType || 'scheduled');
+      setJobType(job.jobType || 'appointment');
 
       // Find and set customer
       const jobCustomer = customers?.find(c => c.id === job.customerId);
@@ -103,7 +103,7 @@ export function JobEditModal({
     setTitle('');
     setNotes('');
     setAmount('');
-    setJobType('scheduled');
+    setJobType('appointment');
   };
 
   // Reset state when modal closes
@@ -197,7 +197,7 @@ export function JobEditModal({
                   <SelectValue placeholder={t('jobs.types.selectType')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="scheduled">{t('jobs.types.scheduled')}</SelectItem>
+                  <SelectItem value="appointment">{t('jobs.types.appointment')}</SelectItem>
                   <SelectItem value="time_and_materials">{t('jobs.types.timeAndMaterials')}</SelectItem>
                 </SelectContent>
               </Select>

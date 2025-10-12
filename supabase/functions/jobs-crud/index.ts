@@ -146,7 +146,7 @@ Deno.serve(async (req) => {
           ends_at: endsAt,
           address,
           notes,
-          job_type: jobType || 'scheduled',
+          job_type: jobType || 'appointment',
           quote_id: quoteId,
           is_assessment: isAssessment || false,
           request_id: requestId,
