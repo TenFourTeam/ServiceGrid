@@ -24,7 +24,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 interface JobShowModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  job: Pick<Job, "id" | "customerId" | "startsAt" | "endsAt" | "status" | "jobType" | "isClockedIn" | "businessId" | "ownerId" | "createdAt" | "updatedAt"> & Partial<Pick<Job, "notes" | "address" | "total" | "photos" | "quoteId" | "clockInTime" | "clockOutTime" | "assignedMembers" | "confirmationToken" | "confirmedAt">>;
+  job: Pick<Job, "id" | "customerId" | "startsAt" | "endsAt" | "status" | "jobType" | "isClockedIn" | "businessId" | "ownerId" | "createdAt" | "updatedAt" | "title"> & Partial<Pick<Job, "notes" | "address" | "total" | "photos" | "quoteId" | "clockInTime" | "clockOutTime" | "assignedMembers" | "confirmationToken" | "confirmedAt">>;
   onOpenJobEditModal?: (job: Job) => void;
 }
 
@@ -422,7 +422,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="max-h-[85vh]">
         <DrawerHeader>
-          <DrawerTitle>{t('workOrders.modal.title')}</DrawerTitle>
+          <DrawerTitle>{job.title || t('workOrders.modal.title')}</DrawerTitle>
         </DrawerHeader>
         <div className="px-4 space-y-4 overflow-y-auto">
           <div className="grid grid-cols-2 gap-3">
@@ -466,6 +466,19 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
               <div className="text-sm text-muted-foreground">{t('workOrders.modal.total')}</div>
               <div>{typeof job.total === 'number' ? formatMoney(job.total) : '—'}</div>
             </div>
+            {linkedQuote && linkedQuote.lineItems && linkedQuote.lineItems.length > 0 && (
+              <div className="col-span-2">
+                <div className="text-sm text-muted-foreground mb-2">{t('workOrders.modal.lineItems')}</div>
+                <div className="space-y-1">
+                  {linkedQuote.lineItems.map((item) => (
+                    <div key={item.id} className="flex justify-between text-sm">
+                      <span>{item.name} ({item.qty} {item.unit || 'unit'})</span>
+                      <span>{formatMoney(item.lineTotal)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <div>
             <div className="text-sm text-muted-foreground">{t('workOrders.modal.quote')}</div>
             <div className="flex items-center gap-2">

@@ -373,6 +373,7 @@
       "clockOut": "Salida",
       "address": "Dirección",
       "total": "Total",
+      "lineItems": "Elementos de Línea",
       "quote": "Cotización",
       "notes": "Notas",
       "photos": "Fotos",

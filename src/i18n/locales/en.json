@@ -374,6 +374,7 @@
       "clockOut": "Clock Out",
       "address": "Address",
       "total": "Total",
+      "lineItems": "Line Items",
       "quote": "Quote",
       "notes": "Notes",
       "photos": "Photos",
