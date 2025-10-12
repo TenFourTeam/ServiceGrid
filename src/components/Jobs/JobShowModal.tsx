@@ -467,7 +467,11 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
             </div>
             <div>
               <div className="text-sm text-muted-foreground">{t('workOrders.modal.type')}</div>
-              <div className="font-medium capitalize">{job.jobType?.replace('_', ' ') || t('jobs.types.appointment')}</div>
+              <div className="font-medium">
+                {job.jobType === 'time_and_materials' 
+                  ? t('jobs.types.timeAndMaterials')
+                  : t('jobs.types.appointment')}
+              </div>
             </div>
             <div>
               <div className="text-sm text-muted-foreground">{t('workOrders.modal.status')}</div>
