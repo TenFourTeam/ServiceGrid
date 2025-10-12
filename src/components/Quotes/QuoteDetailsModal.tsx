@@ -11,14 +11,14 @@ import { useNavigate } from 'react-router-dom';
 import { useCustomersData } from '@/queries/unified';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useQueryClient } from '@tanstack/react-query';
-import { queryKeys } from '@/queries/keys';
+import { queryKeys, invalidationHelpers } from '@/queries/keys';
 import LoadingScreen from '@/components/LoadingScreen';
 import { QuoteForm } from '@/components/Quotes/QuoteForm';
 import { useLifecycleEmailIntegration } from '@/hooks/useLifecycleEmailIntegration';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useDeleteQuote } from '@/hooks/useQuoteOperations';
 import { useIsMobile } from '@/hooks/use-mobile';
-import type { Quote, QuoteListItem, QuoteStatus, Customer, InvoicesCacheData } from '@/types';
+import type { Quote, QuoteListItem, QuoteStatus, Customer, InvoicesCacheData, Job } from '@/types';
 
 const statusColors: Record<QuoteStatus, string> = {
   'Draft': 'bg-gray-100 text-gray-800',
@@ -46,7 +46,7 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const authApi = useAuthApi();
-  const { triggerQuoteCreated } = useLifecycleEmailIntegration();
+  const { triggerQuoteCreated, triggerJobScheduled } = useLifecycleEmailIntegration();
   const deleteQuoteMutation = useDeleteQuote();
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(false);
@@ -249,25 +249,45 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
     setIsConvertingToJob(true);
 
     try {
-      const { data: result } = await authApi.invoke('jobs', {
+      const { data: result } = await authApi.invoke('jobs-crud', {
         method: 'POST',
         body: {
           quoteId: quote.id,
           customerId: quote.customerId,
           title: `Job from Quote ${quote.number}`,
-          total: quote.total,
           status: 'Scheduled',
+          address: quote.address || null,
+          notes: quote.notesInternal || null,
         },
         toast: {
-          success: 'Quote converted to job successfully',
+          success: `Quote ${quote.number} converted to job successfully`,
           loading: 'Converting quote to job...',
-          error: 'Failed to convert quote to job'
+          error: 'Failed to convert quote to job',
+          onSuccess: triggerJobScheduled
         }
       });
 
+      // Optimistically update the jobs cache
+      if (result?.job && businessId) {
+        queryClient.setQueryData(
+          queryKeys.data.jobs(businessId), 
+          (oldData: { jobs: Job[], count: number } | undefined) => {
+            if (oldData) {
+              return {
+                jobs: [result.job, ...oldData.jobs],
+                count: oldData.count + 1
+              };
+            }
+            return { jobs: [result.job], count: 1 };
+          }
+        );
+        
+        invalidationHelpers.jobs(queryClient, businessId);
+      }
+
       if (result) {
         onOpenChange(false);
-        navigate('/calendar');
+        navigate('/work-orders');
       }
     } catch (error) {
       console.error('Failed to convert quote to job:', error);
