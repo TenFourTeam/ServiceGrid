@@ -41,6 +41,14 @@ export function QuoteActions({ quote, onSendQuote, onEditQuote }: QuoteActionsPr
     }
 
     try {
+      // Fetch full quote details to get address and notes
+      const { data: fullQuoteData } = await authApi.invoke('quotes-crud', {
+        method: 'GET',
+        queryParams: { id: quote.id }
+      });
+
+      const fullQuote = fullQuoteData?.quote;
+
       const { data: result } = await authApi.invoke('jobs-crud', {
         method: 'POST',
         body: {
@@ -48,6 +56,8 @@ export function QuoteActions({ quote, onSendQuote, onEditQuote }: QuoteActionsPr
           customerId: quote.customerId,
           title: `Job from Quote ${quote.number}`,
           status: 'Scheduled',
+          address: fullQuote?.address || null,
+          notes: fullQuote?.notesInternal || null,
         },
         toast: {
           success: `Quote ${quote.number} converted to job successfully`,
