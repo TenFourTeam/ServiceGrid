@@ -25,7 +25,10 @@ export function useJobsData(businessId?: string, opts?: UseJobsDataOptions) {
   const role = context.role;
   const isAuthenticated = context.isAuthenticated;
   
-  const enabled = isAuthenticated && !!effectiveBusinessId && (opts?.enabled ?? true);
+  const enabled = isAuthenticated && 
+                !!effectiveBusinessId && 
+                effectiveBusinessId !== 'undefined' && // Prevent string 'undefined'
+                (opts?.enabled ?? true);
 
   const queryKey = queryKeys.data.jobs(effectiveBusinessId || '', userId || '');
   console.log("[useJobsData] DEBUG - Query setup:", {

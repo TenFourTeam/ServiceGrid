@@ -29,9 +29,21 @@ export default function CalendarShell({
   const [displayMode, setDisplayMode] = useState<CalendarDisplayMode>('scheduled');
   const [date, setDate] = useState<Date>(startOfDay(new Date()));
   const { role, userId, businessId, businessName } = useBusinessContext(routeBusinessId);
-  const { data: jobs, refetch: refetchJobs } = useJobsData(businessId);
-  const { data: businessMembers } = useBusinessMembersData();
+  const { data: jobs, refetch: refetchJobs, isLoading: jobsLoading } = useJobsData(businessId);
+  const { data: businessMembers, isLoading: membersLoading } = useBusinessMembersData();
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+
+  // Show loading state while data is being fetched
+  if (!businessId || jobsLoading || membersLoading) {
+    return (
+      <div className="flex-1 grid place-items-center">
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-primary" />
+          <span className="text-sm">Loading calendar...</span>
+        </div>
+      </div>
+    );
+  }
   const isMobile = useIsMobile();
   const isPhone = useIsPhone();
   const { t } = useLanguage();
