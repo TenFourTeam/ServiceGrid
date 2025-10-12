@@ -41,6 +41,11 @@ const statusColors: Record<string, string> = {
   'Completed': 'bg-gray-100 text-gray-800'
 };
 
+const typeColors: Record<string, string> = {
+  'appointment': 'bg-purple-100 text-purple-800',
+  'time_and_materials': 'bg-blue-100 text-blue-800'
+};
+
 function useFilteredJobs() {
   const { businessId } = useBusinessContext();
   const { data: jobs = [], isLoading, isError, error } = useJobsData(businessId);
@@ -145,9 +150,9 @@ function useFilteredJobs() {
             aValue = a.startsAt || '';
             bValue = b.startsAt || '';
             break;
-          case 'status':
-            aValue = a.status || '';
-            bValue = b.status || '';
+          case 'type':
+            aValue = a.jobType || '';
+            bValue = b.jobType || '';
             break;
           case 'amount':
             aValue = a.total || 0;
@@ -217,6 +222,18 @@ function StatusChip({ status, t }: { status: Job['status'], t: (key: string) => 
   return <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${styles}`}>{t(statusKey)}</span>;
 }
 
+function TypeChip({ jobType, t }: { jobType: Job['jobType'], t: (key: string) => string }) {
+  const typeKey = jobType === 'time_and_materials' 
+    ? 'jobs.types.timeAndMaterials'
+    : 'jobs.types.appointment';
+  
+  const styles = jobType === 'time_and_materials'
+    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
+    : 'bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300';
+  
+  return <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${styles}`}>{t(typeKey)}</span>;
+}
+
 
 function WorkOrderRow({ job, uninvoiced, customerName, when, onOpen, onOpenJobEditModal, t, userRole, existingInvoice }: {
   job: Job;
@@ -229,20 +246,19 @@ function WorkOrderRow({ job, uninvoiced, customerName, when, onOpen, onOpenJobEd
   userRole: string;
   existingInvoice?: any;
 }) {
-  const statusKey = job.status === 'Scheduled' ? 'workOrders.status.scheduled' 
-    : job.status === 'Schedule Approved' ? 'workOrders.status.scheduleApproved'
-    : job.status === 'In Progress' ? 'workOrders.status.inProgress'
-    : 'workOrders.status.completed';
+  const typeKey = job.jobType === 'time_and_materials' 
+    ? 'jobs.types.timeAndMaterials'
+    : 'jobs.types.appointment';
 
   return (
     <div 
       onClick={onOpen} 
       className="relative p-4 border rounded-md bg-card shadow-sm cursor-pointer hover:bg-accent/30 transition-colors"
     >
-      {/* Status badge in top-right corner */}
+      {/* Job type badge in top-right corner */}
       <div className="absolute top-2 right-2">
-        <Badge className={statusColors[job.status]}>
-          {t(statusKey)}
+        <Badge className={typeColors[job.jobType || 'appointment']}>
+          {t(typeKey)}
         </Badge>
       </div>
       
@@ -467,9 +483,9 @@ export default function WorkOrdersPage() {
                       </TableHead>
                       <TableHead 
                         className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => handleTableSort('status')}
+                        onClick={() => handleTableSort('type')}
                       >
-                        {t('workOrders.table.status')} {tableSort?.column === 'status' && (tableSort.direction === 'asc' ? '▲' : '▼')}
+                        {t('workOrders.table.type')} {tableSort?.column === 'type' && (tableSort.direction === 'asc' ? '▲' : '▼')}
                       </TableHead>
                       <TableHead 
                         className="cursor-pointer hover:bg-muted/50 text-right"
@@ -505,7 +521,7 @@ export default function WorkOrdersPage() {
                           <TableCell className="max-w-xs truncate">{address}</TableCell>
                           <TableCell>{when}</TableCell>
                           <TableCell>
-                            <StatusChip status={j.status} t={t} />
+                            <TypeChip jobType={j.jobType || 'appointment'} t={t} />
                           </TableCell>
                           <TableCell className="text-right">{formatMoney(j.total || 0)}</TableCell>
                           <TableCell onClick={(e) => e.stopPropagation()}>

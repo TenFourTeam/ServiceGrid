@@ -335,7 +335,7 @@
       "customer": "Cliente",
       "address": "Dirección",
       "scheduled": "Programado",
-      "status": "Estado",
+      "type": "Tipo",
       "confirmation": "Confirmación",
       "amount": "Monto"
     },

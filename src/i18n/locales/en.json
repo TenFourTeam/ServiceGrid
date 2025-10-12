@@ -335,7 +335,7 @@
       "customer": "Customer",
       "address": "Address",
       "scheduled": "Scheduled",
-      "status": "Status",
+      "type": "Type",
       "confirmation": "Confirmation",
       "amount": "Amount"
     },
