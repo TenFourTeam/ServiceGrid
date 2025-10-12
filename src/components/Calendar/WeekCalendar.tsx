@@ -700,11 +700,6 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                               {j.address}
                             </div>
                           )}
-                          <div className="text-xs leading-tight mt-0.5 truncate ml-2.5">
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-current/20">
-                              {j.status}
-                            </span>
-                          </div>
                           {/* Resize handle - only show if resizable */}
                           {canResize && displayMode === 'scheduled' && (
                             <div
