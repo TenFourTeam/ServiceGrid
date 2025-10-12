@@ -25,14 +25,22 @@ export default function CalendarShell({
   selectedJobId?: string;
   businessId?: string;
 }) {
+  // ===== ALL HOOKS FIRST (NO CONDITIONALS BEFORE THESE) =====
   const [view, setView] = useState<"month" | "week" | "day">("week");
   const [displayMode, setDisplayMode] = useState<CalendarDisplayMode>('scheduled');
   const [date, setDate] = useState<Date>(startOfDay(new Date()));
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  
   const { role, userId, businessId, businessName } = useBusinessContext(routeBusinessId);
   const { data: jobs, refetch: refetchJobs, isLoading: jobsLoading } = useJobsData(businessId);
   const { data: businessMembers, isLoading: membersLoading } = useBusinessMembersData();
-  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  
+  const isMobile = useIsMobile();
+  const isPhone = useIsPhone();
+  const { t } = useLanguage();
+  const queryClient = useQueryClient();
 
+  // ===== NOW SAFE TO DO CONDITIONAL LOGIC =====
   // Show loading state while data is being fetched
   if (!businessId || jobsLoading || membersLoading) {
     return (
@@ -44,10 +52,6 @@ export default function CalendarShell({
       </div>
     );
   }
-  const isMobile = useIsMobile();
-  const isPhone = useIsPhone();
-  const { t } = useLanguage();
-  const queryClient = useQueryClient();
   
   // Clear cache when business changes
   useEffect(() => {
