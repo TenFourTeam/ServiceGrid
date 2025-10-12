@@ -1299,7 +1299,7 @@ export type Database = {
         | "In Progress"
         | "Completed"
         | "Schedule Approved"
-      job_type: "scheduled" | "time_and_materials"
+      job_type: "scheduled" | "time_and_materials" | "appointment"
       payment_status: "Succeeded" | "Failed"
       payment_terms: "due_on_receipt" | "net_15" | "net_30" | "net_60"
       quote_frequency:
@@ -1458,7 +1458,7 @@ export const Constants = {
         "Completed",
         "Schedule Approved",
       ],
-      job_type: ["scheduled", "time_and_materials"],
+      job_type: ["scheduled", "time_and_materials", "appointment"],
       payment_status: ["Succeeded", "Failed"],
       payment_terms: ["due_on_receipt", "net_15", "net_30", "net_60"],
       quote_frequency: [
