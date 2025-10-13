@@ -4,7 +4,7 @@ import { useBusinessContext } from './useBusinessContext';
 import { useProfile } from '@/queries/useProfile';
 import { useStripeConnect } from './useStripeConnect';
 import { useAuthApi } from './useAuthApi';
-import { lifecycleEmailTriggers, daysSinceSignup, daysSinceLastLogin } from '@/utils/lifecycleEmails';
+import { lifecycleEmailTriggers, daysSinceSignup, daysSinceLastLogin, LIFECYCLE_EMAIL_TYPES } from '@/utils/lifecycleEmails';
 
 /**
  * Hook to handle lifecycle email triggers based on user state and actions
@@ -76,30 +76,36 @@ export function useLifecycleEmailTriggers(enableAutoTriggers: boolean = false) {
     // Day 3: Customer Management discovery
     if (daysSinceSignup >= 3 && daysSinceSignup < 4) {
       lifecycleEmailTriggers.sendFeatureDiscoveryEmail(emailData, authApi, {
+        emailType: LIFECYCLE_EMAIL_TYPES.FEATURE_DISCOVERY_CUSTOMERS,
         feature: 'Customer Management',
         featureDescription: 'Organize your customer information',
         ctaUrl: '/customers',
-        ctaText: 'Manage Customers'
+        ctaText: 'Manage Customers',
+        daysFromSignup: 3
       });
     }
 
     // Day 5: Calendar Integration discovery
     if (daysSinceSignup >= 5 && daysSinceSignup < 6) {
       lifecycleEmailTriggers.sendFeatureDiscoveryEmail(emailData, authApi, {
+        emailType: LIFECYCLE_EMAIL_TYPES.FEATURE_DISCOVERY_CALENDAR,
         feature: 'Calendar Integration',
         featureDescription: 'Schedule and track your jobs',
         ctaUrl: '/calendar',
-        ctaText: 'View Calendar'
+        ctaText: 'View Calendar',
+        daysFromSignup: 5
       });
     }
 
     // Day 10: Case study/social proof
     if (daysSinceSignup >= 10 && daysSinceSignup < 11) {
       lifecycleEmailTriggers.sendFeatureDiscoveryEmail(emailData, authApi, {
+        emailType: LIFECYCLE_EMAIL_TYPES.FEATURE_DISCOVERY_SUCCESS,
         feature: 'Success Stories',
         featureDescription: 'See how other businesses are growing',
         ctaUrl: '/quotes',
-        ctaText: 'Create Your First Quote'
+        ctaText: 'Create Your First Quote',
+        daysFromSignup: 10
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

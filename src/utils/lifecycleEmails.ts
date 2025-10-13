@@ -1,6 +1,25 @@
-// Note: This file is deprecated for frontend use. 
-// Lifecycle emails should be managed server-side through edge functions.
+/**
+ * Email type constants for lifecycle emails
+ * Using specific types instead of generic ones ensures proper tracking
+ */
+export const LIFECYCLE_EMAIL_TYPES = {
+  WELCOME: 'welcome',
+  FEATURE_DISCOVERY_CUSTOMERS: 'feature-discovery-customers',
+  FEATURE_DISCOVERY_CALENDAR: 'feature-discovery-calendar',
+  FEATURE_DISCOVERY_SUCCESS: 'feature-discovery-success',
+  MILESTONE_QUOTE: 'milestone-quote',
+  MILESTONE_JOB: 'milestone-job',
+  MILESTONE_INVOICE: 'milestone-invoice',
+  MILESTONE_STRIPE: 'milestone-stripe',
+  ENGAGEMENT_7DAY: 'engagement-7day',
+  ENGAGEMENT_14DAY: 'engagement-14day'
+} as const;
 
+export type LifecycleEmailType = typeof LIFECYCLE_EMAIL_TYPES[keyof typeof LIFECYCLE_EMAIL_TYPES];
+
+/**
+ * Lifecycle email data structure
+ */
 export interface LifecycleEmailData {
   userFullName?: string;
   userEmail?: string;
@@ -44,60 +63,6 @@ export async function sendLifecycleEmail(
 }
 
 /**
- * Check if user should receive a lifecycle email
- */
-export function shouldSendLifecycleEmail(
-  data: LifecycleEmailData,
-  emailType: string
-): boolean {
-  // Basic validation
-  if (!data.userEmail || !data.userId) {
-    return false;
-  }
-
-  // Add more sophisticated logic here if needed
-  // For now, allow all emails
-  return true;
-}
-
-/**
- * Get user engagement metrics
- * Note: This function is deprecated for frontend use.
- * Engagement data should be fetched through edge functions with proper authentication.
- */
-export async function getUserEngagementData(
-  userId: string,
-  authApi: any
-): Promise<{
-  lastLoginDate?: string;
-  signupDate?: string;
-  hasCustomers: boolean;
-  hasQuotes: boolean;
-  hasJobs: boolean;
-  hasStripeConnected: boolean;
-}> {
-  try {
-    // This should be replaced with edge function calls for proper authentication
-    console.warn('[getUserEngagementData] This function should use edge functions for authentication');
-    
-    return {
-      hasCustomers: false,
-      hasQuotes: false,
-      hasJobs: false,
-      hasStripeConnected: false
-    };
-  } catch (error) {
-    console.error('[getUserEngagementData] Error:', error);
-    return {
-      hasCustomers: false,
-      hasQuotes: false,
-      hasJobs: false,
-      hasStripeConnected: false
-    };
-  }
-}
-
-/**
  * Calculate days since signup
  */
 export function daysSinceSignup(signupDate: string): number {
@@ -120,122 +85,175 @@ export function daysSinceLastLogin(lastLoginDate?: string): number {
 }
 
 // Lifecycle email trigger functions
-// Note: These functions are deprecated for frontend use and should be handled server-side
 export const lifecycleEmailTriggers = {
-  // Welcome email on first login
+  /**
+   * Send welcome email when user first signs up
+   */
   async sendWelcomeEmail(data: LifecycleEmailData, authApi: any) {
-    if (!shouldSendLifecycleEmail(data, 'welcome')) return;
-    
-    return sendLifecycleEmail('welcome', data, authApi);
+    try {
+      await sendLifecycleEmail(LIFECYCLE_EMAIL_TYPES.WELCOME, data, authApi);
+      console.info('[lifecycleEmails] Welcome email sent');
+    } catch (error) {
+      console.error('[lifecycleEmails] Failed to send welcome email:', error);
+    }
   },
 
-  // Feature discovery emails
-  async sendFeatureDiscoveryEmail(
-    data: LifecycleEmailData, 
-    authApi: any,
-    params: { feature: string; featureDescription: string; ctaUrl: string; ctaText: string; daysFromSignup?: number }
-  ) {
-    return sendLifecycleEmail('feature-discovery', data, authApi, {
-      featureName: params.feature,
-      featureDescription: params.featureDescription,
-      featureUrl: params.ctaUrl,
-      ctaText: params.ctaText,
-      daysFromSignup: params.daysFromSignup || 3
-    });
+  /**
+   * Generic feature discovery email with specific type
+   */
+  async sendFeatureDiscoveryEmail(data: LifecycleEmailData, authApi: any, params: {
+    emailType: LifecycleEmailType;
+    feature: string;
+    featureDescription: string;
+    ctaUrl: string;
+    ctaText: string;
+    daysFromSignup?: number;
+  }) {
+    try {
+      await sendLifecycleEmail(params.emailType, data, authApi, {
+        featureName: params.feature,
+        featureDescription: params.featureDescription,
+        featureUrl: params.ctaUrl,
+        daysFromSignup: params.daysFromSignup || 3
+      });
+      console.info('[lifecycleEmails] Feature discovery email sent:', params.feature);
+    } catch (error) {
+      console.error('[lifecycleEmails] Failed to send feature discovery email:', error);
+    }
   },
 
+  /**
+   * Day 3: Customer management feature
+   */
   async sendCustomerManagementEmail(data: LifecycleEmailData, authApi: any) {
-    const engagement = await getUserEngagementData(data.userId!, authApi);
-    
-    // Only send if user signed up 3+ days ago and has no customers
-    if (data.signupDate && daysSinceSignup(data.signupDate) >= 3 && !engagement.hasCustomers) {
-      return sendLifecycleEmail('feature-discovery', data, authApi, {
-        featureName: 'Customer Management',
-        featureDescription: 'Keep all your customer information organized in one place. Add contacts, track history, and never lose important details.',
-        featureUrl: '/customers',
-        daysFromSignup: 3
-      });
-    }
+    return this.sendFeatureDiscoveryEmail(data, authApi, {
+      emailType: LIFECYCLE_EMAIL_TYPES.FEATURE_DISCOVERY_CUSTOMERS,
+      feature: 'Customer Management',
+      featureDescription: 'Organize your customer information and communication',
+      ctaUrl: '/customers',
+      ctaText: 'Manage Customers',
+      daysFromSignup: 3
+    });
   },
 
+  /**
+   * Day 5: Calendar integration feature
+   */
   async sendCalendarIntegrationEmail(data: LifecycleEmailData, authApi: any) {
-    const engagement = await getUserEngagementData(data.userId!, authApi);
-    
-    // Only send if user signed up 5+ days ago and has no jobs
-    if (data.signupDate && daysSinceSignup(data.signupDate) >= 5 && !engagement.hasJobs) {
-      return sendLifecycleEmail('feature-discovery', data, authApi, {
-        featureName: 'Calendar Integration',
-        featureDescription: 'Never miss an appointment again! Schedule jobs, set reminders, and keep your team synchronized.',
-        featureUrl: '/calendar',
-        daysFromSignup: 5
+    return this.sendFeatureDiscoveryEmail(data, authApi, {
+      emailType: LIFECYCLE_EMAIL_TYPES.FEATURE_DISCOVERY_CALENDAR,
+      feature: 'Calendar Integration',
+      featureDescription: 'Schedule and track your jobs with our calendar',
+      ctaUrl: '/calendar',
+      ctaText: 'View Calendar',
+      daysFromSignup: 5
+    });
+  },
+
+  /**
+   * Milestone: First quote created
+   */
+  async sendFirstQuoteCreatedEmail(data: LifecycleEmailData, authApi: any) {
+    try {
+      await sendLifecycleEmail(LIFECYCLE_EMAIL_TYPES.MILESTONE_QUOTE, data, authApi, {
+        milestoneType: 'quote',
+        nextSteps: 'Now send your quote to your customer and schedule a job when they approve it.',
+        ctaText: 'View Your Quotes',
+        ctaUrl: '/quotes'
       });
+      console.info('[lifecycleEmails] First quote milestone email sent');
+    } catch (error) {
+      console.error('[lifecycleEmails] Failed to send first quote email:', error);
     }
   },
 
-  // Milestone celebration emails
-  async sendFirstQuoteCreatedEmail(data: LifecycleEmailData, authApi: any) {
-    return sendLifecycleEmail('milestone', data, authApi, {
-      milestoneType: 'quote',
-      nextSteps: 'Now you can send this quote to your customer and start converting leads into jobs.',
-      ctaText: 'Send Your Quote',
-      ctaUrl: '/quotes'
-    });
-  },
-
+  /**
+   * Milestone: First job scheduled
+   */
   async sendFirstJobScheduledEmail(data: LifecycleEmailData, authApi: any) {
-    return sendLifecycleEmail('milestone', data, authApi, {
-      milestoneType: 'job',
-      nextSteps: 'Great job! You\'re building a systematic approach to managing your service business.',
-      ctaText: 'View Your Jobs',
-      ctaUrl: '/calendar'
-    });
+    try {
+      await sendLifecycleEmail(LIFECYCLE_EMAIL_TYPES.MILESTONE_JOB, data, authApi, {
+        milestoneType: 'job',
+        nextSteps: 'Your calendar is taking shape! Now create an invoice to get paid after completing the job.',
+        ctaText: 'View Your Calendar',
+        ctaUrl: '/calendar'
+      });
+      console.info('[lifecycleEmails] First job milestone email sent');
+    } catch (error) {
+      console.error('[lifecycleEmails] Failed to send first job email:', error);
+    }
   },
 
+  /**
+   * Milestone: First invoice sent
+   */
   async sendFirstInvoiceSentEmail(data: LifecycleEmailData, authApi: any) {
-    return sendLifecycleEmail('milestone', data, authApi, {
-      milestoneType: 'invoice',
-      nextSteps: 'You\'re on track to get paid! Consider connecting Stripe to accept online payments.',
-      ctaText: 'View Invoices',
-      ctaUrl: '/invoices'
-    });
+    try {
+      await sendLifecycleEmail(LIFECYCLE_EMAIL_TYPES.MILESTONE_INVOICE, data, authApi, {
+        milestoneType: 'invoice',
+        nextSteps: 'Great job! Connect Stripe to accept online payments and get paid faster.',
+        ctaText: 'View Your Invoices',
+        ctaUrl: '/invoices'
+      });
+      console.info('[lifecycleEmails] First invoice milestone email sent');
+    } catch (error) {
+      console.error('[lifecycleEmails] Failed to send first invoice email:', error);
+    }
   },
 
+  /**
+   * Milestone: Stripe connected
+   */
   async sendStripeConnectedEmail(data: LifecycleEmailData, authApi: any) {
-    return sendLifecycleEmail('milestone', data, authApi, {
-      milestoneType: 'stripe',
-      nextSteps: 'You can now accept credit card payments directly through your invoices. Your customers will love the convenience!',
-      ctaText: 'Create Invoice',
-      ctaUrl: '/invoices'
-    });
+    try {
+      await sendLifecycleEmail(LIFECYCLE_EMAIL_TYPES.MILESTONE_STRIPE, data, authApi, {
+        milestoneType: 'stripe',
+        nextSteps: 'You\'re all set up to accept payments! Send an invoice with a payment link to get paid online.',
+        ctaText: 'Create an Invoice',
+        ctaUrl: '/invoices'
+      });
+      console.info('[lifecycleEmails] Stripe connected milestone email sent');
+    } catch (error) {
+      console.error('[lifecycleEmails] Failed to send Stripe connected email:', error);
+    }
   },
 
-  // Engagement recovery emails
-  async sendEngagementRecoveryEmail(
-    data: LifecycleEmailData, 
-    authApi: any,
-    params: { type: string; lastActivity?: string }
-  ) {
-    const daysInactive = params.type === '7-day' ? 7 : 14;
-    const isLongInactive = daysInactive >= 14;
-    
-    return sendLifecycleEmail('engagement', data, authApi, {
-      daysInactive,
-      ctaText: isLongInactive ? 'Get Help Getting Started' : 'Continue Building',
-      ctaUrl: isLongInactive ? '/settings' : '/calendar'
-    });
+  /**
+   * Engagement recovery email
+   */
+  async sendEngagementRecoveryEmail(data: LifecycleEmailData, authApi: any, params: {
+    type: '7-day' | '14-day';
+    lastActivity: string;
+  }) {
+    try {
+      const daysInactive = params.type === '7-day' ? 7 : 14;
+      const emailType = params.type === '7-day' 
+        ? LIFECYCLE_EMAIL_TYPES.ENGAGEMENT_7DAY 
+        : LIFECYCLE_EMAIL_TYPES.ENGAGEMENT_14DAY;
+      
+      await sendLifecycleEmail(emailType, data, authApi, {
+        daysInactive,
+        ctaText: params.type === '7-day' ? 'Check Your Calendar' : 'Get Help',
+        ctaUrl: params.type === '7-day' ? '/calendar' : '/settings'
+      });
+      console.info('[lifecycleEmails] Engagement recovery email sent:', params.type);
+    } catch (error) {
+      console.error('[lifecycleEmails] Failed to send engagement email:', error);
+    }
   },
 
+  /**
+   * Inactive user email (alias for engagement recovery)
+   */
   async sendInactiveUserEmail(
     data: LifecycleEmailData, 
     authApi: any,
     daysInactive: number
   ) {
-    const isLongInactive = daysInactive >= 14;
-    
-    return sendLifecycleEmail('engagement', data, authApi, {
-      daysInactive,
-      ctaText: isLongInactive ? 'Get Help Getting Started' : 'Continue Building',
-      ctaUrl: isLongInactive ? '/settings' : '/calendar'
+    const type = daysInactive >= 14 ? '14-day' : '7-day';
+    return this.sendEngagementRecoveryEmail(data, authApi, {
+      type,
+      lastActivity: new Date(Date.now() - daysInactive * 24 * 60 * 60 * 1000).toISOString()
     });
   }
 };

@@ -618,6 +618,38 @@ export type Database = {
           },
         ]
       }
+      lifecycle_emails_sent: {
+        Row: {
+          email_data: Json | null
+          email_type: string
+          id: string
+          sent_at: string
+          user_id: string
+        }
+        Insert: {
+          email_data?: Json | null
+          email_type: string
+          id?: string
+          sent_at?: string
+          user_id: string
+        }
+        Update: {
+          email_data?: Json | null
+          email_type?: string
+          id?: string
+          sent_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lifecycle_emails_sent_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mail_sends: {
         Row: {
           created_at: string

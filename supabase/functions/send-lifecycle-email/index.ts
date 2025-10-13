@@ -350,11 +350,24 @@ serve(async (req: Request): Promise<Response> => {
     }
 
   const { type, data } = payload;
-  const appUrl = Deno.env.get("FRONTEND_URL") || 'https://your-app.com';
+  const appUrl = Deno.env.get("FRONTEND_URL") || 'https://servicegrid.app';
 
     // Validate required fields
     if (!type || !data?.userEmail) {
       return json({ error: "Missing type or data.userEmail" }, { status: 400 });
+    }
+
+    // Check if email already sent (deduplication)
+    const { data: existingEmail } = await ctx.supabase
+      .from('lifecycle_emails_sent')
+      .select('id')
+      .eq('user_id', ownerId)
+      .eq('email_type', type)
+      .maybeSingle();
+
+    if (existingEmail) {
+      console.info('[send-lifecycle-email] Email already sent:', type, data.userEmail);
+      return json({ success: true, message: 'Email already sent' }, { status: 200 });
     }
 
   // Generate email based on type
@@ -435,6 +448,19 @@ serve(async (req: Request): Promise<Response> => {
     } catch (logError) {
       console.error('[send-lifecycle-email] Failed to log to mail_sends:', logError);
       // Don't fail the operation if logging fails
+    }
+
+    // Record that email was sent (prevents duplicates)
+    try {
+      await ctx.supabase.from('lifecycle_emails_sent').insert({
+        user_id: ownerId,
+        email_type: type,
+        email_data: data,
+      });
+      console.info('[send-lifecycle-email] Recorded in lifecycle_emails_sent:', type);
+    } catch (trackError) {
+      console.error('[send-lifecycle-email] Failed to record in lifecycle_emails_sent:', trackError);
+      // Don't fail the request if tracking fails
     }
 
     return json({ 
