@@ -25,33 +25,17 @@ export default function CalendarShell({
   selectedJobId?: string;
   businessId?: string;
 }) {
-  // ===== ALL HOOKS FIRST (NO CONDITIONALS BEFORE THESE) =====
   const [view, setView] = useState<"month" | "week" | "day">("week");
   const [displayMode, setDisplayMode] = useState<CalendarDisplayMode>('scheduled');
   const [date, setDate] = useState<Date>(startOfDay(new Date()));
-  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
-  
   const { role, userId, businessId, businessName } = useBusinessContext(routeBusinessId);
-  const { data: jobs, refetch: refetchJobs, isLoading: jobsLoading } = useJobsData(businessId);
-  const { data: businessMembers, isLoading: membersLoading } = useBusinessMembersData();
-  
+  const { data: jobs, refetch: refetchJobs } = useJobsData(businessId);
+  const { data: businessMembers } = useBusinessMembersData();
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const isMobile = useIsMobile();
   const isPhone = useIsPhone();
   const { t } = useLanguage();
   const queryClient = useQueryClient();
-
-  // ===== NOW SAFE TO DO CONDITIONAL LOGIC =====
-  // Show loading state while data is being fetched
-  if (!businessId || jobsLoading || membersLoading) {
-    return (
-      <div className="flex-1 grid place-items-center">
-        <div className="flex items-center gap-3 text-muted-foreground">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-primary" />
-          <span className="text-sm">Loading calendar...</span>
-        </div>
-      </div>
-    );
-  }
   
   // Clear cache when business changes
   useEffect(() => {

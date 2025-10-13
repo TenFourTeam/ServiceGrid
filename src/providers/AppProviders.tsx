@@ -8,21 +8,17 @@ import { LanguageProvider } from '@/contexts/LanguageContext';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 30_000, // 30 seconds for mobile
-      gcTime: 5 * 60 * 1000, // 5 minutes (mobile has less memory)
+      staleTime: 15_000, // 15 seconds
+      gcTime: 10 * 60 * 1000, // 10 minutes
       refetchOnWindowFocus: false,
-      refetchOnReconnect: true, // Better mobile network handling
       retry: (failureCount, error: any) => {
-        // Don't retry on auth or CORS errors
+        // Don't retry on auth errors
         if (error?.status === 401 || error?.message?.includes('401')) return false;
-        if (error?.message?.includes('CORS')) return false;
         return failureCount < 2;
-      },
-      networkMode: 'online',
+      }
     },
     mutations: {
       retry: 1,
-      networkMode: 'online',
     }
   }
 });
