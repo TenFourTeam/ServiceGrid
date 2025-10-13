@@ -161,7 +161,7 @@ export default function CalendarShell({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Members</SelectItem>
-                  {businessMembers.map((member) => (
+                  {(businessMembers || []).map((member) => (
                     <SelectItem key={member.user_id} value={member.user_id}>
                       {member.name || member.email}
                     </SelectItem>
