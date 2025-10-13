@@ -1,9 +1,7 @@
 import { useAuth } from '@clerk/clerk-react';
-import { useProfile } from '@/queries/useProfile';
+import { useUserBusinesses } from '@/hooks/useUserBusinesses';
 import { useEffect } from 'react';
 import { updateBusinessMeta } from '@/utils/metaUpdater';
-import { useQuery } from '@tanstack/react-query';
-import { useAuthApi } from '@/hooks/useAuthApi';
 
 export type BusinessUI = {
   id: string;
@@ -25,97 +23,42 @@ export type BusinessUI = {
  */
 export function useBusinessContext(targetBusinessId?: string) {
   const { isSignedIn, isLoaded, userId } = useAuth();
-  const authApi = useAuthApi();
   
-  // Don't query until Clerk is fully loaded and user is authenticated
-  const shouldFetch = isLoaded && isSignedIn;
+  // Get all businesses the user has access to (owned + worker)
+  const businessesQuery = useUserBusinesses();
   
-  // Get user's profile to determine their default business
-  const profileQuery = useProfile();
-  const userOwnedBusiness = profileQuery.data?.business;
+  // Transform UserBusiness to BusinessUI format
+  const transformedBusinesses: BusinessUI[] | undefined = businessesQuery.data?.map(b => ({
+    id: b.id,
+    name: b.name,
+    description: b.description,
+    phone: b.phone,
+    replyToEmail: b.reply_to_email,
+    taxRateDefault: b.tax_rate_default,
+    role: b.role,
+    logoUrl: b.logo_url,
+    lightLogoUrl: b.light_logo_url,
+    createdAt: b.joined_at,
+  }));
   
-  // Use target business ID if provided, otherwise fall back to user's own business
-  const businessIdToQuery = targetBusinessId || userOwnedBusiness?.id;
+  // Find the owned business (user's default business)
+  const ownedBusiness = transformedBusinesses?.find(b => b.role === 'owner');
   
-  // Query user's role for the specific business
-  const roleQuery = useQuery({
-    queryKey: ['user-business-role', businessIdToQuery, userId],
-    queryFn: async () => {
-      if (!businessIdToQuery || !authApi) return null;
-      
-      try {
-        // If querying user's own business, they're the owner
-        if (businessIdToQuery === userOwnedBusiness?.id) {
-          return 'owner' as const;
-        }
-        
-        // For other businesses, check business_permissions via supabase query
-        const { data, error } = await authApi.invoke('user-businesses', {
-          method: 'GET'
-        });
-        
-        if (error) {
-          console.error('[useBusinessContext] Role query error:', error);
-          return null;
-        }
-        
-        // Check if user has permissions for this business
-        const hasPermission = data?.data?.some((b: any) => b.id === businessIdToQuery);
-        return hasPermission ? 'worker' as const : null;
-      } catch (err) {
-        console.error('[useBusinessContext] Role query failed:', err);
-        return null;
-      }
-    },
-    enabled: shouldFetch && !!businessIdToQuery,
-    staleTime: 30_000,
-  });
-
-  // Query target business data when accessing a different business
-  const targetBusinessQuery = useQuery({
-    queryKey: ['target-business', targetBusinessId],
-    queryFn: async () => {
-      if (!targetBusinessId || !authApi) return null;
-      
-      try {
-        const { data, error } = await authApi.invoke('user-businesses', {
-          method: 'GET'
-        });
-        
-        if (error) {
-          console.error('[useBusinessContext] Target business query error:', error);
-          return null;
-        }
-        
-        // Find the target business in the user's accessible businesses
-        const targetBusiness = data?.data?.find((b: any) => b.id === targetBusinessId);
-        return targetBusiness || null;
-      } catch (err) {
-        console.error('[useBusinessContext] Target business query failed:', err);
-        return null;
-      }
-    },
-    enabled: shouldFetch && !!targetBusinessId && targetBusinessId !== userOwnedBusiness?.id,
-    staleTime: 30_000,
-  });
+  // Determine which business to use
+  const targetBusiness = targetBusinessId 
+    ? transformedBusinesses?.find(b => b.id === targetBusinessId)
+    : ownedBusiness;
   
-  // Determine which business data to use
-  const business = targetBusinessId && targetBusinessId !== userOwnedBusiness?.id 
-    ? targetBusinessQuery.data 
-    : userOwnedBusiness;
-  const role = roleQuery.data;
+  // Get the business and role
+  const business = targetBusiness;
+  const role = targetBusiness?.role || null;
   
-  // CRITICAL: Use targetBusinessId immediately if provided to prevent race condition
-  // This ensures API calls get the correct businessId before the query resolves
+  // Use targetBusinessId immediately if provided to prevent race condition
   const businessId = targetBusinessId || business?.id;
   
-  // Coordinated loading state
-  const isLoadingBusiness = !isLoaded || (shouldFetch && (
-    profileQuery.isLoading || 
-    roleQuery.isLoading || 
-    (targetBusinessQuery.isLoading && targetBusinessId && targetBusinessId !== userOwnedBusiness?.id)
-  ));
-  const hasError = profileQuery.isError || roleQuery.isError || targetBusinessQuery.isError;
+  // Simplified loading and error states
+  const isLoadingBusiness = !isLoaded || businessesQuery.isLoading;
+  const hasError = businessesQuery.isError;
   
   // Update meta tags when business data changes
   useEffect(() => {
@@ -123,10 +66,10 @@ export function useBusinessContext(targetBusinessId?: string) {
       updateBusinessMeta({
         name: business.name,
         description: business.description,
-        logoUrl: (business.logoUrl || business.lightLogoUrl) as string
+        logoUrl: business.logoUrl as string
       });
     }
-  }, [business?.name, business?.description, business?.logoUrl, business?.lightLogoUrl]);
+  }, [business?.name, business?.description, business?.logoUrl]);
   
   return {
     // Authentication state
@@ -155,13 +98,9 @@ export function useBusinessContext(targetBusinessId?: string) {
     
     // Error states
     hasBusinessError: hasError,
-    businessError: profileQuery.error || roleQuery.error || targetBusinessQuery.error,
+    businessError: businessesQuery.error,
     
     // Utilities
-    refetchBusiness: () => {
-      profileQuery.refetch();
-      roleQuery.refetch();
-      targetBusinessQuery.refetch();
-    },
+    refetchBusiness: () => businessesQuery.refetch(),
   };
 }

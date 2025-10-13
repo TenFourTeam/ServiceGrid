@@ -25,7 +25,7 @@ serve(async (req: Request) => {
     // Get businesses owned by the user
     const { data: ownedBusinesses, error: ownedError } = await supabase
       .from('businesses')
-      .select('id, name, logo_url, created_at')
+      .select('id, name, logo_url, light_logo_url, description, phone, reply_to_email, tax_rate_default, created_at')
       .eq('owner_id', ctx.userId);
 
     if (ownedError) {
@@ -40,6 +40,11 @@ serve(async (req: Request) => {
         id: ownedBusiness.id,
         name: ownedBusiness.name,
         logo_url: ownedBusiness.logo_url,
+        light_logo_url: ownedBusiness.light_logo_url,
+        description: ownedBusiness.description,
+        phone: ownedBusiness.phone,
+        reply_to_email: ownedBusiness.reply_to_email,
+        tax_rate_default: ownedBusiness.tax_rate_default,
         role: 'owner',
         joined_at: ownedBusiness.created_at,
         is_current: true // Primary business is current
@@ -51,7 +56,7 @@ serve(async (req: Request) => {
       .from('business_permissions')
       .select(`
         granted_at,
-        businesses!business_permissions_business_id_fkey(id, name, logo_url)
+        businesses!business_permissions_business_id_fkey(id, name, logo_url, light_logo_url, description, phone, reply_to_email, tax_rate_default)
       `)
       .eq('user_id', ctx.userId);
 
@@ -68,6 +73,11 @@ serve(async (req: Request) => {
           id: business.id,
           name: business.name,
           logo_url: business.logo_url,
+          light_logo_url: business.light_logo_url,
+          description: business.description,
+          phone: business.phone,
+          reply_to_email: business.reply_to_email,
+          tax_rate_default: business.tax_rate_default,
           role: 'worker', // Always worker for external businesses
           joined_at: permission.granted_at,
           is_current: false // External memberships are not current

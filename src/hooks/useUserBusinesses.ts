@@ -5,6 +5,11 @@ export interface UserBusiness {
   id: string;
   name: string;
   logo_url?: string;
+  light_logo_url?: string;
+  description?: string;
+  phone?: string;
+  reply_to_email?: string;
+  tax_rate_default?: number;
   role: 'owner' | 'worker';
   joined_at: string;
   is_current: boolean;
