@@ -81,34 +81,6 @@ async function initializeApp() {
   }
 }
 
-// Completely neutralize lovable.js interference
-(function() {
-  // Save original fetch before lovable.js loads
-  const originalFetch = window.fetch;
-  
-  // Override postMessage to suppress DataCloneError
-  const originalPostMessage = window.postMessage;
-  window.postMessage = function(...args) {
-    try {
-      return originalPostMessage.apply(this, args);
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'DataCloneError') {
-        // Silently suppress DataCloneError from lovable.js
-        return;
-      }
-      throw error;
-    }
-  };
-  
-  // After a short delay, restore original fetch if it was overridden
-  setTimeout(() => {
-    if (window.fetch !== originalFetch) {
-      console.info('[App] Restoring original fetch (was intercepted by tracking script)');
-      window.fetch = originalFetch;
-    }
-  }, 100);
-})();
-
 // Suppress DataCloneError from blocked tracking scripts on custom domain
 window.addEventListener('error', (event) => {
   if (event.error?.name === 'DataCloneError' || 
