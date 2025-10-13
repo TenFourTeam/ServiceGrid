@@ -25,15 +25,18 @@ interface UseBusinessMembersDataOptions {
  * Resilient business members hook with canonical query key
  */
 export function useBusinessMembersData(opts: UseBusinessMembersDataOptions = {}) {
+  const { isAuthenticated, businessId: contextBusinessId } = useBusinessContext();
   const authApi = useAuthApi();
   
-  // Use explicit businessId from options
-  const businessId = opts?.businessId;
-  const enabled = !!businessId && (opts?.enabled ?? true);
+  // Use explicit businessId if provided, fallback to context
+  const businessId = opts?.businessId || contextBusinessId;
+  const enabled = isAuthenticated && !!businessId && (opts?.enabled ?? true);
 
   // Debug logging
   console.log('[useBusinessMembers] Hook setup:', { 
     businessId, 
+    contextBusinessId: contextBusinessId,
+    isAuthenticated, 
     enabled,
     optsEnabled: opts?.enabled 
   });
@@ -65,16 +68,9 @@ export function useBusinessMembersData(opts: UseBusinessMembersDataOptions = {})
       console.log('[useBusinessMembers] Normalized members:', members?.length || 0);
       
       return members.map((member: any) => ({
-        id: String(member.id),
-        business_id: String(member.business_id),
-        user_id: String(member.user_id),
-        role: String(member.role),
-        invited_at: member.invited_at ? String(member.invited_at) : null,
-        joined_at: member.joined_at ? String(member.joined_at) : null,
-        invited_by: member.invited_by ? String(member.invited_by) : null,
-        joined_via_invite: Boolean(member.joined_via_invite),
-        email: member.email ? String(member.email) : null,
-        name: member.name ? String(member.name) : null,
+        ...member,
+        invited_at: member.invited_at ?? null,
+        joined_at: member.joined_at ?? null,
       }));
     },
 

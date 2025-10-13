@@ -30,7 +30,7 @@ export default function CalendarShell({
   const [date, setDate] = useState<Date>(startOfDay(new Date()));
   const { role, userId, businessId, businessName } = useBusinessContext(routeBusinessId);
   const { data: jobs, refetch: refetchJobs } = useJobsData(businessId);
-  const { data: businessMembers } = useBusinessMembersData({ businessId });
+  const { data: businessMembers } = useBusinessMembersData();
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const isMobile = useIsMobile();
   const isPhone = useIsPhone();
@@ -105,12 +105,6 @@ export default function CalendarShell({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [stepDate]);
-  
-  // Prevent rendering until businessId is available
-  if (!businessId) {
-    return null;
-  }
-  
   return <div className="flex-1 min-h-0 flex flex-col gap-2 md:gap-4">
         <header className="pt-4 md:pt-6 flex flex-col gap-3 md:gap-0 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center justify-between md:gap-3">
@@ -167,7 +161,7 @@ export default function CalendarShell({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Members</SelectItem>
-                  {(businessMembers || []).map((member) => (
+                  {businessMembers.map((member) => (
                     <SelectItem key={member.user_id} value={member.user_id}>
                       {member.name || member.email}
                     </SelectItem>

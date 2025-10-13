@@ -34,7 +34,7 @@ export function BusinessSwitcher({ businessId, className = "" }: BusinessSwitche
     }
   };
 
-  if (!userBusinesses || userBusinesses.length === 0) {
+  if (!userBusinesses || userBusinesses.length <= 1) {
     return null;
   }
 

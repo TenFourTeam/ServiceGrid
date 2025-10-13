@@ -36,6 +36,40 @@ export function useBusinessContext(targetBusinessId?: string) {
   
   // Use target business ID if provided, otherwise fall back to user's own business
   const businessIdToQuery = targetBusinessId || userOwnedBusiness?.id;
+  
+  // Query user's role for the specific business
+  const roleQuery = useQuery({
+    queryKey: ['user-business-role', businessIdToQuery, userId],
+    queryFn: async () => {
+      if (!businessIdToQuery || !authApi) return null;
+      
+      try {
+        // If querying user's own business, they're the owner
+        if (businessIdToQuery === userOwnedBusiness?.id) {
+          return 'owner' as const;
+        }
+        
+        // For other businesses, check business_permissions via supabase query
+        const { data, error } = await authApi.invoke('user-businesses', {
+          method: 'GET'
+        });
+        
+        if (error) {
+          console.error('[useBusinessContext] Role query error:', error);
+          return null;
+        }
+        
+        // Check if user has permissions for this business
+        const hasPermission = data?.data?.some((b: any) => b.id === businessIdToQuery);
+        return hasPermission ? 'worker' as const : null;
+      } catch (err) {
+        console.error('[useBusinessContext] Role query failed:', err);
+        return null;
+      }
+    },
+    enabled: shouldFetch && !!businessIdToQuery,
+    staleTime: 30_000,
+  });
 
   // Query target business data when accessing a different business
   const targetBusinessQuery = useQuery({
@@ -69,9 +103,7 @@ export function useBusinessContext(targetBusinessId?: string) {
   const business = targetBusinessId && targetBusinessId !== userOwnedBusiness?.id 
     ? targetBusinessQuery.data 
     : userOwnedBusiness;
-  
-  // Role is deterministic: if viewing another business, you're a worker; otherwise, you're the owner
-  const role = targetBusinessId ? ('worker' as const) : ('owner' as const);
+  const role = roleQuery.data;
   
   // CRITICAL: Use targetBusinessId immediately if provided to prevent race condition
   // This ensures API calls get the correct businessId before the query resolves
@@ -80,9 +112,10 @@ export function useBusinessContext(targetBusinessId?: string) {
   // Coordinated loading state
   const isLoadingBusiness = !isLoaded || (shouldFetch && (
     profileQuery.isLoading || 
+    roleQuery.isLoading || 
     (targetBusinessQuery.isLoading && targetBusinessId && targetBusinessId !== userOwnedBusiness?.id)
   ));
-  const hasError = profileQuery.isError || targetBusinessQuery.isError;
+  const hasError = profileQuery.isError || roleQuery.isError || targetBusinessQuery.isError;
   
   // Update meta tags when business data changes
   useEffect(() => {
@@ -113,7 +146,7 @@ export function useBusinessContext(targetBusinessId?: string) {
     businessLightLogoUrl: business?.lightLogoUrl,
     
     // Dynamic role and permissions
-    role: role, // Always 'owner' or 'worker', never null
+    role: role, // Can be 'owner', 'worker', or null
     userRole: role,
     canManage: role === 'owner', // Only owners can manage
     
@@ -122,11 +155,12 @@ export function useBusinessContext(targetBusinessId?: string) {
     
     // Error states
     hasBusinessError: hasError,
-    businessError: profileQuery.error || targetBusinessQuery.error,
+    businessError: profileQuery.error || roleQuery.error || targetBusinessQuery.error,
     
     // Utilities
     refetchBusiness: () => {
       profileQuery.refetch();
+      roleQuery.refetch();
       targetBusinessQuery.refetch();
     },
   };
