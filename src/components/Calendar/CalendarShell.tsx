@@ -37,6 +37,11 @@ export default function CalendarShell({
   const { t } = useLanguage();
   const queryClient = useQueryClient();
   
+  // Prevent rendering until businessId is available
+  if (!businessId) {
+    return null;
+  }
+  
   // Clear cache when business changes
   useEffect(() => {
     if (businessId) {
