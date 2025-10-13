@@ -81,53 +81,25 @@ async function initializeApp() {
   }
 }
 
-// Suppress DataCloneError from blocked tracking scripts
-// This happens when third-party scripts (tracking/analytics) are blocked by browser security policies
-// Especially common on Mobile Safari with strict cross-origin policies
+// Suppress DataCloneError from blocked tracking scripts on custom domain
 window.addEventListener('error', (event) => {
-  // Catch all DataCloneErrors - these are always from blocked postMessage calls
   if (event.error?.name === 'DataCloneError' || 
       event.message?.includes('DataCloneError') ||
-      event.message?.includes('postMessage') ||
-      event.message?.includes('cdn.gpteng.co') ||
-      event.message?.includes('gptengineer.app') ||
-      event.message?.includes('lovable')) {
-    console.debug('[Mobile Safari] Tracking script blocked (expected)');
-    event.stopImmediatePropagation(); // Stop event from bubbling
-    event.preventDefault(); // Prevent default error handling
+      event.message?.includes('cdn.gpteng.co')) {
+    console.warn('Lovable tracking blocked on custom domain (expected)');
+    event.preventDefault(); // Prevent error from propagating
     return true;
   }
 });
 
-// Also handle unhandled promise rejections from tracking scripts
+// Also handle unhandled promise rejections
 window.addEventListener('unhandledrejection', (event) => {
   if (event.reason?.name === 'DataCloneError' ||
-      event.reason?.message?.includes('DataCloneError') ||
-      event.reason?.message?.includes('postMessage') ||
-      event.reason?.message?.includes('cdn.gpteng.co') ||
-      event.reason?.message?.includes('gptengineer.app') ||
-      event.reason?.message?.includes('lovable')) {
-    console.debug('[Mobile Safari] Tracking promise rejected (expected)');
-    event.stopImmediatePropagation();
+      event.reason?.message?.includes('cdn.gpteng.co')) {
+    console.warn('Lovable tracking promise rejected (expected on custom domain)');
     event.preventDefault();
   }
 });
-
-// Prevent tracking script interference with Clerk auth on Mobile Safari
-if (typeof window !== 'undefined' && /iPhone|iPad|iPod/.test(navigator.userAgent)) {
-  const originalPostMessage = window.postMessage.bind(window);
-  window.postMessage = function(...args: any[]) {
-    try {
-      return originalPostMessage(...args);
-    } catch (error) {
-      if (error instanceof Error && error.name === 'DataCloneError') {
-        console.debug('[Mobile Safari] Blocked postMessage to tracking script');
-        return;
-      }
-      throw error;
-    }
-  } as typeof window.postMessage;
-}
 
 // Start initialization
 initializeApp();
