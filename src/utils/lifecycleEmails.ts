@@ -45,6 +45,8 @@ export async function sendLifecycleEmail(
       body: {
         type,
         data,
+        userId: data.userId,
+        businessId: data.businessId,
         ...extraParams
       }
     });

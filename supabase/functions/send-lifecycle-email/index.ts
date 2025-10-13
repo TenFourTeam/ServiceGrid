@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
+import { corsHeaders, json } from "../_lib/auth.ts";
 import { Resend } from 'https://esm.sh/resend@4.0.0';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.54.0';
 
 // Import email templates - simplified versions since we can't import from src
 function escapeHtml(text: string): string {
@@ -333,12 +334,12 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   try {
-    const ctx = await requireCtx(req);
-    const ownerId = ctx.userId;
-
+    // Parse request body
     let payload: {
       type: string;
       data: LifecycleEmailData;
+      userId?: string;
+      businessId?: string;
       [key: string]: any;
     };
 
@@ -349,19 +350,29 @@ serve(async (req: Request): Promise<Response> => {
       return json({ error: "Invalid JSON" }, { status: 400 });
     }
 
-  const { type, data } = payload;
-  const appUrl = 'https://servicegrid.app';
+    const { type, data, userId, businessId } = payload;
+    const appUrl = 'https://servicegrid.app';
 
     // Validate required fields
-    if (!type || !data?.userEmail) {
-      return json({ error: "Missing type or data.userEmail" }, { status: 400 });
+    if (!type || !data?.userEmail || !userId) {
+      return json({ error: "Missing type, data.userEmail, or userId" }, { status: 400 });
     }
 
+    // Create Supabase admin client
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !serviceKey) {
+      console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+      return json({ error: "Database configuration missing" }, { status: 500 });
+    }
+
+    const supabase = createClient(supabaseUrl, serviceKey);
+
     // Check if email already sent (deduplication)
-    const { data: existingEmail } = await ctx.supabase
+    const { data: existingEmail } = await supabase
       .from('lifecycle_emails_sent')
       .select('id')
-      .eq('user_id', ownerId)
+      .eq('user_id', userId)
       .eq('email_type', type)
       .maybeSingle();
 
@@ -411,8 +422,8 @@ serve(async (req: Request): Promise<Response> => {
       
       // Log failed email to mail_sends
       try {
-        await ctx.supabase.from('mail_sends').insert({
-          user_id: ownerId,
+        await supabase.from('mail_sends').insert({
+          user_id: userId,
           to_email: data.userEmail,
           subject: emailTemplate.subject,
           status: 'failed',
@@ -435,8 +446,8 @@ serve(async (req: Request): Promise<Response> => {
     try {
       const requestHash = crypto.randomUUID();
       
-      await ctx.supabase.from('mail_sends').insert({
-        user_id: ownerId,
+      await supabase.from('mail_sends').insert({
+        user_id: userId,
         to_email: data.userEmail,
         subject: emailTemplate.subject,
         status: 'sent',
@@ -452,8 +463,8 @@ serve(async (req: Request): Promise<Response> => {
 
     // Record that email was sent (prevents duplicates)
     try {
-      await ctx.supabase.from('lifecycle_emails_sent').insert({
-        user_id: ownerId,
+      await supabase.from('lifecycle_emails_sent').insert({
+        user_id: userId,
         email_type: type,
         email_data: data,
       });
@@ -475,8 +486,8 @@ serve(async (req: Request): Promise<Response> => {
     
     // Log failed email to mail_sends
     try {
-      await ctx.supabase.from('mail_sends').insert({
-        user_id: ownerId,
+      await supabase.from('mail_sends').insert({
+        user_id: userId,
         to_email: data.userEmail,
         subject: emailTemplate?.subject || 'Lifecycle Email',
         status: 'failed',
