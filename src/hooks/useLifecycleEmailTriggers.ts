@@ -8,8 +8,11 @@ import { lifecycleEmailTriggers, daysSinceSignup, daysSinceLastLogin, LIFECYCLE_
 
 /**
  * Hook to handle lifecycle email triggers based on user state and actions
+ * DISABLED: Lifecycle emails are currently disabled
  */
 export function useLifecycleEmailTriggers(enableAutoTriggers: boolean = false) {
+  // Force disable all auto triggers
+  enableAutoTriggers = false;
   const { isSignedIn, isLoaded } = useAuth();
   const { user } = useUser();
   const { business, businessName, isLoadingBusiness } = useBusinessContext();
