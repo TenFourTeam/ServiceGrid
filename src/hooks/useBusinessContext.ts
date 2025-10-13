@@ -109,7 +109,7 @@ export function useBusinessContext(targetBusinessId?: string) {
   // Coordinated loading state
   const isLoadingBusiness = !isLoaded || (shouldFetch && (
     profileQuery.isLoading || 
-    roleQuery.isLoading || 
+    (targetBusinessId && roleQuery.isLoading) || 
     (targetBusinessQuery.isLoading && targetBusinessId && targetBusinessId !== userOwnedBusiness?.id)
   ));
   const hasError = profileQuery.isError || roleQuery.isError || targetBusinessQuery.isError;
