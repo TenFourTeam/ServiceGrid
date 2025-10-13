@@ -25,18 +25,15 @@ interface UseBusinessMembersDataOptions {
  * Resilient business members hook with canonical query key
  */
 export function useBusinessMembersData(opts: UseBusinessMembersDataOptions = {}) {
-  const { isAuthenticated, businessId: contextBusinessId } = useBusinessContext();
   const authApi = useAuthApi();
   
-  // Use explicit businessId if provided, fallback to context
-  const businessId = opts?.businessId || contextBusinessId;
-  const enabled = isAuthenticated && !!businessId && (opts?.enabled ?? true);
+  // Use explicit businessId from options
+  const businessId = opts?.businessId;
+  const enabled = !!businessId && (opts?.enabled ?? true);
 
   // Debug logging
   console.log('[useBusinessMembers] Hook setup:', { 
     businessId, 
-    contextBusinessId: contextBusinessId,
-    isAuthenticated, 
     enabled,
     optsEnabled: opts?.enabled 
   });
