@@ -10,7 +10,6 @@ import { usePreloadImage } from "@/hooks/usePreloadImage";
 import { useProfile } from "@/queries/useProfile";
 import { SignOutButton } from "@/components/Auth/SignOutButton";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useIsMobile } from "@/hooks/use-mobile";
 const getCoreNavItems = (t: (key: string) => string) => [{
   title: t('navigation.calendar'),
   url: "/calendar",
@@ -81,7 +80,6 @@ export default function AppSidebar({ businessId }: { businessId?: string }) {
     data: profile
   } = useProfile();
   const { t } = useLanguage();
-  const isMobile = useIsMobile();
 
   // Get translated nav items and filter based on user role
   const coreItems = getCoreNavItems(t);
@@ -126,24 +124,22 @@ export default function AppSidebar({ businessId }: { businessId?: string }) {
       </SidebarHeader>
 
       <SidebarContent>
-        {!isMobile && (
-          <SidebarGroup>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {visibleCoreItems.map(item => <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton asChild isActive={isActivePath(item.url)}>
-                      <NavLink to={buildUrl(item.url)} end className={({
-                    isActive
-                  }) => isActive ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"}>
-                        <item.icon className="mr-2 h-4 w-4" />
-                        <span className="truncate">{item.title}</span>
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>)}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {visibleCoreItems.map(item => <SidebarMenuItem key={item.url}>
+                  <SidebarMenuButton asChild isActive={isActivePath(item.url)}>
+                    <NavLink to={buildUrl(item.url)} end className={({
+                  isActive
+                }) => isActive ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"}>
+                      <item.icon className="mr-2 h-4 w-4" />
+                      <span className="truncate">{item.title}</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>)}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
 
         {visibleBusinessItems.length > 0 && (
           <>
