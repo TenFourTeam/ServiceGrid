@@ -49,6 +49,7 @@ function App({ clerkKey }: AppProps) {
   return (
     <ClerkProvider 
       publishableKey={clerkKey}
+      telemetry={false}
     >
       <BrowserRouter>
         <ClerkLoaded>
