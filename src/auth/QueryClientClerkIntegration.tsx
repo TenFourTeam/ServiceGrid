@@ -15,8 +15,8 @@ export function QueryClientClerkIntegration() {
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const previousSignedInRef = useRef<boolean | null>(null);
   
-  // Initialize lifecycle email triggers (automatic triggers enabled)
-  useLifecycleEmailTriggers(true);
+  // Lifecycle email triggers temporarily disabled - was causing email spam and mobile crashes
+  // useLifecycleEmailTriggers(true);
 
   // Clear cache on sign out and handle auth changes
   useEffect(() => {
