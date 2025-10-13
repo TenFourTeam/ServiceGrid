@@ -350,7 +350,7 @@ serve(async (req: Request): Promise<Response> => {
     }
 
   const { type, data } = payload;
-  const appUrl = Deno.env.get("FRONTEND_URL") || 'https://servicegrid.app';
+  const appUrl = 'https://servicegrid.app';
 
     // Validate required fields
     if (!type || !data?.userEmail) {
