@@ -37,11 +37,6 @@ export default function CalendarShell({
   const { t } = useLanguage();
   const queryClient = useQueryClient();
   
-  // Prevent rendering until businessId is available
-  if (!businessId) {
-    return null;
-  }
-  
   // Clear cache when business changes
   useEffect(() => {
     if (businessId) {
@@ -110,6 +105,12 @@ export default function CalendarShell({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [stepDate]);
+  
+  // Prevent rendering until businessId is available
+  if (!businessId) {
+    return null;
+  }
+  
   return <div className="flex-1 min-h-0 flex flex-col gap-2 md:gap-4">
         <header className="pt-4 md:pt-6 flex flex-col gap-3 md:gap-0 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center justify-between md:gap-3">
