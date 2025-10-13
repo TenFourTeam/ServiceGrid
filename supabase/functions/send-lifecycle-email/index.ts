@@ -368,11 +368,25 @@ serve(async (req: Request): Promise<Response> => {
 
     const supabase = createClient(supabaseUrl, serviceKey);
 
+    // Convert Clerk user ID to Supabase profile UUID
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('clerk_user_id', userId)
+      .maybeSingle();
+
+    if (!profileData?.id) {
+      console.error('[send-lifecycle-email] Profile not found for Clerk user:', userId);
+      return json({ error: "User profile not found" }, { status: 404 });
+    }
+
+    const profileId = profileData.id;
+
     // Check if email already sent (deduplication)
     const { data: existingEmail } = await supabase
       .from('lifecycle_emails_sent')
       .select('id')
-      .eq('user_id', userId)
+      .eq('user_id', profileId)
       .eq('email_type', type)
       .maybeSingle();
 
@@ -423,7 +437,7 @@ serve(async (req: Request): Promise<Response> => {
       // Log failed email to mail_sends
       try {
         await supabase.from('mail_sends').insert({
-          user_id: userId,
+          user_id: profileId,
           to_email: data.userEmail,
           subject: emailTemplate.subject,
           status: 'failed',
@@ -447,7 +461,7 @@ serve(async (req: Request): Promise<Response> => {
       const requestHash = crypto.randomUUID();
       
       await supabase.from('mail_sends').insert({
-        user_id: userId,
+        user_id: profileId,
         to_email: data.userEmail,
         subject: emailTemplate.subject,
         status: 'sent',
@@ -464,7 +478,7 @@ serve(async (req: Request): Promise<Response> => {
     // Record that email was sent (prevents duplicates)
     try {
       await supabase.from('lifecycle_emails_sent').insert({
-        user_id: userId,
+        user_id: profileId,
         email_type: type,
         email_data: data,
       });
@@ -487,7 +501,7 @@ serve(async (req: Request): Promise<Response> => {
     // Log failed email to mail_sends
     try {
       await supabase.from('mail_sends').insert({
-        user_id: userId,
+        user_id: profileId,
         to_email: data.userEmail,
         subject: emailTemplate?.subject || 'Lifecycle Email',
         status: 'failed',
