@@ -30,7 +30,7 @@ export default function CalendarShell({
   const [date, setDate] = useState<Date>(startOfDay(new Date()));
   const { role, userId, businessId, businessName } = useBusinessContext(routeBusinessId);
   const { data: jobs, refetch: refetchJobs } = useJobsData(businessId);
-  const { data: businessMembers } = useBusinessMembersData();
+  const { data: businessMembers = [] } = useBusinessMembersData();
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const isMobile = useIsMobile();
   const isPhone = useIsPhone();
