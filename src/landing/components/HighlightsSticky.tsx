@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
-import { content } from "../content";
 import { Section } from "@/components/Section";
 import { Heading } from "@/components/Heading";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Dialog, DialogTrigger, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { usePreloadImage, usePreloadImages } from "@/hooks/usePreloadImage";
-type HighlightStep = (typeof content.highlights.steps)[number] & { imageSrc?: string; alt?: string };
+import { useLanguage } from "@/contexts/LanguageContext";
+
+type HighlightStep = {
+  key: string;
+  imageSrc?: string;
+  alt?: string;
+};
 
 function VisualCard({ title, imageSrc, alt, kind }: { title: string; imageSrc?: string; alt?: string; kind?: 'schedule' | 'quote' | 'work' | 'invoice' }) {
   const [broken, setBroken] = useState(false);
@@ -119,7 +124,15 @@ function VisualCard({ title, imageSrc, alt, kind }: { title: string; imageSrc?: 
 }
 
 export function HighlightsSticky() {
-  const steps = content.highlights.steps as ReadonlyArray<HighlightStep>;
+  const { t } = useLanguage();
+  
+  const steps: HighlightStep[] = [
+    { key: 'schedule', imageSrc: '/How%20It%20Works%201.png', alt: t('landing.highlights.steps.0.alt') },
+    { key: 'quote', imageSrc: '/How%20It%20Works%202.png', alt: t('landing.highlights.steps.1.alt') },
+    { key: 'work', imageSrc: '/How%20It%20Works%203.png', alt: t('landing.highlights.steps.2.alt') },
+    { key: 'invoice', imageSrc: '/How%20It%20Works%204.png', alt: t('landing.highlights.steps.3.alt') },
+  ];
+  
   const computeDefaultKey = () => {
     const hashKey = (location.hash || "").replace("#", "");
     return (
@@ -158,24 +171,25 @@ export function HighlightsSticky() {
 
   const displayKey = hoveredKey ?? activeKey;
   const currentStep = steps.find((s) => s.key === displayKey) ?? steps[0];
+  const currentIndex = steps.findIndex(s => s.key === currentStep.key);
   const kind = currentStep?.key === 'invoice' ? 'invoice'
     : currentStep?.key === 'quote' ? 'quote'
     : currentStep?.key === 'work' ? 'work'
     : currentStep?.key === 'schedule' ? 'schedule'
     : undefined;
   const visualSrc = currentStep?.imageSrc;
-  const visualAlt = currentStep?.alt ?? currentStep?.title ?? "Highlight visual";
+  const visualAlt = currentStep?.alt ?? t(`landing.highlights.steps.${currentIndex}.alt`);
   usePreloadImage(visualSrc);
   return (
-    <Section ariaLabel={content.highlights.heading}>
+    <Section ariaLabel={t('landing.highlights.heading')}>
       <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-start">
         {/* Sticky narrative */}
         <div className="lg:sticky lg:top-24">
           <Heading as="h2" intent="section" id="how-title" data-reveal>
-            {content.highlights.heading}
+            {t('landing.highlights.heading')}
           </Heading>
           <ol className="mt-6 space-y-6">
-            {content.highlights.steps.map((s, i) => (
+            {steps.map((s, i) => (
               <li
                 key={s.key}
                 id={s.key}
@@ -185,7 +199,7 @@ export function HighlightsSticky() {
                 aria-current={activeKey === s.key ? 'step' : undefined}
                 role="button"
                 tabIndex={0}
-                aria-label={s.title}
+                aria-label={t(`landing.highlights.steps.${i}.title`)}
                 onMouseEnter={() => setHoveredKey(s.key)}
                 onFocus={() => setHoveredKey(s.key)}
                 onClick={() => { setHoveredKey(s.key); handleSelect(s.key); }}
@@ -197,8 +211,8 @@ export function HighlightsSticky() {
                   }
                 }}
               >
-                <h3 className="font-semibold">{i + 1}. {s.title}</h3>
-                <p className="mt-1 text-muted-foreground">{s.desc}</p>
+                <h3 className="font-semibold">{i + 1}. {t(`landing.highlights.steps.${i}.title`)}</h3>
+                <p className="mt-1 text-muted-foreground">{t(`landing.highlights.steps.${i}.desc`)}</p>
               </li>
             ))}
           </ol>
@@ -207,7 +221,12 @@ export function HighlightsSticky() {
         {/* Visuals */}
           <div aria-live="polite" className="relative mt-6 lg:mt-20" data-visuals>
             <span id="highlights-live" className="sr-only" />
-            <VisualCard title={currentStep.title} imageSrc={visualSrc} alt={visualAlt} kind={kind} />
+            <VisualCard 
+              title={t(`landing.highlights.steps.${currentIndex}.title`)} 
+              imageSrc={visualSrc} 
+              alt={visualAlt} 
+              kind={kind} 
+            />
           </div>
       </div>
     </Section>

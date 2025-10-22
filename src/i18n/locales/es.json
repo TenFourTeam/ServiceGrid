@@ -741,5 +741,117 @@
   "roles": {
     "owner": "Propietario",
     "worker": "Trabajador"
+  },
+  "landing": {
+    "nav": {
+      "resources": "Recursos",
+      "signIn": "Iniciar sesión",
+      "tryFree": "Prueba gratis (sin tarjeta de crédito)",
+      "tryFreeShort": "Prueba gratis"
+    },
+    "hero": {
+      "A": {
+        "eyebrow": "Para equipos de servicio en campo en crecimiento",
+        "title": "Programa, cotiza y factura sin el ir y venir",
+        "subtitle": "ServiceGrid mantiene tu día en movimiento: programación de arrastrar y soltar, cotizaciones de un clic y pagos instantáneos en una sola aplicación ligera."
+      },
+      "B": {
+        "eyebrow": "Menos administración. Más trabajos.",
+        "title": "Tus rutas de césped, cotizaciones y flujo de caja—en piloto automático",
+        "subtitle": "Deja de hacer malabares con herramientas. Visualiza el trabajo de hoy, envía precios que los clientes aceptan y recibe pagos más rápido—sin clics adicionales."
+      },
+      "primaryCta": "Prueba gratis (sin tarjeta de crédito)"
+    },
+    "benefits": {
+      "heading": "Por qué los equipos cambian a ServiceGrid",
+      "subtitle": "Menos clics, menos llamadas, flujo de caja más rápido.",
+      "items": {
+        "0": {
+          "title": "Calendario de arrastrar y soltar",
+          "desc": "Reasigna, reprograma y agrupa trabajos en segundos—sin llamadas telefónicas."
+        },
+        "1": {
+          "title": "Cotizaciones que los clientes aceptan",
+          "desc": "Cotizaciones simples y amigables para móviles que se convierten con un toque."
+        },
+        "2": {
+          "title": "Facturas que se pagan",
+          "desc": "Rastrea el estado y cobra pagos en línea sin perseguir."
+        },
+        "3": {
+          "title": "Configuración cero",
+          "desc": "Comienza en minutos. Importa clientes más tarde si quieres."
+        }
+      }
+    },
+    "industries": {
+      "heading": "Creado para profesionales de servicios en campo",
+      "subtitle": "Flujos de trabajo diseñados para sentirse nativos en tu oficio.",
+      "items": {
+        "lawnCare": "Cuidado de Césped",
+        "houseCleaning": "Limpieza de Casas",
+        "pressureWashing": "Lavado a Presión",
+        "irrigation": "Riego",
+        "poolService": "Servicio de Piscinas",
+        "handyman": "Mantenimiento General",
+        "gutterCleaning": "Limpieza de Canaletas",
+        "junkRemoval": "Remoción de Chatarra",
+        "carpetCleaning": "Limpieza de Alfombras"
+      }
+    },
+    "faq": {
+      "heading": "Preguntas frecuentes",
+      "subtitle": "Respuestas rápidas a preguntas comunes.",
+      "items": {
+        "0": {
+          "q": "¿Hay una prueba gratuita?",
+          "a": "Sí. Disfruta de una prueba gratuita de 7 días — no se requiere tarjeta de crédito."
+        },
+        "1": {
+          "q": "¿Puedo traer mi lista de clientes?",
+          "a": "Puedes comenzar desde cero ahora e importar clientes más tarde—compatible con CSV."
+        },
+        "2": {
+          "q": "¿Funciona en dispositivos móviles?",
+          "a": "Sí. La aplicación web funciona hermosamente en teléfonos y tabletas."
+        },
+        "3": {
+          "q": "¿Soportan equipos?",
+          "a": "Sí. Asigna trabajos a rutas y miembros del equipo fácilmente."
+        }
+      }
+    },
+    "cta": {
+      "heading": "¿Listo para funcionar en piloto automático?",
+      "primaryCta": "Prueba gratis (sin tarjeta de crédito)"
+    },
+    "highlights": {
+      "heading": "Cómo funciona",
+      "steps": {
+        "0": {
+          "title": "Planifica tu día rápidamente",
+          "desc": "Arrastra trabajos al calendario. Manejamos conflictos y tiempo de viaje.",
+          "alt": "Cómo funciona — programar: calendario de arrastrar y soltar"
+        },
+        "1": {
+          "title": "Envía una cotización que vende",
+          "desc": "Opciones detalladas, totales claros y aprobación de un toque.",
+          "alt": "Cómo funciona — cotizar: aprobación simple de un toque"
+        },
+        "2": {
+          "title": "Haz el trabajo, captura fotos",
+          "desc": "Adjunta fotos y notas del trabajo desde tu teléfono en un par de toques.",
+          "alt": "Cómo funciona — trabajar: captura fotos y notas del trabajo"
+        },
+        "3": {
+          "title": "Factura y recibe el pago",
+          "desc": "Envía instantáneamente. Los clientes pagan en línea. Lo ves en tu tablero.",
+          "alt": "Cómo funciona — facturar: vista del tablero de pagos"
+        }
+      }
+    },
+    "footer": {
+      "copyright": "2025 ServiceGrid"
+    }
   }
 }

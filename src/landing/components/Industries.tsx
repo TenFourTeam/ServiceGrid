@@ -1,39 +1,42 @@
 import { Section } from "@/components/Section";
 import { Heading } from "@/components/Heading";
 import { Leaf, Sprout, Waves, Droplets, Sparkles, Wrench, Home, CloudRain, Trash2 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
-const industries = [
-  { icon: Leaf, label: "Lawn Care" },
-  { icon: Home, label: "House Cleaning" },
-  { icon: Droplets, label: "Pressure Washing" },
-  { icon: Sprout, label: "Irrigation" },
-  { icon: Waves, label: "Pool Service" },
-  { icon: Wrench, label: "Handyman" },
-  { icon: CloudRain, label: "Gutter Cleaning" },
-  { icon: Trash2, label: "Junk Removal" },
-  { icon: Sparkles, label: "Carpet Cleaning" },
+const industryIcons = [
+  { icon: Leaf, key: "lawnCare" },
+  { icon: Home, key: "houseCleaning" },
+  { icon: Droplets, key: "pressureWashing" },
+  { icon: Sprout, key: "irrigation" },
+  { icon: Waves, key: "poolService" },
+  { icon: Wrench, key: "handyman" },
+  { icon: CloudRain, key: "gutterCleaning" },
+  { icon: Trash2, key: "junkRemoval" },
+  { icon: Sparkles, key: "carpetCleaning" },
 ];
 
 export function Industries() {
+  const { t } = useLanguage();
+  
   return (
     <Section ariaLabel="Industries we serve">
       <div className="mx-auto max-w-5xl text-center" data-reveal>
-        <Heading as="h2" intent="section" id="industries-title">Built for field service pros</Heading>
-        <p className="mt-3 text-muted-foreground">Purpose-built workflows that feel native to your trade.</p>
+        <Heading as="h2" intent="section" id="industries-title">{t('landing.industries.heading')}</Heading>
+        <p className="mt-3 text-muted-foreground">{t('landing.industries.subtitle')}</p>
       </div>
       <div className="mt-8 marquee" data-reveal>
         <div className="marquee-track" aria-label="Industries carousel">
-          {industries.map(({ icon: Icon, label }) => (
-            <article key={label} className="shrink-0 w-40 md:w-44 rounded-lg border bg-card p-4 md:p-5 shadow-subtle grid place-items-center text-center">
+          {industryIcons.map(({ icon: Icon, key }) => (
+            <article key={key} className="shrink-0 w-40 md:w-44 rounded-lg border bg-card p-4 md:p-5 shadow-subtle grid place-items-center text-center">
               <Icon aria-hidden className="text-primary" />
-              <h3 className="mt-3 font-medium">{label}</h3>
+              <h3 className="mt-3 font-medium">{t(`landing.industries.items.${key}`)}</h3>
             </article>
           ))}
           <span aria-hidden="true" className="contents">
-            {industries.map(({ icon: Icon, label }) => (
-              <article key={`${label}-dup`} className="shrink-0 w-40 md:w-44 rounded-lg border bg-card p-4 md:p-5 shadow-subtle grid place-items-center text-center">
+            {industryIcons.map(({ icon: Icon, key }) => (
+              <article key={`${key}-dup`} className="shrink-0 w-40 md:w-44 rounded-lg border bg-card p-4 md:p-5 shadow-subtle grid place-items-center text-center">
                 <Icon aria-hidden className="text-primary" />
-                <h3 className="mt-3 font-medium">{label}</h3>
+                <h3 className="mt-3 font-medium">{t(`landing.industries.items.${key}`)}</h3>
               </article>
             ))}
           </span>

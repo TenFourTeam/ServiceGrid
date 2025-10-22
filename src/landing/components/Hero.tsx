@@ -4,6 +4,7 @@ import { content } from "../content";
 import { BWAnimatedBackground } from "./BWAnimatedBackground";
 import { useRef } from "react";
 import { HeroMedia } from "./HeroMedia";
+import { useLanguage } from "@/contexts/LanguageContext";
 function LogoMark() {
   return <svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" className="text-primary">
       <path fill="currentColor" d="M12 2c5.523 0 10 4.477 10 10h-2a8 8 0 1 0-8 8v2C6.477 22 2 17.523 2 12S6.477 2 12 2Z" />
@@ -11,9 +12,9 @@ function LogoMark() {
     </svg>;
 }
 export function Hero() {
+  const { t } = useLanguage();
   const params = new URLSearchParams(location.search);
   const variant = params.get("v")?.toLowerCase() === "b" ? "B" : "A";
-  const copy = content.hero[variant as "A" | "B"];
   const heroRef = useRef<HTMLElement | null>(null);
   
   const onMove = (e: React.MouseEvent) => {
@@ -31,25 +32,20 @@ export function Hero() {
       <div className="grid lg:grid-cols-2 gap-10 items-center">
         {/* Copy */}
         <div className="mx-auto max-w-3xl text-center lg:text-left">
-          <p className="eyebrow font-jakarta is-revealed" data-reveal>{copy.eyebrow}</p>
+          <p className="eyebrow font-jakarta is-revealed" data-reveal>{t(`landing.hero.${variant}.eyebrow`)}</p>
           <h1 id="hero-title" className="mt-3 text-4xl md:text-6xl font-bold tracking-tight bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text text-transparent is-revealed" data-reveal>
-            {copy.title}
+            {t(`landing.hero.${variant}.title`)}
           </h1>
           <p className="mt-4 text-lg md:text-xl text-muted-foreground is-revealed" data-reveal>
-            {copy.subtitle}
+            {t(`landing.hero.${variant}.subtitle`)}
           </p>
 
           <div className="mt-8 flex flex-col sm:flex-row items-center lg:items-start justify-center lg:justify-start gap-3 is-revealed" data-reveal>
             <SignUpButton mode="modal" forceRedirectUrl="/calendar">
               <Button size="lg" variant="primary" className="hover-scale attention-ring [--ring:var(--brand-600)]" id="hero-cta">
-                {copy.primaryCta.label}
+                {t('landing.hero.primaryCta')}
               </Button>
             </SignUpButton>
-            {copy.secondaryCta.label ? (
-              <Button size="lg" variant="primary" className="hover-scale" onClick={() => { location.href = copy.secondaryCta.href; }}>
-                {copy.secondaryCta.label}
-              </Button>
-            ) : null}
           </div>
         </div>
 

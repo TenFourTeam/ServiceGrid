@@ -742,5 +742,117 @@
   "roles": {
     "owner": "Owner",
     "worker": "Worker"
+  },
+  "landing": {
+    "nav": {
+      "resources": "Resources",
+      "signIn": "Sign in",
+      "tryFree": "Try for free (no credit card required)",
+      "tryFreeShort": "Try free"
+    },
+    "hero": {
+      "A": {
+        "eyebrow": "For growing field service teams",
+        "title": "Schedule, quote, and invoice without the back-and-forth",
+        "subtitle": "ServiceGrid keeps your day moving: drag-and-drop scheduling, one-click quotes, and instant payments in a single lightweight app."
+      },
+      "B": {
+        "eyebrow": "Less admin. More jobs.",
+        "title": "Your lawn routes, quotes, and cashflow—on autopilot",
+        "subtitle": "Stop juggling tools. See today's work, send prices clients accept, and get paid faster—without extra clicks."
+      },
+      "primaryCta": "Try for free (no credit card required)"
+    },
+    "benefits": {
+      "heading": "Why teams switch to ServiceGrid",
+      "subtitle": "Fewer clicks, fewer calls, faster cashflow.",
+      "items": {
+        "0": {
+          "title": "Drag-and-drop calendar",
+          "desc": "Reassign, reschedule, and batch jobs in seconds—no phone tag."
+        },
+        "1": {
+          "title": "Quotes clients accept",
+          "desc": "Simple, mobile‑friendly quotes that convert with one tap."
+        },
+        "2": {
+          "title": "Invoices that get paid",
+          "desc": "Track status and collect online payments without chasing."
+        },
+        "3": {
+          "title": "Zero setup",
+          "desc": "Start in minutes. Import customers later if you want."
+        }
+      }
+    },
+    "industries": {
+      "heading": "Built for field service pros",
+      "subtitle": "Purpose-built workflows that feel native to your trade.",
+      "items": {
+        "lawnCare": "Lawn Care",
+        "houseCleaning": "House Cleaning",
+        "pressureWashing": "Pressure Washing",
+        "irrigation": "Irrigation",
+        "poolService": "Pool Service",
+        "handyman": "Handyman",
+        "gutterCleaning": "Gutter Cleaning",
+        "junkRemoval": "Junk Removal",
+        "carpetCleaning": "Carpet Cleaning"
+      }
+    },
+    "faq": {
+      "heading": "Frequently asked questions",
+      "subtitle": "Quick answers to common questions.",
+      "items": {
+        "0": {
+          "q": "Is there a free trial?",
+          "a": "Yes. Enjoy a 7-day free trial — no credit card required."
+        },
+        "1": {
+          "q": "Can I bring my customer list?",
+          "a": "You can start fresh now and import customers later—CSV supported."
+        },
+        "2": {
+          "q": "Does it work on mobile?",
+          "a": "Yes. The web app runs beautifully on phones and tablets."
+        },
+        "3": {
+          "q": "Do you support teams?",
+          "a": "Yes. Assign jobs to routes and crew members easily."
+        }
+      }
+    },
+    "cta": {
+      "heading": "Ready to run on autopilot?",
+      "primaryCta": "Try for free (no credit card required)"
+    },
+    "highlights": {
+      "heading": "How it works",
+      "steps": {
+        "0": {
+          "title": "Plan your day fast",
+          "desc": "Drag jobs onto the calendar. We handle conflicts and travel time.",
+          "alt": "How it works — schedule: drag-and-drop calendar"
+        },
+        "1": {
+          "title": "Send a quote that sells",
+          "desc": "Itemized options, clear totals, and one‑tap approval.",
+          "alt": "How it works — quote: simple, one-tap approval"
+        },
+        "2": {
+          "title": "Do the work, capture photos",
+          "desc": "Attach job photos and notes from your phone in a couple taps.",
+          "alt": "How it works — work: capture job photos and notes"
+        },
+        "3": {
+          "title": "Invoice and get paid",
+          "desc": "Send instantly. Clients pay online. You see it in your dashboard.",
+          "alt": "How it works — invoice: dashboard view of payments"
+        }
+      }
+    },
+    "footer": {
+      "copyright": "2025 ServiceGrid"
+    }
   }
 }

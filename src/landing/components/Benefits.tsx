@@ -1,6 +1,6 @@
-import { content } from "../content";
 import { Section } from "@/components/Section";
 import { Heading } from "@/components/Heading";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 function CheckIcon() {
   return (
@@ -11,23 +11,25 @@ function CheckIcon() {
 }
 
 export function Benefits() {
+  const { t } = useLanguage();
+  
   return (
     <Section id="benefits" ariaLabel="Benefits">
       <div className="mx-auto max-w-3xl text-center" data-reveal>
-        <Heading as="h2" intent="section" id="benefits-title">Why teams switch to ServiceGrid</Heading>
-        <p className="mt-3 text-muted-foreground">Fewer clicks, fewer calls, faster cashflow.</p>
+        <Heading as="h2" intent="section" id="benefits-title">{t('landing.benefits.heading')}</Heading>
+        <p className="mt-3 text-muted-foreground">{t('landing.benefits.subtitle')}</p>
       </div>
 
       <div className="mt-10 grid sm:grid-cols-2 gap-6">
-        {content.benefits.map((b, i) => (
-          <article key={b.title} className="rounded-lg border bg-card p-6 shadow-subtle" data-reveal>
+        {[0, 1, 2, 3].map((i) => (
+          <article key={i} className="rounded-lg border bg-card p-6 shadow-subtle" data-reveal>
             <div className="flex items-start gap-3">
               <div className="mt-1">
                 <CheckIcon />
               </div>
               <div>
-                <h3 className="font-semibold text-lg">{b.title}</h3>
-                <p className="mt-1 text-muted-foreground">{b.desc}</p>
+                <h3 className="font-semibold text-lg">{t(`landing.benefits.items.${i}.title`)}</h3>
+                <p className="mt-1 text-muted-foreground">{t(`landing.benefits.items.${i}.desc`)}</p>
               </div>
             </div>
           </article>

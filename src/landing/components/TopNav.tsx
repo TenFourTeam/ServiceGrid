@@ -12,8 +12,12 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
+import { LanguageToggle } from "./LanguageToggle";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export function TopNav() {
+  const { t } = useLanguage();
+  
   return (
     <header role="banner" className="sticky top-0 z-50 bg-background/60 dark:bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex items-center py-3">
@@ -26,7 +30,7 @@ export function TopNav() {
             <NavigationMenuList>
               <NavigationMenuItem>
                 <NavigationMenuTrigger className="text-sm font-medium">
-                  Resources
+                  {t('landing.nav.resources')}
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
                   <div className="w-[min(600px,calc(100vw-2rem))] p-4 sm:p-6">
@@ -60,17 +64,17 @@ export function TopNav() {
           </NavigationMenu>
 
           <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 ml-auto">
+            <LanguageToggle />
             <SignedOut>
               <SignInButton mode="modal" forceRedirectUrl="/calendar">
                 <Button variant="ghost" size="sm" className="hover-scale text-xs sm:text-sm px-2 sm:px-3">
-                  <span className="hidden xs:inline">Sign in</span>
-                  <span className="xs:hidden">Sign in</span>
+                  {t('landing.nav.signIn')}
                 </Button>
               </SignInButton>
               <SignUpButton mode="modal" forceRedirectUrl="/calendar">
                 <Button variant="primary" size="sm" className="hover-scale attention-ring [--ring:var(--brand-600)] text-xs sm:text-sm px-2 sm:px-3">
-                  <span className="hidden xs:inline">Try for free (no credit card required)</span>
-                  <span className="xs:hidden">Try free</span>
+                  <span className="hidden xs:inline">{t('landing.nav.tryFree')}</span>
+                  <span className="xs:hidden">{t('landing.nav.tryFreeShort')}</span>
                 </Button>
               </SignUpButton>
             </SignedOut>
