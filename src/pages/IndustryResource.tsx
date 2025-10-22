@@ -1,5 +1,5 @@
 import { useParams, Navigate } from "react-router-dom";
-import { industries } from "@/landing/industryData";
+import { getIndustries } from "@/landing/industryData";
 import { IndustryHero } from "@/landing/components/IndustryHero";
 import { ChallengesGrid } from "@/landing/components/ChallengesGrid";
 import { FeaturesShowcase } from "@/landing/components/FeaturesShowcase";
@@ -7,23 +7,27 @@ import { IndustryCTA } from "@/landing/components/IndustryCTA";
 import { Benefits } from "@/landing/components/Benefits";
 import { Footer } from "@/landing/components/Footer";
 import { TopNav } from "@/landing/components/TopNav";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useEffect } from "react";
 
 export default function IndustryResource() {
   const { slug } = useParams<{ slug: string }>();
+  const { t } = useLanguage();
   
+  // Get translated industries
+  const industries = getIndustries(t);
   const industry = industries.find(ind => ind.slug === slug);
 
   useEffect(() => {
     if (industry) {
-      document.title = `${industry.label} Business Software | ServiceGrid`;
+      document.title = `${industry.label} ${t('landing.nav.business')} | ServiceGrid`;
       
       const metaDescription = document.querySelector('meta[name="description"]');
       if (metaDescription) {
         metaDescription.setAttribute('content', industry.description);
       }
     }
-  }, [industry]);
+  }, [industry, t]);
 
   if (!industry) {
     return <Navigate to="/404" replace />;

@@ -3,7 +3,7 @@ import { SignInButton, SignUpButton, SignedIn, SignedOut } from "@clerk/clerk-re
 import { Link } from "react-router-dom";
 import { content } from "../content";
 import { ServiceGridLogo } from "./ServiceGridLogo";
-import { industries } from "../industryData";
+import { getIndustries } from "../industryData";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -17,6 +17,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 export function TopNav() {
   const { t } = useLanguage();
+  const industries = getIndustries(t);
   
   return (
     <header role="banner" className="sticky top-0 z-50 bg-background/60 dark:bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/60">
