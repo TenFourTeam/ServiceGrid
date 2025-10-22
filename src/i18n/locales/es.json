@@ -854,5 +854,475 @@
     "footer": {
       "copyright": "2025 ServiceGrid"
     }
+  },
+  "industries": {
+    "lawnCare": {
+      "label": "Cuidado del Césped",
+      "description": "Software completo de gestión empresarial para profesionales del cuidado del césped",
+      "hero": {
+        "title": "Software para Cuidado del Césped que Hace Crecer Tu Negocio",
+        "subtitle": "Programa trabajos, envía cotizaciones profesionales, gestiona rutas y recibe pagos más rápido—todo en una plataforma diseñada para profesionales del cuidado del césped."
+      },
+      "challenges": {
+        "0": {
+          "title": "Caos en la Programación Estacional",
+          "description": "Gestionar la demanda en temporada alta mientras coordinas retrasos por clima y servicios recurrentes crea pesadillas de programación."
+        },
+        "1": {
+          "title": "Rutas Ineficientes",
+          "description": "Perder tiempo y combustible yendo y viniendo por toda la ciudad reduce la rentabilidad y la moral del equipo."
+        },
+        "2": {
+          "title": "Precios Inconsistentes",
+          "description": "Estimar tamaños de propiedad y servicios sin un sistema lleva a precios bajos y pérdida de ingresos."
+        },
+        "3": {
+          "title": "Retrasos en Pagos",
+          "description": "Perseguir pagos y gestionar facturas en papel ralentiza el flujo de caja y desperdicia tiempo valioso."
+        }
+      },
+      "features": {
+        "0": {
+          "title": "Programación y Rutas Inteligentes",
+          "description": "Calendario de arrastrar y soltar con optimización automática de rutas. Las alertas meteorológicas te mantienen informado, y los servicios recurrentes se configuran una vez y se automatizan para siempre.",
+          "benefit": "Ahorra 20% en costos de combustible y ajusta más trabajos en cada día"
+        },
+        "1": {
+          "title": "Cotizaciones Profesionales en Minutos",
+          "description": "Crea propuestas con marca con plantillas de servicio, medidas de propiedad y precios estacionales. Envía instantáneamente por correo o mensaje de texto.",
+          "benefit": "Gana más trabajos con cotizaciones rápidas y profesionales"
+        },
+        "2": {
+          "title": "Facturación y Pagos Automatizados",
+          "description": "Genera facturas automáticamente después de completar trabajos. Acepta tarjetas de crédito, ACH y pagos en línea con recordatorios automáticos.",
+          "benefit": "Recibe pagos 3 veces más rápido con menos seguimiento"
+        },
+        "3": {
+          "title": "Centro de Comunicación con Clientes",
+          "description": "Envía recordatorios de citas, actualizaciones de trabajos y promociones estacionales por mensaje y correo. Mantén a los clientes informados automáticamente.",
+          "benefit": "Reduce ausencias en 60% y aumenta reservas repetidas"
+        }
+      },
+      "cta": {
+        "title": "¿Listo para optimizar tu negocio de cuidado del césped?",
+        "subtitle": "Únete a miles de profesionales del cuidado del césped que usan ServiceGrid para ahorrar tiempo y aumentar ingresos."
+      }
+    },
+    "houseCleaning": {
+      "label": "Limpieza del Hogar",
+      "description": "Software de gestión empresarial todo en uno para servicios profesionales de limpieza del hogar",
+      "hero": {
+        "title": "Software de Limpieza del Hogar que Simplifica Tu Negocio",
+        "subtitle": "Gestiona citas, envía cotizaciones instantáneas, coordina equipos y procesa pagos—todo desde una plataforma diseñada para negocios de limpieza."
+      },
+      "challenges": {
+        "0": {
+          "title": "Reservas Caóticas",
+          "description": "Gestionar citas recurrentes, solicitudes de última hora y cambios de programación por teléfono y texto se vuelve abrumador a medida que creces."
+        },
+        "1": {
+          "title": "Coordinación de Equipos",
+          "description": "Asignar limpiadores a trabajos, rastrear quién trabajó en qué casa y gestionar disponibilidad se vuelve imposible sin las herramientas adecuadas."
+        },
+        "2": {
+          "title": "Precios Variados e Imprecisos",
+          "description": "Cotizar servicios de limpieza sin una estructura clara lleva a subestimaciones y pérdida de margen de beneficio."
+        },
+        "3": {
+          "title": "Cobros Lentos",
+          "description": "Perseguir pagos después de cada limpieza desperdicia horas cada semana y crea incomodidad con los clientes."
+        }
+      },
+      "features": {
+        "0": {
+          "title": "Reservas Automatizadas",
+          "description": "Los clientes pueden reservar, reprogramar o cancelar en línea. Las limpiezas recurrentes se programan automáticamente con recordatorios enviados antes de cada cita.",
+          "benefit": "Reduce llamadas telefónicas en 70% y elimina dobles reservas"
+        },
+        "1": {
+          "title": "Gestión de Equipos",
+          "description": "Asigna limpiadores a trabajos, rastrea horas trabajadas y ve el desempeño del equipo. Acceso móvil para que los limpiadores vean sus programaciones en cualquier lugar.",
+          "benefit": "Mejora la responsabilidad del equipo y reduce conflictos de programación"
+        },
+        "2": {
+          "title": "Cotización Inteligente",
+          "description": "Plantillas de precios basadas en pies cuadrados, tipo de habitación y servicios adicionales. Envía estimaciones profesionales y de marca instantáneamente.",
+          "benefit": "Aumenta tasas de aceptación con precios claros y transparentes"
+        },
+        "3": {
+          "title": "Pagos al Instante",
+          "description": "Cobra automáticamente tarjetas archivadas después de cada limpieza. Los clientes pueden pagar en línea o con tarjeta antes de que salgas.",
+          "benefit": "Recibe pagos el mismo día sin perseguir a los clientes"
+        }
+      },
+      "cta": {
+        "title": "¿Listo para modernizar tu negocio de limpieza?",
+        "subtitle": "Únete a miles de servicios de limpieza que usan ServiceGrid para trabajar de manera más inteligente, no más dura."
+      }
+    },
+    "pressureWashing": {
+      "label": "Lavado a Presión",
+      "description": "Software robusto de gestión empresarial para profesionales del lavado a presión",
+      "hero": {
+        "title": "Software de Lavado a Presión Diseñado para Negocios en Crecimiento",
+        "subtitle": "Programa trabajos, calcula cotizaciones basadas en pies cuadrados, gestiona rutas de servicio y cobra en línea—todo construido para contratistas de lavado a presión."
+      },
+      "challenges": {
+        "0": {
+          "title": "Estimación Difícil",
+          "description": "Calcular precio por pie cuadrado para calzadas, terrazas y edificios en el sitio lleva a subestimaciones y tiempo perdido."
+        },
+        "1": {
+          "title": "Equipamiento y Logística",
+          "description": "Rastrear qué equipo está en qué trabajo, gestionar químicos y coordinar suministro de agua añade complejidad innecesaria."
+        },
+        "2": {
+          "title": "Condiciones Climáticas",
+          "description": "Reprogramar trabajos por lluvia mientras mantienes rutas de servicio eficientes crea caos en el calendario."
+        },
+        "3": {
+          "title": "Fotos de Antes/Después",
+          "description": "Los clientes quieren ver resultados, pero gestionar fotos de trabajos manualmente toma tiempo y es desorganizado."
+        }
+      },
+      "features": {
+        "0": {
+          "title": "Cotización Basada en Pies Cuadrados",
+          "description": "Crea plantillas de precios por tipo de superficie (concreto, vinilo, ladrillo, madera). Genera cotizaciones en el sitio desde tu teléfono en segundos.",
+          "benefit": "Cotiza trabajos con precisión y cierra más negocios en la primera visita"
+        },
+        "1": {
+          "title": "Notas de Trabajos y Rastreo de Equipos",
+          "description": "Adjunta notas sobre mezclas de químicos, configuraciones de presión y requisitos de equipos a cada trabajo. Rastrea qué equipo está en uso y cuándo necesita mantenimiento.",
+          "benefit": "Mantén la consistencia en todos los trabajos y reduce errores costosos"
+        },
+        "2": {
+          "title": "Programación Consciente del Clima",
+          "description": "Integración con pronóstico del tiempo con recordatorios automáticos para reprogramar. Reprograma con arrastrar y soltar cuando llegue la lluvia.",
+          "benefit": "Minimiza cancelaciones y mantén a los clientes informados automáticamente"
+        },
+        "3": {
+          "title": "Galería de Fotos de Trabajos",
+          "description": "Sube fotos de antes/después directamente desde tu teléfono. Comparte galerías de trabajos con clientes automáticamente o en perfiles de redes sociales.",
+          "benefit": "Muestra tu trabajo para ganar más clientes y generar referencias"
+        }
+      },
+      "cta": {
+        "title": "¿Listo para potenciar tu negocio de lavado a presión?",
+        "subtitle": "Únete a profesionales del lavado a presión que usan ServiceGrid para optimizar operaciones y aumentar ganancias."
+      }
+    },
+    "irrigation": {
+      "label": "Riego",
+      "description": "Software completo de gestión para profesionales de sistemas de riego",
+      "hero": {
+        "title": "Software de Riego que Gestiona Cada Zona",
+        "subtitle": "Programa mantenimientos, rastrea sistemas de clientes, envía cotizaciones detalladas y cobra automáticamente—construido para contratistas de riego."
+      },
+      "challenges": {
+        "0": {
+          "title": "Información Compleja del Sistema",
+          "description": "Rastrear diseños de zonas, tipos de cabezales rociadores, programaciones de controladores y ubicaciones de válvulas para decenas de clientes es casi imposible sin un sistema."
+        },
+        "1": {
+          "title": "Mantenimiento Estacional",
+          "description": "Gestionar activaciones de primavera, revisiones de verano y cierres de otoño para cientos de clientes requiere una programación y logística meticulosas."
+        },
+        "2": {
+          "title": "Órdenes de Partes e Inventario",
+          "description": "Hacer seguimiento de qué partes están en tu camioneta, qué necesita ser pedido y qué se usó en qué trabajo crea pesadillas contables."
+        },
+        "3": {
+          "title": "Servicios de Emergencia",
+          "description": "Cuando los rociadores se rompen, los clientes necesitan servicio urgente. Programar reparaciones de emergencia mientras mantienes trabajos planificados en ruta crea estrés."
+        }
+      },
+      "features": {
+        "0": {
+          "title": "Perfiles de Sistemas de Clientes",
+          "description": "Almacena diseños de zonas, marcas de equipos, programaciones de controladores y notas de instalación para cada propiedad. Adjunta fotos y diagramas.",
+          "benefit": "Nunca olvides detalles del sistema o pierdas información de clientes"
+        },
+        "1": {
+          "title": "Servicios Estacionales Automatizados",
+          "description": "Programa activaciones, cierres y revisiones de mantenimiento para todos los clientes con un clic. Envía recordatorios automáticos conforme se acerquen las citas.",
+          "benefit": "Llena tu calendario estacional sin llamadas o correos manuales"
+        },
+        "2": {
+          "title": "Rastreo de Partes y Materiales",
+          "description": "Registra partes usadas en cada trabajo con modelos y cantidades. Genera informes de inventario y listas de compra automáticamente.",
+          "benefit": "Mantén camionetas abastecidas y rastrea costos de trabajos con precisión"
+        },
+        "3": {
+          "title": "Programación de Reparaciones de Emergencia",
+          "description": "Reserva franjas de emergencia en tu calendario para reparaciones urgentes. Notifica a los clientes sobre tiempos estimados de llegada por mensaje de texto.",
+          "benefit": "Responde rápido a emergencias sin desorganizar toda tu programación"
+        }
+      },
+      "cta": {
+        "title": "¿Listo para sistematizar tu negocio de riego?",
+        "subtitle": "Únete a contratistas de riego que usan ServiceGrid para gestionar sistemas complejos sin esfuerzo."
+      }
+    },
+    "poolService": {
+      "label": "Servicio de Piscinas",
+      "description": "Software de gestión todo en uno para profesionales del servicio de piscinas",
+      "hero": {
+        "title": "Software de Servicio de Piscinas Construido para Rutas Eficientes",
+        "subtitle": "Gestiona rutas de servicio, rastrea química del agua, factura automáticamente y comunícate con clientes—todo desde una plataforma diseñada para negocios de piscinas."
+      },
+      "challenges": {
+        "0": {
+          "title": "Rutas de Servicio Recurrente",
+          "description": "Visitar las mismas 50-100 piscinas cada semana requiere planificación meticulosa de rutas para maximizar paradas por día y minimizar tiempo de conducción."
+        },
+        "1": {
+          "title": "Rastreo de Química y Tratamientos",
+          "description": "Registrar lecturas de pH, cloro, alcalinidad y tratamientos aplicados para cada piscina manualmente toma tiempo y es propenso a errores."
+        },
+        "2": {
+          "title": "Facturación Recurrente",
+          "description": "Facturar mensualmente a docenas de clientes, rastrear químicos usados y cobrar pagos en ruta es tedioso y consume tiempo."
+        },
+        "3": {
+          "title": "Gestión Estacional",
+          "description": "Programar aperturas y cierres de piscinas, gestionar reparaciones de equipos y coordinar servicios durante clima malo añade complejidad."
+        }
+      },
+      "features": {
+        "0": {
+          "title": "Optimización de Rutas de Servicio",
+          "description": "Planifica rutas semanales optimizadas por ubicación. Arrastra y suelta paradas, ve tiempos de conducción y ajusta programaciones en tiempo real desde tu teléfono.",
+          "benefit": "Añade 3-5 paradas más por día ahorrando tiempo de conducción"
+        },
+        "1": {
+          "title": "Registro de Química del Agua",
+          "description": "Registra lecturas de pH, cloro, alcalinidad y otros parámetros en cada visita. Rastrea tratamientos aplicados y visualiza tendencias a lo largo del tiempo.",
+          "benefit": "Mantén agua perfecta y muestra profesionalismo con registros detallados"
+        },
+        "2": {
+          "title": "Facturación y Pagos Recurrentes Automatizados",
+          "description": "Configura facturación mensual recurrente. Cobra automáticamente tarjetas archivadas. Rastrea químicos usados y añádelos a facturas.",
+          "benefit": "Recibe pagos a tiempo cada mes sin perseguir a clientes"
+        },
+        "3": {
+          "title": "Órdenes de Trabajo de Aperturas/Cierres",
+          "description": "Crea listas de verificación específicas para aperturas de primavera y cierres de invierno. Programa estos servicios estacionales con meses de anticipación.",
+          "benefit": "Llena tu calendario estacional temprano y nunca olvides pasos"
+        }
+      },
+      "cta": {
+        "title": "¿Listo para optimizar tu negocio de servicio de piscinas?",
+        "subtitle": "Únete a profesionales del servicio de piscinas que usan ServiceGrid para ejecutar rutas eficientes y ganar más."
+      }
+    },
+    "handyman": {
+      "label": "Mantenimiento General",
+      "description": "Software versátil de gestión empresarial para profesionales del mantenimiento",
+      "hero": {
+        "title": "Software de Mantenimiento que Gestiona Cada Trabajo",
+        "subtitle": "Programa reparaciones, rastrea múltiples proyectos, envía cotizaciones claras y recibe pagos rápido—diseñado para la naturaleza variada del trabajo de mantenimiento."
+      },
+      "challenges": {
+        "0": {
+          "title": "Alcance de Trabajo Variable",
+          "description": "Cada trabajo es diferente—desde arreglar un grifo que gotea hasta renovaciones de habitaciones completas. Estimar tiempo y materiales precisamente es difícil sin datos históricos."
+        },
+        "1": {
+          "title": "Haciendo Malabarismos con Múltiples Proyectos",
+          "description": "Cambiar entre pequeñas reparaciones y proyectos de múltiples días mientras mantienes a todos los clientes actualizados crea caos en la comunicación."
+        },
+        "2": {
+          "title": "Rastreo de Materiales y Herramientas",
+          "description": "Recordar qué materiales compraste para qué trabajo, rastrear recibos y facturar materiales con precisión es desordenado sin un sistema."
+        },
+        "3": {
+          "title": "Pagos Lentos",
+          "description": "Cobrar después de completar trabajos, especialmente proyectos pequeños, a menudo resulta en pagos retrasados o facturas olvidadas."
+        }
+      },
+      "features": {
+        "0": {
+          "title": "Cotización Flexible",
+          "description": "Crea cotizaciones por hora o de precio fijo con partidas para mano de obra y materiales. Guarda plantillas de cotización para trabajos comunes como instalar ventiladores de techo o reparar cercos.",
+          "benefit": "Cotiza más rápido y gana más trabajos con estimaciones claras"
+        },
+        "1": {
+          "title": "Gestión de Múltiples Proyectos",
+          "description": "Ve todos los trabajos activos en un solo tablero. Rastrea el estado de cada proyecto, notas e historial de comunicación. Establece recordatorios para seguimientos.",
+          "benefit": "Nunca dejes caer ningún proyecto ni decepciones a clientes"
+        },
+        "2": {
+          "title": "Rastreo de Gastos y Materiales",
+          "description": "Registra materiales comprados con recibos fotográficos adjuntos a cada trabajo. Genera facturas que muestran desgloses claros de mano de obra vs materiales.",
+          "benefit": "Rastrea gastos con precisión y mejora márgenes de ganancia"
+        },
+        "3": {
+          "title": "Pagos Móviles en el Sitio",
+          "description": "Cobra con tarjeta o ACH inmediatamente al completar trabajos usando tu teléfono. Envía facturas digitales por mensaje de texto o correo para pagos en línea.",
+          "benefit": "Recibe pagos al instante en el sitio sin perseguir a clientes"
+        }
+      },
+      "cta": {
+        "title": "¿Listo para profesionalizar tu negocio de mantenimiento?",
+        "subtitle": "Únete a profesionales del mantenimiento que usan ServiceGrid para mantenerse organizados y ganar más."
+      }
+    },
+    "gutterCleaning": {
+      "label": "Limpieza de Canaletas",
+      "description": "Software especializado de gestión para servicios de limpieza de canaletas",
+      "hero": {
+        "title": "Software de Limpieza de Canaletas para Negocios Estacionales",
+        "subtitle": "Programa trabajos de otoño, gestiona rutas eficientemente, envía cotizaciones instantáneas y procesa pagos—construido para servicios de canaletas."
+      },
+      "challenges": {
+        "0": {
+          "title": "Demanda Estacional Extrema",
+          "description": "El 80% de tus ingresos llegan en otoño. Gestionar cientos de trabajos en unas pocas semanas mientras el clima cambia requiere programación precisa."
+        },
+        "1": {
+          "title": "Optimización de Rutas",
+          "description": "Visitar múltiples casas por día significa que el tiempo de conducción entre trabajos afecta directamente la rentabilidad. Las rutas malas desperdician horas cada día."
+        },
+        "2": {
+          "title": "Estimación de Altura y Acceso",
+          "description": "Precios basados en pies lineales, altura de la casa y dificultad de acceso. Estimar en el sitio sin registro de trabajos anteriores lleva a precios inconsistentes."
+        },
+        "3": {
+          "title": "Fotos de Antes/Después",
+          "description": "Los clientes quieren prueba de que las canaletas fueron limpiadas. Tomar y compartir fotos manualmente añade tiempo a cada trabajo."
+        }
+      },
+      "features": {
+        "0": {
+          "title": "Programación Estacional Masiva",
+          "description": "Importa clientes del año pasado y programa cientos de trabajos con clics. Envía recordatorios automáticos conforme se acerque el otoño.",
+          "benefit": "Llena tu calendario estacional semanas antes y reduce ausencias"
+        },
+        "1": {
+          "title": "Planificación de Rutas Inteligente",
+          "description": "Agrupa trabajos por vecindario y optimiza secuencia de paradas. Ve toda tu ruta del día en un mapa con tiempos de conducción.",
+          "benefit": "Completa 2-3 trabajos más por día reduciendo tiempo de conducción"
+        },
+        "2": {
+          "title": "Precios por Pies Lineales",
+          "description": "Crea plantillas de cotización basadas en pies lineales de canaleta, pisos de la casa y dificultad de acceso. Genera cotizaciones en 30 segundos en el sitio.",
+          "benefit": "Cotiza con precisión y consistencia en cada trabajo"
+        },
+        "3": {
+          "title": "Documentación Fotográfica Automática",
+          "description": "Sube fotos de antes/después directamente desde tu teléfono. Comparte automáticamente galerías de trabajos con clientes tras completar.",
+          "benefit": "Muestra profesionalismo y genera reseñas de 5 estrellas"
+        }
+      },
+      "cta": {
+        "title": "¿Listo para maximizar tu temporada de canaletas?",
+        "subtitle": "Únete a servicios de limpieza de canaletas que usan ServiceGrid para gestionar temporadas altas sin estrés."
+      }
+    },
+    "junkRemoval": {
+      "label": "Remoción de Chatarra",
+      "description": "Software robusto de gestión para negocios de remoción de chatarra",
+      "hero": {
+        "title": "Software de Remoción de Chatarra para Equipos en Movimiento",
+        "subtitle": "Reserva trabajos al instante, envía cotizaciones basadas en volumen, rastrea disposición y cobra en el sitio—construido para operaciones de chatarra."
+      },
+      "challenges": {
+        "0": {
+          "title": "Estimación de Volumen",
+          "description": "Cotizar trabajos basándose en cuánta chatarra llenará tu camión—sin verla de antemano—lleva a disputas de precios y dinero dejado en la mesa."
+        },
+        "1": {
+          "title": "Programación el Mismo Día",
+          "description": "Los clientes quieren servicio ahora. Coordinar equipos de dos personas, disponibilidad de camiones y programar múltiples trabajos de último momento crea caos logístico."
+        },
+        "2": {
+          "title": "Rastreo de Disposición y Reciclaje",
+          "description": "Rastrear qué fue desechado, qué fue reciclado y qué fue donado—además de registrar tarifas de vertedero—es tedioso pero necesario."
+        },
+        "3": {
+          "title": "Cobro en el Sitio",
+          "description": "Los clientes esperan pagar después de que vean cuánta chatarra se removió. Aceptar pagos con tarjeta en el sitio sin perder tiempo es crítico."
+        }
+      },
+      "features": {
+        "0": {
+          "title": "Precios Basados en Volumen",
+          "description": "Crea niveles de precios por carga parcial de camión, media carga, carga completa y cargas múltiples. Muestra fotos de ejemplo para ayudar a clientes a estimar por teléfono.",
+          "benefit": "Reduce disputas de precios y aumenta tamaño promedio de trabajos"
+        },
+        "1": {
+          "title": "Programación y Despacho en Tiempo Real",
+          "description": "Reserva trabajos para franjas del mismo día. Asigna equipos basándote en ubicación y disponibilidad. Los equipos ven detalles de trabajos en teléfonos.",
+          "benefit": "Responde más rápido a consultas y completa más trabajos por día"
+        },
+        "2": {
+          "title": "Registro de Disposición",
+          "description": "Registra peso/volumen desechado, reciclado y donado por trabajo. Rastrea viajes al vertedero y tarifas. Genera informes mensuales de impacto ambiental.",
+          "benefit": "Demuestra sostenibilidad y rastrea costos de disposición con precisión"
+        },
+        "3": {
+          "title": "Pagos Móviles Instantáneos",
+          "description": "Cobra con tarjeta o ACH inmediatamente después de cargar usando tu teléfono. Envía recibos digitales automáticamente.",
+          "benefit": "Recibe pagos el 100% del tiempo sin facturas perdidas"
+        }
+      },
+      "cta": {
+        "title": "¿Listo para acelerar tu negocio de remoción de chatarra?",
+        "subtitle": "Únete a servicios de chatarra que usan ServiceGrid para reservar más trabajos y ganar más por día."
+      }
+    },
+    "carpetCleaning": {
+      "label": "Limpieza de Alfombras",
+      "description": "Software completo de gestión para servicios profesionales de limpieza de alfombras",
+      "hero": {
+        "title": "Software de Limpieza de Alfombras que Maximiza Reservas",
+        "subtitle": "Reserva citas en línea, envía cotizaciones por pie cuadrado, gestiona equipos y procesa pagos—todo construido para negocios de limpieza de alfombras."
+      },
+      "challenges": {
+        "0": {
+          "title": "Reservas por Teléfono que Consumen Tiempo",
+          "description": "Contestar llamadas todo el día para reservar citas interrumpe trabajos y alarga días. Perderse llamadas significa perder clientes a competidores."
+        },
+        "1": {
+          "title": "Estimación de Pies Cuadrados",
+          "description": "Cotizar trabajos por teléfono sin medidas precisas de habitaciones lleva a conflictos de precios cuando llegas al sitio."
+        },
+        "2": {
+          "title": "Rastreo de Equipos y Tratamientos",
+          "description": "Gestionar múltiples camiones con extractores, químicos y herramientas—además de rastrear qué tratamientos se aplicaron en cada trabajo—es complejo."
+        },
+        "3": {
+          "title": "Tiempos de Secado y Seguimientos",
+          "description": "Los clientes preguntan sobre tiempos de secado y resultados. Hacer seguimiento manual después de trabajos toma tiempo pero genera negocios repetidos."
+        }
+      },
+      "features": {
+        "0": {
+          "title": "Reservas en Línea 24/7",
+          "description": "Los clientes reservan citas directamente desde tu sitio o perfil de Google. Elige franjas de tiempo disponibles y recibe confirmación instantánea.",
+          "benefit": "Capta consultas fuera de horario y reduce llamadas telefónicas en 60%"
+        },
+        "1": {
+          "title": "Calculadora de Cotización por Habitación",
+          "description": "Los clientes ingresan número de habitaciones, pies cuadrados y tipos (dormitorio, sala, escaleras). Precios de tratamientos adicionales incluidos instantáneamente.",
+          "benefit": "Da precios precisos por teléfono y evita sorpresas en el sitio"
+        },
+        "2": {
+          "title": "Despacho de Camiones y Gestión de Inventario",
+          "description": "Asigna trabajos a camiones específicos basándote en equipamiento. Rastrea químicos usados y recibe alertas cuando el inventario sea bajo.",
+          "benefit": "Mantén camiones abastecidos y rastrea rentabilidad por camión"
+        },
+        "3": {
+          "title": "Mensajes de Seguimiento Automatizados",
+          "description": "Envía automáticamente instrucciones de cuidado posterior y pregunta sobre satisfacción 24 horas después del servicio. Solicita reseñas de clientes contentos.",
+          "benefit": "Genera reseñas de 5 estrellas y reservas repetidas sin trabajo manual"
+        }
+      },
+      "cta": {
+        "title": "¿Listo para modernizar tu negocio de limpieza de alfombras?",
+        "subtitle": "Únete a servicios de limpieza de alfombras que usan ServiceGrid para reservar más trabajos con menos esfuerzo."
+      }
+    }
   }
 }
