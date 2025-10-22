@@ -39,8 +39,14 @@ export default function IndustryResource() {
     return <Navigate to="/404" replace />;
   }
 
+  // Convert slug to camelCase for translation key lookup
+  const slugToCamelCase = (slug: string) => {
+    return slug.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+  };
+  
   // Get extended content if available
-  const extendedContent = (t as any)(`industries.${slug}`, { returnObjects: true });
+  const camelCaseKey = slugToCamelCase(slug || '');
+  const extendedContent = (t as any)(`industries.${camelCaseKey}`, { returnObjects: true });
   const hasExtendedContent = extendedContent?.faq;
 
   // Map icon names to components for getting started
