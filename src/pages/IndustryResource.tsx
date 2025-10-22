@@ -4,11 +4,17 @@ import { IndustryHero } from "@/landing/components/IndustryHero";
 import { ChallengesGrid } from "@/landing/components/ChallengesGrid";
 import { FeaturesShowcase } from "@/landing/components/FeaturesShowcase";
 import { IndustryCTA } from "@/landing/components/IndustryCTA";
+import { IndustryFAQ } from "@/landing/components/IndustryFAQ";
+import { IndustryPricing } from "@/landing/components/IndustryPricing";
+import { IndustryGettingStarted } from "@/landing/components/IndustryGettingStarted";
+import { IndustryDeepDive } from "@/landing/components/IndustryDeepDive";
+import { IndustryTestimonials } from "@/landing/components/IndustryTestimonials";
 import { Benefits } from "@/landing/components/Benefits";
 import { Footer } from "@/landing/components/Footer";
 import { TopNav } from "@/landing/components/TopNav";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useEffect } from "react";
+import { Settings, Calendar, Rocket } from "lucide-react";
 
 export default function IndustryResource() {
   const { slug } = useParams<{ slug: string }>();
@@ -33,6 +39,17 @@ export default function IndustryResource() {
     return <Navigate to="/404" replace />;
   }
 
+  // Get extended content if available
+  const extendedContent = (t as any)(`industries.${slug}`, { returnObjects: true });
+  const hasExtendedContent = extendedContent?.faq;
+
+  // Map icon names to components for getting started
+  const iconMap: Record<string, any> = {
+    Settings,
+    Calendar,
+    Rocket,
+  };
+
   return (
     <main className="min-h-screen bg-background text-foreground">
       <TopNav />
@@ -46,6 +63,40 @@ export default function IndustryResource() {
       <ChallengesGrid challenges={industry.challenges} />
       
       <FeaturesShowcase features={industry.features} />
+      
+      {hasExtendedContent && (
+        <>
+          <IndustryFAQ faqs={extendedContent.faq} />
+          
+          <IndustryPricing
+            title={extendedContent.pricing.title}
+            subtitle={extendedContent.pricing.subtitle}
+            points={extendedContent.pricing.points}
+            roiNote={extendedContent.pricing.roiNote}
+          />
+          
+          <IndustryGettingStarted
+            title={extendedContent.gettingStarted.title}
+            subtitle={extendedContent.gettingStarted.subtitle}
+            steps={extendedContent.gettingStarted.steps.map((step: any) => ({
+              ...step,
+              icon: iconMap[step.icon] || Settings,
+            }))}
+          />
+          
+          <IndustryDeepDive
+            title={extendedContent.deepDive.title}
+            subtitle={extendedContent.deepDive.subtitle}
+            terms={extendedContent.deepDive.terms}
+            bestPractices={extendedContent.deepDive.bestPractices}
+          />
+          
+          <IndustryTestimonials
+            title={extendedContent.testimonials.title}
+            testimonials={extendedContent.testimonials.testimonials}
+          />
+        </>
+      )}
       
       <Benefits />
       

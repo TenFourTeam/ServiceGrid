@@ -873,6 +873,226 @@
       "startTrial": "Start Free Trial",
       "scheduleDemo": "Schedule a Demo",
       "disclaimer": "No credit card required • Free 14-day trial • Cancel anytime"
+    },
+    "faq": {
+      "heading": "Frequently Asked Questions",
+      "subtitle": "Everything you need to know about managing your service business with ServiceGrid"
+    },
+    "houseCleaning": {
+      "faq": [
+        {
+          "question": "How does ServiceGrid handle recurring cleaning schedules?",
+          "answer": "Set up any frequency—weekly, bi-weekly, monthly, or custom intervals. After initial setup, the system automatically generates appointments on your calendar without manual entry. You can adjust individual occurrences, pause clients during vacations, or bulk-reschedule due to holidays. Clients receive automatic reminders before each visit, reducing no-shows by an average of 60%."
+        },
+        {
+          "question": "Can I manage multiple cleaning teams simultaneously?",
+          "answer": "Yes. Assign specific teams or individual cleaners to each job based on availability, skill level, or client preference. The mobile app gives each team member their own schedule view with navigation, client access codes, and cleaning instructions. Track who's where in real-time, and reassign jobs instantly if someone calls in sick."
+        },
+        {
+          "question": "How do I store and share client access information securely?",
+          "answer": "Store gate codes, alarm codes, lockbox combinations, and key locations in encrypted client profiles. Access information is only visible to assigned team members during active jobs—not before or after. You can set expiration dates for temporary codes and receive alerts when codes are viewed, providing an audit trail for security."
+        },
+        {
+          "question": "What's the best way to price different types of cleaning services?",
+          "answer": "Create service templates for deep cleans, standard cleans, move-outs, and specialty services with base pricing by square footage or room count. Add modifiers for high ceilings, pets, or specific add-ons like interior windows or oven cleaning. The system calculates the total automatically and adjusts for first-time discounts or recurring client pricing tiers."
+        },
+        {
+          "question": "How do I maintain consistent quality across different teams?",
+          "answer": "Build custom checklists for each service type (standard clean, deep clean, move-out) that teams check off during jobs. Require before and after photos for specific areas like bathrooms and kitchens. Set quality standards and track completion rates by team member to identify training needs. Clients can rate each service, giving you real-time feedback."
+        },
+        {
+          "question": "Can clients book and reschedule online without calling me?",
+          "answer": "Yes. Your branded customer portal lets clients book services, select add-ons, choose available time slots, and pay deposits—all without phone calls. Existing clients can reschedule with proper notice (you set the minimum), request additional services, or pause recurring cleanings during travel. You control which time slots are available and can block dates for holidays."
+        },
+        {
+          "question": "How does the system handle last-minute cancellations?",
+          "answer": "Set your cancellation policy (e.g., 24-hour notice required) in the system. When clients try to cancel within your window, they see the cancellation fee automatically. You can choose to enforce the fee, waive it for specific circumstances, or apply it as credit toward future services. The system tracks cancellation patterns by client to identify chronic issues."
+        },
+        {
+          "question": "What happens when a client requests additional services during a job?",
+          "answer": "Team members can add services and extra time directly from the mobile app during the job. The client receives an updated quote instantly via text or email and can approve with a single tap. Once approved, the invoice updates automatically—no follow-up paperwork or miscommunication about charges."
+        },
+        {
+          "question": "How do I track cleaning supply usage and reorder inventory?",
+          "answer": "Log products used per job or set average consumption rates for each service type. The system tracks inventory levels and sends alerts when products drop below your specified threshold. Generate reorder lists automatically and track cost-per-job to identify areas where you're overspending on supplies."
+        },
+        {
+          "question": "Can I send targeted promotions to inactive clients?",
+          "answer": "Yes. Filter clients by last service date and send personalized reactivation campaigns via email or text. Offer specific promotions like 'We miss you—20% off your next deep clean' to clients who haven't booked in 3+ months. Track campaign response rates and automatically remove clients who rebook from future reminder sequences."
+        },
+        {
+          "question": "How does ServiceGrid help me hire and onboard new cleaners?",
+          "answer": "Store training checklists, safety protocols, and job shadowing records for each new hire. New cleaners start as trainees with limited system access, graduating to full team member status after completing your onboarding requirements. Track certifications, background check dates, and insurance documentation with automatic renewal reminders."
+        },
+        {
+          "question": "What reports help me understand which services are most profitable?",
+          "answer": "Service profitability reports break down revenue, labor hours, and supply costs by service type. See which clients generate the most revenue, which services have the highest profit margins, and where you're spending excessive time relative to price. Use these insights to raise prices on undervalued services or focus marketing on high-margin offerings."
+        },
+        {
+          "question": "How do I handle clients who want specific teams or cleaners?",
+          "answer": "Tag team members with specialties (pet-friendly, green products, detail-oriented) and let clients request preferences during booking. The system prioritizes those preferences when auto-scheduling but shows you conflicts if the preferred team is unavailable. You maintain control over final assignments while respecting client relationships."
+        },
+        {
+          "question": "Can I charge different rates for first-time vs. recurring clients?",
+          "answer": "Yes. Set different pricing tiers: first-time clean (typically higher for initial deep clean), recurring weekly/bi-weekly (discounted for loyalty), and occasional cleans (standard rate). The system automatically applies the correct rate based on client history. You can also offer promotional first-time rates to acquire new recurring clients."
+        },
+        {
+          "question": "How does ServiceGrid integrate with my accounting software?",
+          "answer": "Export invoices, payments, and expenses to QuickBooks or Xero automatically. Transactions sync daily, eliminating double-entry and ensuring your books stay current. Map ServiceGrid service categories to your chart of accounts once during setup, then everything flows correctly. Sales tax calculations sync based on your locations and rates."
+        },
+        {
+          "question": "What mobile features do my cleaners need during jobs?",
+          "answer": "Cleaners access their daily schedule, navigation to each property, client access codes, cleaning checklists, and photo upload from the mobile app—even offline. They clock in/out directly from job sites, track hours automatically, and mark jobs complete. Clients receive notifications when the team arrives and departs, improving communication."
+        },
+        {
+          "question": "How do I protect my business from client payment disputes?",
+          "answer": "Before/after photos with timestamps create indisputable evidence of work completed. Detailed checklists show exactly which tasks were performed. Clients receive digital invoices immediately after service with photos attached. Payment terms are clear during booking, and automated reminders reduce forgotten payments. For disputes, you have complete documentation of the job."
+        },
+        {
+          "question": "Can I manage commercial cleaning contracts differently from residential?",
+          "answer": "Yes. Set up commercial clients with custom billing cycles (net-30, net-60), different service frequencies (nightly, weekly), and multi-location management under one account. Track square footage, specialized equipment needs, and compliance requirements specific to commercial properties. Generate consolidated invoices for property managers overseeing multiple buildings."
+        }
+      ],
+      "pricing": {
+        "title": "Pricing & ROI for Cleaning Businesses",
+        "subtitle": "Understand the investment and returns cleaning companies see with ServiceGrid",
+        "points": [
+          {
+            "label": "Software Investment",
+            "value": "Starting at $49/month for small teams. Scales with team size and features—typically 1-2% of monthly revenue for established businesses."
+          },
+          {
+            "label": "Time Savings",
+            "value": "Owners report saving 10-15 hours per week on scheduling, invoicing, and admin tasks. That's 520-780 hours annually to focus on growth or service quality."
+          },
+          {
+            "label": "Revenue Increase",
+            "value": "Cleaning businesses typically see 15-25% revenue growth within 6 months through improved booking rates, reduced no-shows, and automated rebooking of recurring clients."
+          },
+          {
+            "label": "Faster Payments",
+            "value": "Online payment processing cuts average payment time from 18 days to 3 days. Improved cash flow means you can invest in equipment, marketing, or team bonuses."
+          },
+          {
+            "label": "Client Retention",
+            "value": "Automated communication and consistent quality documentation increase client retention from industry average of 68% to 85%+. Recurring clients are your most profitable."
+          },
+          {
+            "label": "Payback Timeline",
+            "value": "Most cleaning businesses recover their software investment within 2-3 months through time savings alone—before accounting for revenue growth and improved retention."
+          }
+        ],
+        "roiNote": "A cleaning business with 50 recurring clients typically saves $2,400/month in admin time while adding $3,000-5,000 in new revenue through better operations—a 10x return on software investment."
+      },
+      "gettingStarted": {
+        "title": "Getting Started with ServiceGrid",
+        "subtitle": "From signup to fully operational in less than one week",
+        "steps": [
+          {
+            "title": "Initial Setup (Day 1)",
+            "description": "Create your account, add team members, and set up your service catalog with pricing. Import existing clients via CSV or add them individually. Takes 2-3 hours.",
+            "icon": "Settings"
+          },
+          {
+            "title": "Schedule Migration (Days 2-3)",
+            "description": "Transfer your current schedule into ServiceGrid. Our team can help migrate data from your existing system. Set up recurring services and test the mobile app with your team.",
+            "icon": "Calendar"
+          },
+          {
+            "title": "Go Live (Day 4)",
+            "description": "Start using ServiceGrid for all new bookings while maintaining your current schedule. Gradually transition existing clients to the customer portal. Most teams are fully operational within 5-7 days.",
+            "icon": "Rocket"
+          }
+        ]
+      },
+      "deepDive": {
+        "title": "House Cleaning Industry Insights",
+        "subtitle": "Professional knowledge to help you run a more efficient and profitable cleaning business",
+        "terms": [
+          {
+            "term": "Turnover Cleaning",
+            "definition": "Deep cleaning performed between tenants in rental properties, typically including appliances, inside cabinets, and detailed sanitization. Higher pricing than standard cleans due to increased scope and time requirements."
+          },
+          {
+            "term": "Touchpoint Sanitization",
+            "definition": "Focused disinfection of high-touch surfaces like doorknobs, light switches, and handles. Became standard during COVID-19 and remains a valued service tier, especially for commercial clients and high-traffic residential properties."
+          },
+          {
+            "term": "Square Footage Pricing",
+            "definition": "Charging based on property size rather than hourly rates. Typical rates range from $0.10-0.25 per square foot depending on service level, frequency, and local market. Protects profitability on large or complex homes."
+          },
+          {
+            "term": "Green Cleaning Certification",
+            "definition": "Training and certification in using environmentally friendly, non-toxic cleaning products. Commands 10-20% premium pricing and appeals to health-conscious clients, especially those with children, pets, or allergies."
+          },
+          {
+            "term": "Flat Rate vs. Hourly",
+            "definition": "Flat rate (e.g., $150 per visit) provides predictable pricing for clients and incentivizes efficiency. Hourly billing ($40-60/hour) works better for unpredictable jobs but can create client anxiety about time spent."
+          },
+          {
+            "term": "Service Frequency Tiers",
+            "definition": "Weekly service typically discounted 15-20% from base rate to reward commitment. Bi-weekly at base rate. Monthly at 10-15% premium due to increased cleaning requirements and lower client lifetime value."
+          }
+        ],
+        "bestPractices": [
+          {
+            "title": "Standardize Your Service Levels",
+            "description": "Define exactly what's included in 'Standard Clean' vs. 'Deep Clean' vs. 'Move-Out Clean.' Create visual checklists so teams and clients have identical expectations. This eliminates scope disputes and helps clients choose the right service."
+          },
+          {
+            "title": "Implement a Pre-Clean Requirement",
+            "description": "Require clients to pick up clutter, toys, and personal items before cleaning. Your team cleans, they don't organize. This policy saves 15-20 minutes per job and prevents 'we didn't clean under the pile of clothes' complaints."
+          },
+          {
+            "title": "Price New Clients Higher Initially",
+            "description": "First-time cleans always take longer due to built-up dirt and unknown property conditions. Charge 25-40% more for initial service, then reduce to regular pricing for recurring cleanings. This protects profitability while demonstrating value."
+          },
+          {
+            "title": "Use Before Photos Strategically",
+            "description": "Photograph problem areas (greasy stovetops, soap scum, grimy grout) before starting. After photos show your work quality and eliminate disputes. Clients seeing visual proof of value are more likely to upgrade services and refer friends."
+          },
+          {
+            "title": "Build Buffer Time Between Jobs",
+            "description": "Schedule 30-minute gaps between appointments for travel, restocking supplies, and handling jobs that run long. Over-tight scheduling creates cascading delays, stressed teams, and late arrivals. Buffer time costs less than unhappy clients."
+          },
+          {
+            "title": "Track Which Services Clients Never Buy",
+            "description": "If you offer interior window cleaning but only 3% of clients add it, that service probably isn't worth marketing. Focus on high-demand, high-margin services. Eliminate low-uptake offerings that complicate your service catalog."
+          }
+        ]
+      },
+      "testimonials": {
+        "title": "Success Stories from Cleaning Professionals",
+        "testimonials": [
+          {
+            "quote": "We went from juggling three different apps and a paper calendar to one simple system. I'm spending 12 hours less per week on admin work and our client retention increased by 23%.",
+            "author": "Maria Rodriguez",
+            "business": "Sparkle Home Cleaning, Austin TX",
+            "metrics": [
+              { "value": "12 hrs", "label": "Saved per week" },
+              { "value": "23%", "label": "Retention increase" }
+            ]
+          },
+          {
+            "quote": "The automated recurring scheduling is incredible. Our weekly clients just happen automatically now. We've added 14 new recurring clients in three months because we can actually handle the growth.",
+            "author": "James Chen",
+            "business": "Clean Team Pro, Seattle WA",
+            "metrics": [
+              { "value": "14", "label": "New recurring clients" },
+              { "value": "$6.8K", "label": "Monthly recurring revenue" }
+            ]
+          },
+          {
+            "quote": "Before ServiceGrid, we had constant confusion about who was assigned to which job. Now my team just checks their phone each morning and goes. Client complaints dropped by 80% once we got organized.",
+            "author": "Patricia Williams",
+            "business": "Premier Maid Service, Denver CO",
+            "metrics": [
+              { "value": "80%", "label": "Fewer complaints" },
+              { "value": "4.8★", "label": "Avg client rating" }
+            ]
+          }
+        ]
+      }
     }
   },
   "industries": {
