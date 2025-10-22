@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import Intercom from '@intercom/messenger-js-sdk';
 
 import "@/landing/animations.css";
 import { Hero } from "@/landing/components/Hero";
@@ -31,6 +32,12 @@ export default function Landing() {
       cancel?.();
       dispose?.();
     };
+  }, []);
+
+  useEffect(() => {
+    Intercom({
+      app_id: 'ijvmhny1',
+    });
   }, []);
 
   return (
