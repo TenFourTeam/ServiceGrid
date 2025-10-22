@@ -1,5 +1,6 @@
 import { Button } from "@/components/Button";
 import { SignUpButton } from "@clerk/clerk-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface IndustryCTAProps {
   title: string;
@@ -7,6 +8,7 @@ interface IndustryCTAProps {
 }
 
 export function IndustryCTA({ title, subtitle }: IndustryCTAProps) {
+  const { t } = useLanguage();
   return (
     <section className="py-16 md:py-24 bg-gradient-to-br from-brand-600 to-brand-700 dark:from-brand-800 dark:to-brand-900">
       <div className="container">
@@ -26,7 +28,7 @@ export function IndustryCTA({ title, subtitle }: IndustryCTAProps) {
                 size="lg" 
                 className="hover-scale bg-white text-brand-700 hover:bg-brand-50"
               >
-                Start Free Trial
+                {t('industryPages.cta.startTrial')}
               </Button>
             </SignUpButton>
             <Button 
@@ -34,12 +36,12 @@ export function IndustryCTA({ title, subtitle }: IndustryCTAProps) {
               size="lg"
               className="hover-scale border-white text-white hover:bg-white/10"
             >
-              Schedule a Demo
+              {t('industryPages.cta.scheduleDemo')}
             </Button>
           </div>
 
           <p className="text-sm text-brand-100 mt-4">
-            No credit card required • Free 14-day trial • Cancel anytime
+            {t('industryPages.cta.disclaimer')}
           </p>
         </div>
       </div>

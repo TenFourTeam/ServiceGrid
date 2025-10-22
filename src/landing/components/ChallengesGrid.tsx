@@ -1,19 +1,21 @@
 import type { Challenge } from "@/landing/industryData";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ChallengesGridProps {
   challenges: Challenge[];
 }
 
 export function ChallengesGrid({ challenges }: ChallengesGridProps) {
+  const { t } = useLanguage();
   return (
     <section className="py-16 md:py-24 bg-muted/30">
       <div className="container">
         <div className="text-center mb-12 md:mb-16">
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-4">
-            Common Challenges
+            {t('industryPages.challenges.heading')}
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Running a service business is hard. These are the pain points we hear about most.
+            {t('industryPages.challenges.subtitle')}
           </p>
         </div>
 

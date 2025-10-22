@@ -1,20 +1,22 @@
 import type { Feature } from "@/landing/industryData";
 import { CheckCircle2 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface FeaturesShowcaseProps {
   features: Feature[];
 }
 
 export function FeaturesShowcase({ features }: FeaturesShowcaseProps) {
+  const { t } = useLanguage();
   return (
     <section id="features" className="py-16 md:py-24">
       <div className="container">
         <div className="text-center mb-12 md:mb-16">
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-4">
-            How ServiceGrid Helps
+            {t('industryPages.features.heading')}
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Everything you need to run your business efficiently and profitably.
+            {t('industryPages.features.subtitle')}
           </p>
         </div>
 

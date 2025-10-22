@@ -26,7 +26,7 @@ export function TopNav() {
           <ServiceGridLogo className="h-8 w-auto md:h-10 text-brand-650 flex-shrink-0" />
         </a>
 
-        <div className="flex items-center gap-4 ml-6 flex-1">
+        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 ml-auto">
           <NavigationMenu className="hidden sm:flex">
             <NavigationMenuList>
               <NavigationMenuItem>
@@ -63,9 +63,8 @@ export function TopNav() {
               </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
-
-          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 ml-auto">
-            <LanguageToggle />
+          
+          <LanguageToggle />
             <SignedOut>
               <SignInButton mode="modal" forceRedirectUrl="/calendar">
                 <Button variant="ghost" size="sm" className="hover-scale text-xs sm:text-sm px-2 sm:px-3">
@@ -79,7 +78,6 @@ export function TopNav() {
                 </Button>
               </SignUpButton>
             </SignedOut>
-          </div>
         </div>
       </div>
     </header>

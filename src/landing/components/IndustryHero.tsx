@@ -1,6 +1,7 @@
 import { Button } from "@/components/Button";
 import { SignUpButton } from "@clerk/clerk-react";
 import type { LucideIcon } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface IndustryHeroProps {
   title: string;
@@ -9,6 +10,8 @@ interface IndustryHeroProps {
 }
 
 export function IndustryHero({ title, subtitle, Icon }: IndustryHeroProps) {
+  const { t } = useLanguage();
+  
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-background via-background to-brand-50/30 dark:to-brand-950/30 pt-20 pb-16 md:pt-28 md:pb-24">
       <div className="container relative">
@@ -32,7 +35,7 @@ export function IndustryHero({ title, subtitle, Icon }: IndustryHeroProps) {
                 size="lg" 
                 className="hover-scale attention-ring [--ring:var(--brand-600)]"
               >
-                Start Free Trial
+                {t('industryPages.hero.startTrial')}
               </Button>
             </SignUpButton>
             <Button 
@@ -44,7 +47,7 @@ export function IndustryHero({ title, subtitle, Icon }: IndustryHeroProps) {
                 featuresSection?.scrollIntoView({ behavior: 'smooth' });
               }}
             >
-              See How It Works
+              {t('industryPages.hero.seeHowItWorks')}
             </Button>
           </div>
         </div>

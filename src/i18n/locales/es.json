@@ -1324,5 +1324,24 @@
         "subtitle": "Únete a servicios de limpieza de alfombras que usan ServiceGrid para reservar más trabajos con menos esfuerzo."
       }
     }
+  },
+  "industryPages": {
+    "hero": {
+      "startTrial": "Comenzar Prueba Gratuita",
+      "seeHowItWorks": "Ver Cómo Funciona"
+    },
+    "challenges": {
+      "heading": "Desafíos Comunes",
+      "subtitle": "Administrar un negocio de servicios es difícil. Estos son los puntos críticos que más escuchamos."
+    },
+    "features": {
+      "heading": "Cómo Te Ayuda ServiceGrid",
+      "subtitle": "Todo lo que necesitas para administrar tu negocio de manera eficiente y rentable."
+    },
+    "cta": {
+      "startTrial": "Comenzar Prueba Gratuita",
+      "scheduleDemo": "Agendar una Demo",
+      "disclaimer": "No se requiere tarjeta de crédito • Prueba gratis de 14 días • Cancela en cualquier momento"
+    }
   }
 }

@@ -856,6 +856,25 @@
       "copyright": "2025 ServiceGrid"
     }
   },
+  "industryPages": {
+    "hero": {
+      "startTrial": "Start Free Trial",
+      "seeHowItWorks": "See How It Works"
+    },
+    "challenges": {
+      "heading": "Common Challenges",
+      "subtitle": "Running a service business is hard. These are the pain points we hear about most."
+    },
+    "features": {
+      "heading": "How ServiceGrid Helps",
+      "subtitle": "Everything you need to run your business efficiently and profitably."
+    },
+    "cta": {
+      "startTrial": "Start Free Trial",
+      "scheduleDemo": "Schedule a Demo",
+      "disclaimer": "No credit card required • Free 14-day trial • Cancel anytime"
+    }
+  },
   "industries": {
     "lawnCare": {
       "label": "Lawn Care",
