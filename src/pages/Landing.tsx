@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import { IntercomProvider } from 'react-use-intercom';
 
 import "@/landing/animations.css";
 import { Hero } from "@/landing/components/Hero";
@@ -35,8 +34,7 @@ export default function Landing() {
   }, []);
 
   return (
-    <IntercomProvider appId="ijvmhny1">
-      <main className="min-h-screen bg-background text-foreground">
+    <main className="min-h-screen bg-background text-foreground">
       
       <TopNav />
       <div className="space-y-20 md:space-y-28 lg:space-y-36">
@@ -50,6 +48,5 @@ export default function Landing() {
       <div aria-hidden className="py-8 md:py-12 lg:py-14" />
       <Footer />
     </main>
-    </IntercomProvider>
   );
 }
