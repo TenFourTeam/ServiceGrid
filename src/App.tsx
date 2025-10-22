@@ -37,6 +37,7 @@ const PaymentCanceledPage = lazy(() => import("./pages/PaymentCanceled"));
 const InvoicePayPage = lazy(() => import("./pages/InvoicePay"));
 const InvitePage = lazy(() => import("./pages/Invite"));
 const PublicRequestFormPage = lazy(() => import("./pages/PublicRequestForm"));
+const IndustryResourcePage = lazy(() => import("./pages/IndustryResource"));
 
 // Routes are now properly lazy-loaded without aggressive prefetching
 
@@ -114,6 +115,7 @@ function App({ clerkKey }: AppProps) {
                 </Route>
 
                 {/* Public pages that don't require auth checks */}
+                <Route path="/resources/:slug" element={<IndustryResourcePage />} />
                 <Route path="/clerk-auth" element={<ClerkAuthPage />} />
                 <Route path="/quote-action" element={<QuoteActionPage />} />
                 <Route path="/job-action" element={<JobActionPage />} />
