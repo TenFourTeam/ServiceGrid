@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import Intercom from '@intercom/messenger-js-sdk';
 
 import "@/landing/animations.css";
 import { Hero } from "@/landing/components/Hero";
@@ -32,6 +33,11 @@ export default function Landing() {
       dispose?.();
     };
   }, []);
+
+  // Initialize Intercom messenger
+  Intercom({
+    app_id: 'ijvmhny1',
+  });
 
   return (
     <main className="min-h-screen bg-background text-foreground">
