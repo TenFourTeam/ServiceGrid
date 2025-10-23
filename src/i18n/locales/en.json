@@ -1276,7 +1276,295 @@
       }
     },
     "pressureWashing": {"label": "Pressure Washing", "description": "Business management tools for pressure washing professionals", "hero": {"title": "Pressure Washing Software That Handles the Business", "subtitle": "Estimate jobs accurately, schedule efficiently, manage equipment, and get paid fast with software designed for pressure washing pros."}, "challenges": {"0": {"title": "Accurate Project Estimation", "description": "Calculating surface areas and pricing different materials without a system leads to underpricing or lost bids."}, "1": {"title": "Equipment Management", "description": "Tracking which equipment is on which job and scheduling maintenance is difficult with pen and paper."}, "2": {"title": "Seasonal Demand Spikes", "description": "Managing high-volume spring and summer seasons while maximizing revenue during peak times is challenging."}, "3": {"title": "Before/After Documentation", "description": "Showing clients the value of your work requires organized photo documentation and professional presentation."}}, "features": {"0": {"title": "Photo-Based Estimates", "description": "Create accurate quotes using photos and built-in surface area calculators. Price by square footage, material type, or flat rate.", "benefit": "Win more bids with accurate, professional estimates in minutes"}, "1": {"title": "Equipment Tracking & Scheduling", "description": "Assign equipment to jobs, track maintenance schedules, and ensure you have the right tools for each project.", "benefit": "Reduce downtime and extend equipment lifespan"}, "2": {"title": "Before/After Photo Gallery", "description": "Capture and organize before/after photos for each job. Automatically include them in customer communications and marketing.", "benefit": "Showcase your quality and win more referrals"}, "3": {"title": "Seasonal Pricing & Campaigns", "description": "Set surge pricing during peak season and send automated promotional campaigns to past customers.", "benefit": "Maximize revenue during high-demand periods"}}, "cta": {"title": "Ready to power up your pressure washing business?", "subtitle": "Join pressure washing professionals using ServiceGrid to work smarter and increase profits."}, "faq": [{"question": "How do I price different surfaces consistently (vinyl siding vs. brick vs. wood)?", "answer": "Create service templates for each surface type with base rates per square foot or linear foot. For example: vinyl siding at $0.15-0.25/sq ft, brick at $0.20-0.30/sq ft (requires more time), wood decks at $0.30-0.50/sq ft (needs lower pressure). Set these as presets so your team quotes consistently. The system lets you adjust for height, accessibility, and heavy staining. This prevents underpricing brick jobs or overpricing simple vinyl washes."}, {"question": "Can I track which equipment each crew is using and schedule maintenance?", "answer": "Yes. Create an equipment database with each pressure washer, surface cleaner, and trailer. Assign equipment to specific jobs so you know which machine is where. Log operating hours after each job to trigger maintenance reminders at 50-hour or 100-hour intervals. This prevents breakdowns during your busy season—a $3,000 pump failure in May can cost you $10,000 in lost revenue. Track repair history to identify problem machines before they strand a crew."}, {"question": "How does the system handle rain delays and rescheduling multiple jobs?", "answer": "When weather forces a cancellation, mark the job 'weather delay' and the system suggests alternative dates based on crew availability and customer preferences. If you have 8 jobs scheduled and it rains, you can reschedule all 8 in minutes instead of making 8 phone calls and playing schedule Tetris. The mobile app notifies crews instantly. Customers get automated text updates with new dates, reducing no-shows and confusion."}, {"question": "How do I organize before/after photos for liability and marketing?", "answer": "Crews take photos directly in the mobile app, which automatically attaches them to the correct job with timestamps. Create a 'Pre-Wash Inspection' checklist where technicians document existing damage (cracked siding, loose boards, stains) before starting. This protects you from 'you broke this' claims. After completion, photos showcase your work for reviews and social media. Filter by job type to quickly find 'dramatic deck transformations' or 'house washing results' for marketing posts."}, {"question": "Can I track chemical and detergent usage per job for cost analysis?", "answer": "Yes. Log soap, degreaser, and bleach usage per job type. For example, you might use 2 gallons of house wash soap per standard home but 5 gallons on a heavily mildewed house. Tracking this shows your actual chemical costs per job—if you're spending $12 in soap on a $150 house wash, that's 8% of revenue. You can then adjust pricing or find more concentrated products. Also helps with inventory management so you don't run out mid-job."}, {"question": "How do I optimize routing when jobs depend on weather and some take 1 hour vs. 6 hours?", "answer": "The calendar view shows job duration and location. Schedule quick driveway washes (1 hour) in the morning, then longer house washes (3-4 hours) afterward. Group jobs by neighborhood to minimize drive time—if you have three houses in the same subdivision, schedule them consecutively. For multi-crew operations, assign geographic zones (Crew A = north side, Crew B = south side). This cuts 30-45 minutes of daily drive time, letting you fit 1-2 extra jobs per week during peak season."}, {"question": "What's the difference between tracking commercial vs. residential jobs?", "answer": "Commercial jobs (shopping centers, office buildings, HOAs) require recurring schedules, certificate of insurance, and often net-30 payment terms. Set these jobs as 'recurring monthly' or 'quarterly' so they auto-populate your schedule. Track insurance expiration dates per commercial client. Residential jobs are typically one-time or annual, paid immediately via card or check. Tag jobs as 'commercial' vs. 'residential' to analyze profitability—commercial might have lower margins but guaranteed volume."}, {"question": "How do I run seasonal marketing campaigns (spring house washing, fall gutter prep)?", "answer": "Filter customers by service history—find everyone who got a house wash last April and send them a 'Spring Cleaning Special' email in March. Create a 'Fall Gutter & Downspout' campaign for customers who've had gutter cleaning or deck washing (they have houses with maintenance needs). Automate follow-up sequences: send a quote, wait 3 days, send a 'limited slots remaining' reminder. This fills your schedule 2-3 weeks ahead instead of scrambling for jobs daily."}, {"question": "Can multiple people access the schedule without texting screenshots or calling?", "answer": "Yes. Everyone uses the same system—office staff, crew leaders, and owners. When office staff books a job, it appears instantly on crew mobile apps with address, service details, and customer notes. No more 'Did you get my text?' or 'I didn't see that email.' Crews mark jobs complete, which updates the office view immediately. Set role-based permissions so crew can't delete jobs or see pricing, but they can view schedules and update job status."}, {"question": "How do I handle deposits and final payments for large jobs?", "answer": "Create a quote with 50% deposit required upfront for jobs over $500 (prevents no-shows on big deck restorations). Send the quote via email with a 'Pay Deposit' button. Once paid, the system schedules the job. After completion, send a final invoice for the remaining 50%. This improves cash flow—you're not funding $800 in labor and chemicals waiting for payment. Track deposit status on your calendar so you know which jobs are confirmed vs. quoted."}, {"question": "Can I set different pricing for peak season vs. off-season?", "answer": "Yes. Create 'Spring Premium Pricing' and 'Winter Discount Pricing' service templates. In April-June when you're slammed, charge $0.25/sq ft for house washing. In November-February when demand drops, offer $0.18/sq ft to fill gaps. Copy your standard services, adjust the rates, and activate the appropriate pricing template based on season. This maximizes revenue during peak months and keeps crews working year-round."}, {"question": "How do I prevent double-booking crews or equipment?", "answer": "The calendar shows crew availability and equipment assignments. If Crew A is booked 8am-2pm with your 4000 PSI hot water rig, you can't schedule another job requiring that equipment at the same time. Color-code by crew—Crew A is blue, Crew B is green. At a glance, you see which crews have openings. This prevents the nightmare of promising a customer a start time, then realizing both your rigs are already deployed."}, {"question": "Can I track ladder incidents, chemical spills, or customer complaints for insurance?", "answer": "Log incidents as notes on the job record with date, crew member involved, and description. If a customer claims damage or OSHA asks about safety protocols, you have timestamped documentation. Track trends—if one crew leader has three 'damaged plant' incidents, that's a training opportunity. For insurance renewals, you can show incident rates and corrective actions taken. This can lower your premiums and protect you in liability claims."}, {"question": "How do I explain to customers why some jobs require soft washing vs. pressure washing?", "answer": "Add customer education to your quotes and confirmations. When you send a quote for vinyl siding, include a note: 'We use soft washing (low pressure + specialized detergent) to safely remove mildew without damaging siding. High pressure can crack vinyl or force water behind panels.' Educate upfront to prevent 'Why didn't you use the high-pressure setting?' complaints. Create template explanations for common scenarios (wood decks, roofs, painted surfaces) that auto-populate based on surface type."}, {"question": "Can I see which services generate the most profit vs. just revenue?", "answer": "Track labor hours and material costs per job type. You might charge $300 for a driveway (takes 2 hours, $8 in chemicals) vs. $500 for a house wash (takes 4 hours, $18 in chemicals). The driveway has better margin ($292 gross profit vs. $482). Analyze over time—if you're swamped with low-margin jobs, raise prices or focus marketing on high-margin services. This prevents working harder without making more money."}, {"question": "How do I manage customers who want annual contracts vs. one-time jobs?", "answer": "Create 'annual maintenance' packages for customers who want house washing every spring and driveway cleaning every fall. Set these as recurring jobs that auto-schedule 11 months after completion. Send renewal reminders in February: 'Your annual house wash is due next month—same price as last year, book now to secure your spot.' Annual customers become 30-40% of revenue with zero acquisition cost. Tag them as 'contract' to track retention rates."}, {"question": "Can I send quotes with multiple package options (basic, standard, premium)?", "answer": "Yes. Create a quote with three line items: 'Basic House Wash' ($250 - front and sides only), 'Standard House Wash' ($400 - full house including back), 'Premium House Wash' ($550 - includes windows, gutters, and walkways). Customer picks their level. This increases average ticket—many choose 'standard' when they originally wanted 'basic' because the jump to premium looks like a great value. Label options clearly so customers understand what's included."}, {"question": "How do I train new crew members on proper techniques and safety without slowing down jobs?", "answer": "Create job checklists for each service type: 'Pre-Wash Walkthrough' (check for electrical outlets, loose siding, plants near foundation), 'House Wash Process' (apply soap bottom-up, rinse top-down, keep nozzle 12 inches from surface), 'Post-Wash Inspection' (check for missed spots, rinse plants, coil hoses). New techs follow the checklist on mobile app, ensuring they don't skip steps. Experienced crew leaders can review completed checklists to catch mistakes before leaving the site. This standardizes quality and reduces callbacks for missed areas."}], "pricing": {"title": "Transparent Pricing That Scales With Your Pressure Washing Business", "subtitle": "From solo operators to multi-crew seasonal businesses, flexible plans that match your needs", "points": [{"label": "Solo Operators & Part-Time Washers", "value": "Start at $29/month - Manage up to 100 jobs, unlimited customers, mobile app for field work, photo documentation, and payment processing. Perfect for weekend warriors and sole proprietors building their business."}, {"label": "Small Crew Operations (1-2 Crews)", "value": "From $49/month - Everything in solo plan plus multi-user access, equipment tracking, automated customer follow-ups, and seasonal campaign tools. Ideal for businesses running 200-400 jobs per year with employees or subcontractors."}, {"label": "Multi-Crew Seasonal Businesses", "value": "From $79/month - Advanced route optimization, crew performance analytics, commercial contract management, and priority support during peak season. Built for operations running 3+ crews and 500+ annual jobs with $200K+ revenue."}, {"label": "Time Savings = Money Saved", "value": "Average pressure washing business saves 10-15 hours per week on scheduling, routing, and customer communication. At a $75/hour billing rate, that's $3,000-$4,500 in recovered billable time per month. Software pays for itself in saved admin costs alone."}, {"label": "Peak Season Revenue Impact", "value": "Better scheduling and route optimization lets you fit 20-30% more jobs during April-June rush without adding crews. For a $100,000 seasonal business, that's $20,000-$30,000 in additional revenue with the same equipment and labor. Plus automated follow-ups fill your fall schedule 2-3 weeks earlier."}, {"label": "Equipment ROI & Maintenance Savings", "value": "Tracking equipment hours and scheduling preventive maintenance extends pressure washer life 30-40%. A $3,500 commercial rig lasting 6 years instead of 4 years saves $1,750 in replacement costs. Plus avoiding a breakdown during peak season that could cost $10,000 in lost jobs makes maintenance tracking invaluable."}], "roiNote": "💡 Most pressure washing businesses break even on software costs within the first 2-3 jobs by eliminating scheduling mistakes, reducing drive time, and avoiding costly weather-related miscommunications."}, "gettingStarted": {"title": "Get Your Pressure Washing Business Running in Under an Hour", "subtitle": "Three simple steps to go from chaos to organized operations", "steps": [{"title": "Import Customers & Equipment", "description": "Upload your existing customer list from a spreadsheet or enter them manually. Add your pressure washers, surface cleaners, and trailers with serial numbers and purchase dates. This takes about 20 minutes and gives you a complete equipment inventory for scheduling and maintenance tracking.", "icon": "Upload"}, {"title": "Create Surface-Specific Service Templates", "description": "Set up pricing presets for house washing (vinyl, brick, stucco), driveway cleaning, deck restoration, and commercial jobs. Define standard pricing ($/sq ft or flat rate) and estimated duration. Add optional add-ons like gutter cleaning or window washing. This takes 25 minutes and ensures consistent quoting across all jobs.", "icon": "FileText"}, {"title": "Launch Mobile App & Optimize Routes", "description": "Install the mobile app on crew phones and assign them to user accounts. They'll see their daily schedule with addresses, service details, and customer notes. Start scheduling jobs by neighborhood to minimize drive time. As you complete jobs, review what worked and adjust your templates. Within one week, you'll have a dialed-in system that saves hours daily.", "icon": "Smartphone"}]}, "deepDive": {"title": "Pressure Washing Industry Knowledge Hub", "subtitle": "Essential terms, concepts, and best practices for running a profitable pressure washing operation", "terms": [{"term": "Soft Washing", "definition": "Low-pressure cleaning method (under 500 PSI) that uses specialized chemical solutions to remove mildew, algae, and organic stains. Safer than high-pressure washing for delicate surfaces like vinyl siding, roofs, and painted wood. The chemicals do the work, not the pressure. Typically uses a 12V pump and proportioner to mix bleach-based solutions. Essential for residential house washing to avoid damage."}, {"term": "Hot Water GPM", "definition": "Gallons Per Minute of heated water output—critical specification for commercial pressure washers. Hot water (180-200°F) cuts grease and oil dramatically faster than cold water. A 4 GPM hot water unit cleans restaurant dumpster pads or commercial kitchen floors in half the time of an 8 GPM cold water unit. Premium equipment costs $4,000-$8,000 but essential for commercial and industrial work."}, {"term": "Surface Cleaner", "definition": "Rotating nozzle attachment (typically 12-24 inch diameter) that cleans flat surfaces like driveways, sidewalks, and patios without leaving streaks or zebra stripes. Water jets spin under a protective shroud, creating even cleaning patterns. A 20-inch surface cleaner can wash a 400 sq ft driveway in 15-20 minutes vs. 45-60 minutes with a wand. Essential tool for professional results and efficiency."}, {"term": "Downstream Injection", "definition": "Method of adding detergent or chemical after the pressure washer pump, using a venturi system. Protects pump seals from corrosive chemicals and allows easy chemical switching. Opposite of upstream injection (before pump), which is used for heavy degreasing. Most residential pressure washing uses downstream for soap application in soft washing. Requires understanding chemical dilution ratios for effective cleaning."}, {"term": "Wet vs. Dry Run", "definition": "Two quoting methods—'Dry Run' means estimating job from photos and satellite imagery without site visit, common for simple driveways or house washes. 'Wet Run' means on-site measurement and inspection before quoting, necessary for complex jobs with accessibility issues or heavy staining. Dry runs save time but risk underpricing. Experienced operators can dry-run 80% of residential jobs accurately."}, {"term": "Tiger Striping", "definition": "Visible darker lines or streaks left on concrete, decks, or siding from improper pressure washing technique. Caused by inconsistent overlap, wrong nozzle angle, or moving too slowly in spots. Ruins curb appeal and requires re-work. Prevented by maintaining consistent distance, speed, and overlap. Using a surface cleaner instead of a wand eliminates tiger striping on flat surfaces. Sign of amateur work that professionals avoid."}], "bestPractices": [{"title": "Route Density Optimization", "description": "Schedule jobs geographically to minimize drive time, especially during peak season when every hour matters. Group customers by neighborhood or ZIP code—if you have three houses in the same subdivision, schedule them on the same day. Use mapping tools to visualize your schedule and identify clusters. This can save 30-45 minutes of drive time daily, allowing you to fit an extra job per day during April-June rush. Over a 60-day peak season, that's 10-12 additional jobs worth $3,000-$5,000 in revenue without adding crew or equipment."}, {"title": "Weather-Responsive Scheduling", "description": "Build flexibility into your schedule for inevitable rain delays. Leave 1-2 'buffer' slots per week for rescheduled jobs or emergency calls. When weather forces cancellations, have a system to quickly notify customers and reschedule without playing phone tag. Consider offering 'rain day discounts' to fill unexpected gaps. Track historical weather patterns—if May typically has 6 rainy days, don't overbook. Customers appreciate contractors who proactively communicate about weather delays rather than ghosting them."}, {"title": "Equipment Maintenance Tracking", "description": "Log operating hours on every pressure washer and schedule maintenance at 50-hour (oil change, check unloader valve) and 100-hour (pump inspection, replace spray tips) intervals. Keep spare parts (O-rings, nozzles, quick-connects) in your truck to handle minor repairs on-site. A well-maintained $3,500 commercial unit lasts 6-8 years vs. 3-4 years with neglect. Breakdown during peak season costs you $500-$1,000 in lost daily revenue, plus customer frustration. Preventive maintenance is dramatically cheaper than emergency repairs or equipment replacement."}, {"title": "Seasonal Pricing Strategies", "description": "Charge premium rates during high-demand months (April-June) and offer discounts during slow periods (November-February) to smooth cash flow. For example, charge $0.25/sq ft for house washing in May when you're turning away work, but $0.18/sq ft in January to keep crews working. Communicate this as 'off-season special pricing' rather than admitting you're desperate for work. Annual contracts lock in year-round revenue at averaged pricing. This prevents feast-or-famine cycle where you're slammed in spring but idle in winter."}, {"title": "Before/After Photo Protocols", "description": "Establish standard photo procedures: take wide shots and close-ups of heavily stained areas before starting, then identical angles after completion. Time-stamp photos to document conditions. This serves dual purposes—liability protection (proving pre-existing damage like cracked siding) and marketing material (dramatic transformations for social media). Create folders by job type (house washing, concrete cleaning, deck restoration) to quickly find impressive results when prospects ask to see your work. Good photos win jobs and prevent 'you damaged this' disputes."}, {"title": "Customer Education Systems", "description": "Many customers don't understand the difference between high-pressure washing and soft washing, leading to unrealistic expectations or complaints. Create simple explanations for quotes: 'We use soft washing on your vinyl siding to safely remove mildew without damaging the surface. High pressure can crack vinyl or force water into walls.' Explain why you can't pressure wash a roof (damages shingles) or why hot water costs more (equipment investment). Educated customers complain less, refer more, and appreciate your professionalism. Include care instructions after service (wait 24 hours before parking on cleaned concrete, rinse plants if soap is present)."}]}, "testimonials": [{"quote": "I was losing at least one job a week during spring rush because I'd accidentally double-book my hot water rig or promise a start time that conflicted with an existing job. The calendar view shows exactly which equipment is where, and I haven't had a scheduling conflict in two months. Booked 40% more driveways in April-May because I could actually see my available slots instead of guessing from a whiteboard.", "author": "Marcus T.", "role": "Sole Proprietor, Atlanta Metro", "metric": "40% more jobs during peak season | Zero double-bookings | 8 hours/week saved on scheduling"}, {"quote": "Managing three crews with text messages and a whiteboard was absolute chaos. Guys would show up to jobs without the right equipment or miss weather delays entirely. Now everyone has the mobile app—they see their daily schedule, equipment assignments, and customer notes instantly. When we have to reschedule for rain, I update it once and everyone's notified. We completed 287 jobs in our peak 8-week season, up from 213 last year with the same crews.", "author": "Jennifer R.", "role": "Multi-Crew Owner, Phoenix", "metric": "35% more jobs completed | Zero missed appointments | 12 hours/week saved on crew coordination"}, {"quote": "I used to spend February and March scrambling to book enough spring jobs. Now I filter last year's house washing customers and send them renewal reminders in March with a 'book by April 1' discount. Filled our April-June schedule two weeks earlier than last year and added $18,000 in shoulder-season revenue by automating fall gutter cleaning reminders to the same customer base. The follow-up system pays for itself ten times over.", "author": "David K.", "role": "Seasonal Business Owner, Portland", "metric": "$18K added shoulder-season revenue | Schedule filled 2 weeks earlier | 70% customer retention rate"}]},
-    "irrigation": {"label": "Irrigation", "description": "Specialized software for irrigation and sprinkler system professionals", "hero": {"title": "Irrigation Software for Smarter System Management", "subtitle": "Manage seasonal services, track zones and equipment, automate maintenance schedules, and respond to emergencies faster."}, "challenges": {"0": {"title": "Seasonal Service Tracking", "description": "Coordinating spring startups, summer maintenance, and fall winterization across hundreds of systems is overwhelming."}, "1": {"title": "Zone Documentation", "description": "Remembering zone layouts, valve locations, and system specifications for each property without proper records."}, "2": {"title": "Emergency Response Time", "description": "Finding system information and dispatching technicians quickly during pipe bursts and emergencies."}, "3": {"title": "Maintenance Reminders", "description": "Missing seasonal deadlines like winterization can lead to liability issues and unhappy customers."}}, "features": {"0": {"title": "Seasonal Service Automation", "description": "Set up spring, summer, and fall service templates once. ServiceGrid automatically schedules and reminds customers.", "benefit": "Never miss a winterization deadline or seasonal revenue opportunity"}, "1": {"title": "Zone & System Documentation", "description": "Store zone maps, valve locations, controller settings, and system notes with photos for every property.", "benefit": "Service systems faster with complete property information"}, "2": {"title": "Emergency Dispatch", "description": "Access property information instantly on mobile. Dispatch available technicians with one tap during emergency calls.", "benefit": "Respond to emergencies 50% faster and improve customer satisfaction"}, "3": {"title": "Maintenance Tracking", "description": "Schedule and track backflow testing, controller battery changes, and seasonal inspections automatically.", "benefit": "Reduce liability and provide proactive maintenance"}}, "cta": {"title": "Ready to streamline your irrigation business?", "subtitle": "Join irrigation professionals managing more systems with less stress using ServiceGrid."}},
+    "irrigation": {
+      "label": "Irrigation",
+      "description": "Specialized software for irrigation and sprinkler system professionals",
+      "hero": {
+        "title": "Irrigation Software for Smarter System Management",
+        "subtitle": "Manage seasonal services, track zones and equipment, automate maintenance schedules, and respond to emergencies faster."
+      },
+      "challenges": {
+        "0": {
+          "title": "Seasonal Service Tracking",
+          "description": "Coordinating spring startups, summer maintenance, and fall winterization across hundreds of systems is overwhelming."
+        },
+        "1": {
+          "title": "Zone Documentation",
+          "description": "Remembering zone layouts, valve locations, and system specifications for each property without proper records."
+        },
+        "2": {
+          "title": "Emergency Response Time",
+          "description": "Finding system information and dispatching technicians quickly during pipe bursts and emergencies."
+        },
+        "3": {
+          "title": "Maintenance Reminders",
+          "description": "Missing seasonal deadlines like winterization can lead to liability issues and unhappy customers."
+        }
+      },
+      "features": {
+        "0": {
+          "title": "Seasonal Service Automation",
+          "description": "Set up spring, summer, and fall service templates once. ServiceGrid automatically schedules and reminds customers.",
+          "benefit": "Never miss a winterization deadline or seasonal revenue opportunity"
+        },
+        "1": {
+          "title": "Zone & System Documentation",
+          "description": "Store zone maps, valve locations, controller settings, and system notes with photos for every property.",
+          "benefit": "Service systems faster with complete property information"
+        },
+        "2": {
+          "title": "Emergency Dispatch",
+          "description": "Access property information instantly on mobile. Dispatch available technicians with one tap during emergency calls.",
+          "benefit": "Respond to emergencies 50% faster and improve customer satisfaction"
+        },
+        "3": {
+          "title": "Maintenance Tracking",
+          "description": "Schedule and track backflow testing, controller battery changes, and seasonal inspections automatically.",
+          "benefit": "Reduce liability and provide proactive maintenance"
+        }
+      },
+      "cta": {
+        "title": "Ready to streamline your irrigation business?",
+        "subtitle": "Join irrigation professionals managing more systems with less stress using ServiceGrid."
+      },
+      "faq": [
+        {
+          "question": "How does ServiceGrid handle seasonal irrigation scheduling?",
+          "answer": "ServiceGrid automates your entire seasonal workflow. Set up spring startup, summer maintenance, and fall winterization service templates once, and the system automatically schedules appointments and sends customer reminders 3 weeks before typical seasonal dates. This eliminates manual calling and helps you fill your calendar weeks earlier than competitors still making phone calls. Many irrigation businesses report booking 25% more seasonal appointments through automated outreach."
+        },
+        {
+          "question": "Can I track zone layouts and valve locations for each property?",
+          "answer": "Yes. ServiceGrid provides comprehensive zone documentation tools. For each property, you can photograph valve boxes, upload controller layouts, map zone configurations with measurements, and store system specifications. Your technicians access this information instantly on their mobile devices, eliminating the need to remember details or search for valve boxes. One hour of documentation during the first visit saves 20+ minutes on every future service call."
+        },
+        {
+          "question": "How do I price different types of irrigation services?",
+          "answer": "ServiceGrid supports unlimited service types with custom pricing for spring startups, winterization blowouts, emergency repairs, routine maintenance, backflow testing, and seasonal adjustments. You can set different rates for residential vs. commercial properties, zone-based pricing, and hourly emergency rates. The system calculates totals automatically and allows you to send professional quotes that customers can approve with one tap."
+        },
+        {
+          "question": "Does the system track backflow testing certifications and compliance?",
+          "answer": "Absolutely. ServiceGrid logs backflow test dates, certification numbers, test results, and renewal deadlines for each property. The system sends automated reminders when annual tests are approaching, helping you maintain compliance and avoid legal issues. You can upload test reports, track which technicians hold certifications, and generate compliance documentation for water authorities or property managers."
+        },
+        {
+          "question": "Can I adjust watering schedules based on weather and seasonal changes?",
+          "answer": "Yes. While ServiceGrid doesn't directly control smart irrigation controllers, it helps you track and document seasonal schedule adjustments. You can log controller programming changes, record recommended watering times by zone and season, and store notes about sun exposure, soil type, and plant water needs. Many irrigation professionals use this documentation to provide value-added service and demonstrate water savings to customers."
+        },
+        {
+          "question": "How does emergency dispatch work for pipe bursts and urgent repairs?",
+          "answer": "When a customer calls with an emergency, you can instantly access their property information—zone maps, valve locations, gate codes, and system specifications—right from your phone. Dispatch an available technician with one tap, and they receive all property details on their mobile app immediately. This eliminates frantic searching through files and reduces emergency response time by 40% compared to traditional paper-based systems."
+        },
+        {
+          "question": "Can I track equipment inventory like nozzles, controllers, and replacement parts?",
+          "answer": "ServiceGrid includes job-level equipment and materials tracking. When you complete a repair or maintenance visit, log which parts you used—nozzles, valves, controllers, pipe sections—and the system tracks usage over time. This helps you identify which properties require frequent repairs, maintain proper inventory levels, and calculate accurate job costs. You can also track which truck carries which equipment."
+        },
+        {
+          "question": "Does the system send automated seasonal reminders to customers?",
+          "answer": "Yes. ServiceGrid sends automated email and SMS reminders for seasonal services. Set up your seasonal timeline once (e.g., 'Spring startups typically needed in late March'), and the system automatically contacts customers 3 weeks before their typical service date. This proactive outreach captures 80%+ of seasonal revenue compared to 60% when relying on customers to call you. You can customize messaging and timing for each service type."
+        },
+        {
+          "question": "How do I manage multiple properties for HOAs and commercial accounts?",
+          "answer": "Commercial and HOA accounts are easy to manage. Create a parent account for the property management company or HOA, then link individual properties beneath it. Schedule maintenance across all properties, track which systems are serviced on which days, generate consolidated invoicing, and provide portfolio-level reporting. You can also set up recurring maintenance schedules and track preventive maintenance completion rates."
+        },
+        {
+          "question": "Can technicians access zone documentation from their phones in the field?",
+          "answer": "Absolutely. The ServiceGrid mobile app provides instant access to zone maps, valve locations, controller settings, customer notes, and service history while your technicians are on-site. They can also photograph new findings, update zone information, add notes about system conditions, and log completed work—all from their phones. This ensures your documentation stays current and complete."
+        },
+        {
+          "question": "How does the system help with winterization liability protection?",
+          "answer": "ServiceGrid creates comprehensive documentation for every winterization visit. Technicians log each zone blown out, photograph valve positions, record air pressure used, and note system conditions. If a customer claims freeze damage later, you have timestamped photos and detailed service records proving proper winterization. This documentation has protected many irrigation businesses from liability claims. The system also sends automated winterization reminders so customers can't claim they weren't notified."
+        },
+        {
+          "question": "Can I set up preventive maintenance schedules for commercial properties?",
+          "answer": "Yes. Create recurring service schedules for commercial accounts that need monthly, quarterly, or seasonal maintenance. ServiceGrid automatically generates scheduled jobs, sends customer confirmations, and alerts you if any scheduled maintenance is missed. This is ideal for HOAs, commercial buildings, and municipal accounts that require documented preventive maintenance programs."
+        },
+        {
+          "question": "Does the system help me track water usage and efficiency metrics?",
+          "answer": "While ServiceGrid doesn't directly measure water usage, it helps you document efficiency improvements. Log baseline watering schedules, record optimization changes (nozzle upgrades, zone adjustments, smart controller installations), and track estimated water savings. Many irrigation professionals use this documentation to demonstrate value to environmentally-conscious customers and secure water efficiency rebates from local utilities."
+        },
+        {
+          "question": "How do I handle emergency calls outside business hours?",
+          "answer": "ServiceGrid is accessible 24/7 from any device. When an after-hours emergency call comes in, you can access property information, dispatch on-call technicians, and log emergency details from your phone—even at midnight. The system tracks emergency response times and helps you invoice emergency rates correctly. You can also set up automated customer responses acknowledging emergency requests."
+        },
+        {
+          "question": "Can I track which properties have smart controllers or need upgrades?",
+          "answer": "Yes. ServiceGrid allows you to tag properties with equipment types—manual controllers, timer-based systems, smart controllers, or specific brands. This helps you identify upgrade opportunities, track which customers might benefit from water-saving technology, and target marketing for controller replacement. When water districts offer rebates, you can instantly identify eligible customers."
+        },
+        {
+          "question": "How does the system handle seasonal crew expansion?",
+          "answer": "ServiceGrid scales with your seasonal workforce. Add temporary technicians during spring and fall peak seasons, assign them to specific jobs or territories, and provide mobile app access so they can view job details and update work status. When the season ends, you can deactivate seasonal workers without losing historical data. This flexibility is essential for irrigation businesses that double or triple their crew size seasonally."
+        },
+        {
+          "question": "Can customers approve quotes and pay online?",
+          "answer": "Yes. Send professional quotes via email or SMS that customers can review and approve with one tap. Once approved, they can pay immediately using a credit card or bank transfer. This eliminates the 'send quote, wait for callback, schedule follow-up' cycle and reduces payment collection time from 21 days to 4 days on average. Online payment also reduces your administrative workload significantly."
+        },
+        {
+          "question": "Is there a way to track certification expirations and license renewals?",
+          "answer": "ServiceGrid includes technician credential tracking for backflow testing certifications, irrigation licenses, contractor licenses, and insurance policies. Set renewal dates and receive automated alerts when certifications are approaching expiration. This ensures your team stays compliant and you can quickly provide proof of certification when customers or water authorities request documentation."
+        }
+      ],
+      "pricing": {
+        "title": "Transparent Pricing for Irrigation Professionals",
+        "subtitle": "No hidden fees. No per-technician charges. Unlimited seasonal jobs and customer contacts.",
+        "points": [
+          {
+            "label": "Solo Irrigation Technician",
+            "value": "Starting at $39/month — perfect for one-person operations managing spring startups and fall winterizations"
+          },
+          {
+            "label": "Small Irrigation Crew (2-4 technicians)",
+            "value": "Starting at $69/month — includes mobile apps, zone documentation, seasonal automation, and emergency dispatch"
+          },
+          {
+            "label": "Multi-Crew Seasonal Operations",
+            "value": "Starting at $99/month — unlimited users during peak season, advanced routing, HOA management, backflow tracking"
+          },
+          {
+            "label": "Time Savings",
+            "value": "12-18 hours per week saved on seasonal scheduling, property documentation, and customer follow-up calls"
+          },
+          {
+            "label": "Revenue Impact",
+            "value": "25-35% increase in seasonal appointments through automated customer outreach vs. manual calling"
+          },
+          {
+            "label": "Emergency Response",
+            "value": "40% faster dispatch and response time with instant mobile access to zone maps and property information"
+          },
+          {
+            "label": "Seasonal Revenue Capture",
+            "value": "Fill 80%+ of winterization slots with automated reminders vs. 60% with manual follow-up"
+          },
+          {
+            "label": "Payment Processing",
+            "value": "Reduce average payment collection time from 21 days to 4 days with online quote approval and payments"
+          }
+        ],
+        "roiNote": "💧 Average irrigation business: $42K added revenue in first season through earlier booking and increased seasonal capture. Winterization documentation reduces liability claims by 95%."
+      },
+      "gettingStarted": {
+        "title": "Get Started in Under 90 Minutes",
+        "subtitle": "From signup to first seasonal reminder, here's how irrigation professionals launch ServiceGrid.",
+        "steps": [
+          {
+            "title": "Import Customers & Map Territory",
+            "description": "Upload your existing customer list via CSV or start fresh. Map your service territories by postal code to optimize routing. Add gate codes and property access notes for faster service. (30 minutes)",
+            "icon": "Upload"
+          },
+          {
+            "title": "Create Service Templates & Documentation",
+            "description": "Set up spring startup, summer maintenance, and winterization blowout service packages with pricing. Create zone documentation templates with photo placeholders. Configure seasonal automation dates for your region. (45 minutes)",
+            "icon": "FileText"
+          },
+          {
+            "title": "Launch Mobile App & Train Crew",
+            "description": "Install mobile apps on technician devices. Train your crew to photograph zones, log valve locations, and update job status from the field. Activate automated seasonal reminders so customers start receiving outreach. (Ongoing)",
+            "icon": "Smartphone"
+          }
+        ]
+      },
+      "deepDive": {
+        "title": "Irrigation Industry Knowledge Center",
+        "subtitle": "Essential terminology and best practices for irrigation and sprinkler system professionals.",
+        "terms": [
+          {
+            "term": "Winterization Blowout",
+            "definition": "Using compressed air to clear all water from irrigation pipes, valves, and sprinkler heads before freezing temperatures. Prevents pipe cracking and costly freeze damage. Most irrigation businesses charge $75-150 per winterization and must complete them before first hard freeze to avoid liability."
+          },
+          {
+            "term": "Backflow Preventer",
+            "definition": "Required safety device that prevents contaminated water from irrigation systems from flowing backward into potable water supply. Annual testing is legally mandated in most jurisdictions. Irrigation businesses must maintain records of test dates, results, and certified tester credentials."
+          },
+          {
+            "term": "Controller Programming",
+            "definition": "Setting automated watering schedules by zone, considering factors like sun exposure, soil type, plant water requirements, and seasonal temperature changes. Proper programming prevents overwatering, reduces water bills, and maintains landscape health throughout the year."
+          },
+          {
+            "term": "Zone Isolation",
+            "definition": "The ability to shut off specific irrigation zones independently for repairs or adjustments without affecting the entire system. Critical for efficient troubleshooting and repairs. Proper zone documentation helps technicians isolate problems quickly during service calls."
+          },
+          {
+            "term": "Precipitation Rate",
+            "definition": "The amount of water (measured in inches or gallons per hour) that each sprinkler head applies to a given area. Matching precipitation rates across all heads in a zone prevents overwatering in some areas and underwatering in others, reducing runoff and improving efficiency."
+          },
+          {
+            "term": "Smart Controller Integration",
+            "definition": "Weather-based irrigation controllers that automatically adjust watering schedules based on temperature, rainfall, humidity, and evapotranspiration rates. Increasingly required by water districts in drought-prone areas. Creates upsell opportunities and reduces customer water costs by 20-40%."
+          }
+        ],
+        "bestPractices": [
+          {
+            "title": "Document Every Zone on First Visit",
+            "description": "Spend one hour on the initial service call photographing valve boxes with locations, mapping zone layouts with measurements, and documenting controller settings. This upfront investment saves 20+ minutes on every future visit and enables any technician to service the property confidently. Use consistent photo angles and clear labeling."
+          },
+          {
+            "title": "Seasonal Automation Drives Revenue",
+            "description": "Set up automated email/SMS sequences 3 weeks before typical spring startup and fall winterization dates for your climate zone. Proactive outreach captures 25% more appointments than waiting for customers to call you. Include pricing and online booking links. Businesses using seasonal automation consistently fill their calendars 2-3 weeks earlier than competitors."
+          },
+          {
+            "title": "Weather-Responsive Scheduling",
+            "description": "Monitor local weather forecasts and proactively reschedule spring startup appointments if freeze risk remains. Prevents callbacks from systems damaged by early startups and demonstrates professionalism. Send customers a brief explanation: 'Rescheduling to protect your system—no charge.' This reduces liability and builds trust."
+          },
+          {
+            "title": "Preventive Maintenance Upsells",
+            "description": "During every seasonal visit, photograph aging components: controllers with corroded terminals, leaking valves, broken sprinkler heads, inefficient nozzles. Send photos to customers with replacement recommendations within 24 hours while the need is fresh. Photo evidence converts 35% of customers to repairs vs. 10% with verbal recommendations alone."
+          },
+          {
+            "title": "Emergency Access Protocols",
+            "description": "Store gate codes, property access instructions, lockbox locations, and valve location notes for every customer. When emergency calls come in (pipe bursts, broken heads), your technicians can respond immediately without waiting for customer callbacks. This reduces emergency response time from 45 minutes to 15 minutes and dramatically improves customer satisfaction."
+          },
+          {
+            "title": "Backflow Certification Tracking",
+            "description": "Log every backflow test date, certification number, test result, and renewal deadline in your system. Set automated reminders for annual retesting 30 days before expiration. Maintaining compliance protects your business legally and creates a reliable recurring revenue stream. Many irrigation pros generate $15K-30K annually from backflow testing alone."
+          }
+        ]
+      },
+      "testimonials": [
+        {
+          "quote": "We went from tracking 280 spring startups in a spreadsheet to automated scheduling. ServiceGrid filled our calendar 3 weeks earlier than last year and we added $42K in revenue before summer even started.",
+          "author": "Mark Peterson",
+          "business": "GreenFlow Irrigation, Colorado",
+          "metrics": [
+            {
+              "value": "3 weeks",
+              "label": "Earlier booked"
+            },
+            {
+              "value": "$42K",
+              "label": "Added revenue"
+            }
+          ]
+        },
+        {
+          "quote": "Emergency calls used to mean frantic searching for property info. Now my techs access zone maps and valve locations on their phone in seconds. We're responding to pipe bursts 40% faster and our emergency service rating jumped to 4.9 stars.",
+          "author": "Jennifer Wu",
+          "business": "Precision Sprinkler Systems, Arizona",
+          "metrics": [
+            {
+              "value": "40%",
+              "label": "Faster response"
+            },
+            {
+              "value": "4.9★",
+              "label": "Emergency rating"
+            }
+          ]
+        },
+        {
+          "quote": "I was doing everything myself and couldn't hire a second technician because I couldn't explain where valves were or how systems worked. ServiceGrid documents everything with photos. I hired 2 techs and grew 65% this season.",
+          "author": "Carlos Mendoza",
+          "business": "Summit Irrigation Services, Utah",
+          "metrics": [
+            {
+              "value": "2 techs",
+              "label": "Hired"
+            },
+            {
+              "value": "65%",
+              "label": "Revenue growth"
+            }
+          ]
+        }
+      ]
+    },
     "poolService": {"label": "Pool Service", "description": "Complete pool service management and route optimization software", "hero": {"title": "Pool Service Software That Keeps You Swimming", "subtitle": "Optimize routes, track chemicals, manage equipment, and automate seasonal services with software built for pool professionals."}, "challenges": {"0": {"title": "Weekly Route Efficiency", "description": "Planning optimal routes across dozens of pools while managing time windows and customer preferences."}, "1": {"title": "Chemical Inventory", "description": "Tracking chemical usage per pool and maintaining proper inventory levels without overstocking."}, "2": {"title": "Equipment Maintenance", "description": "Remembering filter cleanings, pump servicing, and equipment history for each pool customer."}, "3": {"title": "Seasonal Services", "description": "Coordinating pool openings, closings, and mid-season repairs while keeping customers informed."}}, "features": {"0": {"title": "Intelligent Route Optimization", "description": "Create efficient weekly routes automatically. Mobile app guides technicians pool-to-pool with customer notes and chemical history.", "benefit": "Service 20% more pools with the same team"}, "1": {"title": "Chemical Tracking & Inventory", "description": "Log chemical readings and usage per pool. Track inventory levels and get low-stock alerts automatically.", "benefit": "Maintain perfect water chemistry and reduce chemical waste"}, "2": {"title": "Equipment Service History", "description": "Record filter cleanings, equipment repairs, and part replacements with photos and dates for every pool.", "benefit": "Provide better service and identify upsell opportunities"}, "3": {"title": "Automated Seasonal Workflows", "description": "Set up pool opening and closing checklists. Schedule and invoice seasonal services automatically.", "benefit": "Never miss an opening or closing and capture all seasonal revenue"}}, "cta": {"title": "Ready to make waves in your pool business?", "subtitle": "Join pool service professionals using ServiceGrid to optimize routes and grow revenue."}},
     "handyman": {"label": "Handyman", "description": "Versatile business management software for handyman services", "hero": {"title": "Handyman Software That Handles Every Job", "subtitle": "Manage diverse services, prevent scope creep, track parts, and schedule efficiently with software built for multi-trade professionals."}, "challenges": {"0": {"title": "Service Pricing Consistency", "description": "Pricing dozens of different services without a system leads to inconsistent quotes and underpricing."}, "1": {"title": "Scope Creep", "description": "Small jobs growing into big projects without proper change orders eats into profitability."}, "2": {"title": "Parts & Materials", "description": "Tracking which parts are needed, marking them up consistently, and getting reimbursed slows cash flow."}, "3": {"title": "Skill-Based Scheduling", "description": "Matching the right technician to each job type while keeping everyone busy is complex."}}, "features": {"0": {"title": "Service Catalog & Pricing", "description": "Create a library of common services with standard pricing. Build quotes quickly by selecting services and adjusting as needed.", "benefit": "Quote faster and maintain consistent, profitable pricing"}, "1": {"title": "Change Order Management", "description": "Document scope changes with photos and customer approval before starting additional work. Keep projects profitable.", "benefit": "Prevent scope creep and get paid for all work performed"}, "2": {"title": "Parts Tracking & Markup", "description": "Add parts to quotes and invoices with automatic markup. Track receipts and reimbursement in one place.", "benefit": "Recover all parts costs and increase parts revenue"}, "3": {"title": "Skill-Based Scheduling", "description": "Tag services by skill type and assign jobs to technicians based on their expertise and availability.", "benefit": "Send the right person to every job and improve quality"}}, "cta": {"title": "Ready to build a better handyman business?", "subtitle": "Join handyman professionals using ServiceGrid to manage more jobs and increase profits."}},
     "gutterCleaning": {"label": "Gutter Cleaning", "description": "Seasonal business management for gutter cleaning professionals", "hero": {"title": "Gutter Cleaning Software That Captures Every Season", "subtitle": "Manage seasonal demand, automate rebooking, track safety compliance, and maximize fall revenue with specialized software."}, "challenges": {"0": {"title": "Seasonal Demand Spikes", "description": "Managing overwhelming fall demand while filling the rest of the year is the biggest challenge."}, "1": {"title": "Safety Documentation", "description": "Tracking ladder safety, roof access, and insurance compliance without proper documentation is risky."}, "2": {"title": "Debris Disposal", "description": "Tracking debris removal and disposal costs to maintain profitability on each job."}, "3": {"title": "Annual Rebooking", "description": "Remembering to contact customers year after year for repeat business without automation."}}, "features": {"0": {"title": "Seasonal Campaign Automation", "description": "Send automated reminders to past customers before fall season. Create email and text campaigns to fill your schedule.", "benefit": "Book out fall season weeks in advance"}, "1": {"title": "Safety Checklists & Documentation", "description": "Digital safety checklists with photo documentation for insurance compliance. Store property access notes securely.", "benefit": "Reduce liability and meet insurance requirements"}, "2": {"title": "Before/After Photos & Disposal Tracking", "description": "Document gutter condition with photos. Track debris removal and disposal costs per job.", "benefit": "Show value to customers and maintain profitability"}, "3": {"title": "Automatic Annual Reminders", "description": "ServiceGrid automatically reminds customers 12 months after their last cleaning to rebook for next season.", "benefit": "Maximize repeat business without manual follow-up"}}, "cta": {"title": "Ready to clean up your gutter business?", "subtitle": "Join gutter cleaning professionals using ServiceGrid to automate seasonality and grow revenue."}},
