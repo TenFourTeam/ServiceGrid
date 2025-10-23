@@ -2238,7 +2238,285 @@
         "subtitle": "Join handyman professionals using ServiceGrid to manage more jobs and increase profits."
       }
     },
-    "gutterCleaning": {"label": "Gutter Cleaning", "description": "Seasonal business management for gutter cleaning professionals", "hero": {"title": "Gutter Cleaning Software That Captures Every Season", "subtitle": "Manage seasonal demand, automate rebooking, track safety compliance, and maximize fall revenue with specialized software."}, "challenges": {"0": {"title": "Seasonal Demand Spikes", "description": "Managing overwhelming fall demand while filling the rest of the year is the biggest challenge."}, "1": {"title": "Safety Documentation", "description": "Tracking ladder safety, roof access, and insurance compliance without proper documentation is risky."}, "2": {"title": "Debris Disposal", "description": "Tracking debris removal and disposal costs to maintain profitability on each job."}, "3": {"title": "Annual Rebooking", "description": "Remembering to contact customers year after year for repeat business without automation."}}, "features": {"0": {"title": "Seasonal Campaign Automation", "description": "Send automated reminders to past customers before fall season. Create email and text campaigns to fill your schedule.", "benefit": "Book out fall season weeks in advance"}, "1": {"title": "Safety Checklists & Documentation", "description": "Digital safety checklists with photo documentation for insurance compliance. Store property access notes securely.", "benefit": "Reduce liability and meet insurance requirements"}, "2": {"title": "Before/After Photos & Disposal Tracking", "description": "Document gutter condition with photos. Track debris removal and disposal costs per job.", "benefit": "Show value to customers and maintain profitability"}, "3": {"title": "Automatic Annual Reminders", "description": "ServiceGrid automatically reminds customers 12 months after their last cleaning to rebook for next season.", "benefit": "Maximize repeat business without manual follow-up"}}, "cta": {"title": "Ready to clean up your gutter business?", "subtitle": "Join gutter cleaning professionals using ServiceGrid to automate seasonality and grow revenue."}},
+    "gutterCleaning": {
+      "hero": {
+        "badge": "Gutter Cleaning Software",
+        "title": "Software Built for Gutter Cleaning Pros",
+        "subtitle": "Manage seasonal demand spikes, automate customer reminders, and optimize routes so you can clean more gutters in less time during peak season.",
+        "cta": "Start Free Trial"
+      },
+      "challenges": [
+        {
+          "title": "Seasonal Booking Chaos",
+          "description": "60-70% of annual revenue happens in 8 weeks. Manual scheduling can't handle the fall rush."
+        },
+        {
+          "title": "Customer Retention Gaps",
+          "description": "Customers forget to call back next year. No system to automatically reach returning clients."
+        },
+        {
+          "title": "Scattered Routes",
+          "description": "Driving all over town wastes 30-45 minutes daily. Poor clustering limits how many homes you can clean."
+        },
+        {
+          "title": "Damage Documentation",
+          "description": "Handwritten notes and lost photos mean missed upsell opportunities for repairs and gutter guards."
+        }
+      ],
+      "features": [
+        {
+          "title": "Automated Season Reminders",
+          "description": "Send campaigns to last year's customers 6-8 weeks before peak season and fill your schedule automatically."
+        },
+        {
+          "title": "Geographic Job Clustering",
+          "description": "Schedule jobs by neighborhood to minimize drive time and clean 2-3 more houses per day."
+        },
+        {
+          "title": "Photo Documentation",
+          "description": "Capture damage during cleaning and send repair quotes instantly from your phone."
+        },
+        {
+          "title": "Annual Contract Tracking",
+          "description": "Track which customers are on annual plans and when they're due for their next cleaning."
+        }
+      ],
+      "faq": [
+        {
+          "question": "How much should I charge per linear foot for gutter cleaning?",
+          "answer": "Standard rates range from $0.75-$2.00 per linear foot depending on your market, with most operators charging $1.00-$1.50. Single-story homes average $125-$250, while two-story homes run $200-$400. Add 50-75% surcharge for second-story work due to safety risks and time requirements. Factor in downspout count (standard is 1 per 40 feet) and disposal."
+        },
+        {
+          "question": "Should I price by house size or linear footage?",
+          "answer": "Flat rate by house size is easier for customers to understand and faster to quote ($150 for ranches, $250 for two-stories). Linear footage pricing is more accurate for unusual homes with complex rooflines. Most successful operators use flat rates for standard homes and switch to linear footage pricing for homes over 3,000 sq ft or with intricate designs."
+        },
+        {
+          "question": "How many houses can I clean per day?",
+          "answer": "Solo operators typically complete 4-6 single-story homes or 2-4 two-story homes per day, depending on drive time and gutter condition. Jobs average 45-75 minutes for single-story, 90-120 minutes for two-story. Route density matters—tightly clustered jobs allow 6-8 houses daily, while spread-out routes reduce capacity to 3-4 houses."
+        },
+        {
+          "question": "What's the profit margin for gutter cleaning?",
+          "answer": "Well-run gutter cleaning businesses maintain 60-75% gross profit margins due to low material costs and equipment investment. Labor and disposal are your primary costs. Two-story work typically yields higher margins (70-75%) due to skill requirements, while single-story work runs 60-65%. Annual contracts improve margins by 5-10% through guaranteed volume."
+        },
+        {
+          "question": "Should I offer one-time or annual contracts?",
+          "answer": "Annual contracts provide predictable revenue and reduce marketing costs, but require upfront discount (typically 10-20% off per-service pricing). Start with one-time service to build your customer base, then offer annual plans after the first cleaning. Conversion rate from one-time to annual is typically 35-45% when offered with a compelling discount."
+        },
+        {
+          "question": "How do I safely access second-story gutters?",
+          "answer": "Use extension ladders rated for your weight plus tools (minimum Type I - 250 lb rating). Position ladder at 75-degree angle (4:1 ratio—1 foot out for every 4 feet up). Secure ladder base and use standoff brackets to prevent gutter damage. For roofs steeper than 6:12 pitch, use fall protection harnesses anchored to roof structure. Never lean to reach—reposition the ladder."
+        },
+        {
+          "question": "Should I bag debris or blow it to the ground?",
+          "answer": "Bagging takes 30-40% longer but prevents landscape damage and eliminates ground cleanup. Blowing debris down works for homes without delicate landscaping but requires thorough ground cleanup and customer pre-approval. Most operators blow debris to driveway/patio areas for easy collection. Ask customers their preference upfront and price accordingly—bagging warrants 15-25% premium."
+        },
+        {
+          "question": "What's the proper way to flush downspouts?",
+          "answer": "After removing gutter debris, flush each downspout from the top with a garden hose. If water backs up, use a plumber's snake or pressure washer to clear clogs. Check downspout outlets to ensure water flows freely away from foundation. Downspout clogs are found in 30-40% of jobs—clearing them is essential for proper drainage and prevents callback complaints."
+        },
+        {
+          "question": "When should I recommend gutter guards?",
+          "answer": "Recommend guards for homes with heavy tree coverage (especially pine needles), roofs with significant leaf accumulation, or customers who are elderly or have mobility issues. Set realistic expectations—guards reduce cleaning frequency but don't eliminate it (annual inspection still recommended). Guards installation adds $8-$15 per linear foot and creates lucrative recurring revenue."
+        },
+        {
+          "question": "How do I identify gutter damage during cleaning?",
+          "answer": "Look for sagging sections (bracket failure), rust spots or holes, separated seams, damaged downspout connections, and improper slope (standing water). Take photos of any damage found and provide repair quotes immediately. Approximately 25-30% of cleanings reveal damage—this upsell opportunity adds $200-$800 per job in repair revenue."
+        },
+        {
+          "question": "What ladder setup is safest for gutter work?",
+          "answer": "Use extension ladders with rubber feet and standoff stabilizers that rest against the wall, not the gutters. Maintain three points of contact when climbing. Set ladder angle at 75 degrees (1:4 ratio). On soft ground, use ladder levelers or plywood base plates. For two-story homes over 25 feet, consider ladder jacks or scaffolding for extended work areas."
+        },
+        {
+          "question": "Should I invest in a gutter vacuum system?",
+          "answer": "Gutter vacuum systems ($800-$2,500) work from the ground, eliminating ladder hazards and speeding up cleaning by 40-50%. Ideal for operators with back problems or high insurance rates due to ladder risks. Best for homes under 1.5 stories. Limitation: harder to identify damage and less effective on compacted wet debris. Good investment after your first season once you've proven the business model."
+        },
+        {
+          "question": "Do I need fall protection equipment?",
+          "answer": "Required by OSHA for commercial work and strongly recommended for residential work on any roof access. Basic fall protection kit ($150-$400) includes harness, rope, and roof anchor. Some insurance policies require fall protection for two-story work or provide 15-25% premium discounts when used. Always use protection on steep roofs (over 6:12 pitch) regardless of regulations."
+        },
+        {
+          "question": "What insurance coverage do I need for gutter work?",
+          "answer": "General liability insurance ($500-$1,200 annually) covering slip-and-fall and property damage is essential. Workers' compensation required once you hire employees. Many policies exclude ladder work over 15 feet—confirm your coverage explicitly includes two-story work. Consider adding umbrella policy ($200-$400 annually) for additional protection given the fall risks."
+        },
+        {
+          "question": "How do I manage fall season demand spikes?",
+          "answer": "Book appointments 3-4 weeks in advance starting in September. Implement deposit policy (25-50%) to reduce no-shows. Extend work weeks to 6-7 days during October-November peak. Hire seasonal helpers for debris removal and ground cleanup. Send calendar-blocking emails to past customers in August offering early-booking discounts (10-15% off) to fill your schedule before peak hits."
+        },
+        {
+          "question": "Should I offer discounts for spring/summer bookings?",
+          "answer": "Yes—offer 20-30% discounts for off-season cleanings to generate cash flow when demand is soft. Market spring cleaning as post-winter debris removal and summer cleaning as preparation for fall. Off-season work helps maintain employee continuity and covers fixed costs. Approximately 15-25% of customers will book off-season service when offered compelling discounts."
+        },
+        {
+          "question": "What other services pair well with gutter cleaning?",
+          "answer": "Window cleaning (especially exterior windows), pressure washing siding/walkways, roof debris removal, and holiday light installation/removal. These services target the same customer base (homeowners 40+), use similar equipment (ladders, access), and have complementary seasonality. Adding window cleaning can double your revenue per visit with minimal additional time investment."
+        }
+      ],
+      "pricing": {
+        "title": "Investment & ROI for Gutter Cleaning Businesses",
+        "subtitle": "See exactly how ServiceGrid helps gutter cleaning businesses manage seasonality and maximize annual revenue",
+        "points": [
+          {
+            "title": "Software Cost",
+            "description": "ServiceGrid starts at $19/month with a 14-day free trial. No setup fees, no contracts, no per-job charges. That's less than the profit from cleaning one single-story home per month."
+          },
+          {
+            "title": "Seasonal Booking Automation",
+            "description": "Automated campaigns sent to past customers 2-3 weeks before peak season fill your schedule faster. Operators report booking 40-60% of fall work from automated reminders alone, eliminating the need for paid advertising during peak season. That's worth $3,000-$8,000 in saved marketing costs annually."
+          },
+          {
+            "title": "Time Savings on Admin",
+            "description": "Gutter cleaning operators save 5-8 hours weekly during peak season on scheduling, route planning, and customer communications. That recovered time allows 6-10 additional houses cleaned weekly during October-November, worth $1,200-$2,400 in additional revenue during your busiest 8 weeks."
+          },
+          {
+            "title": "Annual Retention Rate Increase",
+            "description": "Automated anniversary reminders sent 11-12 months after last cleaning drive repeat bookings without manual effort. Retention rates improve from typical 35-45% to 60-75%, worth $6,000-$12,000 annually for a 200-customer base. Each retained customer costs $0 in marketing versus $30-$80 to acquire a new one."
+          },
+          {
+            "title": "Route Optimization",
+            "description": "Geographic job clustering and optimized routing reduce daily drive time by 30-45 minutes, allowing one additional house per day during peak season. Over a 40-day fall season, that's 40 additional jobs worth $4,000-$8,000 in revenue with no additional advertising spend."
+          },
+          {
+            "title": "Payback Timeline",
+            "description": "Most gutter cleaning businesses recoup their annual software investment within 8-12 booked jobs through automated rebooking and time savings. During peak season alone, operators typically see 400-800% ROI from efficiency gains and improved customer retention."
+          }
+        ],
+        "roiNote": "Gutter cleaning businesses using ServiceGrid report filling their fall schedule 2-3 weeks faster and retaining 25-30% more customers year-over-year, resulting in an average $8,500 annual revenue increase."
+      },
+      "gettingStarted": {
+        "title": "Get Started in Under 20 Minutes",
+        "subtitle": "ServiceGrid is built for seasonal businesses that need to capture peak demand fast, not waste time on complex software",
+        "steps": [
+          {
+            "icon": "Settings",
+            "title": "Import Customers & Build Service Menu",
+            "duration": "10 minutes",
+            "description": "Upload your customer list from last season or start fresh. Create your service offerings (single-story cleaning, two-story cleaning, downspout flush, gutter guard install) with standard pricing. Set your service area and book-ahead window for peak season."
+          },
+          {
+            "icon": "Calendar",
+            "title": "Launch Fall Season Campaign",
+            "duration": "5 minutes",
+            "description": "Send automated email and SMS reminders to past customers 6-8 weeks before peak season. ServiceGrid tracks who books, who opens but doesn't respond, and who needs a follow-up. Watch your calendar fill with returning customers before you spend a dollar on advertising."
+          },
+          {
+            "icon": "Rocket",
+            "title": "Schedule Jobs & Track in the Field",
+            "duration": "5 minutes",
+            "description": "Build optimized routes clustered by neighborhood to minimize drive time. Use the mobile app to capture before/after photos, mark downspout issues, and document any damage found. Send invoices instantly after job completion and get paid same-day via card or ACH."
+          }
+        ]
+      },
+      "deepDive": {
+        "title": "Understanding Gutter Cleaning Operations",
+        "subtitle": "Industry knowledge and best practices to build a safe, profitable seasonal business",
+        "terms": [
+          {
+            "term": "Linear Footage Pricing",
+            "definition": "The standard gutter cleaning pricing method, calculated by measuring the horizontal length of all gutters (not counting vertical downspouts). Average home has 150-200 linear feet. Pricing per linear foot accounts for property size accurately but requires measuring. Most operators charge $1.00-$1.50 per foot for residential work."
+          },
+          {
+            "term": "Downspout Flushing",
+            "definition": "The process of clearing and testing all downspouts to ensure proper water flow from gutters to ground. Critical step often skipped by low-quality providers. Downspout clogs cause water overflow and foundation damage. Standard practice is to flush every downspout with water and clear blockages with a plumber's snake or pressure washer."
+          },
+          {
+            "term": "Gutter Guards / Leaf Guards",
+            "definition": "Mesh, screen, or solid covers installed over gutters to reduce debris accumulation. Guards reduce cleaning frequency from 2-4 times annually to 1-2 times but don't eliminate maintenance. Professional-grade guards cost $8-$15 per linear foot installed. DIY guards ($1-$3 per foot) often fail within 2-3 years. Guards are a high-margin upsell for gutter cleaning businesses."
+          },
+          {
+            "term": "Fall Protection System",
+            "definition": "Safety equipment including harness, anchor points, and rope used to prevent falls from roofs or ladders. Required by OSHA for commercial work over 6 feet and strongly recommended for steep residential roofs (over 6:12 pitch). Insurance companies often provide 15-25% premium discounts when fall protection is documented and used."
+          },
+          {
+            "term": "Soffit and Fascia",
+            "definition": "Soffit is the underside of roof overhang; fascia is the vertical board behind the gutter. Both are vulnerable to water damage from clogged gutters. During cleaning, inspect for rot, pest damage, or paint deterioration. Damage in these areas signals long-term gutter neglect and creates upsell opportunities for repairs ($200-$800)."
+          },
+          {
+            "term": "Seasonal Surge Pricing",
+            "definition": "Pricing strategy that increases rates during peak demand periods (October-November fall leaf season). Operators commonly charge 20-40% premium during peak weeks when demand exceeds capacity. Surge pricing manages demand, rewards early-booking customers with lower rates, and maximizes revenue during the narrow window when most annual income is generated."
+          }
+        ],
+        "bestPractices": [
+          {
+            "title": "Send Pre-Season Reminders 6-8 Weeks Early",
+            "description": "Don't wait until peak season to contact past customers. Send email and SMS campaigns in late August for fall cleaning. Early reminders capture 40-60% of your schedule before competition heats up. Customers appreciate the advance notice and you lock in revenue before spending on advertising. Follow up with non-responders every 2 weeks."
+          },
+          {
+            "title": "Photograph Damage for Immediate Upsells",
+            "description": "Carry your phone and photograph any damage: sagging gutters, separated seams, damaged downspout connections, soffit rot, or foundation issues. Show photos immediately after cleaning and provide repair quotes on the spot. Approximately 25-30% of customers approve repairs when presented with visual evidence. This adds $200-$800 per repair-eligible job."
+          },
+          {
+            "title": "Cluster Jobs Geographically by Day",
+            "description": "Never zigzag across your service area. Schedule all jobs in the same neighborhood on the same day to minimize drive time. Clustering increases daily capacity from 4-5 houses to 6-8 houses with the same work hours. Use mapping software to visualize job density and plan efficient routes. Each eliminated drive hour equals one additional job daily."
+          },
+          {
+            "title": "Use Flat-Rate Pricing for Standard Homes",
+            "description": "Develop tiered pricing for common house types: ranch/single-story ($125-$175), two-story standard ($200-$275), two-story large ($275-$375). Flat rates speed up quoting and are easier for customers to understand. Reserve linear footage pricing for unusual properties. Post prices on your website to filter price shoppers and attract serious buyers."
+          },
+          {
+            "title": "Implement Deposit Policy During Peak Season",
+            "description": "Require 25-50% deposits for bookings during October-November when demand exceeds capacity. Deposits reduce no-show rate from 15-20% to under 5%, ensuring your schedule stays full. Communicate deposit policy clearly when booking. Accept cards or ACH for instant deposit collection. Refund policy: full refund with 48-hour notice, zero refund for same-day cancellations."
+          },
+          {
+            "title": "Bundle Gutter Guards for Recurring Revenue",
+            "description": "After cleaning, offer gutter guard installation at $10-$15 per linear foot installed. Guards pay for themselves within 2-3 years for customers with heavy tree coverage. Even with guards installed, recommend annual inspection and minor cleaning ($75-$125), creating recurring revenue from the same customer. Guard installation jobs yield 50-65% gross margins."
+          }
+        ]
+      },
+      "testimonials": {
+        "title": "Real Results from Gutter Cleaning Professionals",
+        "testimonials": [
+          {
+            "quote": "I used to spend September frantically calling last year's customers to fill my fall schedule. ServiceGrid's automated reminders brought back 68% of my customers without a single phone call. I booked out my entire October and November in just 3 weeks.",
+            "author": "Tom Richardson",
+            "business": "Clear Flow Gutter Services, Portland OR",
+            "metrics": [
+              {
+                "value": "68%",
+                "label": "Customer return rate"
+              },
+              {
+                "value": "3 weeks",
+                "label": "Time to book peak season"
+              }
+            ]
+          },
+          {
+            "quote": "Before ServiceGrid, I was driving all over town with no system. Now I schedule jobs by neighborhood and cut my drive time in half. I'm cleaning 7-8 houses per day instead of 4-5, which added about $18,000 to my fall season revenue.",
+            "author": "Jennifer Santos",
+            "business": "Santos Property Maintenance, Charlotte NC",
+            "metrics": [
+              {
+                "value": "50%",
+                "label": "Less drive time"
+              },
+              {
+                "value": "$18K",
+                "label": "Additional fall revenue"
+              }
+            ]
+          },
+          {
+            "quote": "The photo documentation changed everything. I take pictures of every damaged section or clogged downspout and show customers immediately. My repair conversion rate went from maybe 10% to over 35%. Those repairs add $6,000-$8,000 to my annual revenue.",
+            "author": "Marcus Chen",
+            "business": "Peak Gutter Solutions, Denver CO",
+            "metrics": [
+              {
+                "value": "35%",
+                "label": "Repair approval rate"
+              },
+              {
+                "value": "$7K",
+                "label": "Average annual repair revenue"
+              }
+            ]
+          }
+        ]
+      },
+      "cta": {
+        "title": "Ready to Maximize Your Peak Season Revenue?",
+        "subtitle": "Join gutter cleaning pros who book out their fall schedule weeks faster with ServiceGrid."
+      }
+    },
     "junkRemoval": {"label": "Junk Removal", "description": "On-demand scheduling and pricing software for junk removal businesses", "hero": {"title": "Junk Removal Software That Hauls More Jobs", "subtitle": "Price by volume instantly, coordinate teams, optimize disposal routes, and handle same-day bookings with ease."}, "challenges": {"0": {"title": "Accurate Volume Pricing", "description": "Estimating load size and pricing without physical inspection leads to disputes and lost revenue."}, "1": {"title": "Team Coordination", "description": "Most jobs require 2+ people. Coordinating team availability and assigning multi-person jobs is complex."}, "2": {"title": "Disposal Routing", "description": "Finding the closest appropriate disposal facility for each load type while minimizing dump fees."}, "3": {"title": "Same-Day Booking", "description": "Customers expect fast service. Managing same-day bookings while routing efficiently is challenging."}}, "features": {"0": {"title": "Photo-Based Volume Estimates", "description": "Customers send photos, you estimate load size using visual guides. Provide instant quotes by volume tier (1/4 truck, 1/2 truck, full truck).", "benefit": "Quote accurately without site visits and win more jobs"}, "1": {"title": "Multi-Person Job Coordination", "description": "Assign 2+ team members to each job automatically. Track availability and ensure proper staffing for every haul.", "benefit": "Never send one person to a two-person job"}, "2": {"title": "Disposal Facility Database", "description": "Store facility locations, accepted materials, and fee structures. Route to the optimal facility for each load type.", "benefit": "Minimize disposal costs and maximize profitability"}, "3": {"title": "Real-Time Booking & Dispatch", "description": "Accept online bookings 24/7. Dispatch available teams instantly with job details and customer location.", "benefit": "Capture same-day jobs and fill schedule gaps"}}, "cta": {"title": "Ready to haul your business to the next level?", "subtitle": "Join junk removal professionals using ServiceGrid to book more jobs and increase efficiency."}},
     "carpetCleaning": {"label": "Carpet Cleaning", "description": "Professional carpet cleaning management and scheduling software", "hero": {"title": "Carpet Cleaning Software That Extracts More Revenue", "subtitle": "Calculate square footage precisely, document stains, schedule drying time, and maximize equipment utilization."}, "challenges": {"0": {"title": "Square Footage Pricing", "description": "Manually measuring rooms and calculating square footage leads to pricing errors and disputes."}, "1": {"title": "Stain Documentation", "description": "Recording pre-existing stains and setting proper expectations without photo evidence causes conflicts."}, "2": {"title": "Drying Time Scheduling", "description": "Blocking enough time between jobs for equipment setup, cleaning, and drying without losing bookings."}, "3": {"title": "Equipment Utilization", "description": "Tracking which machines are available and scheduling maintenance without double-booking equipment."}}, "features": {"0": {"title": "Room Measurement Tools", "description": "Digital room measurement with automatic square footage calculation. Price by room, area, or stain treatment.", "benefit": "Create precise quotes in minutes and eliminate pricing disputes"}, "1": {"title": "Before/After Photo Documentation", "description": "Capture and timestamp before/after photos with stain markers. Automatically include in customer communications.", "benefit": "Set proper expectations and showcase your quality"}, "2": {"title": "Smart Time Blocking", "description": "Set job duration based on square footage and service type. Automatically block time for drying and equipment setup.", "benefit": "Prevent overbooking and maximize jobs per day"}, "3": {"title": "Equipment Calendars", "description": "Assign equipment to jobs and track maintenance schedules. Prevent double-booking and extend equipment life.", "benefit": "Maximize equipment ROI and reduce downtime"}}, "cta": {"title": "Ready to clean up your carpet business?", "subtitle": "Join carpet cleaning professionals using ServiceGrid to streamline operations and increase bookings."}}
   }
