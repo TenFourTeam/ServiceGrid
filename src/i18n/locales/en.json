@@ -2354,32 +2354,32 @@
       "pricing": {
         "title": "Investment & ROI for Gutter Cleaning Businesses",
         "subtitle": "See exactly how ServiceGrid helps gutter cleaning businesses manage seasonality and maximize annual revenue",
-        "points": [
-          {
-            "title": "Software Cost",
-            "description": "ServiceGrid starts at $19/month with a 14-day free trial. No setup fees, no contracts, no per-job charges. That's less than the profit from cleaning one single-story home per month."
-          },
-          {
-            "title": "Seasonal Booking Automation",
-            "description": "Automated campaigns sent to past customers 2-3 weeks before peak season fill your schedule faster. Operators report booking 40-60% of fall work from automated reminders alone, eliminating the need for paid advertising during peak season. That's worth $3,000-$8,000 in saved marketing costs annually."
-          },
-          {
-            "title": "Time Savings on Admin",
-            "description": "Gutter cleaning operators save 5-8 hours weekly during peak season on scheduling, route planning, and customer communications. That recovered time allows 6-10 additional houses cleaned weekly during October-November, worth $1,200-$2,400 in additional revenue during your busiest 8 weeks."
-          },
-          {
-            "title": "Annual Retention Rate Increase",
-            "description": "Automated anniversary reminders sent 11-12 months after last cleaning drive repeat bookings without manual effort. Retention rates improve from typical 35-45% to 60-75%, worth $6,000-$12,000 annually for a 200-customer base. Each retained customer costs $0 in marketing versus $30-$80 to acquire a new one."
-          },
-          {
-            "title": "Route Optimization",
-            "description": "Geographic job clustering and optimized routing reduce daily drive time by 30-45 minutes, allowing one additional house per day during peak season. Over a 40-day fall season, that's 40 additional jobs worth $4,000-$8,000 in revenue with no additional advertising spend."
-          },
-          {
-            "title": "Payback Timeline",
-            "description": "Most gutter cleaning businesses recoup their annual software investment within 8-12 booked jobs through automated rebooking and time savings. During peak season alone, operators typically see 400-800% ROI from efficiency gains and improved customer retention."
-          }
-        ],
+          "points": [
+            {
+              "label": "Software Cost",
+              "value": "ServiceGrid starts at $19/month with a 14-day free trial. No setup fees, no contracts, no per-job charges. That's less than the profit from cleaning one single-story home per month."
+            },
+            {
+              "label": "Seasonal Booking Automation",
+              "value": "Automated campaigns sent to past customers 2-3 weeks before peak season fill your schedule faster. Operators report booking 40-60% of fall work from automated reminders alone, eliminating the need for paid advertising during peak season. That's worth $3,000-$8,000 in saved marketing costs annually."
+            },
+            {
+              "label": "Time Savings on Admin",
+              "value": "Gutter cleaning operators save 5-8 hours weekly during peak season on scheduling, route planning, and customer communications. That recovered time allows 6-10 additional houses cleaned weekly during October-November, worth $1,200-$2,400 in additional revenue during your busiest 8 weeks."
+            },
+            {
+              "label": "Annual Retention Rate Increase",
+              "value": "Automated anniversary reminders sent 11-12 months after last cleaning drive repeat bookings without manual effort. Retention rates improve from typical 35-45% to 60-75%, worth $6,000-$12,000 annually for a 200-customer base. Each retained customer costs $0 in marketing versus $30-$80 to acquire a new one."
+            },
+            {
+              "label": "Route Optimization",
+              "value": "Geographic job clustering and optimized routing reduce daily drive time by 30-45 minutes, allowing one additional house per day during peak season. Over a 40-day fall season, that's 40 additional jobs worth $4,000-$8,000 in revenue with no additional advertising spend."
+            },
+            {
+              "label": "Payback Timeline",
+              "value": "Most gutter cleaning businesses recoup their annual software investment within 8-12 booked jobs through automated rebooking and time savings. During peak season alone, operators typically see 400-800% ROI from efficiency gains and improved customer retention."
+            }
+          ],
         "roiNote": "Gutter cleaning businesses using ServiceGrid report filling their fall schedule 2-3 weeks faster and retaining 25-30% more customers year-over-year, resulting in an average $8,500 annual revenue increase."
       },
       "gettingStarted": {
