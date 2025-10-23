@@ -1559,7 +1559,308 @@
         "subtitle": "Join pressure washing professionals using ServiceGrid to work smarter and increase profits."
       }
     },
-    "irrigation": {"label": "Irrigation", "description": "Specialized software for irrigation and sprinkler system professionals", "hero": {"title": "Irrigation Software for Smarter System Management", "subtitle": "Manage seasonal services, track zones and equipment, automate maintenance schedules, and respond to emergencies faster."}, "challenges": {"0": {"title": "Seasonal Service Tracking", "description": "Coordinating spring startups, summer maintenance, and fall winterization across hundreds of systems is overwhelming."}, "1": {"title": "Zone Documentation", "description": "Remembering zone layouts, valve locations, and system specifications for each property without proper records."}, "2": {"title": "Emergency Response Time", "description": "Finding system information and dispatching technicians quickly during pipe bursts and emergencies."}, "3": {"title": "Maintenance Reminders", "description": "Missing seasonal deadlines like winterization can lead to liability issues and unhappy customers."}}, "features": {"0": {"title": "Seasonal Service Automation", "description": "Set up spring, summer, and fall service templates once. ServiceGrid automatically schedules and reminds customers.", "benefit": "Never miss a winterization deadline or seasonal revenue opportunity"}, "1": {"title": "Zone & System Documentation", "description": "Store zone maps, valve locations, controller settings, and system notes with photos for every property.", "benefit": "Service systems faster with complete property information"}, "2": {"title": "Emergency Dispatch", "description": "Access property information instantly on mobile. Dispatch available technicians with one tap during emergency calls.", "benefit": "Respond to emergencies 50% faster and improve customer satisfaction"}, "3": {"title": "Maintenance Tracking", "description": "Schedule and track backflow testing, controller battery changes, and seasonal inspections automatically.", "benefit": "Reduce liability and provide proactive maintenance"}}, "cta": {"title": "Ready to streamline your irrigation business?", "subtitle": "Join irrigation professionals managing more systems with less stress using ServiceGrid."}},
+    "irrigation": {
+      "label": "Irrigation & Sprinklers",
+      "description": "Irrigation system maintenance and installation",
+      "hero": {
+        "headline": "Irrigation Business Software That Handles Seasonal Surges",
+        "subheadline": "Manage spring startups, winterizations, and emergency repairs with scheduling built for seasonal irrigation work.",
+        "ctaText": "Start Managing Seasonal Services",
+        "ctaLink": "/auth"
+      },
+      "challenges": [
+        {
+          "title": "Seasonal Deadline Chaos",
+          "description": "Spring startup and fall winterization rushes mean missed appointments and angry customers when you lose track of 200+ properties that need service in a 3-week window."
+        },
+        {
+          "title": "Zone Layout Memory Game",
+          "description": "Every system is different—8 zones here, 12 there, valve boxes in random spots. When you return months later for repairs, you're starting from scratch trying to remember each property's layout."
+        },
+        {
+          "title": "Emergency Calls During Peak Season",
+          "description": "Broken pipes don't wait for your schedule. When emergency calls come in during your busiest weeks, you're scrambling to dispatch techs who are already fully booked three weeks out."
+        },
+        {
+          "title": "Contract Renewal Gaps",
+          "description": "Half your customers forget to re-book seasonal services until it's too late. You're chasing down contract renewals instead of focusing on the work, and late winterizations turn into burst pipe liabilities."
+        }
+      ],
+      "features": [
+        {
+          "title": "Seasonal Service Automation",
+          "description": "Schedule all spring startups and fall winterizations in one session, then let automated reminders notify customers 60, 30, and 14 days before their service date. No more manual follow-up calls.",
+          "benefit": "Handle 200+ seasonal services without scheduling chaos"
+        },
+        {
+          "title": "System Documentation With Photos",
+          "description": "Document every property's zone layout, controller settings, and valve box locations with photos and notes during service visits. Pull up complete system details instantly on future calls.",
+          "benefit": "Stop wasting time re-learning systems on every return visit"
+        },
+        {
+          "title": "Emergency Dispatch Ready",
+          "description": "When a broken pipe emergency comes in, instantly see which tech is nearest and available, view the property's system documentation, and dispatch with one tap from your mobile device.",
+          "benefit": "Respond to emergencies in minutes, not hours"
+        },
+        {
+          "title": "Contract Renewal Tracking",
+          "description": "Track which customers are on annual maintenance contracts and when renewals are due. Automated reminders ensure customers re-book before seasonal deadlines pass.",
+          "benefit": "Convert 80%+ of one-time customers to annual contracts"
+        }
+      ],
+      "faq": [
+        {
+          "question": "How much should I charge for sprinkler system startup?",
+          "answer": "Most irrigation contractors charge $75-$150 for residential spring startups, depending on system complexity and zone count. Properties with 4-8 zones typically run $75-$95, while 10-15 zone systems command $120-$150. Include backflow testing in the startup price or charge separately at $50-$75. Commercial properties with 20+ zones start around $200-$350."
+        },
+        {
+          "question": "What's a fair price for irrigation system winterization?",
+          "answer": "Winterization (system blowout) pricing ranges from $60-$125 for residential properties, based on zone count and accessibility. Most contractors charge $70-$85 for standard 6-10 zone systems. Properties requiring longer blowout times (12+ zones, multiple backflows, or difficult valve access) justify $100-$125. Commercial properties typically run $150-$400 depending on complexity."
+        },
+        {
+          "question": "How do I price irrigation repairs vs. installations?",
+          "answer": "Repairs typically use service call minimums ($75-$125) plus parts and additional labor at $65-$95 per hour. Valve replacements run $150-$250 all-in, head replacements $15-$35 per head. New installations are priced per zone ($350-$800 per zone depending on size, material quality, and site conditions) or per square foot ($0.40-$1.20/sq ft). Always charge for design time separately on installs."
+        },
+        {
+          "question": "Should I charge per zone or flat rate for service calls?",
+          "answer": "Use service call minimums ($75-$125) that cover the first 60-90 minutes, then charge additional time at your hourly rate ($65-$95/hour). This protects you on small jobs while remaining competitive. For seasonal services like startups and winterizations, flat rates per property (based on zone count tiers) are standard and easier for customers to understand."
+        },
+        {
+          "question": "What's the typical profit margin for irrigation businesses?",
+          "answer": "Well-run irrigation service businesses target 40-60% gross margins on labor (after paying technician wages but before overhead). Parts and materials typically carry 30-50% markup. Seasonal services (startups, winterizations) often hit 60-70% margins since they're quick, predictable work. New installations run lower at 35-45% margins due to competitive bidding and longer project timelines."
+        },
+        {
+          "question": "How do I document zone layouts for future reference?",
+          "answer": "Take photos of the controller with zone labels visible, mark valve box locations on a property sketch, and photograph each valve box interior showing zone wire colors. Note rotor vs. spray head counts per zone and any special features (drip lines, master valve, flow sensor). Store all documentation with customer records—this saves 15-30 minutes on every return visit and prevents re-learning systems."
+        },
+        {
+          "question": "What should be included in a spring startup checklist?",
+          "answer": "Turn on water supply slowly while checking for leaks at backflow and main valve. Test each zone manually for broken heads, coverage gaps, and proper pressure. Inspect and clean all heads, adjust spray patterns, check controller battery and programming. Test backflow preventer if certified. Document any needed repairs and provide customer with written recommendations. Most startups take 30-60 minutes for residential systems."
+        },
+        {
+          "question": "When is the deadline for winterization in different climates?",
+          "answer": "Northern states (Minnesota, Wisconsin, Montana) need winterization by mid-October before consistent freezing temperatures. Midwest states (Illinois, Ohio, Kansas) target late October to early November. Southern cold-climate areas (Oklahoma, Tennessee, North Carolina) can extend to mid-November. Track first frost predictions in your area and schedule 2-3 weeks ahead—late winterizations risk burst pipes and liability claims."
+        },
+        {
+          "question": "How do I test and certify backflow preventers?",
+          "answer": "Backflow testing requires state certification (courses typically 16-40 hours, $400-$800). Use a certified test kit (Watts, Ames, Apollo brands, $400-$1,200) calibrated annually. Follow manufacturer procedures to test check valves and relief valve opening points, document results on required state forms. Most tests take 10-20 minutes. Testing 20-30 backflows per day during spring generates $1,000-$1,500 daily revenue at $50-$75 per test."
+        },
+        {
+          "question": "What's the proper way to blow out irrigation lines?",
+          "answer": "Use an air compressor rated 80-120 PSI with 30-80 CFM capacity (larger commercial systems need 80+ CFM). Connect to mainline via quick-coupler or drain port, open one zone at a time starting with highest/farthest zone. Run air until all water is expelled (mist transitions to dry air), typically 2-5 minutes per zone. Never exceed 80 PSI on residential systems—higher pressure can damage pipes and fittings."
+        },
+        {
+          "question": "How do I troubleshoot zone communication issues?",
+          "answer": "Check controller display for error codes, test zone wire continuity with multimeter (should read 20-60 ohms to solenoid). Inspect wire connections at controller and valve box for corrosion or loose wires. Swap suspected bad zone wire with working zone to isolate controller vs. field wiring issues. Common causes: cut wires from landscaping work (80%), failed solenoid ($20-$45 part), or controller output failure."
+        },
+        {
+          "question": "When should I recommend upgrading to smart controllers?",
+          "answer": "Recommend smart controllers (Rachio, RainBird WiFi, Hunter Hydrawise) when customers complain about high water bills, have inconsistent watering schedules, or want remote access. Smart controllers reduce water use 30-50%, saving $200-$600 annually on typical residential properties. Many water utilities offer $50-$200 rebates. Installation takes 45-90 minutes and commands $250-$450 labor plus controller cost ($150-$350)."
+        },
+        {
+          "question": "How do I prioritize emergency calls vs. scheduled maintenance?",
+          "answer": "Triage by severity: active water main breaks or flooding get same-day response (charge premium $150-$250 minimum). Non-flooding broken zones can wait 24-48 hours (standard $75-$125 minimum). Schedule emergency slots (10-20% of daily capacity) during peak season, and be transparent about wait times. Customers accept longer waits if you communicate clearly and offer specific appointment windows."
+        },
+        {
+          "question": "What information do I need for broken pipe emergencies?",
+          "answer": "Ask: where is water pooling, how long has it been running, which zone/area is affected, can they turn off the water at the main valve or timer? Get property address, gate codes, and customer phone number. Pull up property records to review zone layout and previous service notes before dispatching. This information helps you bring the right parts and reduces diagnostic time on-site by 50%."
+        },
+        {
+          "question": "Should I offer 24/7 emergency service?",
+          "answer": "Most residential irrigation businesses operate normal hours (7am-6pm) with emergency callbacks until 8-9pm. True 24/7 service rarely pays off—middle-of-night irrigation emergencies are uncommon since systems run on timers. Focus on same-day or next-morning response during business hours. Commercial clients (golf courses, HOAs, sports fields) may justify premium 24/7 availability with retainer agreements."
+        },
+        {
+          "question": "How do I charge for emergency after-hours calls?",
+          "answer": "Use premium minimums for after-hours: 1.5x regular rate for evenings (after 6pm), 2x for weekends, 2.5-3x for holidays. Standard $75-$125 minimums become $115-$190 evenings, $150-$250 weekends. Clearly communicate premium rates when booking—most customers accept higher charges for urgency. After-hours calls should be genuinely urgent (active flooding, broken mains) to justify premium pricing."
+        },
+        {
+          "question": "How do I convert one-time customers to annual maintenance plans?",
+          "answer": "Offer packages bundling spring startup, mid-season check, and fall winterization at 10-15% discount vs. individual service pricing. Position as 'protection plans' preventing costly freeze damage and ensuring optimal system performance. Send renewal reminders 60 days before spring season. Customers on plans renew at 70-85% rates vs. 25-35% for one-time service customers, dramatically improving revenue predictability."
+        },
+        {
+          "question": "What's the renewal rate for seasonal service contracts?",
+          "answer": "Well-managed irrigation businesses see 75-85% annual contract renewals when they use automated reminders, deliver consistent quality, and maintain customer communication. Businesses relying on customers to re-book manually typically see 40-55% renewals. The difference: proactive communication 60, 30, and 14 days before seasonal deadlines. Every 10% increase in renewal rate equals $15,000-$30,000 in recurring revenue for a $200K business."
+        },
+        {
+          "question": "Should I offer backflow testing as a standalone service?",
+          "answer": "Yes—backflow testing is high-margin work requiring certification but minimal equipment investment. Charge $50-$75 per test (takes 10-20 minutes), market to municipal water customers facing annual testing requirements. You can test 20-30 devices per day during spring rush, generating $1,000-$1,500 daily revenue. Cross-sell irrigation maintenance to backflow-only customers—20-30% convert to full-service contracts."
+        },
+        {
+          "question": "How do I compete with landscapers who offer irrigation as an add-on?",
+          "answer": "Emphasize irrigation specialization: certified backflow testing, warranty on repairs, emergency response capability, and system optimization expertise. Landscapers treat irrigation as secondary—you make it your primary focus. Target customers frustrated with landscapers who 'also do sprinklers.' Offer detailed system documentation, seasonal maintenance contracts, and smart controller upgrades that generalist landscapers don't provide. Specialization justifies 15-25% premium pricing."
+        }
+      ],
+      "pricing": {
+        "title": "Investment & ROI for Irrigation",
+        "subtitle": "Understanding the costs and returns of professional irrigation management software for seasonal service businesses.",
+        "points": [
+          {
+            "label": "Software Cost",
+            "value": "ServiceGrid starts at $19/month, covering unlimited seasonal services, customer records, and mobile access for field documentation. Compare to manual tracking costs: wasted drive time from poor routing ($300-$600/month in fuel and lost productivity), missed appointments from calendar errors (2-4% of services at $75-$150 each), and time spent on manual reminder calls (5-10 hours weekly at $50-$75/hour value)."
+          },
+          {
+            "label": "Time Savings",
+            "value": "Automated customer reminders save 6-10 hours weekly during peak seasons vs. manual phone calls and texts. Digital documentation with photos eliminates 15-30 minutes per return visit spent re-learning system layouts. Route optimization reduces daily drive time by 20-30%, adding 2-3 extra service stops per day. These time savings equal $2,000-$4,000 monthly in recovered productivity for a $200K annual revenue business."
+          },
+          {
+            "label": "Revenue Increase",
+            "value": "Irrigation businesses using ServiceGrid report 35-50% higher seasonal service capture rates through automated reminders vs. manual follow-up. Converting 30% more one-time customers to annual contracts (from 50% to 80% renewal rates) adds $15,000-$30,000 annual recurring revenue for typical operations. Better emergency dispatch reduces response time from 4 hours to 90 minutes, enabling 40-60% more premium emergency calls."
+          },
+          {
+            "label": "Emergency Response Speed",
+            "value": "Instant access to system documentation and technician availability reduces emergency response time by 60-75%. Faster dispatch means handling more emergency calls during peak season—each additional emergency call generates $150-$250 premium revenue vs. $75-$125 scheduled service. Businesses completing 5 extra emergency calls weekly add $15,000-$25,000 annual revenue during the March-May rush."
+          },
+          {
+            "label": "Customer Retention",
+            "value": "Automated seasonal reminders sent 60, 30, and 14 days before service deadlines improve contract renewals from 50-55% to 75-85%. For a business with 300 seasonal customers at $180 average annual contract value, improving retention from 50% to 80% increases recurring revenue from $27,000 to $43,200—a $16,200 annual gain. Higher retention also reduces marketing costs needed to replace lost customers."
+          },
+          {
+            "label": "Payback Timeline",
+            "value": "Most irrigation businesses recover their software investment within 3-5 seasonal services through time savings and reduced missed appointments. A business completing 200 spring startups captures an additional 60-100 services through better reminders and scheduling, generating $4,500-$15,000 in revenue that wouldn't exist with manual processes. Monthly software cost ($19-$29) pays for itself with one additional weekly service at typical $75-$150 pricing."
+          }
+        ],
+        "roiNote": "Irrigation businesses managing 150+ seasonal services typically see 8-15x ROI on software costs within the first year through improved service capture rates, faster emergency response, and higher contract renewals."
+      },
+      "gettingStarted": {
+        "title": "Get Your Irrigation System Running Fast",
+        "subtitle": "From setup to managing seasonal services in under a week",
+        "steps": [
+          {
+            "icon": "Settings",
+            "title": "Initial Setup (15 minutes)",
+            "description": "Add your business details, service area, and branding. Configure seasonal service templates for spring startups, mid-season maintenance, and fall winterizations. Import your customer list with property details and system information (zone counts, backflow locations, controller types). Set up your backflow testing certification schedule if applicable."
+          },
+          {
+            "icon": "Calendar",
+            "title": "Schedule Seasonal Services (10 minutes)",
+            "description": "Create your spring startup schedule based on last frost dates in your area, and set fall winterization deadlines by climate zone. Configure automated customer reminders to send 60, 30, and 14 days before scheduled service dates. Assign technicians to service routes and territories, optimizing for minimal drive time between properties."
+          },
+          {
+            "icon": "Rocket",
+            "title": "Go Live & Document Systems (10 minutes)",
+            "description": "Download the ServiceGrid mobile app for field documentation during service visits. Start capturing zone layouts, controller settings, and valve box locations with photos and notes. Track completed seasonal services, backflow certifications, and any repair recommendations. Send your first digital invoice for seasonal maintenance. Your complete system history is now searchable for instant recall on future visits."
+          }
+        ]
+      },
+      "deepDive": {
+        "title": "Irrigation Industry Knowledge",
+        "subtitle": "Professional terminology and operational best practices for irrigation service businesses",
+        "terms": [
+          {
+            "term": "Zone",
+            "definition": "A distinct section of an irrigation system controlled by a single valve, typically designed to water plants with similar water requirements. Residential systems have 4-12 zones on average; commercial properties can exceed 50 zones. Each zone is independently programmed for duration and frequency based on plant type, sun exposure, and soil conditions."
+          },
+          {
+            "term": "Controller",
+            "definition": "The programmable timer (often called the 'brain') that manages watering schedules for each zone. Traditional controllers use fixed schedules; smart controllers (WiFi-enabled) adjust automatically based on weather data, soil moisture sensors, and evapotranspiration rates. Smart controllers reduce water consumption by 30-50% compared to basic timers, saving $200-$600 annually on typical residential properties."
+          },
+          {
+            "term": "Backflow Preventer",
+            "definition": "A valve assembly that prevents irrigation water from flowing backward into the potable (drinking) water supply, protecting against contamination from fertilizers, pesticides, or stagnant water. Must be tested annually by certified testers in most jurisdictions. Common types: PVB (pressure vacuum breaker), SVB (spill-resistant vacuum breaker), RP (reduced pressure), and DC (double check). Testing takes 10-20 minutes and generates $50-$75 revenue per device."
+          },
+          {
+            "term": "GPM Requirements (Gallons Per Minute)",
+            "definition": "The total water flow available from the property's supply line, measured in gallons per minute. This determines how many zones can run simultaneously and which sprinkler head types are feasible. Residential properties typically provide 10-25 GPM; commercial sites range from 30-100+ GPM. Undersized GPM causes low pressure and poor coverage—calculating GPM correctly is critical for system design and preventing coverage gaps."
+          },
+          {
+            "term": "Rotor vs. Spray Heads",
+            "definition": "Two primary sprinkler head types with different applications. Rotors cover 20-50 foot radius using rotating streams, ideal for lawns with low precipitation rates (0.4-0.6 inches/hour). Spray heads cover 4-15 feet with fixed spray patterns, suited for shrubs and tight areas with higher precipitation rates (1.5-2.0 inches/hour). Never mix rotors and sprays on the same zone—different precipitation rates cause uneven watering and turf stress."
+          },
+          {
+            "term": "Winterization (System Blowout)",
+            "definition": "The process of removing all water from irrigation lines, valves, and sprinkler heads using compressed air to prevent freeze damage in cold climates. Requires 80-120 PSI air compressor with 30-80 CFM capacity (larger systems need 80+ CFM). Critical in regions where temperatures drop below 28°F—failure to winterize causes burst pipes, cracked valves, and broken fittings, resulting in $500-$5,000+ repair costs and potential liability for contractors. Most residential winterizations take 30-60 minutes and command $60-$125 pricing."
+          }
+        ],
+        "bestPractices": [
+          {
+            "title": "Document Every System With Photos and Notes",
+            "description": "Capture controller settings, zone layouts, valve box locations, head types, and backflow preventer details with photos during every service visit. Store documentation with customer records for instant retrieval. This eliminates 15-30 minutes wasted per return visit re-learning system configurations and protects against liability when other contractors or landscapers make changes between your visits. Digital documentation also enables faster emergency response—techs arrive knowing exactly what they're working on."
+          },
+          {
+            "title": "Schedule Winterization by Climate Zone, Not Calendar Date",
+            "description": "Northern states (Minnesota, Wisconsin, Montana) require winterization by mid-October before consistent hard freezes. Midwest regions (Illinois, Ohio, Kansas) target late October to early November. Southern cold-climate areas (Oklahoma, Tennessee, North Carolina) can extend to mid-November. Track NOAA first frost predictions for your service area and schedule customers 2-3 weeks ahead—late winterizations lead to burst pipes, emergency calls, and liability claims that cost far more than the original service revenue."
+          },
+          {
+            "title": "Offer Annual Maintenance Contracts, Not One-Time Services",
+            "description": "Bundle spring startup, mid-season adjustment, and fall winterization into annual contracts at 10-15% discount vs. individual service pricing. Position as 'system protection plans' preventing costly freeze damage and ensuring optimal performance year-round. Customers on annual contracts renew at 70-85% rates compared to 25-35% for one-time service customers. This shift from transactional to recurring revenue dramatically improves cash flow predictability and business valuation."
+          },
+          {
+            "title": "Maintain Backflow Certification and Testing Equipment",
+            "description": "Backflow testing requires state certification (16-40 hour courses, $400-$800 cost) but generates exceptional margins. Testing 20-30 devices per day during March-May rush produces $1,000-$1,500 daily revenue at $50-$75 per test with minimal equipment investment ($400-$1,200 test kit plus annual calibration). Many irrigation customers are required by municipal water suppliers to test annually—offering this service keeps you top-of-mind and opens cross-sell opportunities for full maintenance contracts."
+          },
+          {
+            "title": "Build Emergency Response Capability",
+            "description": "Stock common repair parts (solenoids, valves, fittings, assorted heads) to complete repairs on first visit without return trips. Develop triage protocols: active main breaks get same-day response at premium rates ($150-$250 minimum vs. $75-$125 standard), non-flooding broken zones can wait 24-48 hours. Reserve 10-20% of daily capacity for emergency slots during peak season. Operators offering fast, professional emergency service command premium pricing and generate referrals from satisfied customers."
+          },
+          {
+            "title": "Recommend Smart Controllers for Water Savings",
+            "description": "Smart controllers (Rachio, RainBird WiFi, Hunter Hydrawise) reduce water use by 30-50% through weather-based adjustments and soil moisture data, saving customers $200-$600 annually on typical residential properties. Many water utilities offer $50-$200 rebates, improving customer payback to under 1 year. Installation takes 45-90 minutes and commands $250-$450 labor plus $150-$350 controller cost. Pitch water savings and rebates—environmental benefits and lower bills are compelling, and you capture high-margin upgrade revenue."
+          }
+        ]
+      },
+      "testimonials": {
+        "title": "Real Results from Irrigation Professionals",
+        "testimonials": [
+          {
+            "quote": "I was tracking 240 spring startups and fall winterizations on paper calendars and sticky notes. Customers would call and I'd scramble to remember their system details. ServiceGrid sends automated reminders to customers, stores zone maps with photos, and schedules my route. I now handle 340 seasonal services with less stress and zero missed deadlines.",
+            "author": "David Martinez",
+            "business": "Precision Irrigation, Denver CO",
+            "metrics": [
+              {
+                "value": "42%",
+                "label": "more customers (240 → 340 properties)"
+              },
+              {
+                "value": "$18K",
+                "label": "additional seasonal revenue"
+              }
+            ]
+          },
+          {
+            "quote": "Emergency calls used to mean frantic phone tag—finding property info, checking technician availability, then manually dispatching. Now when a customer reports a broken pipe, I tap their name in ServiceGrid mobile, see their zone layout and valve locations instantly, and dispatch the nearest available tech with one button. Our average emergency response time dropped from 4 hours to 90 minutes.",
+            "author": "Jennifer Thompson",
+            "business": "Elite Sprinkler Services, Austin TX",
+            "metrics": [
+              {
+                "value": "90 min",
+                "label": "average response (vs. 4 hours)"
+              },
+              {
+                "value": "65%",
+                "label": "more emergency calls handled"
+              }
+            ]
+          },
+          {
+            "quote": "My annual contract renewal rate was stuck at 55%—customers would forget about winterization until it was too late, then blame me. ServiceGrid automatically sends reminders 60, 30, and 14 days before seasonal deadlines. I also use it to track every backflow test with digital certificates. My renewal rate jumped to 84% and I've tested 1,200+ backflows this year instead of my usual 800.",
+            "author": "Mike Chen",
+            "business": "WaterWise Irrigation, Phoenix AZ",
+            "metrics": [
+              {
+                "value": "84%",
+                "label": "contract renewals (vs. 55%)"
+              },
+              {
+                "value": "50%",
+                "label": "more backflow tests (800 → 1,200)"
+              }
+            ]
+          }
+        ]
+      },
+      "cta": {
+        "headline": "Ready to Handle More Irrigation Customers?",
+        "subheadline": "Join irrigation professionals who manage seasonal surges without the scheduling chaos.",
+        "primaryButton": {
+          "text": "Start Free Trial",
+          "link": "/auth"
+        },
+        "secondaryButton": {
+          "text": "See How It Works",
+          "link": "#features"
+        }
+      }
+    },
     "poolService": {"label": "Pool Service", "description": "Complete pool service management and route optimization software", "hero": {"title": "Pool Service Software That Keeps You Swimming", "subtitle": "Optimize routes, track chemicals, manage equipment, and automate seasonal services with software built for pool professionals."}, "challenges": {"0": {"title": "Weekly Route Efficiency", "description": "Planning optimal routes across dozens of pools while managing time windows and customer preferences."}, "1": {"title": "Chemical Inventory", "description": "Tracking chemical usage per pool and maintaining proper inventory levels without overstocking."}, "2": {"title": "Equipment Maintenance", "description": "Remembering filter cleanings, pump servicing, and equipment history for each pool customer."}, "3": {"title": "Seasonal Services", "description": "Coordinating pool openings, closings, and mid-season repairs while keeping customers informed."}}, "features": {"0": {"title": "Intelligent Route Optimization", "description": "Create efficient weekly routes automatically. Mobile app guides technicians pool-to-pool with customer notes and chemical history.", "benefit": "Service 20% more pools with the same team"}, "1": {"title": "Chemical Tracking & Inventory", "description": "Log chemical readings and usage per pool. Track inventory levels and get low-stock alerts automatically.", "benefit": "Maintain perfect water chemistry and reduce chemical waste"}, "2": {"title": "Equipment Service History", "description": "Record filter cleanings, equipment repairs, and part replacements with photos and dates for every pool.", "benefit": "Provide better service and identify upsell opportunities"}, "3": {"title": "Automated Seasonal Workflows", "description": "Set up pool opening and closing checklists. Schedule and invoice seasonal services automatically.", "benefit": "Never miss an opening or closing and capture all seasonal revenue"}}, "cta": {"title": "Ready to make waves in your pool business?", "subtitle": "Join pool service professionals using ServiceGrid to optimize routes and grow revenue."}},
     "handyman": {"label": "Handyman", "description": "Versatile business management software for handyman services", "hero": {"title": "Handyman Software That Handles Every Job", "subtitle": "Manage diverse services, prevent scope creep, track parts, and schedule efficiently with software built for multi-trade professionals."}, "challenges": {"0": {"title": "Service Pricing Consistency", "description": "Pricing dozens of different services without a system leads to inconsistent quotes and underpricing."}, "1": {"title": "Scope Creep", "description": "Small jobs growing into big projects without proper change orders eats into profitability."}, "2": {"title": "Parts & Materials", "description": "Tracking which parts are needed, marking them up consistently, and getting reimbursed slows cash flow."}, "3": {"title": "Skill-Based Scheduling", "description": "Matching the right technician to each job type while keeping everyone busy is complex."}}, "features": {"0": {"title": "Service Catalog & Pricing", "description": "Create a library of common services with standard pricing. Build quotes quickly by selecting services and adjusting as needed.", "benefit": "Quote faster and maintain consistent, profitable pricing"}, "1": {"title": "Change Order Management", "description": "Document scope changes with photos and customer approval before starting additional work. Keep projects profitable.", "benefit": "Prevent scope creep and get paid for all work performed"}, "2": {"title": "Parts Tracking & Markup", "description": "Add parts to quotes and invoices with automatic markup. Track receipts and reimbursement in one place.", "benefit": "Recover all parts costs and increase parts revenue"}, "3": {"title": "Skill-Based Scheduling", "description": "Tag services by skill type and assign jobs to technicians based on their expertise and availability.", "benefit": "Send the right person to every job and improve quality"}}, "cta": {"title": "Ready to build a better handyman business?", "subtitle": "Join handyman professionals using ServiceGrid to manage more jobs and increase profits."}},
     "gutterCleaning": {"label": "Gutter Cleaning", "description": "Seasonal business management for gutter cleaning professionals", "hero": {"title": "Gutter Cleaning Software That Captures Every Season", "subtitle": "Manage seasonal demand, automate rebooking, track safety compliance, and maximize fall revenue with specialized software."}, "challenges": {"0": {"title": "Seasonal Demand Spikes", "description": "Managing overwhelming fall demand while filling the rest of the year is the biggest challenge."}, "1": {"title": "Safety Documentation", "description": "Tracking ladder safety, roof access, and insurance compliance without proper documentation is risky."}, "2": {"title": "Debris Disposal", "description": "Tracking debris removal and disposal costs to maintain profitability on each job."}, "3": {"title": "Annual Rebooking", "description": "Remembering to contact customers year after year for repeat business without automation."}}, "features": {"0": {"title": "Seasonal Campaign Automation", "description": "Send automated reminders to past customers before fall season. Create email and text campaigns to fill your schedule.", "benefit": "Book out fall season weeks in advance"}, "1": {"title": "Safety Checklists & Documentation", "description": "Digital safety checklists with photo documentation for insurance compliance. Store property access notes securely.", "benefit": "Reduce liability and meet insurance requirements"}, "2": {"title": "Before/After Photos & Disposal Tracking", "description": "Document gutter condition with photos. Track debris removal and disposal costs per job.", "benefit": "Show value to customers and maintain profitability"}, "3": {"title": "Automatic Annual Reminders", "description": "ServiceGrid automatically reminds customers 12 months after their last cleaning to rebook for next season.", "benefit": "Maximize repeat business without manual follow-up"}}, "cta": {"title": "Ready to clean up your gutter business?", "subtitle": "Join gutter cleaning professionals using ServiceGrid to automate seasonality and grow revenue."}},
