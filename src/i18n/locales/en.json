@@ -2803,6 +2803,286 @@
         "subtitle": "Join junk removal professionals using ServiceGrid to book more jobs and increase efficiency."
       }
     },
-    "carpetCleaning": {"label": "Carpet Cleaning", "description": "Professional carpet cleaning management and scheduling software", "hero": {"title": "Carpet Cleaning Software That Extracts More Revenue", "subtitle": "Calculate square footage precisely, document stains, schedule drying time, and maximize equipment utilization."}, "challenges": {"0": {"title": "Square Footage Pricing", "description": "Manually measuring rooms and calculating square footage leads to pricing errors and disputes."}, "1": {"title": "Stain Documentation", "description": "Recording pre-existing stains and setting proper expectations without photo evidence causes conflicts."}, "2": {"title": "Drying Time Scheduling", "description": "Blocking enough time between jobs for equipment setup, cleaning, and drying without losing bookings."}, "3": {"title": "Equipment Utilization", "description": "Tracking which machines are available and scheduling maintenance without double-booking equipment."}}, "features": {"0": {"title": "Room Measurement Tools", "description": "Digital room measurement with automatic square footage calculation. Price by room, area, or stain treatment.", "benefit": "Create precise quotes in minutes and eliminate pricing disputes"}, "1": {"title": "Before/After Photo Documentation", "description": "Capture and timestamp before/after photos with stain markers. Automatically include in customer communications.", "benefit": "Set proper expectations and showcase your quality"}, "2": {"title": "Smart Time Blocking", "description": "Set job duration based on square footage and service type. Automatically block time for drying and equipment setup.", "benefit": "Prevent overbooking and maximize jobs per day"}, "3": {"title": "Equipment Calendars", "description": "Assign equipment to jobs and track maintenance schedules. Prevent double-booking and extend equipment life.", "benefit": "Maximize equipment ROI and reduce downtime"}}, "cta": {"title": "Ready to clean up your carpet business?", "subtitle": "Join carpet cleaning professionals using ServiceGrid to streamline operations and increase bookings."}}
+    "carpetCleaning": {
+      "label": "Carpet Cleaning",
+      "description": "Professional carpet cleaning management and scheduling software",
+      "hero": {
+        "badge": "Carpet Cleaning Software",
+        "title": "Carpet Cleaning Software That Extracts More Revenue",
+        "subtitle": "Calculate square footage precisely, document stains, schedule drying time, and maximize equipment utilization."
+      },
+      "challenges": [
+        {
+          "title": "Square Footage Pricing",
+          "description": "Manually measuring rooms and calculating square footage leads to pricing errors and disputes."
+        },
+        {
+          "title": "Stain Documentation",
+          "description": "Recording pre-existing stains and setting proper expectations without photo evidence causes conflicts."
+        },
+        {
+          "title": "Drying Time Scheduling",
+          "description": "Blocking enough time between jobs for equipment setup, cleaning, and drying without losing bookings."
+        },
+        {
+          "title": "Equipment Utilization",
+          "description": "Tracking which machines are available and scheduling maintenance without double-booking equipment."
+        }
+      ],
+      "features": [
+        {
+          "title": "Room Measurement Tools",
+          "description": "Digital room measurement with automatic square footage calculation. Price by room, area, or stain treatment.",
+          "benefit": "Create precise quotes in minutes and eliminate pricing disputes"
+        },
+        {
+          "title": "Before/After Photo Documentation",
+          "description": "Capture and timestamp before/after photos with stain markers. Automatically include in customer communications.",
+          "benefit": "Set proper expectations and showcase your quality"
+        },
+        {
+          "title": "Smart Time Blocking",
+          "description": "Set job duration based on square footage and service type. Automatically block time for drying and equipment setup.",
+          "benefit": "Prevent overbooking and maximize jobs per day"
+        },
+        {
+          "title": "Equipment Calendars",
+          "description": "Assign equipment to jobs and track maintenance schedules. Prevent double-booking and extend equipment life.",
+          "benefit": "Maximize equipment ROI and reduce downtime"
+        }
+      ],
+      "faq": [
+        {
+          "question": "Should I charge per room or per square foot for carpet cleaning?",
+          "answer": "Per-room pricing is simpler for customers but requires clear room size limits. Most operators define 'room' as up to 200-300 square feet. Rooms larger than your cap should be charged as 1.5 or 2 rooms. Per-square-foot pricing ($0.25-$0.50/sq ft) is more accurate but requires measuring every space. Hybrid approach works best: per-room for standard rooms, square footage for large open areas. Avoid underselling by clearly stating room size limits in quotes."
+        },
+        {
+          "question": "What's a 'room' for pricing purposes (size limits)?",
+          "answer": "Define 'room' as 200-300 square feet maximum—roughly 12x20 or 14x18 rooms. Rooms exceeding your limit count as 1.5 or 2 rooms. Clearly communicate this in marketing and quotes: 'Standard room up to 250 sq ft.' Staircases typically count as one room (13-15 stairs). Hallways priced separately (6-12 feet = $25-$50). Open-concept living/dining combos are 2-3 rooms depending on size. Set expectations upfront to prevent disputes."
+        },
+        {
+          "question": "How many rooms can I clean per day?",
+          "answer": "Professional carpet cleaners with truck-mounted equipment average 8-12 rooms per day (1,600-3,000 sq ft). This includes travel time, setup, pre-treatment, extraction, and cleanup. Larger jobs (whole-house 2,500+ sq ft) take 3-4 hours plus dry time consideration for scheduling next job. Portable equipment adds 30-40% more time per room. Factor in drive time between jobs—dense service areas allow 2-3 homes daily, rural areas 1-2 homes."
+        },
+        {
+          "question": "What's the profit margin for residential carpet cleaning?",
+          "answer": "Established carpet cleaning businesses maintain 50-65% gross profit margins. Labor costs 20-30% (often owner-operator or small crew), equipment fuel/maintenance 8-12%, cleaning chemicals 3-5%, vehicle costs 5-8%. Specialty treatments (pet odor, stain protection, upholstery) yield 65-75% margins. Truck-mounted systems have higher upfront cost ($15k-$40k) but better margins than portable units due to faster cleaning and superior results."
+        },
+        {
+          "question": "Should I upsell stain protection or include it?",
+          "answer": "Offer stain protection (Scotchgard, fabric protector) as an add-on, not included in base pricing. Charge $15-$30 per room or $0.10-$0.15 per square foot for protector application. This allows budget-conscious customers to decline while capturing 40-60% upsell rate from those who want maximum protection. Protector application takes 3-5 minutes per room and costs $2-$4 in material—high-margin service. Always apply post-extraction when carpets are clean."
+        },
+        {
+          "question": "What's the difference between steam cleaning and other methods?",
+          "answer": "Hot water extraction (commonly called 'steam cleaning') injects heated water and cleaning solution deep into carpet fibers, then extracts it with powerful vacuum—the most effective method for deep cleaning. Encapsulation uses polymer crystals that trap dirt for vacuuming (low moisture, fast drying, good for maintenance). Bonnet cleaning scrubs surface with rotating pad (commercial, fast, not deep clean). Dry cleaning uses chemical solvents (minimal water, specialty fabrics). IICRC recommends hot water extraction for thorough cleaning."
+        },
+        {
+          "question": "How do I handle pet odor and stains effectively?",
+          "answer": "Pet urine requires enzyme-based pre-treatment to break down uric acid crystals that cause odor. Identify contaminated areas with UV blacklight before cleaning. Apply enzyme treatment with 15-20 minute dwell time before extraction. Severe cases need sub-floor treatment (pull carpet back, seal concrete/wood with odor barrier). Set realistic expectations—old, untreated urine may have permanently stained padding requiring replacement. Charge $25-$75 per area for enzyme treatment. Always recommend professional deodorizer, not just extraction."
+        },
+        {
+          "question": "What dwell time should I allow for pre-spray?",
+          "answer": "Allow 10-15 minutes dwell time for standard pre-spray on normal soil, 15-20 minutes for heavy traffic lanes or grease buildup. Pre-spray breaks down dirt and oils so extraction removes them effectively. Dwell time too short (under 5 minutes) leaves soil embedded; too long (over 30 minutes) causes over-wetting and longer dry times. Temperature matters—hot water activates pre-spray faster. Use rotary brush or carpet rake during dwell time to agitate fibers for deeper penetration."
+        },
+        {
+          "question": "How many dry passes do I need for proper extraction?",
+          "answer": "Make 2-4 dry passes (no water, vacuum-only) after wet extraction passes to remove maximum moisture. Proper technique: wet pass forward, dry pass backward, repeat. Over-wetting is the #1 cause of long dry times, mold, and browning. Well-extracted carpets should be dry to touch and ready for light foot traffic in 6-8 hours. Use air movers/fans to accelerate drying in humid conditions. Test moisture with meter—carpets over 20% moisture risk mold growth."
+        },
+        {
+          "question": "When should I recommend carpet replacement vs. cleaning?",
+          "answer": "Recommend replacement when carpets show: permanent staining through to backing, worn/matted fibers that won't lift after cleaning, odor penetration into padding despite cleaning, seam separation, water damage with mold growth. Be honest—cleaning severely damaged carpets sets false expectations and damages your reputation. If padding is contaminated (pet urine, flooding), replacement is often more cost-effective than sub-floor treatment. Offer to clean anyway if customer insists, but document pre-existing condition with photos."
+        },
+        {
+          "question": "How do I prevent over-wetting and extend dry time?",
+          "answer": "Control water flow—use lowest effective PSI (400-500 PSI for truck-mounts) and proper wand technique (slow, overlapping passes). Make 2-4 dry passes immediately after each wet pass to extract maximum moisture. Pre-vacuum thoroughly so carpet isn't holding dirt and water. Use high-quality cleaning solutions that don't require excessive rinsing. Deploy air movers and dehumidifiers in humid conditions. Open windows and increase airflow. Over-wetting causes browning, mold, and customer complaints—proper extraction technique prevents this."
+        },
+        {
+          "question": "Should I use truck-mount or portable extractors?",
+          "answer": "Truck-mounted systems are superior for residential/commercial work—higher PSI (500-1000+), hotter water (200-220°F), stronger vacuum, faster cleaning. Cost $15k-$40k but pay for themselves in 12-18 months through efficiency and quality. Portable extractors work for apartments, high-rises where truck-mount hose won't reach (150-200 ft limit). Portables cost $1k-$8k but take 40-50% longer per room with inferior results. Start with quality portable, upgrade to truck-mount once booked consistently."
+        },
+        {
+          "question": "What PSI and water temp is optimal for extraction?",
+          "answer": "Truck-mounted systems: 400-600 PSI for standard carpets, 600-800 PSI for heavily soiled commercial carpets. Higher PSI (800+) risks damage to residential carpets and seams. Water temperature: 180-210°F is optimal—hot enough to break down oils and activate chemicals, not so hot it damages fibers or sets stains. Portable units: 100-200 PSI, 140-180°F water temperature. Temperature drops 5-10°F per 50 feet of hose, so maintain higher temp at truck."
+        },
+        {
+          "question": "Which pre-spray chemicals work best for high-traffic areas?",
+          "answer": "Alkaline pre-sprays (pH 10-12) work best for greasy soil, traffic lanes, and heavily soiled areas—they break down oils and organic matter. Use acidic rinses (pH 3-5) afterward to neutralize residue and restore carpet pH. Enzyme-based pre-treatments for protein stains (blood, food, pet waste). Traffic lane cleaners have higher detergent concentration for embedded dirt. Always match chemical to soil type—wrong chemical wastes time and money. Follow manufacturer dilution ratios—stronger isn't always better."
+        },
+        {
+          "question": "Should I offer upholstery cleaning?",
+          "answer": "Yes—upholstery is high-margin ($75-$150 per furniture piece) and requires similar equipment with different attachments. Most carpet customers have furniture that needs cleaning. Offer combo packages: 3 rooms + sofa and loveseat for $300-$450. Upholstery requires different chemicals (lower pH, less aggressive) and hand tools. Drying time is longer (12-24 hours) due to padding density. Test for colorfastness before cleaning—some fabrics require dry-cleaning specialists. Upholstery adds 30-40% to average job revenue."
+        },
+        {
+          "question": "How do I price upholstery vs. carpet cleaning?",
+          "answer": "Charge $75-$150 per furniture piece for upholstery: $75-$100 for chairs/loveseats, $125-$175 for sofas, $50-$75 for dining chairs. Price by piece, not by square footage—customers understand per-item pricing better. Upholstery takes 15-30 minutes per piece but commands premium pricing due to hand-tool work and specialty chemicals. Offer bundled packages: carpet rooms + furniture at slight discount to increase average ticket. Upholstery margins (65-75%) exceed carpet cleaning due to perceived value and lower material costs."
+        },
+        {
+          "question": "Should I add tile and grout cleaning to my services?",
+          "answer": "Tile and grout cleaning pairs naturally with carpet cleaning—customers often want both. Charge $0.75-$1.50 per square foot for tile (higher than carpet due to labor intensity). Requires different equipment: rotary scrubbers or high-pressure tools, grout brushes, sealing equipment. Grout sealing is high-margin add-on ($0.50-$1.00 per sq ft). Market as package: clean carpets + tile/grout for complete home refresh. Learning curve is minimal if you already do carpet extraction. Tile jobs often book together with carpet—grows average ticket size."
+        }
+      ],
+      "pricing": {
+        "title": "Investment & ROI for Carpet Cleaning Businesses",
+        "subtitle": "See exactly how ServiceGrid helps carpet cleaners book more jobs, reduce no-shows, and maximize equipment utilization",
+        "points": [
+          {
+            "label": "Software Cost",
+            "value": "ServiceGrid starts at $19/month with a 14-day free trial. No setup fees, no contracts, no per-job transaction fees. That's less than the profit from cleaning one standard room. Cancel anytime, though most carpet cleaners stick with us once they see how much time they save on scheduling and customer communication."
+          },
+          {
+            "label": "Online Booking for Last-Minute Jobs",
+            "value": "Enable 24/7 online booking so customers can schedule next-day or same-week service without waiting for return calls. Carpet cleaners report capturing 30-40% more bookings because customers book during evening hours when urgency is highest. Each additional booking at your average $250-$400 per job means $3,000-$4,800 in monthly revenue you'd otherwise lose to competitors who answer phones faster."
+          },
+          {
+            "label": "Time Savings on Scheduling & Measurement",
+            "value": "Operators save 5-8 hours weekly managing appointments, calculating square footage quotes, and coordinating drying time schedules. Digital room measurement tools eliminate manual calculation errors and speed up estimates. That recovered time equals 4-6 additional jobs per month worth $1,000-$2,400. Over a year, time savings generate $12,000-$29,000 in additional revenue with zero marketing spend."
+          },
+          {
+            "label": "No-Show & Late Cancellation Reduction",
+            "value": "Automated SMS reminders sent 24 hours before appointments reduce no-shows from 15-20% to under 6%. Each prevented no-show saves $250-$400 in wasted drive time, fuel, and schedule gaps. For operators running 25 jobs monthly, reducing no-shows saves $3,000-$4,500 annually in lost revenue and allows you to fill schedule gaps with real bookings."
+          },
+          {
+            "label": "Equipment Utilization Tracking",
+            "value": "Assign equipment (truck-mount, portables, air movers) to jobs and track maintenance schedules to prevent double-booking and extend equipment life. Proper maintenance scheduling reduces emergency repairs by 40-50%, saving $2,000-$4,000 yearly on truck-mount downtime. Maximizing equipment uptime means handling 10-15% more jobs annually—worth $12,000-$24,000 in additional revenue from your existing equipment investment."
+          },
+          {
+            "label": "Payback Timeline",
+            "value": "Most carpet cleaning businesses recoup their annual software investment within 3-5 completed jobs through online booking capture and reduced no-shows. During peak seasons (spring cleaning, pre-holiday), operators typically see 600-1,200% ROI from efficiency gains and schedule optimization alone."
+          }
+        ],
+        "roiNote": "Carpet cleaning companies using ServiceGrid report handling 6-8 more jobs monthly and reducing no-shows by 65%, resulting in an average $16,800 annual revenue increase."
+      },
+      "gettingStarted": {
+        "title": "Get Started in Under 15 Minutes",
+        "subtitle": "ServiceGrid is built for carpet cleaning professionals who need to book jobs fast, not spend hours learning complicated software",
+        "steps": [
+          {
+            "icon": "Settings",
+            "title": "Set Up Services & Room Pricing",
+            "description": "Create your service menu: per-room pricing with size limits (e.g., 'up to 250 sq ft'), square footage pricing for large areas, specialty treatments (pet odor, stain protection, upholstery). Set your 'room' definition clearly so customers understand pricing. Configure service area radius, same-day booking availability (if offered), and drying time blocks between jobs to prevent overbooking."
+          },
+          {
+            "icon": "Calendar",
+            "title": "Enable Online Booking & Equipment Calendars",
+            "description": "Turn on 24/7 online booking so customers can schedule service without calling. Set available time slots based on your average job duration (2-4 hours for typical homes). Assign equipment (truck-mount, portable units, air movers) to prevent double-booking machines. Block time for equipment maintenance and cleaning. Customers see real-time availability and book instantly."
+          },
+          {
+            "icon": "Rocket",
+            "title": "Accept Jobs & Document Stains",
+            "description": "New bookings appear on your mobile app with customer address, room count, and special requests (pet stains, spot treatments). Use before/after photo tools to document pre-existing stains and set expectations. After cleaning, invoice on-site with automatic square footage calculation, collect payment via card or cash, and send receipt instantly. No paperwork, no calculation errors."
+          }
+        ]
+      },
+      "deepDive": {
+        "title": "Understanding Carpet Cleaning Operations",
+        "subtitle": "Industry knowledge and best practices to build a profitable, professional carpet cleaning business",
+        "terms": [
+          {
+            "term": "Hot Water Extraction (Steam Cleaning)",
+            "definition": "The industry-standard deep cleaning method that injects heated water (180-210°F) and cleaning solution into carpet fibers under pressure (400-600 PSI), then extracts it with powerful vacuum. Despite the common name 'steam cleaning,' it uses hot water, not steam. IICRC (Industry Inspection Cleaning and Restoration Certification) recommends hot water extraction as the most effective method for removing deep-down dirt, allergens, and bacteria. Properly executed extraction leaves carpets dry in 6-8 hours."
+          },
+          {
+            "term": "IICRC Certification",
+            "definition": "Industry Inspection Cleaning and Restoration Certification—the professional standard for carpet and upholstery cleaners. IICRC-certified technicians have formal training in fiber identification, cleaning methods, stain removal, and drying techniques. Certification demonstrates professionalism to customers and often required for insurance/restoration work. Courses cover carpet cleaning technician (CCT), upholstery cleaning technician (UCT), and advanced certifications. Recertification required every 5 years. Advertise IICRC certification to command premium pricing."
+          },
+          {
+            "term": "Dwell Time",
+            "definition": "The waiting period (10-20 minutes) between applying pre-spray chemical and extraction, allowing cleaning solution to break down dirt, oils, and stains. Proper dwell time is critical—too short (under 5 minutes) and soil isn't loosened, too long (over 30 minutes) risks over-wetting and fiber damage. Use rotary brush or carpet rake during dwell time to agitate fibers and work chemical deeper. Traffic lanes and heavily soiled areas need longer dwell time (15-20 minutes) than lightly soiled carpets (8-10 minutes)."
+          },
+          {
+            "term": "Traffic Lanes",
+            "definition": "High-wear carpet areas showing visible dirt paths and matted fibers—typically hallways, entries, in front of sofas, and paths between rooms. Traffic lanes require extra pre-treatment with higher-concentration cleaners and additional extraction passes because soil is compacted into fibers. Charge extra for heavy traffic lane treatment ($25-$50 per area) since it requires more chemical, time, and multiple passes. Use traffic lane cleaners (stronger detergent formulations) and agitation before extraction for best results."
+          },
+          {
+            "term": "Truck-Mount vs. Portable Extractor",
+            "definition": "Truck-mounted extraction systems are permanently installed in service vehicles, using vehicle engine to power vacuum and heat water—delivering 500-1,000+ PSI, 200-220°F water, and superior suction. Truck-mounts clean faster (40-50% less time per room) with better results but cost $15k-$40k. Portable extractors are self-contained units ($1k-$8k) running on electricity, delivering 100-200 PSI and 140-180°F water—adequate for apartments and high-rises where truck-mount hose won't reach (150-200 ft limit). Professionals prefer truck-mounts for quality and efficiency."
+          },
+          {
+            "term": "Dry Passes (Extraction Passes)",
+            "definition": "Vacuum-only passes made after wet extraction passes to remove maximum moisture from carpet. Proper technique: wet pass forward applying water/solution, dry pass backward extracting moisture, repeat. Make 2-4 dry passes per section—the more moisture extracted, the faster drying time. Carpets should be dry to touch after proper extraction. Over-wetting (insufficient dry passes) causes 12-24+ hour dry times, browning, mold growth, and customer complaints. Master dry pass technique to differentiate your service from competitors who over-wet carpets."
+          }
+        ],
+        "bestPractices": [
+          {
+            "title": "Define 'Room' Size Limits Clearly in All Marketing",
+            "description": "Always specify your room definition: 'Standard room up to 250 square feet' in quotes, website, and contracts. Rooms exceeding your limit count as 1.5 or 2 rooms to prevent underpricing large spaces. Measure and show customers—a 12x20 room is 240 sq ft (one room), but a 20x20 room is 400 sq ft (two rooms). Set expectations upfront to avoid pricing disputes. Staircases count as one room (13-15 stairs typical). Hallways priced separately by length: 6-12 ft hallway $25-$50."
+          },
+          {
+            "title": "Document Pre-Existing Stains and Damage with Timestamped Photos",
+            "description": "Take before photos of all pre-existing stains, wear patterns, seam separation, and damage BEFORE cleaning. Use timestamp feature to prove condition existed prior to your work. Show photos to customer during walkthrough and note on invoice: 'Pre-existing stains documented—cleaning may lighten but not remove.' This protects you from damage claims and manages expectations. After cleaning, take after photos showing improvement. Photo documentation prevents 90% of disputes and provides evidence if customer files complaint."
+          },
+          {
+            "title": "Use Proper Extraction Technique to Ensure 6-8 Hour Dry Time",
+            "description": "Master dry pass technique: make 2-4 vacuum-only passes after each wet pass to extract 90-95% of applied water. Slow, overlapping passes—never rush extraction. Over-wetting is the #1 customer complaint and indicates poor technique. Test moisture with meter—carpets over 20% moisture risk mold. Deploy air movers in humid conditions. Schedule jobs to allow 6-8 hours before customer returns home. Fast dry times differentiate professionals from amateurs and generate referrals."
+          },
+          {
+            "title": "Offer Stain Protection as High-Margin Add-On, Not Included",
+            "description": "Always upsell stain protection (Scotchgard, fabric protector) as separate add-on at $15-$30 per room. Don't include in base price—this allows budget customers to decline while capturing 40-60% upsell rate from those who want protection. Application takes 3-5 minutes per room, costs $2-$4 in material, and yields 70-80% profit margin. Apply post-extraction when carpets are clean and still slightly damp. Explain benefit: 'Protection keeps new spills on surface for easy cleanup, extends carpet life.' Frame as optional insurance."
+          },
+          {
+            "title": "Schedule Equipment Maintenance Proactively to Prevent Downtime",
+            "description": "Track truck-mount maintenance (oil changes, pump rebuilds, hose replacements) on calendar and perform before failures occur. Downtime during peak season costs $1,000-$2,000 daily in lost revenue. Keep spare hoses, wands, and common parts in truck. Clean solution tanks and filters after every job. Inspect vacuum relief valves weekly. Emergency repairs cost 2-3x more than scheduled maintenance and leave customers waiting. Reliable equipment = professional reputation. Budget $2,000-$4,000 annually for truck-mount maintenance—it pays for itself in prevented breakdowns."
+          },
+          {
+            "title": "Bundle Carpet + Upholstery or Tile for Higher Average Tickets",
+            "description": "Offer package pricing to increase job value: 3 rooms + sofa/loveseat for $350-$475 (vs. $250 rooms only). Customers perceive packages as deals even though margins stay strong. Upselling upholstery adds 30-40% to average job revenue with minimal extra time (furniture cleaning takes 15-30 minutes per piece). Train yourself to suggest: 'While I'm here with the equipment, I can clean your sofa and loveseat for just $125 more—normally $200.' Capture 50-60% upsell rate by offering at booking and on-site."
+          }
+        ]
+      },
+      "testimonials": {
+        "title": "Real Results from Carpet Cleaning Professionals",
+        "testimonials": [
+          {
+            "quote": "We were missing calls during jobs and losing bookings to competitors who answered first. Turning on online booking let customers schedule service at 10pm when they notice stains. Online bookings went from zero to 45% of our business, adding about $2,800 monthly just from being available 24/7.",
+            "author": "Sarah Mitchell",
+            "business": "Crystal Clean Carpet Care, Denver CO",
+            "metrics": [
+              {
+                "value": "45%",
+                "label": "Online bookings"
+              },
+              {
+                "value": "$2,800",
+                "label": "Additional monthly revenue"
+              }
+            ]
+          },
+          {
+            "quote": "Calculating square footage quotes used to take 10-15 minutes per estimate with a tape measure and calculator. Digital room measurement in ServiceGrid does it in 90 seconds. I save 6-7 hours weekly on estimates alone, which means I can clean 3-4 more homes per month. That's $900-$1,400 extra monthly revenue.",
+            "author": "James Park",
+            "business": "Park Carpet Cleaning, Portland OR",
+            "metrics": [
+              {
+                "value": "85%",
+                "label": "Faster quote creation"
+              },
+              {
+                "value": "$1,150",
+                "label": "Avg monthly revenue increase"
+              }
+            ]
+          },
+          {
+            "quote": "No-shows were brutal—we'd drive 30 minutes to a job and find nobody home. The automated text reminders cut our no-show rate from about 18% down to 5%. That's 3-4 prevented no-shows monthly, saving us around $1,000-$1,300 in wasted time and fuel. Plus we can fill those slots with real bookings now.",
+            "author": "Michael Torres",
+            "business": "Torres Carpet Restoration, Phoenix AZ",
+            "metrics": [
+              {
+                "value": "72%",
+                "label": "Fewer no-shows"
+              },
+              {
+                "value": "$1,150",
+                "label": "Monthly savings on wasted trips"
+              }
+            ]
+          }
+        ]
+      },
+      "cta": {
+        "title": "Ready to clean up your carpet business?",
+        "subtitle": "Join carpet cleaning professionals using ServiceGrid to streamline operations and increase bookings."
+      }
+    }
   }
 }
