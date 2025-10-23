@@ -15,6 +15,7 @@ import { TopNav } from "@/landing/components/TopNav";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useEffect } from "react";
 import { Settings, Calendar, Rocket } from "lucide-react";
+import { initIntercom, shutdownIntercom } from "@/utils/intercom";
 
 export default function IndustryResource() {
   const { slug } = useParams<{ slug: string }>();
@@ -23,6 +24,12 @@ export default function IndustryResource() {
   // Get translated industries
   const industries = getIndustries(t);
   const industry = industries.find(ind => ind.slug === slug);
+
+  // Initialize Intercom on mount
+  useEffect(() => {
+    initIntercom();
+    return () => shutdownIntercom();
+  }, []);
 
   useEffect(() => {
     if (industry) {
