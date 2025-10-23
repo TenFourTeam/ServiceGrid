@@ -1517,53 +1517,56 @@
           }
         ]
       },
-      "testimonials": [
-        {
-          "quote": "We went from tracking 280 spring startups in a spreadsheet to automated scheduling. ServiceGrid filled our calendar 3 weeks earlier than last year and we added $42K in revenue before summer even started.",
-          "author": "Mark Peterson",
-          "business": "GreenFlow Irrigation, Colorado",
-          "metrics": [
-            {
-              "value": "3 weeks",
-              "label": "Earlier booked"
-            },
-            {
-              "value": "$42K",
-              "label": "Added revenue"
-            }
-          ]
-        },
-        {
-          "quote": "Emergency calls used to mean frantic searching for property info. Now my techs access zone maps and valve locations on their phone in seconds. We're responding to pipe bursts 40% faster and our emergency service rating jumped to 4.9 stars.",
-          "author": "Jennifer Wu",
-          "business": "Precision Sprinkler Systems, Arizona",
-          "metrics": [
-            {
-              "value": "40%",
-              "label": "Faster response"
-            },
-            {
-              "value": "4.9★",
-              "label": "Emergency rating"
-            }
-          ]
-        },
-        {
-          "quote": "I was doing everything myself and couldn't hire a second technician because I couldn't explain where valves were or how systems worked. ServiceGrid documents everything with photos. I hired 2 techs and grew 65% this season.",
-          "author": "Carlos Mendoza",
-          "business": "Summit Irrigation Services, Utah",
-          "metrics": [
-            {
-              "value": "2 techs",
-              "label": "Hired"
-            },
-            {
-              "value": "65%",
-              "label": "Revenue growth"
-            }
-          ]
-        }
-      ]
+      "testimonials": {
+        "title": "Real Results from Irrigation Professionals",
+        "testimonials": [
+          {
+            "quote": "We went from tracking 280 spring startups in a spreadsheet to automated scheduling. ServiceGrid filled our calendar 3 weeks earlier than last year and we added $42K in revenue before summer even started.",
+            "author": "Mark Peterson",
+            "business": "GreenFlow Irrigation, Colorado",
+            "metrics": [
+              {
+                "value": "3 weeks",
+                "label": "Earlier booked"
+              },
+              {
+                "value": "$42K",
+                "label": "Added revenue"
+              }
+            ]
+          },
+          {
+            "quote": "Emergency calls used to mean frantic searching for property info. Now my techs access zone maps and valve locations on their phone in seconds. We're responding to pipe bursts 40% faster and our emergency service rating jumped to 4.9 stars.",
+            "author": "Jennifer Wu",
+            "business": "Precision Sprinkler Systems, Arizona",
+            "metrics": [
+              {
+                "value": "40%",
+                "label": "Faster response"
+              },
+              {
+                "value": "4.9★",
+                "label": "Emergency rating"
+              }
+            ]
+          },
+          {
+            "quote": "I was doing everything myself and couldn't hire a second technician because I couldn't explain where valves were or how systems worked. ServiceGrid documents everything with photos. I hired 2 techs and grew 65% this season.",
+            "author": "Carlos Mendoza",
+            "business": "Summit Irrigation Services, Utah",
+            "metrics": [
+              {
+                "value": "2 techs",
+                "label": "Hired"
+              },
+              {
+                "value": "65%",
+                "label": "Revenue growth"
+              }
+            ]
+          }
+        ]
+      }
     },
     "poolService": {"label": "Pool Service", "description": "Complete pool service management and route optimization software", "hero": {"title": "Pool Service Software That Keeps You Swimming", "subtitle": "Optimize routes, track chemicals, manage equipment, and automate seasonal services with software built for pool professionals."}, "challenges": {"0": {"title": "Weekly Route Efficiency", "description": "Planning optimal routes across dozens of pools while managing time windows and customer preferences."}, "1": {"title": "Chemical Inventory", "description": "Tracking chemical usage per pool and maintaining proper inventory levels without overstocking."}, "2": {"title": "Equipment Maintenance", "description": "Remembering filter cleanings, pump servicing, and equipment history for each pool customer."}, "3": {"title": "Seasonal Services", "description": "Coordinating pool openings, closings, and mid-season repairs while keeping customers informed."}}, "features": {"0": {"title": "Intelligent Route Optimization", "description": "Create efficient weekly routes automatically. Mobile app guides technicians pool-to-pool with customer notes and chemical history.", "benefit": "Service 20% more pools with the same team"}, "1": {"title": "Chemical Tracking & Inventory", "description": "Log chemical readings and usage per pool. Track inventory levels and get low-stock alerts automatically.", "benefit": "Maintain perfect water chemistry and reduce chemical waste"}, "2": {"title": "Equipment Service History", "description": "Record filter cleanings, equipment repairs, and part replacements with photos and dates for every pool.", "benefit": "Provide better service and identify upsell opportunities"}, "3": {"title": "Automated Seasonal Workflows", "description": "Set up pool opening and closing checklists. Schedule and invoice seasonal services automatically.", "benefit": "Never miss an opening or closing and capture all seasonal revenue"}}, "cta": {"title": "Ready to make waves in your pool business?", "subtitle": "Join pool service professionals using ServiceGrid to optimize routes and grow revenue."}},
     "handyman": {"label": "Handyman", "description": "Versatile business management software for handyman services", "hero": {"title": "Handyman Software That Handles Every Job", "subtitle": "Manage diverse services, prevent scope creep, track parts, and schedule efficiently with software built for multi-trade professionals."}, "challenges": {"0": {"title": "Service Pricing Consistency", "description": "Pricing dozens of different services without a system leads to inconsistent quotes and underpricing."}, "1": {"title": "Scope Creep", "description": "Small jobs growing into big projects without proper change orders eats into profitability."}, "2": {"title": "Parts & Materials", "description": "Tracking which parts are needed, marking them up consistently, and getting reimbursed slows cash flow."}, "3": {"title": "Skill-Based Scheduling", "description": "Matching the right technician to each job type while keeping everyone busy is complex."}}, "features": {"0": {"title": "Service Catalog & Pricing", "description": "Create a library of common services with standard pricing. Build quotes quickly by selecting services and adjusting as needed.", "benefit": "Quote faster and maintain consistent, profitable pricing"}, "1": {"title": "Change Order Management", "description": "Document scope changes with photos and customer approval before starting additional work. Keep projects profitable.", "benefit": "Prevent scope creep and get paid for all work performed"}, "2": {"title": "Parts Tracking & Markup", "description": "Add parts to quotes and invoices with automatic markup. Track receipts and reimbursement in one place.", "benefit": "Recover all parts costs and increase parts revenue"}, "3": {"title": "Skill-Based Scheduling", "description": "Tag services by skill type and assign jobs to technicians based on their expertise and availability.", "benefit": "Send the right person to every job and improve quality"}}, "cta": {"title": "Ready to build a better handyman business?", "subtitle": "Join handyman professionals using ServiceGrid to manage more jobs and increase profits."}},
