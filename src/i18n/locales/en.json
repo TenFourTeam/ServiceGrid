@@ -1954,7 +1954,314 @@
         ]
       }
     },
-    "handyman": {"label": "Handyman", "description": "Versatile business management software for handyman services", "hero": {"title": "Handyman Software That Handles Every Job", "subtitle": "Manage diverse services, prevent scope creep, track parts, and schedule efficiently with software built for multi-trade professionals."}, "challenges": {"0": {"title": "Service Pricing Consistency", "description": "Pricing dozens of different services without a system leads to inconsistent quotes and underpricing."}, "1": {"title": "Scope Creep", "description": "Small jobs growing into big projects without proper change orders eats into profitability."}, "2": {"title": "Parts & Materials", "description": "Tracking which parts are needed, marking them up consistently, and getting reimbursed slows cash flow."}, "3": {"title": "Skill-Based Scheduling", "description": "Matching the right technician to each job type while keeping everyone busy is complex."}}, "features": {"0": {"title": "Service Catalog & Pricing", "description": "Create a library of common services with standard pricing. Build quotes quickly by selecting services and adjusting as needed.", "benefit": "Quote faster and maintain consistent, profitable pricing"}, "1": {"title": "Change Order Management", "description": "Document scope changes with photos and customer approval before starting additional work. Keep projects profitable.", "benefit": "Prevent scope creep and get paid for all work performed"}, "2": {"title": "Parts Tracking & Markup", "description": "Add parts to quotes and invoices with automatic markup. Track receipts and reimbursement in one place.", "benefit": "Recover all parts costs and increase parts revenue"}, "3": {"title": "Skill-Based Scheduling", "description": "Tag services by skill type and assign jobs to technicians based on their expertise and availability.", "benefit": "Send the right person to every job and improve quality"}}, "cta": {"title": "Ready to build a better handyman business?", "subtitle": "Join handyman professionals using ServiceGrid to manage more jobs and increase profits."}},
+    "handyman": {
+      "label": "Handyman",
+      "description": "Versatile business management software for handyman services",
+      "hero": {
+        "title": "Handyman Software That Handles Every Job",
+        "subtitle": "Manage diverse services, prevent scope creep, track parts, and schedule efficiently with software built for multi-trade professionals."
+      },
+      "challenges": {
+        "0": {
+          "title": "Service Pricing Consistency",
+          "description": "Pricing dozens of different services without a system leads to inconsistent quotes and underpricing."
+        },
+        "1": {
+          "title": "Scope Creep",
+          "description": "Small jobs growing into big projects without proper change orders eats into profitability."
+        },
+        "2": {
+          "title": "Parts & Materials",
+          "description": "Tracking which parts are needed, marking them up consistently, and getting reimbursed slows cash flow."
+        },
+        "3": {
+          "title": "Skill-Based Scheduling",
+          "description": "Matching the right technician to each job type while keeping everyone busy is complex."
+        }
+      },
+      "features": {
+        "0": {
+          "title": "Service Catalog & Pricing",
+          "description": "Create a library of common services with standard pricing. Build quotes quickly by selecting services and adjusting as needed.",
+          "benefit": "Quote faster and maintain consistent, profitable pricing"
+        },
+        "1": {
+          "title": "Change Order Management",
+          "description": "Document scope changes with photos and customer approval before starting additional work. Keep projects profitable.",
+          "benefit": "Prevent scope creep and get paid for all work performed"
+        },
+        "2": {
+          "title": "Parts Tracking & Markup",
+          "description": "Add parts to quotes and invoices with automatic markup. Track receipts and reimbursement in one place.",
+          "benefit": "Recover all parts costs and increase parts revenue"
+        },
+        "3": {
+          "title": "Skill-Based Scheduling",
+          "description": "Tag services by skill type and assign jobs to technicians based on their expertise and availability.",
+          "benefit": "Send the right person to every job and improve quality"
+        }
+      },
+      "faq": {
+        "heading": "Frequently Asked Questions",
+        "subtitle": "Common questions about running a handyman business",
+        "categories": {
+          "businessOperations": {
+            "title": "Business Operations",
+            "questions": {
+              "0": {
+                "question": "Should I charge hourly or flat rate for handyman services?",
+                "answer": "Hourly rates ($50-$125 per hour depending on market and expertise) work well for unfamiliar tasks and troubleshooting. Flat rates provide better margins on routine tasks you've done dozens of times and make quoting easier for customers. Most successful handyman businesses use hybrid pricing: flat rate for common tasks (door installation, drywall repair), hourly for diagnostic work and complex repairs where scope is unclear."
+              },
+              "1": {
+                "question": "How do I estimate time for unfamiliar jobs?",
+                "answer": "Add 50% buffer time to your initial estimate for tasks you haven't performed before. Research videos or tutorials to gauge complexity, and contact supplier or manufacturer support for time estimates. Track actual time spent meticulously on first-time jobs to build accurate pricing for future similar work. Your estimates will improve dramatically after 3-5 repetitions of any task."
+              },
+              "2": {
+                "question": "What's the best way to prevent scope creep on small jobs?",
+                "answer": "Walk the property with the customer before starting, document all work in writing with photos, and get signature approval. When customers ask \"while you're here\" questions, stop work immediately, write a change order with new price and time estimate, and get approval before continuing. Set clear boundaries: \"I can add that work, but let me price it properly first so there are no surprises.\""
+              },
+              "3": {
+                "question": "How much should I mark up materials and parts?",
+                "answer": "Standard markup is 20-40% on materials and parts, with higher markups (40-60%) on small items requiring trips to supply stores. Factor in your time to source, purchase, transport, and manage returns. Don't just charge cost—your procurement time and expertise have value. Commercial clients expect 30-40% markups; residential clients typically accept 20-30%."
+              },
+              "4": {
+                "question": "Should I specialize in certain services or stay generalist?",
+                "answer": "Generalists capture more work per customer and maintain steady workflow year-round, but face constant learning curves and equipment variety. Specialists (drywall only, fixture installation only) develop speed and efficiency, command premium rates, and reduce tool investment, but may have seasonal lulls. Many operators start generalist to build client base, then gradually specialize in their most profitable services."
+              },
+              "5": {
+                "question": "What's a typical profit margin for handyman work?",
+                "answer": "Well-run handyman businesses maintain 40-55% gross profit margins after materials, tools, and direct labor costs. Skilled specialists often achieve 50-60% margins on routine work. Jobs requiring specialty tools or difficult customer management trend toward 35-45% margins. Track margins by service type—your most profitable services deserve priority in marketing and scheduling."
+              }
+            }
+          },
+          "serviceScoping": {
+            "title": "Service Scoping",
+            "questions": {
+              "0": {
+                "question": "How do I determine if a job requires a licensed contractor?",
+                "answer": "Most states have \"handyman exemptions\" allowing minor repairs without contractor licenses, typically limited to $500-$1,500 per project. Major electrical (panel work, new circuits), structural changes, HVAC installation, and gas line work almost always require licensed contractors. Check your state's contractor licensing board for specific limits. When in doubt, refer the work—liability isn't worth the risk."
+              },
+              "1": {
+                "question": "What services can I legally perform as a handyman?",
+                "answer": "Generally permitted: minor plumbing repairs (faucet replacement, toilet repair, drain cleaning), basic electrical (outlet/switch replacement, fixture installation), drywall repair, painting, carpentry, door/window repair, assembly, and general maintenance. Prohibited without proper licenses: structural modifications, electrical panel work, HVAC installation, gas line work. Laws vary significantly by state and municipality."
+              },
+              "2": {
+                "question": "When should I subcontract vs. turn down work?",
+                "answer": "Subcontract when the work is within your scope but beyond your skill level, and you have a reliable subcontractor who maintains your quality standards. Turn down work that's outside legal handyman scope or creates significant liability risk. Build a network of licensed electricians, plumbers, and contractors for referrals—they'll often reciprocate with handyman work referrals."
+              },
+              "3": {
+                "question": "How do I write clear change orders for additional work?",
+                "answer": "Document what's changing from the original scope, photograph the conditions that necessitate additional work, provide line-item pricing for added tasks, estimate additional time required, and get written or digital signature before proceeding. Use clear language: \"Original quote covered X. Customer requested Y be added. Additional cost: $Z. Additional time: N hours.\" This protects both parties."
+              }
+            }
+          },
+          "efficiency": {
+            "title": "Efficiency",
+            "questions": {
+              "0": {
+                "question": "What tools should I carry in my truck daily?",
+                "answer": "Core tools: cordless drill/driver, impact driver, circular saw, reciprocating saw, basic hand tools (hammer, screwdrivers, pliers, wrenches), tape measure, level, stud finder, utility knife, and basic electrical tester. Add specialized tools as you identify recurring needs. Organized truck storage saves 15-20 minutes per job versus digging through chaos. Replace or organize tools weekly to maintain efficiency."
+              },
+              "1": {
+                "question": "How do I minimize trips to hardware stores?",
+                "answer": "Stock common consumables in your truck: screws, nails, anchors, wire nuts, outlets, switches, caulk, spackling, sandpaper, and basic plumbing components (washers, O-rings, supply lines). For specialized parts, confirm exact needs with photos before leaving the job site. Call ahead to confirm stock availability. Hardware store trips cost $20-$40 in lost time per trip—stock strategically to reduce frequency."
+              },
+              "2": {
+                "question": "Should I pre-buy common parts and materials?",
+                "answer": "Yes for high-frequency, non-perishable items that don't tie up excessive cash: electrical components (outlets, switches, wire nuts), plumbing washers and O-rings, drywall anchors, common screws/nails, caulk, and spackling compound. Avoid pre-buying specialty items or materials that degrade (paint, adhesives). Calculate based on monthly usage—keep 2-4 weeks of common parts on hand."
+              },
+              "3": {
+                "question": "How many jobs can I complete per day?",
+                "answer": "Small jobs (1-2 hours each): 3-4 per day with travel time. Medium jobs (3-4 hours): 2 per day. Full-day jobs: 1 per day, possibly starting a second. Overestimating capacity leads to rushed work and quality issues. Account for 30-45 minutes between jobs for travel, documentation, and unexpected delays. Track actual job duration over time to improve scheduling accuracy."
+              }
+            }
+          },
+          "customerManagement": {
+            "title": "Customer Management",
+            "questions": {
+              "0": {
+                "question": "How do I handle \"while you're here\" requests?",
+                "answer": "Listen fully to the request, write it down, then provide a separate estimate: \"I can definitely help with that. Let me price it separately so you know exactly what it costs. Would you like me to do that today if time permits, or schedule it for next time?\" This respects your time, maintains profitability, and gives customers control. Never do free work—it devalues your expertise."
+              },
+              "1": {
+                "question": "Should I offer package deals for multiple small tasks?",
+                "answer": "Yes—package pricing (\"Honey-Do List Special: Up to 5 small tasks for $300\") captures more work per visit, reduces travel costs per job, and appeals to customers overwhelmed by accumulated minor repairs. Define clear boundaries: tasks must be completable within 3-4 hours total, no specialty parts over $50, no ladder work above second story. Packages build customer loyalty and recurring relationships."
+              },
+              "2": {
+                "question": "What's the best way to upsell additional services?",
+                "answer": "Document problems you notice during work with photos: \"While installing your ceiling fan, I noticed your outlets aren't grounded—that's a safety issue I can fix.\" Provide specific pricing and safety/benefit rationale. Don't pressure—education-based selling builds trust. Approximately 30-40% of customers accept same-visit upsells when presented professionally with clear value."
+              },
+              "3": {
+                "question": "How do I convert one-time customers to regular maintenance clients?",
+                "answer": "Offer quarterly or semi-annual maintenance packages covering seasonal tasks: gutter cleaning, HVAC filter changes, weather stripping, caulking, minor repairs. Price packages at 10-15% discount versus one-off pricing to incentivize commitment. Recurring maintenance clients provide predictable revenue, reduce marketing costs, and often call you first for emergency repairs. Target homeowners aged 50+ and investment property owners."
+              }
+            }
+          }
+        }
+      },
+      "pricing": {
+        "title": "Investment & ROI for Handyman Services",
+        "subtitle": "Understanding costs and returns for handyman business software",
+        "points": {
+          "0": {
+            "label": "Software Cost",
+            "value": "ServiceGrid starts at $19/month with a 14-day free trial. No per-job fees, no contracts, no hidden charges. That's less than one billable hour per month."
+          },
+          "1": {
+            "label": "Time Savings",
+            "value": "Handyman operators save 8-12 hours weekly on estimating, scheduling, invoicing, and customer communications. That recovered time allows 6-10 additional billable jobs monthly, worth $600-$1,200 in revenue."
+          },
+          "2": {
+            "label": "Faster Quoting",
+            "value": "Service catalog with standard pricing lets you build quotes in 3-5 minutes versus 15-20 minutes per manual estimate. Faster quoting increases quote volume and win rates. Operators report 25-30% more quotes sent monthly, converting to 15-20% more booked jobs."
+          },
+          "3": {
+            "label": "Parts Markup Recovery",
+            "value": "Built-in parts markup ensures you capture 20-40% margin on all materials. Manual tracking results in forgotten charges and lost revenue. Operators report recovering an additional $200-$400 monthly in parts revenue they previously missed."
+          },
+          "4": {
+            "label": "Scope Creep Prevention",
+            "value": "Digital change orders with customer signatures prevent scope creep and ensure payment for all work. Operators recover an estimated $150-$300 monthly in previously unpaid additional work by properly documenting scope changes."
+          },
+          "5": {
+            "label": "Payback Timeline",
+            "value": "Most handyman businesses recoup annual software costs within 3-4 additional jobs from improved efficiency and recovered revenue. ROI typically exceeds 800% annually when factoring time savings, parts markup, and scope management."
+          }
+        },
+        "roiNote": "Handyman professionals using ServiceGrid report completing 15-25% more jobs monthly while reducing quoting time and improving parts margin, resulting in an average $1,800 monthly revenue increase."
+      },
+      "gettingStarted": {
+        "title": "Get Started in Under an Hour",
+        "subtitle": "Simple setup process to launch your handyman business software",
+        "steps": {
+          "0": {
+            "title": "Initial Setup (20 minutes)",
+            "description": "Add business details, service area, and licensing information. Create service catalog with common tasks and pricing. Import customer list and job history. Configure parts markup percentages and tax rates.",
+            "icon": "Settings"
+          },
+          "1": {
+            "title": "Build Your Workflow (15 minutes)",
+            "description": "Set scheduling preferences (same-day booking, lead time requirements). Create job templates for common service combinations. Configure automated estimate and invoice templates. Set up customer communication preferences (email, SMS).",
+            "icon": "Calendar"
+          },
+          "2": {
+            "title": "Start Booking Jobs (10 minutes)",
+            "description": "Download mobile app for field use. Build your first estimate using service catalog. Schedule jobs and sync with calendar. Collect payment and customer signatures digitally on-site.",
+            "icon": "Rocket"
+          }
+        }
+      },
+      "deepDive": {
+        "title": "Understanding Handyman Business Operations",
+        "subtitle": "Industry knowledge and best practices for handyman professionals",
+        "terms": {
+          "0": {
+            "term": "Handyman Exemption",
+            "definition": "State laws allowing unlicensed contractors to perform minor repairs and maintenance below specific dollar thresholds, typically $500-$2,000 per project depending on jurisdiction. These exemptions permit general repairs without specialty trade licenses but prohibit major electrical, plumbing, structural, HVAC, and gas work. Exceeding exemption limits or performing restricted work without proper licenses creates significant legal and insurance liability."
+          },
+          "1": {
+            "term": "Scope Creep",
+            "definition": "The gradual expansion of a project beyond its original boundaries without corresponding price adjustments. Common in handyman work when customers ask for \"one more small thing\" repeatedly. Scope creep destroys profitability and creates schedule chaos. Combat with clear written scope, change order procedures, and firm boundaries about additional work requiring separate pricing."
+          },
+          "2": {
+            "term": "Change Order",
+            "definition": "Formal documentation of work added to or removed from a project's original scope, including pricing for the changes and customer approval. Essential for maintaining profitability and preventing disputes. Effective change orders include description of additional work, reason for the change, price adjustment, time impact, and customer signature before work begins."
+          },
+          "3": {
+            "term": "Parts Markup",
+            "definition": "Percentage added to material and parts costs to cover procurement time, expertise, warranty handling, and transportation. Standard markup ranges from 20-40% for larger materials to 40-60% for small parts requiring trips to suppliers. Parts markup is not \"extra\"—it compensates for your time and knowledge in sourcing correct parts and managing returns/warranty issues."
+          },
+          "4": {
+            "term": "Flat Rate Pricing",
+            "definition": "Fixed price for specific tasks regardless of time spent, based on average completion time plus margin. Provides pricing certainty for customers and rewards efficiency improvements for contractors. Common for routine tasks like door installation, drywall repair, fixture replacement. Flat rate pricing requires accurate time tracking initially to establish profitable rates."
+          },
+          "5": {
+            "term": "T&M (Time and Materials)",
+            "definition": "Billing method charging hourly labor rate plus actual material costs (usually with markup). Appropriate for diagnostic work, repairs with unknown scope, and tasks you're performing for the first time. Provides protection when job complexity is uncertain but requires careful time tracking and clear communication about costs as work progresses."
+          }
+        },
+        "bestPractices": {
+          "0": {
+            "title": "Create a Standard Service Catalog",
+            "description": "Document your 20-30 most common tasks with flat-rate pricing based on actual historical time data. Include door hanging, drywall repair, fixture installation, basic plumbing repairs, electrical outlet/switch work, and painting touch-ups. Standardized pricing speeds quoting, ensures profitability, and projects professionalism. Update prices annually based on cost increases and efficiency improvements."
+          },
+          "1": {
+            "title": "Photograph Everything Before Starting",
+            "description": "Before touching anything, photograph existing conditions, damage, and surrounding areas. Customers frequently blame handymen for pre-existing problems. Timestamped photos protect you from false damage claims and document the scope of work. This documentation is essential for insurance claims and dispute resolution. Takes 2 minutes, saves thousands in potential liability."
+          },
+          "2": {
+            "title": "Write Change Orders for All Additional Work",
+            "description": "When customers request work beyond original scope, stop immediately, document the addition, provide specific pricing, and get written approval before proceeding. Verbal agreements lead to payment disputes and scope confusion. Use standardized change order forms or digital signature tools. This practice alone can recover 10-20% revenue on jobs that expand mid-project."
+          },
+          "3": {
+            "title": "Organize Your Truck by Task Frequency",
+            "description": "Place most-used tools and parts within arm's reach, moderate-frequency items in labeled bins, and rarely-used equipment in back storage. Color-code or label storage clearly. Disorganization costs 10-20 minutes per job searching for tools. Well-organized trucks improve professional appearance and reduce customer wait time. Reorganize weekly to maintain system."
+          },
+          "4": {
+            "title": "Track Actual Job Time vs. Estimates",
+            "description": "Log actual start time, end time, and time spent for every job. Compare against your estimates to identify tasks you're consistently underestimating. This data is essential for accurate future quoting and profitability analysis. After 20-30 repetitions of a task, your time estimates should be accurate within 15%. Poor time tracking leads to chronic underpricing."
+          },
+          "5": {
+            "title": "Build a Network of Licensed Trade Professionals",
+            "description": "Develop relationships with licensed electricians, plumbers, HVAC technicians, and general contractors for work beyond handyman scope. Refer customers to these professionals when jobs exceed your legal limits or expertise. They'll often reciprocate with handyman referrals for smaller jobs. This network protects you from liability and builds reputation for honest scoping."
+          }
+        }
+      },
+      "testimonials": {
+        "title": "Real Results from Handyman Professionals",
+        "testimonials": {
+          "0": {
+            "quote": "I was spending 2-3 hours every evening on paperwork, estimates, and scheduling. ServiceGrid gave me pre-built pricing for my common services and automated my invoicing. I now complete that same admin work in 30 minutes while sitting at dinner. I added 8 billable jobs monthly with the recovered time.",
+            "author": "David Martinez",
+            "business": "Fix-It-Right Handyman, Austin TX",
+            "metrics": {
+              "0": {
+                "value": "8",
+                "label": "Additional jobs monthly"
+              },
+              "1": {
+                "value": "90%",
+                "label": "Less admin time"
+              }
+            }
+          },
+          "1": {
+            "quote": "We were consistently forgetting to charge for small parts—wire nuts, anchors, caulk—because tracking them manually was impossible. ServiceGrid's automatic parts markup on every invoice recovered about $350 monthly in parts revenue we were leaving on the table. Over a year, that's $4,200 we would have missed.",
+            "author": "Lisa Thompson",
+            "business": "Thompson Home Services, Seattle WA",
+            "metrics": {
+              "0": {
+                "value": "$350",
+                "label": "Monthly parts recovery"
+              },
+              "1": {
+                "value": "$4.2K",
+                "label": "Annual revenue gain"
+              }
+            }
+          },
+          "2": {
+            "quote": "Customers would ask for 'one more thing' and I'd do it without adjusting the price because I didn't want conflict. ServiceGrid's digital change orders let me present additional costs professionally with a signature. I'm now capturing an extra $200-$300 per week in scope additions I used to do for free.",
+            "author": "Robert Chen",
+            "business": "Chen's Quality Repairs, Phoenix AZ",
+            "metrics": {
+              "0": {
+                "value": "$200-$300",
+                "label": "Weekly scope recovery"
+              },
+              "1": {
+                "value": "100%",
+                "label": "Change order adoption"
+              }
+            }
+          }
+        }
+      },
+      "cta": {
+        "title": "Ready to build a better handyman business?",
+        "subtitle": "Join handyman professionals using ServiceGrid to manage more jobs and increase profits."
+      }
+    },
     "gutterCleaning": {"label": "Gutter Cleaning", "description": "Seasonal business management for gutter cleaning professionals", "hero": {"title": "Gutter Cleaning Software That Captures Every Season", "subtitle": "Manage seasonal demand, automate rebooking, track safety compliance, and maximize fall revenue with specialized software."}, "challenges": {"0": {"title": "Seasonal Demand Spikes", "description": "Managing overwhelming fall demand while filling the rest of the year is the biggest challenge."}, "1": {"title": "Safety Documentation", "description": "Tracking ladder safety, roof access, and insurance compliance without proper documentation is risky."}, "2": {"title": "Debris Disposal", "description": "Tracking debris removal and disposal costs to maintain profitability on each job."}, "3": {"title": "Annual Rebooking", "description": "Remembering to contact customers year after year for repeat business without automation."}}, "features": {"0": {"title": "Seasonal Campaign Automation", "description": "Send automated reminders to past customers before fall season. Create email and text campaigns to fill your schedule.", "benefit": "Book out fall season weeks in advance"}, "1": {"title": "Safety Checklists & Documentation", "description": "Digital safety checklists with photo documentation for insurance compliance. Store property access notes securely.", "benefit": "Reduce liability and meet insurance requirements"}, "2": {"title": "Before/After Photos & Disposal Tracking", "description": "Document gutter condition with photos. Track debris removal and disposal costs per job.", "benefit": "Show value to customers and maintain profitability"}, "3": {"title": "Automatic Annual Reminders", "description": "ServiceGrid automatically reminds customers 12 months after their last cleaning to rebook for next season.", "benefit": "Maximize repeat business without manual follow-up"}}, "cta": {"title": "Ready to clean up your gutter business?", "subtitle": "Join gutter cleaning professionals using ServiceGrid to automate seasonality and grow revenue."}},
     "junkRemoval": {"label": "Junk Removal", "description": "On-demand scheduling and pricing software for junk removal businesses", "hero": {"title": "Junk Removal Software That Hauls More Jobs", "subtitle": "Price by volume instantly, coordinate teams, optimize disposal routes, and handle same-day bookings with ease."}, "challenges": {"0": {"title": "Accurate Volume Pricing", "description": "Estimating load size and pricing without physical inspection leads to disputes and lost revenue."}, "1": {"title": "Team Coordination", "description": "Most jobs require 2+ people. Coordinating team availability and assigning multi-person jobs is complex."}, "2": {"title": "Disposal Routing", "description": "Finding the closest appropriate disposal facility for each load type while minimizing dump fees."}, "3": {"title": "Same-Day Booking", "description": "Customers expect fast service. Managing same-day bookings while routing efficiently is challenging."}}, "features": {"0": {"title": "Photo-Based Volume Estimates", "description": "Customers send photos, you estimate load size using visual guides. Provide instant quotes by volume tier (1/4 truck, 1/2 truck, full truck).", "benefit": "Quote accurately without site visits and win more jobs"}, "1": {"title": "Multi-Person Job Coordination", "description": "Assign 2+ team members to each job automatically. Track availability and ensure proper staffing for every haul.", "benefit": "Never send one person to a two-person job"}, "2": {"title": "Disposal Facility Database", "description": "Store facility locations, accepted materials, and fee structures. Route to the optimal facility for each load type.", "benefit": "Minimize disposal costs and maximize profitability"}, "3": {"title": "Real-Time Booking & Dispatch", "description": "Accept online bookings 24/7. Dispatch available teams instantly with job details and customer location.", "benefit": "Capture same-day jobs and fill schedule gaps"}}, "cta": {"title": "Ready to haul your business to the next level?", "subtitle": "Join junk removal professionals using ServiceGrid to book more jobs and increase efficiency."}},
     "carpetCleaning": {"label": "Carpet Cleaning", "description": "Professional carpet cleaning management and scheduling software", "hero": {"title": "Carpet Cleaning Software That Extracts More Revenue", "subtitle": "Calculate square footage precisely, document stains, schedule drying time, and maximize equipment utilization."}, "challenges": {"0": {"title": "Square Footage Pricing", "description": "Manually measuring rooms and calculating square footage leads to pricing errors and disputes."}, "1": {"title": "Stain Documentation", "description": "Recording pre-existing stains and setting proper expectations without photo evidence causes conflicts."}, "2": {"title": "Drying Time Scheduling", "description": "Blocking enough time between jobs for equipment setup, cleaning, and drying without losing bookings."}, "3": {"title": "Equipment Utilization", "description": "Tracking which machines are available and scheduling maintenance without double-booking equipment."}}, "features": {"0": {"title": "Room Measurement Tools", "description": "Digital room measurement with automatic square footage calculation. Price by room, area, or stain treatment.", "benefit": "Create precise quotes in minutes and eliminate pricing disputes"}, "1": {"title": "Before/After Photo Documentation", "description": "Capture and timestamp before/after photos with stain markers. Automatically include in customer communications.", "benefit": "Set proper expectations and showcase your quality"}, "2": {"title": "Smart Time Blocking", "description": "Set job duration based on square footage and service type. Automatically block time for drying and equipment setup.", "benefit": "Prevent overbooking and maximize jobs per day"}, "3": {"title": "Equipment Calendars", "description": "Assign equipment to jobs and track maintenance schedules. Prevent double-booking and extend equipment life.", "benefit": "Maximize equipment ROI and reduce downtime"}}, "cta": {"title": "Ready to clean up your carpet business?", "subtitle": "Join carpet cleaning professionals using ServiceGrid to streamline operations and increase bookings."}}
