@@ -2517,7 +2517,290 @@
         "subtitle": "Join gutter cleaning pros who book out their fall schedule weeks faster with ServiceGrid."
       }
     },
-    "junkRemoval": {"label": "Junk Removal", "description": "On-demand scheduling and pricing software for junk removal businesses", "hero": {"title": "Junk Removal Software That Hauls More Jobs", "subtitle": "Price by volume instantly, coordinate teams, optimize disposal routes, and handle same-day bookings with ease."}, "challenges": {"0": {"title": "Accurate Volume Pricing", "description": "Estimating load size and pricing without physical inspection leads to disputes and lost revenue."}, "1": {"title": "Team Coordination", "description": "Most jobs require 2+ people. Coordinating team availability and assigning multi-person jobs is complex."}, "2": {"title": "Disposal Routing", "description": "Finding the closest appropriate disposal facility for each load type while minimizing dump fees."}, "3": {"title": "Same-Day Booking", "description": "Customers expect fast service. Managing same-day bookings while routing efficiently is challenging."}}, "features": {"0": {"title": "Photo-Based Volume Estimates", "description": "Customers send photos, you estimate load size using visual guides. Provide instant quotes by volume tier (1/4 truck, 1/2 truck, full truck).", "benefit": "Quote accurately without site visits and win more jobs"}, "1": {"title": "Multi-Person Job Coordination", "description": "Assign 2+ team members to each job automatically. Track availability and ensure proper staffing for every haul.", "benefit": "Never send one person to a two-person job"}, "2": {"title": "Disposal Facility Database", "description": "Store facility locations, accepted materials, and fee structures. Route to the optimal facility for each load type.", "benefit": "Minimize disposal costs and maximize profitability"}, "3": {"title": "Real-Time Booking & Dispatch", "description": "Accept online bookings 24/7. Dispatch available teams instantly with job details and customer location.", "benefit": "Capture same-day jobs and fill schedule gaps"}}, "cta": {"title": "Ready to haul your business to the next level?", "subtitle": "Join junk removal professionals using ServiceGrid to book more jobs and increase efficiency."}},
+    "junkRemoval": {
+      "label": "Junk Removal",
+      "description": "On-demand scheduling and pricing software for junk removal businesses",
+      "hero": {
+        "title": "Junk Removal Software That Hauls More Jobs",
+        "subtitle": "Price by volume instantly, coordinate teams, optimize disposal routes, and handle same-day bookings with ease."
+      },
+      "challenges": [
+        {
+          "title": "Accurate Volume Pricing",
+          "description": "Estimating load size and pricing without physical inspection leads to disputes and lost revenue."
+        },
+        {
+          "title": "Team Coordination",
+          "description": "Most jobs require 2+ people. Coordinating team availability and assigning multi-person jobs is complex."
+        },
+        {
+          "title": "Disposal Routing",
+          "description": "Finding the closest appropriate disposal facility for each load type while minimizing dump fees."
+        },
+        {
+          "title": "Same-Day Booking",
+          "description": "Customers expect fast service. Managing same-day bookings while routing efficiently is challenging."
+        }
+      ],
+      "features": [
+        {
+          "title": "Photo-Based Volume Estimates",
+          "description": "Customers send photos, you estimate load size using visual guides. Provide instant quotes by volume tier (1/4 truck, 1/2 truck, full truck).",
+          "benefit": "Quote accurately without site visits and win more jobs"
+        },
+        {
+          "title": "Multi-Person Job Coordination",
+          "description": "Assign 2+ team members to each job automatically. Track availability and ensure proper staffing for every haul.",
+          "benefit": "Never send one person to a two-person job"
+        },
+        {
+          "title": "Disposal Facility Database",
+          "description": "Store facility locations, accepted materials, and fee structures. Route to the optimal facility for each load type.",
+          "benefit": "Minimize disposal costs and maximize profitability"
+        },
+        {
+          "title": "Real-Time Booking & Dispatch",
+          "description": "Accept online bookings 24/7. Dispatch available teams instantly with job details and customer location.",
+          "benefit": "Capture same-day jobs and fill schedule gaps"
+        }
+      ],
+      "faq": [
+        {
+          "question": "How do I price junk removal loads accurately?",
+          "answer": "Use volume-based pricing tiers: 1/8 truck ($150-$200), 1/4 truck ($225-$300), 1/2 truck ($325-$450), 3/4 truck ($475-$650), full truck ($650-$800). Each tier represents approximately 2 cubic yards. Provide photo-based estimates but confirm pricing on-site after seeing actual volume. Build in 10-15% buffer for customer underestimation—most loads are larger than described."
+        },
+        {
+          "question": "Should I charge by volume or by item type?",
+          "answer": "Volume-based pricing is simpler and more transparent for customers. Item-based pricing works for specialty items (appliances $50-$100 each, mattresses $30-$50 each, hot tubs $200-$400). Use hybrid approach: volume tiers for general junk, surcharges for heavy items (refrigerators, pianos, concrete). This prevents underpricing difficult loads while keeping quotes straightforward."
+        },
+        {
+          "question": "What's included in my truck minimum charge?",
+          "answer": "Most operators set a $150-$225 minimum covering travel, labor (two-person crew), and disposal for 1/8 to 1/4 truck load. Minimum ensures profitability on small jobs and filters price-shopping customers. Clearly communicate minimum on website and booking confirmation. Jobs under minimum still require two crew members and vehicle costs—never waive minimum to win jobs."
+        },
+        {
+          "question": "How do I estimate cubic yardage on-site?",
+          "answer": "Each pickup truck bed holds roughly 2 cubic yards. Quarter load = 2 yards, half load = 4 yards, three-quarter = 6 yards, full = 8 yards. Use mental math: 1 cubic yard = 3ft x 3ft x 3ft. Most couches are 1-1.5 yards, mattresses 1 yard, refrigerators 1.5 yards. Estimate total volume, show customer the truck bed fill level, and confirm pricing before loading."
+        },
+        {
+          "question": "What's the average profit margin for junk removal?",
+          "answer": "Well-run junk removal businesses maintain 45-60% gross profit margins. Labor (two-person crew) typically costs 25-35% of revenue, dump fees 10-20%, fuel 5-8%, truck maintenance 3-5%. Recycling and donation diversion improves margins by reducing disposal costs. Specialty item surcharges (appliances, tires, e-waste) yield 60-70% margins due to fixed pricing."
+        },
+        {
+          "question": "How many loads can a crew complete per day?",
+          "answer": "Two-person crews typically complete 3-5 loads per 8-hour day, depending on load size and dump proximity. Small loads (1/4 truck) take 45-60 minutes on-site plus travel time. Full loads take 90-120 minutes plus dump trip. Calculate: 30 min drive each way + 60 min load + 30 min dump = 2.5 hours per job. Dense service areas allow 5-6 jobs daily; rural areas 2-3 jobs."
+        },
+        {
+          "question": "Should I own my truck or lease it?",
+          "answer": "Purchase used trucks (15-20ft box truck or pickup with 8ft bed and trailer) to minimize capital. New trucks cost $40k-$80k; used run $12k-$25k. Leasing makes sense for rapid expansion or credit constraints but costs 20-30% more long-term. Most owner-operators start with used pickup + utility trailer ($8k-$15k total) and upgrade to box truck after 12-18 months when revenue justifies it."
+        },
+        {
+          "question": "What size truck is most efficient for junk removal?",
+          "answer": "14-16ft box trucks offer the best balance—large enough for full loads (8-10 cubic yards) but maneuverable in residential areas. Pickup trucks with 6ft-8ft beds plus trailer work for starting out but require more dump trips for large jobs. 20ft+ trucks maximize load capacity but struggle with narrow driveways and street parking. Most successful operators run 15ft trucks and add second truck before upgrading size."
+        },
+        {
+          "question": "How do I minimize dump fees?",
+          "answer": "Separate recyclables (metal, cardboard, wood) and donate usable items (furniture, appliances, clothing) to reduce landfill fees by 30-50%. Landfill fees average $50-$120 per ton; recycling centers often free for metal and cardboard. Build relationships with donation centers for free drop-off. Track diversion rate (% recycled/donated) and market it—eco-conscious customers pay 10-15% premiums for green disposal."
+        },
+        {
+          "question": "Which items should I recycle vs. landfill?",
+          "answer": "Always recycle: scrap metal (free disposal, sometimes pays), cardboard (free at recycling centers), wood pallets (free or low-cost). Always donate if usable: furniture, working appliances, clothing, books, toys. Landfill only: broken furniture, mixed trash, contaminated materials. E-waste (TVs, computers, batteries) requires certified recycling—charge $25-$50 surcharge per item to cover specialized disposal costs."
+        },
+        {
+          "question": "How do I handle hazardous materials legally?",
+          "answer": "Never transport hazardous materials: paint, chemicals, pesticides, asbestos, fuel, propane tanks. Direct customers to municipal hazardous waste facilities or specialized disposal services. Liability is too high—one spill can bankrupt your business. Include 'prohibited items' list in booking confirmation: hazmat, medical waste, firearms, explosives. If discovered on-site, refuse the job and document why."
+        },
+        {
+          "question": "How do I charge for heavy items like appliances?",
+          "answer": "Charge volume tier for truck space occupied plus surcharge for weight/difficulty. Refrigerators: $75-$125 (heavy, refrigerant disposal). Washers/dryers: $50-$75 each. Dishwashers: $40-$60. Hot tubs: $250-$400 (require cutting/disassembly). Pianos: $200-$350 (extreme weight, stairs extra). Heavy items cause crew fatigue and truck wear—surcharges prevent underpricing difficult work."
+        },
+        {
+          "question": "Should I offer different pricing for clean fill vs. trash?",
+          "answer": "Yes—clean loads (single material like wood, metal, concrete) cost less to dispose and should be priced 15-25% lower than mixed trash. Clean wood: $0.20-$0.40 per cubic foot vs. mixed junk $0.60-$1.00 per cubic foot. Market separate pricing for demolition debris, yard waste, and clean-outs. Clean loads are faster to sort, easier to recycle, and generate better margins despite lower pricing."
+        },
+        {
+          "question": "How do I price e-waste disposal?",
+          "answer": "Charge $25-$50 per TV/monitor, $15-$30 per computer/printer, $10-$20 per small electronics. E-waste recycling fees range $5-$40 per item depending on size and local regulations. CRT TVs cost the most to dispose ($30-$50 each). Build surcharges into quotes upfront—e-waste surprises on-site cause pricing disputes. Some recyclers pay for bulk e-waste; establish relationships for better margins."
+        },
+        {
+          "question": "Do I charge extra for stairs or difficult access?",
+          "answer": "Yes—charge $50-$100 extra for second-story access, $75-$150 for third-story or walk-up apartments. Stairs slow load time by 30-50% and increase injury risk. Long carries from backyard/basement add $40-$75. Clearly communicate access fees in booking confirmation. On-site, assess access before loading and confirm surcharges with customer to avoid payment disputes."
+        },
+        {
+          "question": "Should I provide same-day junk removal?",
+          "answer": "Yes, when capacity allows—same-day service commands 20-30% premium pricing and captures customers in 'I need this gone now' urgency. Block 1-2 same-day slots daily for last-minute bookings. Use dynamic pricing: charge premium for same-day, standard rate for next-day, 10% discount for 3+ days advance. Same-day capability differentiates you from budget competitors stuck on 7-day lead times."
+        },
+        {
+          "question": "How do I handle price objections on-site?",
+          "answer": "Provide photo-based estimate with 'starting at $X' language, not firm quotes. On-site, show customer the truck bed and explain volume tiers visually. If load exceeds estimate, offer options: remove some items to hit lower tier, proceed at higher tier, or schedule second trip. 60-70% of customers who receive accurate on-site pricing proceed. Never load first—agree on price before touching items."
+        },
+        {
+          "question": "What's the best way to upsell additional items?",
+          "answer": "After loading initial items, ask 'Anything else you'd like to get rid of while we're here?' Walk the property with customer looking for additional junk—garage, shed, attic, basement. Offer volume-based pricing incentive: 'We have room for another 1/4 load for only $125 more.' Approximately 40-50% of customers add items when prompted. Additional items cost minimal extra labor but boost revenue by $75-$200 per job."
+        }
+      ],
+      "pricing": {
+        "title": "Investment & ROI for Junk Removal Businesses",
+        "subtitle": "See exactly how ServiceGrid helps junk removal companies handle more loads per day and reduce no-shows",
+        "points": [
+          {
+            "label": "Software Cost",
+            "value": "ServiceGrid starts at $19/month with a 14-day free trial. No setup fees, no contracts, no per-job transaction fees. That's less than the profit from a single 1/4 truck load. Cancel anytime, though most junk removal businesses never do once they see the time savings."
+          },
+          {
+            "label": "Same-Day Booking Capture",
+            "value": "Online booking with real-time availability lets customers book same-day slots instantly without phone calls. Operators report capturing 25-35% more same-day jobs because customers can book after-hours when urgency is highest. Each additional same-day job generates $300-$600 in revenue you'd otherwise miss."
+          },
+          {
+            "label": "Time Savings on Scheduling",
+            "value": "Junk removal operators save 4-6 hours weekly managing bookings, coordinating crew assignments, and routing to dump facilities. That time converts to 2-3 additional jobs per week, worth $1,200-$2,400 monthly. Over a year, recovered time equals $14,000-$29,000 in additional revenue with zero marketing spend."
+          },
+          {
+            "label": "No-Show & Cancellation Reduction",
+            "value": "Automated SMS reminders sent 24 hours before jobs reduce no-shows from 12-18% to under 5%. Each prevented no-show saves $300-$600 in wasted crew time and fuel. For operators running 20 jobs weekly, reducing no-shows saves $2,400-$4,800 annually in lost revenue and prevents schedule gaps."
+          },
+          {
+            "label": "Route Optimization for Multiple Dump Trips",
+            "value": "Geographic clustering and disposal facility routing reduce daily drive time by 25-40 minutes, allowing one additional load per day. Over 250 working days, that's 250 extra jobs worth $75,000-$150,000 annually. Optimized routing also cuts fuel costs by 15-20%, saving $2,400-$4,000 yearly."
+          },
+          {
+            "label": "Payback Timeline",
+            "value": "Most junk removal businesses recoup their annual software investment within 6-8 completed jobs through same-day booking capture and reduced no-shows. In peak season (spring cleaning, estate clear-outs), operators typically see 500-900% ROI from efficiency gains alone."
+          }
+        ],
+        "roiNote": "Junk removal companies using ServiceGrid report handling 3-5 more loads weekly and reducing no-shows by 60%, resulting in an average $18,500 annual revenue increase."
+      },
+      "gettingStarted": {
+        "title": "Get Started in Under 15 Minutes",
+        "subtitle": "ServiceGrid is built for fast-paced hauling businesses that need to book customers quickly, not wrestle with complicated software",
+        "steps": [
+          {
+            "icon": "Settings",
+            "title": "Build Your Service Menu & Pricing (5 minutes)",
+            "description": "Create your load size tiers (1/8 truck, 1/4 truck, 1/2 truck, 3/4 truck, full truck) with pricing for each. Add specialty item surcharges (appliances, mattresses, e-waste, concrete). Set your service area radius and same-day booking cutoff time (typically 2-4 hours advance notice)."
+          },
+          {
+            "icon": "Calendar",
+            "title": "Enable Online Booking & Crew Calendars (5 minutes)",
+            "description": "Turn on 24/7 online booking so customers can schedule same-day or next-day service without calling. Set up crew calendars and assign two-person teams to each job slot. Block time for dump trips and lunch breaks. Customers see real-time availability and book instantly—no phone tag."
+          },
+          {
+            "icon": "Rocket",
+            "title": "Accept Jobs & Route to Disposal Facilities (5 minutes)",
+            "description": "New bookings appear instantly on your crew's mobile app with customer address, load estimate, and special instructions. After loading, route to the nearest appropriate disposal facility (landfill, recycling center, donation center). Take photos of the loaded truck, invoice on-site, and collect payment via card or cash."
+          }
+        ]
+      },
+      "deepDive": {
+        "title": "Understanding Junk Removal Operations",
+        "subtitle": "Industry knowledge and best practices to build a profitable, efficient hauling business",
+        "terms": [
+          {
+            "term": "Cubic Yard Pricing",
+            "definition": "The standard junk removal pricing unit based on volume. One cubic yard = 3ft x 3ft x 3ft. Most pricing tiers: 1/4 truck (2 cubic yards), 1/2 truck (4 cubic yards), 3/4 truck (6 cubic yards), full truck (8 cubic yards). Customers often confuse cubic yards with square footage—always show visual reference (truck bed fill level) when quoting."
+          },
+          {
+            "term": "Dump Fees / Tipping Fees",
+            "definition": "The cost charged by landfills, recycling centers, or transfer stations to dispose of waste, calculated by weight (per ton) or volume (per cubic yard). Fees range $40-$150 per ton depending on material type and location. Mixed trash costs more than clean loads (wood, metal, cardboard). Tracking dump fees per load is critical for margin management."
+          },
+          {
+            "term": "Diversion Rate",
+            "definition": "The percentage of collected junk that is recycled, donated, or repurposed rather than sent to landfills. Higher diversion rates (50-70%) reduce disposal costs and appeal to eco-conscious customers who pay premium pricing. Calculate monthly: (weight recycled + weight donated) / total weight collected. Market your diversion rate as competitive advantage."
+          },
+          {
+            "term": "Prohibited Items / Hazmat",
+            "definition": "Materials that junk removal companies cannot legally transport: paint, chemicals, pesticides, asbestos, fuel, propane tanks, medical waste, firearms, explosives. Accepting hazmat creates massive liability—fines range $10,000-$100,000. Always include prohibited items list in booking confirmations and contracts. Refuse jobs with hazmat and document refusal reason."
+          },
+          {
+            "term": "Two-Person Crew Requirement",
+            "definition": "Industry standard for junk removal is two-person crews for safety and efficiency. Heavy items (appliances, furniture, concrete) require two people to lift safely. Two-person teams load 40-50% faster than solo operators. Price all jobs assuming two-person crew—never send one person to save labor costs. Injury from solo lifting costs far more than the saved wages."
+          },
+          {
+            "term": "Same-Day Service Premium",
+            "definition": "Pricing strategy that charges 20-30% higher rates for same-day service compared to next-day or scheduled service. Premium compensates for schedule disruption and captures customers' urgency willingness to pay. Standard pricing: 1/2 truck load $350 next-day, $420-$455 same-day. Clearly display premium pricing at booking to avoid disputes."
+          }
+        ],
+        "bestPractices": [
+          {
+            "title": "Provide Photo-Based Estimates with Volume Disclaimers",
+            "description": "Ask customers to send photos of all items from multiple angles before quoting. Provide estimated volume tier ('appears to be 1/2 truck load, approximately $350-$450') with disclaimer: 'Final pricing determined on-site after measuring actual volume.' This manages expectations and reduces pricing disputes. Customers underestimate volume 60-70% of the time—never commit to firm prices from photos alone."
+          },
+          {
+            "title": "Confirm Pricing Before Loading Anything",
+            "description": "After arriving on-site, assess actual load size, show customer the truck bed, and confirm final pricing before touching any items. Walk through surcharges: stairs, long carries, heavy appliances. Get verbal confirmation or signature on invoice. Loading first then arguing price leads to conflicts—30-40% of customers decline once items are loaded if price wasn't pre-agreed."
+          },
+          {
+            "title": "Separate Recyclables & Donations During Loading",
+            "description": "Sort items into truck compartments as you load: metal/scrap (free recycling), cardboard/wood (free/low-cost), usable donations (free drop-off), landfill trash. Sorting on-site takes minimal extra time but cuts disposal costs by 30-50%. Market eco-friendly disposal as premium service—customers appreciate responsible disposal and justify higher pricing."
+          },
+          {
+            "title": "Build Disposal Facility Relationships",
+            "description": "Establish accounts at 3-4 disposal facilities: landfill, metal recycler, donation center, e-waste recycler. Compare pricing and route to most cost-effective facility for each load type. Some metal recyclers pay for bulk scrap—free disposal plus $20-$100 payment improves margins. Donation centers provide tax-deductible receipts customers value. Good facility relationships = faster dump times and better pricing."
+          },
+          {
+            "title": "Use Dynamic Pricing for Demand Management",
+            "description": "Charge premium rates (20-30% higher) for same-day service and peak periods (weekends, spring season). Offer discounts (10-15% off) for mid-week advance bookings when schedule has gaps. Dynamic pricing fills slow periods, maximizes revenue during high demand, and trains customers to book ahead. Implement tiered pricing: same-day $420, next-day $350, 3+ days $315 for 1/2 truck load."
+          },
+          {
+            "title": "Upsell On-Site with Volume Incentive Pricing",
+            "description": "After loading initial items, walk the property asking 'Anything else?' Offer incremental pricing: 'We have space for another 1/4 load for only $100 more (normally $250).' Frame as deal since crew is already there—minimal extra labor for you, convenience for customer. Upsells add $75-$200 per job with near-100% profit margin (no dump fee increase for minor additional volume). Capture 40-50% upsell rate with consistent asking."
+          }
+        ]
+      },
+      "testimonials": {
+        "title": "Real Results from Junk Removal Professionals",
+        "testimonials": [
+          {
+            "quote": "Before ServiceGrid, customers who called after 5pm went to voicemail and I'd lose them to competitors. Now they book same-day service online at 9pm and I wake up to confirmed jobs. Same-day bookings went from 15% of my business to 40%, adding about $3,200 monthly.",
+            "author": "Derek Martinez",
+            "business": "Quick Haul Junk Removal, Austin TX",
+            "metrics": [
+              {
+                "value": "40%",
+                "label": "Same-day bookings"
+              },
+              {
+                "value": "$3,200",
+                "label": "Additional monthly revenue"
+              }
+            ]
+          },
+          {
+            "quote": "We were making 4-5 dump runs daily with terrible routing. ServiceGrid clusters our jobs by area and routes us to the closest facility for each load type. We cut drive time by 90 minutes daily, which means we handle 6-7 loads now instead of 4-5. That extra capacity doubled our profit.",
+            "author": "Amanda Chen",
+            "business": "Green Cycle Junk Pros, Seattle WA",
+            "metrics": [
+              {
+                "value": "90 min",
+                "label": "Less daily drive time"
+              },
+              {
+                "value": "40%",
+                "label": "More loads per day"
+              }
+            ]
+          },
+          {
+            "quote": "No-shows were killing us—we'd drive to jobs and find empty houses. The automated text reminders cut our no-show rate from about 18% down to maybe 4%. That's 3-4 prevented no-shows per week, saving us probably $1,200-$1,600 monthly in wasted crew time.",
+            "author": "Mike Thompson",
+            "business": "Thompson Hauling Services, Phoenix AZ",
+            "metrics": [
+              {
+                "value": "78%",
+                "label": "Fewer no-shows"
+              },
+              {
+                "value": "$1,400",
+                "label": "Monthly savings on wasted trips"
+              }
+            ]
+          }
+        ]
+      },
+      "cta": {
+        "title": "Ready to haul your business to the next level?",
+        "subtitle": "Join junk removal professionals using ServiceGrid to book more jobs and increase efficiency."
+      }
+    },
     "carpetCleaning": {"label": "Carpet Cleaning", "description": "Professional carpet cleaning management and scheduling software", "hero": {"title": "Carpet Cleaning Software That Extracts More Revenue", "subtitle": "Calculate square footage precisely, document stains, schedule drying time, and maximize equipment utilization."}, "challenges": {"0": {"title": "Square Footage Pricing", "description": "Manually measuring rooms and calculating square footage leads to pricing errors and disputes."}, "1": {"title": "Stain Documentation", "description": "Recording pre-existing stains and setting proper expectations without photo evidence causes conflicts."}, "2": {"title": "Drying Time Scheduling", "description": "Blocking enough time between jobs for equipment setup, cleaning, and drying without losing bookings."}, "3": {"title": "Equipment Utilization", "description": "Tracking which machines are available and scheduling maintenance without double-booking equipment."}}, "features": {"0": {"title": "Room Measurement Tools", "description": "Digital room measurement with automatic square footage calculation. Price by room, area, or stain treatment.", "benefit": "Create precise quotes in minutes and eliminate pricing disputes"}, "1": {"title": "Before/After Photo Documentation", "description": "Capture and timestamp before/after photos with stain markers. Automatically include in customer communications.", "benefit": "Set proper expectations and showcase your quality"}, "2": {"title": "Smart Time Blocking", "description": "Set job duration based on square footage and service type. Automatically block time for drying and equipment setup.", "benefit": "Prevent overbooking and maximize jobs per day"}, "3": {"title": "Equipment Calendars", "description": "Assign equipment to jobs and track maintenance schedules. Prevent double-booking and extend equipment life.", "benefit": "Maximize equipment ROI and reduce downtime"}}, "cta": {"title": "Ready to clean up your carpet business?", "subtitle": "Join carpet cleaning professionals using ServiceGrid to streamline operations and increase bookings."}}
   }
 }
