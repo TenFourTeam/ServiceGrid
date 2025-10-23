@@ -2239,6 +2239,8 @@
       }
     },
     "gutterCleaning": {
+      "label": "Gutter Cleaning",
+      "description": "Seasonal scheduling and route optimization software for gutter cleaning businesses",
       "hero": {
         "badge": "Gutter Cleaning Software",
         "title": "Software Built for Gutter Cleaning Pros",
