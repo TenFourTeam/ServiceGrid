@@ -1560,11 +1560,11 @@
       }
     },
     "irrigation": {
-      "label": "Irrigation & Sprinklers",
+      "label": "Irrigation",
       "description": "Irrigation system maintenance and installation",
       "hero": {
-        "headline": "Irrigation Business Software That Handles Seasonal Surges",
-        "subheadline": "Manage spring startups, winterizations, and emergency repairs with scheduling built for seasonal irrigation work.",
+        "title": "Irrigation Business Software That Handles Seasonal Surges",
+        "subtitle": "Manage spring startups, winterizations, and emergency repairs with scheduling built for seasonal irrigation work.",
         "ctaText": "Start Managing Seasonal Services",
         "ctaLink": "/auth"
       },
