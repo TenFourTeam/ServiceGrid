@@ -1275,7 +1275,290 @@
         ]
       }
     },
-    "pressureWashing": {"label": "Pressure Washing", "description": "Business management tools for pressure washing professionals", "hero": {"title": "Pressure Washing Software That Handles the Business", "subtitle": "Estimate jobs accurately, schedule efficiently, manage equipment, and get paid fast with software designed for pressure washing pros."}, "challenges": {"0": {"title": "Accurate Project Estimation", "description": "Calculating surface areas and pricing different materials without a system leads to underpricing or lost bids."}, "1": {"title": "Equipment Management", "description": "Tracking which equipment is on which job and scheduling maintenance is difficult with pen and paper."}, "2": {"title": "Seasonal Demand Spikes", "description": "Managing high-volume spring and summer seasons while maximizing revenue during peak times is challenging."}, "3": {"title": "Before/After Documentation", "description": "Showing clients the value of your work requires organized photo documentation and professional presentation."}}, "features": {"0": {"title": "Photo-Based Estimates", "description": "Create accurate quotes using photos and built-in surface area calculators. Price by square footage, material type, or flat rate.", "benefit": "Win more bids with accurate, professional estimates in minutes"}, "1": {"title": "Equipment Tracking & Scheduling", "description": "Assign equipment to jobs, track maintenance schedules, and ensure you have the right tools for each project.", "benefit": "Reduce downtime and extend equipment lifespan"}, "2": {"title": "Before/After Photo Gallery", "description": "Capture and organize before/after photos for each job. Automatically include them in customer communications and marketing.", "benefit": "Showcase your quality and win more referrals"}, "3": {"title": "Seasonal Pricing & Campaigns", "description": "Set surge pricing during peak season and send automated promotional campaigns to past customers.", "benefit": "Maximize revenue during high-demand periods"}}, "cta": {"title": "Ready to power up your pressure washing business?", "subtitle": "Join pressure washing professionals using ServiceGrid to work smarter and increase profits."}},
+    "pressureWashing": {
+      "label": "Pressure Washing",
+      "description": "Business management tools for pressure washing professionals",
+      "hero": {
+        "title": "Pressure Washing Software That Handles the Business",
+        "subtitle": "Estimate jobs accurately, schedule efficiently, manage equipment, and get paid fast with software designed for pressure washing pros."
+      },
+      "challenges": {
+        "0": {
+          "title": "Accurate Project Estimation",
+          "description": "Calculating surface areas and pricing different materials without a system leads to underpricing or lost bids."
+        },
+        "1": {
+          "title": "Equipment Management",
+          "description": "Tracking which equipment is on which job and scheduling maintenance is difficult with pen and paper."
+        },
+        "2": {
+          "title": "Seasonal Demand Spikes",
+          "description": "Managing high-volume spring and summer seasons while maximizing revenue during peak times is challenging."
+        },
+        "3": {
+          "title": "Before/After Documentation",
+          "description": "Showing clients the value of your work requires organized photo documentation and professional presentation."
+        }
+      },
+      "features": {
+        "0": {
+          "title": "Photo-Based Estimates",
+          "description": "Create accurate quotes using photos and built-in surface area calculators. Price by square footage, material type, or flat rate.",
+          "benefit": "Win more bids with accurate, professional estimates in minutes"
+        },
+        "1": {
+          "title": "Equipment Tracking & Scheduling",
+          "description": "Assign equipment to jobs, track maintenance schedules, and ensure you have the right tools for each project.",
+          "benefit": "Reduce downtime and extend equipment lifespan"
+        },
+        "2": {
+          "title": "Before/After Photo Gallery",
+          "description": "Capture and organize before/after photos for each job. Automatically include them in customer communications and marketing.",
+          "benefit": "Showcase your quality and win more referrals"
+        },
+        "3": {
+          "title": "Seasonal Pricing & Campaigns",
+          "description": "Set surge pricing during peak season and send automated promotional campaigns to past customers.",
+          "benefit": "Maximize revenue during high-demand periods"
+        }
+      },
+      "faq": [
+        {
+          "question": "How much should I charge per square foot for pressure washing?",
+          "answer": "Residential driveways typically range from $0.15-$0.40 per square foot, while house siding runs $0.30-$0.60 per square foot. Concrete surfaces like driveways average $0.20-$0.30, while delicate surfaces like wood decks command $0.40-$0.70 due to the care required. Always factor in surface condition, accessibility, and local market rates."
+        },
+        {
+          "question": "What's the difference between soft washing and pressure washing?",
+          "answer": "Soft washing uses low-pressure water (under 500 PSI) combined with specialized cleaning solutions to remove organic growth, ideal for roofs, siding, and painted surfaces. Pressure washing uses high-pressure water (1,500-4,000+ PSI) for hard surfaces like concrete and brick. Choosing the wrong method can damage surfaces or leave cleaning incomplete."
+        },
+        {
+          "question": "How do I estimate pressure washing jobs accurately?",
+          "answer": "Measure the surface area using photos and satellite imagery, then multiply by your per-square-foot rate for that surface type. Add time estimates for setup, travel, and breakdown. Factor in surface condition (light dirt vs. heavy staining), accessibility (first floor vs. second story), and any special requirements like chemical treatments or multiple cleaning passes."
+        },
+        {
+          "question": "What PSI do I need for different surfaces?",
+          "answer": "Concrete and brick can handle 3,000-4,000 PSI. Vinyl siding requires 1,300-1,600 PSI. Wood decks need just 500-600 PSI to avoid splintering. Asphalt shingle roofs should be cleaned with under 500 PSI (soft wash method). Always test in an inconspicuous area first and start with lower pressure."
+        },
+        {
+          "question": "When should I use hot water vs. cold water?",
+          "answer": "Hot water excels at removing oil, grease, and stubborn organic stains, making it ideal for commercial kitchens, gas stations, and heavily soiled driveways. Cold water is sufficient for most residential work including house washing, deck cleaning, and light concrete cleaning. Hot water units cost more but can command premium pricing for specialized work."
+        },
+        {
+          "question": "What chemicals are safe for different materials?",
+          "answer": "Sodium hypochlorite (bleach) diluted to 1-3% is safe for most hard surfaces and kills organic growth. Use pH-neutral cleaners for aluminum and painted surfaces to prevent oxidation. Avoid acids on concrete unless specifically removing rust or efflorescence. Always rinse thoroughly and test new chemical combinations on small areas first."
+        },
+        {
+          "question": "How do I avoid damaging wood decks or siding?",
+          "answer": "Use low pressure (500-800 PSI), maintain a 12-15 inch spray distance, and keep the nozzle moving constantly. Use a 25-40 degree nozzle tip, never a zero-degree tip. Spray with the grain on wood, and avoid holding the stream in one spot. Pre-wet plants and rinse them immediately after if using chemicals."
+        },
+        {
+          "question": "Should I offer roof cleaning or focus on concrete?",
+          "answer": "Roof cleaning typically offers higher profit margins ($300-$800 per job) but requires specialized soft-wash equipment and carries more liability. Concrete work has higher volume potential and is easier to start. Many operators begin with concrete to build cash flow, then add roof cleaning as a premium service once they've mastered the basics and secured insurance."
+        },
+        {
+          "question": "Can I pressure wash in winter temperatures?",
+          "answer": "Work is possible above 40°F, but below freezing creates safety hazards from ice formation. Cold water is less effective at cleaning, and equipment can freeze if not properly winterized. Many operators shift to indoor work (garage floors, warehouses) or focus on estimates and equipment maintenance during the coldest months."
+        },
+        {
+          "question": "How do I manage spring season demand spikes?",
+          "answer": "Book jobs 2-3 weeks out during peak season and implement deposit requirements to reduce no-shows. Batch similar jobs by location to maximize daily capacity. Communicate longer lead times clearly and consider premium pricing for last-minute bookings. Train backup crew members before the season starts to handle overflow."
+        },
+        {
+          "question": "What's the proper dilution ratio for downstream injection?",
+          "answer": "Most downstreaming injectors pull at a 10:1 ratio (10 parts water to 1 part chemical). If using 12.5% sodium hypochlorite, this delivers approximately 1-1.5% solution at the surface, ideal for house washing. Stronger concentrations (3-5%) are needed for heavily stained concrete. Always confirm your injector's actual draw ratio as they vary by model."
+        },
+        {
+          "question": "How do I soft wash a roof without damaging shingles?",
+          "answer": "Apply cleaning solution from bottom to top using low pressure (under 300 PSI), let it dwell for 10-15 minutes, then rinse gently from top to bottom. Never use a pressure wand directly on shingles. Protect gutters and landscaping with tarps and pre-wetting. Schedule roof cleaning on overcast days when possible to prevent rapid drying."
+        },
+        {
+          "question": "Should I invest in a hot water pressure washer?",
+          "answer": "Hot water units cost $3,000-$8,000 more than cold water but allow you to charge 25-50% more for heavy-duty work like commercial kitchens, fleet washing, or oil-stained driveways. If your market has commercial demand or you regularly encounter grease and oil, the investment pays off within 20-30 jobs. For residential-only work, cold water is usually sufficient."
+        },
+        {
+          "question": "What GPM rating do I need for commercial work?",
+          "answer": "Residential work runs well on 2.5-3.5 GPM, while commercial jobs benefit from 4-5+ GPM for faster cleaning of large areas. Higher GPM reduces total job time significantly—a 5 GPM machine can clean a large driveway in half the time of a 2.5 GPM unit. Balance your budget against the size of jobs you're targeting."
+        },
+        {
+          "question": "Is a surface cleaner attachment worth the investment?",
+          "answer": "Absolutely. A quality surface cleaner ($200-$600) reduces driveway cleaning time by 70% and eliminates streaking from wand cleaning. It pays for itself within 5-10 jobs. Choose a size appropriate to your machine's GPM—typically 16-20 inches for residential work. This tool is essential for professional, even results on flat surfaces."
+        },
+        {
+          "question": "How do I price driveway vs. house siding differently?",
+          "answer": "Driveways are typically priced lower per square foot ($0.15-$0.30) because they're faster to clean and use simpler techniques. House siding commands higher rates ($0.30-$0.60) due to the care required, vertical work, and often soft-wash chemicals needed. Factor in time for protecting landscaping and windows when pricing house washing."
+        },
+        {
+          "question": "What's a typical profit margin for pressure washing?",
+          "answer": "Well-run pressure washing businesses maintain 40-60% gross profit margins after equipment costs, chemicals, fuel, and labor. Residential work typically yields 50-55% margins, while commercial contracts may run 40-45% due to competitive bidding. Specialty services like roof cleaning or deck restoration often exceed 60% margins."
+        },
+        {
+          "question": "What services can I offer during the off-season?",
+          "answer": "Interior concrete work (garage floors, basements, warehouses) continues year-round in most climates. Offer winter pricing promotions for exterior work on warmer days. Use slow periods for equipment maintenance, marketing campaigns, and booking spring work. Some operators add complementary services like gutter cleaning, window washing, or holiday light installation."
+        }
+      ],
+      "pricing": {
+        "title": "Investment & ROI for Pressure Washing",
+        "subtitle": "Understanding the costs and returns of business management software for your pressure washing operation",
+        "points": [
+          {
+            "label": "Software Cost",
+            "value": "ServiceGrid starts at $19/month with a 14-day free trial. No contracts, no setup fees, no per-user charges. That's less than the profit from one driveway cleaning job per month."
+          },
+          {
+            "label": "Time Savings",
+            "value": "Operators save 8-12 hours weekly on administrative tasks like scheduling, estimating, and invoicing. That's time redirected to 10-15 additional jobs per month, or $2,000-$4,000 in additional revenue."
+          },
+          {
+            "label": "Revenue Increase",
+            "value": "Professional quotes with photos and detailed breakdowns win 25-35% more bids. Better scheduling reduces gaps between jobs, increasing daily capacity by 20-30%. Average revenue increase: $3,200-$5,800 monthly."
+          },
+          {
+            "label": "Equipment Utilization",
+            "value": "Equipment tracking prevents double-booking and ensures maintenance is completed on schedule, reducing breakdown-related downtime by 40%. Extended equipment life saves $1,500-$3,000 annually on replacement costs."
+          },
+          {
+            "label": "Customer Retention",
+            "value": "Automated follow-ups and seasonal reminders increase repeat customer rate from typical 30-40% to 55-70%. Each retained customer is worth $800-$1,500 in annual recurring revenue versus the cost of acquiring new customers."
+          },
+          {
+            "label": "Payback Timeline",
+            "value": "Most pressure washing operators recoup the annual software cost within the first 2-3 jobs by winning more bids and working more efficiently. Annual ROI typically exceeds 2,000% when accounting for time savings and revenue gains."
+          }
+        ],
+        "roiNote": "Pressure washing businesses using ServiceGrid report an average of $4,200 monthly revenue increase while working the same hours, driven by better scheduling, faster estimates, and improved customer retention."
+      },
+      "gettingStarted": {
+        "title": "Get Your Pressure Washing System Running Fast",
+        "subtitle": "From setup to first jobs scheduled in under 30 minutes—no technical expertise required",
+        "steps": [
+          {
+            "icon": "Settings",
+            "title": "Initial Setup (10 minutes)",
+            "description": "Add your business details, logo, and equipment inventory. Set your service offerings (house washing, driveway cleaning, roof soft wash, etc.) and base pricing. Import your customer list or start fresh—no spreadsheets required."
+          },
+          {
+            "icon": "Calendar",
+            "title": "Schedule First Jobs (10 minutes)",
+            "description": "Create your first estimates using photo uploads and built-in surface calculators. Schedule jobs on your calendar with equipment assignments. Set up automated customer reminders and confirmation requests."
+          },
+          {
+            "icon": "Rocket",
+            "title": "Go Live (10 minutes)",
+            "description": "Download the mobile app for field use. Start capturing before/after photos and tracking job completion. Send your first digital invoice and get paid faster. Your pressure washing operation is now running on modern software."
+          }
+        ]
+      },
+      "deepDive": {
+        "title": "Pressure Washing Industry Knowledge",
+        "subtitle": "Professional terminology, technical considerations, and best practices for running a successful pressure washing business",
+        "terms": [
+          {
+            "term": "PSI Rating (Pounds per Square Inch)",
+            "definition": "The pressure measurement of water output from your machine. Consumer units produce 1,300-2,000 PSI, while professional equipment ranges from 2,500-4,000+ PSI. Higher PSI cleans faster but increases risk of surface damage if used improperly."
+          },
+          {
+            "term": "GPM (Gallons Per Minute)",
+            "definition": "The water flow rate, often more important than PSI for cleaning speed. A 4 GPM machine cleans significantly faster than a 2 GPM unit at the same PSI. Professional operators prioritize GPM for efficiency. Cleaning power = PSI × GPM."
+          },
+          {
+            "term": "Soft Washing",
+            "definition": "A low-pressure cleaning method (under 500 PSI) that relies on specialized chemical solutions to break down organic growth, dirt, and stains. Essential for delicate surfaces like roofs, painted siding, and stucco where high pressure would cause damage."
+          },
+          {
+            "term": "Downstream Injection",
+            "definition": "A method of introducing chemicals into the water stream after the pump, using the pressure differential to draw cleaning solution from a container. Typical ratio is 10:1 (water to chemical). Protects pump seals from chemical exposure."
+          },
+          {
+            "term": "Surface Cleaner",
+            "definition": "A rotating bar attachment with multiple nozzles enclosed under a hood, used for flat surfaces like driveways and walkways. Eliminates streaking, speeds up cleaning by 60-80%, and provides even results. Essential equipment for professional work."
+          },
+          {
+            "term": "Hot Water vs. Cold Water",
+            "definition": "Hot water machines heat water to 200°F+, significantly improving cleaning power for grease, oil, and heavy organic stains. Cold water is sufficient for most residential work. Hot water units cost 2-3× more but command premium pricing for commercial and heavy-duty jobs."
+          }
+        ],
+        "bestPractices": [
+          {
+            "title": "Always Test Surface Materials First",
+            "description": "Before starting any job, test your pressure and chemical solution on a small, inconspicuous area. Different materials react differently—what works on one vinyl siding may damage another. Testing prevents costly mistakes and builds your knowledge base."
+          },
+          {
+            "title": "Document Before/After Photos Systematically",
+            "description": "Capture wide-angle and close-up shots from the same position before and after cleaning. These photos justify your pricing, prevent disputes, serve as marketing material, and protect against false damage claims. Store them organized by customer and job date."
+          },
+          {
+            "title": "Price Based on Surface Type, Not Just Area",
+            "description": "A 500 sq ft wood deck requires more care, time, and skill than 500 sq ft of concrete. Price reflects difficulty, risk, and expertise—not just square footage. Develop separate rates for concrete ($0.15-$0.30), siding ($0.30-$0.60), wood ($0.40-$0.70), and roofs ($0.50-$1.00)."
+          },
+          {
+            "title": "Build Weather Buffer Days Into Scheduling",
+            "description": "Don't schedule jobs back-to-back without buffer days during rainy seasons. Rain delays cascade, disappointing customers and reducing your weekly capacity. Schedule 4 days of work across 5-day periods, giving you flexibility to shift jobs when weather doesn't cooperate."
+          },
+          {
+            "title": "Maintain Equipment Weekly, Not When It Breaks",
+            "description": "Check and clean inlet filters, inspect hoses for wear, verify oil levels, and test pressure weekly. Replace pump oil every 50 hours of operation. Preventive maintenance costs $50-$100 monthly but prevents $500-$2,000 breakdown repairs and lost job income."
+          },
+          {
+            "title": "Specialize in High-Margin Services",
+            "description": "Once you master basic pressure washing, add specialized services like roof soft washing ($400-$800 per job), deck restoration ($600-$1,500), or commercial building facades ($1,000-$5,000). Specialization reduces competition and increases your per-job profit significantly."
+          }
+        ]
+      },
+      "testimonials": {
+        "title": "Real Results from Pressure Washing Professionals",
+        "testimonials": [
+          {
+            "quote": "We went from handwritten estimates that took 30 minutes to digital quotes with photos done in under 10 minutes. Our close rate jumped from 55% to 78% because customers can actually see what we're quoting. The before/after gallery in our proposals closes deals.",
+            "author": "Mike Davidson",
+            "business": "ProClean Pressure Washing, Tampa FL",
+            "metrics": [
+              {
+                "value": "35%",
+                "label": "Faster quotes"
+              },
+              {
+                "value": "$2,400",
+                "label": "Monthly revenue increase"
+              }
+            ]
+          },
+          {
+            "quote": "Managing five pressure washers and three crews used to mean constant phone calls about who has which equipment. Now I assign equipment to jobs in the calendar and everyone knows what to bring. We've eliminated double-bookings and reduced equipment downtime by half.",
+            "author": "Sarah Chen",
+            "business": "Elite Exterior Cleaning, Seattle WA",
+            "metrics": [
+              {
+                "value": "95%",
+                "label": "Equipment utilization"
+              },
+              {
+                "value": "8 hours",
+                "label": "Saved weekly"
+              }
+            ]
+          },
+          {
+            "quote": "Spring season used to be total chaos—lost paperwork, missed appointments, unhappy customers. ServiceGrid's automated reminders and calendar integration meant we handled 60 more properties this spring than last year with the same crew size. That's pure profit.",
+            "author": "James Rodriguez",
+            "business": "Rodriguez Pressure Washing, Austin TX",
+            "metrics": [
+              {
+                "value": "60+",
+                "label": "More properties/season"
+              },
+              {
+                "value": "$9,200",
+                "label": "Monthly revenue increase"
+              }
+            ]
+          }
+        ]
+      },
+      "cta": {
+        "title": "Ready to power up your pressure washing business?",
+        "subtitle": "Join pressure washing professionals using ServiceGrid to work smarter and increase profits."
+      }
+    },
     "irrigation": {"label": "Irrigation", "description": "Specialized software for irrigation and sprinkler system professionals", "hero": {"title": "Irrigation Software for Smarter System Management", "subtitle": "Manage seasonal services, track zones and equipment, automate maintenance schedules, and respond to emergencies faster."}, "challenges": {"0": {"title": "Seasonal Service Tracking", "description": "Coordinating spring startups, summer maintenance, and fall winterization across hundreds of systems is overwhelming."}, "1": {"title": "Zone Documentation", "description": "Remembering zone layouts, valve locations, and system specifications for each property without proper records."}, "2": {"title": "Emergency Response Time", "description": "Finding system information and dispatching technicians quickly during pipe bursts and emergencies."}, "3": {"title": "Maintenance Reminders", "description": "Missing seasonal deadlines like winterization can lead to liability issues and unhappy customers."}}, "features": {"0": {"title": "Seasonal Service Automation", "description": "Set up spring, summer, and fall service templates once. ServiceGrid automatically schedules and reminds customers.", "benefit": "Never miss a winterization deadline or seasonal revenue opportunity"}, "1": {"title": "Zone & System Documentation", "description": "Store zone maps, valve locations, controller settings, and system notes with photos for every property.", "benefit": "Service systems faster with complete property information"}, "2": {"title": "Emergency Dispatch", "description": "Access property information instantly on mobile. Dispatch available technicians with one tap during emergency calls.", "benefit": "Respond to emergencies 50% faster and improve customer satisfaction"}, "3": {"title": "Maintenance Tracking", "description": "Schedule and track backflow testing, controller battery changes, and seasonal inspections automatically.", "benefit": "Reduce liability and provide proactive maintenance"}}, "cta": {"title": "Ready to streamline your irrigation business?", "subtitle": "Join irrigation professionals managing more systems with less stress using ServiceGrid."}},
     "poolService": {"label": "Pool Service", "description": "Complete pool service management and route optimization software", "hero": {"title": "Pool Service Software That Keeps You Swimming", "subtitle": "Optimize routes, track chemicals, manage equipment, and automate seasonal services with software built for pool professionals."}, "challenges": {"0": {"title": "Weekly Route Efficiency", "description": "Planning optimal routes across dozens of pools while managing time windows and customer preferences."}, "1": {"title": "Chemical Inventory", "description": "Tracking chemical usage per pool and maintaining proper inventory levels without overstocking."}, "2": {"title": "Equipment Maintenance", "description": "Remembering filter cleanings, pump servicing, and equipment history for each pool customer."}, "3": {"title": "Seasonal Services", "description": "Coordinating pool openings, closings, and mid-season repairs while keeping customers informed."}}, "features": {"0": {"title": "Intelligent Route Optimization", "description": "Create efficient weekly routes automatically. Mobile app guides technicians pool-to-pool with customer notes and chemical history.", "benefit": "Service 20% more pools with the same team"}, "1": {"title": "Chemical Tracking & Inventory", "description": "Log chemical readings and usage per pool. Track inventory levels and get low-stock alerts automatically.", "benefit": "Maintain perfect water chemistry and reduce chemical waste"}, "2": {"title": "Equipment Service History", "description": "Record filter cleanings, equipment repairs, and part replacements with photos and dates for every pool.", "benefit": "Provide better service and identify upsell opportunities"}, "3": {"title": "Automated Seasonal Workflows", "description": "Set up pool opening and closing checklists. Schedule and invoice seasonal services automatically.", "benefit": "Never miss an opening or closing and capture all seasonal revenue"}}, "cta": {"title": "Ready to make waves in your pool business?", "subtitle": "Join pool service professionals using ServiceGrid to optimize routes and grow revenue."}},
     "handyman": {"label": "Handyman", "description": "Versatile business management software for handyman services", "hero": {"title": "Handyman Software That Handles Every Job", "subtitle": "Manage diverse services, prevent scope creep, track parts, and schedule efficiently with software built for multi-trade professionals."}, "challenges": {"0": {"title": "Service Pricing Consistency", "description": "Pricing dozens of different services without a system leads to inconsistent quotes and underpricing."}, "1": {"title": "Scope Creep", "description": "Small jobs growing into big projects without proper change orders eats into profitability."}, "2": {"title": "Parts & Materials", "description": "Tracking which parts are needed, marking them up consistently, and getting reimbursed slows cash flow."}, "3": {"title": "Skill-Based Scheduling", "description": "Matching the right technician to each job type while keeping everyone busy is complex."}}, "features": {"0": {"title": "Service Catalog & Pricing", "description": "Create a library of common services with standard pricing. Build quotes quickly by selecting services and adjusting as needed.", "benefit": "Quote faster and maintain consistent, profitable pricing"}, "1": {"title": "Change Order Management", "description": "Document scope changes with photos and customer approval before starting additional work. Keep projects profitable.", "benefit": "Prevent scope creep and get paid for all work performed"}, "2": {"title": "Parts Tracking & Markup", "description": "Add parts to quotes and invoices with automatic markup. Track receipts and reimbursement in one place.", "benefit": "Recover all parts costs and increase parts revenue"}, "3": {"title": "Skill-Based Scheduling", "description": "Tag services by skill type and assign jobs to technicians based on their expertise and availability.", "benefit": "Send the right person to every job and improve quality"}}, "cta": {"title": "Ready to build a better handyman business?", "subtitle": "Join handyman professionals using ServiceGrid to manage more jobs and increase profits."}},
