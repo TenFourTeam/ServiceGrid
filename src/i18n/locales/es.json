@@ -858,54 +858,297 @@
   "industries": {
     "lawnCare": {
       "label": "Cuidado del Césped",
-      "description": "Software completo de gestión empresarial para profesionales del cuidado del césped",
+      "description": "Software para gestionar servicios de mantenimiento de césped y jardinería",
       "hero": {
-        "title": "Software para Cuidado del Césped que Hace Crecer Tu Negocio",
-        "subtitle": "Programa trabajos, envía cotizaciones profesionales, gestiona rutas y recibe pagos más rápido—todo en una plataforma diseñada para profesionales del cuidado del césped."
+        "badge": "Software de Gestión de Cuidado del Césped",
+        "title": "Software para Empresas de Cuidado del Césped que Eliminan el Desorden de Papel",
+        "subtitle": "Gestiona clientes recurrentes, optimiza rutas de corte y factura profesionalmente—todo desde tu teléfono entre trabajos.",
+        "ctaText": "Comienza Gratis",
+        "ctaLink": "/auth"
       },
-      "challenges": {
-        "0": {
-          "title": "Caos en la Programación Estacional",
-          "description": "Gestionar la demanda en temporada alta mientras coordinas retrasos por clima y servicios recurrentes crea pesadillas de programación."
+      "challenges": [
+        {
+          "title": "Rastreo Manual de Clientes Recurrentes",
+          "description": "Gestionar cientos de propiedades con ciclos de corte semanales/quincenales usando papel o hojas de cálculo significa facturaciones perdidas, fechas confusas y confusión constante sobre quién necesita servicio esta semana."
         },
-        "1": {
-          "title": "Rutas Ineficientes",
-          "description": "Perder tiempo y combustible yendo y viniendo por toda la ciudad reduce la rentabilidad y la moral del equipo."
+        {
+          "title": "Rutas Ineficientes que Desperdician Combustible",
+          "description": "Sin optimización de rutas, conduces patrones en zigzag por la ciudad agregando 2-3 horas de conducción diarias. Ese combustible y tiempo desperdiciado directamente reducen tus ganancias en cada trabajo."
         },
-        "2": {
-          "title": "Precios Inconsistentes",
-          "description": "Estimar tamaños de propiedad y servicios sin un sistema lleva a precios bajos y pérdida de ingresos."
+        {
+          "title": "Facturas Retrasadas = Pago Retrasado",
+          "description": "Enviar facturas semanas después del servicio significa esperar más para recibir pago. Los clientes olvidan los detalles del servicio, cuestionan cargos y tu flujo de efectivo sufre."
         },
-        "3": {
-          "title": "Retrasos en Pagos",
-          "description": "Perseguir pagos y gestionar facturas en papel ralentiza el flujo de caja y desperdicia tiempo valioso."
+        {
+          "title": "No Hay Forma de Rastrear Servicios Adicionales",
+          "description": "Cuando ves que una propiedad necesita aireación, sobresemilla o fertilización, no hay un sistema para documentarlo, hacer seguimiento y vender servicios adicionales que agreguen $150-$300 por propiedad."
         }
+      ],
+      "features": [
+        {
+          "title": "Programa de Servicio Recurrente",
+          "description": "Configura a los clientes con programas de corte semanal, quincenal o mensual. El calendario muestra toda la semana de trabajo de un vistazo—sin más adivinar quién necesita servicio a continuación.",
+          "benefit": "Maneja 200+ clientes recurrentes sin perder ninguno"
+        },
+        {
+          "title": "Optimización de Rutas",
+          "description": "El sistema agrupa automáticamente trabajos por ubicación para minimizar tiempo de conducción. Genera una ruta diaria eficiente que ahorra 30-45 minutos en combustible y conducción, permitiéndote ajustar 2-3 céspedes más diarios.",
+          "benefit": "Ahorra 5-8 horas semanales en conducción"
+        },
+        {
+          "title": "Facturación Instantánea en el Lugar",
+          "description": "Completa un trabajo, factura inmediatamente desde tu teléfono y envía recibo al cliente mientras guardas equipo. Facturar en el mismo día en lugar de semanas después significa recibir pago 12-18 días más rápido en promedio.",
+          "benefit": "Mejora flujo de efectivo con pago más rápido"
+        },
+        {
+          "title": "Rastreo de Servicios Adicionales",
+          "description": "Marca propiedades que necesitan aireación, sobresemilla o tratamientos de fertilización durante cortes rutinarios. El sistema te recuerda hacer seguimiento con estimados de servicios adicionales, convirtiendo 20-30% de clientes de solo corte en clientes de servicio completo.",
+          "benefit": "Aumenta ingresos $25,000-$50,000 anuales por ventas adicionales"
+        }
+      ],
+      "faq": [
+        {
+          "question": "¿Cómo calculo el precio de corte de césped por pie cuadrado?",
+          "answer": "La mayoría de negocios de cuidado del césped cobran $35-$80 por corte para propiedades residenciales (5,000-15,000 pies cuadrados), promediando $0.01-$0.02 por pie cuadrado. Sin embargo, el precio por pie cuadrado solo funciona bien para propiedades grandes y comerciales. Es mejor usar precios escalonados: $35-$45 para lotes pequeños (menos de 8,000 pies cuadrados), $45-$65 para propiedades medianas (8,000-15,000 pies cuadrados), $65-$100 para lotes grandes (más de 15,000 pies cuadrados). Factoriza obstáculos, condición del césped y frecuencia del servicio."
+        },
+        {
+          "question": "¿Cuál es la mejor forma de gestionar clientes de mantenimiento de césped recurrentes?",
+          "answer": "Usa contratos de servicio estacional o anuales que especifiquen frecuencia de corte (semanal/quincenal), servicios incluidos y precio total. Factura mensualmente por servicios recurrentes en lugar de por corte—esto estabiliza flujo de efectivo y facilita la facturación. La mayoría de operadores cobran 4 cortes por adelantado cada mes de abril a octubre. Software de calendario digital que muestre todas las propiedades recurrentes con códigos de color por día de servicio previene cortes perdidos."
+        },
+        {
+          "question": "¿Cómo optimizo rutas de corte para ahorrar combustible?",
+          "answer": "Asigna días de servicio a vecindarios o zonas—todos los clientes del lunes en el mismo área, todos los del martes en otra. Usa software de rutas que ordene paradas de forma eficiente dentro de cada zona. Prioriza nuevos clientes en vecindarios donde ya tienes trabajos. Este enfoque de agrupación por zonas reduce conducción en 25-40% versus saltar por toda la ciudad. Reevalúa rutas cada trimestre a medida que agregas/pierdes clientes."
+        },
+        {
+          "question": "¿Debo cobrar por visita o por temporada para cuidado del césped?",
+          "answer": "El precio por temporada (abril-octubre: 28-32 cortes a tarifa fija mensual) simplifica facturación y suaviza ingreso, pero requiere estimar crecimiento del césped con precisión. El precio por visita ($35-$80 por corte) refleja servicio real pero causa variabilidad de flujo de efectivo. Los precios híbridos funcionan mejor: tarifa mensual que cubra cortes estándar esperados, con cargos adicionales si el crecimiento extremo requiere visitas extra. Comunica claramente qué incluye la tarifa mensual para evitar malentendidos."
+        },
+        {
+          "question": "¿Cómo manejo retrasos por clima y reprogramación?",
+          "answer": "Construye días de reserva en tu agenda semanal—programa 4 días de trabajo en 5 días disponibles. Cuando la lluvia cancela un día, cambias trabajos al día de reserva sin decepcionar a clientes. Comunica temprano: envía mensajes texto la noche anterior sobre cambios de programa relacionados con clima. La mayoría de clientes entienden retrasos relacionados con clima si te comunicas proactivamente. Durante períodos de lluvia prolongada, prioriza clientes comerciales y de alto valor primero."
+        },
+        {
+          "question": "¿Cuál es el margen de ganancia promedio para servicios de cuidado del césped?",
+          "answer": "Negocios bien administrados de cuidado del césped apuntan a márgenes brutos del 50-60% después de costos laborales, combustible y mantenimiento de equipo. Operaciones solo de corte típicamente funcionan con 45-55% de margen. Agregar servicios de alto margen como fertilización (60-70% de margen), aireación (65-75%), o instalación de paisajismo (40-50%) aumenta rentabilidad general. Las operaciones solo del propietario ven márgenes más altos (60-70%) hasta que contratan cuadrillas."
+        },
+        {
+          "question": "¿Cuántos céspedes puede atender una cuadrilla por día?",
+          "answer": "Una cuadrilla de dos personas con equipo comercial promedia 12-18 propiedades residenciales por día (8,000-12,000 pies cuadrados cada una), asumiendo propiedades densas agrupadas y servicio solo de corte. Propiedades más grandes (15,000+ pies cuadrados) o trabajos que incluyen bordeado, recorte y soplado reducen a 10-14 por día. Operadores solitarios manejan 8-12 propiedades diariamente. Tiempo de conducción entre trabajos es el factor más grande—rutas optimizadas permiten 2-3 cortes más diarios que rutas pobres."
+        },
+        {
+          "question": "¿Cómo rastreo aplicaciones de fertilizantes y cumplo regulaciones estatales?",
+          "answer": "Mantén registros detallados de cada aplicación de fertilizante: fecha, producto usado (nombre/número NPK), cantidad aplicada, condiciones climáticas y técnico que realiza aplicación. Muchos estados requieren licencia de aplicador certificado y reportes de uso para fertilizantes que contienen pesticidas. Usa software que almacene estos registros con marca de tiempo y ubicación—los inspectores estatales pueden auditar registros en cualquier momento. Fotografía cada bolsa de producto aplicada como respaldo de documentación."
+        },
+        {
+          "question": "¿Cuál es el programa ideal para aireación y sobresemilla?",
+          "answer": "Airea céspedes a principios de otoño (septiembre-octubre en climas del norte, octubre-noviembre en climas cálidos) cuando el césped se está recuperando activamente. Sobresemilla inmediatamente después de airear mientras los hoyos están abiertos—las semillas caen en los hoyos para mejor contacto con el suelo. La aireación de primavera (marzo-abril) también funciona pero es menos ideal porque las malezas compiten con las nuevas semillas. Cobra $75-$150 por aireación y $50-$100 adicionales por sobresemilla para lotes residenciales típicos."
+        },
+        {
+          "question": "¿Cómo documento el tiempo de aplicación de pre-emergentes para registros de clientes?",
+          "answer": "Aplica herbicidas pre-emergentes antes de la germinación de malezas—típicamente cuando temperaturas del suelo alcanzan 50-55°F (fines de febrero-abril dependiendo de región). Documenta fecha exacta de aplicación, producto usado y temperatura del suelo en registros de clientes. Esta información es crucial para aplicaciones del año siguiente—la mejor prevención de malezas requiere tiempo constante año tras año. Configura recordatorios para volver a aplicar a mitad de temporada (8-12 semanas después de aplicación inicial)."
+        },
+        {
+          "question": "¿Debo ofrecer programas reguladores de crecimiento (PGR)?",
+          "answer": "Los programas PGR reducen frecuencia de corte en 30-40% al disminuir crecimiento vertical mientras fortalecen el sistema de raíces. Mejor para propiedades comerciales, HOAs e instalaciones deportivas donde apariencia consistente importa. Cuesta $75-$150 por aplicación (cada 4-6 semanas), pero factoriza costos de corte reducidos al precificar. Las propiedades residenciales rara vez justifican PGR—los clientes lo ven como gasto adicional con beneficio visible mínimo. Enfoca PGR en clientes comerciales donde ahorros de mano de obra justifican inversión en químicos."
+        },
+        {
+          "question": "¿Cómo precio escarificación versus corte regular?",
+          "answer": "Cobra $75-$150 para escarificación residencial (5,000-12,000 pies cuadrados)—2-3 veces más que el corte regular porque requiere equipo especializado y más esfuerzo físico. La escarificación típicamente toma 45-90 minutos versus 20-30 minutos para corte. Explica el beneficio a clientes: remover paja permite agua/nutrientes alcanzar raíces, mejorando salud del césped. Ofrece escarificación primavera/otoño como parte de paquetes de renovación de césped combinados con aireación y sobresemilla para tickets promedio más altos ($200-$350)."
+        },
+        {
+          "question": "¿Cuándo debo agregar una segunda cuadrilla?",
+          "answer": "Agrega una segunda cuadrilla cuando estés constantemente reservado 2-3 semanas adelante y rechazando nuevos clientes. Señales: tu calendario está 100% completo 4+ días semanales, gastas más de 10 horas semanales programando/estimando en lugar de cortar, o tienes lista de espera de 15+ clientes potenciales. Asegúrate de tener flujo de efectivo para cubrir costos de segunda cuadrilla (salarios, equipo, seguro) durante meses de construcción. La mayoría de operadores necesitan 40-60 clientes recurrentes para soportar una cuadrilla de manera rentable."
+        },
+        {
+          "question": "¿Cómo transiciono de operador solo a operaciones basadas en equipo?",
+          "answer": "Comienza contratando ayuda a tiempo parcial para pico de temporada mientras mantienes clientes clave tú mismo. Documenta todos los procesos—rutas, preferencias de clientes, procedimientos de corte—antes de delegar. Contrata tu primera cuadrilla completa solo cuando tengas 60-80 clientes recurrentes (suficiente ingreso para cubrir salario + 30% de reserva). Usa rastreo GPS y aplicación móvil para monitorear eficiencia de cuadrilla. Espera márgenes más estrechos (45-50% versus 60-70% solo) el primer año mientras capacitas personal y optimizas operaciones."
+        },
+        {
+          "question": "¿Cuál es la mejor forma de ganar contratos comerciales de césped?",
+          "answer": "Apunta a propiedades más pequeñas comerciales (consultorios médicos, oficinas pequeñas, iglesias) en lugar de licitaciones de gestores de propiedad grande. Visita propiedades en persona para citar preciso—nunca cotices ciego basado en fotos. Enfatiza confiabilidad y comunicación—propiedades comerciales priorizan consistencia sobre precio bajo. Ofrece contratos de 12 meses con precio fijo mensual (incluso durante meses de invierno para mantener la cuenta). Los contratos comerciales ofrecen ingreso predecible pero típicamente pagan 20-30% menos por visita que propiedades residenciales."
+        },
+        {
+          "question": "¿Cómo calculo mi punto de equilibrio para compras de equipo?",
+          "answer": "Divide costo de equipo entre ganancia adicional que genera por trabajo. Ejemplo: una podadora de montaje cero de $8,000 ahorra 20 minutos por propiedad versus podadora de empuje. Con 15 propiedades diarias, ahorras 5 horas semanales (20 semanas de temporada = 100 horas). A tasa de $75/hora, eso es $7,500 en valor de tiempo—el equipo se paga en una temporada. Mantenlo simple: buen equipo comercial se paga en 1-2 temporadas a través de ahorro de tiempo e ingreso aumentado."
+        },
+        {
+          "question": "¿Con qué frecuencia debo comunicarme con clientes de cuidado del césped?",
+          "answer": "Para clientes recurrentes: envía recordatorios 24 horas antes de visitas programadas (reduce no-shows/problemas de acceso) y confirmación de finalización mismo día con foto. Envía facturas mensualmente en misma fecha (ejemplo: 1° de cada mes) para ingreso predecible. Comunicación trimestral (inicio de primavera, medio verano, otoño) sobre ventas adicionales disponibles (aireación, sobresemilla, tratamientos). La sobre-comunicación previene problemas—clientes valoran saber exactamente cuándo llegarás y qué hiciste."
+        },
+        {
+          "question": "¿Qué debo incluir en mis cotizaciones de cuidado del césped?",
+          "answer": "Cotizaciones claras incluyen: dirección de propiedad, tamaño del lote, frecuencia de servicio (semanal/quincenal), servicios incluidos (cortar, bordear, recortar, soplar), precio por visita o precio mensual total, duración de contrato (temporada/anual) y términos de pago. Incluye fotos de la propiedad con anotaciones mostrando características especiales (bordear extenso, obstáculos). Especifica qué NO está incluido (aerificar, fertilización, limpieza de hojas) para prevenir malentendidos. Cotizaciones profesionales con fotos cierran 25-35% mejor que estimados manuscritos."
+        },
+        {
+          "question": "¿Cómo manejo clientes que quieren omitir servicios?",
+          "answer": "Para clientes mensuales: incluye en contrato que el precio mensual cubre 4 cortes/mes independientemente de omisiones de cliente. Si omiten, aún deben el pago mensual completo—estás reservando ese horario. Para clientes por visita: requiere aviso de 48 horas para cancelaciones o cobra tarifa de cancelación del 50%. Sé flexible con cancelaciones legítimas relacionadas con clima pero firme en omisiones de último minuto. Los omisiones frecuentes señalan mal ajuste del cliente—considera despedirlos si sucede regularmente."
+        },
+        {
+          "question": "¿Cuál es la mejor forma de hacer venta cruzada de aireación o fertilización?",
+          "answer": "Identifica necesidades durante cortes rutinarios—césped delgado necesita sobresemilla, hierba amarilla necesita fertilizante, suelo compactado necesita aireación. Toma fotos de áreas problemáticas y envía mensaje texto mismo día: 'Noté que tu césped frontal está adelgazando—aerificar y sobresembrar ahora ($185) lo hará verse muy bien para otoño.' El tiempo importa—ofrece servicios adicionales basados en observaciones reales, no pitches de venta genéricos. Convierte 20-30% con alcance oportuno y basado en problemas versus 5-10% con email masivo."
+        }
+      ],
+      "pricing": {
+        "title": "Inversión y ROI para Cuidado del Césped",
+        "subtitle": "Entiende costos y retornos de software de gestión de negocio para operaciones de cuidado del césped",
+        "points": [
+          {
+            "label": "Costo del Software",
+            "value": "ServiceGrid comienza en $19/mes con prueba gratuita de 14 días. Sin contratos, sin tarifas de instalación, sin cargos por usuario. Eso es menos que la ganancia de cortar 1-2 céspedes por mes."
+          },
+          {
+            "label": "Ahorros de Tiempo",
+            "value": "Operadores ahorran 6-10 horas semanales en tareas administrativas como programación, facturación y seguimiento de clientes. Ese tiempo redirigido a trabajos reales equivale a $1,200-$3,000 en ingreso adicional mensual."
+          },
+          {
+            "label": "Aumento de Ingresos",
+            "value": "Optimización de rutas agrega 2-3 propiedades adicionales diarias (menos tiempo de conducción = más tiempo de trabajo). Con ganancias promedio de $25-$35 por corte, eso es $2,000-$4,200 mensuales adicionales durante temporada."
+          },
+          {
+            "label": "Mejora de Flujo de Efectivo",
+            "value": "Facturación instantánea en lugar de facturación retrasada significa recibir pago 12-18 días más rápido. Para negocio de $150K de ingresos anuales, eso libera $15,000-$22,000 en flujo de efectivo trabajando que antes estaba atado en cuentas por cobrar."
+          },
+          {
+            "label": "Ingresos por Ventas Adicionales",
+            "value": "Rastreo y seguimiento de servicios adicionales (aireación, fertilización, sobresemilla) aumenta ventas adicionales del 10-15% de clientes al 25-35%. Para operación con 150 clientes a $200 promedio adicional, eso es $15,000-$30,000 en nuevos ingresos anuales."
+          },
+          {
+            "label": "Cronograma de Recuperación",
+            "value": "La mayoría de negocios de cuidado del césped recuperan su inversión anual en software dentro de 2-4 semanas a través de mayor eficiencia y mejora de flujo de efectivo. El ROI anual típicamente excede 1,500% cuando se contabiliza ahorro de tiempo y ganancias de ingresos."
+          }
+        ],
+        "roiNote": "Negocios de cuidado del césped usando ServiceGrid reportan promedio de $3,600 de ingreso mensual adicional durante temporada pico mientras trabajan las mismas horas, impulsado por mejor enrutamiento y captura de ventas adicionales."
       },
-      "features": {
-        "0": {
-          "title": "Programación y Rutas Inteligentes",
-          "description": "Calendario de arrastrar y soltar con optimización automática de rutas. Las alertas meteorológicas te mantienen informado, y los servicios recurrentes se configuran una vez y se automatizan para siempre.",
-          "benefit": "Ahorra 20% en costos de combustible y ajusta más trabajos en cada día"
-        },
-        "1": {
-          "title": "Cotizaciones Profesionales en Minutos",
-          "description": "Crea propuestas con marca con plantillas de servicio, medidas de propiedad y precios estacionales. Envía instantáneamente por correo o mensaje de texto.",
-          "benefit": "Gana más trabajos con cotizaciones rápidas y profesionales"
-        },
-        "2": {
-          "title": "Facturación y Pagos Automatizados",
-          "description": "Genera facturas automáticamente después de completar trabajos. Acepta tarjetas de crédito, ACH y pagos en línea con recordatorios automáticos.",
-          "benefit": "Recibe pagos 3 veces más rápido con menos seguimiento"
-        },
-        "3": {
-          "title": "Centro de Comunicación con Clientes",
-          "description": "Envía recordatorios de citas, actualizaciones de trabajos y promociones estacionales por mensaje y correo. Mantén a los clientes informados automáticamente.",
-          "benefit": "Reduce ausencias en 60% y aumenta reservas repetidas"
-        }
+      "gettingStarted": {
+        "title": "Pon tu Sistema de Cuidado del Césped en Marcha Rápidamente",
+        "subtitle": "De configuración a primeros trabajos programados en menos de 30 minutos—sin experiencia técnica requerida",
+        "steps": [
+          {
+            "icon": "Settings",
+            "title": "Configuración Inicial (10 minutos)",
+            "description": "Agrega detalles de tu negocio, logo e inventario de equipo. Configura tus ofertas de servicio (cortar, bordear, recortar) y precios base. Importa tu lista de clientes o comienza de cero—no se requieren hojas de cálculo."
+          },
+          {
+            "icon": "Calendar",
+            "title": "Programa Primeros Trabajos (10 minutos)",
+            "description": "Crea tus primeros estimados usando medidores de propiedad incorporados. Programa trabajos en tu calendario con asignaciones de equipo. Configura recordatorios automáticos para clientes y solicitudes de confirmación."
+          },
+          {
+            "icon": "Rocket",
+            "title": "Actívalo (10 minutos)",
+            "description": "Descarga la aplicación móvil para uso en campo. Comienza a capturar fotos de antes/después y rastreando finalización de trabajos. Envía tu primera factura digital y recibe pago más rápido. Tu operación de cuidado del césped ahora funciona con software moderno."
+          }
+        ]
+      },
+      "deepDive": {
+        "title": "Conocimiento de la Industria del Cuidado del Césped",
+        "subtitle": "Terminología profesional, consideraciones técnicas y mejores prácticas para dirigir un negocio exitoso de cuidado del césped",
+        "terms": [
+          {
+            "term": "Ciclos de Corte",
+            "definition": "Programas de frecuencia de servicio basados en tasas de crecimiento del césped: semanal (pico de primavera/verano), quincenal (primavera temprana/otoño tardío), o mensual (temporada inactiva de mantenimiento). Céspedes de temporada cálida crecen más rápido en verano, céspedes de temporada fría pican en primavera/otoño. Ajusta frecuencia estacionalmente para mantener césped a altura óptima mientras maximizas eficiencia."
+          },
+          {
+            "term": "Aireación Central",
+            "definition": "Proceso de remover tapones de suelo pequeños (2-3 pulgadas de profundidad) para aliviar compactación de suelo y mejorar flujo de oxígeno/agua/nutrientes a raíces. Más efectiva en principios de otoño cuando el césped se recupera activamente. Cobra $75-$150 para lotes residenciales—toma 30-60 minutos con aireador de remolque comercial. Combina con sobresemilla para resultados máximos y tickets de servicio más altos ($150-$250 combinados)."
+          },
+          {
+            "term": "Sobresemilla",
+            "definition": "Aplicar semillas de césped sobre césped existente para espesar densidad, rellenar parches delgados y mejorar tolerancia a enfermedades/sequía. Mejores resultados cuando se combina con aireación (semillas caen en hoyos de aireación para mejor contacto con suelo). Usa 3-5 libras de semilla por 1,000 pies cuadrados para sobresemilla (versus 8-10 libras para sembrando nuevo césped). Cobra $50-$100 adicionales sobre precio de aireación."
+          },
+          {
+            "term": "Herbicida Pre-Emergente",
+            "definition": "Herbicidas preventivos aplicados antes de germinación de malezas, típicamente cuando temperatura del suelo alcanza 50-55°F (fines de febrero-abril). Crea barrera que previene germinación de semillas de malezas—no mata malezas existentes. Aplica pasto cangrejo pre-emergente antes de que las lilas florezcan (indicador visual común). Tiempo correcto es crítico—demasiado temprano desperdicia producto, demasiado tarde permite que las malezas emerjan. Documenta fecha de aplicación en registros de cliente."
+          },
+          {
+            "term": "Escarificación",
+            "definition": "Remover capa acumulada de paja (material orgánico muerto) usando rastrillo de escarificación mecánico. Paja sobre 0.5 pulgadas previene penetración de agua/nutrientes y alberga plagas/enfermedades. Escarifica cuando paja excede 0.5-0.75 pulgadas de grosor—típicamente cada 2-3 años para céspedes saludables. Mejor tiempo: principios de primavera o principios de otoño cuando el césped crece vigorosamente. Cobra $75-$150 para propiedades residenciales—requiere equipo especializado y esfuerzo físico."
+          },
+          {
+            "term": "Aplicación de Cobertura Superior",
+            "definition": "Esparcir capa delgada (1/4-1/2 pulgada) de suelo cernido, compost o mezcla de arena sobre césped existente para suavizar superficie irregular, mejorar textura del suelo y fomentar nuevo crecimiento. Usado en mantenimiento profesional de campos deportivos y campos de golf pero cada vez más común en céspedes residenciales premium. Requiere esparcidor de cobertura superior motorizado ($3K-$10K). Cobra $200-$500 por propiedad residencial—servicio premium con márgenes de 60-70%."
+          }
+        ],
+        "bestPractices": [
+          {
+            "title": "Programa por Zona/Día para Maximizar Eficiencia",
+            "description": "Asigna cada vecindario o zona a día específico—todos los clientes del lunes en Zona Norte, todos los del martes en Zona Sur. Este agrupamiento reduce tiempo de conducción entre trabajos en 25-40% versus saltar por toda la ciudad. Reevalúa zonas trimestralmente a medida que agregas/pierdes clientes. Dile a nuevos clientes potenciales tu día de servicio para su área—cierra tasas más altas cuando encajan perfectamente en programas existentes."
+          },
+          {
+            "title": "Factura el Mismo Día para Flujo de Efectivo Mejorado",
+            "description": "Envía facturas inmediatamente después de completar trabajo, no semanas después. Facturación retrasada significa pago retrasado—clientes olvidan detalles del servicio y cuestionan cargos. Factura en campo usando aplicación móvil con fotos de propiedad completada. Negocio típico de cuidado del césped recibe pago 12-18 días más rápido con facturación mismo día, liberando $15,000-$25,000 en flujo de efectivo de trabajo para negocio de $150K de ingresos."
+          },
+          {
+            "title": "Documenta Oportunidades de Ventas Adicionales Durante Cortes Rutinarios",
+            "description": "Entrena a cuadrillas para identificar y fotografiar problemas durante cortes regulares: parches delgados (necesitan sobresemilla), color amarillo (necesitan fertilizante), suelo compactado (necesita aireación), malezas (necesitan tratamiento). Envía mensaje texto a cliente mismo día con foto y recomendación. Ventas adicionales basadas en problemas observados convierten 20-30% versus 5-10% para pitches de venta genéricos. Esto solo agrega $15,000-$30,000 anuales en ingreso de ventas adicionales."
+          },
+          {
+            "title": "Construye Días de Reserva en Programa Semanal",
+            "description": "Programa 4 días de trabajo en ventana de 5 días disponibles. Cuando lluvia cancela día, cambias trabajos a día de reserva sin decepcionar a clientes. Sin días de reserva, retrasos por clima se acumulan causando trabajos 1-2 semanas fuera de programa. Comunica cambios relacionados con clima temprano (envía mensajes texto la noche anterior) y mayoría de clientes entiende. Flexibilidad de programación previene pérdida de clientes y reduce estrés durante períodos de lluvia."
+          },
+          {
+            "title": "Implementa Contratos de Servicio Mensual para Ingreso Predecible",
+            "description": "Cambia de precio por visita a precio mensual fijo (abril-octubre: 7 meses a tarifa establecida cubriendo 28-32 cortes totales). Facturación mensual estabiliza flujo de efectivo y simplifica contabilidad. Clientes prefieren precio predecible sobre facturas variables. Incluye lenguaje de contrato de que el precio mensual cubre cortes programados independientemente de omisiones de cliente—estás reservando ese horario. Tasas de renovación mejoran 40-60% con contratos mensuales versus precio por visita."
+          },
+          {
+            "title": "Rastrea Métricas de Equipo para Optimizar Decisiones de Reemplazo",
+            "description": "Registra horas de operación, costos de reparación y downtime para cada podadora y equipo. Cuando reparaciones exceden 40-50% del valor de reemplazo anualmente, es tiempo de actualizar. Calcula punto de equilibrio: podadora montaje cero de $8,000 que ahorra 5 horas semanales (100 horas/temporada a valor de $75/hora = $7,500) se paga en una temporada. Mantén equipo comercial bien mantenido pero reemplaza estratégicamente cuando costos de reparación indican rendimiento decreciente."
+          }
+        ]
+      },
+      "testimonials": {
+        "title": "Resultados Reales de Profesionales del Cuidado del Césped",
+        "testimonials": [
+          {
+            "quote": "Solíamos perder 2-3 horas diarias conduciendo por la ciudad de forma ineficiente. Optimización de rutas de ServiceGrid agrupó trabajos por vecindario—ahora cortamos 15-18 céspedes diarios versus 12-14. Eso es $450-$600 en ingreso adicional semanal solo por mejor enrutamiento.",
+            "author": "Marcus Johnson",
+            "business": "GreenScape Lawn Care, Charlotte NC",
+            "metrics": [
+              {
+                "value": "35%",
+                "label": "Más propiedades diarias"
+              },
+              {
+                "value": "$2,100",
+                "label": "Ingreso mensual adicional"
+              }
+            ]
+          },
+          {
+            "quote": "La facturación instantánea cambió nuestro flujo de efectivo completamente. Antes, enviábamos facturas una vez al mes y esperábamos otras 2-3 semanas para pago. Ahora facturamos en el lugar y recibimos pago 15 días más rápido en promedio. Ese flujo de efectivo mejorado nos permitió agregar segunda cuadrilla este año.",
+            "author": "Sarah Martinez",
+            "business": "Martinez Lawn Service, Phoenix AZ",
+            "metrics": [
+              {
+                "value": "15 días",
+                "label": "Pago más rápido"
+              },
+              {
+                "value": "$18,000",
+                "label": "Flujo de efectivo mejorado"
+              }
+            ]
+          },
+          {
+            "quote": "Comenzamos a rastrear oportunidades de ventas adicionales durante cortes regulares—césped delgado que necesita sobresemilla, áreas amarillas que necesitan fertilizante. Enviando mensaje texto con fotos mismo día, convertimos 28% de clientes solo de corte en clientes de servicio completo. Eso agregó $23,000 en ingreso de ventas adicionales este año.",
+            "author": "David Chen",
+            "business": "Chen's Lawn Care, Portland OR",
+            "metrics": [
+              {
+                "value": "28%",
+                "label": "Tasa de conversión de venta adicional"
+              },
+              {
+                "value": "$23,000",
+                "label": "Ingreso anual de ventas adicionales"
+              }
+            ]
+          }
+        ]
       },
       "cta": {
-        "title": "¿Listo para optimizar tu negocio de cuidado del césped?",
-        "subtitle": "Únete a miles de profesionales del cuidado del césped que usan ServiceGrid para ahorrar tiempo y aumentar ingresos."
+        "title": "¿Listo para mejorar tu negocio de cuidado del césped?",
+        "subtitle": "Únete a los profesionales del cuidado del césped que usan ServiceGrid para hacer crecer sus negocios."
       }
     },
     "houseCleaning": {
