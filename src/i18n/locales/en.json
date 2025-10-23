@@ -1849,8 +1849,8 @@
         ]
       },
       "cta": {
-        "headline": "Ready to Handle More Irrigation Customers?",
-        "subheadline": "Join irrigation professionals who manage seasonal surges without the scheduling chaos.",
+        "title": "Ready to Handle More Irrigation Customers?",
+        "subtitle": "Join irrigation professionals who manage seasonal surges without the scheduling chaos.",
         "primaryButton": {
           "text": "Start Free Trial",
           "link": "/auth"

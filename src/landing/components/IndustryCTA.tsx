@@ -31,13 +31,6 @@ export function IndustryCTA({ title, subtitle }: IndustryCTAProps) {
                 {t('industryPages.cta.startTrial')}
               </Button>
             </SignUpButton>
-            <Button 
-              variant="secondary" 
-              size="lg"
-              className="hover-scale border-white text-white hover:bg-white/10"
-            >
-              {t('industryPages.cta.scheduleDemo')}
-            </Button>
           </div>
 
           <p className="text-sm text-brand-100 mt-4">
