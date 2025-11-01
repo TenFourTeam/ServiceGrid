@@ -137,16 +137,23 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
     );
   }
 
+  console.log('[RouteMapView] Rendering map with:', {
+    mapCenter,
+    jobsCount: jobsWithCoords.length,
+    mapId: 'd174fd11e8cacedb35e319da'
+  });
+
   return (
-    <APIProvider apiKey={apiKey}>
+    <APIProvider apiKey={apiKey} onLoad={() => console.log('[RouteMapView] Google Maps API loaded')}>
       <div className="relative w-full h-full">
         <Map
-          mapId="route-map"
+          mapId="d174fd11e8cacedb35e319da"
           center={mapCenter}
           zoom={11}
           gestureHandling="greedy"
           disableDefaultUI={false}
           className="w-full h-full"
+          onCameraChanged={() => console.log('[RouteMapView] Camera changed')}
         >
           {jobsWithCoords.map(({ job, coords }) => (
             <AdvancedMarker
