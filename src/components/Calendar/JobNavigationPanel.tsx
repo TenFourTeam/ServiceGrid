@@ -1,11 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Job } from '@/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Clock, MapPin, Search, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Clock, MapPin, Search, X, ChevronRight, ChevronLeft, List } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -14,21 +13,29 @@ interface JobNavigationPanelProps {
   selectedJobId: string | null;
   currentJobIndex: number;
   onJobSelect: (jobId: string, index: number) => void;
-  onClose: () => void;
+  isCollapsed: boolean;
+  onCollapsedChange: (collapsed: boolean) => void;
 }
 
 /**
- * Collapsible sidebar panel showing list of jobs for easy navigation
+ * Resizable sidebar panel showing list of jobs for easy navigation
  * Allows filtering, searching, and quick selection of jobs on the map
+ * Can be collapsed to a minimal state to avoid obstructing the map
  */
 export function JobNavigationPanel({ 
   jobs, 
   selectedJobId, 
   currentJobIndex,
-  onJobSelect, 
-  onClose 
+  onJobSelect,
+  isCollapsed,
+  onCollapsedChange
 }: JobNavigationPanelProps) {
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Save collapsed state to localStorage
+  useEffect(() => {
+    localStorage.setItem('jobNavigationPanelCollapsed', JSON.stringify(isCollapsed));
+  }, [isCollapsed]);
 
   const filteredJobs = useMemo(() => {
     if (!searchQuery.trim()) return jobs;
@@ -57,24 +64,52 @@ export function JobNavigationPanel({
     }
   };
 
+  // Collapsed state - minimal vertical bar
+  if (isCollapsed) {
+    return (
+      <div className="h-full w-full bg-background border-r border-border flex flex-col items-center py-4 gap-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onCollapsedChange(false)}
+          className="h-8 w-8 p-0"
+          title="Expand job list"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+        
+        <div className="flex-1 flex items-center justify-center">
+          <div className="writing-mode-vertical-rl text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <List className="h-4 w-4 rotate-90" />
+            <span className="rotate-180">JOBS ({jobs.length})</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Expanded state - full job list
   return (
-    <Card className="absolute top-4 left-4 z-10 w-80 max-h-[calc(100vh-8rem)] flex flex-col shadow-lg">
-      <CardHeader className="pb-3 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base">
+    <div className="h-full w-full bg-background border-r border-border flex flex-col">
+      {/* Header */}
+      <div className="flex-shrink-0 p-4 border-b border-border">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-base font-semibold">
             Jobs ({filteredJobs.length})
-          </CardTitle>
+          </h3>
           <Button
             variant="ghost"
             size="sm"
-            onClick={onClose}
+            onClick={() => onCollapsedChange(true)}
             className="h-6 w-6 p-0"
+            title="Collapse panel"
           >
-            <X className="h-4 w-4" />
+            <ChevronLeft className="h-4 w-4" />
           </Button>
         </div>
         
-        <div className="relative mt-2">
+        {/* Search */}
+        <div className="relative">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search jobs..."
@@ -93,10 +128,11 @@ export function JobNavigationPanel({
             </Button>
           )}
         </div>
-      </CardHeader>
+      </div>
 
+      {/* Job List */}
       <ScrollArea className="flex-1">
-        <CardContent className="space-y-2 pt-0">
+        <div className="p-4 space-y-2">
           {filteredJobs.length === 0 ? (
             <div className="text-center py-8 text-sm text-muted-foreground">
               {searchQuery ? 'No jobs found' : 'No jobs for this date'}
@@ -156,8 +192,8 @@ export function JobNavigationPanel({
               );
             })
           )}
-        </CardContent>
+        </div>
       </ScrollArea>
-    </Card>
+    </div>
   );
 }

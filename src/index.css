@@ -271,6 +271,12 @@ All colors MUST be HSL.
   }
 }
 
+@layer utilities {
+  .writing-mode-vertical-rl {
+    writing-mode: vertical-rl;
+  }
+}
+
 /* Email preview safety: disable interactivity inside previews */
 .email-preview :is(a, button, [role="button"], input, select, textarea, label, summary, .btn, [onclick]) {
   pointer-events: none !important;
