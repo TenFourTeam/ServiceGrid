@@ -19,6 +19,7 @@ import { useSettingsForm } from '@/hooks/useSettingsForm';
 import { useBusinessDetailsForm } from '@/hooks/useBusinessDetailsForm';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Textarea } from '@/components/ui/textarea';
+import { BusinessConstraintsSettings } from '@/components/Settings/BusinessConstraintsSettings';
 
 export default function SettingsPage() {
   const { business, role } = useBusinessContext();
@@ -245,6 +246,16 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Scheduling Rules</CardTitle>
+              <p className="text-sm text-muted-foreground">Configure automated scheduling constraints</p>
+            </CardHeader>
+            <CardContent>
+              <BusinessConstraintsSettings />
             </CardContent>
           </Card>
 

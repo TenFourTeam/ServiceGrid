@@ -33,6 +33,11 @@ export interface Customer {
   phone?: string;
   address?: string;
   notes?: string;
+  // Scheduling preferences
+  preferred_days?: string; // JSON array of day indices
+  avoid_days?: string; // JSON array of day indices
+  preferred_time_window?: string; // JSON object with start/end times
+  scheduling_notes?: string;
   createdAt?: ISODate;
   updatedAt?: ISODate;
 }

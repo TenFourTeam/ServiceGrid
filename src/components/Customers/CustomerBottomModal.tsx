@@ -11,6 +11,10 @@ import { useAuth } from '@clerk/clerk-react';
 import { useAuthApi } from "@/hooks/useAuthApi";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Customer } from "@/types";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
+import { ChevronDown } from 'lucide-react';
 
 // Email validation regex - requires a valid email format
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -32,6 +36,11 @@ interface CustomerFormData {
   email: string;
   phone: string;
   address: string;
+  preferredDays: number[];
+  avoidDays: number[];
+  preferredTimeStart: string;
+  preferredTimeEnd: string;
+  schedulingNotes: string;
 }
 
 // Validation state interface
@@ -61,6 +70,11 @@ export function CustomerBottomModal({
     email: "",
     address: "",
     phone: "",
+    preferredDays: [],
+    avoidDays: [],
+    preferredTimeStart: "",
+    preferredTimeEnd: "",
+    schedulingNotes: "",
   });
 
   const [validationErrors, setValidationErrors] = useState<ValidationState>({
@@ -71,11 +85,20 @@ export function CustomerBottomModal({
   // Update form data when customer prop changes
   useEffect(() => {
     if (customer) {
+      const prefs = customer.preferred_days ? JSON.parse(customer.preferred_days as any) : [];
+      const avoid = customer.avoid_days ? JSON.parse(customer.avoid_days as any) : [];
+      const timeWindow = customer.preferred_time_window ? JSON.parse(customer.preferred_time_window as any) : {};
+      
       setFormData({
         name: customer.name || "",
         email: customer.email || "",
         address: customer.address || "",
         phone: customer.phone || "",
+        preferredDays: prefs,
+        avoidDays: avoid,
+        preferredTimeStart: timeWindow.start || "",
+        preferredTimeEnd: timeWindow.end || "",
+        schedulingNotes: customer.scheduling_notes || "",
       });
     } else {
       setFormData({
@@ -83,6 +106,11 @@ export function CustomerBottomModal({
         email: "",
         address: "",
         phone: "",
+        preferredDays: [],
+        avoidDays: [],
+        preferredTimeStart: "",
+        preferredTimeEnd: "",
+        schedulingNotes: "",
       });
     }
   }, [customer]);
@@ -148,7 +176,13 @@ export function CustomerBottomModal({
         email: formData.email.trim(),
         phone: formData.phone.trim() || null,
         address: formData.address.trim() || null,
-        notes: null, // Add notes field to match database schema
+        notes: null,
+        preferred_days: formData.preferredDays.length > 0 ? JSON.stringify(formData.preferredDays) : null,
+        avoid_days: formData.avoidDays.length > 0 ? JSON.stringify(formData.avoidDays) : null,
+        preferred_time_window: formData.preferredTimeStart && formData.preferredTimeEnd 
+          ? JSON.stringify({ start: formData.preferredTimeStart, end: formData.preferredTimeEnd })
+          : null,
+        scheduling_notes: formData.schedulingNotes.trim() || null,
       };
       
       
@@ -217,6 +251,11 @@ export function CustomerBottomModal({
         email: "",
         address: "",
         phone: "",
+        preferredDays: [],
+        avoidDays: [],
+        preferredTimeStart: "",
+        preferredTimeEnd: "",
+        schedulingNotes: "",
       });
       setValidationErrors({
         name: false,
@@ -314,6 +353,85 @@ export function CustomerBottomModal({
                 />
               )}
             </div>
+
+            {/* Scheduling Preferences */}
+            {mode !== 'view' && (
+              <Collapsible>
+                <CollapsibleTrigger className="flex items-center justify-between w-full py-2 hover:bg-muted/50 rounded px-2">
+                  <Label>Scheduling Preferences (Optional)</Label>
+                  <ChevronDown className="h-4 w-4" />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-4 pt-2">
+                  <div className="space-y-2">
+                    <Label className="text-sm">Preferred Days</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day, idx) => (
+                        <div key={day} className="flex items-center space-x-2">
+                          <Checkbox
+                            checked={formData.preferredDays.includes(idx)}
+                            onCheckedChange={(checked) => {
+                              const updated = checked
+                                ? [...formData.preferredDays, idx]
+                                : formData.preferredDays.filter(d => d !== idx);
+                              setFormData({ ...formData, preferredDays: updated });
+                            }}
+                          />
+                          <Label className="text-sm font-normal">{day}</Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm">Preferred Time Window</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        type="time"
+                        value={formData.preferredTimeStart}
+                        onChange={(e) => setFormData({ ...formData, preferredTimeStart: e.target.value })}
+                        placeholder="Start"
+                      />
+                      <Input
+                        type="time"
+                        value={formData.preferredTimeEnd}
+                        onChange={(e) => setFormData({ ...formData, preferredTimeEnd: e.target.value })}
+                        placeholder="End"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm">Days to Avoid</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day, idx) => (
+                        <div key={day} className="flex items-center space-x-2">
+                          <Checkbox
+                            checked={formData.avoidDays.includes(idx)}
+                            onCheckedChange={(checked) => {
+                              const updated = checked
+                                ? [...formData.avoidDays, idx]
+                                : formData.avoidDays.filter(d => d !== idx);
+                              setFormData({ ...formData, avoidDays: updated });
+                            }}
+                          />
+                          <Label className="text-sm font-normal">{day}</Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm">Scheduling Notes</Label>
+                    <Textarea
+                      value={formData.schedulingNotes}
+                      onChange={(e) => setFormData({ ...formData, schedulingNotes: e.target.value })}
+                      placeholder="Any special scheduling considerations..."
+                      rows={2}
+                    />
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            )}
           </div>
         </div>
         

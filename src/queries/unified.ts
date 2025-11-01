@@ -38,3 +38,34 @@ export { useRouteRecalculation } from '@/hooks/useRouteRecalculation';
 export { useAnalyticsSummary } from '@/hooks/useAnalyticsSummary';
 export { useTeamUtilization } from '@/hooks/useTeamUtilization';
 export { usePredictiveInsights } from '@/hooks/usePredictiveInsights';
+
+// Phase 6: Advanced Scheduling hooks
+export { 
+  useTeamAvailability, 
+  useCreateAvailability, 
+  useUpdateAvailability, 
+  useDeleteAvailability 
+} from '@/hooks/useTeamAvailability';
+
+export { 
+  useTimeOffRequests, 
+  useCreateTimeOffRequest, 
+  useUpdateTimeOffRequest, 
+  useDeleteTimeOffRequest 
+} from '@/hooks/useTimeOff';
+
+export { 
+  useBusinessConstraints, 
+  useUpsertConstraint, 
+  useUpdateConstraint, 
+  useDeleteConstraint 
+} from '@/hooks/useBusinessConstraints';
+
+export { 
+  useRecurringJobTemplates, 
+  useCreateRecurringTemplate, 
+  useUpdateRecurringTemplate, 
+  useDeleteRecurringTemplate,
+  useGenerateRecurringJobs,
+  useCheckSchedulingCapacity
+} from '@/hooks/useRecurringJobs';

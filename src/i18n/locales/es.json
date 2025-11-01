@@ -55,7 +55,8 @@
     "invoices": "Facturas",
     "requests": "Solicitudes",
     "workOrders": "Órdenes de Trabajo",
-    "analytics": "Analíticas"
+    "analytics": "Analíticas",
+    "recurringJobs": "Trabajos Recurrentes"
   },
   "sidebar": {
     "navigation": "Navegación",

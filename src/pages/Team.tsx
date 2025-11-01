@@ -13,6 +13,8 @@ import { useState, useMemo } from "react";
 import { Users, UserPlus, AlertTriangle, AlertCircle, Shield, Mail } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { RequireRole } from "@/components/Auth/RequireRole";
+import { TeamAvailabilitySchedule } from "@/components/Team/TeamAvailabilitySchedule";
+import { TimeOffManagement } from "@/components/Team/TimeOffManagement";
 
 export default function Team() {
   const { t } = useLanguage();
@@ -119,6 +121,28 @@ export default function Team() {
 
         {/* Business Access Section */}
         <BusinessAccessSection />
+
+        {/* Team Availability */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Team Availability</CardTitle>
+            <p className="text-sm text-muted-foreground">Manage weekly availability schedules</p>
+          </CardHeader>
+          <CardContent>
+            <TeamAvailabilitySchedule />
+          </CardContent>
+        </Card>
+
+        {/* Time Off Management */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Time Off Requests</CardTitle>
+            <p className="text-sm text-muted-foreground">Submit and manage time off requests</p>
+          </CardHeader>
+          <CardContent>
+            <TimeOffManagement />
+          </CardContent>
+        </Card>
 
         <Card className="p-4 sm:p-6 max-w-full overflow-hidden">
           {/* Header */}

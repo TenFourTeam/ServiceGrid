@@ -55,7 +55,8 @@
     "invoices": "Invoices",
     "requests": "Requests",
     "workOrders": "Work Orders",
-    "analytics": "Analytics"
+    "analytics": "Analytics",
+    "recurringJobs": "Recurring Jobs"
   },
   "sidebar": {
     "navigation": "Navigation",
