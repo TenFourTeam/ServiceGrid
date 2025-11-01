@@ -18,7 +18,10 @@ import { TeamAvailabilitySchedule } from "@/components/Team/TeamAvailabilitySche
 import { TimeOffManagement } from "@/components/Team/TimeOffManagement";
 import { RecurringJobsList } from "@/components/RecurringJobs/RecurringJobsList";
 import { RecurringJobModal } from "@/components/RecurringJobs/RecurringJobModal";
+import { RecurringJobsMapView } from "@/components/RecurringJobs/RecurringJobsMapView";
 import { useRecurringJobTemplates } from "@/hooks/useRecurringJobs";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { List, Map as MapIcon } from "lucide-react";
 
 export default function Team() {
   const { t } = useLanguage();
@@ -29,6 +32,7 @@ export default function Team() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'members';
+  const recurringView = searchParams.get('view') || 'list';
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [isRecurringModalOpen, setIsRecurringModalOpen] = useState(false);
 
@@ -317,8 +321,30 @@ export default function Team() {
           <TabsContent value="recurring" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Recurring Job Templates</CardTitle>
-                <p className="text-sm text-muted-foreground">Automate recurring service schedules</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Recurring Job Templates</CardTitle>
+                    <p className="text-sm text-muted-foreground">Automate recurring service schedules</p>
+                  </div>
+                  {recurringTemplates && recurringTemplates.length > 0 && (
+                    <ToggleGroup 
+                      type="single" 
+                      value={recurringView}
+                      onValueChange={(value) => {
+                        if (value) {
+                          setSearchParams({ tab: activeTab, view: value });
+                        }
+                      }}
+                    >
+                      <ToggleGroupItem value="list" aria-label="List view">
+                        <List className="h-4 w-4" />
+                      </ToggleGroupItem>
+                      <ToggleGroupItem value="map" aria-label="Map view">
+                        <MapIcon className="h-4 w-4" />
+                      </ToggleGroupItem>
+                    </ToggleGroup>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="pt-6">
                 {recurringTemplates?.length === 0 && !isLoadingRecurring ? (
@@ -332,6 +358,15 @@ export default function Team() {
                       <Plus className="h-4 w-4 mr-2" />
                       Create Your First Template
                     </Button>
+                  </div>
+                ) : recurringView === 'map' ? (
+                  <div className="h-[600px] rounded-lg overflow-hidden">
+                    <RecurringJobsMapView 
+                      templates={recurringTemplates || []}
+                      onTemplateClick={(template) => {
+                        console.log('Template clicked:', template);
+                      }}
+                    />
                   </div>
                 ) : (
                   <RecurringJobsList
