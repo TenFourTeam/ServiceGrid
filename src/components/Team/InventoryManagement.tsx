@@ -10,7 +10,7 @@ import { InventoryTransactionModal } from './InventoryTransactionModal';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 export function InventoryManagement() {
-  const { business, userId } = useBusinessContext();
+  const { business, profileId } = useBusinessContext();
   const { data: items = [], isLoading } = useInventory(business?.id);
   const { createItem, updateItem, deleteItem, logTransaction } = useInventoryOperations();
 
@@ -42,12 +42,12 @@ export function InventoryManagement() {
   const categories = Array.from(new Set(items.map(i => i.category).filter(Boolean))) as string[];
 
   const handleSaveItem = async (data: any) => {
-    if (!business?.id || !userId) return;
+    if (!business?.id || !profileId) return;
 
     if (editingItem) {
       await updateItem.mutateAsync({ id: editingItem.id, business_id: business.id, ...data });
     } else {
-      await createItem.mutateAsync({ ...data, business_id: business.id, owner_id: userId, is_active: true });
+      await createItem.mutateAsync({ ...data, business_id: business.id, owner_id: profileId, is_active: true });
     }
     
     setItemModalOpen(false);
