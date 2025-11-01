@@ -8,7 +8,7 @@ import DayCalendar from "@/components/Calendar/DayCalendar";
 import { RouteMapView } from "@/components/Calendar/RouteMapView";
 import { useMemo, useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { addMonths, startOfDay, addDays, format, startOfWeek, endOfWeek } from "date-fns";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Map } from "lucide-react";
 import { useJobsData } from "@/hooks/useJobsData";
 import { useBusinessMembersData } from "@/hooks/useBusinessMembers";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -27,7 +27,8 @@ export default function CalendarShell({
   selectedJobId?: string;
   businessId?: string;
 }) {
-  const [view, setView] = useState<"month" | "week" | "day" | "map">("week");
+  const [view, setView] = useState<"month" | "week" | "day">("week");
+  const [showMap, setShowMap] = useState(false);
   const [displayMode, setDisplayMode] = useState<CalendarDisplayMode>('scheduled');
   const [date, setDate] = useState<Date>(startOfDay(new Date()));
   const { role, userId, businessId, businessName } = useBusinessContext(routeBusinessId);
@@ -172,34 +173,42 @@ export default function CalendarShell({
               </Select>
             )}
             
-            <Tabs value={view} onValueChange={v => setView(v as any)}>
-              <TabsList className={`grid w-full grid-cols-4 ${isPhone ? 'h-8' : ''}`}>
-                <TabsTrigger 
-                  value="day" 
-                  className={`${isPhone ? 'text-xs px-1' : 'text-xs md:text-sm px-2 md:px-3'}`}
-                >
-                  {isMobile ? t('calendar.views.dayShort') : t('calendar.views.day')}
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="week" 
-                  className={`${isPhone ? 'text-xs px-1' : 'text-xs md:text-sm px-2 md:px-3'}`}
-                >
-                  {isMobile ? t('calendar.views.weekShort') : t('calendar.views.week')}
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="month" 
-                  className={`${isPhone ? 'text-xs px-1' : 'text-xs md:text-sm px-2 md:px-3'}`}
-                >
-                  {isMobile ? t('calendar.views.monthShort') : t('calendar.views.month')}
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="map" 
-                  className={`${isPhone ? 'text-xs px-1' : 'text-xs md:text-sm px-2 md:px-3'}`}
-                >
-                  {isMobile ? 'Map' : 'Map'}
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+            {/* Map Toggle - Separate from time views */}
+            <Button 
+              variant={showMap ? "primary" : "secondary"} 
+              size={isPhone ? "md" : "sm"}
+              onClick={() => setShowMap(!showMap)}
+              className={isPhone ? "px-2" : ""}
+            >
+              <Map className="h-4 w-4" />
+              {!isPhone && <span className="ml-2">Map</span>}
+            </Button>
+            
+            {/* Time-based View Tabs - Hidden when map is shown */}
+            {!showMap && (
+              <Tabs value={view} onValueChange={v => setView(v as any)}>
+                <TabsList className={`grid w-full grid-cols-3 ${isPhone ? 'h-8' : ''}`}>
+                  <TabsTrigger 
+                    value="day" 
+                    className={`${isPhone ? 'text-xs px-1' : 'text-xs md:text-sm px-2 md:px-3'}`}
+                  >
+                    {isMobile ? t('calendar.views.dayShort') : t('calendar.views.day')}
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="week" 
+                    className={`${isPhone ? 'text-xs px-1' : 'text-xs md:text-sm px-2 md:px-3'}`}
+                  >
+                    {isMobile ? t('calendar.views.weekShort') : t('calendar.views.week')}
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="month" 
+                    className={`${isPhone ? 'text-xs px-1' : 'text-xs md:text-sm px-2 md:px-3'}`}
+                  >
+                    {isMobile ? t('calendar.views.monthShort') : t('calendar.views.month')}
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            )}
             
             <Button 
               variant="secondary" 
@@ -227,10 +236,7 @@ export default function CalendarShell({
         
         {/* Main calendar area */}
         <main className="h-full min-h-0" role="grid">
-          {view === "month" && <MonthCalendar date={date} onDateChange={setDate} displayMode={displayMode} selectedMemberId={selectedMemberId} />}
-          {view === "week" && <WeekCalendar selectedJobId={selectedJobId} date={date} displayMode={displayMode} jobs={jobs} refetchJobs={refetchJobs} selectedMemberId={selectedMemberId} />}
-          {view === "day" && <DayCalendar date={date} displayMode={displayMode} selectedMemberId={selectedMemberId} />}
-          {view === "map" && (
+          {showMap ? (
             <Suspense fallback={
               <div className="w-full h-full flex items-center justify-center bg-muted/10">
                 <div className="space-y-4 w-full max-w-md p-8">
@@ -246,6 +252,12 @@ export default function CalendarShell({
                 selectedMemberId={selectedMemberId}
               />
             </Suspense>
+          ) : (
+            <>
+              {view === "month" && <MonthCalendar date={date} onDateChange={setDate} displayMode={displayMode} selectedMemberId={selectedMemberId} />}
+              {view === "week" && <WeekCalendar selectedJobId={selectedJobId} date={date} displayMode={displayMode} jobs={jobs} refetchJobs={refetchJobs} selectedMemberId={selectedMemberId} />}
+              {view === "day" && <DayCalendar date={date} displayMode={displayMode} selectedMemberId={selectedMemberId} />}
+            </>
           )}
         </main>
 

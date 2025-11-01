@@ -6,6 +6,8 @@ import { JobMarker } from './JobMarker';
 import { JobInfoWindow } from './JobInfoWindow';
 import { MapLegend } from './MapLegend';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/Button';
+import { MapPin } from 'lucide-react';
 
 interface RouteMapViewProps {
   date: Date;
@@ -21,6 +23,32 @@ interface RouteMapViewProps {
 export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: RouteMapViewProps) {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [mapCenter, setMapCenter] = useState({ lat: 39.8283, lng: -98.5795 }); // Center of USA as default
+
+  // Check if Google Maps API key is configured
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+
+  if (!apiKey) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-muted/10">
+        <div className="text-center space-y-4 max-w-md p-8">
+          <MapPin className="h-12 w-12 mx-auto text-muted-foreground" />
+          <h3 className="text-lg font-semibold">Google Maps Not Configured</h3>
+          <p className="text-sm text-muted-foreground">
+            Add your Google Maps API key to the <code className="bg-muted px-1 py-0.5 rounded">.env</code> file to enable route visualization.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Set <code className="bg-muted px-1 py-0.5 rounded">VITE_GOOGLE_MAPS_API_KEY</code> with your API key.
+          </p>
+          <Button 
+            variant="secondary" 
+            onClick={() => window.open('https://console.cloud.google.com/google/maps-apis', '_blank', 'noopener,noreferrer')}
+          >
+            Get API Key
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   // Extract unique addresses from jobs
   const addresses = useMemo(() => {
@@ -102,7 +130,7 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
   }
 
   return (
-    <APIProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''}>
+    <APIProvider apiKey={apiKey}>
       <div className="relative w-full h-full">
         <Map
           mapId="route-map"
