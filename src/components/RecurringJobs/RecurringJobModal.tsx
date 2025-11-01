@@ -24,7 +24,9 @@ const recurringJobSchema = z.object({
   start_date: z.string().min(1, 'Start date is required'),
   end_date: z.string().optional(),
   auto_schedule: z.boolean(),
-  preferred_time: z.string().optional(),
+  time_window_preset: z.enum(['morning', 'afternoon', 'anytime', 'custom']).optional(),
+  preferred_time_start: z.string().optional(),
+  preferred_time_end: z.string().optional(),
 });
 
 type FormData = z.infer<typeof recurringJobSchema>;
@@ -54,7 +56,9 @@ export function RecurringJobModal({ isOpen, onClose, template }: RecurringJobMod
       start_date: new Date().toISOString().split('T')[0],
       end_date: '',
       auto_schedule: false,
-      preferred_time: '09:00',
+      time_window_preset: 'anytime',
+      preferred_time_start: '08:00',
+      preferred_time_end: '17:00',
     },
   });
 
@@ -70,12 +74,29 @@ export function RecurringJobModal({ isOpen, onClose, template }: RecurringJobMod
         start_date: template.start_date,
         end_date: template.end_date || '',
         auto_schedule: template.auto_schedule,
-        preferred_time: template.preferred_time_window?.start || '09:00',
+        time_window_preset: template.preferred_time_start ? 'custom' : 'anytime',
+        preferred_time_start: template.preferred_time_start || '08:00',
+        preferred_time_end: template.preferred_time_end || '17:00',
       });
     }
   }, [template, form]);
 
   const onSubmit = (data: FormData) => {
+    // Determine time window based on preset or custom values
+    let timeStart: string | undefined;
+    let timeEnd: string | undefined;
+
+    if (data.time_window_preset === 'morning') {
+      timeStart = '08:00:00';
+      timeEnd = '12:00:00';
+    } else if (data.time_window_preset === 'afternoon') {
+      timeStart = '12:00:00';
+      timeEnd = '17:00:00';
+    } else if (data.time_window_preset === 'custom') {
+      timeStart = data.preferred_time_start ? `${data.preferred_time_start}:00` : undefined;
+      timeEnd = data.preferred_time_end ? `${data.preferred_time_end}:00` : undefined;
+    }
+
     const payload = {
       business_id: businessId!,
       customer_id: data.customer_id,
@@ -89,7 +110,8 @@ export function RecurringJobModal({ isOpen, onClose, template }: RecurringJobMod
       end_date: data.end_date || undefined,
       is_active: true,
       auto_schedule: data.auto_schedule,
-      preferred_time_window: data.preferred_time ? { start: data.preferred_time, end: '17:00' } : undefined,
+      preferred_time_start: timeStart,
+      preferred_time_end: timeEnd,
       assigned_members: [],
     };
 
@@ -244,17 +266,58 @@ export function RecurringJobModal({ isOpen, onClose, template }: RecurringJobMod
 
             <FormField
               control={form.control}
-              name="preferred_time"
+              name="time_window_preset"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Preferred Start Time</FormLabel>
-                  <FormControl>
-                    <Input type="time" {...field} />
-                  </FormControl>
+                  <FormLabel>Preferred Time Window</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="anytime">Anytime</SelectItem>
+                      <SelectItem value="morning">Morning (8am - 12pm)</SelectItem>
+                      <SelectItem value="afternoon">Afternoon (12pm - 5pm)</SelectItem>
+                      <SelectItem value="custom">Custom Time Window</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
+            {form.watch('time_window_preset') === 'custom' && (
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="preferred_time_start"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Start Time</FormLabel>
+                      <FormControl>
+                        <Input type="time" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="preferred_time_end"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>End Time</FormLabel>
+                      <FormControl>
+                        <Input type="time" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
 
             <FormField
               control={form.control}

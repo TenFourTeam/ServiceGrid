@@ -20,6 +20,10 @@ export interface RecurringJobTemplate {
   is_active: boolean;
   auto_schedule: boolean;
   preferred_time_window?: any;
+  preferred_time_start?: string;
+  preferred_time_end?: string;
+  territory_id?: string;
+  territory_name?: string;
   assigned_members?: string[];
   last_generated_at?: string;
   next_generation_date?: string;

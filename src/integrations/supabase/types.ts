@@ -1088,10 +1088,14 @@ export type Database = {
           last_generated_at: string | null
           next_generation_date: string | null
           notes: string | null
+          preferred_time_end: string | null
+          preferred_time_start: string | null
           preferred_time_window: Json | null
           recurrence_config: Json
           recurrence_pattern: Database["public"]["Enums"]["recurrence_pattern"]
           start_date: string
+          territory_id: string | null
+          territory_name: string | null
           title: string
           updated_at: string
         }
@@ -1109,10 +1113,14 @@ export type Database = {
           last_generated_at?: string | null
           next_generation_date?: string | null
           notes?: string | null
+          preferred_time_end?: string | null
+          preferred_time_start?: string | null
           preferred_time_window?: Json | null
           recurrence_config: Json
           recurrence_pattern: Database["public"]["Enums"]["recurrence_pattern"]
           start_date: string
+          territory_id?: string | null
+          territory_name?: string | null
           title: string
           updated_at?: string
         }
@@ -1130,10 +1138,14 @@ export type Database = {
           last_generated_at?: string | null
           next_generation_date?: string | null
           notes?: string | null
+          preferred_time_end?: string | null
+          preferred_time_start?: string | null
           preferred_time_window?: Json | null
           recurrence_config?: Json
           recurrence_pattern?: Database["public"]["Enums"]["recurrence_pattern"]
           start_date?: string
+          territory_id?: string | null
+          territory_name?: string | null
           title?: string
           updated_at?: string
         }

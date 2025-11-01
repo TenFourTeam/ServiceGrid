@@ -12,6 +12,8 @@ interface RecurringJobTemplate {
   address: string;
   estimated_duration_minutes: number;
   recurrence_pattern: string;
+  preferred_time_start?: string;
+  preferred_time_end?: string;
   customer?: {
     name: string;
   };
@@ -62,7 +64,10 @@ serve(async (req) => {
       address: t.address,
       duration: t.estimated_duration_minutes,
       customer: t.customer?.name || 'Unknown',
-      pattern: t.recurrence_pattern
+      pattern: t.recurrence_pattern,
+      timeWindow: t.preferred_time_start && t.preferred_time_end 
+        ? `${t.preferred_time_start} - ${t.preferred_time_end}`
+        : 'Flexible'
     }));
 
     const systemPrompt = `You are a route optimization expert for service businesses. 
@@ -71,13 +76,16 @@ Your goal is to reorder recurring job templates to minimize travel time and maxi
 Consider:
 1. Geographic clustering - group nearby locations together
 2. Travel time minimization - reduce total route distance
-3. Logical flow - create sensible daily routes
-4. Work-life balance - efficient routes mean earlier finish times
+3. Time windows - respect customer preferred time windows
+4. Logical flow - create sensible daily routes
+5. Work-life balance - efficient routes mean earlier finish times
 
 Constraints:
 ${constraints?.maxDailyHours ? `- Max daily hours: ${constraints.maxDailyHours}` : '- No time constraints specified'}
 ${constraints?.teamSize ? `- Team size: ${constraints.teamSize}` : '- Team size not specified'}
-${constraints?.startTime && constraints?.endTime ? `- Work hours: ${constraints.startTime} - ${constraints.endTime}` : '- Standard work hours'}`;
+${constraints?.startTime && constraints?.endTime ? `- Work hours: ${constraints.startTime} - ${constraints.endTime}` : '- Standard work hours'}
+
+IMPORTANT: When reordering jobs, ensure jobs with specific time windows are grouped logically and don't conflict.`;
 
     const userPrompt = `Optimize this route by reordering the jobs for maximum efficiency:
 

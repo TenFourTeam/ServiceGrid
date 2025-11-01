@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Calendar, MapPin, Clock, Users, Play, Pause, Edit, Trash2, Route } from 'lucide-react';
+import { Calendar, MapPin, Clock, Users, Play, Pause, Edit, Trash2, Route, Eye, BarChart3 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -15,6 +16,7 @@ import {
 import { RecurringJobTemplate } from '@/hooks/useRecurringJobs';
 import { useGenerateRecurringJobs, useUpdateRecurringTemplate, useDeleteRecurringTemplate } from '@/hooks/useRecurringJobs';
 import { RecurringJobModal } from './RecurringJobModal';
+import { RecurringJobHistoryPanel } from './RecurringJobHistoryPanel';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,8 +36,10 @@ interface RecurringJobsListProps {
 
 export function RecurringJobsList({ templates, isLoading, onPreviewRoute }: RecurringJobsListProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [editingTemplate, setEditingTemplate] = useState<RecurringJobTemplate | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [viewingHistoryId, setViewingHistoryId] = useState<string | null>(null);
   
   const generateJobs = useGenerateRecurringJobs();
   const updateTemplate = useUpdateRecurringTemplate();
@@ -87,6 +91,17 @@ export function RecurringJobsList({ templates, isLoading, onPreviewRoute }: Recu
 
   return (
     <>
+      {/* History Panel */}
+      {viewingHistoryId && (
+        <div className="mb-4">
+          <RecurringJobHistoryPanel
+            templateId={viewingHistoryId}
+            onClose={() => setViewingHistoryId(null)}
+            onViewJob={(jobId) => navigate(`/calendar?job=${jobId}`)}
+          />
+        </div>
+      )}
+
       {/* Preview Route Button */}
       {templates.length > 1 && onPreviewRoute && (
         <div className="mb-4 flex justify-end">
@@ -155,6 +170,24 @@ export function RecurringJobsList({ templates, isLoading, onPreviewRoute }: Recu
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => navigate(`/calendar?source=recurring&templateId=${template.id}`)}
+                      title="View on Calendar"
+                    >
+                      <Eye className="h-3 w-3 mr-1" />
+                      Calendar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setViewingHistoryId(template.id)}
+                      title="View History"
+                    >
+                      <BarChart3 className="h-3 w-3 mr-1" />
+                      History
+                    </Button>
                     <Button
                       size="sm"
                       variant="outline"
