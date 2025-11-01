@@ -7,33 +7,36 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Authenticate using Clerk
-    const { userId, businessId: defaultBusinessId, supaAdmin } = await requireCtx(req);
-
     const method = req.method;
+    const url = new URL(req.url);
+    const businessId = url.searchParams.get('businessId');
+    const userIdParam = url.searchParams.get('userId');
+    
+    // Authenticate using Clerk
+    const { userId, businessId: contextBusinessId, supaAdmin } = await requireCtx(req, {
+      businessId: businessId || undefined
+    });
+
+    const finalBusinessId = businessId || contextBusinessId;
     const body = method !== 'GET' ? await req.json() : null;
 
-    console.log(`[team-availability-crud] ${method} request from user ${userId}`);
+    console.log(`[team-availability-crud] ${method} request from user ${userId} for business ${finalBusinessId}`);
 
     // GET - List availability for a business/user
     if (method === 'GET') {
-      const url = new URL(req.url);
-      const businessId = url.searchParams.get('businessId');
-      const userId = url.searchParams.get('userId');
-
-      if (!businessId) {
+      if (!finalBusinessId) {
         throw new Error('businessId is required');
       }
 
       let query = supaAdmin
         .from('team_availability')
         .select('*')
-        .eq('business_id', businessId)
+        .eq('business_id', finalBusinessId)
         .order('day_of_week', { ascending: true })
         .order('start_time', { ascending: true });
 
-      if (userId) {
-        query = query.eq('user_id', userId);
+      if (userIdParam) {
+        query = query.eq('user_id', userIdParam);
       }
 
       const { data, error } = await query;

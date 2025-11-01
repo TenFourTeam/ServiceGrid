@@ -7,22 +7,25 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Authenticate using Clerk
-    const { userId, businessId: defaultBusinessId, supaAdmin } = await requireCtx(req);
-
     const method = req.method;
+    const url = new URL(req.url);
+    const businessId = url.searchParams.get('businessId');
+    const userIdParam = url.searchParams.get('userId');
+    const status = url.searchParams.get('status');
+    
+    // Authenticate using Clerk
+    const { userId, businessId: contextBusinessId, supaAdmin } = await requireCtx(req, {
+      businessId: businessId || undefined
+    });
+
+    const finalBusinessId = businessId || contextBusinessId;
     const body = method !== 'GET' ? await req.json() : null;
 
-    console.log(`[time-off-crud] ${method} request from user ${userId}`);
+    console.log(`[time-off-crud] ${method} request from user ${userId} for business ${finalBusinessId}`);
 
     // GET - List time off requests
     if (method === 'GET') {
-      const url = new URL(req.url);
-      const businessId = url.searchParams.get('businessId');
-      const userId = url.searchParams.get('userId');
-      const status = url.searchParams.get('status');
-
-      if (!businessId) {
+      if (!finalBusinessId) {
         throw new Error('businessId is required');
       }
 
@@ -33,11 +36,11 @@ Deno.serve(async (req) => {
           user:user_id(id, full_name, email),
           reviewer:reviewed_by(id, full_name)
         `)
-        .eq('business_id', businessId)
+        .eq('business_id', finalBusinessId)
         .order('start_date', { ascending: false });
 
-      if (userId) {
-        query = query.eq('user_id', userId);
+      if (userIdParam) {
+        query = query.eq('user_id', userIdParam);
       }
 
       if (status) {
@@ -81,7 +84,7 @@ Deno.serve(async (req) => {
 
     // PUT - Update time off request (approve/deny or edit)
     if (method === 'PUT') {
-      const { id, status, ...updates } = body;
+      const { id, status: newStatus, ...updates } = body;
 
       if (!id) {
         throw new Error('id is required for update');
@@ -90,8 +93,8 @@ Deno.serve(async (req) => {
       const updateData: any = { ...updates };
 
       // If status is being changed to approved/denied, record who reviewed it
-      if (status && (status === 'approved' || status === 'denied')) {
-        updateData.status = status;
+      if (newStatus && (newStatus === 'approved' || newStatus === 'denied')) {
+        updateData.status = newStatus;
         updateData.reviewed_by = userId;
         updateData.reviewed_at = new Date().toISOString();
       }
