@@ -246,11 +246,13 @@ export default function CalendarShell({
                 </div>
               </div>
             }>
-              <RouteMapView 
-                date={date} 
-                jobs={jobs} 
-                selectedMemberId={selectedMemberId}
-              />
+              <div className="h-full w-full">
+                <RouteMapView 
+                  date={date} 
+                  jobs={jobs} 
+                  selectedMemberId={selectedMemberId}
+                />
+              </div>
             </Suspense>
           ) : (
             <>

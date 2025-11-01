@@ -22,7 +22,7 @@ interface RouteMapViewProps {
  */
 export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: RouteMapViewProps) {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-  const [mapCenter, setMapCenter] = useState({ lat: 39.8283, lng: -98.5795 }); // Center of USA as default
+  const [mapCenter, setMapCenter] = useState({ lat: 37.7749, lng: -122.4194 }); // San Francisco as default
 
   // Check if Google Maps API key is configured
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
@@ -145,7 +145,7 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
 
   return (
     <APIProvider apiKey={apiKey} onLoad={() => console.log('[RouteMapView] Google Maps API loaded')}>
-      <div className="relative w-full h-full">
+      <div className="relative w-full h-full min-h-[400px]">
         <Map
           mapId="d174fd11e8cacedb35e319da"
           center={mapCenter}
@@ -153,6 +153,7 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
           gestureHandling="greedy"
           disableDefaultUI={false}
           className="w-full h-full"
+          style={{ width: '100%', height: '100%' }}
           onCameraChanged={() => console.log('[RouteMapView] Camera changed')}
         >
           {jobsWithCoords.map(({ job, coords }) => (
