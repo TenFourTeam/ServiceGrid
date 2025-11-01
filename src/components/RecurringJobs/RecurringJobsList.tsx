@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Calendar, MapPin, Clock, Users, Play, Pause, Edit, Trash2 } from 'lucide-react';
+import { Calendar, MapPin, Clock, Users, Play, Pause, Edit, Trash2, Route } from 'lucide-react';
 import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -29,9 +29,10 @@ import {
 interface RecurringJobsListProps {
   templates: RecurringJobTemplate[];
   isLoading: boolean;
+  onPreviewRoute?: () => void;
 }
 
-export function RecurringJobsList({ templates, isLoading }: RecurringJobsListProps) {
+export function RecurringJobsList({ templates, isLoading, onPreviewRoute }: RecurringJobsListProps) {
   const { t } = useTranslation();
   const [editingTemplate, setEditingTemplate] = useState<RecurringJobTemplate | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -86,6 +87,19 @@ export function RecurringJobsList({ templates, isLoading }: RecurringJobsListPro
 
   return (
     <>
+      {/* Preview Route Button */}
+      {templates.length > 1 && onPreviewRoute && (
+        <div className="mb-4 flex justify-end">
+          <Button
+            variant="outline"
+            onClick={onPreviewRoute}
+          >
+            <Route className="h-4 w-4 mr-2" />
+            Preview & Optimize Route
+          </Button>
+        </div>
+      )}
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>

@@ -19,6 +19,7 @@ import { TimeOffManagement } from "@/components/Team/TimeOffManagement";
 import { RecurringJobsList } from "@/components/RecurringJobs/RecurringJobsList";
 import { RecurringJobModal } from "@/components/RecurringJobs/RecurringJobModal";
 import { RecurringJobsMapView } from "@/components/RecurringJobs/RecurringJobsMapView";
+import { RouteOptimizer } from "@/components/RecurringJobs/RouteOptimizer";
 import { useRecurringJobTemplates } from "@/hooks/useRecurringJobs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { List, Map as MapIcon } from "lucide-react";
@@ -35,6 +36,7 @@ export default function Team() {
   const recurringView = searchParams.get('view') || 'list';
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [isRecurringModalOpen, setIsRecurringModalOpen] = useState(false);
+  const [showRouteOptimizer, setShowRouteOptimizer] = useState(false);
 
   const handleTabChange = (value: string) => {
     setSearchParams({ tab: value });
@@ -372,6 +374,7 @@ export default function Team() {
                   <RecurringJobsList
                     templates={recurringTemplates || []}
                     isLoading={isLoadingRecurring}
+                    onPreviewRoute={() => setShowRouteOptimizer(true)}
                   />
                 )}
               </CardContent>
@@ -390,6 +393,13 @@ export default function Team() {
           isOpen={isRecurringModalOpen}
           onClose={() => setIsRecurringModalOpen(false)}
         />
+
+        {showRouteOptimizer && (
+          <RouteOptimizer
+            templates={recurringTemplates || []}
+            onClose={() => setShowRouteOptimizer(false)}
+          />
+        )}
       </div>
     </AppLayout>
   );

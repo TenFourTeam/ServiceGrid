@@ -1,25 +1,56 @@
-import { useMemo, useState } from 'react';
-import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
+import { useMemo, useState, useEffect } from 'react';
+import { APIProvider, Map, AdvancedMarker, useMap } from '@vis.gl/react-google-maps';
 import { RecurringJobTemplate } from '@/hooks/useRecurringJobs';
 import { useGeocoding } from '@/hooks/useGeocoding';
+import { useTravelTimes } from '@/hooks/useTravelTimes';
 import { RecurringJobMarker } from './RecurringJobMarker';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card } from '@/components/ui/card';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { calculateRouteMetrics } from '@/utils/calculateRouteMetrics';
+import { RoutePreviewPanel } from './RoutePreviewPanel';
 
 interface RecurringJobsMapViewProps {
   templates: RecurringJobTemplate[];
   onTemplateClick?: (template: RecurringJobTemplate) => void;
+  showRoute?: boolean;
+}
+
+/**
+ * Route polyline component that draws the path between jobs
+ */
+function RoutePolyline({ path }: { path: Array<{ lat: number; lng: number }> }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!map || path.length < 2) return;
+
+    const polyline = new google.maps.Polyline({
+      path,
+      geodesic: true,
+      strokeColor: '#3B82F6',
+      strokeOpacity: 0.8,
+      strokeWeight: 3,
+      map,
+    });
+
+    return () => {
+      polyline.setMap(null);
+    };
+  }, [map, path]);
+
+  return null;
 }
 
 /**
  * Interactive map view showing recurring job templates with pattern-based markers
- * Features: geocoding, custom markers, info windows, pattern color coding
+ * Features: geocoding, custom markers, info windows, pattern color coding, route preview
  */
-export function RecurringJobsMapView({ templates, onTemplateClick }: RecurringJobsMapViewProps) {
+export function RecurringJobsMapView({ templates, onTemplateClick, showRoute = false }: RecurringJobsMapViewProps) {
   const [selectedTemplate, setSelectedTemplate] = useState<RecurringJobTemplate | null>(null);
   const [mapCenter, setMapCenter] = useState({ lat: 39.8283, lng: -98.5795 }); // Center of USA as default
+  const [showMetrics, setShowMetrics] = useState(showRoute);
 
   // Extract unique addresses from templates
   const addresses = useMemo(() => {
@@ -75,6 +106,27 @@ export function RecurringJobsMapView({ templates, onTemplateClick }: RecurringJo
       .filter(Boolean) as Array<{ template: RecurringJobTemplate; coords: { lat: number; lng: number } }>;
   }, [templates, coordinates]);
 
+  // Calculate travel times for route preview
+  const origins = addresses.slice(0, -1);
+  const destinations = addresses.slice(1);
+  const { data: travelTimes } = useTravelTimes(
+    origins,
+    destinations,
+    showRoute && origins.length > 0 && destinations.length > 0
+  );
+
+  // Calculate route metrics
+  const routeMetrics = useMemo(() => {
+    if (!showRoute || !travelTimes || travelTimes.length === 0) return null;
+    return calculateRouteMetrics(templates, travelTimes);
+  }, [showRoute, templates, travelTimes]);
+
+  // Create path for polyline
+  const routePath = useMemo(() => {
+    if (!showRoute || !coordinates) return [];
+    return templatesWithCoords.map(({ coords }) => coords);
+  }, [showRoute, coordinates, templatesWithCoords]);
+
   if (isLoading) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-muted/10">
@@ -123,6 +175,11 @@ export function RecurringJobsMapView({ templates, onTemplateClick }: RecurringJo
               <RecurringJobMarker template={template} />
             </AdvancedMarker>
           ))}
+
+          {/* Route Polyline */}
+          {showRoute && routePath.length > 1 && (
+            <RoutePolyline path={routePath} />
+          )}
         </Map>
 
         {/* Info Window */}
@@ -183,6 +240,14 @@ export function RecurringJobsMapView({ templates, onTemplateClick }: RecurringJo
               </div>
             </div>
           </Card>
+        )}
+
+        {/* Route Metrics Panel */}
+        {showRoute && routeMetrics && showMetrics && (
+          <RoutePreviewPanel
+            metrics={routeMetrics}
+            onClose={() => setShowMetrics(false)}
+          />
         )}
 
         {/* Legend */}
