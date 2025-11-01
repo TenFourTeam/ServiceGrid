@@ -26,8 +26,16 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
 
   // Check if Google Maps API key is configured
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+  
+  // Debug: Log the API key value (first 10 chars only for security)
+  console.log('[RouteMapView] API Key status:', {
+    exists: !!apiKey,
+    length: apiKey?.length || 0,
+    preview: apiKey ? `${apiKey.substring(0, 10)}...` : 'undefined',
+    envValue: import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+  });
 
-  if (!apiKey) {
+  if (!apiKey || apiKey.trim() === '') {
     return (
       <div className="w-full h-full flex items-center justify-center bg-muted/10">
         <div className="text-center space-y-4 max-w-md p-8">
