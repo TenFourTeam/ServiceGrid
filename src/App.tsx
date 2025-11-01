@@ -16,6 +16,7 @@ const QuotesPage = lazy(() => import("./pages/Quotes"));
 const RequestsPage = lazy(() => import("./pages/Requests"));
 const InvoicesPage = lazy(() => import("./pages/Invoices"));
 const CustomersPage = lazy(() => import("./pages/Customers"));
+const AnalyticsPage = lazy(() => import("./pages/Analytics"));
 const SettingsPage = lazy(() => import("./pages/Settings"));
 const LegalPage = lazy(() => import("./pages/Legal"));
 const LegalDocument = lazy(() => import("./components/Legal/LegalDocument"));
@@ -106,6 +107,11 @@ function App({ clerkKey }: AppProps) {
                   <Route path="/requests" element={
                     <RequireRole role="owner">
                       <RequestsPage />
+                    </RequireRole>
+                  } />
+                  <Route path="/analytics" element={
+                    <RequireRole role="owner">
+                      <AnalyticsPage />
                     </RequireRole>
                   } />
                   <Route path="/settings" element={<SettingsPage />} />

@@ -506,6 +506,8 @@ export type Database = {
         Row: {
           address: string | null
           ai_suggested: boolean | null
+          ai_suggestion_accepted: boolean | null
+          ai_suggestion_rejected_reason: string | null
           business_id: string
           clock_in_time: string | null
           clock_out_time: string | null
@@ -542,6 +544,8 @@ export type Database = {
         Insert: {
           address?: string | null
           ai_suggested?: boolean | null
+          ai_suggestion_accepted?: boolean | null
+          ai_suggestion_rejected_reason?: string | null
           business_id: string
           clock_in_time?: string | null
           clock_out_time?: string | null
@@ -578,6 +582,8 @@ export type Database = {
         Update: {
           address?: string | null
           ai_suggested?: boolean | null
+          ai_suggestion_accepted?: boolean | null
+          ai_suggestion_rejected_reason?: string | null
           business_id?: string
           clock_in_time?: string | null
           clock_out_time?: string | null

@@ -33,3 +33,8 @@ export { useTravelTimes } from '@/hooks/useTravelTimes';
 // Route Planning and Mapping hooks
 export { useGeocoding } from '@/hooks/useGeocoding';
 export { useRouteRecalculation } from '@/hooks/useRouteRecalculation';
+
+// Analytics hooks
+export { useAnalyticsSummary } from '@/hooks/useAnalyticsSummary';
+export { useTeamUtilization } from '@/hooks/useTeamUtilization';
+export { usePredictiveInsights } from '@/hooks/usePredictiveInsights';

@@ -2,7 +2,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { RequireRole } from "@/components/Auth/RequireRole";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarHeader, SidebarSeparator, SidebarTrigger, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
-import { Calendar as CalendarIcon, FileText, Receipt, Users, Wrench, User as UserIcon, Settings as SettingsIcon, LifeBuoy, LogOut, Shield, Clock, UserPlus, ClipboardList } from "lucide-react";
+import { Calendar as CalendarIcon, FileText, Receipt, Users, Wrench, User as UserIcon, Settings as SettingsIcon, LifeBuoy, LogOut, Shield, Clock, UserPlus, ClipboardList, BarChart3 } from "lucide-react";
 import BusinessLogo from "@/components/BusinessLogo";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useClerk, useUser } from "@clerk/clerk-react";
@@ -51,6 +51,11 @@ const getBusinessNavItems = (t: (key: string) => string) => [{
   title: t('navigation.invoices'),
   url: "/invoices",
   icon: Receipt,
+  workerAccess: false
+}, {
+  title: t('navigation.analytics'),
+  url: "/analytics",
+  icon: BarChart3,
   workerAccess: false
 }];
 export default function AppSidebar({ businessId }: { businessId?: string }) {

@@ -54,7 +54,8 @@
     "quotes": "Cotizaciones",
     "invoices": "Facturas",
     "requests": "Solicitudes",
-    "workOrders": "Órdenes de Trabajo"
+    "workOrders": "Órdenes de Trabajo",
+    "analytics": "Analíticas"
   },
   "sidebar": {
     "navigation": "Navegación",

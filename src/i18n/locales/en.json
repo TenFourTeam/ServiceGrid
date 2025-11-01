@@ -54,7 +54,8 @@
     "quotes": "Quotes",
     "invoices": "Invoices",
     "requests": "Requests",
-    "workOrders": "Work Orders"
+    "workOrders": "Work Orders",
+    "analytics": "Analytics"
   },
   "sidebar": {
     "navigation": "Navigation",
