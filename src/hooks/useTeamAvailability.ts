@@ -30,7 +30,8 @@ export function useTeamAvailability(userId?: string) {
       });
 
       if (error) throw error;
-      return data as TeamAvailability[];
+      // Edge function returns { data: [...] }, extract the array
+      return (data?.data || data) as TeamAvailability[];
     },
     enabled: !!businessId,
   });
