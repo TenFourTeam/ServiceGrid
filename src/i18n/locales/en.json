@@ -58,6 +58,15 @@
     "analytics": "Analytics",
     "recurringJobs": "Recurring Jobs"
   },
+  "team": {
+    "title": "Team",
+    "tabs": {
+      "members": "Members",
+      "availability": "Availability",
+      "timeOff": "Time Off",
+      "recurring": "Recurring Jobs"
+    }
+  },
   "sidebar": {
     "navigation": "Navigation",
     "subtitle": "Contractor Console", 

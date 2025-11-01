@@ -58,6 +58,15 @@
     "analytics": "Analíticas",
     "recurringJobs": "Trabajos Recurrentes"
   },
+  "team": {
+    "title": "Equipo",
+    "tabs": {
+      "members": "Miembros",
+      "availability": "Disponibilidad",
+      "timeOff": "Tiempo Libre",
+      "recurring": "Trabajos Recurrentes"
+    }
+  },
   "sidebar": {
     "navigation": "Navegación",
     "subtitle": "Consola de Contratista",
