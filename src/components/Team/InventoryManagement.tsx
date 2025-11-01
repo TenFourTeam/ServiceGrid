@@ -41,14 +41,16 @@ export function InventoryManagement() {
 
   const categories = Array.from(new Set(items.map(i => i.category).filter(Boolean))) as string[];
 
-  const handleSaveItem = (data: any) => {
+  const handleSaveItem = async (data: any) => {
     if (!business?.id) return;
 
     if (editingItem) {
-      updateItem.mutate({ id: editingItem.id, ...data });
+      await updateItem.mutateAsync({ id: editingItem.id, business_id: business.id, ...data });
     } else {
-      createItem.mutate({ ...data, business_id: business.id, owner_id: business.owner_id, is_active: true });
+      await createItem.mutateAsync({ ...data, business_id: business.id, owner_id: business.owner_id, is_active: true });
     }
+    
+    setItemModalOpen(false);
     setEditingItem(undefined);
   };
 
@@ -69,8 +71,8 @@ export function InventoryManagement() {
   };
 
   const handleDeleteConfirm = () => {
-    if (itemToDelete) {
-      deleteItem.mutate(itemToDelete);
+    if (itemToDelete && business?.id) {
+      deleteItem.mutate({ id: itemToDelete, business_id: business.id });
       setItemToDelete(undefined);
       setDeleteDialogOpen(false);
     }
@@ -160,6 +162,7 @@ export function InventoryManagement() {
           setEditingItem(undefined);
         }}
         onSave={handleSaveItem}
+        isLoading={createItem.isPending || updateItem.isPending}
       />
 
       {transactionItem && (

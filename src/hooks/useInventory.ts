@@ -71,11 +71,51 @@ export function useInventoryOperations() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['inventory'] });
+    onMutate: async (newItem) => {
+      await queryClient.cancelQueries({ queryKey: ['inventory'] });
+      const previousData = queryClient.getQueryData(['inventory', newItem.business_id]);
+      
+      const optimisticItem: InventoryItem = {
+        id: `temp-${Date.now()}`,
+        business_id: newItem.business_id!,
+        name: newItem.name!,
+        description: newItem.description,
+        sku: newItem.sku,
+        category: newItem.category,
+        unit_type: newItem.unit_type!,
+        current_quantity: newItem.current_quantity || 0,
+        min_quantity: newItem.min_quantity,
+        max_quantity: newItem.max_quantity,
+        unit_cost: newItem.unit_cost,
+        supplier: newItem.supplier,
+        location: newItem.location,
+        last_restocked_at: newItem.last_restocked_at,
+        notes: newItem.notes,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        owner_id: newItem.owner_id!,
+      };
+
+      queryClient.setQueryData(
+        ['inventory', newItem.business_id],
+        (old: InventoryItem[] | undefined) => [...(old || []), optimisticItem]
+      );
+
+      return { previousData };
+    },
+    onSuccess: (data, variables) => {
+      queryClient.setQueryData(
+        ['inventory', variables.business_id],
+        (old: InventoryItem[] | undefined) => 
+          (old || []).map(item => item.id.startsWith('temp-') ? data : item)
+      );
       toast.success('Item added successfully');
     },
-    onError: (error: Error) => {
+    onError: (error: Error, variables, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(['inventory', variables.business_id], context.previousData);
+      }
       toast.error(`Failed to add item: ${error.message}`);
     },
   });
@@ -92,17 +132,33 @@ export function useInventoryOperations() {
       if (error) throw error;
       return data;
     },
+    onMutate: async ({ id, business_id, ...updates }) => {
+      await queryClient.cancelQueries({ queryKey: ['inventory'] });
+      const previousData = queryClient.getQueryData(['inventory', business_id]);
+
+      queryClient.setQueryData(
+        ['inventory', business_id],
+        (old: InventoryItem[] | undefined) =>
+          (old || []).map(item => 
+            item.id === id ? { ...item, ...updates, updated_at: new Date().toISOString() } : item
+          )
+      );
+
+      return { previousData, business_id };
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['inventory'] });
       toast.success('Item updated successfully');
     },
-    onError: (error: Error) => {
+    onError: (error: Error, variables, context) => {
+      if (context?.previousData && context?.business_id) {
+        queryClient.setQueryData(['inventory', context.business_id], context.previousData);
+      }
       toast.error(`Failed to update item: ${error.message}`);
     },
   });
 
   const deleteItem = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, business_id }: { id: string; business_id: string }) => {
       const { error } = await supabase
         .from('inventory_items')
         .update({ is_active: false })
@@ -110,11 +166,24 @@ export function useInventoryOperations() {
 
       if (error) throw error;
     },
+    onMutate: async ({ id, business_id }) => {
+      await queryClient.cancelQueries({ queryKey: ['inventory'] });
+      const previousData = queryClient.getQueryData(['inventory', business_id]);
+
+      queryClient.setQueryData(
+        ['inventory', business_id],
+        (old: InventoryItem[] | undefined) => (old || []).filter(item => item.id !== id)
+      );
+
+      return { previousData, business_id };
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['inventory'] });
       toast.success('Item deleted successfully');
     },
-    onError: (error: Error) => {
+    onError: (error: Error, variables, context) => {
+      if (context?.previousData && context?.business_id) {
+        queryClient.setQueryData(['inventory', context.business_id], context.previousData);
+      }
       toast.error(`Failed to delete item: ${error.message}`);
     },
   });

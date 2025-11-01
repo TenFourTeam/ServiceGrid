@@ -31,12 +31,13 @@ interface InventoryItemModalProps {
   open: boolean;
   onClose: () => void;
   onSave: (data: FormData) => void;
+  isLoading?: boolean;
 }
 
 const CATEGORIES = ['Chemicals', 'Supplies', 'Equipment', 'Parts', 'Other'];
 const UNIT_TYPES = ['piece', 'gallon', 'lb', 'oz', 'box', 'case', 'liter', 'kg'];
 
-export function InventoryItemModal({ item, open, onClose, onSave }: InventoryItemModalProps) {
+export function InventoryItemModal({ item, open, onClose, onSave, isLoading }: InventoryItemModalProps) {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: item ? {
@@ -283,11 +284,11 @@ export function InventoryItemModal({ item, open, onClose, onSave }: InventoryIte
             />
 
             <div className="flex justify-end gap-2 pt-4">
-              <Button type="button" variant="outline" onClick={onClose}>
+              <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
                 Cancel
               </Button>
-              <Button type="submit">
-                {item ? 'Update Item' : 'Add Item'}
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? 'Saving...' : item ? 'Update Item' : 'Add Item'}
               </Button>
             </div>
           </form>
