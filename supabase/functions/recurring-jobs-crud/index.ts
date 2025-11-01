@@ -1,10 +1,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.54.0';
-import { corsHeaders } from '../_shared/cors.ts';
+import { corsHeaders, json, requireCtx } from '../_lib/auth.ts';
 
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-);
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -12,42 +10,19 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Missing authorization header');
-    }
+    console.log(`[recurring-jobs-crud] ${req.method} request received`);
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
-    if (authError || !user) {
-      console.error('[recurring-jobs-crud] Auth error:', authError);
-      throw new Error('Unauthorized');
-    }
+    const ctx = await requireCtx(req);
+    console.log('[recurring-jobs-crud] Context resolved:', { userId: ctx.userId, businessId: ctx.businessId });
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('clerk_user_id', user.id)
-      .single();
-
-    if (!profile) {
-      throw new Error('Profile not found');
-    }
-
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const method = req.method;
     const body = method !== 'GET' ? await req.json() : null;
-
-    console.log(`[recurring-jobs-crud] ${method} request from user ${profile.id}`);
 
     // GET - List recurring job templates
     if (method === 'GET') {
       const url = new URL(req.url);
-      const businessId = url.searchParams.get('businessId');
-
-      if (!businessId) {
-        throw new Error('businessId is required');
-      }
+      const businessId = url.searchParams.get('businessId') || ctx.businessId;
 
       const { data, error } = await supabase
         .from('recurring_job_templates')
@@ -60,9 +35,8 @@ Deno.serve(async (req) => {
 
       if (error) throw error;
 
-      return new Response(JSON.stringify({ data }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      console.log(`[recurring-jobs-crud] Fetched ${data?.length || 0} templates`);
+      return json({ data });
     }
 
     // POST - Create recurring job template
@@ -113,9 +87,7 @@ Deno.serve(async (req) => {
 
       console.log('[recurring-jobs-crud] Created template:', data.id);
 
-      return new Response(JSON.stringify({ data }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return json({ data });
     }
 
     // PUT - Update recurring job template
@@ -137,9 +109,7 @@ Deno.serve(async (req) => {
 
       console.log('[recurring-jobs-crud] Updated template:', id);
 
-      return new Response(JSON.stringify({ data }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return json({ data });
     }
 
     // DELETE - Delete recurring job template
@@ -159,21 +129,16 @@ Deno.serve(async (req) => {
 
       console.log('[recurring-jobs-crud] Deleted template:', id);
 
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return json({ success: true });
     }
 
     throw new Error('Method not allowed');
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[recurring-jobs-crud] Error:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: error.message === 'Unauthorized' ? 401 : 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+    return json(
+      { error: error.message || 'Failed to process request' },
+      { status: error.message === 'Unauthorized' ? 401 : 500 }
     );
   }
 });
