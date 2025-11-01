@@ -16,6 +16,7 @@ import { useLifecycleEmailIntegration } from "@/hooks/useLifecycleEmailIntegrati
 import { useRequestOperations } from "@/hooks/useRequestOperations";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { AutoScheduleButton } from "./AutoScheduleButton";
 interface RequestShowModalProps {
   request: RequestListItem | null;
   open: boolean;
@@ -374,6 +375,11 @@ export function RequestShowModal({
           <DrawerFooter>
             {isMobile ? (
               <div className="flex flex-col gap-2">
+                <AutoScheduleButton
+                  requestId={request.id}
+                  disabled={request.status === 'Archived'}
+                  onSuccess={() => onOpenChange(false)}
+                />
                 <Button
                   variant="outline"
                   onClick={handleScheduleAssessment}
@@ -415,6 +421,11 @@ export function RequestShowModal({
             ) : (
               <div className="flex justify-between">
                 <div className="flex gap-2">
+                  <AutoScheduleButton
+                    requestId={request.id}
+                    disabled={request.status === 'Archived'}
+                    onSuccess={() => onOpenChange(false)}
+                  />
                   <Button
                     variant="outline"
                     onClick={handleScheduleAssessment}

@@ -203,3 +203,12 @@ verify_jwt = false
 
 [functions.ai-schedule-optimizer]
 verify_jwt = false
+
+[functions.auto-schedule-request]
+verify_jwt = false
+
+[functions.suggest-reschedule]
+verify_jwt = false
+
+[functions.priority-reschedule]
+verify_jwt = false

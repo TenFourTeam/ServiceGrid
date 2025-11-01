@@ -24,3 +24,8 @@ export { useBusinessMembersData, useBusinessMemberOperations } from '@/hooks/use
 export { useStripeConnect } from '@/hooks/useStripeConnect';
 export { useSubscriptions } from '@/hooks/useSubscriptions';
 export { usePayments } from '@/hooks/usePayments';
+
+// AI Scheduling hooks
+export { useAIScheduling } from '@/hooks/useAIScheduling';
+export { useAutoScheduleRequest } from '@/hooks/useAutoScheduleRequest';
+export { useTravelTimes } from '@/hooks/useTravelTimes';

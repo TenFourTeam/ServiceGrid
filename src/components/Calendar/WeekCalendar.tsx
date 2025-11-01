@@ -20,6 +20,7 @@ import JobShowModal from '@/components/Jobs/JobShowModal';
 
 import { getJobStatusColors, canDragJob, canResizeJob, validateJobTiming, checkJobTimeConflict } from '@/utils/jobStatus';
 import { calculateJobColumns } from '@/utils/jobOverlap';
+import { RescheduleAssistant } from '@/components/Calendar/RescheduleAssistant';
 const START_ANCHOR_HOUR = 5; // visual start at 5:00
 const TOTAL_MIN = 24 * 60;
 function dayKey(d: Date) {
@@ -60,6 +61,16 @@ export function WeekCalendar({
   const [isDragging, setIsDragging] = useState<string | null>(null);
   const [isResizing, setIsResizing] = useState<string | null>(null);
   const [conflictingJobId, setConflictingJobId] = useState<string | null>(null);
+  
+  // Reschedule assistant state
+  const [showRescheduleAssistant, setShowRescheduleAssistant] = useState(false);
+  const [rescheduleData, setRescheduleData] = useState<{
+    jobId: string;
+    jobTitle: string;
+    proposedStartTime: Date;
+    proposedEndTime: Date;
+    conflicts: Array<{ id: string; title: string; start_time: string; end_time: string }>;
+  } | null>(null);
   const [weekStart, setWeekStart] = useState(() => {
     const initial = (() => {
       if (selectedJobId) {
@@ -384,7 +395,20 @@ function onDragStart(e: React.PointerEvent, job: Job) {
       );
 
       if (finalConflictCheck.hasConflict) {
-        toast.error(`Cannot schedule job - conflicts with: ${finalConflictCheck.conflicts.map(c => c.title).join(', ')}`);
+        // Show AI reschedule assistant instead of just showing error
+        setRescheduleData({
+          jobId: job.id,
+          jobTitle: job.title || 'Job',
+          proposedStartTime: new Date(latest.startsAt),
+          proposedEndTime: new Date(latest.endsAt),
+          conflicts: finalConflictCheck.conflicts.map(c => ({
+            id: c.id,
+            title: c.title,
+            start_time: typeof c.start === 'string' ? c.start : (c.start as Date).toISOString(),
+            end_time: typeof c.end === 'string' ? c.end : (c.end as Date).toISOString()
+          }))
+        });
+        setShowRescheduleAssistant(true);
         
         // Revert the job position
         const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
@@ -811,5 +835,59 @@ function onDragStart(e: React.PointerEvent, job: Job) {
           setModalState('closed');
         }}
       />
+
+      {/* AI Reschedule Assistant Modal */}
+      {rescheduleData && (
+        <RescheduleAssistant
+          open={showRescheduleAssistant}
+          onOpenChange={setShowRescheduleAssistant}
+          jobId={rescheduleData.jobId}
+          jobTitle={rescheduleData.jobTitle}
+          proposedStartTime={rescheduleData.proposedStartTime}
+          proposedEndTime={rescheduleData.proposedEndTime}
+          conflicts={rescheduleData.conflicts}
+          onAcceptAlternative={async (startTime, endTime) => {
+            setShowRescheduleAssistant(false);
+            try {
+              await authApi.invoke('jobs-crud', {
+                method: 'PUT',
+                body: {
+                  id: rescheduleData.jobId,
+                  startsAt: startTime,
+                  endsAt: endTime,
+                },
+                toast: {
+                  success: 'Job rescheduled to alternative time',
+                  error: 'Failed to reschedule job'
+                }
+              });
+              queryClient.invalidateQueries({ queryKey: queryKeys.data.jobs(businessId || '', userId || '') });
+            } catch (error) {
+              console.error('Failed to reschedule:', error);
+            }
+          }}
+          onForceMove={async () => {
+            setShowRescheduleAssistant(false);
+            try {
+              await authApi.invoke('jobs-crud', {
+                method: 'PUT',
+                body: {
+                  id: rescheduleData.jobId,
+                  startsAt: rescheduleData.proposedStartTime.toISOString(),
+                  endsAt: rescheduleData.proposedEndTime.toISOString(),
+                },
+                toast: {
+                  success: 'Job moved (conflicts may exist)',
+                  error: 'Failed to move job'
+                }
+              });
+              queryClient.invalidateQueries({ queryKey: queryKeys.data.jobs(businessId || '', userId || '') });
+            } catch (error) {
+              console.error('Failed to move job:', error);
+            }
+          }}
+        />
+      )}
     </div>;
   }
+

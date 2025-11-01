@@ -21,6 +21,9 @@
   "dependencies": {
     "@axe-core/playwright": "^4.10.2",
     "@clerk/clerk-react": "^5.40.0",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^3.10.0",
     "@intercom/messenger-js-sdk": "^0.0.18",
     "@playwright/test": "^1.55.0",
