@@ -7,27 +7,30 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Authenticate using Clerk
-    const { userId, businessId: defaultBusinessId, supaAdmin } = await requireCtx(req);
-
     const method = req.method;
+    const url = new URL(req.url);
+    const businessId = url.searchParams.get('businessId');
+    
+    // Authenticate using Clerk
+    const { userId, businessId: contextBusinessId, supaAdmin } = await requireCtx(req, {
+      businessId: businessId || undefined
+    });
+
+    const finalBusinessId = businessId || contextBusinessId;
     const body = method !== 'GET' ? await req.json() : null;
 
-    console.log(`[business-constraints-crud] ${method} request from user ${userId}`);
+    console.log(`[business-constraints-crud] ${method} request from user ${userId} for business ${finalBusinessId}`);
 
     // GET - List constraints for a business
     if (method === 'GET') {
-      const url = new URL(req.url);
-      const businessId = url.searchParams.get('businessId');
-
-      if (!businessId) {
+      if (!finalBusinessId) {
         throw new Error('businessId is required');
       }
 
       const { data, error } = await supaAdmin
         .from('business_constraints')
         .select('*')
-        .eq('business_id', businessId)
+        .eq('business_id', finalBusinessId)
         .order('constraint_type', { ascending: true });
 
       if (error) throw error;
