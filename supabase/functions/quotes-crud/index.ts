@@ -58,7 +58,14 @@ Deno.serve(async (req) => {
         }
 
         // Map line items to frontend format
-        const lineItems = (lineItemsData || []).map((item: any) => ({
+        const lineItems = (lineItemsData || []).map((item: {
+          id: string;
+          name: string;
+          qty: number;
+          unit: string | null;
+          unit_price: number;
+          line_total: number;
+        }) => ({
           id: item.id,
           name: item.name,
           qty: item.qty,
@@ -113,7 +120,7 @@ Deno.serve(async (req) => {
           throw new Error(`Failed to fetch quotes: ${error.message}`);
         }
 
-        const quotes = data?.map((quote: Record<string, unknown>) => ({
+        const quotes = data?.map((quote: any) => ({
           id: quote.id,
           number: quote.number,
           total: quote.total,
@@ -122,8 +129,8 @@ Deno.serve(async (req) => {
           publicToken: quote.public_token,
           viewCount: quote.view_count ?? 0,
           customerId: quote.customer_id,
-          customerName: (quote.customers as any)?.name,
-          customerEmail: (quote.customers as any)?.email,
+          customerName: quote.customers?.name,
+          customerEmail: quote.customers?.email,
           sentAt: quote.sent_at,
           terms: quote.terms,
         })) || [];
