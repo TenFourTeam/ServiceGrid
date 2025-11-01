@@ -1,10 +1,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.54.0';
-import { corsHeaders } from '../_shared/cors.ts';
+import { corsHeaders, json, requireCtx } from '../_lib/auth.ts';
 
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-);
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 interface RecurrenceConfig {
   daysOfWeek?: number[]; // 0-6 for weekly/biweekly
@@ -65,29 +63,12 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Missing authorization header');
-    }
+    console.log('[generate-recurring-jobs] POST request received');
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
-    if (authError || !user) {
-      console.error('[generate-recurring-jobs] Auth error:', authError);
-      throw new Error('Unauthorized');
-    }
+    const ctx = await requireCtx(req);
+    console.log('[generate-recurring-jobs] Context resolved:', { userId: ctx.userId, businessId: ctx.businessId });
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('clerk_user_id', user.id)
-      .single();
-
-    if (!profile) {
-      throw new Error('Profile not found');
-    }
-
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const { templateId, count = 4, startFromDate } = await req.json();
 
     if (!templateId) {
@@ -145,7 +126,7 @@ Deno.serve(async (req) => {
         status: 'Scheduled',
         recurring_template_id: template.id,
         estimated_duration_minutes: template.estimated_duration_minutes,
-        owner_id: profile.id,
+        owner_id: ctx.userId,
       };
     });
 
@@ -165,7 +146,7 @@ Deno.serve(async (req) => {
         template.assigned_members.map((userId: string) => ({
           job_id: job.id,
           user_id: userId,
-          assigned_by: profile.id,
+          assigned_by: ctx.userId,
         }))
       );
 
@@ -207,24 +188,16 @@ Deno.serve(async (req) => {
 
     console.log(`[generate-recurring-jobs] Successfully created ${createdJobs.length} jobs`);
 
-    return new Response(
-      JSON.stringify({ 
-        data: createdJobs,
-        count: createdJobs.length 
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+    return json({ 
+      data: createdJobs,
+      count: createdJobs.length 
+    });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[generate-recurring-jobs] Error:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: error.message === 'Unauthorized' ? 401 : 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+    return json(
+      { error: error.message || 'Failed to generate recurring jobs' },
+      { status: error.message === 'Unauthorized' ? 401 : 500 }
     );
   }
 });
