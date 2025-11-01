@@ -280,6 +280,155 @@ export type Database = {
           },
         ]
       }
+      inventory_items: {
+        Row: {
+          business_id: string
+          category: string | null
+          created_at: string
+          current_quantity: number
+          description: string | null
+          id: string
+          is_active: boolean
+          last_restocked_at: string | null
+          location: string | null
+          max_quantity: number | null
+          min_quantity: number | null
+          name: string
+          notes: string | null
+          owner_id: string
+          sku: string | null
+          supplier: string | null
+          unit_cost: number | null
+          unit_type: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          category?: string | null
+          created_at?: string
+          current_quantity?: number
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          last_restocked_at?: string | null
+          location?: string | null
+          max_quantity?: number | null
+          min_quantity?: number | null
+          name: string
+          notes?: string | null
+          owner_id: string
+          sku?: string | null
+          supplier?: string | null
+          unit_cost?: number | null
+          unit_type?: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          category?: string | null
+          created_at?: string
+          current_quantity?: number
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          last_restocked_at?: string | null
+          location?: string | null
+          max_quantity?: number | null
+          min_quantity?: number | null
+          name?: string
+          notes?: string | null
+          owner_id?: string
+          sku?: string | null
+          supplier?: string | null
+          unit_cost?: number | null
+          unit_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_items_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_items_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_transactions: {
+        Row: {
+          business_id: string
+          created_at: string
+          id: string
+          inventory_item_id: string
+          job_id: string | null
+          notes: string | null
+          quantity: number
+          transaction_date: string
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          id?: string
+          inventory_item_id: string
+          job_id?: string | null
+          notes?: string | null
+          quantity: number
+          transaction_date?: string
+          transaction_type: string
+          user_id: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          id?: string
+          inventory_item_id?: string
+          job_id?: string | null
+          notes?: string | null
+          quantity?: number
+          transaction_date?: string
+          transaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_transactions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_transactions_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_transactions_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invites: {
         Row: {
           accepted_at: string | null

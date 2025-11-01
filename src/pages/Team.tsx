@@ -11,7 +11,19 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useState, useMemo } from "react";
-import { Users, UserPlus, AlertTriangle, AlertCircle, Shield, Mail, Clock, Calendar, Repeat, Plus } from "lucide-react";
+import {
+  Users,
+  UserPlus,
+  AlertTriangle,
+  AlertCircle,
+  Shield,
+  Mail,
+  Clock,
+  Calendar,
+  Repeat,
+  Plus,
+  Package
+} from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { RequireRole } from "@/components/Auth/RequireRole";
 import { TeamAvailabilitySchedule } from "@/components/Team/TeamAvailabilitySchedule";
@@ -20,6 +32,8 @@ import { RecurringJobsList } from "@/components/RecurringJobs/RecurringJobsList"
 import { RecurringJobModal } from "@/components/RecurringJobs/RecurringJobModal";
 import { RecurringJobsMapView } from "@/components/RecurringJobs/RecurringJobsMapView";
 import { RouteOptimizer } from "@/components/RecurringJobs/RouteOptimizer";
+import { InventoryManagement } from "@/components/Team/InventoryManagement";
+import { InventoryItemModal } from "@/components/Team/InventoryItemModal";
 import { useRecurringJobTemplates } from "@/hooks/useRecurringJobs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { List, Map as MapIcon } from "lucide-react";
@@ -37,6 +51,7 @@ export default function Team() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [isRecurringModalOpen, setIsRecurringModalOpen] = useState(false);
   const [showRouteOptimizer, setShowRouteOptimizer] = useState(false);
+  const [isInventoryModalOpen, setIsInventoryModalOpen] = useState(false);
 
   const handleTabChange = (value: string) => {
     setSearchParams({ tab: value });
@@ -146,10 +161,19 @@ export default function Team() {
               New Template
             </Button>
           )}
+          {activeTab === 'inventory' && (
+            <Button 
+              onClick={() => setIsInventoryModalOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <Package className="h-4 w-4" />
+              Add Item
+            </Button>
+          )}
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange}>
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 gap-1">
+          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 gap-1">
             <TabsTrigger value="members" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               <span className="hidden sm:inline">{t('team.tabs.members', 'Members')}</span>
@@ -165,6 +189,10 @@ export default function Team() {
             <TabsTrigger value="recurring" className="flex items-center gap-2">
               <Repeat className="h-4 w-4" />
               <span className="hidden sm:inline">{t('team.tabs.recurring', 'Recurring Jobs')}</span>
+            </TabsTrigger>
+            <TabsTrigger value="inventory" className="flex items-center gap-2">
+              <Package className="h-4 w-4" />
+              <span className="hidden sm:inline">{t('team.tabs.inventory', 'Inventory')}</span>
             </TabsTrigger>
           </TabsList>
 
@@ -380,6 +408,19 @@ export default function Team() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Inventory Tab */}
+          <TabsContent value="inventory" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Inventory Management</CardTitle>
+                <p className="text-sm text-muted-foreground">Track supplies, chemicals, and equipment</p>
+              </CardHeader>
+              <CardContent>
+                <InventoryManagement />
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
 
         {/* Modals */}
@@ -392,6 +433,12 @@ export default function Team() {
         <RecurringJobModal
           isOpen={isRecurringModalOpen}
           onClose={() => setIsRecurringModalOpen(false)}
+        />
+
+        <InventoryItemModal
+          open={isInventoryModalOpen}
+          onClose={() => setIsInventoryModalOpen(false)}
+          onSave={() => setIsInventoryModalOpen(false)}
         />
 
         {showRouteOptimizer && (

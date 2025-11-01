@@ -64,7 +64,8 @@
       "members": "Members",
       "availability": "Availability",
       "timeOff": "Time Off",
-      "recurring": "Recurring Jobs"
+      "recurring": "Recurring Jobs",
+      "inventory": "Inventory"
     }
   },
   "sidebar": {

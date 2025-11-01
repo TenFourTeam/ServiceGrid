@@ -64,7 +64,8 @@
       "members": "Miembros",
       "availability": "Disponibilidad",
       "timeOff": "Tiempo Libre",
-      "recurring": "Trabajos Recurrentes"
+      "recurring": "Trabajos Recurrentes",
+      "inventory": "Inventario"
     }
   },
   "sidebar": {
