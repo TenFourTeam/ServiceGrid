@@ -5,13 +5,14 @@ import { MapPin } from 'lucide-react';
 interface JobMarkerProps {
   job: Job;
   selectedMemberId?: string | null;
+  isSelected?: boolean;
 }
 
 /**
  * Custom map marker for jobs
  * Color-coded by status, priority, and team member
  */
-export function JobMarker({ job, selectedMemberId }: JobMarkerProps) {
+export function JobMarker({ job, selectedMemberId, isSelected = false }: JobMarkerProps) {
   // Determine marker color based on priority and status
   const getMarkerColor = () => {
     // Urgent jobs (high priority)
@@ -41,6 +42,21 @@ export function JobMarker({ job, selectedMemberId }: JobMarkerProps) {
       className="relative"
       title={`${job.title || 'Untitled Job'}`}
     >
+      {/* Selection ring */}
+      {isSelected && (
+        <div 
+          className="absolute inset-0 rounded-full animate-pulse"
+          style={{ 
+            backgroundColor: markerColor, 
+            opacity: 0.3,
+            width: '56px',
+            height: '56px',
+            left: '-8px',
+            top: '-8px'
+          }}
+        />
+      )}
+
       {isPulsing && (
         <div 
           className="absolute inset-0 rounded-full animate-ping"
@@ -49,19 +65,25 @@ export function JobMarker({ job, selectedMemberId }: JobMarkerProps) {
       )}
       
       <div
-        className="relative flex items-center justify-center w-10 h-10 rounded-full shadow-lg border-2 border-white"
+        className={`relative flex items-center justify-center rounded-full shadow-lg border-2 transition-all ${
+          isSelected ? 'w-12 h-12 border-white border-4' : 'w-10 h-10 border-white'
+        }`}
         style={{ backgroundColor: markerColor }}
       >
-        <MapPin className="w-6 h-6 text-white" />
+        <MapPin className={`text-white ${isSelected ? 'w-7 h-7' : 'w-6 h-6'}`} />
       </div>
 
       {/* Job number badge */}
-      <div
-        className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-white border-2 flex items-center justify-center text-xs font-bold"
-        style={{ borderColor: markerColor, color: markerColor }}
-      >
-        {job.priority || ''}
-      </div>
+      {job.priority && (
+        <div
+          className={`absolute -top-1 -right-1 rounded-full bg-white border-2 flex items-center justify-center text-xs font-bold ${
+            isSelected ? 'w-6 h-6' : 'w-5 h-5'
+          }`}
+          style={{ borderColor: markerColor, color: markerColor }}
+        >
+          {job.priority}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,13 +1,15 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
 import { Job } from '@/types';
 import { useGeocoding } from '@/hooks/useGeocoding';
 import { JobMarker } from './JobMarker';
 import { JobInfoWindow } from './JobInfoWindow';
+import { JobNavigationPanel } from './JobNavigationPanel';
 import { MapLegend } from './MapLegend';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/Button';
-import { MapPin } from 'lucide-react';
+import { MapPin, ChevronLeft, ChevronRight, List } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface RouteMapViewProps {
   date: Date;
@@ -23,6 +25,10 @@ interface RouteMapViewProps {
 export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: RouteMapViewProps) {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [mapCenter, setMapCenter] = useState({ lat: 37.7749, lng: -122.4194 }); // San Francisco as default
+  const [mapZoom, setMapZoom] = useState(11);
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const [currentJobIndex, setCurrentJobIndex] = useState<number>(0);
+  const [isNavigationPanelOpen, setIsNavigationPanelOpen] = useState(true);
 
   // Check if Google Maps API key is configured
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
@@ -112,6 +118,59 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
       .filter(Boolean) as Array<{ job: Job; coords: { lat: number; lng: number } }>;
   }, [jobs, coordinates]);
 
+  // Focus on a specific job by centering map and opening info window
+  const focusJob = (jobId: string) => {
+    const jobWithCoords = jobsWithCoords.find(j => j.job.id === jobId);
+    if (!jobWithCoords) return;
+    
+    setSelectedJobId(jobId);
+    setMapCenter(jobWithCoords.coords);
+    setMapZoom(15); // Closer zoom for focused view
+    setSelectedJob(jobWithCoords.job);
+  };
+
+  // Navigate to next or previous job
+  const navigateToJob = (direction: 'next' | 'prev') => {
+    if (jobsWithCoords.length === 0) return;
+    
+    const newIndex = direction === 'next' 
+      ? (currentJobIndex + 1) % jobsWithCoords.length
+      : (currentJobIndex - 1 + jobsWithCoords.length) % jobsWithCoords.length;
+    
+    setCurrentJobIndex(newIndex);
+    focusJob(jobsWithCoords[newIndex].job.id);
+  };
+
+  // Handle job selection from navigation panel
+  const handleJobSelect = (jobId: string, index: number) => {
+    setCurrentJobIndex(index);
+    focusJob(jobId);
+  };
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle if not typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        navigateToJob('next');
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        navigateToJob('prev');
+      } else if (e.key === 'Escape') {
+        setSelectedJob(null);
+        setSelectedJobId(null);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentJobIndex, jobsWithCoords]);
+
   if (isLoading) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-muted/10">
@@ -149,33 +208,96 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
         <Map
           mapId="d174fd11e8cacedb35e319da"
           center={mapCenter}
-          zoom={11}
+          zoom={mapZoom}
           gestureHandling="greedy"
           disableDefaultUI={false}
           className="w-full h-full"
           style={{ width: '100%', height: '100%' }}
           onCameraChanged={() => console.log('[RouteMapView] Camera changed')}
         >
-          {jobsWithCoords.map(({ job, coords }) => (
+          {jobsWithCoords.map(({ job, coords }, index) => (
             <AdvancedMarker
               key={job.id}
               position={coords}
               onClick={() => {
                 setSelectedJob(job);
+                setSelectedJobId(job.id);
+                setCurrentJobIndex(index);
                 if (onJobClick) onJobClick(job);
               }}
             >
-              <JobMarker job={job} selectedMemberId={selectedMemberId} />
+              <JobMarker 
+                job={job} 
+                selectedMemberId={selectedMemberId}
+                isSelected={job.id === selectedJobId}
+              />
             </AdvancedMarker>
           ))}
 
           {selectedJob && (
             <JobInfoWindow
               job={selectedJob}
-              onClose={() => setSelectedJob(null)}
+              jobNumber={currentJobIndex + 1}
+              totalJobs={jobsWithCoords.length}
+              onClose={() => {
+                setSelectedJob(null);
+                setSelectedJobId(null);
+              }}
+              onNavigate={navigateToJob}
             />
           )}
         </Map>
+
+        {/* Navigation Panel */}
+        {isNavigationPanelOpen && jobsWithCoords.length > 0 && (
+          <JobNavigationPanel
+            jobs={jobsWithCoords}
+            selectedJobId={selectedJobId}
+            currentJobIndex={currentJobIndex}
+            onJobSelect={handleJobSelect}
+            onClose={() => setIsNavigationPanelOpen(false)}
+          />
+        )}
+
+        {/* Toggle Navigation Panel Button */}
+        {!isNavigationPanelOpen && jobsWithCoords.length > 0 && (
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setIsNavigationPanelOpen(true)}
+            className="absolute top-4 left-4 z-10 shadow-lg"
+          >
+            <List className="h-4 w-4 mr-2" />
+            Jobs ({jobsWithCoords.length})
+          </Button>
+        )}
+
+        {/* Navigation Controls */}
+        {jobsWithCoords.length > 1 && (
+          <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg border p-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigateToJob('prev')}
+              className="h-8 w-8 p-0"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            
+            <Badge variant="secondary" className="px-3 py-1 text-sm font-medium">
+              {currentJobIndex + 1} / {jobsWithCoords.length}
+            </Badge>
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigateToJob('next')}
+              className="h-8 w-8 p-0"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
 
         <MapLegend jobs={jobs} selectedMemberId={selectedMemberId} />
       </div>

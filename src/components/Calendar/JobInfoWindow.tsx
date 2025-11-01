@@ -2,19 +2,29 @@ import { Job } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Clock, MapPin, User, X } from 'lucide-react';
+import { Clock, MapPin, User, X, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface JobInfoWindowProps {
   job: Job;
+  jobNumber?: number;
+  totalJobs?: number;
   onClose: () => void;
   onViewDetails?: () => void;
+  onNavigate?: (direction: 'next' | 'prev') => void;
 }
 
 /**
  * Info window displayed when clicking a job marker on the map
  */
-export function JobInfoWindow({ job, onClose, onViewDetails }: JobInfoWindowProps) {
+export function JobInfoWindow({ 
+  job, 
+  jobNumber, 
+  totalJobs, 
+  onClose, 
+  onViewDetails,
+  onNavigate 
+}: JobInfoWindowProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Completed':
@@ -30,17 +40,31 @@ export function JobInfoWindow({ job, onClose, onViewDetails }: JobInfoWindowProp
     }
   };
 
+  const openInGoogleMaps = () => {
+    if (job.address) {
+      const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.address)}`;
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   return (
     <div className="absolute top-4 left-4 z-10 w-80 animate-in fade-in slide-in-from-top-2 duration-200">
       <Card>
         <CardHeader className="pb-3">
-          <div className="flex items-start justify-between">
-            <CardTitle className="text-lg">{job.title || 'Untitled Job'}</CardTitle>
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1">
+              <CardTitle className="text-lg">{job.title || 'Untitled Job'}</CardTitle>
+              {jobNumber && totalJobs && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Job {jobNumber} of {totalJobs}
+                </p>
+              )}
+            </div>
             <Button
               variant="ghost"
               size="sm"
               onClick={onClose}
-              className="h-6 w-6 p-0"
+              className="h-6 w-6 p-0 flex-shrink-0"
             >
               <X className="h-4 w-4" />
             </Button>
@@ -62,9 +86,20 @@ export function JobInfoWindow({ job, onClose, onViewDetails }: JobInfoWindowProp
           )}
 
           {job.address && (
-            <div className="flex items-start gap-2 text-sm">
+            <div className="flex items-start gap-2 text-sm group">
               <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-              <span className="text-muted-foreground">{job.address}</span>
+              <div className="flex-1">
+                <span className="text-muted-foreground">{job.address}</span>
+                <Button
+                  variant="link"
+                  size="sm"
+                  onClick={openInGoogleMaps}
+                  className="h-auto p-0 ml-2 text-xs"
+                >
+                  <ExternalLink className="h-3 w-3 mr-1" />
+                  Open in Maps
+                </Button>
+              </div>
             </div>
           )}
 
@@ -80,10 +115,10 @@ export function JobInfoWindow({ job, onClose, onViewDetails }: JobInfoWindowProp
             </Badge>
           )}
 
-          <div className="flex gap-2 pt-2">
+          <div className="flex flex-col gap-2 pt-2">
             <Button 
               size="sm" 
-              className="flex-1"
+              className="w-full"
               onClick={() => {
                 onViewDetails?.();
                 onClose();
@@ -91,6 +126,30 @@ export function JobInfoWindow({ job, onClose, onViewDetails }: JobInfoWindowProp
             >
               View Details
             </Button>
+
+            {/* Navigation buttons */}
+            {onNavigate && totalJobs && totalJobs > 1 && (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onNavigate('prev')}
+                  className="flex-1"
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onNavigate('next')}
+                  className="flex-1"
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
