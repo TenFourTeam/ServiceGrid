@@ -29,3 +29,7 @@ export { usePayments } from '@/hooks/usePayments';
 export { useAIScheduling } from '@/hooks/useAIScheduling';
 export { useAutoScheduleRequest } from '@/hooks/useAutoScheduleRequest';
 export { useTravelTimes } from '@/hooks/useTravelTimes';
+
+// Route Planning and Mapping hooks
+export { useGeocoding } from '@/hooks/useGeocoding';
+export { useRouteRecalculation } from '@/hooks/useRouteRecalculation';

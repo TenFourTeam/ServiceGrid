@@ -520,6 +520,8 @@ export type Database = {
           is_clocked_in: boolean | null
           is_recurring: boolean
           job_type: Database["public"]["Enums"]["job_type"] | null
+          latitude: number | null
+          longitude: number | null
           notes: string | null
           optimized_order: number | null
           owner_id: string
@@ -554,6 +556,8 @@ export type Database = {
           is_clocked_in?: boolean | null
           is_recurring?: boolean
           job_type?: Database["public"]["Enums"]["job_type"] | null
+          latitude?: number | null
+          longitude?: number | null
           notes?: string | null
           optimized_order?: number | null
           owner_id: string
@@ -588,6 +592,8 @@ export type Database = {
           is_clocked_in?: boolean | null
           is_recurring?: boolean
           job_type?: Database["public"]["Enums"]["job_type"] | null
+          latitude?: number | null
+          longitude?: number | null
           notes?: string | null
           optimized_order?: number | null
           owner_id?: string
@@ -1221,28 +1227,40 @@ export type Database = {
         Row: {
           cached_at: string | null
           destination_address: string
+          destination_lat: number | null
+          destination_lng: number | null
           distance_miles: number | null
           expires_at: string | null
           id: string
           origin_address: string
+          origin_lat: number | null
+          origin_lng: number | null
           travel_time_minutes: number
         }
         Insert: {
           cached_at?: string | null
           destination_address: string
+          destination_lat?: number | null
+          destination_lng?: number | null
           distance_miles?: number | null
           expires_at?: string | null
           id?: string
           origin_address: string
+          origin_lat?: number | null
+          origin_lng?: number | null
           travel_time_minutes: number
         }
         Update: {
           cached_at?: string | null
           destination_address?: string
+          destination_lat?: number | null
+          destination_lng?: number | null
           distance_miles?: number | null
           expires_at?: string | null
           id?: string
           origin_address?: string
+          origin_lat?: number | null
+          origin_lng?: number | null
           travel_time_minutes?: number
         }
         Relationships: []

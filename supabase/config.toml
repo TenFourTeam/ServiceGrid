@@ -212,3 +212,6 @@ verify_jwt = false
 
 [functions.priority-reschedule]
 verify_jwt = false
+
+[functions.batch-geocode]
+verify_jwt = false

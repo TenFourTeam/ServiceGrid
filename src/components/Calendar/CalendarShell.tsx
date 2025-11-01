@@ -5,7 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { WeekCalendar } from "@/components/Calendar/WeekCalendar";
 import MonthCalendar from "@/components/Calendar/MonthCalendar";
 import DayCalendar from "@/components/Calendar/DayCalendar";
-import { useMemo, useState, useEffect, useCallback } from "react";
+import { RouteMapView } from "@/components/Calendar/RouteMapView";
+import { useMemo, useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { addMonths, startOfDay, addDays, format, startOfWeek, endOfWeek } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useJobsData } from "@/hooks/useJobsData";
@@ -16,6 +17,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
 type CalendarDisplayMode = 'scheduled' | 'clocked' | 'combined';
 
 export default function CalendarShell({
@@ -25,7 +27,7 @@ export default function CalendarShell({
   selectedJobId?: string;
   businessId?: string;
 }) {
-  const [view, setView] = useState<"month" | "week" | "day">("week");
+  const [view, setView] = useState<"month" | "week" | "day" | "map">("week");
   const [displayMode, setDisplayMode] = useState<CalendarDisplayMode>('scheduled');
   const [date, setDate] = useState<Date>(startOfDay(new Date()));
   const { role, userId, businessId, businessName } = useBusinessContext(routeBusinessId);
@@ -171,7 +173,7 @@ export default function CalendarShell({
             )}
             
             <Tabs value={view} onValueChange={v => setView(v as any)}>
-              <TabsList className={`grid w-full grid-cols-3 ${isPhone ? 'h-8' : ''}`}>
+              <TabsList className={`grid w-full grid-cols-4 ${isPhone ? 'h-8' : ''}`}>
                 <TabsTrigger 
                   value="day" 
                   className={`${isPhone ? 'text-xs px-1' : 'text-xs md:text-sm px-2 md:px-3'}`}
@@ -189,6 +191,12 @@ export default function CalendarShell({
                   className={`${isPhone ? 'text-xs px-1' : 'text-xs md:text-sm px-2 md:px-3'}`}
                 >
                   {isMobile ? t('calendar.views.monthShort') : t('calendar.views.month')}
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="map" 
+                  className={`${isPhone ? 'text-xs px-1' : 'text-xs md:text-sm px-2 md:px-3'}`}
+                >
+                  {isMobile ? 'Map' : 'Map'}
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -222,6 +230,23 @@ export default function CalendarShell({
           {view === "month" && <MonthCalendar date={date} onDateChange={setDate} displayMode={displayMode} selectedMemberId={selectedMemberId} />}
           {view === "week" && <WeekCalendar selectedJobId={selectedJobId} date={date} displayMode={displayMode} jobs={jobs} refetchJobs={refetchJobs} selectedMemberId={selectedMemberId} />}
           {view === "day" && <DayCalendar date={date} displayMode={displayMode} selectedMemberId={selectedMemberId} />}
+          {view === "map" && (
+            <Suspense fallback={
+              <div className="w-full h-full flex items-center justify-center bg-muted/10">
+                <div className="space-y-4 w-full max-w-md p-8">
+                  <Skeleton className="h-8 w-3/4" />
+                  <Skeleton className="h-64 w-full" />
+                  <Skeleton className="h-8 w-1/2" />
+                </div>
+              </div>
+            }>
+              <RouteMapView 
+                date={date} 
+                jobs={jobs} 
+                selectedMemberId={selectedMemberId}
+              />
+            </Suspense>
+          )}
         </main>
 
         {/* Right rail (search/shortcuts placeholder) */}
