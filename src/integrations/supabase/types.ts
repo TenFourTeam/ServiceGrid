@@ -505,6 +505,7 @@ export type Database = {
       jobs: {
         Row: {
           address: string | null
+          ai_suggested: boolean | null
           business_id: string
           clock_in_time: string | null
           clock_out_time: string | null
@@ -513,18 +514,23 @@ export type Database = {
           created_at: string
           customer_id: string
           ends_at: string | null
+          estimated_duration_minutes: number | null
           id: string
           is_assessment: boolean | null
           is_clocked_in: boolean | null
           is_recurring: boolean
           job_type: Database["public"]["Enums"]["job_type"] | null
           notes: string | null
+          optimized_order: number | null
           owner_id: string
           parent_quote_id: string | null
           photos: Json
+          preferred_time_window: Json | null
+          priority: number | null
           quote_id: string | null
           recurrence: string | null
           request_id: string | null
+          scheduling_score: number | null
           starts_at: string | null
           status: Database["public"]["Enums"]["job_status"]
           title: string | null
@@ -533,6 +539,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          ai_suggested?: boolean | null
           business_id: string
           clock_in_time?: string | null
           clock_out_time?: string | null
@@ -541,18 +548,23 @@ export type Database = {
           created_at?: string
           customer_id: string
           ends_at?: string | null
+          estimated_duration_minutes?: number | null
           id?: string
           is_assessment?: boolean | null
           is_clocked_in?: boolean | null
           is_recurring?: boolean
           job_type?: Database["public"]["Enums"]["job_type"] | null
           notes?: string | null
+          optimized_order?: number | null
           owner_id: string
           parent_quote_id?: string | null
           photos?: Json
+          preferred_time_window?: Json | null
+          priority?: number | null
           quote_id?: string | null
           recurrence?: string | null
           request_id?: string | null
+          scheduling_score?: number | null
           starts_at?: string | null
           status?: Database["public"]["Enums"]["job_status"]
           title?: string | null
@@ -561,6 +573,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          ai_suggested?: boolean | null
           business_id?: string
           clock_in_time?: string | null
           clock_out_time?: string | null
@@ -569,18 +582,23 @@ export type Database = {
           created_at?: string
           customer_id?: string
           ends_at?: string | null
+          estimated_duration_minutes?: number | null
           id?: string
           is_assessment?: boolean | null
           is_clocked_in?: boolean | null
           is_recurring?: boolean
           job_type?: Database["public"]["Enums"]["job_type"] | null
           notes?: string | null
+          optimized_order?: number | null
           owner_id?: string
           parent_quote_id?: string | null
           photos?: Json
+          preferred_time_window?: Json | null
+          priority?: number | null
           quote_id?: string | null
           recurrence?: string | null
           request_id?: string | null
+          scheduling_score?: number | null
           starts_at?: string | null
           status?: Database["public"]["Enums"]["job_status"]
           title?: string | null
@@ -1199,6 +1217,36 @@ export type Database = {
         }
         Relationships: []
       }
+      travel_time_cache: {
+        Row: {
+          cached_at: string | null
+          destination_address: string
+          distance_miles: number | null
+          expires_at: string | null
+          id: string
+          origin_address: string
+          travel_time_minutes: number
+        }
+        Insert: {
+          cached_at?: string | null
+          destination_address: string
+          distance_miles?: number | null
+          expires_at?: string | null
+          id?: string
+          origin_address: string
+          travel_time_minutes: number
+        }
+        Update: {
+          cached_at?: string | null
+          destination_address?: string
+          distance_miles?: number | null
+          expires_at?: string | null
+          id?: string
+          origin_address?: string
+          travel_time_minutes?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1208,24 +1256,12 @@ export type Database = {
         Args: { p_business_id: string }
         Returns: boolean
       }
-      can_manage_business: {
-        Args: { p_business_id: string }
-        Returns: boolean
-      }
-      current_clerk_user_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      current_user_profile_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      debug_auth_state: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      can_manage_business: { Args: { p_business_id: string }; Returns: boolean }
+      current_clerk_user_id: { Args: never; Returns: string }
+      current_user_profile_id: { Args: never; Returns: string }
+      debug_auth_state: { Args: never; Returns: Json }
       ensure_default_business: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           application_fee_bps: number
           clerk_org_id: string | null
@@ -1251,11 +1287,14 @@ export type Database = {
           tax_rate_default: number
           updated_at: string
         }
+        SetofOptions: {
+          from: "*"
+          to: "businesses"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
-      generate_slug: {
-        Args: { input_text: string }
-        Returns: string
-      }
+      generate_slug: { Args: { input_text: string }; Returns: string }
       get_active_subscription_info: {
         Args: { p_business_id: string; p_customer_id: string }
         Returns: {
@@ -1273,10 +1312,7 @@ export type Database = {
         Args: { p_business_id: string; p_user_id: string }
         Returns: boolean
       }
-      is_business_member: {
-        Args: { p_business_id: string }
-        Returns: boolean
-      }
+      is_business_member: { Args: { p_business_id: string }; Returns: boolean }
       link_invoice_relations: {
         Args: {
           p_invoice_id: string
@@ -1299,16 +1335,13 @@ export type Database = {
         }
         Returns: string
       }
-      next_est_number: {
-        Args: { p_business_id: string }
-        Returns: string
-      }
-      next_inv_number: {
-        Args:
-          | { p_business_id: string }
-          | { p_business_id: string; p_user_id: string }
-        Returns: string
-      }
+      next_est_number: { Args: { p_business_id: string }; Returns: string }
+      next_inv_number:
+        | {
+            Args: { p_business_id: string; p_user_id: string }
+            Returns: string
+          }
+        | { Args: { p_business_id: string }; Returns: string }
       supersede_previous_quotes: {
         Args: {
           p_business_id: string
