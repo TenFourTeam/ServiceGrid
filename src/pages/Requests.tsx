@@ -28,11 +28,16 @@ import { RequestBottomModal } from "@/components/Requests/RequestBottomModal";
 import { RequestShowModal } from "@/components/Requests/RequestShowModal";
 import { RequestShareModal } from "@/components/Requests/RequestShareModal";
 import { RequestActions } from "@/components/Requests/RequestActions";
+import { AIScheduleSuggestions } from "@/components/Calendar/AIScheduleSuggestions";
+import { useBusinessMembersData } from "@/hooks/useBusinessMembers";
+import { useJobsData } from "@/hooks/useJobsData";
+import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { statusOptions } from "@/validation/requests";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function Requests() {
   const { t } = useLanguage();
+  const { businessId } = useBusinessContext();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("All");
   const [selectedRequest, setSelectedRequest] = useState<RequestListItem | null>(null);
@@ -45,6 +50,8 @@ export default function Requests() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
   const { data: requestsResponse, isLoading, error } = useRequestsData();
+  const { data: membersData } = useBusinessMembersData();
+  const { data: jobsData } = useJobsData(businessId);
   const requests = useMemo(() => requestsResponse?.data || [], [requestsResponse]);
 
   // Sorting logic
@@ -99,6 +106,22 @@ export default function Requests() {
       return acc;
     }, {} as Record<string, number>)
   };
+
+  // Prepare unscheduled requests for AI scheduling
+  const unscheduledRequests = requests.filter(r => r.status === 'New' || r.status === 'Reviewed') || [];
+  const unscheduledJobs = useMemo(() => 
+    unscheduledRequests.map(r => ({
+      id: r.id,
+      title: r.title,
+      customerId: r.customer_id,
+      address: r.property_address,
+      priority: 3, // default priority
+      estimatedDurationMinutes: 60, // default 1 hour
+      businessId: businessId || '',
+      ownerId: r.owner_id
+    })),
+    [unscheduledRequests, businessId]
+  );
 
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, string> = {
@@ -225,6 +248,19 @@ export default function Requests() {
               </Select>
             </div>
           </div>
+
+          {/* AI Scheduling Suggestions */}
+          {unscheduledJobs.length > 0 && businessId && (
+            <AIScheduleSuggestions
+              unscheduledJobs={unscheduledJobs}
+              existingJobs={jobsData?.data || []}
+              teamMembers={membersData?.data || []}
+              businessId={businessId}
+              onJobScheduled={() => {
+                // Suggestions are informational - users create jobs via JobBottomModal
+              }}
+            />
+          )}
 
           {/* Requests Content */}
           {isMobile ? (

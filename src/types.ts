@@ -134,6 +134,16 @@ export interface Job {
   requestId?: string; // NEW: links back to the originating request
   confirmationToken?: string; // NEW: confirmation token for work order confirmations
   confirmedAt?: ISODate; // NEW: when confirmation was received
+  // AI Scheduling fields
+  priority?: number; // 1-5, where 1 is most urgent
+  estimatedDurationMinutes?: number;
+  preferredTimeWindow?: {
+    start: string; // "09:00"
+    end: string; // "17:00"
+  };
+  aiSuggested?: boolean;
+  schedulingScore?: number; // 0.0 - 1.0
+  optimizedOrder?: number; // Position in optimized route
   createdAt: ISODate;
   updatedAt: ISODate;
 }

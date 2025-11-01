@@ -31,6 +31,8 @@ import { CustomerCombobox } from '@/components/Quotes/CustomerCombobox';
 import { CustomerBottomModal } from '@/components/Customers/CustomerBottomModal';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
+import { ConflictDetector } from '@/components/Calendar/ConflictDetector';
+import { useJobsData } from '@/hooks/useJobsData';
 
 interface JobBottomModalProps {
   open?: boolean;
@@ -67,12 +69,14 @@ export function JobBottomModal({
   const [isCreating, setIsCreating] = useState(false);
   const [showCreateCustomer, setShowCreateCustomer] = useState(false);
   const [assignedMemberIds, setAssignedMemberIds] = useState<string[]>([]);
+  const [priority, setPriority] = useState(3); // Default: Normal priority
 
   const { data: customers } = useCustomersData();
   const { data: allMembers } = useBusinessMembersData();
-  const { assignMembers } = useJobAssignments();
   const queryClient = useQueryClient();
   const { businessId, userId } = useBusinessContext();
+  const { data: jobsData } = useJobsData(businessId);
+  const { assignMembers } = useJobAssignments();
   const authApi = useAuthApi();
   const { t } = useLanguage();
 
@@ -230,6 +234,8 @@ export function JobBottomModal({
         total: amount ? Math.round(parseFloat(amount) * 100) : undefined,
         jobType,
         isClockedIn: false,
+        priority, // AI scheduling field
+        estimatedDurationMinutes: duration ? Math.round(parseFloat(duration) * 60) : undefined, // AI scheduling field
       };
 
       // Create the job using edge function
@@ -427,6 +433,23 @@ export function JobBottomModal({
             </Select>
           </div>
 
+          {/* Priority */}
+          <div className="space-y-2">
+            <Label htmlFor="priority">Priority</Label>
+            <Select value={priority.toString()} onValueChange={(value) => setPriority(parseInt(value))}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">🔴 Urgent</SelectItem>
+                <SelectItem value="2">🟠 High</SelectItem>
+                <SelectItem value="3">🟡 Normal</SelectItem>
+                <SelectItem value="4">🟢 Low</SelectItem>
+                <SelectItem value="5">⚪ Lowest</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Title */}
           <div className="space-y-2">
             <Label htmlFor="title">{t('jobs.form.title')}</Label>
@@ -615,6 +638,18 @@ export function JobBottomModal({
               )}
             </div>
           </div>
+
+          {/* Conflict Detection */}
+          {date && startTime && endTime && (
+            <ConflictDetector
+              proposedJob={{
+                startTime: new Date(`${date.toDateString()} ${startTime}`),
+                endTime: new Date(`${date.toDateString()} ${endTime}`),
+                address
+              }}
+              existingJobs={jobsData?.data || []}
+            />
+          )}
         </div>
 
         <DrawerFooter>

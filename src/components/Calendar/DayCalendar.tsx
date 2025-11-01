@@ -6,6 +6,8 @@ import { formatMoney } from "@/utils/format";
 import { safeCreateDate, filterJobsWithValidDates } from "@/utils/validation";
 import JobShowModal from "@/components/Jobs/JobShowModal";
 import { JobBottomModal } from "@/components/Jobs/JobBottomModal";
+import { RouteMetrics } from "@/components/Calendar/RouteMetrics";
+import { useTravelTimes } from "@/hooks/useTravelTimes";
 import type { Job } from "@/types";
 import { getJobStatusColors } from "@/utils/jobStatus";
 import { calculateJobColumns } from "@/utils/jobOverlap";
@@ -63,6 +65,29 @@ export default function DayCalendar({ date, displayMode = 'scheduled', selectedM
   const [open, setOpen] = useState(false);
   const [newJobOpen, setNewJobOpen] = useState(false);
 
+  // Calculate travel times between consecutive jobs
+  const jobAddresses = useMemo(() => {
+    return (jobs as Job[])
+      .filter(j => j.address && j.startsAt)
+      .sort((a, b) => {
+        const dateA = safeCreateDate(a.startsAt);
+        const dateB = safeCreateDate(b.startsAt);
+        if (!dateA || !dateB) return 0;
+        return dateA.getTime() - dateB.getTime();
+      })
+      .map(j => j.address!);
+  }, [jobs]);
+
+  const origins = useMemo(() => jobAddresses.slice(0, -1), [jobAddresses]);
+  const destinations = useMemo(() => jobAddresses.slice(1), [jobAddresses]);
+
+  const { data: travelTimes } = useTravelTimes(origins, destinations, jobAddresses.length > 1);
+
+  const totalTravelTime = useMemo(() => 
+    travelTimes?.reduce((sum, t) => sum + t.travelTimeMinutes, 0) || 0,
+    [travelTimes]
+  );
+
   const handleDayClick = () => {
     if (role === 'owner') {
       setNewJobOpen(true);
@@ -70,12 +95,21 @@ export default function DayCalendar({ date, displayMode = 'scheduled', selectedM
   };
   
   return (
-    <section className="rounded-lg border p-3" onClick={handleDayClick}>
-      <h2 className="sr-only">Day view</h2>
-      {jobs.length === 0 && (
-        <p className="text-sm opacity-70">No jobs scheduled for this day.</p>
+    <section className="space-y-4">
+      {/* Route Metrics */}
+      {jobs.length > 0 && (
+        <RouteMetrics
+          jobs={jobs as Job[]}
+          totalTravelTimeMinutes={totalTravelTime}
+        />
       )}
-      <ul className="space-y-2 flex flex-col">
+
+      <div className="rounded-lg border p-3" onClick={handleDayClick}>
+        <h2 className="sr-only">Day view</h2>
+        {jobs.length === 0 && (
+          <p className="text-sm opacity-70">No jobs scheduled for this day.</p>
+        )}
+        <ul className="space-y-2 flex flex-col">{/*... keep existing code*/}
         {jobs.flatMap((j) => {
           const blocks: JSX.Element[] = [];
           
@@ -151,6 +185,7 @@ export default function DayCalendar({ date, displayMode = 'scheduled', selectedM
           initialEndTime="10:00"
           onJobCreated={() => setNewJobOpen(false)}
         />
-      </section>
+      </div>
+    </section>
   );
 }
