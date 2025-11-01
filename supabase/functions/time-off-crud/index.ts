@@ -1,10 +1,5 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.54.0';
 import { corsHeaders } from '../_shared/cors.ts';
-
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-);
+import { requireCtx } from '../_lib/auth.ts';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -12,33 +7,13 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Missing authorization header');
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
-    if (authError || !user) {
-      console.error('[time-off-crud] Auth error:', authError);
-      throw new Error('Unauthorized');
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('clerk_user_id', user.id)
-      .single();
-
-    if (!profile) {
-      throw new Error('Profile not found');
-    }
+    // Authenticate using Clerk
+    const { userId, businessId: defaultBusinessId, supaAdmin } = await requireCtx(req);
 
     const method = req.method;
     const body = method !== 'GET' ? await req.json() : null;
 
-    console.log(`[time-off-crud] ${method} request from user ${profile.id}`);
+    console.log(`[time-off-crud] ${method} request from user ${userId}`);
 
     // GET - List time off requests
     if (method === 'GET') {
@@ -51,7 +26,7 @@ Deno.serve(async (req) => {
         throw new Error('businessId is required');
       }
 
-      let query = supabase
+      let query = supaAdmin
         .from('time_off_requests')
         .select(`
           *,
@@ -82,7 +57,7 @@ Deno.serve(async (req) => {
     if (method === 'POST') {
       const { business_id, user_id, start_date, end_date, reason } = body;
 
-      const { data, error } = await supabase
+      const { data, error } = await supaAdmin
         .from('time_off_requests')
         .insert({
           business_id,
@@ -117,11 +92,11 @@ Deno.serve(async (req) => {
       // If status is being changed to approved/denied, record who reviewed it
       if (status && (status === 'approved' || status === 'denied')) {
         updateData.status = status;
-        updateData.reviewed_by = profile.id;
+        updateData.reviewed_by = userId;
         updateData.reviewed_at = new Date().toISOString();
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await supaAdmin
         .from('time_off_requests')
         .update(updateData)
         .eq('id', id)
@@ -145,7 +120,7 @@ Deno.serve(async (req) => {
         throw new Error('id is required for delete');
       }
 
-      const { error } = await supabase
+      const { error } = await supaAdmin
         .from('time_off_requests')
         .delete()
         .eq('id', id);

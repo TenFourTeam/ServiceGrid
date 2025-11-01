@@ -1,10 +1,5 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.54.0';
 import { corsHeaders } from '../_shared/cors.ts';
-
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-);
+import { requireCtx } from '../_lib/auth.ts';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -12,33 +7,13 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Missing authorization header');
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
-    if (authError || !user) {
-      console.error('[business-constraints-crud] Auth error:', authError);
-      throw new Error('Unauthorized');
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('clerk_user_id', user.id)
-      .single();
-
-    if (!profile) {
-      throw new Error('Profile not found');
-    }
+    // Authenticate using Clerk
+    const { userId, businessId: defaultBusinessId, supaAdmin } = await requireCtx(req);
 
     const method = req.method;
     const body = method !== 'GET' ? await req.json() : null;
 
-    console.log(`[business-constraints-crud] ${method} request from user ${profile.id}`);
+    console.log(`[business-constraints-crud] ${method} request from user ${userId}`);
 
     // GET - List constraints for a business
     if (method === 'GET') {
@@ -49,7 +24,7 @@ Deno.serve(async (req) => {
         throw new Error('businessId is required');
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await supaAdmin
         .from('business_constraints')
         .select('*')
         .eq('business_id', businessId)
@@ -67,7 +42,7 @@ Deno.serve(async (req) => {
       const { business_id, constraint_type, constraint_value, is_active } = body;
 
       // Use upsert to handle unique constraint
-      const { data, error } = await supabase
+      const { data, error } = await supaAdmin
         .from('business_constraints')
         .upsert({
           business_id,
@@ -97,7 +72,7 @@ Deno.serve(async (req) => {
         throw new Error('id is required for update');
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await supaAdmin
         .from('business_constraints')
         .update(updates)
         .eq('id', id)
@@ -121,7 +96,7 @@ Deno.serve(async (req) => {
         throw new Error('id is required for delete');
       }
 
-      const { error } = await supabase
+      const { error } = await supaAdmin
         .from('business_constraints')
         .delete()
         .eq('id', id);
