@@ -46,7 +46,7 @@ export function useRecurringJobTemplates() {
       });
 
       if (error) throw error;
-      return data as RecurringJobTemplate[];
+      return data.data as RecurringJobTemplate[];
     },
     enabled: !!businessId,
   });
@@ -70,7 +70,7 @@ export function useCreateRecurringTemplate() {
       });
 
       if (error) throw error;
-      return data;
+      return data.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recurring-job-templates', businessId] });
@@ -96,7 +96,7 @@ export function useUpdateRecurringTemplate() {
       });
 
       if (error) throw error;
-      return data;
+      return data.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recurring-job-templates', businessId] });
@@ -122,7 +122,7 @@ export function useDeleteRecurringTemplate() {
       });
 
       if (error) throw error;
-      return data;
+      return data.data || data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recurring-job-templates', businessId] });
@@ -148,7 +148,7 @@ export function useGenerateRecurringJobs() {
       });
 
       if (error) throw error;
-      return data;
+      return data.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recurring-job-templates', businessId] });
@@ -168,7 +168,7 @@ export function useCheckSchedulingCapacity() {
       });
 
       if (error) throw error;
-      return data;
+      return data.data;
     },
   });
 }
