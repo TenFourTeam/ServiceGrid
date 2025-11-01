@@ -32,8 +32,8 @@ export function InventoryItemCard({ item, onEdit, onUse, onRestock }: InventoryI
   return (
     <Card>
       <CardContent className="p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-4 flex-1">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+          <div className="flex items-start gap-4 flex-1 w-full">
             <div className="p-3 rounded-lg bg-muted">
               <Package className="h-6 w-6 text-muted-foreground" />
             </div>
@@ -52,7 +52,7 @@ export function InventoryItemCard({ item, onEdit, onUse, onRestock }: InventoryI
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-muted-foreground">Quantity:</span>
                   <span className="ml-2 font-medium text-foreground">
@@ -98,30 +98,33 @@ export function InventoryItemCard({ item, onEdit, onUse, onRestock }: InventoryI
             </div>
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-row md:flex-col gap-2 w-full md:w-auto justify-end md:justify-start">
             <Button
               variant="outline"
               size="sm"
               onClick={() => onEdit(item)}
+              className="flex-1 md:flex-none"
             >
-              <Edit className="h-4 w-4 mr-2" />
-              Edit
+              <Edit className="h-4 w-4 md:mr-2" />
+              <span className="hidden sm:inline">Edit</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => onUse(item)}
+              className="flex-1 md:flex-none"
             >
-              <TrendingDown className="h-4 w-4 mr-2" />
-              Use
+              <TrendingDown className="h-4 w-4 md:mr-2" />
+              <span className="hidden sm:inline">Use</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => onRestock(item)}
+              className="flex-1 md:flex-none"
             >
-              <TrendingUp className="h-4 w-4 mr-2" />
-              Restock
+              <TrendingUp className="h-4 w-4 md:mr-2" />
+              <span className="hidden sm:inline">Restock</span>
             </Button>
           </div>
         </div>
