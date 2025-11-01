@@ -243,3 +243,6 @@ verify_jwt = false
 
 [functions.check-scheduling-capacity]
 verify_jwt = false
+
+[functions.optimize-recurring-route]
+verify_jwt = false

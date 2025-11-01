@@ -25,7 +25,16 @@ import { useGeocoding } from '@/hooks/useGeocoding';
 import { useTravelTimes } from '@/hooks/useTravelTimes';
 import { calculateRouteMetrics, RouteMetrics } from '@/utils/calculateRouteMetrics';
 import { RoutePreviewPanel } from './RoutePreviewPanel';
+import { useRouteOptimization } from '@/hooks/useRouteOptimization';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface RouteOptimizerProps {
   templates: RecurringJobTemplate[];
@@ -103,6 +112,15 @@ function SortableItem({ template, index }: SortableItemProps) {
 export function RouteOptimizer({ templates, onClose, onSaveOrder }: RouteOptimizerProps) {
   const [orderedTemplates, setOrderedTemplates] = useState<RecurringJobTemplate[]>(templates);
   const [showMetrics, setShowMetrics] = useState(true);
+  const [aiInsights, setAiInsights] = useState<{
+    reasoning: string;
+    timeSaved: number;
+    suggestions: string[];
+  } | null>(null);
+  const [showInsightsDialog, setShowInsightsDialog] = useState(false);
+
+  const { businessId } = useBusinessContext();
+  const { mutate: optimizeRoute, isPending: isOptimizing } = useRouteOptimization();
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -150,8 +168,33 @@ export function RouteOptimizer({ templates, onClose, onSaveOrder }: RouteOptimiz
   };
 
   const handleAIOptimize = () => {
-    // For now, sort by proximity (in real implementation, use AI)
-    toast.info('AI optimization not yet implemented. Try manual reordering!');
+    if (!businessId) {
+      toast.error('Business context not found');
+      return;
+    }
+
+    optimizeRoute(
+      { 
+        businessId, 
+        templates: orderedTemplates,
+        constraints: {
+          maxDailyHours: 8,
+          startTime: '08:00',
+          endTime: '17:00'
+        }
+      },
+      {
+        onSuccess: (result) => {
+          setOrderedTemplates(result.optimizedTemplates);
+          setAiInsights({
+            reasoning: result.reasoning,
+            timeSaved: result.estimatedTimeSaved,
+            suggestions: result.suggestions
+          });
+          setShowInsightsDialog(true);
+        }
+      }
+    );
   };
 
   const handleSave = () => {
@@ -177,9 +220,13 @@ export function RouteOptimizer({ templates, onClose, onSaveOrder }: RouteOptimiz
             <Button variant="outline" onClick={() => setShowMetrics(!showMetrics)}>
               {showMetrics ? 'Hide' : 'Show'} Metrics
             </Button>
-            <Button variant="outline" onClick={handleAIOptimize}>
+            <Button 
+              variant="outline" 
+              onClick={handleAIOptimize}
+              disabled={isOptimizing || orderedTemplates.length < 2}
+            >
               <Sparkles className="h-4 w-4 mr-2" />
-              AI Optimize
+              {isOptimizing ? 'Optimizing...' : 'AI Optimize'}
             </Button>
             <Button onClick={handleSave}>
               Save Order
@@ -235,6 +282,60 @@ export function RouteOptimizer({ templates, onClose, onSaveOrder }: RouteOptimiz
           </div>
         )}
       </div>
+
+      {/* AI Insights Dialog */}
+      <Dialog open={showInsightsDialog} onOpenChange={setShowInsightsDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              AI Route Optimization Results
+            </DialogTitle>
+            <DialogDescription>
+              Your route has been optimized for maximum efficiency
+            </DialogDescription>
+          </DialogHeader>
+
+          {aiInsights && (
+            <div className="space-y-4">
+              {/* Time Saved */}
+              <div className="bg-primary/10 rounded-lg p-4">
+                <div className="text-sm text-muted-foreground mb-1">Estimated Time Saved</div>
+                <div className="text-3xl font-bold text-primary">
+                  {aiInsights.timeSaved} minutes
+                </div>
+              </div>
+
+              {/* AI Reasoning */}
+              <div>
+                <div className="text-sm font-medium mb-2">Optimization Strategy</div>
+                <div className="text-sm text-muted-foreground bg-muted rounded-lg p-3">
+                  {aiInsights.reasoning}
+                </div>
+              </div>
+
+              {/* Suggestions */}
+              {aiInsights.suggestions.length > 0 && (
+                <div>
+                  <div className="text-sm font-medium mb-2">Additional Suggestions</div>
+                  <ul className="space-y-2">
+                    {aiInsights.suggestions.map((suggestion, idx) => (
+                      <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                        <span className="text-primary mt-0.5">•</span>
+                        <span>{suggestion}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <Button onClick={() => setShowInsightsDialog(false)} className="w-full">
+                Close
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
