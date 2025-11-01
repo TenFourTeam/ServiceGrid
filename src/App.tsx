@@ -39,6 +39,7 @@ const InvoicePayPage = lazy(() => import("./pages/InvoicePay"));
 const InvitePage = lazy(() => import("./pages/Invite"));
 const PublicRequestFormPage = lazy(() => import("./pages/PublicRequestForm"));
 const IndustryResourcePage = lazy(() => import("./pages/IndustryResource"));
+const RecurringJobsPage = lazy(() => import("./pages/RecurringJobs"));
 
 // Routes are now properly lazy-loaded without aggressive prefetching
 
@@ -112,6 +113,11 @@ function App({ clerkKey }: AppProps) {
                   <Route path="/analytics" element={
                     <RequireRole role="owner">
                       <AnalyticsPage />
+                    </RequireRole>
+                  } />
+                  <Route path="/recurring-jobs" element={
+                    <RequireRole role="owner">
+                      <RecurringJobsPage />
                     </RequireRole>
                   } />
                   <Route path="/settings" element={<SettingsPage />} />

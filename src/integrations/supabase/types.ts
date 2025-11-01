@@ -53,6 +53,44 @@ export type Database = {
         }
         Relationships: []
       }
+      business_constraints: {
+        Row: {
+          business_id: string
+          constraint_type: Database["public"]["Enums"]["constraint_type"]
+          constraint_value: Json
+          created_at: string
+          id: string
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          constraint_type: Database["public"]["Enums"]["constraint_type"]
+          constraint_value: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          constraint_type?: Database["public"]["Enums"]["constraint_type"]
+          constraint_value?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_constraints_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_permissions: {
         Row: {
           business_id: string
@@ -186,6 +224,7 @@ export type Database = {
       customers: {
         Row: {
           address: string | null
+          avoid_days: Json | null
           business_id: string
           created_at: string
           email: string
@@ -194,10 +233,14 @@ export type Database = {
           notes: string | null
           owner_id: string
           phone: string | null
+          preferred_days: Json | null
+          preferred_time_window: Json | null
+          scheduling_notes: string | null
           updated_at: string
         }
         Insert: {
           address?: string | null
+          avoid_days?: Json | null
           business_id: string
           created_at?: string
           email: string
@@ -206,10 +249,14 @@ export type Database = {
           notes?: string | null
           owner_id: string
           phone?: string | null
+          preferred_days?: Json | null
+          preferred_time_window?: Json | null
+          scheduling_notes?: string | null
           updated_at?: string
         }
         Update: {
           address?: string | null
+          avoid_days?: Json | null
           business_id?: string
           created_at?: string
           email?: string
@@ -218,6 +265,9 @@ export type Database = {
           notes?: string | null
           owner_id?: string
           phone?: string | null
+          preferred_days?: Json | null
+          preferred_time_window?: Json | null
+          scheduling_notes?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -533,6 +583,7 @@ export type Database = {
           priority: number | null
           quote_id: string | null
           recurrence: string | null
+          recurring_template_id: string | null
           request_id: string | null
           scheduling_score: number | null
           starts_at: string | null
@@ -571,6 +622,7 @@ export type Database = {
           priority?: number | null
           quote_id?: string | null
           recurrence?: string | null
+          recurring_template_id?: string | null
           request_id?: string | null
           scheduling_score?: number | null
           starts_at?: string | null
@@ -609,6 +661,7 @@ export type Database = {
           priority?: number | null
           quote_id?: string | null
           recurrence?: string | null
+          recurring_template_id?: string | null
           request_id?: string | null
           scheduling_score?: number | null
           starts_at?: string | null
@@ -637,6 +690,13 @@ export type Database = {
             columns: ["quote_id"]
             isOneToOne: false
             referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jobs_recurring_template_id_fkey"
+            columns: ["recurring_template_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_job_templates"
             referencedColumns: ["id"]
           },
           {
@@ -1013,6 +1073,87 @@ export type Database = {
           },
         ]
       }
+      recurring_job_templates: {
+        Row: {
+          address: string | null
+          assigned_members: Json | null
+          auto_schedule: boolean
+          business_id: string
+          created_at: string
+          customer_id: string
+          end_date: string | null
+          estimated_duration_minutes: number
+          id: string
+          is_active: boolean
+          last_generated_at: string | null
+          next_generation_date: string | null
+          notes: string | null
+          preferred_time_window: Json | null
+          recurrence_config: Json
+          recurrence_pattern: Database["public"]["Enums"]["recurrence_pattern"]
+          start_date: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          assigned_members?: Json | null
+          auto_schedule?: boolean
+          business_id: string
+          created_at?: string
+          customer_id: string
+          end_date?: string | null
+          estimated_duration_minutes?: number
+          id?: string
+          is_active?: boolean
+          last_generated_at?: string | null
+          next_generation_date?: string | null
+          notes?: string | null
+          preferred_time_window?: Json | null
+          recurrence_config: Json
+          recurrence_pattern: Database["public"]["Enums"]["recurrence_pattern"]
+          start_date: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          assigned_members?: Json | null
+          auto_schedule?: boolean
+          business_id?: string
+          created_at?: string
+          customer_id?: string
+          end_date?: string | null
+          estimated_duration_minutes?: number
+          id?: string
+          is_active?: boolean
+          last_generated_at?: string | null
+          next_generation_date?: string | null
+          notes?: string | null
+          preferred_time_window?: Json | null
+          recurrence_config?: Json
+          recurrence_pattern?: Database["public"]["Enums"]["recurrence_pattern"]
+          start_date?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_job_templates_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_job_templates_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recurring_schedules: {
         Row: {
           business_id: string
@@ -1195,6 +1336,121 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      team_availability: {
+        Row: {
+          business_id: string
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          is_available: boolean
+          start_time: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          is_available?: boolean
+          start_time: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          is_available?: boolean
+          start_time?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_availability_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_availability_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      time_off_requests: {
+        Row: {
+          business_id: string
+          created_at: string
+          end_date: string
+          id: string
+          reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          start_date: string
+          status: Database["public"]["Enums"]["time_off_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          end_date: string
+          id?: string
+          reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          start_date: string
+          status?: Database["public"]["Enums"]["time_off_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          end_date?: string
+          id?: string
+          reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["time_off_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_off_requests_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_off_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_off_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       timesheet_entries: {
         Row: {
@@ -1382,6 +1638,13 @@ export type Database = {
     }
     Enums: {
       business_role: "owner" | "worker"
+      constraint_type:
+        | "max_jobs_per_day"
+        | "max_hours_per_day"
+        | "min_time_between_jobs"
+        | "max_travel_time"
+        | "business_hours"
+        | "buffer_time"
       invoice_status: "Draft" | "Sent" | "Paid" | "Overdue"
       job_status:
         | "Scheduled"
@@ -1404,6 +1667,7 @@ export type Database = {
         | "Approved"
         | "Declined"
         | "Edits Requested"
+      recurrence_pattern: "daily" | "weekly" | "biweekly" | "monthly" | "custom"
       request_status:
         | "New"
         | "Reviewed"
@@ -1412,6 +1676,7 @@ export type Database = {
         | "Declined"
         | "Assessed"
         | "Archived"
+      time_off_status: "pending" | "approved" | "denied"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1540,6 +1805,14 @@ export const Constants = {
   public: {
     Enums: {
       business_role: ["owner", "worker"],
+      constraint_type: [
+        "max_jobs_per_day",
+        "max_hours_per_day",
+        "min_time_between_jobs",
+        "max_travel_time",
+        "business_hours",
+        "buffer_time",
+      ],
       invoice_status: ["Draft", "Sent", "Paid", "Overdue"],
       job_status: [
         "Scheduled",
@@ -1565,6 +1838,7 @@ export const Constants = {
         "Declined",
         "Edits Requested",
       ],
+      recurrence_pattern: ["daily", "weekly", "biweekly", "monthly", "custom"],
       request_status: [
         "New",
         "Reviewed",
@@ -1574,6 +1848,7 @@ export const Constants = {
         "Assessed",
         "Archived",
       ],
+      time_off_status: ["pending", "approved", "denied"],
     },
   },
 } as const

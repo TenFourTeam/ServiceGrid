@@ -224,3 +224,22 @@ verify_jwt = false
 
 [functions.predict-scheduling]
 verify_jwt = false
+
+# Phase 6: Advanced Scheduling Features
+[functions.team-availability-crud]
+verify_jwt = false
+
+[functions.time-off-crud]
+verify_jwt = false
+
+[functions.business-constraints-crud]
+verify_jwt = false
+
+[functions.recurring-jobs-crud]
+verify_jwt = false
+
+[functions.generate-recurring-jobs]
+verify_jwt = false
+
+[functions.check-scheduling-capacity]
+verify_jwt = false
