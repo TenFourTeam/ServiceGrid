@@ -16,10 +16,10 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
-    if (!openaiApiKey) {
-      throw new Error('OpenAI API key not configured');
+    if (!lovableApiKey) {
+      throw new Error('Lovable AI API key not configured');
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -70,7 +70,7 @@ serve(async (req) => {
       averageJobsPerDay: jobs.length / 90,
     };
 
-    // Call OpenAI for predictions
+    // Call Lovable AI (Gemini 2.5) for predictions
     const prompt = `Analyze this service business scheduling data and provide predictions for the next 30 days.
 
 Historical patterns (last 90 days):
@@ -94,29 +94,30 @@ Format your response as JSON with these keys:
   "routeOpportunities": ["opportunity1", "opportunity2"]
 }`;
 
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
+        'Authorization': `Bearer ${lovableApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: 'You are a scheduling analytics expert. Always respond with valid JSON.' },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.7,
         response_format: { type: 'json_object' }
       }),
     });
 
-    if (!openaiResponse.ok) {
-      throw new Error(`OpenAI API error: ${openaiResponse.statusText}`);
+    if (!aiResponse.ok) {
+      const errorText = await aiResponse.text();
+      console.error('Lovable AI Gateway error:', aiResponse.status, errorText);
+      throw new Error(`AI Gateway error: ${aiResponse.statusText}`);
     }
 
-    const openaiData = await openaiResponse.json();
-    const predictions = JSON.parse(openaiData.choices[0].message.content);
+    const aiData = await aiResponse.json();
+    const predictions = JSON.parse(aiData.choices[0].message.content);
 
     return new Response(JSON.stringify({
       patterns,
