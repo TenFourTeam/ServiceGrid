@@ -1,6 +1,6 @@
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Menu, Settings, LogOut, Shield, FileText, Calendar as CalendarIcon, Receipt, Users, Wrench, Clock, ClipboardList, UserPlus } from "lucide-react";
+import { Menu, Settings, LogOut, Shield, FileText, Calendar as CalendarIcon, Receipt, Users, Wrench, Clock, ClipboardList, UserPlus, BarChart3 } from "lucide-react";
 import { useNavigate, NavLink, useLocation } from "react-router-dom";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useUser } from "@clerk/clerk-react";
@@ -21,6 +21,7 @@ const coreNavItems = [
   { title: "Calendar", url: "/calendar", icon: CalendarIcon, workerAccess: true },
   { title: "Timesheet", url: "/timesheet", icon: Clock, workerAccess: true },
   { title: "Team", url: "/team", icon: Shield, workerAccess: false },
+  { title: "Analytics", url: "/analytics", icon: BarChart3, workerAccess: false },
 ];
 
 // Business navigation items (Group 2)
