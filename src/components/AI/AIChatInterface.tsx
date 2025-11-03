@@ -6,6 +6,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
+import { TypingIndicator } from './TypingIndicator';
+import { ConversationStarters } from './ConversationStarters';
 import { Sparkles, Trash2, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -26,6 +28,7 @@ export function AIChatInterface({
     messages,
     isStreaming,
     currentStreamingMessage,
+    currentToolName,
     conversationId,
     sendMessage,
     stopStreaming,
@@ -152,23 +155,39 @@ export function AIChatInterface({
           <div className="flex-1 flex flex-col min-w-0">
             {/* Messages */}
             <ScrollArea className="flex-1 px-4 py-6" ref={scrollRef}>
-              {messages.length === 0 && !currentStreamingMessage && (
-                <div className="h-full flex items-center justify-center">
-                  <div className="text-center max-w-md">
+              {messages.length === 0 && !currentStreamingMessage && !isStreaming && (
+                <div className="h-full flex items-center justify-center py-8">
+                  <div className="text-center max-w-2xl w-full">
                     <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
                       <Sparkles className="w-8 h-8 text-purple-600" />
                     </div>
                     <h3 className="text-lg font-semibold mb-2">AI Assistant Ready</h3>
-                    <p className="text-sm text-muted-foreground mb-6">
+                    <p className="text-sm text-muted-foreground mb-8">
                       I can help you schedule jobs, check availability, and optimize your routes.
                     </p>
+                    <ConversationStarters
+                      currentPage={context?.currentPage}
+                      onStarterClick={(msg) => sendMessage(msg, context)}
+                    />
                   </div>
                 </div>
               )}
 
               {messages.map(msg => (
-                <ChatMessage key={msg.id} message={msg} />
+                <ChatMessage 
+                  key={msg.id} 
+                  message={msg}
+                  onActionExecute={async (action) => {
+                    // Execute action by sending it as a message
+                    await sendMessage(action, context);
+                  }}
+                />
               ))}
+
+              {/* Show typing indicator when streaming but no content yet */}
+              {isStreaming && !currentStreamingMessage && (
+                <TypingIndicator toolName={currentToolName} />
+              )}
 
               {currentStreamingMessage && (
                 <ChatMessage

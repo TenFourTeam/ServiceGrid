@@ -12,6 +12,10 @@ export interface Message {
     status: 'executing' | 'complete';
     result?: any;
   }>;
+  actions?: Array<{
+    action: string;
+    label: string;
+  }>;
 }
 
 interface UseAIChatOptions {
@@ -23,6 +27,7 @@ export function useAIChat(options?: UseAIChatOptions) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [currentStreamingMessage, setCurrentStreamingMessage] = useState('');
+  const [currentToolName, setCurrentToolName] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | undefined>(options?.conversationId);
   const abortControllerRef = useRef<AbortController | null>(null);
   const { businessId } = useBusinessContext();
@@ -95,8 +100,10 @@ export function useAIChat(options?: UseAIChatOptions) {
               } else if (data.type === 'token') {
                 fullContent += data.content;
                 setCurrentStreamingMessage(fullContent);
+                setCurrentToolName(null); // Clear tool name when streaming starts
               } else if (data.type === 'tool_call') {
                 // Show tool execution indicator
+                setCurrentToolName(data.tool);
                 setMessages(prev => {
                   const lastMsg = prev[prev.length - 1];
                   if (lastMsg?.id === assistantMessageId) {
@@ -140,13 +147,14 @@ export function useAIChat(options?: UseAIChatOptions) {
                   return prev;
                 });
               } else if (data.type === 'done') {
-                // Finalize message
+                // Finalize message with parsed actions
+                const { cleanContent, actions } = parseMessageActions(fullContent);
                 setMessages(prev => {
                   const lastMsg = prev[prev.length - 1];
                   if (lastMsg?.id === assistantMessageId) {
                     return [
                       ...prev.slice(0, -1),
-                      { ...lastMsg, content: fullContent }
+                      { ...lastMsg, content: cleanContent, actions }
                     ];
                   }
                   return [
@@ -154,12 +162,14 @@ export function useAIChat(options?: UseAIChatOptions) {
                     {
                       id: assistantMessageId,
                       role: 'assistant' as const,
-                      content: fullContent,
+                      content: cleanContent,
                       timestamp: new Date(),
+                      actions,
                     }
                   ];
                 });
                 setCurrentStreamingMessage('');
+                setCurrentToolName(null);
               } else if (data.type === 'error') {
                 throw new Error(data.error);
               }
@@ -203,9 +213,27 @@ export function useAIChat(options?: UseAIChatOptions) {
     messages,
     isStreaming,
     currentStreamingMessage,
+    currentToolName,
     conversationId,
     sendMessage,
     stopStreaming,
     clearMessages,
   };
+}
+
+// Helper function to parse action buttons from message content
+function parseMessageActions(content: string): { 
+  cleanContent: string; 
+  actions: Array<{ action: string; label: string }> 
+} {
+  const actions: Array<{ action: string; label: string }> = [];
+  
+  // Extract [BUTTON:action:label] syntax
+  const buttonRegex = /\[BUTTON:([^:]+):([^\]]+)\]/g;
+  const cleanContent = content.replace(buttonRegex, (match, action, label) => {
+    actions.push({ action: action.trim(), label: label.trim() });
+    return ''; // Remove button syntax from content
+  }).trim();
+  
+  return { cleanContent, actions };
 }

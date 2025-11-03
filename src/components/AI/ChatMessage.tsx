@@ -1,10 +1,12 @@
 import { Message } from '@/hooks/useAIChat';
 import { Bot, User, Loader2, CheckCircle2, Calendar, Users, MapPin, Clock, FileText, TrendingUp, AlertCircle, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ActionButton } from './ActionButton';
 
 interface ChatMessageProps {
   message: Message;
   isStreaming?: boolean;
+  onActionExecute?: (action: string) => Promise<void>;
 }
 
 const toolIconMap: Record<string, any> = {
@@ -42,7 +44,7 @@ function getToolInfo(toolName: string) {
   };
 }
 
-export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
+export function ChatMessage({ message, isStreaming, onActionExecute }: ChatMessageProps) {
   const isUser = message.role === 'user';
 
   return (
@@ -73,6 +75,20 @@ export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
               <span className="inline-block w-2 h-4 ml-1 bg-current animate-pulse" />
             )}
           </div>
+
+          {/* Action Buttons */}
+          {message.actions && message.actions.length > 0 && onActionExecute && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {message.actions.map((action, idx) => (
+                <ActionButton
+                  key={idx}
+                  action={action.action}
+                  label={action.label}
+                  onExecute={onActionExecute}
+                />
+              ))}
+            </div>
+          )}
 
           {/* Tool Execution Indicators */}
           {message.toolCalls && message.toolCalls.length > 0 && (
