@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Calendar, User, MapPin, Clock, TrendingUp, ChevronDown, Loader2 } from 'lucide-react';
+import { Calendar, User, MapPin, Clock, TrendingUp, ChevronDown, Loader2, Navigation } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -133,8 +133,8 @@ export function SchedulePreviewCard({
                       </div>
                     </CollapsibleContent>
                     {idx < jobs.length - 1 && job.travelTimeMinutes && job.travelTimeMinutes > 0 && (
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground py-1 px-3">
-                        <MapPin className="w-3 h-3" />
+                      <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground py-2">
+                        <Navigation className="w-3 h-3" />
                         {job.travelTimeMinutes} min travel
                       </div>
                     )}
@@ -183,9 +183,11 @@ export function SchedulePreviewCard({
                         </div>
                       </div>
                       {idx < jobs.length - 1 && job.travelTimeMinutes && job.travelTimeMinutes > 0 && (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground pl-3">
-                          <MapPin className="w-3 h-3" />
-                          🚗 {job.travelTimeMinutes} min travel to next job
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground pl-3">
+                          <Navigation className="w-3 h-3" />
+                          <div className="flex-1 border-t border-dashed border-muted-foreground/30" />
+                          <span>{job.travelTimeMinutes} min travel</span>
+                          <div className="flex-1 border-t border-dashed border-muted-foreground/30" />
                         </div>
                       )}
                     </div>
@@ -199,12 +201,15 @@ export function SchedulePreviewCard({
         {/* Actions */}
         <div className={cn(
           "flex gap-2 pt-2 border-t border-border",
-          isMobile && "flex-col"
+          isMobile && "flex-col sticky bottom-0 bg-card/95 backdrop-blur -mx-6 -mb-6 p-4 rounded-b-lg"
         )}>
           <Button
             onClick={handleApprove}
             disabled={isApproving}
-            className="flex-1 gap-2"
+            className={cn(
+              "flex-1 gap-2 bg-green-600 hover:bg-green-700 text-white",
+              isMobile && "h-12 touch-manipulation"
+            )}
           >
             {isApproving ? (
               <>
@@ -219,7 +224,7 @@ export function SchedulePreviewCard({
             onClick={onReject}
             variant="outline"
             disabled={isApproving}
-            className="flex-1"
+            className={cn("flex-1", isMobile && "h-12 touch-manipulation")}
           >
             ❌ Reject & Refine
           </Button>
@@ -228,7 +233,10 @@ export function SchedulePreviewCard({
               onClick={() => onViewCalendar(firstDate)}
               variant="secondary"
               disabled={isApproving}
-              className={cn("gap-2", isMobile ? "w-full" : "flex-shrink-0")}
+              className={cn(
+                "gap-2",
+                isMobile ? "w-full h-12 touch-manipulation" : "flex-shrink-0"
+              )}
             >
               <Calendar className="w-4 h-4" />
               View on Calendar

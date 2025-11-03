@@ -690,7 +690,7 @@ const tools: Record<string, Tool> = {
 
       // 4. Apply scheduling suggestions
       const results = [];
-      const failed = [];
+      const failedJobs = [];
       
       for (const suggestion of suggestions) {
         try {
@@ -710,7 +710,14 @@ const tools: Record<string, Tool> = {
           
           if (updateError) {
             console.error('[batch_schedule_jobs] Failed to update job:', suggestion.jobId, updateError);
-            failed.push({ jobId: suggestion.jobId, error: updateError.message });
+            const job = jobs.find(j => j.id === suggestion.jobId);
+            failedJobs.push({ 
+              jobId: suggestion.jobId, 
+              jobTitle: job?.title,
+              customerName: job?.customers?.name,
+              reason: 'update_failed',
+              details: updateError.message 
+            });
             continue;
           }
 
@@ -733,19 +740,53 @@ const tools: Record<string, Tool> = {
           results.push({
             jobId: suggestion.jobId,
             jobTitle: job?.title,
+            customerName: job?.customers?.name,
             success: true,
             scheduledTime: suggestion.recommendedStartTime,
             assignedTo: suggestion.assignedMemberId,
             reasoning: suggestion.reasoning,
-            priorityScore: suggestion.priorityScore
+            priorityScore: suggestion.priorityScore,
+            travelTimeMinutes: suggestion.travelTimeMinutes
           });
         } catch (err) {
           console.error('[batch_schedule_jobs] Error processing suggestion:', err);
-          failed.push({ jobId: suggestion.jobId, error: err.message });
+          const job = jobs.find(j => j.id === suggestion.jobId);
+          failedJobs.push({ 
+            jobId: suggestion.jobId, 
+            jobTitle: job?.title,
+            customerName: job?.customers?.name,
+            reason: 'processing_error',
+            details: err.message 
+          });
         }
       }
       
-      // 5. Log activity
+      // 5. Analyze failed jobs for detailed error reporting
+      for (const jobId of args.jobIds) {
+        if (!results.some(r => r.jobId === jobId) && !failedJobs.some(f => f.jobId === jobId)) {
+          const job = jobs.find(j => j.id === jobId);
+          const reasons = [];
+          
+          if (!job.customers?.address) {
+            reasons.push('missing_address');
+          }
+          if (!job.estimated_duration_minutes) {
+            reasons.push('missing_duration');
+          }
+          
+          failedJobs.push({
+            jobId,
+            jobTitle: job?.title,
+            customerName: job?.customers?.name,
+            reason: reasons.length > 0 ? reasons.join(', ') : 'no_suggestion_generated',
+            details: reasons.length > 0 
+              ? `Missing required data: ${reasons.join(', ')}` 
+              : 'AI could not find suitable time slot'
+          });
+        }
+      }
+      
+      // 6. Log activity
       await context.supabase.from('ai_activity_log').insert({
         business_id: context.businessId,
         user_id: context.userId,
@@ -755,7 +796,7 @@ const tools: Record<string, Tool> = {
           tool: 'batch_schedule_jobs',
           requested: args.jobIds.length,
           scheduled: results.length,
-          failed: failed.length,
+          failed: failedJobs.length,
           constraints: args.constraints
         },
         accepted: true
@@ -763,18 +804,174 @@ const tools: Record<string, Tool> = {
 
       console.info('[batch_schedule_jobs] Completed', {
         scheduled: results.length,
-        failed: failed.length
+        failed: failedJobs.length
       });
+
+      // Calculate time savings estimate
+      const estimatedTimeSaved = results.reduce((total, r) => 
+        total + (r.travelTimeMinutes || 0), 0
+      ) * 0.3; // 30% travel time reduction from optimization
 
       return {
         success: true,
         scheduled_count: results.length,
-        requested_count: args.jobIds.length,
+        total_requested: args.jobIds.length,
         results,
-        failed,
-        message: failed.length > 0 
-          ? `Scheduled ${results.length} of ${args.jobIds.length} jobs. ${failed.length} couldn't be scheduled.`
+        failed_jobs: failedJobs,
+        estimated_time_saved: Math.round(estimatedTimeSaved),
+        message: failedJobs.length > 0 
+          ? `Scheduled ${results.length} of ${args.jobIds.length} jobs. ${failedJobs.length} couldn't be scheduled.`
           : `Successfully scheduled all ${results.length} jobs.`
+      };
+    }
+  },
+
+  refine_schedule: {
+    name: 'refine_schedule',
+    description: 'Refine or adjust an existing schedule based on user feedback. Use when user rejects a schedule or wants modifications.',
+    parameters: {
+      type: 'object',
+      properties: {
+        jobIds: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Jobs to reschedule/adjust'
+        },
+        feedback: {
+          type: 'string',
+          description: 'User feedback like "move earlier", "spread across more days", "group by location"'
+        },
+        preferredDateRange: {
+          type: 'object',
+          properties: {
+            start: { type: 'string' },
+            end: { type: 'string' }
+          }
+        }
+      },
+      required: ['jobIds', 'feedback']
+    },
+    execute: async (args: any, context: any) => {
+      console.info('[refine_schedule] Refining schedule', { jobCount: args.jobIds.length, feedback: args.feedback });
+      
+      // 1. Analyze feedback to extract constraints
+      const feedbackLower = args.feedback.toLowerCase();
+      const refinementConstraints: any = {};
+      
+      if (feedbackLower.includes('earlier') || feedbackLower.includes('morning')) {
+        refinementConstraints.preferTimeWindow = 'morning';
+      }
+      if (feedbackLower.includes('later') || feedbackLower.includes('afternoon')) {
+        refinementConstraints.preferTimeWindow = 'afternoon';
+      }
+      if (feedbackLower.includes('spread') || feedbackLower.includes('distribute')) {
+        refinementConstraints.spreadAcrossDays = true;
+      }
+      if (feedbackLower.includes('group') || feedbackLower.includes('location')) {
+        refinementConstraints.groupByLocation = true;
+      }
+      if (feedbackLower.includes('urgent') || feedbackLower.includes('priority')) {
+        refinementConstraints.prioritizeUrgent = true;
+      }
+      
+      // 2. Get jobs to refine
+      const { data: jobs } = await context.supabase
+        .from('jobs')
+        .select('*, customers(name, address, preferred_days, preferred_time_window)')
+        .in('id', args.jobIds);
+      
+      // 3. Re-gather scheduling context
+      const dateRange = args.preferredDateRange || {
+        start: new Date().toISOString().split('T')[0],
+        end: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      };
+      
+      const [existingJobsRes, teamMembersRes, availabilityRes, timeOffRes, constraintsRes] = await Promise.all([
+        context.supabase.from('jobs').select('id, title, starts_at, ends_at, status, customers(address)').eq('business_id', context.businessId).gte('starts_at', `${dateRange.start}T00:00:00Z`).lte('starts_at', `${dateRange.end}T23:59:59Z`).neq('status', 'Cancelled').not('id', 'in', `(${args.jobIds.join(',')})`),
+        context.supabase.from('business_permissions').select('user_id, profiles(id, full_name, email)').eq('business_id', context.businessId),
+        context.supabase.from('team_availability').select('*').eq('business_id', context.businessId),
+        context.supabase.from('time_off_requests').select('*').eq('business_id', context.businessId).eq('status', 'approved').gte('end_date', dateRange.start).lte('start_date', dateRange.end),
+        context.supabase.from('business_constraints').select('*').eq('business_id', context.businessId).eq('is_active', true)
+      ]);
+      
+      // 4. Call ai-schedule-optimizer with refined constraints
+      const { data, error } = await context.supabase.functions.invoke('ai-schedule-optimizer', {
+        body: {
+          businessId: context.businessId,
+          unscheduledJobs: jobs,
+          existingJobs: existingJobsRes.data || [],
+          teamMembers: teamMembersRes.data || [],
+          constraints: [
+            ...(constraintsRes.data || []),
+            { userFeedback: args.feedback, refinementConstraints }
+          ],
+          availability: availabilityRes.data || [],
+          timeOff: timeOffRes.data || [],
+          customerPreferences: jobs?.map(j => j.customers).filter(Boolean)
+        }
+      });
+      
+      if (error) throw error;
+      
+      // 5. Apply refined schedule
+      const suggestions = data.suggestions || [];
+      const results = [];
+      
+      for (const suggestion of suggestions) {
+        const { error: updateError } = await context.supabase
+          .from('jobs')
+          .update({
+            starts_at: suggestion.recommendedStartTime,
+            ends_at: suggestion.recommendedEndTime,
+            status: 'Scheduled',
+            ai_suggested: true,
+            scheduling_score: suggestion.priorityScore
+          })
+          .eq('id', suggestion.jobId);
+        
+        if (!updateError) {
+          if (suggestion.assignedMemberId) {
+            await context.supabase.from('job_assignments').upsert({
+              job_id: suggestion.jobId,
+              user_id: suggestion.assignedMemberId,
+              assigned_by: context.userId
+            });
+          }
+          
+          results.push({
+            jobId: suggestion.jobId,
+            success: true,
+            scheduledTime: suggestion.recommendedStartTime,
+            assignedTo: suggestion.assignedMemberId,
+            reasoning: suggestion.reasoning,
+            travelTimeMinutes: suggestion.travelTimeMinutes
+          });
+        }
+      }
+      
+      // 6. Log refinement activity
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'refine_schedule',
+        description: `Refined schedule for ${results.length} jobs based on: "${args.feedback}"`,
+        metadata: {
+          tool: 'refine_schedule',
+          job_ids: args.jobIds,
+          feedback: args.feedback,
+          scheduled_count: results.length,
+          applied_constraints: refinementConstraints
+        },
+        accepted: true
+      });
+      
+      return {
+        success: true,
+        scheduled_count: results.length,
+        total_requested: args.jobIds.length,
+        results,
+        estimated_time_saved: data.estimatedTimeSaved || 0,
+        applied_constraints: refinementConstraints
       };
     }
   }
@@ -843,13 +1040,14 @@ Available Tools:
 3. get_schedule_summary - Overview of jobs in date range
 4. auto_schedule_job - Schedule single job with basic optimization
 5. batch_schedule_jobs - ⭐ SMART BATCH SCHEDULER - Schedule multiple jobs at once with full AI optimization
-6. create_job_from_request - Convert service request to job
-7. optimize_route_for_date - Optimize job order for efficiency
-8. get_scheduling_conflicts - Find overlapping bookings
-9. get_customer_details - Get customer history and info
-10. update_job_status - Change job status
-11. get_capacity_forecast - Predict workload and availability
-12. reschedule_job - Move job to different time
+6. refine_schedule - ⭐ INTELLIGENT REFINEMENT - Adjust schedule based on user feedback
+7. create_job_from_request - Convert service request to job
+8. optimize_route_for_date - Optimize job order for efficiency
+9. get_scheduling_conflicts - Find overlapping bookings
+10. get_customer_details - Get customer history and info
+11. update_job_status - Change job status
+12. get_capacity_forecast - Predict workload and availability
+13. reschedule_job - Move job to different time
 
 SCHEDULING WORKFLOW (IMPORTANT):
 When user asks to schedule jobs, follow this flow:
@@ -881,6 +1079,65 @@ The batch_schedule_jobs tool is SMART:
 ✅ Schedules urgent jobs (priority 1-2) first
 ✅ Leaves buffers between jobs for travel
 ✅ Checks business constraints (max jobs/day, hours)
+
+SCHEDULE PREVIEW FORMATTING:
+After batch scheduling, ALWAYS show results with this special syntax:
+[SCHEDULE_PREVIEW:{"scheduledJobs":[{"jobId":"...","title":"...","customerName":"...","startTime":"...","endTime":"...","assignedTo":"...","assignedToName":"...","reasoning":"...","priorityScore":0.95,"travelTimeMinutes":15}],"totalJobsRequested":5,"estimatedTimeSaved":45}]
+
+REFINEMENT WORKFLOW:
+When user rejects a schedule or wants adjustments:
+1. Use refine_schedule tool with their feedback
+2. Explain what constraints you applied based on feedback
+3. Show new [SCHEDULE_PREVIEW:...] with refined schedule
+4. Highlight what changed: "I moved 3 jobs earlier and grouped 2 by location"
+
+Example refinement responses:
+User: "Move these earlier in the day"
+→ Use refine_schedule with feedback="move earlier in the day"
+→ "I've rescheduled these for morning time slots (8 AM - 12 PM)..."
+
+User: "Spread them across more days"
+→ Use refine_schedule with feedback="spread across more days"
+→ "I've distributed these across 5 days instead of 2..."
+
+ERROR HANDLING:
+When scheduling fails partially or completely, provide structured feedback:
+
+PARTIAL SUCCESS (some jobs scheduled):
+"✅ **Scheduled {X} of {Y} jobs**
+
+[Show SCHEDULE_PREVIEW for successful ones]
+
+⚠️ **Could not schedule {Z} jobs:**
+
+❌ **{Job Title}** - {Customer Name}
+   Reason: {specific reason}
+   Solution: {actionable fix}
+   
+[BUTTON:retry_next_week:Try Next Week]
+[BUTTON:edit_job:Fix Missing Data]"
+
+INSUFFICIENT CAPACITY:
+"⚠️ **Team At Capacity**
+
+Your team is fully booked for the requested period.
+Options:
+1. Schedule into next available week
+2. Prioritize urgent jobs only
+
+[BUTTON:schedule_next_week:Schedule Next Week]
+[BUTTON:prioritize_urgent:Schedule Urgent Only]"
+
+MISSING DATA:
+"⚠️ **Missing Required Information**
+
+{X} jobs cannot be scheduled without complete data:
+
+❌ **{Job Title}**
+   - Missing: Customer address
+   - Needed for: Route optimization
+   
+[BUTTON:add_addresses:Add Missing Data]"
 
 RESPONSE STYLE:
 1. Be proactive and actionable - don't just inform, offer to act
