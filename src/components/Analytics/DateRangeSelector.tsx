@@ -18,13 +18,14 @@ export function DateRangeSelector({ value, onChange }: DateRangeSelectorProps) {
   ];
 
   return (
-    <div className="flex items-center gap-2">
-      <div className="flex gap-2">
+    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+      <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0 -mx-2 px-2 sm:mx-0 sm:px-0">
         {presets.map((preset) => (
           <Button
             key={preset.label}
             variant="outline"
             size="sm"
+            className="whitespace-nowrap flex-shrink-0"
             onClick={() => onChange({
               start: subDays(new Date(), preset.days),
               end: new Date(),
@@ -37,9 +38,15 @@ export function DateRangeSelector({ value, onChange }: DateRangeSelectorProps) {
 
       <Popover>
         <PopoverTrigger asChild>
-          <Button variant="outline" size="sm" className={cn('justify-start text-left font-normal')}>
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {format(value.start, 'MMM d')} - {format(value.end, 'MMM d, yyyy')}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className={cn('justify-start text-left font-normal w-full sm:w-auto')}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
+            <span className="truncate">
+              {format(value.start, 'MMM d')} - {format(value.end, 'MMM d, yyyy')}
+            </span>
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="end">

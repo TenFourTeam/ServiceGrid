@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface AISuggestionChartProps {
@@ -10,6 +11,15 @@ interface AISuggestionChartProps {
 }
 
 export function AISuggestionChart({ data }: AISuggestionChartProps) {
+  const [isSmallScreen, setIsSmallScreen] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkSize = () => setIsSmallScreen(window.innerWidth < 640);
+    checkSize();
+    window.addEventListener('resize', checkSize);
+    return () => window.removeEventListener('resize', checkSize);
+  }, []);
+
   const pending = data.totalSuggestions - data.accepted - data.rejected;
 
   const chartData = [
@@ -19,7 +29,7 @@ export function AISuggestionChart({ data }: AISuggestionChartProps) {
   ].filter(item => item.value > 0);
 
   return (
-    <ResponsiveContainer width="100%" height={350}>
+    <ResponsiveContainer width="100%" height={isSmallScreen ? 250 : 350}>
       <PieChart>
         <Pie
           data={chartData}

@@ -56,11 +56,11 @@ export default function AnalyticsDashboard({ dateRange, onDateRangeChange }: Ana
       {/* Key Metrics Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
             <CardTitle className="text-sm font-medium">Efficiency Score</CardTitle>
             <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6">
             <div className="text-2xl font-bold">{overview.efficiencyScore.toFixed(1)}%</div>
             <p className="text-xs text-muted-foreground mt-1">
               Overall scheduling efficiency
@@ -69,11 +69,11 @@ export default function AnalyticsDashboard({ dateRange, onDateRangeChange }: Ana
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
             <CardTitle className="text-sm font-medium">On-Time Rate</CardTitle>
             <Zap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6">
             <div className="text-2xl font-bold">{overview.onTimeCompletionRate.toFixed(1)}%</div>
             <p className="text-xs text-muted-foreground mt-1">
               {overview.completedJobs} of {overview.totalJobs} jobs
@@ -82,11 +82,11 @@ export default function AnalyticsDashboard({ dateRange, onDateRangeChange }: Ana
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
             <CardTitle className="text-sm font-medium">Avg Travel Time</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6">
             <div className="text-2xl font-bold">{overview.averageTravelTime.toFixed(0)} min</div>
             <p className="text-xs text-muted-foreground mt-1">
               Per job
@@ -95,11 +95,11 @@ export default function AnalyticsDashboard({ dateRange, onDateRangeChange }: Ana
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
             <CardTitle className="text-sm font-medium">Total Jobs</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6">
             <div className="text-2xl font-bold">{overview.totalJobs}</div>
             <p className="text-xs text-muted-foreground mt-1">
               In selected period

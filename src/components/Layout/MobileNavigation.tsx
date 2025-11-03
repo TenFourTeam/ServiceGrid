@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Calendar as CalendarIcon, Clock, Users, Settings } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, Users, Settings, BarChart3 } from "lucide-react";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -8,6 +8,7 @@ const getNavItems = (t: (key: string) => string) => [
   { title: t('navigation.calendar'), url: "/calendar", icon: CalendarIcon, workerAccess: true },
   { title: t('navigation.timesheet'), url: "/timesheet", icon: Clock, workerAccess: true },
   { title: t('navigation.team'), url: "/team", icon: Users, workerAccess: false },
+  { title: t('navigation.analytics'), url: "/analytics", icon: BarChart3, workerAccess: false },
 ];
 
 export default function MobileNavigation() {

@@ -34,24 +34,26 @@ export default function AnalyticsPage() {
 
   return (
     <AppLayout title={t('navigation.analytics')} businessId={businessId}>
-      <div className="flex-1 p-6 space-y-6">
+      <div className="flex-1 p-4 sm:p-6 space-y-4 sm:space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h1>
-            <p className="text-muted-foreground mt-1">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Analytics Dashboard</h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">
               Insights into your scheduling efficiency, team utilization, and performance
             </p>
           </div>
         </div>
 
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="team">Team</TabsTrigger>
-            <TabsTrigger value="routes">Routes</TabsTrigger>
-            <TabsTrigger value="ai">AI Performance</TabsTrigger>
-            <TabsTrigger value="predictions">Predictions</TabsTrigger>
-          </TabsList>
+        <Tabs defaultValue="overview" className="space-y-4 sm:space-y-6">
+          <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+            <TabsList className="inline-flex w-auto">
+              <TabsTrigger value="overview" className="whitespace-nowrap">Overview</TabsTrigger>
+              <TabsTrigger value="team" className="whitespace-nowrap">Team</TabsTrigger>
+              <TabsTrigger value="routes" className="whitespace-nowrap">Routes</TabsTrigger>
+              <TabsTrigger value="ai" className="whitespace-nowrap">AI Performance</TabsTrigger>
+              <TabsTrigger value="predictions" className="whitespace-nowrap">Predictions</TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="overview" className="space-y-4">
             <Suspense fallback={<LoadingSkeleton />}>

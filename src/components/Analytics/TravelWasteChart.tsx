@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { format } from 'date-fns';
 
@@ -11,13 +12,22 @@ interface TravelWasteChartProps {
 }
 
 export function TravelWasteChart({ data }: TravelWasteChartProps) {
+  const [isSmallScreen, setIsSmallScreen] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkSize = () => setIsSmallScreen(window.innerWidth < 640);
+    checkSize();
+    window.addEventListener('resize', checkSize);
+    return () => window.removeEventListener('resize', checkSize);
+  }, []);
+
   const chartData = data.map(item => ({
     weekLabel: format(new Date(item.week), 'MMM d'),
     travelTime: item.travelTime,
   }));
 
   return (
-    <ResponsiveContainer width="100%" height={350}>
+    <ResponsiveContainer width="100%" height={isSmallScreen ? 250 : 350}>
       <AreaChart data={chartData}>
         <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
         <XAxis 

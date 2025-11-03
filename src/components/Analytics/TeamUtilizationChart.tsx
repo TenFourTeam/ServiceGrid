@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import type { TeamMemberUtilization } from '@/hooks/useTeamUtilization';
 
@@ -6,6 +7,15 @@ interface TeamUtilizationChartProps {
 }
 
 export function TeamUtilizationChart({ data }: TeamUtilizationChartProps) {
+  const [isSmallScreen, setIsSmallScreen] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkSize = () => setIsSmallScreen(window.innerWidth < 640);
+    checkSize();
+    window.addEventListener('resize', checkSize);
+    return () => window.removeEventListener('resize', checkSize);
+  }, []);
+
   const getUtilizationColor = (rate: number) => {
     if (rate < 50) return 'hsl(var(--destructive))'; // Red - underutilized
     if (rate < 75) return 'hsl(var(--chart-3))'; // Yellow - moderate
@@ -19,7 +29,7 @@ export function TeamUtilizationChart({ data }: TeamUtilizationChartProps) {
   }));
 
   return (
-    <ResponsiveContainer width="100%" height={350}>
+    <ResponsiveContainer width="100%" height={isSmallScreen ? 250 : 350}>
       <BarChart data={chartData} layout="vertical">
         <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
         <XAxis 
@@ -31,7 +41,7 @@ export function TeamUtilizationChart({ data }: TeamUtilizationChartProps) {
         <YAxis 
           type="category" 
           dataKey="name" 
-          width={120}
+          width={isSmallScreen ? 80 : 120}
           className="text-xs"
           tick={{ fill: 'hsl(var(--muted-foreground))' }}
         />
