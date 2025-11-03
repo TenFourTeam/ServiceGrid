@@ -27,7 +27,7 @@ const tools: Record<string, Tool> = {
         .from('jobs')
         .select('id, title, customer_id, notes, created_at, customers(name, address)')
         .eq('business_id', context.businessId)
-        .eq('status', 'Unscheduled')
+        .is('starts_at', null)
         .order('created_at', { ascending: false })
         .limit(20);
       
@@ -812,11 +812,29 @@ const tools: Record<string, Tool> = {
         total + (r.travelTimeMinutes || 0), 0
       ) * 0.3; // 30% travel time reduction from optimization
 
+      // Format response for schedule preview
+      const scheduledJobs = results.map(r => {
+        const job = jobs.find(j => j.id === r.jobId);
+        const assignedMember = teamMembers?.find(m => m.user_id === r.assignedTo);
+        return {
+          jobId: r.jobId,
+          title: r.jobTitle || job?.title || 'Unknown Job',
+          customerName: r.customerName || job?.customers?.name || 'Unknown Customer',
+          startTime: r.scheduledTime,
+          endTime: new Date(new Date(r.scheduledTime).getTime() + (job?.estimated_duration_minutes || 60) * 60000).toISOString(),
+          assignedTo: r.assignedTo,
+          assignedToName: assignedMember?.profiles?.full_name || assignedMember?.profiles?.email || 'Unassigned',
+          reasoning: r.reasoning,
+          priorityScore: r.priorityScore || 0.9,
+          travelTimeMinutes: r.travelTimeMinutes || 0
+        };
+      });
+
       return {
         success: true,
         scheduled_count: results.length,
         total_requested: args.jobIds.length,
-        results,
+        scheduledJobs,
         failed_jobs: failedJobs,
         estimated_time_saved: Math.round(estimatedTimeSaved),
         message: failedJobs.length > 0 
@@ -1214,6 +1232,10 @@ INTELLIGENCE NOTES:
           const reader = response.body!.getReader();
           const decoder = new TextDecoder();
           let buffer = '';
+          
+          // Buffer for tool calls (they stream in chunks)
+          let toolCallsBuffer: Record<number, any> = {};
+          let isCollectingToolCalls = false;
 
           while (true) {
             const { done, value } = await reader.read();
@@ -1239,14 +1261,48 @@ INTELLIGENCE NOTES:
                     );
                   }
 
-                  // Handle tool calls
+                  // Buffer tool calls as they stream in
                   if (delta?.tool_calls) {
+                    isCollectingToolCalls = true;
+                    
                     for (const toolCall of delta.tool_calls) {
-                      if (toolCall.function?.name) {
-                        const tool = tools[toolCall.function.name];
-                        if (tool) {
+                      const index = toolCall.index || 0;
+                      
+                      if (!toolCallsBuffer[index]) {
+                        toolCallsBuffer[index] = {
+                          id: toolCall.id || '',
+                          type: toolCall.type || 'function',
+                          function: {
+                            name: toolCall.function?.name || '',
+                            arguments: toolCall.function?.arguments || ''
+                          }
+                        };
+                      } else {
+                        // Append to existing buffer
+                        if (toolCall.function?.name) {
+                          toolCallsBuffer[index].function.name += toolCall.function.name;
+                        }
+                        if (toolCall.function?.arguments) {
+                          toolCallsBuffer[index].function.arguments += toolCall.function.arguments;
+                        }
+                      }
+                    }
+                  }
+
+                  // Execute buffered tool calls when complete
+                  if (parsed.choices?.[0]?.finish_reason === 'tool_calls' && isCollectingToolCalls) {
+                    for (const index in toolCallsBuffer) {
+                      const toolCall = toolCallsBuffer[index];
+                      const tool = tools[toolCall.function.name];
+                      
+                      if (tool) {
+                        try {
                           controller.enqueue(
-                            encoder.encode(`data: ${JSON.stringify({ type: 'tool_call', tool: tool.name, status: 'executing' })}\n\n`)
+                            encoder.encode(`data: ${JSON.stringify({ 
+                              type: 'tool_call', 
+                              tool: tool.name, 
+                              status: 'executing' 
+                            })}\n\n`)
                           );
 
                           const args = JSON.parse(toolCall.function.arguments || '{}');
@@ -1259,11 +1315,29 @@ INTELLIGENCE NOTES:
                           const result = await tool.execute(args, context);
                           
                           controller.enqueue(
-                            encoder.encode(`data: ${JSON.stringify({ type: 'tool_result', tool: tool.name, result })}\n\n`)
+                            encoder.encode(`data: ${JSON.stringify({ 
+                              type: 'tool_result', 
+                              tool: tool.name, 
+                              result,
+                              success: true 
+                            })}\n\n`)
+                          );
+                        } catch (error) {
+                          console.error(`Tool execution failed: ${tool.name}`, error);
+                          controller.enqueue(
+                            encoder.encode(`data: ${JSON.stringify({ 
+                              type: 'tool_error', 
+                              tool: tool.name, 
+                              error: error.message 
+                            })}\n\n`)
                           );
                         }
                       }
                     }
+                    
+                    // Reset buffer
+                    toolCallsBuffer = {};
+                    isCollectingToolCalls = false;
                   }
                 } catch (e) {
                   console.error('Error parsing streaming data:', e);
