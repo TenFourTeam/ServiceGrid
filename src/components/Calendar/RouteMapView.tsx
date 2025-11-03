@@ -8,9 +8,12 @@ import { JobNavigationPanel } from './JobNavigationPanel';
 import { MapLegend } from './MapLegend';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/Button';
-import { MapPin, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
+import { MapPin, ChevronLeft, ChevronRight, AlertCircle, Sparkles, Loader2, CheckSquare, Check, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
+import { Card, CardContent } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { useJobRouteOptimization } from '@/hooks/useJobRouteOptimization';
 
 interface RouteMapViewProps {
   date: Date;
@@ -24,17 +27,23 @@ interface RouteMapViewProps {
  */
 function MapContent({ 
   jobsWithCoords, 
-  selectedJobId, 
+  selectedJobId,
+  selectedJobIds,
+  isMultiSelectMode,
   selectedMemberId, 
   onJobClick,
   onMarkerClick,
+  onToggleSelection,
   mapRef
 }: {
   jobsWithCoords: Array<{ job: Job; coords: { lat: number; lng: number } }>;
   selectedJobId: string | null;
+  selectedJobIds: Set<string>;
+  isMultiSelectMode: boolean;
   selectedMemberId?: string | null;
   onJobClick?: (job: Job) => void;
   onMarkerClick: (job: Job, index: number) => void;
+  onToggleSelection: (jobId: string) => void;
   mapRef: React.MutableRefObject<google.maps.Map | null>;
 }) {
   const map = useMap();
@@ -54,17 +63,23 @@ function MapContent({
           key={`${job.id}-${coords.lat}-${coords.lng}`}
           position={coords}
           onClick={() => {
-            // Batch state updates with startTransition
-            startTransition(() => {
-              onMarkerClick(job, index);
-            });
-            if (onJobClick) onJobClick(job);
+            if (isMultiSelectMode) {
+              // Multi-select mode: toggle selection
+              onToggleSelection(job.id);
+            } else {
+              // Batch state updates with startTransition
+              startTransition(() => {
+                onMarkerClick(job, index);
+              });
+              if (onJobClick) onJobClick(job);
+            }
           }}
         >
           <JobMarker 
             job={job} 
             selectedMemberId={selectedMemberId}
             isSelected={job.id === selectedJobId}
+            isMultiSelected={selectedJobIds.has(job.id)}
           />
         </AdvancedMarker>
       ))}
@@ -87,6 +102,15 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
     const saved = localStorage.getItem('jobNavigationPanelCollapsed');
     return saved ? JSON.parse(saved) : false;
   });
+
+  // Multi-selection state
+  const [selectedJobIds, setSelectedJobIds] = useState<Set<string>>(new Set());
+  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
+  
+  // Route optimization
+  const { mutate: optimizeRoute, isPending: isOptimizing } = useJobRouteOptimization();
+  const [optimizationResult, setOptimizationResult] = useState<any>(null);
+  const [showOptimizationDialog, setShowOptimizationDialog] = useState(false);
 
   // Refs for performance optimization
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -220,6 +244,40 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
     focusJob(jobId);
   };
 
+  const toggleJobSelection = (jobId: string) => {
+    setSelectedJobIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(jobId)) {
+        newSet.delete(jobId);
+      } else {
+        newSet.add(jobId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleOptimizeRoute = () => {
+    const selectedJobs = jobsWithCoords
+      .filter(({ job }) => selectedJobIds.has(job.id))
+      .map(({ job }) => job);
+    
+    if (selectedJobs.length < 2) return;
+    
+    optimizeRoute({
+      businessId: selectedJobs[0].businessId,
+      jobs: selectedJobs,
+      constraints: {
+        startTime: '08:00',
+        endTime: '17:00'
+      }
+    }, {
+      onSuccess: (result) => {
+        setOptimizationResult(result);
+        setShowOptimizationDialog(true);
+      }
+    });
+  };
+
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -329,6 +387,71 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
         {/* Map Panel */}
         <ResizablePanel defaultSize={isNavigationPanelCollapsed ? 95 : 80}>
           <div className="relative w-full h-full">
+            {/* Multi-Select Mode Toggle */}
+            {!isMultiSelectMode && jobsWithCoords.length > 1 && (
+              <div className="absolute top-4 left-4 z-10">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setIsMultiSelectMode(true)}
+                  className="bg-background/95 backdrop-blur-sm shadow-lg"
+                >
+                  <CheckSquare className="h-4 w-4 mr-2" />
+                  Select Multiple Jobs
+                </Button>
+              </div>
+            )}
+
+            {/* Multi-Select Toolbar */}
+            {isMultiSelectMode && (
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg border p-3">
+                <div className="flex items-center gap-3">
+                  <Badge variant="secondary" className="font-medium">
+                    {selectedJobIds.size} job{selectedJobIds.size !== 1 ? 's' : ''} selected
+                  </Badge>
+                  
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    disabled={selectedJobIds.size < 2 || isOptimizing}
+                    onClick={handleOptimizeRoute}
+                  >
+                    {isOptimizing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Optimizing...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Generate Route
+                      </>
+                    )}
+                  </Button>
+                  
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setSelectedJobIds(new Set())}
+                    disabled={selectedJobIds.size === 0}
+                  >
+                    Clear
+                  </Button>
+                  
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setIsMultiSelectMode(false);
+                      setSelectedJobIds(new Set());
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <Map
               mapId="d174fd11e8cacedb35e319da"
               defaultCenter={mapCenter}
@@ -341,6 +464,8 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
               <MapContent
                 jobsWithCoords={jobsWithCoords}
                 selectedJobId={selectedJobId}
+                selectedJobIds={selectedJobIds}
+                isMultiSelectMode={isMultiSelectMode}
                 selectedMemberId={selectedMemberId}
                 onJobClick={onJobClick}
                 onMarkerClick={(job, index) => {
@@ -348,12 +473,13 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
                   setSelectedJobId(job.id);
                   setCurrentJobIndex(index);
                 }}
+                onToggleSelection={toggleJobSelection}
                 mapRef={mapRef}
               />
             </Map>
 
             {/* Job Info Window positioned over map */}
-            {selectedJob && (
+            {selectedJob && !isMultiSelectMode && (
               <div className="absolute top-4 right-4 z-10 w-80 pointer-events-auto">
                 <JobInfoWindow
                   job={selectedJob}
@@ -369,7 +495,7 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
             )}
 
             {/* Navigation Controls */}
-            {jobsWithCoords.length > 1 && (
+            {jobsWithCoords.length > 1 && !isMultiSelectMode && (
               <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg border p-2">
                 <Button
                   variant="ghost"
@@ -399,6 +525,109 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>
+
+      {/* Optimization Results Dialog */}
+      <Dialog open={showOptimizationDialog} onOpenChange={setShowOptimizationDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              AI Route Optimization Results
+            </DialogTitle>
+            <DialogDescription>
+              Your route has been optimized for maximum efficiency
+            </DialogDescription>
+          </DialogHeader>
+
+          {optimizationResult && (
+            <div className="space-y-6">
+              {/* Metrics */}
+              <div className="grid grid-cols-2 gap-4">
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="text-sm text-muted-foreground">Time Saved</div>
+                    <div className="text-2xl font-bold text-green-600">
+                      {optimizationResult.estimatedTimeSaved} min
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="text-sm text-muted-foreground">Total Travel Time</div>
+                    <div className="text-2xl font-bold">
+                      {optimizationResult.estimatedTravelTime} min
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* AI Reasoning */}
+              <div className="space-y-2">
+                <h4 className="font-semibold">Why this route?</h4>
+                <p className="text-sm text-muted-foreground">
+                  {optimizationResult.reasoning}
+                </p>
+              </div>
+
+              {/* Optimized Order */}
+              <div className="space-y-2">
+                <h4 className="font-semibold">Optimized Route</h4>
+                <div className="space-y-2">
+                  {optimizationResult.optimizedJobs.map((job: Job, index: number) => (
+                    <div key={job.id} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                      <Badge variant="secondary" className="font-bold">
+                        {index + 1}
+                      </Badge>
+                      <div className="flex-1">
+                        <div className="font-medium">{job.title || 'Untitled Job'}</div>
+                        <div className="text-sm text-muted-foreground">{job.address}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Suggestions */}
+              {optimizationResult.suggestions?.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="font-semibold">Additional Tips</h4>
+                  <ul className="space-y-1 text-sm text-muted-foreground">
+                    {optimizationResult.suggestions.map((suggestion: string, index: number) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <Check className="h-4 w-4 mt-0.5 text-primary flex-shrink-0" />
+                        <span>{suggestion}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-2">
+                <Button
+                  variant="secondary"
+                  className="flex-1"
+                  onClick={() => setShowOptimizationDialog(false)}
+                >
+                  Close
+                </Button>
+                <Button
+                  variant="primary"
+                  className="flex-1"
+                  onClick={() => {
+                    // Apply the optimized order - future enhancement
+                    setShowOptimizationDialog(false);
+                    setIsMultiSelectMode(false);
+                    setSelectedJobIds(new Set());
+                  }}
+                >
+                  Apply Route
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </APIProvider>
   );
 }

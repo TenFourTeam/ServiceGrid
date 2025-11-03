@@ -1,18 +1,20 @@
 import { Job } from '@/types';
 import { getTeamMemberColor } from '@/utils/teamColors';
-import { MapPin } from 'lucide-react';
+import { MapPin, Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface JobMarkerProps {
   job: Job;
   selectedMemberId?: string | null;
   isSelected?: boolean;
+  isMultiSelected?: boolean;
 }
 
 /**
  * Custom map marker for jobs
  * Color-coded by status, priority, and team member
  */
-export function JobMarker({ job, selectedMemberId, isSelected = false }: JobMarkerProps) {
+export function JobMarker({ job, selectedMemberId, isSelected = false, isMultiSelected = false }: JobMarkerProps) {
   // Determine marker color based on priority and status
   const getMarkerColor = () => {
     // Urgent jobs (high priority)
@@ -65,13 +67,22 @@ export function JobMarker({ job, selectedMemberId, isSelected = false }: JobMark
       )}
       
       <div
-        className={`relative flex items-center justify-center rounded-full shadow-lg border-2 transition-all ${
-          isSelected ? 'w-12 h-12 border-white border-4' : 'w-10 h-10 border-white'
-        }`}
+        className={cn(
+          "relative flex items-center justify-center rounded-full shadow-lg border-2 transition-all",
+          isSelected ? 'w-12 h-12 border-white border-4' : 'w-10 h-10 border-white',
+          isMultiSelected && 'ring-4 ring-primary/50 border-primary'
+        )}
         style={{ backgroundColor: markerColor }}
       >
         <MapPin className={`text-white ${isSelected ? 'w-7 h-7' : 'w-6 h-6'}`} />
       </div>
+
+      {/* Multi-select checkmark overlay */}
+      {isMultiSelected && (
+        <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center border-2 border-background shadow-lg">
+          <Check className="h-3 w-3" />
+        </div>
+      )}
 
       {/* Job number badge */}
       {job.priority && (
