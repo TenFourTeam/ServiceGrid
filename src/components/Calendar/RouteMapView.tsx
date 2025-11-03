@@ -1,5 +1,5 @@
-import { useMemo, useState, useEffect } from 'react';
-import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
+import { useMemo, useState, useEffect, useRef, startTransition } from 'react';
+import { APIProvider, Map, AdvancedMarker, useMap } from '@vis.gl/react-google-maps';
 import { Job } from '@/types';
 import { useGeocoding } from '@/hooks/useGeocoding';
 import { JobMarker } from './JobMarker';
@@ -8,7 +8,7 @@ import { JobNavigationPanel } from './JobNavigationPanel';
 import { MapLegend } from './MapLegend';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/Button';
-import { MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MapPin, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 
@@ -17,6 +17,59 @@ interface RouteMapViewProps {
   jobs: Job[];
   selectedMemberId?: string | null;
   onJobClick?: (job: Job) => void;
+}
+
+/**
+ * Internal map component that uses the map instance
+ */
+function MapContent({ 
+  jobsWithCoords, 
+  selectedJobId, 
+  selectedMemberId, 
+  onJobClick,
+  onMarkerClick,
+  mapRef
+}: {
+  jobsWithCoords: Array<{ job: Job; coords: { lat: number; lng: number } }>;
+  selectedJobId: string | null;
+  selectedMemberId?: string | null;
+  onJobClick?: (job: Job) => void;
+  onMarkerClick: (job: Job, index: number) => void;
+  mapRef: React.MutableRefObject<google.maps.Map | null>;
+}) {
+  const map = useMap();
+
+  // Capture map instance
+  useEffect(() => {
+    if (map) {
+      mapRef.current = map;
+      console.log('[RouteMapView] Map instance captured');
+    }
+  }, [map, mapRef]);
+
+  return (
+    <>
+      {jobsWithCoords.map(({ job, coords }, index) => (
+        <AdvancedMarker
+          key={`${job.id}-${coords.lat}-${coords.lng}`}
+          position={coords}
+          onClick={() => {
+            // Batch state updates with startTransition
+            startTransition(() => {
+              onMarkerClick(job, index);
+            });
+            if (onJobClick) onJobClick(job);
+          }}
+        >
+          <JobMarker 
+            job={job} 
+            selectedMemberId={selectedMemberId}
+            isSelected={job.id === selectedJobId}
+          />
+        </AdvancedMarker>
+      ))}
+    </>
+  );
 }
 
 /**
@@ -29,10 +82,15 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
   const [mapZoom, setMapZoom] = useState(11);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [currentJobIndex, setCurrentJobIndex] = useState<number>(0);
+  const [mapError, setMapError] = useState<string | null>(null);
   const [isNavigationPanelCollapsed, setIsNavigationPanelCollapsed] = useState(() => {
     const saved = localStorage.getItem('jobNavigationPanelCollapsed');
     return saved ? JSON.parse(saved) : false;
   });
+
+  // Refs for performance optimization
+  const mapRef = useRef<google.maps.Map | null>(null);
+  const initialBoundsSet = useRef(false);
 
   // Check if Google Maps API key is configured
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
@@ -92,12 +150,15 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
       maxLng = Math.max(maxLng, lng);
     });
 
-    // Update map center
+    // Update map center only once on initial load
     if (isFinite(minLat) && isFinite(maxLat) && isFinite(minLng) && isFinite(maxLng)) {
-      setMapCenter({
-        lat: (minLat + maxLat) / 2,
-        lng: (minLng + maxLng) / 2,
-      });
+      if (!initialBoundsSet.current) {
+        setMapCenter({
+          lat: (minLat + maxLat) / 2,
+          lng: (minLng + maxLng) / 2,
+        });
+        initialBoundsSet.current = true;
+      }
     }
 
     return {
@@ -125,11 +186,19 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
   // Focus on a specific job by centering map and opening info window
   const focusJob = (jobId: string) => {
     const jobWithCoords = jobsWithCoords.find(j => j.job.id === jobId);
-    if (!jobWithCoords) return;
+    if (!jobWithCoords || !mapRef.current) return;
+    
+    // Use imperative API for smooth pan/zoom without state conflicts
+    mapRef.current.panTo(jobWithCoords.coords);
+    
+    // Zoom after a brief delay to allow pan to complete
+    setTimeout(() => {
+      if (mapRef.current) {
+        mapRef.current.setZoom(15);
+      }
+    }, 300);
     
     setSelectedJobId(jobId);
-    setMapCenter(jobWithCoords.coords);
-    setMapZoom(15); // Closer zoom for focused view
     setSelectedJob(jobWithCoords.job);
   };
 
@@ -175,6 +244,25 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentJobIndex, jobsWithCoords]);
 
+  // Display error state if map fails to load
+  if (mapError) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-muted/10">
+        <div className="text-center space-y-4 max-w-md p-8">
+          <AlertCircle className="h-12 w-12 mx-auto text-destructive" />
+          <h3 className="text-lg font-semibold">Map Error</h3>
+          <p className="text-sm text-muted-foreground">{mapError}</p>
+          <Button 
+            variant="secondary" 
+            onClick={() => window.location.reload()}
+          >
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-muted/10">
@@ -207,7 +295,14 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
   });
 
   return (
-    <APIProvider apiKey={apiKey} onLoad={() => console.log('[RouteMapView] Google Maps API loaded')}>
+    <APIProvider 
+      apiKey={apiKey}
+      onLoad={() => console.log('[RouteMapView] Google Maps API loaded')}
+      onError={(error) => {
+        console.error('[RouteMapView] Maps API error:', error);
+        setMapError('Failed to load Google Maps. Check your API key and enabled APIs.');
+      }}
+    >
       <ResizablePanelGroup direction="horizontal" className="h-full w-full">
         {/* Job Navigation Panel */}
         <ResizablePanel
@@ -236,32 +331,25 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
           <div className="relative w-full h-full">
             <Map
               mapId="d174fd11e8cacedb35e319da"
-              center={mapCenter}
-              zoom={mapZoom}
+              defaultCenter={mapCenter}
+              defaultZoom={mapZoom}
               gestureHandling="greedy"
               disableDefaultUI={false}
               className="w-full h-full"
               style={{ width: '100%', height: '100%' }}
-              onCameraChanged={() => console.log('[RouteMapView] Camera changed')}
             >
-              {jobsWithCoords.map(({ job, coords }, index) => (
-                <AdvancedMarker
-                  key={job.id}
-                  position={coords}
-                  onClick={() => {
-                    setSelectedJob(job);
-                    setSelectedJobId(job.id);
-                    setCurrentJobIndex(index);
-                    if (onJobClick) onJobClick(job);
-                  }}
-                >
-                  <JobMarker 
-                    job={job} 
-                    selectedMemberId={selectedMemberId}
-                    isSelected={job.id === selectedJobId}
-                  />
-                </AdvancedMarker>
-              ))}
+              <MapContent
+                jobsWithCoords={jobsWithCoords}
+                selectedJobId={selectedJobId}
+                selectedMemberId={selectedMemberId}
+                onJobClick={onJobClick}
+                onMarkerClick={(job, index) => {
+                  setSelectedJob(job);
+                  setSelectedJobId(job.id);
+                  setCurrentJobIndex(index);
+                }}
+                mapRef={mapRef}
+              />
             </Map>
 
             {/* Job Info Window positioned over map */}
