@@ -183,6 +183,10 @@ export function AIChatInterface({
                     // Execute action by sending it as a message
                     await sendMessage(action, context);
                   }}
+                  onApproveSchedule={async (scheduleData) => {
+                    // Send approval confirmation to AI
+                    await sendMessage('Yes, approve this schedule', context);
+                  }}
                 />
               ))}
 

@@ -1,12 +1,16 @@
+import { useState } from 'react';
 import { Message } from '@/hooks/useAIChat';
-import { Bot, User, Loader2, CheckCircle2, Calendar, Users, MapPin, Clock, FileText, TrendingUp, AlertCircle, RefreshCw } from 'lucide-react';
+import { Bot, User, Loader2, CheckCircle2, Calendar, Users, MapPin, Clock, FileText, TrendingUp, AlertCircle, RefreshCw, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ActionButton } from './ActionButton';
+import { SchedulePreviewCard } from './SchedulePreviewCard';
+import { useCalendarNavigation } from '@/hooks/useCalendarNavigation';
 
 interface ChatMessageProps {
   message: Message;
   isStreaming?: boolean;
   onActionExecute?: (action: string) => Promise<void>;
+  onApproveSchedule?: (scheduleData: any) => Promise<void>;
 }
 
 const toolIconMap: Record<string, any> = {
@@ -21,6 +25,9 @@ const toolIconMap: Record<string, any> = {
   update_job_status: CheckCircle2,
   get_capacity_forecast: TrendingUp,
   reschedule_job: RefreshCw,
+  batch_schedule_jobs: Zap,
+  preview_schedule_changes: Calendar,
+  refine_schedule: RefreshCw,
 };
 
 const toolLabelMap: Record<string, string> = {
@@ -35,6 +42,9 @@ const toolLabelMap: Record<string, string> = {
   update_job_status: 'Updating job status',
   get_capacity_forecast: 'Forecasting capacity',
   reschedule_job: 'Rescheduling job',
+  batch_schedule_jobs: 'Scheduling multiple jobs with AI',
+  preview_schedule_changes: 'Previewing schedule changes',
+  refine_schedule: 'Refining schedule based on feedback',
 };
 
 function getToolInfo(toolName: string) {
@@ -44,8 +54,10 @@ function getToolInfo(toolName: string) {
   };
 }
 
-export function ChatMessage({ message, isStreaming, onActionExecute }: ChatMessageProps) {
+export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSchedule }: ChatMessageProps) {
   const isUser = message.role === 'user';
+  const { navigateToDate } = useCalendarNavigation();
+  const [parsedContent] = useState(() => parseMessageContent(message.content));
 
   return (
     <div className={cn('flex gap-3 mb-4', isUser && 'flex-row-reverse')}>
@@ -69,11 +81,35 @@ export function ChatMessage({ message, isStreaming, onActionExecute }: ChatMessa
             ? 'bg-primary text-primary-foreground' 
             : 'bg-muted'
         )}>
-          <div className="text-sm whitespace-pre-wrap break-words">
-            {message.content}
-            {isStreaming && (
-              <span className="inline-block w-2 h-4 ml-1 bg-current animate-pulse" />
-            )}
+          <div className="space-y-3">
+            {parsedContent.map((part, idx) => {
+              if (part.type === 'text') {
+                return (
+                  <div key={idx} className="text-sm whitespace-pre-wrap break-words">
+                    {part.content}
+                    {isStreaming && idx === parsedContent.length - 1 && (
+                      <span className="inline-block w-2 h-4 ml-1 bg-current animate-pulse" />
+                    )}
+                  </div>
+                );
+              }
+              
+              if (part.type === 'schedule_preview' && onApproveSchedule) {
+                return (
+                  <SchedulePreviewCard
+                    key={idx}
+                    scheduledJobs={part.content.scheduledJobs}
+                    totalJobsRequested={part.content.totalJobsRequested}
+                    estimatedTimeSaved={part.content.estimatedTimeSaved}
+                    onApprove={() => onApproveSchedule(part.content)}
+                    onReject={() => onActionExecute?.('I want to refine this schedule')}
+                    onViewCalendar={navigateToDate}
+                  />
+                );
+              }
+              
+              return null;
+            })}
           </div>
 
           {/* Action Buttons */}
@@ -135,4 +171,53 @@ export function ChatMessage({ message, isStreaming, onActionExecute }: ChatMessa
       </div>
     </div>
   );
+}
+
+// Parse message content to extract special syntax
+function parseMessageContent(content: string): Array<{ type: 'text' | 'schedule_preview'; content: any }> {
+  const parts: Array<{ type: 'text' | 'schedule_preview'; content: any }> = [];
+  
+  // Match [SCHEDULE_PREVIEW:...] syntax
+  const schedulePreviewRegex = /\[SCHEDULE_PREVIEW:(.*?)\]/gs;
+  
+  let lastIndex = 0;
+  let match;
+  
+  while ((match = schedulePreviewRegex.exec(content)) !== null) {
+    // Add text before the match
+    if (match.index > lastIndex) {
+      const textBefore = content.slice(lastIndex, match.index).trim();
+      if (textBefore) {
+        parts.push({ type: 'text', content: textBefore });
+      }
+    }
+    
+    // Try to parse the JSON data
+    try {
+      const jsonStr = match[1];
+      const scheduleData = JSON.parse(jsonStr);
+      parts.push({ type: 'schedule_preview', content: scheduleData });
+    } catch (e) {
+      console.error('Failed to parse schedule preview data:', e);
+      // If parsing fails, treat it as text
+      parts.push({ type: 'text', content: match[0] });
+    }
+    
+    lastIndex = match.index + match[0].length;
+  }
+  
+  // Add remaining text
+  if (lastIndex < content.length) {
+    const textAfter = content.slice(lastIndex).trim();
+    if (textAfter) {
+      parts.push({ type: 'text', content: textAfter });
+    }
+  }
+  
+  // If no special syntax found, return the original content as text
+  if (parts.length === 0) {
+    parts.push({ type: 'text', content });
+  }
+  
+  return parts;
 }
