@@ -611,6 +611,18 @@ const tools: Record<string, Tool> = {
     execute: async (args: any, context: any) => {
       console.info('[batch_schedule_jobs] Starting batch schedule', { jobCount: args.jobIds.length });
 
+      // Send progress updates
+      const sendProgress = (message: string) => {
+        if (context.controller) {
+          const encoder = new TextEncoder();
+          context.controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ type: 'tool_progress', progress: message })}\n\n`)
+          );
+        }
+      };
+
+      sendProgress('🔍 Analyzing jobs...');
+
       // 1. Gather all unscheduled jobs
       const { data: jobs, error: jobsError } = await context.supabase
         .from('jobs')
@@ -621,11 +633,15 @@ const tools: Record<string, Tool> = {
       if (jobsError) throw jobsError;
       if (!jobs || jobs.length === 0) throw new Error('No jobs found');
 
+      sendProgress(`📋 Found ${jobs.length} jobs to schedule`);
+
       // 2. Gather scheduling context
       const dateRange = args.preferredDateRange || {
         start: new Date().toISOString().split('T')[0],
         end: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
       };
+
+      sendProgress('👥 Checking team availability...');
 
       // Get existing jobs in date range
       const { data: existingJobs } = await context.supabase
@@ -674,6 +690,8 @@ const tools: Record<string, Tool> = {
         constraints: constraints?.length || 0
       });
 
+      sendProgress('🎯 Optimizing schedule with AI...');
+
       // 3. Call ai-schedule-optimizer with full context
       const { data, error } = await context.supabase.functions.invoke(
         'ai-schedule-optimizer',
@@ -698,6 +716,8 @@ const tools: Record<string, Tool> = {
 
       const suggestions = data.suggestions || [];
       console.info('[batch_schedule_jobs] AI suggestions received', { count: suggestions.length });
+
+      sendProgress(`✅ Schedule optimized! Applying ${suggestions.length} suggestions...`);
 
       // 4. Apply scheduling suggestions
       const results = [];
@@ -1173,12 +1193,15 @@ MISSING DATA:
 
 RESPONSE STYLE:
 1. Be proactive and actionable - don't just inform, offer to act
-2. Use clickable buttons for actions:
-   [BUTTON:message_to_send:Button Label]
+2. Use clickable buttons for actions with OPTIONAL variants:
+   Syntax: [BUTTON:message_to_send:Button Label|variant]
+   Variants: primary (default blue), secondary (gray), danger (red)
    
    Examples:
-   - "Found 5 jobs. [BUTTON:batch_schedule_jobs with job IDs:Schedule All]"
-   - "3 urgent jobs! [BUTTON:batch_schedule priority jobs:Schedule Urgent First]"
+   - [BUTTON:batch_schedule_jobs with job IDs:Schedule All|primary]
+   - [BUTTON:cancel_changes:Cancel|secondary]
+   - [BUTTON:delete_all_jobs:Delete All|danger]
+   - [BUTTON:view_calendar:View Calendar] (no variant = default primary)
    
 3. Keep responses concise (2-4 sentences ideal)
 4. Use emojis for visual hierarchy (✅ success, ⚠️ warnings, 📅 scheduling, 🚗 travel)
@@ -1323,7 +1346,9 @@ INTELLIGENCE NOTES:
                           const context = {
                             supabase: supaAdmin,
                             businessId: businessId,
-                            userId: userId
+                            userId: userId,
+                            controller: controller,
+                            encoder: encoder
                           };
 
                           const result = await tool.execute(args, context);

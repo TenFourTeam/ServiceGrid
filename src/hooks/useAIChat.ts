@@ -16,6 +16,7 @@ export interface Message {
   actions?: Array<{
     action: string;
     label: string;
+    variant?: 'primary' | 'secondary' | 'danger';
   }>;
 }
 
@@ -183,6 +184,24 @@ export function useAIChat(options?: UseAIChatOptions) {
                   description: data.error,
                   icon: '❌',
                 });
+              } else if (data.type === 'tool_progress') {
+                // Update tool system message with progress
+                setMessages(prev => {
+                  const toolMsgIndex = prev.findIndex(m => 
+                    m.role === 'system' && 
+                    m.toolCalls?.some(tc => tc.status === 'executing')
+                  );
+                  
+                  if (toolMsgIndex !== -1) {
+                    const updated = [...prev];
+                    updated[toolMsgIndex] = {
+                      ...updated[toolMsgIndex],
+                      content: data.progress
+                    };
+                    return updated;
+                  }
+                  return prev;
+                });
               } else if (data.type === 'done') {
                 // Finalize message with parsed actions
                 const { cleanContent, actions } = parseMessageActions(fullContent);
@@ -261,14 +280,19 @@ export function useAIChat(options?: UseAIChatOptions) {
 // Helper function to parse action buttons from message content
 function parseMessageActions(content: string): { 
   cleanContent: string; 
-  actions: Array<{ action: string; label: string }> 
+  actions: Array<{ action: string; label: string; variant?: 'primary' | 'secondary' | 'danger' }> 
 } {
-  const actions: Array<{ action: string; label: string }> = [];
+  const actions: Array<{ action: string; label: string; variant?: 'primary' | 'secondary' | 'danger' }> = [];
   
-  // Extract [BUTTON:action:label] syntax
-  const buttonRegex = /\[BUTTON:([^:]+):([^\]]+)\]/g;
-  const cleanContent = content.replace(buttonRegex, (match, action, label) => {
-    actions.push({ action: action.trim(), label: label.trim() });
+  // Extract [BUTTON:action:label|variant] syntax
+  // Supports complex actions with colons (like JSON) by using non-greedy matching
+  const buttonRegex = /\[BUTTON:(.*?):([^:|\]]+?)(?:\|(\w+))?\]/g;
+  const cleanContent = content.replace(buttonRegex, (match, action, label, variant) => {
+    actions.push({ 
+      action: action.trim(), 
+      label: label.trim(),
+      variant: (variant as 'primary' | 'secondary' | 'danger') || undefined
+    });
     return ''; // Remove button syntax from content
   }).trim();
   

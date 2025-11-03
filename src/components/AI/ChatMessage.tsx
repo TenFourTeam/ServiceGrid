@@ -131,6 +131,7 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
                   key={idx}
                   action={action.action}
                   label={action.label}
+                  variant={action.variant}
                   onExecute={onActionExecute}
                 />
               ))}
