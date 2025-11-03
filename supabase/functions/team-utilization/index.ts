@@ -26,7 +26,7 @@ serve(async (req) => {
     // Get business members
     const { data: permissions, error: permError } = await supabase
       .from('business_permissions')
-      .select('user_id, profiles(full_name)')
+      .select('user_id, profiles!business_permissions_user_id_fkey(full_name)')
       .eq('business_id', businessId);
 
     if (permError) throw permError;
