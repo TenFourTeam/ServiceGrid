@@ -1,10 +1,45 @@
 import { Message } from '@/hooks/useAIChat';
-import { Bot, User, Wrench, CheckCircle } from 'lucide-react';
+import { Bot, User, Loader2, CheckCircle2, Calendar, Users, MapPin, Clock, FileText, TrendingUp, AlertCircle, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ChatMessageProps {
   message: Message;
   isStreaming?: boolean;
+}
+
+const toolIconMap: Record<string, any> = {
+  get_unscheduled_jobs: Calendar,
+  check_team_availability: Users,
+  get_schedule_summary: FileText,
+  auto_schedule_job: Calendar,
+  create_job_from_request: FileText,
+  optimize_route_for_date: MapPin,
+  get_scheduling_conflicts: AlertCircle,
+  get_customer_details: Users,
+  update_job_status: CheckCircle2,
+  get_capacity_forecast: TrendingUp,
+  reschedule_job: RefreshCw,
+};
+
+const toolLabelMap: Record<string, string> = {
+  get_unscheduled_jobs: 'Finding unscheduled jobs',
+  check_team_availability: 'Checking team availability',
+  get_schedule_summary: 'Getting schedule summary',
+  auto_schedule_job: 'Auto-scheduling job',
+  create_job_from_request: 'Creating job from request',
+  optimize_route_for_date: 'Optimizing route',
+  get_scheduling_conflicts: 'Finding conflicts',
+  get_customer_details: 'Getting customer details',
+  update_job_status: 'Updating job status',
+  get_capacity_forecast: 'Forecasting capacity',
+  reschedule_job: 'Rescheduling job',
+};
+
+function getToolInfo(toolName: string) {
+  return {
+    icon: toolIconMap[toolName] || Clock,
+    label: toolLabelMap[toolName] || toolName.replace(/_/g, ' '),
+  };
 }
 
 export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
@@ -41,25 +76,32 @@ export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
 
           {/* Tool Execution Indicators */}
           {message.toolCalls && message.toolCalls.length > 0 && (
-            <div className="mt-2 space-y-1">
-              {message.toolCalls.map((toolCall, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center gap-2 text-xs text-muted-foreground"
-                >
-                  {toolCall.status === 'executing' ? (
-                    <>
-                      <Wrench className="w-3 h-3 animate-spin" />
-                      <span>Running: {toolCall.tool.replace(/_/g, ' ')}</span>
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="w-3 h-3 text-green-600" />
-                      <span>Completed: {toolCall.tool.replace(/_/g, ' ')}</span>
-                    </>
-                  )}
-                </div>
-              ))}
+            <div className="mt-3 space-y-2">
+              {message.toolCalls.map((toolCall, idx) => {
+                const toolInfo = getToolInfo(toolCall.tool);
+                return (
+                  <div
+                    key={idx}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-all",
+                      toolCall.status === 'executing'
+                        ? "bg-blue-500/10 text-blue-700 dark:text-blue-300"
+                        : "bg-green-500/10 text-green-700 dark:text-green-300"
+                    )}
+                  >
+                    {toolCall.status === 'executing' ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin flex-shrink-0" />
+                    ) : (
+                      <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+                    )}
+                    <toolInfo.icon className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span className="font-medium">{toolInfo.label}</span>
+                    {toolCall.status === 'complete' && (
+                      <span className="ml-auto text-[10px] opacity-60">✓</span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
 
