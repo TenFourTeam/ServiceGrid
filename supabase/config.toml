@@ -225,6 +225,9 @@ verify_jwt = false
 [functions.predict-scheduling]
 verify_jwt = false
 
+[functions.ai-chat]
+verify_jwt = false
+
 # Phase 6: Advanced Scheduling Features
 [functions.team-availability-crud]
 verify_jwt = false
