@@ -21,15 +21,15 @@ const defaultStarters: Starter[] = [
   {
     icon: Calendar,
     title: 'Schedule Jobs',
-    subtitle: 'Auto-schedule all pending work',
-    message: 'Schedule all pending jobs automatically',
+    subtitle: 'Let AI handle the backlog',
+    message: 'Can you schedule all my pending jobs?',
     gradient: 'from-blue-500/10 to-cyan-500/10',
   },
   {
     icon: MapPin,
     title: 'Optimize Routes',
-    subtitle: 'Find the most efficient routes',
-    message: 'Optimize all routes this week',
+    subtitle: 'Reduce drive time',
+    message: 'Help me optimize routes this week',
     gradient: 'from-green-500/10 to-emerald-500/10',
   },
   {
@@ -42,8 +42,8 @@ const defaultStarters: Starter[] = [
   {
     icon: Users,
     title: 'Team Status',
-    subtitle: 'Check team availability',
-    message: 'Show me team availability for tomorrow',
+    subtitle: 'Check availability',
+    message: 'Who on my team is available tomorrow?',
     gradient: 'from-orange-500/10 to-red-500/10',
   },
 ];

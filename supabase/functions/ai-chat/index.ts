@@ -1026,6 +1026,119 @@ const tools: Record<string, Tool> = {
   }
 };
 
+// Helper function to fetch greeting context (not exposed to AI, used on startup)
+async function fetchGreetingContext(context: any) {
+  const [unscheduledJobs, todaysJobs, teamMembers, recentActivity, business] = await Promise.all([
+    // Unscheduled jobs count
+    context.supabase
+      .from('jobs')
+      .select('id', { count: 'exact', head: true })
+      .eq('business_id', context.businessId)
+      .is('starts_at', null),
+    
+    // Today's jobs count
+    context.supabase
+      .from('jobs')
+      .select('id', { count: 'exact', head: true })
+      .eq('business_id', context.businessId)
+      .gte('starts_at', new Date().toISOString().split('T')[0])
+      .lt('starts_at', new Date(Date.now() + 86400000).toISOString().split('T')[0]),
+    
+    // Team members count
+    context.supabase
+      .from('business_permissions')
+      .select('user_id', { count: 'exact', head: true })
+      .eq('business_id', context.businessId),
+    
+    // Recent AI activity (last 3)
+    context.supabase
+      .from('ai_activity_log')
+      .select('activity_type, description, created_at')
+      .eq('business_id', context.businessId)
+      .order('created_at', { ascending: false })
+      .limit(3),
+    
+    // Business info
+    context.supabase
+      .from('businesses')
+      .select('name')
+      .eq('id', context.businessId)
+      .single()
+  ]);
+
+  const hour = new Date().getHours();
+  const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+
+  return {
+    businessName: business.data?.name || 'your business',
+    unscheduledCount: unscheduledJobs.count || 0,
+    todaysJobsCount: todaysJobs.count || 0,
+    teamMemberCount: teamMembers.count || 0,
+    recentActivity: recentActivity.data || [],
+    timeOfDay,
+    currentPage: context.currentPage || 'dashboard'
+  };
+}
+
+async function generateGreetingMessage(context: any): Promise<string> {
+  const ctx = await fetchGreetingContext(context);
+  
+  let greeting = `Good ${ctx.timeOfDay}! `;
+  
+  // Acknowledge previous interactions if they exist
+  if (ctx.recentActivity.length > 0) {
+    const lastActivity = ctx.recentActivity[0];
+    const lastActionTime = new Date(lastActivity.created_at);
+    const hoursSince = Math.floor((Date.now() - lastActionTime.getTime()) / (1000 * 60 * 60));
+    
+    if (hoursSince < 24) {
+      greeting += `Welcome back! `;
+    } else if (hoursSince < 168) { // Less than a week
+      greeting += `Great to see you again! `;
+    }
+  }
+  
+  // Business state summary
+  const statusParts: string[] = [];
+  
+  if (ctx.unscheduledCount > 0) {
+    statusParts.push(`**${ctx.unscheduledCount} job${ctx.unscheduledCount !== 1 ? 's' : ''} waiting to be scheduled**`);
+  }
+  
+  if (ctx.todaysJobsCount > 0) {
+    statusParts.push(`${ctx.todaysJobsCount} job${ctx.todaysJobsCount !== 1 ? 's' : ''} on your calendar today`);
+  } else if (ctx.timeOfDay === 'morning') {
+    statusParts.push(`no jobs scheduled today yet`);
+  }
+  
+  if (statusParts.length > 0) {
+    greeting += `I see you have ${statusParts.join(', and ')}. `;
+  }
+  
+  // Proactive suggestions based on state
+  if (ctx.unscheduledCount > 0) {
+    if (ctx.unscheduledCount >= 5) {
+      greeting += `\n\nThat's quite a backlog! I can schedule all of them at once with smart routing and team balancing. Just say "schedule all pending jobs" and I'll handle it. ✨`;
+    } else {
+      greeting += `\n\nI can help schedule ${ctx.unscheduledCount === 1 ? 'it' : 'them'} efficiently. Want me to find optimal time slots?`;
+    }
+  } else if (ctx.todaysJobsCount > 0) {
+    greeting += `\n\nYour team is ready to go! Need help with route optimization or any last-minute changes?`;
+  } else {
+    greeting += `\n\nLooking pretty clear! Want to focus on filling your calendar for the rest of the week?`;
+  }
+  
+  // Context-specific suggestions
+  const page = ctx.currentPage;
+  if (page.includes('/calendar')) {
+    greeting += `\n\n💡 **Quick tip**: I can optimize your routes to minimize drive time between jobs.`;
+  } else if (page.includes('/team')) {
+    greeting += `\n\n💡 **Quick tip**: I can check team availability and balance workloads across members.`;
+  }
+  
+  return greeting;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -1038,9 +1151,11 @@ Deno.serve(async (req) => {
     const { conversationId, message, includeContext } = await req.json();
 
     let convId = conversationId;
+    let isNewConversation = false;
     
       // Create or load conversation
     if (!convId) {
+      isNewConversation = true;
       const title = generateConversationTitle(message);
       
       const { data: newConv, error: convError } = await supaAdmin
@@ -1239,6 +1354,33 @@ INTELLIGENCE NOTES:
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify({ type: 'conversation_id', id: convId })}\n\n`)
           );
+
+          // Send greeting for new conversations
+          if (isNewConversation) {
+            const greetingText = await generateGreetingMessage({
+              businessId,
+              userId,
+              supabase: supaAdmin,
+              currentPage: includeContext?.currentPage
+            });
+            
+            // Save greeting as assistant message
+            await supaAdmin
+              .from('ai_chat_messages')
+              .insert({
+                conversation_id: convId,
+                role: 'assistant',
+                content: greetingText
+              });
+            
+            // Send greeting to frontend immediately via SSE
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ 
+                type: 'greeting', 
+                content: greetingText 
+              })}\n\n`)
+            );
+          }
 
           const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
             method: 'POST',

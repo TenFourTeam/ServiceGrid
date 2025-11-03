@@ -175,20 +175,24 @@ export function AIChatInterface({
           <div className="flex-1 flex flex-col min-w-0">
             {/* Messages */}
             <ScrollArea className={cn("flex-1 py-6", isMobile ? "px-2" : "px-4")} ref={scrollRef}>
-              {messages.length === 0 && !currentStreamingMessage && !isStreaming && (
+              {messages.length === 0 && !currentStreamingMessage && (
                 <div className="h-full flex items-center justify-center py-8">
                   <div className="text-center max-w-2xl w-full">
                     <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Sparkles className="w-8 h-8 text-primary" />
+                      <Sparkles className={cn("w-8 h-8 text-primary", isStreaming && "animate-pulse")} />
                     </div>
-                    <h3 className="text-lg font-semibold mb-2">AI Assistant Ready</h3>
+                    <h3 className="text-lg font-semibold mb-2">
+                      {isStreaming ? 'Connecting to AI...' : 'AI Assistant Ready'}
+                    </h3>
                     <p className="text-sm text-muted-foreground mb-8">
-                      I can help you schedule jobs, check availability, and optimize your routes.
+                      {isStreaming ? 'Preparing personalized assistant' : 'I can help you schedule jobs, check availability, and optimize your routes.'}
                     </p>
-                    <ConversationStarters
-                      currentPage={context?.currentPage}
-                      onStarterClick={(msg) => sendMessage(msg, context)}
-                    />
+                    {!isStreaming && (
+                      <ConversationStarters
+                        currentPage={context?.currentPage}
+                        onStarterClick={(msg) => sendMessage(msg, context)}
+                      />
+                    )}
                   </div>
                 </div>
               )}

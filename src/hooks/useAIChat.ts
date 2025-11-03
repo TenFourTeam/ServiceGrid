@@ -99,6 +99,16 @@ export function useAIChat(options?: UseAIChatOptions) {
               if (data.type === 'conversation_id') {
                 setConversationId(data.id);
                 options?.onNewConversation?.(data.id);
+              } else if (data.type === 'greeting') {
+                // Show greeting as first assistant message
+                const greetingMessage: Message = {
+                  id: crypto.randomUUID(),
+                  role: 'assistant',
+                  content: data.content,
+                  timestamp: new Date(),
+                };
+                setMessages([greetingMessage]);
+                setIsStreaming(false); // Stop streaming indicator after greeting
               } else if (data.type === 'token') {
                 fullContent += data.content;
                 setCurrentStreamingMessage(fullContent);
