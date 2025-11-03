@@ -64,7 +64,7 @@ export function InventoryManagement() {
       inventory_item_id: transactionItem.id,
       transaction_type: transactionType,
       quantity: adjustedQuantity,
-      user_id: business.owner_id as string,
+      user_id: profileId as string,
       notes,
       transaction_date: new Date().toISOString(),
     });
