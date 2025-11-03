@@ -13,6 +13,17 @@ interface Tool {
   execute: (args: any, context: any) => Promise<any>;
 }
 
+// Helper to generate conversation titles
+function generateConversationTitle(firstMessage: string): string {
+  const title = firstMessage
+    .replace(/^(can you|could you|please|i want to|i need to|help me)\s+/i, '')
+    .split(/[.!?]/)[0]
+    .slice(0, 50)
+    .trim();
+  
+  return title || 'New conversation';
+}
+
 // Tool registry
 const tools: Record<string, Tool> = {
   get_unscheduled_jobs: {
@@ -1008,14 +1019,17 @@ Deno.serve(async (req) => {
 
     let convId = conversationId;
     
-    // Create or load conversation
+      // Create or load conversation
     if (!convId) {
+      const title = generateConversationTitle(message);
+      
       const { data: newConv, error: convError } = await supaAdmin
         .from('ai_chat_conversations')
         .insert({
           business_id: businessId,
           user_id: userId,
-          title: message.substring(0, 100)
+          title: title,
+          updated_at: new Date().toISOString()
         })
         .select()
         .single();

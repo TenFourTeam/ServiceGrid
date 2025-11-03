@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsPhone } from '@/hooks/use-phone';
+import { toast } from 'sonner';
 
 interface ActionButtonProps {
   action: string;
@@ -30,6 +31,7 @@ export function ActionButton({
     try {
       await onExecute(action);
       setIsComplete(true);
+      toast.success('Action completed');
       
       // Reset after 3 seconds
       setTimeout(() => {
@@ -37,6 +39,9 @@ export function ActionButton({
       }, 3000);
     } catch (error) {
       console.error('Action execution failed:', error);
+      toast.error('Action failed', {
+        description: error instanceof Error ? error.message : 'Please try again'
+      });
     } finally {
       setIsExecuting(false);
     }

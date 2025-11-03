@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Message } from '@/hooks/useAIChat';
-import { Bot, User, Loader2, CheckCircle2, Calendar, Users, MapPin, Clock, FileText, TrendingUp, AlertCircle, RefreshCw, Zap } from 'lucide-react';
+import { Bot, User, Loader2, CheckCircle2, Calendar, Users, MapPin, Clock, FileText, TrendingUp, AlertCircle, RefreshCw, Zap, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ActionButton } from './ActionButton';
 import { SchedulePreviewCard } from './SchedulePreviewCard';
@@ -56,25 +56,36 @@ function getToolInfo(toolName: string) {
 
 export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSchedule }: ChatMessageProps) {
   const isUser = message.role === 'user';
+  const isSystemMessage = message.role === 'system';
   const { navigateToDate } = useCalendarNavigation();
   const [parsedContent] = useState(() => parseMessageContent(message.content));
 
   return (
-    <div className={cn('flex gap-3 mb-4', isUser && 'flex-row-reverse')}>
-      {/* Avatar */}
-      <div className={cn(
-        'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center',
-        isUser ? 'bg-primary/10' : 'bg-primary/10'
-      )}>
-        {isUser ? (
-          <User className="w-4 h-4 text-primary" />
-        ) : (
-          <Bot className="w-4 h-4 text-primary" />
-        )}
-      </div>
+    <div className={cn(
+      'flex gap-3 mb-4', 
+      isUser && 'flex-row-reverse',
+      isSystemMessage && 'justify-center'
+    )}>
+      {/* Avatar (skip for system messages) */}
+      {!isSystemMessage && (
+        <div className={cn(
+          'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center',
+          isUser ? 'bg-primary/10' : 'bg-primary/10'
+        )}>
+          {isUser ? (
+            <User className="w-4 h-4 text-primary" />
+          ) : (
+            <Bot className="w-4 h-4 text-primary" />
+          )}
+        </div>
+      )}
 
       {/* Message Content */}
-      <div className={cn('flex-1 min-w-0', isUser && 'flex justify-end')}>
+      <div className={cn(
+        'flex-1 min-w-0', 
+        isUser && 'flex justify-end',
+        isSystemMessage && 'flex justify-center'
+      )}>
         <div className={cn(
           'inline-block max-w-[85%] rounded-2xl px-4 py-2',
           isUser 
@@ -138,11 +149,15 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
                       "flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-all",
                       toolCall.status === 'executing'
                         ? "bg-blue-500/10 text-blue-700 dark:text-blue-300"
+                        : toolCall.status === 'error'
+                        ? "bg-red-500/10 text-red-700 dark:text-red-300"
                         : "bg-green-500/10 text-green-700 dark:text-green-300"
                     )}
                   >
                     {toolCall.status === 'executing' ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin flex-shrink-0" />
+                    ) : toolCall.status === 'error' ? (
+                      <XCircle className="w-3.5 h-3.5 flex-shrink-0" />
                     ) : (
                       <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
                     )}
@@ -150,6 +165,9 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
                     <span className="font-medium">{toolInfo.label}</span>
                     {toolCall.status === 'complete' && (
                       <span className="ml-auto text-[10px] opacity-60">✓</span>
+                    )}
+                    {toolCall.status === 'error' && (
+                      <span className="ml-auto text-[10px] opacity-60">✗</span>
                     )}
                   </div>
                 );

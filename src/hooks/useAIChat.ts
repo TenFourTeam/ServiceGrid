@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { useBusinessContext } from './useBusinessContext';
 import { useAuth } from '@clerk/clerk-react';
+import { toast } from 'sonner';
 
 export interface Message {
   id: string;
@@ -9,7 +10,7 @@ export interface Message {
   timestamp: Date;
   toolCalls?: Array<{
     tool: string;
-    status: 'executing' | 'complete';
+    status: 'executing' | 'complete' | 'error';
     result?: any;
   }>;
   actions?: Array<{
@@ -102,49 +103,85 @@ export function useAIChat(options?: UseAIChatOptions) {
                 setCurrentStreamingMessage(fullContent);
                 setCurrentToolName(null); // Clear tool name when streaming starts
               } else if (data.type === 'tool_call') {
-                // Show tool execution indicator
+                // Create a system message for tool execution
+                const toolSystemMessage: Message = {
+                  id: `tool-${data.tool}-${Date.now()}`,
+                  role: 'system',
+                  content: `Executing: ${data.tool}`,
+                  timestamp: new Date(),
+                  toolCalls: [{ tool: data.tool, status: 'executing' as const }]
+                };
+                
                 setCurrentToolName(data.tool);
-                setMessages(prev => {
-                  const lastMsg = prev[prev.length - 1];
-                  if (lastMsg?.id === assistantMessageId) {
-                    return [
-                      ...prev.slice(0, -1),
-                      {
-                        ...lastMsg,
-                        toolCalls: [
-                          ...(lastMsg.toolCalls || []),
-                          { tool: data.tool, status: 'executing' as const }
-                        ]
-                      }
-                    ];
-                  }
-                  return [
-                    ...prev,
-                    {
-                      id: assistantMessageId,
-                      role: 'assistant' as const,
-                      content: fullContent,
-                      timestamp: new Date(),
-                      toolCalls: [{ tool: data.tool, status: 'executing' as const }]
-                    }
-                  ];
-                });
+                setMessages(prev => [...prev, toolSystemMessage]);
+                
+                // Show toast for important actions
+                const importantTools = ['batch_schedule_jobs', 'auto_schedule_job', 'optimize_route_for_date'];
+                const toolLabels: Record<string, string> = {
+                  batch_schedule_jobs: 'Scheduling multiple jobs with AI',
+                  auto_schedule_job: 'Auto-scheduling job',
+                  optimize_route_for_date: 'Optimizing route',
+                  check_team_availability: 'Checking team availability',
+                  get_unscheduled_jobs: 'Finding unscheduled jobs',
+                };
+                
+                if (importantTools.includes(data.tool)) {
+                  toast.info(toolLabels[data.tool] || data.tool.replace(/_/g, ' '), {
+                    icon: '🔧',
+                    duration: 2000,
+                  });
+                }
               } else if (data.type === 'tool_result') {
-                // Update tool result
+                // Update tool system message to mark complete
                 setMessages(prev => {
-                  const lastMsg = prev[prev.length - 1];
-                  if (lastMsg?.id === assistantMessageId && lastMsg.toolCalls) {
-                    const updatedToolCalls = lastMsg.toolCalls.map(tc =>
-                      tc.tool === data.tool
-                        ? { ...tc, status: 'complete' as const, result: data.result }
-                        : tc
-                    );
-                    return [
-                      ...prev.slice(0, -1),
-                      { ...lastMsg, toolCalls: updatedToolCalls }
-                    ];
+                  const toolMsgIndex = prev.findIndex(m => 
+                    m.role === 'system' && 
+                    m.toolCalls?.some(tc => tc.tool === data.tool && tc.status === 'executing')
+                  );
+                  
+                  if (toolMsgIndex !== -1) {
+                    const updated = [...prev];
+                    updated[toolMsgIndex] = {
+                      ...updated[toolMsgIndex],
+                      toolCalls: [{ tool: data.tool, status: 'complete' as const, result: data.result }]
+                    };
+                    return updated;
                   }
                   return prev;
+                });
+                
+                // Show success toast
+                if (data.success !== false) {
+                  toast.success('Action completed', { icon: '✅', duration: 1500 });
+                }
+              } else if (data.type === 'tool_error') {
+                // Update tool system message to mark error
+                setMessages(prev => {
+                  const toolMsgIndex = prev.findIndex(m => 
+                    m.role === 'system' && 
+                    m.toolCalls?.some(tc => tc.tool === data.tool && tc.status === 'executing')
+                  );
+                  
+                  if (toolMsgIndex !== -1) {
+                    const updated = [...prev];
+                    updated[toolMsgIndex] = {
+                      ...updated[toolMsgIndex],
+                      toolCalls: [{ tool: data.tool, status: 'error' as const, result: data.error }]
+                    };
+                    return updated;
+                  }
+                  return prev;
+                });
+                
+                const toolLabels: Record<string, string> = {
+                  batch_schedule_jobs: 'Scheduling jobs',
+                  auto_schedule_job: 'Auto-scheduling',
+                  optimize_route_for_date: 'Route optimization',
+                };
+                
+                toast.error(`Failed: ${toolLabels[data.tool] || data.tool.replace(/_/g, ' ')}`, {
+                  description: data.error,
+                  icon: '❌',
                 });
               } else if (data.type === 'done') {
                 // Finalize message with parsed actions

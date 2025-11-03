@@ -8,7 +8,8 @@ import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { TypingIndicator } from './TypingIndicator';
 import { ConversationStarters } from './ConversationStarters';
-import { Sparkles, Trash2, MessageSquare } from 'lucide-react';
+import { Sparkles, Trash2, MessageSquare, Plus } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -86,12 +87,29 @@ export function AIChatInterface({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-2xl p-0 flex flex-col">
         <SheetHeader className="border-b border-border px-6 py-4 flex-shrink-0">
-          <SheetTitle className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-primary" />
-            </div>
-            AI Assistant
-          </SheetTitle>
+          <div className="flex items-center justify-between">
+            <SheetTitle className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-primary" />
+              </div>
+              AI Assistant
+            </SheetTitle>
+            
+            {messages.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  clearMessages();
+                  toast.success('Started new conversation');
+                }}
+                className="gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                New Chat
+              </Button>
+            )}
+          </div>
         </SheetHeader>
 
         <div className="flex flex-1 min-h-0">
