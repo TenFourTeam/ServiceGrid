@@ -8,8 +8,6 @@ import MobileNavigation from '@/components/Layout/MobileNavigation';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { PageFade } from '@/components/Motion/PageFade';
 import { SubscriptionBanner } from '@/components/Onboarding/SubscriptionBanner';
-import { HelpWidget } from '@/components/Onboarding/HelpWidget';
-import { IntentPickerModal } from '@/components/Onboarding/IntentPickerModal';
 import { useOnboardingState } from '@/onboarding/streamlined';
 import { useOnboardingActions } from '@/onboarding/hooks';
 import { useSessionStorage } from '@/hooks/useSessionStorage';
@@ -22,12 +20,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Button } from '@/components/ui/button';
 
 export default function AppLayout({ children, title, businessId }: { children: ReactNode; title?: string; businessId?: string }) {
-  const [showIntentPicker, setShowIntentPicker] = useState(false);
   const isMobile = useIsMobile();
   const { role } = useBusinessContext(businessId);
-  
-  // Session-based dismissal state for intent picker modal
-  const [intentPickerDismissed, setIntentPickerDismissed] = useSessionStorage('intentPickerDismissed', false);
   
   // AI onboarding tooltip state
   const [aiOnboardingSeen, setAiOnboardingSeen] = useSessionStorage('aiOnboardingSeen', false);
@@ -40,36 +34,6 @@ export default function AppLayout({ children, title, businessId }: { children: R
       return () => clearTimeout(timer);
     }
   });
-  
-  // Onboarding system
-  const onboardingState = useOnboardingState();
-  const onboardingActions = useOnboardingActions();
-  
-  // Show intent picker modal for new users, but respect session dismissal
-  useEffect(() => {
-    if (onboardingState.showIntentPicker && !intentPickerDismissed && !showIntentPicker) {
-      setShowIntentPicker(true);
-    }
-  }, [onboardingState.showIntentPicker, intentPickerDismissed, showIntentPicker]);
-
-  // Reset dismissal state when profile becomes complete
-  useEffect(() => {
-    if (onboardingState.profileComplete && intentPickerDismissed) {
-      setIntentPickerDismissed(false);
-    }
-  }, [onboardingState.profileComplete, intentPickerDismissed, setIntentPickerDismissed]);
-
-  const handleOpenHelp = () => {
-    setShowIntentPicker(true);
-  };
-
-  const handleIntentPickerClose = (open: boolean) => {
-    setShowIntentPicker(open);
-    if (!open && onboardingState.showIntentPicker) {
-      // Mark as dismissed for this session when user closes it
-      setIntentPickerDismissed(true);
-    }
-  };
 
   useEffect(() => {
     document.title = title ? `${title} • ServiceGrid` : 'ServiceGrid';
@@ -90,22 +54,7 @@ export default function AppLayout({ children, title, businessId }: { children: R
         </main>
         
         <MobileNavigation />
-
-        {/* Onboarding Components */}
-        <IntentPickerModal
-          open={showIntentPicker}
-          onOpenChange={handleIntentPickerClose}
-          onScheduleJob={onboardingActions.openNewJobSheet}
-          onCreateQuote={onboardingActions.openCreateQuote}
-          onAddCustomer={onboardingActions.openAddCustomer}
-          onImportCustomers={onboardingActions.openImportCustomers}
-          onSetupProfile={onboardingActions.openSetupProfile}
-          onLinkBank={onboardingActions.openBankLink}
-          onStartSubscription={onboardingActions.openSubscription}
-          onSendInvoice={onboardingActions.openSendInvoice}
-        />
-        
-        <HelpWidget onOpenHelp={handleOpenHelp} />
+        <AskAIButton />
       </div>
     );
   }
@@ -168,21 +117,6 @@ export default function AppLayout({ children, title, businessId }: { children: R
         </SidebarInset>
       </div>
 
-      {/* Onboarding Components */}
-      <IntentPickerModal
-        open={showIntentPicker}
-        onOpenChange={handleIntentPickerClose}
-        onScheduleJob={onboardingActions.openNewJobSheet}
-        onCreateQuote={onboardingActions.openCreateQuote}
-        onAddCustomer={onboardingActions.openAddCustomer}
-        onImportCustomers={onboardingActions.openImportCustomers}
-        onSetupProfile={onboardingActions.openSetupProfile}
-        onLinkBank={onboardingActions.openBankLink}
-        onStartSubscription={onboardingActions.openSubscription}
-        onSendInvoice={onboardingActions.openSendInvoice}
-      />
-      
-      <HelpWidget onOpenHelp={handleOpenHelp} />
       <AskAIButton />
     </SidebarProvider>
   );

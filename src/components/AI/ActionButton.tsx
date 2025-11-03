@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useIsPhone } from '@/hooks/use-phone';
 
 interface ActionButtonProps {
   action: string;
@@ -20,6 +21,7 @@ export function ActionButton({
 }: ActionButtonProps) {
   const [isExecuting, setIsExecuting] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+  const isPhone = useIsPhone();
 
   const handleClick = async () => {
     if (isExecuting || isComplete) return;
@@ -64,7 +66,9 @@ export function ActionButton({
       disabled={isExecuting || isComplete}
       onClick={handleClick}
       className={cn(
-        'h-8 px-3 text-xs font-medium border transition-all',
+        'text-xs font-medium border transition-all',
+        'min-h-[44px]',
+        isPhone ? 'h-11 px-4' : 'h-8 px-3',
         getVariantClasses(),
         isComplete && 'pointer-events-none',
         className

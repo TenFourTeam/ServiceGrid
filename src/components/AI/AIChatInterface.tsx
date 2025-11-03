@@ -10,6 +10,7 @@ import { TypingIndicator } from './TypingIndicator';
 import { ConversationStarters } from './ConversationStarters';
 import { Sparkles, Trash2, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface AIChatInterfaceProps {
   open: boolean;
@@ -42,6 +43,7 @@ export function AIChatInterface({
   const { conversations, deleteConversation } = useAIConversations();
   const scrollRef = useRef<HTMLDivElement>(null);
   const hasAutoSentRef = useRef(false);
+  const isMobile = useIsMobile();
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -85,8 +87,8 @@ export function AIChatInterface({
       <SheetContent side="right" className="w-full sm:max-w-2xl p-0 flex flex-col">
         <SheetHeader className="border-b border-border px-6 py-4 flex-shrink-0">
           <SheetTitle className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-purple-600" />
+            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-primary" />
             </div>
             AI Assistant
           </SheetTitle>
@@ -154,12 +156,12 @@ export function AIChatInterface({
           {/* Main Chat Area */}
           <div className="flex-1 flex flex-col min-w-0">
             {/* Messages */}
-            <ScrollArea className="flex-1 px-4 py-6" ref={scrollRef}>
+            <ScrollArea className={cn("flex-1 py-6", isMobile ? "px-2" : "px-4")} ref={scrollRef}>
               {messages.length === 0 && !currentStreamingMessage && !isStreaming && (
                 <div className="h-full flex items-center justify-center py-8">
                   <div className="text-center max-w-2xl w-full">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
-                      <Sparkles className="w-8 h-8 text-purple-600" />
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Sparkles className="w-8 h-8 text-primary" />
                     </div>
                     <h3 className="text-lg font-semibold mb-2">AI Assistant Ready</h3>
                     <p className="text-sm text-muted-foreground mb-8">

@@ -26,15 +26,15 @@ export function TypingIndicator({ toolName, className }: TypingIndicatorProps) {
   return (
     <div className={cn('flex gap-3 mb-4', className)}>
       {/* Avatar */}
-      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
-        <Bot className="w-4 h-4 text-purple-600" />
+      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+        <Bot className="w-4 h-4 text-primary" />
       </div>
 
       {/* Typing bubble */}
       <div className="flex-1 min-w-0">
         <div className="inline-block max-w-[85%] rounded-2xl px-4 py-3 bg-muted">
           <div className="flex items-center gap-2">
-            <Loader2 className="w-4 h-4 animate-spin text-purple-600" />
+            <Loader2 className="w-4 h-4 animate-spin text-primary" />
             <span className="text-sm text-muted-foreground animate-pulse">
               {statusMessage}
             </span>

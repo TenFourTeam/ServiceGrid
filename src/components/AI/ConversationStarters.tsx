@@ -1,6 +1,7 @@
 import { Calendar, Zap, Search, FileText, Users, TrendingUp, Clock, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useIsPhone } from '@/hooks/use-phone';
 
 interface ConversationStartersProps {
   currentPage?: string;
@@ -152,6 +153,7 @@ function getStartersForPage(page?: string): Starter[] {
 
 export function ConversationStarters({ currentPage, onStarterClick, className }: ConversationStartersProps) {
   const starters = getStartersForPage(currentPage);
+  const isPhone = useIsPhone();
 
   return (
     <div className={cn('grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl', className)}>
@@ -162,9 +164,10 @@ export function ConversationStarters({ currentPage, onStarterClick, className }:
             key={index}
             variant="outline"
             className={cn(
-              "h-auto p-4 flex flex-col items-start gap-2 hover:shadow-md transition-all",
-              "border-2 hover:border-purple-200 dark:hover:border-purple-800",
-              "group relative overflow-hidden"
+              "h-auto flex flex-col items-start gap-2 hover:shadow-md transition-all",
+              "border-2 hover:border-primary/20",
+              "group relative overflow-hidden",
+              isPhone ? "p-5 min-h-[88px]" : "p-4"
             )}
             onClick={() => onStarterClick(starter.message)}
           >

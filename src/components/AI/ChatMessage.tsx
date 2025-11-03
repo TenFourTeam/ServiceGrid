@@ -52,12 +52,12 @@ export function ChatMessage({ message, isStreaming, onActionExecute }: ChatMessa
       {/* Avatar */}
       <div className={cn(
         'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center',
-        isUser ? 'bg-primary/10' : 'bg-gradient-to-br from-purple-500/20 to-pink-500/20'
+        isUser ? 'bg-primary/10' : 'bg-primary/10'
       )}>
         {isUser ? (
           <User className="w-4 h-4 text-primary" />
         ) : (
-          <Bot className="w-4 h-4 text-purple-600" />
+          <Bot className="w-4 h-4 text-primary" />
         )}
       </div>
 
