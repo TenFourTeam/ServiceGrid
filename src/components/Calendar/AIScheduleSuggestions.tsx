@@ -76,15 +76,22 @@ export function AIScheduleSuggestions({
   }
 
   return (
-    <Card className="mb-6 border-purple-200 dark:border-purple-800">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-purple-500" />
-          AI Scheduling Assistant
-        </CardTitle>
-        <CardDescription>
-          {unscheduledJobs.length} job{unscheduledJobs.length !== 1 ? 's' : ''} need{unscheduledJobs.length === 1 ? 's' : ''} scheduling
-        </CardDescription>
+    <Card className="mb-6 ai-card border-2 shadow-lg ai-fade-in">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <Sparkles className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+              AI Scheduling Assistant
+            </CardTitle>
+            <CardDescription className="text-base">
+              {unscheduledJobs.length} job{unscheduledJobs.length !== 1 ? 's' : ''} ready to schedule
+            </CardDescription>
+          </div>
+          <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
+            Powered by Gemini 2.5
+          </Badge>
+        </div>
       </CardHeader>
       <CardContent>
         {!aiScheduling.data ? (
@@ -101,20 +108,24 @@ export function AIScheduleSuggestions({
             <Button
               onClick={handleGetSuggestions}
               disabled={aiScheduling.isPending}
-              className="w-full"
+              className="w-full ai-button text-base h-11"
+              size="lg"
             >
               {aiScheduling.isPending ? (
                 <>
-                  <Sparkles className="mr-2 h-4 w-4 animate-spin" />
+                  <Sparkles className="mr-2 h-5 w-5 animate-spin" />
                   Analyzing schedule...
                 </>
               ) : (
                 <>
-                  <Sparkles className="mr-2 h-4 w-4" />
+                  <Sparkles className="mr-2 h-5 w-5" />
                   Get AI Suggestions
                 </>
               )}
             </Button>
+            <p className="text-xs text-center text-muted-foreground mt-2">
+              ⚡ Takes ~5 seconds • Considers all scheduling constraints
+            </p>
           </div>
         ) : aiScheduling.data.length === 0 ? (
           <Alert>

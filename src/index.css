@@ -226,6 +226,36 @@ All colors MUST be HSL.
   }
 }
 
+@layer components {
+  /* AI Badge Styling */
+  .ai-badge {
+    @apply bg-gradient-to-r from-purple-50 to-violet-50 border-purple-200;
+    @apply dark:from-purple-950/50 dark:to-violet-950/50 dark:border-purple-800;
+    @apply hover:shadow-lg hover:shadow-purple-200/50 dark:hover:shadow-purple-900/50;
+    @apply transition-all duration-300;
+  }
+
+  /* AI Button Styling */
+  .ai-button {
+    @apply bg-gradient-to-r from-purple-600 to-violet-600;
+    @apply hover:from-purple-700 hover:to-violet-700;
+    @apply text-white border-0;
+    @apply transition-all duration-300;
+  }
+
+  .ai-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 32px hsla(270, 100%, 65%, 0.4);
+  }
+
+  /* AI Card Styling */
+  .ai-card {
+    @apply border-purple-200 dark:border-purple-800;
+    @apply bg-gradient-to-br from-purple-50/50 to-violet-50/50;
+    @apply dark:from-purple-950/20 dark:to-violet-950/20;
+  }
+}
+
 @layer base {
   * {
     @apply border-border;
@@ -237,37 +267,55 @@ All colors MUST be HSL.
 }
 
 @layer utilities {
-  @keyframes attention-ring {
-    0% { box-shadow: 0 0 0 0 hsl(var(--ring) / 0.35); }
-    60% { box-shadow: 0 0 0 6px hsl(var(--ring) / 0); }
-    100% { box-shadow: 0 0 0 0 hsl(var(--ring) / 0); }
+  /* AI Pulse Animation */
+  @keyframes ai-pulse {
+    0%, 100% {
+      box-shadow: 0 0 0 0 hsla(270, 100%, 65%, 0.7);
+    }
+    50% {
+      box-shadow: 0 0 0 8px hsla(270, 100%, 65%, 0);
+    }
   }
 
-  .attention-ring {
-    position: relative;
-    animation: attention-ring 2.4s ease-out infinite;
+  .ai-pulse {
+    animation: ai-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 
-  @keyframes new-job-highlight {
-    0% { box-shadow: 0 0 0 0 hsl(var(--success) / 0.45); }
-    60% { box-shadow: 0 0 0 10px hsl(var(--success) / 0); }
-    100% { box-shadow: 0 0 0 0 hsl(var(--success) / 0); }
+  /* AI Shimmer Animation */
+  @keyframes ai-shimmer {
+    0% {
+      background-position: -200% center;
+    }
+    100% {
+      background-position: 200% center;
+    }
   }
 
-  .new-job-highlight {
-    animation: new-job-highlight 1.5s ease-out 2;
+  .ai-shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      hsla(270, 100%, 75%, 0.3),
+      transparent
+    );
+    background-size: 200% 100%;
+    animation: ai-shimmer 2s ease-in-out infinite;
   }
 
-  /* Spotlight overlay with CSS mask */
-  .spotlight-overlay {
-    -webkit-mask: 
-      radial-gradient(ellipse var(--spotlight-w) var(--spotlight-h) at var(--spotlight-x) var(--spotlight-y), transparent 50%, black 52%),
-      linear-gradient(black, black);
-    mask: 
-      radial-gradient(ellipse var(--spotlight-w) var(--spotlight-h) at var(--spotlight-x) var(--spotlight-y), transparent 50%, black 52%),
-      linear-gradient(black, black);
-    -webkit-mask-composite: subtract;
-    mask-composite: subtract;
+  /* AI Fade In Animation */
+  @keyframes ai-fade-in {
+    0% {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .ai-fade-in {
+    animation: ai-fade-in 0.4s ease-out;
   }
 }
 

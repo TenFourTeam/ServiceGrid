@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_activity_log: {
+        Row: {
+          accepted: boolean | null
+          activity_type: string
+          business_id: string
+          created_at: string
+          description: string
+          id: string
+          metadata: Json | null
+          user_id: string
+        }
+        Insert: {
+          accepted?: boolean | null
+          activity_type: string
+          business_id: string
+          created_at?: string
+          description: string
+          id?: string
+          metadata?: Json | null
+          user_id: string
+        }
+        Update: {
+          accepted?: boolean | null
+          activity_type?: string
+          business_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          metadata?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_activity_log_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
