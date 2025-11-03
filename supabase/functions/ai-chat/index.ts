@@ -565,6 +565,218 @@ const tools: Record<string, Tool> = {
         new_end_time: newEndTime
       };
     }
+  },
+
+  batch_schedule_jobs: {
+    name: 'batch_schedule_jobs',
+    description: 'Schedule multiple jobs at once with AI optimization. Gathers full context (constraints, availability, time off, customer preferences) and uses intelligent scheduling.',
+    parameters: {
+      type: 'object',
+      properties: {
+        jobIds: { 
+          type: 'array', 
+          items: { type: 'string' },
+          description: 'Array of job IDs to schedule' 
+        },
+        preferredDateRange: {
+          type: 'object',
+          properties: {
+            start: { type: 'string', description: 'Start date YYYY-MM-DD' },
+            end: { type: 'string', description: 'End date YYYY-MM-DD' }
+          },
+          description: 'Optional date range to schedule within'
+        },
+        constraints: {
+          type: 'object',
+          properties: {
+            prioritizeUrgent: { type: 'boolean', description: 'Schedule urgent jobs first' },
+            groupByLocation: { type: 'boolean', description: 'Minimize travel time' }
+          },
+          description: 'Optional scheduling preferences'
+        }
+      },
+      required: ['jobIds']
+    },
+    execute: async (args: any, context: any) => {
+      console.info('[batch_schedule_jobs] Starting batch schedule', { jobCount: args.jobIds.length });
+
+      // 1. Gather all unscheduled jobs
+      const { data: jobs, error: jobsError } = await context.supabase
+        .from('jobs')
+        .select('*, customers(id, name, address, preferred_days, avoid_days, preferred_time_window)')
+        .in('id', args.jobIds)
+        .eq('business_id', context.businessId);
+      
+      if (jobsError) throw jobsError;
+      if (!jobs || jobs.length === 0) throw new Error('No jobs found');
+
+      // 2. Gather scheduling context
+      const dateRange = args.preferredDateRange || {
+        start: new Date().toISOString().split('T')[0],
+        end: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      };
+
+      // Get existing jobs in date range
+      const { data: existingJobs } = await context.supabase
+        .from('jobs')
+        .select('*, job_assignments(user_id), customers(address)')
+        .eq('business_id', context.businessId)
+        .gte('starts_at', `${dateRange.start}T00:00:00Z`)
+        .lte('starts_at', `${dateRange.end}T23:59:59Z`)
+        .order('starts_at', { ascending: true });
+
+      // Get team members
+      const { data: teamMembers } = await context.supabase
+        .from('business_permissions')
+        .select('user_id, profiles(id, full_name, email)')
+        .eq('business_id', context.businessId);
+
+      // Get team availability
+      const { data: availability } = await context.supabase
+        .from('team_availability')
+        .select('*')
+        .eq('business_id', context.businessId);
+
+      // Get approved time off
+      const { data: timeOff } = await context.supabase
+        .from('time_off_requests')
+        .select('*')
+        .eq('business_id', context.businessId)
+        .eq('status', 'approved')
+        .gte('end_date', dateRange.start);
+
+      // Get business constraints
+      const { data: constraints } = await context.supabase
+        .from('business_constraints')
+        .select('*')
+        .eq('business_id', context.businessId)
+        .eq('is_active', true);
+
+      // Extract customer preferences
+      const customerPreferences = jobs.map(j => j.customers).filter(Boolean);
+
+      console.info('[batch_schedule_jobs] Context gathered', {
+        existingJobsCount: existingJobs?.length || 0,
+        teamMembersCount: teamMembers?.length || 0,
+        availabilityRecords: availability?.length || 0,
+        timeOffRequests: timeOff?.length || 0,
+        constraints: constraints?.length || 0
+      });
+
+      // 3. Call ai-schedule-optimizer with full context
+      const { data, error } = await context.supabase.functions.invoke(
+        'ai-schedule-optimizer',
+        {
+          body: {
+            businessId: context.businessId,
+            unscheduledJobs: jobs,
+            existingJobs: existingJobs || [],
+            teamMembers: teamMembers || [],
+            constraints: constraints || [],
+            availability: availability || [],
+            timeOff: timeOff || [],
+            customerPreferences: customerPreferences
+          }
+        }
+      );
+      
+      if (error) {
+        console.error('[batch_schedule_jobs] AI optimization error:', error);
+        throw new Error('Failed to generate schedule suggestions');
+      }
+
+      const suggestions = data.suggestions || [];
+      console.info('[batch_schedule_jobs] AI suggestions received', { count: suggestions.length });
+
+      // 4. Apply scheduling suggestions
+      const results = [];
+      const failed = [];
+      
+      for (const suggestion of suggestions) {
+        try {
+          // Update job with suggested time and mark as AI suggested
+          const { error: updateError } = await context.supabase
+            .from('jobs')
+            .update({
+              starts_at: suggestion.recommendedStartTime,
+              ends_at: suggestion.recommendedEndTime,
+              status: 'Scheduled',
+              ai_suggested: true,
+              scheduling_score: suggestion.priorityScore,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', suggestion.jobId)
+            .eq('business_id', context.businessId);
+          
+          if (updateError) {
+            console.error('[batch_schedule_jobs] Failed to update job:', suggestion.jobId, updateError);
+            failed.push({ jobId: suggestion.jobId, error: updateError.message });
+            continue;
+          }
+
+          // Assign team member if suggested
+          if (suggestion.assignedMemberId) {
+            const { error: assignError } = await context.supabase
+              .from('job_assignments')
+              .insert({
+                job_id: suggestion.jobId,
+                user_id: suggestion.assignedMemberId,
+                assigned_by: context.userId
+              });
+            
+            if (assignError) {
+              console.warn('[batch_schedule_jobs] Failed to assign member:', assignError);
+            }
+          }
+          
+          const job = jobs.find(j => j.id === suggestion.jobId);
+          results.push({
+            jobId: suggestion.jobId,
+            jobTitle: job?.title,
+            success: true,
+            scheduledTime: suggestion.recommendedStartTime,
+            assignedTo: suggestion.assignedMemberId,
+            reasoning: suggestion.reasoning,
+            priorityScore: suggestion.priorityScore
+          });
+        } catch (err) {
+          console.error('[batch_schedule_jobs] Error processing suggestion:', err);
+          failed.push({ jobId: suggestion.jobId, error: err.message });
+        }
+      }
+      
+      // 5. Log activity
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'batch_schedule',
+        description: `Scheduled ${results.length} of ${args.jobIds.length} jobs using AI optimization`,
+        metadata: {
+          tool: 'batch_schedule_jobs',
+          requested: args.jobIds.length,
+          scheduled: results.length,
+          failed: failed.length,
+          constraints: args.constraints
+        },
+        accepted: true
+      });
+
+      console.info('[batch_schedule_jobs] Completed', {
+        scheduled: results.length,
+        failed: failed.length
+      });
+
+      return {
+        success: true,
+        scheduled_count: results.length,
+        requested_count: args.jobIds.length,
+        results,
+        failed,
+        message: failed.length > 0 
+          ? `Scheduled ${results.length} of ${args.jobIds.length} jobs. ${failed.length} couldn't be scheduled.`
+          : `Successfully scheduled all ${results.length} jobs.`
+      };
+    }
   }
 };
 
@@ -617,8 +829,8 @@ Deno.serve(async (req) => {
     const messages: Message[] = history || [];
 
     // Build system prompt with context
-    const systemPrompt = `You are a proactive AI assistant for a service business management system. 
-You can both QUERY information and TAKE ACTIONS to help manage the business.
+    const systemPrompt = `You are a proactive AI scheduling assistant for a service business management system.
+You can both QUERY information and TAKE ACTIONS to help manage the business efficiently.
 
 Current Context:
 - Business ID: ${businessId}
@@ -629,43 +841,73 @@ Available Tools:
 1. get_unscheduled_jobs - Find jobs that need scheduling
 2. check_team_availability - Check who's free at specific times
 3. get_schedule_summary - Overview of jobs in date range
-4. auto_schedule_job - Automatically schedule a job with AI optimization
-5. create_job_from_request - Convert service request to job
-6. optimize_route_for_date - Optimize job order for efficiency
-7. get_scheduling_conflicts - Find overlapping bookings
-8. get_customer_details - Get customer history and info
-9. update_job_status - Change job status
-10. get_capacity_forecast - Predict workload and availability
-11. reschedule_job - Move job to different time
+4. auto_schedule_job - Schedule single job with basic optimization
+5. batch_schedule_jobs - ⭐ SMART BATCH SCHEDULER - Schedule multiple jobs at once with full AI optimization
+6. create_job_from_request - Convert service request to job
+7. optimize_route_for_date - Optimize job order for efficiency
+8. get_scheduling_conflicts - Find overlapping bookings
+9. get_customer_details - Get customer history and info
+10. update_job_status - Change job status
+11. get_capacity_forecast - Predict workload and availability
+12. reschedule_job - Move job to different time
 
-Key Capabilities:
-- Query schedules, jobs, availability, and customer data
-- Auto-schedule jobs using AI optimization
-- Create jobs from service requests
-- Update job statuses and reschedule bookings
-- Find conflicts and optimize routes
-- Forecast capacity and workload
+SCHEDULING WORKFLOW (IMPORTANT):
+When user asks to schedule jobs, follow this flow:
 
-IMPORTANT INSTRUCTIONS FOR RESPONSES:
-1. Be proactive and actionable - don't just suggest, offer to execute
-2. When suggesting actions, include clickable buttons using this format:
-   [BUTTON:action_id:Button Label]
+1. FIRST: Use get_unscheduled_jobs to see what needs scheduling
+   - Explain what you found (count, priorities, any urgent ones)
+   - Show key details (customer names, locations if groupable)
+
+2. THEN: Offer to schedule them using batch_schedule_jobs
+   - This is your MAIN scheduling tool - it's smart and considers:
+     * Team availability and time off
+     * Customer preferred days/times
+     * Travel time between jobs (groups by location)
+     * Business constraints (max hours, operating hours)
+     * Priority (urgent jobs scheduled first)
+   - Example: "I can schedule all 5 jobs optimally right now. [BUTTON:batch_schedule:[job_ids]:Schedule All]"
+
+3. AFTER SCHEDULING: Confirm and offer next steps
+   - Show what was scheduled (dates/times)
+   - Offer calendar view: "View on calendar: [BUTTON:view_calendar_2024-03-15:Open Calendar 📅]"
+   - Suggest follow-ups if relevant
+
+BATCH SCHEDULING INTELLIGENCE:
+The batch_schedule_jobs tool is SMART:
+✅ Respects team availability and time off
+✅ Groups jobs by location to minimize driving
+✅ Honors customer preferred days/time windows
+✅ Balances workload across team members
+✅ Schedules urgent jobs (priority 1-2) first
+✅ Leaves buffers between jobs for travel
+✅ Checks business constraints (max jobs/day, hours)
+
+RESPONSE STYLE:
+1. Be proactive and actionable - don't just inform, offer to act
+2. Use clickable buttons for actions:
+   [BUTTON:message_to_send:Button Label]
    
    Examples:
-   - "I found 5 unscheduled jobs. [BUTTON:Schedule all pending jobs:Schedule All]"
-   - "This route can be optimized. [BUTTON:Optimize route for today:Optimize Route]"
-   - "Job #123 needs attention. [BUTTON:Show me job details for 123:View Details]"
+   - "Found 5 jobs. [BUTTON:batch_schedule_jobs with job IDs:Schedule All]"
+   - "3 urgent jobs! [BUTTON:batch_schedule priority jobs:Schedule Urgent First]"
    
-3. Keep responses concise but informative (2-4 sentences ideal)
-4. Use emojis sparingly for visual hierarchy (✅ success, ⚠️ warnings, 📅 scheduling)
-5. When executing tools, explain what you're doing naturally
-6. Always confirm before destructive changes (cancellations, deletions)
-7. If multiple actions are needed, prioritize and explain why
+3. Keep responses concise (2-4 sentences ideal)
+4. Use emojis for visual hierarchy (✅ success, ⚠️ warnings, 📅 scheduling, 🚗 travel)
+5. Explain AI reasoning when scheduling: "Grouped these 3 jobs because they're all on Main Street"
+6. Always confirm before cancellations or major changes
+7. If capacity issues, explain constraints clearly
 
-Response Format Examples:
-- "I found 3 unscheduled jobs ready for scheduling. [BUTTON:Schedule all pending jobs:Schedule Now]"
-- "Your team is at 85% capacity tomorrow. ⚠️ Consider adding resources. [BUTTON:Show me team availability tomorrow:Check Availability]"
-- "✅ I've optimized today's route, saving 45 minutes of travel time."`;
+Response Examples:
+✅ Good: "Found 3 unscheduled jobs, all in the same area. I can schedule them back-to-back tomorrow morning to minimize travel. [BUTTON:Schedule these 3 jobs tomorrow:Schedule]"
+✅ Good: "⚠️ 2 urgent jobs found. I'll prioritize these and fit 3 others around team availability. [BUTTON:batch_schedule_jobs with all IDs:Schedule All]"
+❌ Bad: "There are some jobs that need scheduling. Would you like me to look into that?"
+
+INTELLIGENCE NOTES:
+- When jobs have same/nearby addresses → Mention grouping for efficiency
+- When customer has preferred days → Honor those preferences
+- When team is at capacity → Suggest spreading across multiple days
+- When urgent jobs exist → Prioritize those first
+- Always explain YOUR reasoning for scheduling decisions`;
 
 
     // Prepare messages for AI

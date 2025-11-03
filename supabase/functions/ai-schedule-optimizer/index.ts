@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.54.0';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -7,7 +8,16 @@ serve(async (req) => {
   }
 
   try {
-    const { businessId, unscheduledJobs, existingJobs, teamMembers } = await req.json();
+    const { 
+      businessId, 
+      unscheduledJobs, 
+      existingJobs, 
+      teamMembers,
+      constraints,
+      availability,
+      timeOff,
+      customerPreferences
+    } = await req.json();
     
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
@@ -22,37 +32,159 @@ serve(async (req) => {
       teamMembersCount: teamMembers.length
     });
 
-    // Build context for AI
-    const systemPrompt = `You are an intelligent scheduling assistant for a service business.
-Analyze the provided data and suggest optimal scheduling for unscheduled jobs.
+    // Helper functions for formatting context
+    const formatTeamAvailability = () => {
+      if (!availability || availability.length === 0) return 'No availability data provided';
+      
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const byMember = availability.reduce((acc: any, avail: any) => {
+        if (!acc[avail.user_id]) acc[avail.user_id] = [];
+        acc[avail.user_id].push(avail);
+        return acc;
+      }, {});
 
-Consider these factors:
-1. Job priority (1=urgent, 5=low priority) - urgent jobs should be scheduled ASAP
-2. Geographic proximity between jobs (minimize travel time)
-3. Team member availability and current workload
-4. Customer preferred time windows if provided
-5. Estimated job duration
+      return Object.entries(byMember).map(([userId, avails]: [string, any]) => {
+        const member = teamMembers.find((m: any) => m.user_id === userId);
+        const name = member?.profiles?.full_name || 'Unknown';
+        const schedule = (avails as any[]).map((a: any) => 
+          `${days[a.day_of_week]}: ${a.start_time}-${a.end_time}${!a.is_available ? ' (unavailable)' : ''}`
+        ).join(', ');
+        return `${name}: ${schedule}`;
+      }).join('\n');
+    };
+
+    const formatTimeOff = () => {
+      if (!timeOff || timeOff.length === 0) return 'No time off scheduled';
+      
+      return timeOff
+        .filter((t: any) => t.status === 'approved')
+        .map((t: any) => {
+          const member = teamMembers.find((m: any) => m.user_id === t.user_id);
+          const name = member?.profiles?.full_name || 'Unknown';
+          return `${name}: ${t.start_date} to ${t.end_date}${t.reason ? ` (${t.reason})` : ''}`;
+        }).join('\n') || 'No approved time off';
+    };
+
+    const formatCustomerPreferences = () => {
+      if (!customerPreferences || customerPreferences.length === 0) return 'No customer preferences';
+      
+      return customerPreferences.map((pref: any) => {
+        const job = unscheduledJobs.find((j: any) => j.customer_id === pref.id);
+        if (!job) return null;
+        
+        let prefStr = `Job "${job.title}" (${pref.name}):`;
+        if (pref.preferred_days?.length > 0) {
+          prefStr += ` Prefers ${pref.preferred_days.join(', ')}`;
+        }
+        if (pref.avoid_days?.length > 0) {
+          prefStr += ` | Avoid ${pref.avoid_days.join(', ')}`;
+        }
+        if (pref.preferred_time_window) {
+          prefStr += ` | Time window: ${pref.preferred_time_window.start}-${pref.preferred_time_window.end}`;
+        }
+        return prefStr;
+      }).filter(Boolean).join('\n') || 'No specific preferences';
+    };
+
+    const formatConstraints = () => {
+      if (!constraints || constraints.length === 0) {
+        return 'Standard business hours: 8 AM - 5 PM\nNo specific constraints';
+      }
+      
+      return constraints.map((c: any) => {
+        if (c.constraint_type === 'max_jobs_per_day') {
+          return `Max ${c.constraint_value.max_jobs} jobs per day`;
+        }
+        if (c.constraint_type === 'max_hours_per_day') {
+          return `Max ${c.constraint_value.max_hours} hours per day`;
+        }
+        if (c.constraint_type === 'operating_hours') {
+          return `Operating hours: ${c.constraint_value.start_time} - ${c.constraint_value.end_time}`;
+        }
+        return null;
+      }).filter(Boolean).join('\n') || 'No specific constraints';
+    };
+
+    // Build enhanced context for AI
+    const systemPrompt = `You are an expert scheduling optimizer for service businesses.
+
+OPTIMIZATION GOALS (in priority order):
+1. Respect hard constraints (availability, time off, business hours)
+2. Schedule urgent jobs first (priority 1-2 = urgent, 3-5 = normal)
+3. Minimize total travel time (group jobs by location when possible)
+4. Balance workload across team members
+5. Honor customer preferred time windows and days
+6. Avoid scheduling gaps > 2 hours in daily schedules
+7. Keep jobs within business operating hours
+
+BUSINESS CONSTRAINTS:
+${formatConstraints()}
+
+TEAM AVAILABILITY (weekly patterns):
+${formatTeamAvailability()}
+
+APPROVED TIME OFF:
+${formatTimeOff()}
+
+CUSTOMER PREFERENCES:
+${formatCustomerPreferences()}
+
+SCHEDULING INTELLIGENCE:
+- Always check if team member has approved time off before assigning
+- Group jobs by location to minimize driving between appointments
+- Consider job estimated duration when calculating end times
+- If customer has preferred days/times, prioritize those slots
+- Balance workload - don't overload one person while others are idle
+- Leave 15-30 minute buffer between jobs for travel/prep
+- For urgent jobs (priority 1-2), schedule within next 24-48 hours
 
 Return structured suggestions with clear reasoning for each recommendation.`;
 
     const userPrompt = `
 Current date: ${new Date().toISOString()}
 
-Unscheduled Jobs (need scheduling):
-${JSON.stringify(unscheduledJobs, null, 2)}
+UNSCHEDULED JOBS (need scheduling):
+${JSON.stringify(unscheduledJobs.map((j: any) => ({
+  id: j.id,
+  title: j.title,
+  customer: j.customers?.name,
+  address: j.customers?.address || j.address,
+  priority: j.priority || 3,
+  estimated_duration_minutes: j.estimated_duration_minutes || 60,
+  notes: j.notes
+})), null, 2)}
 
-Existing Schedule (already scheduled jobs):
-${JSON.stringify(existingJobs.slice(0, 20), null, 2)}
+EXISTING SCHEDULE (already booked):
+${JSON.stringify(existingJobs.slice(0, 30).map((j: any) => ({
+  title: j.title,
+  starts_at: j.starts_at,
+  ends_at: j.ends_at,
+  address: j.address || j.customers?.address,
+  assigned_to: j.job_assignments?.[0]?.user_id
+})), null, 2)}
 
-Available Team Members:
-${JSON.stringify(teamMembers, null, 2)}
+AVAILABLE TEAM MEMBERS:
+${JSON.stringify(teamMembers.map((m: any) => ({
+  id: m.user_id,
+  name: m.profiles?.full_name || m.profiles?.email,
+  role: m.role || 'worker'
+})), null, 2)}
 
-Please suggest optimal time slots for each unscheduled job. For each suggestion:
-- Consider job priority and urgency
-- Group jobs by location to minimize travel
-- Balance workload across team members
-- Respect preferred time windows
-- Account for estimated duration
+Analyze all the context above and suggest optimal scheduling for each unscheduled job.
+
+For each job, provide:
+- recommendedStartTime: ISO 8601 datetime (e.g., "2024-03-15T09:00:00Z")
+- recommendedEndTime: ISO 8601 datetime
+- assignedMemberId: Team member ID (must be from available members list)
+- priorityScore: Confidence score 0.0-1.0 (how optimal is this suggestion)
+- reasoning: Clear explanation of WHY this time/person/date is optimal
+- alternatives: Brief mention of 1-2 backup options if this doesn't work
+
+IMPORTANT: 
+- Check availability before assigning
+- Respect time off requests
+- Honor customer preferences when possible
+- Explain your reasoning clearly
 `;
 
     console.info('[ai-schedule-optimizer] Calling Lovable AI');
@@ -84,11 +216,13 @@ Please suggest optimal time slots for each unscheduled job. For each suggestion:
                     jobId: { type: "string", description: "The job ID being scheduled" },
                     recommendedStartTime: { type: "string", description: "ISO 8601 datetime for start" },
                     recommendedEndTime: { type: "string", description: "ISO 8601 datetime for end" },
-                    assignedMemberId: { type: "string", description: "Team member ID to assign (optional)" },
+                    assignedMemberId: { type: "string", description: "Team member ID to assign" },
                     priorityScore: { type: "number", description: "Confidence score 0.0-1.0" },
-                    reasoning: { type: "string", description: "Why this time slot is optimal" }
+                    reasoning: { type: "string", description: "Why this time slot is optimal" },
+                    alternatives: { type: "string", description: "Brief mention of backup options" },
+                    travelTimeMinutes: { type: "number", description: "Estimated travel time from previous job" }
                   },
-                  required: ["jobId", "recommendedStartTime", "recommendedEndTime", "priorityScore", "reasoning"]
+                  required: ["jobId", "recommendedStartTime", "recommendedEndTime", "assignedMemberId", "priorityScore", "reasoning"]
                 }
               }
             },
