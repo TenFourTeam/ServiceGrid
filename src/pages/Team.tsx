@@ -342,7 +342,7 @@ export default function Team() {
                 <p className="text-sm text-muted-foreground">Submit and manage time off requests</p>
               </CardHeader>
               <CardContent>
-                <TimeOffManagement />
+                <TimeOffManagement isManager={role === 'owner'} />
               </CardContent>
             </Card>
           </TabsContent>
