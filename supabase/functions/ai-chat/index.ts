@@ -1,9 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.54.0';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { requireCtx, corsHeaders } from '../_lib/auth.ts';
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -578,27 +574,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('No authorization header');
-    }
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) throw new Error('Unauthorized');
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, default_business_id')
-      .eq('clerk_user_id', user.id)
-      .single();
-
-    if (!profile?.default_business_id) throw new Error('No business context');
+    // Authenticate using Clerk JWT
+    const { userId, businessId, supaAdmin } = await requireCtx(req);
 
     const { conversationId, message, includeContext } = await req.json();
 
@@ -606,11 +583,11 @@ Deno.serve(async (req) => {
     
     // Create or load conversation
     if (!convId) {
-      const { data: newConv, error: convError } = await supabase
+      const { data: newConv, error: convError } = await supaAdmin
         .from('ai_chat_conversations')
         .insert({
-          business_id: profile.default_business_id,
-          user_id: profile.id,
+          business_id: businessId,
+          user_id: userId,
           title: message.substring(0, 100)
         })
         .select()
@@ -621,7 +598,7 @@ Deno.serve(async (req) => {
     }
 
     // Save user message
-    await supabase
+    await supaAdmin
       .from('ai_chat_messages')
       .insert({
         conversation_id: convId,
@@ -630,7 +607,7 @@ Deno.serve(async (req) => {
       });
 
     // Load conversation history
-    const { data: history } = await supabase
+    const { data: history } = await supaAdmin
       .from('ai_chat_messages')
       .select('role, content')
       .eq('conversation_id', convId)
@@ -644,7 +621,7 @@ Deno.serve(async (req) => {
 You can both QUERY information and TAKE ACTIONS to help manage the business.
 
 Current Context:
-- Business ID: ${profile.default_business_id}
+- Business ID: ${businessId}
 - Current Page: ${includeContext?.currentPage || 'unknown'}
 - Date: ${new Date().toISOString().split('T')[0]}
 
@@ -775,9 +752,9 @@ Response Format Examples:
 
                           const args = JSON.parse(toolCall.function.arguments || '{}');
                           const context = {
-                            supabase,
-                            businessId: profile.default_business_id,
-                            userId: profile.id
+                            supabase: supaAdmin,
+                            businessId: businessId,
+                            userId: userId
                           };
 
                           const result = await tool.execute(args, context);
@@ -797,7 +774,7 @@ Response Format Examples:
           }
 
           // Save AI response
-          await supabase
+          await supaAdmin
             .from('ai_chat_messages')
             .insert({
               conversation_id: convId,
