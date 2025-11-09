@@ -511,8 +511,10 @@
       "frequency": {
         "label": "Frequency",
         "oneOff": "One-off",
+        "weekly": "Weekly",
         "biMonthly": "Bi-monthly",
         "monthly": "Monthly",
+        "quarterly": "Quarterly",
         "biYearly": "Bi-yearly",
         "yearly": "Yearly"
       },

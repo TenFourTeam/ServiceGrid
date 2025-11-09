@@ -510,8 +510,10 @@
       "frequency": {
         "label": "Frecuencia",
         "oneOff": "Único",
+        "weekly": "Semanal",
         "biMonthly": "Bimestral",
         "monthly": "Mensual",
+        "quarterly": "Trimestral",
         "biYearly": "Semestral",
         "yearly": "Anual"
       },

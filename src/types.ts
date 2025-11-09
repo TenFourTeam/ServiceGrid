@@ -4,7 +4,7 @@ export type Money = number; // cents
 export type ISODate = string;
 
 // New types for quotes
-export type QuoteFrequency = 'one-off' | 'bi-monthly' | 'monthly' | 'bi-yearly' | 'yearly';
+export type QuoteFrequency = 'one-off' | 'weekly' | 'bi-monthly' | 'monthly' | 'quarterly' | 'bi-yearly' | 'yearly';
 export type PaymentTerms = 'due_on_receipt' | 'net_15' | 'net_30' | 'net_60';
 
 export interface Business {

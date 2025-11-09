@@ -25,7 +25,7 @@ interface QuoteFormData {
   notesInternal: string;
   terms: string;
   paymentTerms: 'due_on_receipt' | 'net_15' | 'net_30' | 'net_60';
-  frequency: 'one-off' | 'bi-monthly' | 'monthly' | 'bi-yearly' | 'yearly';
+  frequency: 'one-off' | 'weekly' | 'bi-monthly' | 'monthly' | 'quarterly' | 'bi-yearly' | 'yearly';
   depositRequired: boolean;
   depositPercent: number;
   isSubscription: boolean;
@@ -295,8 +295,10 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
                       <SelectValue placeholder="Select billing frequency" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="weekly">{t('quotes.form.frequency.weekly')}</SelectItem>
                       <SelectItem value="bi-monthly">{t('quotes.form.frequency.biMonthly')}</SelectItem>
                       <SelectItem value="monthly">{t('quotes.form.frequency.monthly')}</SelectItem>
+                      <SelectItem value="quarterly">{t('quotes.form.frequency.quarterly')}</SelectItem>
                       <SelectItem value="bi-yearly">{t('quotes.form.frequency.biYearly')}</SelectItem>
                       <SelectItem value="yearly">{t('quotes.form.frequency.yearly')}</SelectItem>
                     </SelectContent>

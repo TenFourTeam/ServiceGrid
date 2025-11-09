@@ -192,15 +192,23 @@ serve(async (req) => {
           customerId = created.id;
         }
 
-        const frequencyMap: Record<string, "month" | "week" | "year"> = {
-          Weekly: "week",
-          Monthly: "month",
-          Quarterly: "month",
-          Yearly: "year",
+        // Map frontend frequency names to Stripe intervals
+        const frequencyToStripeMap: Record<string, { interval: "day" | "week" | "month" | "year", count: number }> = {
+          'weekly': { interval: 'week', count: 1 },
+          'bi-monthly': { interval: 'week', count: 2 },
+          'monthly': { interval: 'month', count: 1 },
+          'quarterly': { interval: 'month', count: 3 },
+          'bi-yearly': { interval: 'month', count: 6 },
+          'yearly': { interval: 'year', count: 1 },
+          
+          // Legacy capitalized versions for backward compatibility
+          'Weekly': { interval: 'week', count: 1 },
+          'Monthly': { interval: 'month', count: 1 },
+          'Quarterly': { interval: 'month', count: 3 },
+          'Yearly': { interval: 'year', count: 1 },
         };
 
-        const interval = frequencyMap[quote.frequency] || "month";
-        const intervalCount = quote.frequency === "Quarterly" ? 3 : 1;
+        const stripeConfig = frequencyToStripeMap[quote.frequency] || { interval: 'month', count: 1 };
 
         const product = await stripe.products.create({
           name: `Subscription for Quote ${quote.id}`,
@@ -210,7 +218,10 @@ serve(async (req) => {
           product: product.id,
           unit_amount: quote.total,
           currency: "usd",
-          recurring: { interval, interval_count: intervalCount },
+          recurring: { 
+            interval: stripeConfig.interval, 
+            interval_count: stripeConfig.count 
+          },
         });
 
         const subscription = await stripe.subscriptions.create({
