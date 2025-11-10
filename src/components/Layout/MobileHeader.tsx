@@ -77,117 +77,116 @@ export default function MobileHeader({ title, businessId }: MobileHeaderProps) {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-          <SheetContent side="right">
-            <div className="flex flex-col h-full">
-              <div className="space-y-4">
-                <div className="text-center">
-                  <p className="font-medium">{profile?.profile?.fullName || user?.fullName || "Account"}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {user?.primaryEmailAddress?.emailAddress || user?.emailAddresses?.[0]?.emailAddress}
-                  </p>
-                </div>
-
-                <Separator />
-
-                {/* Core Navigation - Group 1 */}
-                <div className="space-y-2">
-                  {visibleCoreItems.map((item) => (
-                    <Button
-                      key={item.url}
-                      variant="ghost"
-                      className={`w-full justify-start ${
-                        isActivePath(item.url)
-                          ? "bg-accent text-accent-foreground"
-                          : "hover:bg-muted/50"
-                      }`}
-                      onClick={() => navigate(buildUrl(item.url))}
-                    >
-                      <item.icon className="mr-2 h-4 w-4" />
-                      {item.title}
-                    </Button>
-                  ))}
-                </div>
-
-                {visibleBusinessItems.length > 0 && (
-                  <>
-                    <Separator />
-                    
-                    {/* Business Navigation - Group 2 */}
-                    <div className="space-y-2">
-                      {visibleBusinessItems.map((item) => (
-                        <Button
-                          key={item.url}
-                          variant="ghost"
-                          className={`w-full justify-start ${
-                            isActivePath(item.url)
-                              ? "bg-accent text-accent-foreground"
-                              : "hover:bg-muted/50"
-                          }`}
-                          onClick={() => navigate(buildUrl(item.url))}
-                        >
-                          <item.icon className="mr-2 h-4 w-4" />
-                          {item.title}
-                        </Button>
-                      ))}
-                    </div>
-                  </>
-                )}
-
-                <Separator />
-
-                <div className="space-y-2">
-                  <Button
-                    variant="ghost"
-                    className={`w-full justify-start ${
-                      location.pathname === '/settings'
-                        ? "bg-accent text-accent-foreground"
-                        : "hover:bg-muted/50"
-                    }`}
-                    onClick={() => navigate('/settings')}
-                  >
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    className={`w-full justify-start ${
-                      location.pathname === '/legal'
-                        ? "bg-accent text-accent-foreground"
-                        : "hover:bg-muted/50"
-                    }`}
-                    onClick={() => navigate('/legal')}
-                  >
-                    <FileText className="mr-2 h-4 w-4" />
-                    Terms & Services
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    className={`w-full justify-start ${
-                      location.pathname === '/referral'
-                        ? "bg-accent text-accent-foreground"
-                        : "hover:bg-muted/50"
-                    }`}
-                    onClick={() => navigate('/referral')}
-                  >
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Refer A Friend
-                  </Button>
-                </div>
+          <SheetContent side="right" className="flex flex-col overflow-hidden">
+            {/* Scrollable content area */}
+            <div className="flex-1 overflow-y-auto space-y-4">
+              <div className="text-center">
+                <p className="font-medium">{profile?.profile?.fullName || user?.fullName || "Account"}</p>
+                <p className="text-sm text-muted-foreground">
+                  {user?.primaryEmailAddress?.emailAddress || user?.emailAddresses?.[0]?.emailAddress}
+                </p>
               </div>
 
-              <div className="mt-auto pt-4">
-                <Separator className="mb-4" />
-                <SignOutButton 
-                  variant="ghost" 
-                  size="sm" 
-                  showConfirmation={false} 
-                  onSignOut={() => {
-                    sessionStorage.setItem('just-logged-out', 'true');
-                  }} 
-                />
+              <Separator />
+
+              {/* Core Navigation - Group 1 */}
+              <div className="space-y-2">
+                {visibleCoreItems.map((item) => (
+                  <Button
+                    key={item.url}
+                    variant="ghost"
+                    className={`w-full justify-start ${
+                      isActivePath(item.url)
+                        ? "bg-accent text-accent-foreground"
+                        : "hover:bg-muted/50"
+                    }`}
+                    onClick={() => navigate(buildUrl(item.url))}
+                  >
+                    <item.icon className="mr-2 h-4 w-4" />
+                    {item.title}
+                  </Button>
+                ))}
               </div>
+
+              {visibleBusinessItems.length > 0 && (
+                <>
+                  <Separator />
+                  
+                  {/* Business Navigation - Group 2 */}
+                  <div className="space-y-2">
+                    {visibleBusinessItems.map((item) => (
+                      <Button
+                        key={item.url}
+                        variant="ghost"
+                        className={`w-full justify-start ${
+                          isActivePath(item.url)
+                            ? "bg-accent text-accent-foreground"
+                            : "hover:bg-muted/50"
+                        }`}
+                        onClick={() => navigate(buildUrl(item.url))}
+                      >
+                        <item.icon className="mr-2 h-4 w-4" />
+                        {item.title}
+                      </Button>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              <Separator />
+
+              <div className="space-y-2">
+                <Button
+                  variant="ghost"
+                  className={`w-full justify-start ${
+                    location.pathname === '/settings'
+                      ? "bg-accent text-accent-foreground"
+                      : "hover:bg-muted/50"
+                  }`}
+                  onClick={() => navigate('/settings')}
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  Settings
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  className={`w-full justify-start ${
+                    location.pathname === '/legal'
+                      ? "bg-accent text-accent-foreground"
+                      : "hover:bg-muted/50"
+                  }`}
+                  onClick={() => navigate('/legal')}
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  Terms & Services
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  className={`w-full justify-start ${
+                    location.pathname === '/referral'
+                      ? "bg-accent text-accent-foreground"
+                      : "hover:bg-muted/50"
+                  }`}
+                  onClick={() => navigate('/referral')}
+                >
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Refer A Friend
+                </Button>
+              </div>
+            </div>
+
+            {/* Fixed bottom section */}
+            <div className="pt-4 border-t shrink-0">
+              <SignOutButton 
+                variant="ghost" 
+                size="sm" 
+                showConfirmation={false} 
+                onSignOut={() => {
+                  sessionStorage.setItem('just-logged-out', 'true');
+                }} 
+              />
             </div>
           </SheetContent>
         </Sheet>
