@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
@@ -109,48 +110,69 @@ export default function ReschedulePopover({ job, onDone, asDropdownItem = false 
     }
   };
 
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild={!asDropdownItem}>
-        {asDropdownItem ? (
-          <div className="flex items-center gap-2">
+  const content = (
+    <div className="space-y-3">
+      <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1">
+          <label className="text-xs text-muted-foreground">{t('workOrders.reschedule.startTime')}</label>
+          <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs text-muted-foreground">{t('workOrders.reschedule.duration')}</label>
+          <select
+            className="h-9 rounded-md border bg-background px-2 text-sm"
+            value={durationMins}
+            onChange={(e) => setDurationMins(parseInt(e.target.value, 10))}
+          >
+            {[30, 45, 60, 90, 120, 180].map((d) => (
+              <option key={d} value={d}>{d} {t('workOrders.reschedule.minutes')}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        <Button variant="ghost" size="sm" onClick={handleUnschedule} disabled={submitting}>
+          {t('workOrders.reschedule.unschedule')}
+        </Button>
+        <Button size="sm" onClick={handleSave} disabled={submitting}>
+          {t('workOrders.reschedule.save')}
+        </Button>
+      </div>
+    </div>
+  );
+
+  // Use Dialog when inside dropdown menu, Popover for standalone button
+  if (asDropdownItem) {
+    return (
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <div className="flex items-center gap-2 w-full">
             <CalendarIcon className="h-4 w-4" />
             {job.startsAt ? t('workOrders.reschedule.title') : t('workOrders.reschedule.schedule')}
           </div>
-        ) : (
-          <Button size="sm" variant="outline">{job.startsAt ? t('workOrders.reschedule.title') : t('workOrders.reschedule.schedule')}</Button>
-        )}
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {job.startsAt ? t('workOrders.reschedule.title') : t('workOrders.reschedule.schedule')}
+            </DialogTitle>
+          </DialogHeader>
+          {content}
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button size="sm" variant="outline">
+          {job.startsAt ? t('workOrders.reschedule.title') : t('workOrders.reschedule.schedule')}
+        </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80" align="end">
-        <div className="space-y-3">
-          <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">{t('workOrders.reschedule.startTime')}</label>
-              <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">{t('workOrders.reschedule.duration')}</label>
-              <select
-                className="h-9 rounded-md border bg-background px-2 text-sm"
-                value={durationMins}
-                onChange={(e) => setDurationMins(parseInt(e.target.value, 10))}
-              >
-                {[30, 45, 60, 90, 120, 180].map((d) => (
-                  <option key={d} value={d}>{d} {t('workOrders.reschedule.minutes')}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className="flex items-center justify-between gap-2">
-            <Button variant="ghost" size="sm" onClick={handleUnschedule} disabled={submitting}>
-              {t('workOrders.reschedule.unschedule')}
-            </Button>
-            <Button size="sm" onClick={handleSave} disabled={submitting}>
-              {t('workOrders.reschedule.save')}
-            </Button>
-          </div>
-        </div>
+        {content}
       </PopoverContent>
     </Popover>
   );
