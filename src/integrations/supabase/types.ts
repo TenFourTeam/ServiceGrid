@@ -680,6 +680,7 @@ export type Database = {
           payment_terms: Database["public"]["Enums"]["payment_terms"] | null
           public_token: string
           quote_id: string | null
+          recurring_schedule_id: string | null
           status: Database["public"]["Enums"]["invoice_status"]
           subtotal: number
           tax_rate: number
@@ -706,6 +707,7 @@ export type Database = {
           payment_terms?: Database["public"]["Enums"]["payment_terms"] | null
           public_token?: string
           quote_id?: string | null
+          recurring_schedule_id?: string | null
           status?: Database["public"]["Enums"]["invoice_status"]
           subtotal?: number
           tax_rate?: number
@@ -732,6 +734,7 @@ export type Database = {
           payment_terms?: Database["public"]["Enums"]["payment_terms"] | null
           public_token?: string
           quote_id?: string | null
+          recurring_schedule_id?: string | null
           status?: Database["public"]["Enums"]["invoice_status"]
           subtotal?: number
           tax_rate?: number
@@ -766,6 +769,13 @@ export type Database = {
             columns: ["quote_id"]
             isOneToOne: false
             referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_recurring_schedule_id_fkey"
+            columns: ["recurring_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_schedules"
             referencedColumns: ["id"]
           },
         ]
@@ -1444,9 +1454,11 @@ export type Database = {
           frequency: Database["public"]["Enums"]["quote_frequency"]
           id: string
           is_active: boolean
+          last_invoice_date: string | null
           next_billing_date: string
           quote_id: string
           stripe_subscription_id: string | null
+          total_invoices_generated: number | null
           updated_at: string
         }
         Insert: {
@@ -1456,9 +1468,11 @@ export type Database = {
           frequency: Database["public"]["Enums"]["quote_frequency"]
           id?: string
           is_active?: boolean
+          last_invoice_date?: string | null
           next_billing_date: string
           quote_id: string
           stripe_subscription_id?: string | null
+          total_invoices_generated?: number | null
           updated_at?: string
         }
         Update: {
@@ -1468,9 +1482,11 @@ export type Database = {
           frequency?: Database["public"]["Enums"]["quote_frequency"]
           id?: string
           is_active?: boolean
+          last_invoice_date?: string | null
           next_billing_date?: string
           quote_id?: string
           stripe_subscription_id?: string | null
+          total_invoices_generated?: number | null
           updated_at?: string
         }
         Relationships: []

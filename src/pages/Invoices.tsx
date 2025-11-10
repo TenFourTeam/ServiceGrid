@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatDate, formatMoney } from '@/utils/format';
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
@@ -24,6 +25,8 @@ import { invalidationHelpers } from '@/queries/keys';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useAuthApi } from '@/hooks/useAuthApi';
 import { useLanguage } from '@/contexts/LanguageContext';
+import RecurringBillingTab from '@/components/Invoices/RecurringBillingTab';
+import { useRecurringSchedules } from '@/hooks/useRecurringSchedules';
 
 const statusColors: Record<string, string> = {
   'Draft': 'bg-gray-100 text-gray-800',
@@ -35,6 +38,7 @@ const statusColors: Record<string, string> = {
 export default function InvoicesPage() {
   const { data: customers = [] } = useCustomersData();
   const { data: invoices = [] } = useInvoicesData();
+  const { data: recurringSchedules = [] } = useRecurringSchedules();
   const { isSignedIn } = useClerkAuth();
   const { businessId } = useBusinessContext();
   const { t } = useLanguage();
@@ -288,143 +292,165 @@ export default function InvoicesPage() {
       <Card>
         <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <CardTitle>{t('invoices.title')}</CardTitle>
-          <div className="flex flex-col sm:flex-row items-center gap-2">
-            <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
-              <Input
-                placeholder={t('invoices.searchPlaceholder')}
-                value={q}
-                onChange={(e)=>setQ(e.target.value)}
-                className="w-full sm:w-48"
-              />
-              <Select value={status} onValueChange={(value: any) => setStatus(value)}>
-                <SelectTrigger className="w-full sm:w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="All">{t('invoices.status.all')}</SelectItem>
-                  <SelectItem value="Draft">{t('invoices.status.draft')}</SelectItem>
-                  <SelectItem value="Sent">{t('invoices.status.sent')}</SelectItem>
-                  <SelectItem value="Paid">{t('invoices.status.paid')}</SelectItem>
-                  <SelectItem value="Overdue">{t('invoices.status.overdue')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-              <Button
-                onClick={() => {
-                  setSelectedInvoice(null);
-                  setModalMode('create');
-                }}
-                size="sm"
-                className="w-full sm:w-auto"
-              >
-                Create Invoice
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportCSV}
-                disabled={sortedInvoices.length === 0}
-                className="w-full sm:w-auto"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                {t('invoices.exportCSV')}
-              </Button>
-            </div>
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Button
+              onClick={() => {
+                setSelectedInvoice(null);
+                setModalMode('create');
+              }}
+              size="sm"
+              className="w-full sm:w-auto"
+            >
+              Create Invoice
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportCSV}
+              disabled={sortedInvoices.length === 0}
+              className="w-full sm:w-auto"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              {t('invoices.exportCSV')}
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
-          {isMobile ? (
-            // Mobile/Tablet Card View
-            <div className="space-y-3">
-              {sortedInvoices.length === 0 ? (
-                <div className="text-center py-12">
-                  <p className="text-muted-foreground text-lg">{t('invoices.noInvoicesFound')}</p>
-                </div>
-              ) : (
-                sortedInvoices.map((i) => (
-                  <InvoiceCard
-                    key={i.id}
-                    invoice={i}
-                    onClick={() => {
-                      setSelectedInvoice(i.id);
-                      setModalMode('view');
-                    }}
-                  />
-                ))
-              )}
-            </div>
-          ) : (
-            // Desktop Table View
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>
-                      <button className="flex items-center gap-1" onClick={() => requestSort('number')} aria-label="Sort by number">
-                        {t('invoices.table.number')}{sortKey === 'number' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
-                      </button>
-                  </TableHead>
-                  <TableHead>
-                      <button className="flex items-center gap-1" onClick={() => requestSort('customer')} aria-label="Sort by customer">
-                        {t('invoices.table.customer')}{sortKey === 'customer' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
-                      </button>
-                  </TableHead>
-                  <TableHead>
-                      <button className="flex items-center gap-1" onClick={() => requestSort('amount')} aria-label="Sort by amount">
-                        {t('invoices.table.amount')}{sortKey === 'amount' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
-                      </button>
-                  </TableHead>
-                  <TableHead>
-                      <button className="flex items-center gap-1" onClick={() => requestSort('issued')} aria-label="Sort by issued date">
-                        {t('invoices.table.issued')}{sortKey === 'issued' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
-                      </button>
-                  </TableHead>
-                  <TableHead>
-                      <button className="flex items-center gap-1" onClick={() => requestSort('due')} aria-label="Sort by due date">
-                        {t('invoices.table.due')}{sortKey === 'due' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
-                      </button>
-                  </TableHead>
-                  <TableHead>
-                      <button className="flex items-center gap-1" onClick={() => requestSort('status')} aria-label="Sort by status">
-                         {t('invoices.table.status')}{sortKey === 'status' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
-                      </button>
-                  </TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sortedInvoices.map((i)=> (
-                  <TableRow 
-                    key={i.id} 
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => {
-                      setSelectedInvoice(i.id);
-                      setModalMode('view');
-                    }}
-                  >
-                    <TableCell>{i.number}</TableCell>
-                    <TableCell>{customers.find(c=>c.id===i.customerId)?.name}</TableCell>
-                    <TableCell>{formatMoney(i.total)}</TableCell>
-                    <TableCell>{formatDate(i.createdAt)}</TableCell>
-                    <TableCell>{formatDate(i.dueAt)}</TableCell>
-                    <TableCell>{i.status}</TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <InvoiceActions
+          <Tabs defaultValue="all" className="w-full">
+            <TabsList>
+              <TabsTrigger value="all">
+                All Invoices
+                <Badge variant="secondary" className="ml-2">
+                  {sortedInvoices.length}
+                </Badge>
+              </TabsTrigger>
+              <TabsTrigger value="recurring">
+                Recurring Billing
+                <Badge variant="secondary" className="ml-2">
+                  {recurringSchedules.length}
+                </Badge>
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="all" className="space-y-4">
+              <div className="flex flex-col sm:flex-row items-center gap-2">
+                <Input
+                  placeholder={t('invoices.searchPlaceholder')}
+                  value={q}
+                  onChange={(e)=>setQ(e.target.value)}
+                  className="w-full sm:w-48"
+                />
+                <Select value={status} onValueChange={(value: any) => setStatus(value)}>
+                  <SelectTrigger className="w-full sm:w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="All">{t('invoices.status.all')}</SelectItem>
+                    <SelectItem value="Draft">{t('invoices.status.draft')}</SelectItem>
+                    <SelectItem value="Sent">{t('invoices.status.sent')}</SelectItem>
+                    <SelectItem value="Paid">{t('invoices.status.paid')}</SelectItem>
+                    <SelectItem value="Overdue">{t('invoices.status.overdue')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {isMobile ? (
+                // Mobile/Tablet Card View
+                <div className="space-y-3">
+                  {sortedInvoices.length === 0 ? (
+                    <div className="text-center py-12">
+                      <p className="text-muted-foreground text-lg">{t('invoices.noInvoicesFound')}</p>
+                    </div>
+                  ) : (
+                    sortedInvoices.map((i) => (
+                      <InvoiceCard
+                        key={i.id}
                         invoice={i}
-                        onEditInvoice={handleEditInvoice}
-                        onMarkAsPaid={handleMarkAsPaid}
-                        onEmailPreview={handleEmailPreview}
-                        onInvoiceDeleted={() => {
-                          // Refresh data after deletion
-                          invalidationHelpers.invoices(qc, businessId || '');
+                        onClick={() => {
+                          setSelectedInvoice(i.id);
+                          setModalMode('view');
                         }}
                       />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+                    ))
+                  )}
+                </div>
+              ) : (
+                // Desktop Table View
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>
+                          <button className="flex items-center gap-1" onClick={() => requestSort('number')} aria-label="Sort by number">
+                            {t('invoices.table.number')}{sortKey === 'number' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                          </button>
+                      </TableHead>
+                      <TableHead>
+                          <button className="flex items-center gap-1" onClick={() => requestSort('customer')} aria-label="Sort by customer">
+                            {t('invoices.table.customer')}{sortKey === 'customer' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                          </button>
+                      </TableHead>
+                      <TableHead>
+                          <button className="flex items-center gap-1" onClick={() => requestSort('amount')} aria-label="Sort by amount">
+                            {t('invoices.table.amount')}{sortKey === 'amount' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                          </button>
+                      </TableHead>
+                      <TableHead>
+                          <button className="flex items-center gap-1" onClick={() => requestSort('issued')} aria-label="Sort by issued date">
+                            {t('invoices.table.issued')}{sortKey === 'issued' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                          </button>
+                      </TableHead>
+                      <TableHead>
+                          <button className="flex items-center gap-1" onClick={() => requestSort('due')} aria-label="Sort by due date">
+                            {t('invoices.table.due')}{sortKey === 'due' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                          </button>
+                      </TableHead>
+                      <TableHead>
+                          <button className="flex items-center gap-1" onClick={() => requestSort('status')} aria-label="Sort by status">
+                             {t('invoices.table.status')}{sortKey === 'status' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                          </button>
+                      </TableHead>
+                      <TableHead className="w-[100px]">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sortedInvoices.map((i)=> (
+                      <TableRow 
+                        key={i.id} 
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => {
+                          setSelectedInvoice(i.id);
+                          setModalMode('view');
+                        }}
+                      >
+                        <TableCell>{i.number}</TableCell>
+                        <TableCell>{customers.find(c=>c.id===i.customerId)?.name}</TableCell>
+                        <TableCell>{formatMoney(i.total)}</TableCell>
+                        <TableCell>{formatDate(i.createdAt)}</TableCell>
+                        <TableCell>{formatDate(i.dueAt)}</TableCell>
+                        <TableCell>{i.status}</TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <InvoiceActions
+                            invoice={i}
+                            onEditInvoice={handleEditInvoice}
+                            onMarkAsPaid={handleMarkAsPaid}
+                            onEmailPreview={handleEmailPreview}
+                            onInvoiceDeleted={() => {
+                              // Refresh data after deletion
+                              invalidationHelpers.invoices(qc, businessId || '');
+                            }}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </TabsContent>
+
+            <TabsContent value="recurring">
+              <RecurringBillingTab />
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
       <InvoiceModal
