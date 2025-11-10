@@ -25,6 +25,7 @@ export function RequestActions({ request }: RequestActionsProps) {
   const { triggerJobScheduled } = useLifecycleEmailIntegration();
   const createQuote = useCreateQuote();
   const { updateRequest } = useRequestOperations();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const handleConvertToQuote = () => {
     createQuote.mutate({
@@ -172,33 +173,68 @@ export function RequestActions({ request }: RequestActionsProps) {
 
   return (
     <>
-      <DropdownMenu>
+      <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
             <MoreHorizontal className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="bg-background/95 backdrop-blur-sm border z-50">
-          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setShowEditModal(true); }} className="gap-2">
+          <DropdownMenuItem 
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              setDropdownOpen(false);
+              setTimeout(() => setShowEditModal(true), 50);
+            }} 
+            className="gap-2"
+          >
             <Edit className="h-4 w-4" />
             {t('requests.actions.edit')}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleScheduleAssessment(); }} className="gap-2">
+          <DropdownMenuItem 
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              setDropdownOpen(false);
+              setTimeout(() => handleScheduleAssessment(), 50);
+            }} 
+            className="gap-2"
+          >
             <Calendar className="h-4 w-4" />
             {t('requests.actions.scheduleAssessment')}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleConvertToQuote(); }} className="gap-2">
+          <DropdownMenuItem 
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              setDropdownOpen(false);
+              setTimeout(() => handleConvertToQuote(), 50);
+            }} 
+            className="gap-2"
+          >
             <FileText className="h-4 w-4" />
             {t('requests.actions.convertToQuote')}
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleConvertToJob(); }} className="gap-2">
+          <DropdownMenuItem 
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              setDropdownOpen(false);
+              setTimeout(() => handleConvertToJob(), 50);
+            }} 
+            className="gap-2"
+          >
             <Wrench className="h-4 w-4" />
             {t('requests.actions.convertToJob')}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleArchive(); }} className="gap-2">
+          <DropdownMenuItem 
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              setDropdownOpen(false);
+              setTimeout(() => handleArchive(), 50);
+            }} 
+            className="gap-2"
+          >
             <Archive className="h-4 w-4" />
             {t('requests.actions.archive')}
           </DropdownMenuItem>

@@ -24,6 +24,7 @@ export function InvoiceActions({
 }: InvoiceActionsProps) {
   const { t } = useLanguage();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const deleteInvoice = useDeleteInvoice();
 
   const canMarkAsPaid = invoice.status !== 'Paid';
@@ -42,26 +43,44 @@ export function InvoiceActions({
 
   return (
     <>
-      <DropdownMenu>
+      <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
             <MoreHorizontal className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="bg-background border shadow-md">
-          <DropdownMenuItem onClick={() => onEmailPreview(invoice)} className="gap-2">
+          <DropdownMenuItem 
+            onClick={() => {
+              setDropdownOpen(false);
+              setTimeout(() => onEmailPreview(invoice), 50);
+            }} 
+            className="gap-2"
+          >
             <Send className="h-4 w-4" />
             Send Email
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           {canEdit && (
-            <DropdownMenuItem onClick={() => onEditInvoice(invoice)} className="gap-2">
+            <DropdownMenuItem 
+              onClick={() => {
+                setDropdownOpen(false);
+                setTimeout(() => onEditInvoice(invoice), 50);
+              }} 
+              className="gap-2"
+            >
               <Edit className="h-4 w-4" />
               Edit Invoice
             </DropdownMenuItem>
           )}
           {canMarkAsPaid && (
-            <DropdownMenuItem onClick={() => onMarkAsPaid(invoice)} className="gap-2">
+            <DropdownMenuItem 
+              onClick={() => {
+                setDropdownOpen(false);
+                setTimeout(() => onMarkAsPaid(invoice), 50);
+              }} 
+              className="gap-2"
+            >
               <DollarSign className="h-4 w-4" />
               Mark as Paid
             </DropdownMenuItem>
@@ -70,7 +89,10 @@ export function InvoiceActions({
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem 
-                onClick={() => setShowDeleteDialog(true)} 
+                onClick={() => {
+                  setDropdownOpen(false);
+                  setTimeout(() => setShowDeleteDialog(true), 50);
+                }} 
                 className="gap-2 text-destructive focus:text-destructive"
               >
                 <Trash2 className="h-4 w-4" />
