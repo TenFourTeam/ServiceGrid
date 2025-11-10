@@ -296,25 +296,33 @@ function onDragStart(e: React.PointerEvent, job: Job) {
     if (role !== 'owner') return;
     
     e.stopPropagation();
+    e.preventDefault(); // Prevent default touch behaviors
+    
     const currentTime = new Date();
     if (!canDragJob(job.status, currentTime, new Date(job.startsAt))) {
       toast.info(`Cannot move ${job.status.toLowerCase()} jobs`);
       setActiveJob(job);
       return;
     }
+    
+    // Capture pointer to track even when moving outside element
+    const target = e.currentTarget as HTMLElement;
+    target.setPointerCapture(e.pointerId);
+    
     const dur = new Date(job.endsAt).getTime() - new Date(job.startsAt).getTime();
     let latest = { startsAt: job.startsAt, endsAt: job.endsAt };
     const startX = e.clientX;
     const startY = e.clientY;
     let movedEnough = false;
 
-    // Set visual feedback
+    // Set visual feedback and prevent scrolling during drag
     setIsDragging(job.id);
+    gridRef.current?.classList.add('is-dragging');
 
     const onMove = (ev: PointerEvent) => {
       const dx = Math.abs(ev.clientX - startX);
       const dy = Math.abs(ev.clientY - startY);
-      if (!movedEnough && Math.sqrt(dx*dx + dy*dy) < 4) return; // threshold to distinguish click vs drag
+      if (!movedEnough && Math.sqrt(dx*dx + dy*dy) < 8) return; // Increased threshold for touch precision
       movedEnough = true;
 
       // Determine which day column we're over
@@ -370,10 +378,16 @@ function onDragStart(e: React.PointerEvent, job: Job) {
     };
 
     const onUp = async () => {
+      // Release pointer capture and clean up
+      if (target.hasPointerCapture(e.pointerId)) {
+        target.releasePointerCapture(e.pointerId);
+      }
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onCancel);
       setIsDragging(null);
       setConflictingJobId(null);
+      gridRef.current?.classList.remove('is-dragging');
       
       if (!movedEnough) {
         setActiveJob(job);
@@ -461,21 +475,58 @@ function onDragStart(e: React.PointerEvent, job: Job) {
         // Error already handled by authApi toast
       }
     };
+    
+    const onCancel = () => {
+      // Handle interrupted drags (e.g., call received during drag)
+      if (target.hasPointerCapture(e.pointerId)) {
+        target.releasePointerCapture(e.pointerId);
+      }
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onCancel);
+      gridRef.current?.classList.remove('is-dragging');
+      setIsDragging(null);
+      setConflictingJobId(null);
+      
+      // Revert to original position
+      const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
+      queryClient.setQueryData(queryKey, (old: JobsCacheData | undefined) => {
+        if (!old) return old;
+        return {
+          ...old,
+          jobs: old.jobs.map((j: Job) => 
+            j.id === job.id 
+              ? { ...j, startsAt: job.startsAt, endsAt: job.endsAt }
+              : j
+          )
+        };
+      });
+    };
+    
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onCancel);
   }
 
   function onResizeStart(e: React.PointerEvent, job: Job) {
     e.stopPropagation();
+    e.preventDefault(); // Prevent default touch behaviors
+    
     const currentTime = new Date();
     if (!canResizeJob(job.status, currentTime, new Date(job.startsAt), new Date(job.endsAt))) {
       toast.info(`Cannot resize ${job.status.toLowerCase()} jobs`);
       return;
     }
+    
+    // Capture pointer to track even when moving outside element
+    const target = e.currentTarget as HTMLElement;
+    target.setPointerCapture(e.pointerId);
+    
     let latestEnd = job.endsAt;
     
-    // Set visual feedback
+    // Set visual feedback and prevent scrolling during resize
     setIsResizing(job.id);
+    gridRef.current?.classList.add('is-dragging');
     
     const onMove = (ev: PointerEvent) => {
       // Determine which day column we're over
@@ -516,9 +567,15 @@ function onDragStart(e: React.PointerEvent, job: Job) {
     };
 
     const onUp = async () => {
+      // Release pointer capture and clean up
+      if (target.hasPointerCapture(e.pointerId)) {
+        target.releasePointerCapture(e.pointerId);
+      }
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onCancel);
       setIsResizing(null);
+      gridRef.current?.classList.remove('is-dragging');
       
       try {
         const { error } = await authApi.invoke('jobs-crud', {
@@ -554,9 +611,36 @@ function onDragStart(e: React.PointerEvent, job: Job) {
         // Error already handled by authApi toast
       }
     };
+    
+    const onCancel = () => {
+      // Handle interrupted resizes (e.g., call received during resize)
+      if (target.hasPointerCapture(e.pointerId)) {
+        target.releasePointerCapture(e.pointerId);
+      }
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onCancel);
+      gridRef.current?.classList.remove('is-dragging');
+      setIsResizing(null);
+      
+      // Revert to original end time
+      const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
+      queryClient.setQueryData(queryKey, (old: JobsCacheData | undefined) => {
+        if (!old) return old;
+        return {
+          ...old,
+          jobs: old.jobs.map((j: Job) => 
+            j.id === job.id 
+              ? { ...j, endsAt: job.endsAt }
+              : j
+          )
+        };
+      });
+    };
 
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onCancel);
   }
   return <div className="w-full">
       {/* Mobile-friendly responsive layout */}
@@ -602,9 +686,14 @@ function onDragStart(e: React.PointerEvent, job: Job) {
               return (
               <div
                 key={dayISOString}
-                className="border rounded-md p-2 relative overflow-hidden"
+                className="border rounded-md p-2 relative overflow-hidden calendar-grid"
                 ref={(el) => { if (el) dayRefs.current[i] = el; }}
                 onClick={(e) => handleEmptyClick(e, day)}
+                style={{
+                  touchAction: 'none',
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none'
+                }}
               >
                 {/* Weekend shading */}
                 {(day.getDay() === 0 || day.getDay() === 6) && <div className="absolute inset-0 bg-muted/20 pointer-events-none" />}
@@ -703,7 +792,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                         
                         blocks.push(<div
                           key={`${j.id}-scheduled`}
-                          className={`absolute rounded-md p-2 select-none transition-all ${
+                          className={`absolute rounded-md p-2 select-none transition-all calendar-job-draggable ${
                             isHighlighted ? 'ring-2 ring-primary/50 scale-[1.02]' : ''
                           } ${
                             statusColors.bg
@@ -713,7 +802,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                             statusColors.border
                           } ${
                             canDrag ? 'cursor-pointer hover:opacity-80 hover:z-20' : 'cursor-default opacity-90'
-                          } ${isBeingDragged ? 'opacity-70 scale-[1.05]' : ''} ${isBeingResized ? 'opacity-70' : ''} ${
+                          } ${isBeingDragged ? 'opacity-70 scale-105 shadow-lg z-50' : ''} ${isBeingResized ? 'opacity-70 shadow-lg' : ''} ${
                             conflictingJobId === j.id ? 'ring-2 ring-red-500 bg-red-600' : ''
                           } ${displayMode === 'combined' ? 'opacity-70' : ''}`}
                           style={{
@@ -721,7 +810,10 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                             height: `${Math.max(height, 4)}%`,
                             left: columnLeft,
                             width: columnWidth,
-                            zIndex: isHighlighted ? 10 : 1
+                            zIndex: isHighlighted ? 10 : 1,
+                            touchAction: 'none',
+                            WebkitUserSelect: 'none',
+                            userSelect: 'none'
                           }}
                           onPointerDown={canDrag ? (e) => onDragStart(e, j) : undefined}
                           onClick={(e) => { e.stopPropagation(); setActiveJob(j); }}
@@ -738,7 +830,13 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                           {/* Resize handle - only show if resizable */}
                           {canResize && displayMode === 'scheduled' && (
                             <div
-                              className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize opacity-0 hover:opacity-100 bg-current/20"
+                              className={`absolute bottom-0 left-0 right-0 cursor-ns-resize opacity-0 hover:opacity-100 bg-current/20 calendar-resize-handle ${
+                                isPhone ? 'h-6' : 'h-2'
+                              }`}
+                              style={{
+                                touchAction: 'none',
+                                minHeight: isPhone ? '44px' : '8px'
+                              }}
                               onPointerDown={(e) => onResizeStart(e, j)}
                             />
                           )}
