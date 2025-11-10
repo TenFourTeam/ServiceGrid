@@ -38,6 +38,7 @@ export function WorkOrderActions({
   const [isCompletingJob, setIsCompletingJob] = useState(false);
   const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
   const [isSendingConfirmation, setIsSendingConfirmation] = useState(false);
+  const [rescheduleOpen, setRescheduleOpen] = useState(false);
 
   const isOwner = userRole === 'owner';
   const canEdit = isOwner;
@@ -271,25 +272,19 @@ export function WorkOrderActions({
   };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
-          <MoreHorizontal className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="bg-background border shadow-md z-50">
-        {/* Schedule/Reschedule */}
-        <DropdownMenuItem className="gap-2">
-          <ReschedulePopover 
-            job={job} 
-            asDropdownItem={true}
-            onDone={() => {
-              if (businessId) {
-                invalidationHelpers.jobs(queryClient, businessId);
-              }
-            }} 
-          />
-        </DropdownMenuItem>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="bg-background border shadow-md z-50">
+          {/* Schedule/Reschedule */}
+          <DropdownMenuItem onClick={() => setRescheduleOpen(true)} className="gap-2">
+            <Calendar className="h-4 w-4" />
+            {job.startsAt ? t('workOrders.reschedule.title') : t('workOrders.reschedule.schedule')}
+          </DropdownMenuItem>
 
         {/* Edit Job - Only show if user is owner */}
         {isOwner && onOpenJobEditModal && (
@@ -380,5 +375,19 @@ export function WorkOrderActions({
         )}
       </DropdownMenuContent>
     </DropdownMenu>
+
+    {/* Reschedule Dialog - rendered outside dropdown to avoid nesting conflicts */}
+    <ReschedulePopover 
+      job={job} 
+      asDropdownItem={true}
+      open={rescheduleOpen}
+      onOpenChange={setRescheduleOpen}
+      onDone={() => {
+        if (businessId) {
+          invalidationHelpers.jobs(queryClient, businessId);
+        }
+      }} 
+    />
+    </>
   );
 }

@@ -18,14 +18,20 @@ interface ReschedulePopoverProps {
   job: Job;
   onDone?: () => void | Promise<void>;
   asDropdownItem?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export default function ReschedulePopover({ job, onDone, asDropdownItem = false }: ReschedulePopoverProps) {
+export default function ReschedulePopover({ job, onDone, asDropdownItem = false, open: controlledOpen, onOpenChange: controlledOnOpenChange }: ReschedulePopoverProps) {
   const authApi = useAuthApi();
   const queryClient = useQueryClient();
   const { businessId } = useBusinessContext();
   const { t } = useLanguage();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  
+  // Use controlled or internal state
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = controlledOnOpenChange || setInternalOpen;
   const [date, setDate] = useState<Date | undefined>(job.startsAt ? new Date(job.startsAt) : undefined);
   const [time, setTime] = useState<string>(job.startsAt ? format(new Date(job.startsAt), "HH:mm") : "08:00");
   const [durationMins, setDurationMins] = useState<number>(60);
@@ -142,16 +148,10 @@ export default function ReschedulePopover({ job, onDone, asDropdownItem = false 
     </div>
   );
 
-  // Use Dialog when inside dropdown menu, Popover for standalone button
+  // Use Dialog when controlled externally (from dropdown), Popover for standalone button
   if (asDropdownItem) {
     return (
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          <div className="flex items-center gap-2 w-full">
-            <CalendarIcon className="h-4 w-4" />
-            {job.startsAt ? t('workOrders.reschedule.title') : t('workOrders.reschedule.schedule')}
-          </div>
-        </DialogTrigger>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
