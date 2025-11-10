@@ -62,6 +62,11 @@ export function WeekCalendar({
   const [isResizing, setIsResizing] = useState<string | null>(null);
   const [conflictingJobId, setConflictingJobId] = useState<string | null>(null);
   
+  // Long-press detection state for mobile
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+  const [longPressActive, setLongPressActive] = useState<string | null>(null);
+  const [touchStartPos, setTouchStartPos] = useState<{ x: number; y: number } | null>(null);
+  
   // Reschedule assistant state
   const [showRescheduleAssistant, setShowRescheduleAssistant] = useState(false);
   const [rescheduleData, setRescheduleData] = useState<{
@@ -140,6 +145,15 @@ export function WeekCalendar({
     monday.setHours(0, 0, 0, 0);
     setWeekStart(monday);
   }, [date]);
+
+  // Cleanup long-press timer on unmount
+  useEffect(() => {
+    return () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+      }
+    };
+  }, [longPressTimer]);
 
   const authApi = useAuthApi();
   
@@ -508,6 +522,91 @@ function onDragStart(e: React.PointerEvent, job: Job) {
     window.addEventListener('pointercancel', onCancel);
   }
 
+  function handlePointerDownWithLongPress(e: React.PointerEvent, job: Job) {
+    const isTouch = e.pointerType === 'touch';
+    
+    // Desktop/Mouse: immediate drag (existing behavior)
+    if (!isTouch) {
+      onDragStart(e, job);
+      return;
+    }
+    
+    // Mobile/Touch: implement long-press detection
+    // Don't prevent default yet - let it through for potential tap
+    e.stopPropagation();
+    
+    // Store initial touch position to detect movement
+    setTouchStartPos({ x: e.clientX, y: e.clientY });
+    
+    // Visual feedback for long-press in progress
+    setLongPressActive(job.id);
+    
+    // Set up long-press timer (500ms)
+    const timer = setTimeout(() => {
+      // Trigger haptic feedback if available
+      if ('vibrate' in navigator) {
+        navigator.vibrate(50); // Short vibration
+      }
+      
+      // Now initiate the drag
+      onDragStart(e, job);
+      setLongPressActive(null);
+      setLongPressTimer(null);
+    }, 500);
+    
+    setLongPressTimer(timer);
+    
+    // Set up cleanup handlers
+    const cleanup = () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        setLongPressTimer(null);
+      }
+      setLongPressActive(null);
+      setTouchStartPos(null);
+      
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', onPointerUp);
+      document.removeEventListener('pointercancel', onPointerCancel);
+    };
+    
+    const onPointerMove = (ev: PointerEvent) => {
+      // If user moves finger too much, cancel long-press
+      if (touchStartPos) {
+        const dx = Math.abs(ev.clientX - touchStartPos.x);
+        const dy = Math.abs(ev.clientY - touchStartPos.y);
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        // If moved more than 10px, cancel long-press (it's a scroll attempt)
+        if (distance > 10) {
+          cleanup();
+        }
+      }
+    };
+    
+    const onPointerUp = (ev: PointerEvent) => {
+      // Released before long-press completed = it's a tap to view
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        setLongPressTimer(null);
+        setLongPressActive(null);
+        
+        // Trigger the view action
+        setActiveJob(job);
+      }
+      
+      cleanup();
+    };
+    
+    const onPointerCancel = () => {
+      cleanup();
+    };
+    
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', onPointerUp);
+    document.addEventListener('pointercancel', onPointerCancel);
+  }
+
   function onResizeStart(e: React.PointerEvent, job: Job) {
     e.stopPropagation();
     e.preventDefault(); // Prevent default touch behaviors
@@ -795,6 +894,8 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                           className={`absolute rounded-md p-2 select-none transition-all calendar-job-draggable ${
                             isHighlighted ? 'ring-2 ring-primary/50 scale-[1.02]' : ''
                           } ${
+                            longPressActive === j.id ? 'ring-2 ring-blue-400 scale-[1.05] shadow-xl' : ''
+                          } ${
                             statusColors.bg
                           } ${
                             statusColors.text
@@ -815,8 +916,15 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                             WebkitUserSelect: 'none',
                             userSelect: 'none'
                           }}
-                          onPointerDown={canDrag ? (e) => onDragStart(e, j) : undefined}
-                          onClick={(e) => { e.stopPropagation(); setActiveJob(j); }}
+                          data-long-press={longPressActive === j.id ? 'true' : undefined}
+                          onPointerDown={canDrag ? (e) => handlePointerDownWithLongPress(e, j) : (e) => { e.stopPropagation(); }}
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            // Only trigger if not currently in a long-press
+                            if (!longPressActive) {
+                              setActiveJob(j); 
+                            }
+                          }}
                         >
                           <div className="flex items-center gap-1 text-xs font-medium leading-tight">
                             {startsAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} — {customer?.name || 'Unknown'}
@@ -874,7 +982,24 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                             height: `${Math.max(clockHeight, 4)}%`,
                             zIndex: displayMode === 'combined' ? 10 : (highlightJobId === j.id ? 10 : 2)
                           }}
-                          onClick={(e) => { e.stopPropagation(); setActiveJob(j); }}
+                          onPointerDown={(e) => { 
+                            e.stopPropagation(); 
+                            if (e.pointerType === 'touch') {
+                              // Clocked blocks are view-only, use shorter delay to distinguish from scroll
+                              const timer = setTimeout(() => setActiveJob(j), 150);
+                              const cleanup = () => clearTimeout(timer);
+                              document.addEventListener('pointerup', cleanup, { once: true });
+                              document.addEventListener('pointercancel', cleanup, { once: true });
+                            } else {
+                              // Desktop: click immediately opens
+                              setActiveJob(j);
+                            }
+                          }}
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            // Touch events are handled by onPointerDown
+                            // This onClick is mainly for keyboard navigation
+                          }}
                         >
                           <div className="flex items-center gap-1 text-xs font-medium leading-tight">
                             {clockStart.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} — {customer?.name || 'Unknown'}
