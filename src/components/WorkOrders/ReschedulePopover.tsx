@@ -72,8 +72,8 @@ export default function ReschedulePopover({ job, onDone, asDropdownItem = false,
         invalidationHelpers.jobs(queryClient, businessId);
       }
       
-      setOpen(false);
       await onDone?.();
+      setOpen(false);
     } catch (e: Error | unknown) {
       console.error('Failed to reschedule job:', e);
     } finally {
@@ -107,8 +107,8 @@ export default function ReschedulePopover({ job, onDone, asDropdownItem = false,
         invalidationHelpers.jobs(queryClient, businessId);
       }
       
-      setOpen(false);
       await onDone?.();
+      setOpen(false);
     } catch (e: Error | unknown) {
       console.error('Failed to unschedule job:', e);
     } finally {

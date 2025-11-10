@@ -425,7 +425,12 @@
       "unschedule": "Desprogramar",
       "save": "Guardar",
       "pickDate": "Seleccionar fecha",
-      "minutes": "min"
+      "minutes": "min",
+      "messages": {
+        "updated": "Trabajo reprogramado exitosamente",
+        "unscheduled": "Trabajo desprogramado exitosamente",
+        "failed": "Error al actualizar el horario"
+      }
     }
   },
   "quotes": {
