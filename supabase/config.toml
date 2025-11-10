@@ -37,6 +37,9 @@ verify_jwt = true
 [functions.clerk-publishable-key]
 verify_jwt = false
 
+[functions.google-maps-api-key]
+verify_jwt = false
+
 # Email functions
 [functions.resend-send-email]
 verify_jwt = false
