@@ -84,7 +84,7 @@ export function useGenerateNextInvoice() {
       queryClient.invalidateQueries({ queryKey: queryKeys.data.recurringSchedules(businessId || '') });
       queryClient.invalidateQueries({ queryKey: queryKeys.data.invoices(businessId || '') });
     },
-    onError: (error: Error) {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to generate invoice');
     }
   });
@@ -136,6 +136,7 @@ export function usePauseSubscription() {
     mutationFn: async (scheduleId: string) => {
       const { data, error } = await authApi.invoke('recurring-schedules-crud', {
         method: 'PATCH',
+        headers: { 'x-business-id': businessId },
         body: { action: 'pause', scheduleId }
       });
       if (error) throw new Error(error.message || 'Failed to pause subscription');
@@ -160,6 +161,7 @@ export function useResumeSubscription() {
     mutationFn: async (scheduleId: string) => {
       const { data, error } = await authApi.invoke('recurring-schedules-crud', {
         method: 'PATCH',
+        headers: { 'x-business-id': businessId },
         body: { action: 'resume', scheduleId }
       });
       if (error) throw new Error(error.message || 'Failed to resume subscription');
@@ -183,7 +185,8 @@ export function useCancelSubscription() {
   return useMutation({
     mutationFn: async (scheduleId: string) => {
       const { data, error } = await authApi.invoke(`recurring-schedules-crud?id=${scheduleId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: { 'x-business-id': businessId }
       });
       if (error) throw new Error(error.message || 'Failed to cancel subscription');
       return data;
