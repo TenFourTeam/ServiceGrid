@@ -35,7 +35,7 @@ export function useBusinessContext(targetBusinessId?: string) {
         .from('profiles')
         .select('id')
         .eq('clerk_user_id', userId)
-        .single();
+        .maybeSingle();
       return data;
     },
     enabled: !!userId && isSignedIn,
