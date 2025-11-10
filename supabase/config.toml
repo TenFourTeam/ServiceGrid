@@ -200,6 +200,9 @@ verify_jwt = false
 [functions.subscriptions-crud]
 verify_jwt = false
 
+[functions.recurring-schedules-crud]
+verify_jwt = false
+
 # AI Scheduling and Route Planning
 [functions.calculate-travel-times]
 verify_jwt = false
