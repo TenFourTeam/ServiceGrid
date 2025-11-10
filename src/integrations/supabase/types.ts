@@ -1942,6 +1942,8 @@ export type Database = {
         | "monthly"
         | "bi-yearly"
         | "yearly"
+        | "weekly"
+        | "quarterly"
       quote_status:
         | "Draft"
         | "Sent"
@@ -2111,6 +2113,8 @@ export const Constants = {
         "monthly",
         "bi-yearly",
         "yearly",
+        "weekly",
+        "quarterly",
       ],
       quote_status: [
         "Draft",
