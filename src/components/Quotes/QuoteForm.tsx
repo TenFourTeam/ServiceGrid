@@ -342,7 +342,9 @@ export function QuoteForm({ customers, defaultTaxRate, onSubmit, onCancel, disab
                   }))}
                   disabled={isReadOnly}
                 />
-                <Label htmlFor="subscription-service">Subscription Service</Label>
+                <Label htmlFor="subscription-service">
+                  {t('quotes.form.subscription.label')} {t('quotes.form.subscription.explanation')}
+                </Label>
               </div>
             </div>
 

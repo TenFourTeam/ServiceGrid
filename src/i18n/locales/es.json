@@ -521,6 +521,10 @@
         "required": "Depósito Requerido",
         "percentage": "Porcentaje de depósito"
       },
+      "subscription": {
+        "label": "Servicio de Suscripción",
+        "explanation": "(Se enviará orden de trabajo y factura según el intervalo seleccionado)"
+      },
       "summary": {
         "subtotal": "Subtotal:",
         "tax": "Impuesto:",

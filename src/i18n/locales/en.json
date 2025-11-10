@@ -522,6 +522,10 @@
         "required": "Deposit Required",
         "percentage": "Deposit percentage"
       },
+      "subscription": {
+        "label": "Subscription Service",
+        "explanation": "(Work order and invoice will be sent based on interval selected)"
+      },
       "summary": {
         "subtotal": "Subtotal:",
         "tax": "Tax:",
