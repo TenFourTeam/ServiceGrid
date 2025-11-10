@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect, useRef, startTransition } from 'react';
 import { APIProvider, Map, AdvancedMarker, useMap } from '@vis.gl/react-google-maps';
 import { Job } from '@/types';
 import { useGeocoding } from '@/hooks/useGeocoding';
+import { useGoogleMapsApiKey } from '@/hooks/useGoogleMapsApiKey';
 import { JobMarker } from './JobMarker';
 import { JobInfoWindow } from './JobInfoWindow';
 import { JobNavigationPanel } from './JobNavigationPanel';
@@ -120,35 +121,32 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
   const isMobile = useIsMobile();
   const [showNavPanel, setShowNavPanel] = useState(false);
 
-  // Check if Google Maps API key is configured
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-  
-  // Debug: Log the API key value (first 10 chars only for security)
-  console.log('[RouteMapView] API Key status:', {
-    exists: !!apiKey,
-    length: apiKey?.length || 0,
-    preview: apiKey ? `${apiKey.substring(0, 10)}...` : 'undefined',
-    envValue: import.meta.env.VITE_GOOGLE_MAPS_API_KEY
-  });
+  // Fetch Google Maps API key from edge function
+  const { data: apiKey, isLoading: isLoadingApiKey, error: apiKeyError } = useGoogleMapsApiKey();
 
-  if (!apiKey || apiKey.trim() === '') {
+  // Show loading state while fetching API key
+  if (isLoadingApiKey) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-muted/10">
+        <div className="space-y-4 w-full max-w-md p-8">
+          <Skeleton className="h-8 w-3/4" />
+          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-8 w-1/2" />
+        </div>
+      </div>
+    );
+  }
+
+  // Show error if API key fetch failed
+  if (apiKeyError || !apiKey) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-muted/10">
         <div className="text-center space-y-4 max-w-md p-8">
-          <MapPin className="h-12 w-12 mx-auto text-muted-foreground" />
-          <h3 className="text-lg font-semibold">Google Maps Not Configured</h3>
+          <MapPin className="h-12 w-12 mx-auto text-destructive" />
+          <h3 className="text-lg font-semibold">Maps Configuration Error</h3>
           <p className="text-sm text-muted-foreground">
-            Add your Google Maps API key to the <code className="bg-muted px-1 py-0.5 rounded">.env</code> file to enable route visualization.
+            Failed to load Google Maps API key. Please contact support.
           </p>
-          <p className="text-xs text-muted-foreground">
-            Set <code className="bg-muted px-1 py-0.5 rounded">VITE_GOOGLE_MAPS_API_KEY</code> with your API key.
-          </p>
-          <Button 
-            variant="secondary" 
-            onClick={() => window.open('https://console.cloud.google.com/google/maps-apis', '_blank', 'noopener,noreferrer')}
-          >
-            Get API Key
-          </Button>
         </div>
       </div>
     );

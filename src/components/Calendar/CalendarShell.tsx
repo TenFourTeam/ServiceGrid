@@ -246,7 +246,7 @@ export default function CalendarShell({
                 </div>
               </div>
             }>
-              <div className="h-full w-full">
+              <div className="h-full w-full min-h-[600px]">
                 <RouteMapView 
                   date={date} 
                   jobs={jobs} 
