@@ -352,8 +352,7 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
 
   console.log('[RouteMapView] Rendering map with:', {
     mapCenter,
-    jobsCount: jobsWithCoords.length,
-    mapId: 'd174fd11e8cacedb35e319da'
+    jobsCount: jobsWithCoords.length
   });
 
   return (
@@ -457,7 +456,6 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
             )}
 
             <Map
-              mapId="d174fd11e8cacedb35e319da"
               defaultCenter={mapCenter}
               defaultZoom={mapZoom}
               gestureHandling="greedy"
@@ -621,7 +619,6 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
               )}
 
               <Map
-                mapId="d174fd11e8cacedb35e319da"
                 defaultCenter={mapCenter}
                 defaultZoom={mapZoom}
                 gestureHandling="greedy"
