@@ -382,11 +382,6 @@ export function WorkOrderActions({
       asDropdownItem={true}
       open={rescheduleOpen}
       onOpenChange={setRescheduleOpen}
-      onDone={() => {
-        if (businessId) {
-          invalidationHelpers.jobs(queryClient, businessId);
-        }
-      }} 
     />
     </>
   );
