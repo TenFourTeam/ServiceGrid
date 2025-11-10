@@ -16,6 +16,14 @@ export function useInvoicesData(opts?: UseInvoicesDataOptions) {
   const authApi = useAuthApi();
   const enabled = isAuthenticated && !!businessId && (opts?.enabled ?? true);
 
+  // Debug logging
+  console.log('[useInvoicesData] Hook state:', {
+    isAuthenticated,
+    businessId,
+    enabled,
+    optsEnabled: opts?.enabled
+  });
+
   const query = useQuery({
     queryKey: queryKeys.data.invoices(businessId || ''),
     enabled,
