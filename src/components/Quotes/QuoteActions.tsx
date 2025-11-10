@@ -30,6 +30,7 @@ export function QuoteActions({ quote, onSendQuote, onEditQuote }: QuoteActionsPr
   const { triggerJobScheduled, triggerInvoiceSent } = useLifecycleEmailIntegration();
   const deleteQuoteMutation = useDeleteQuote();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   // Determine if quote has been sent (show "Re-send" vs "Send")
   const hasBeenSent = quote.sentAt != null || quote.status !== 'Draft';
@@ -149,27 +150,51 @@ export function QuoteActions({ quote, onSendQuote, onEditQuote }: QuoteActionsPr
   };
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm">
           <MoreHorizontal className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => onEditQuote(quote)} className="gap-2">
+        <DropdownMenuItem 
+          onClick={() => {
+            setDropdownOpen(false);
+            setTimeout(() => onEditQuote(quote), 50);
+          }} 
+          className="gap-2"
+        >
           <Edit className="h-4 w-4" />
           {t('quotes.actions.editQuote')}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onSendQuote(quote)} className="gap-2">
+        <DropdownMenuItem 
+          onClick={() => {
+            setDropdownOpen(false);
+            setTimeout(() => onSendQuote(quote), 50);
+          }} 
+          className="gap-2"
+        >
           <Send className="h-4 w-4" />
           {hasBeenSent ? t('quotes.actions.resendQuote') : t('quotes.actions.sendQuote')}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleConvertToJob} className="gap-2">
+        <DropdownMenuItem 
+          onClick={() => {
+            setDropdownOpen(false);
+            setTimeout(() => handleConvertToJob(), 50);
+          }} 
+          className="gap-2"
+        >
           <FileText className="h-4 w-4" />
           {t('quotes.actions.convertToJob')}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleCreateInvoice} className="gap-2">
+        <DropdownMenuItem 
+          onClick={() => {
+            setDropdownOpen(false);
+            setTimeout(() => handleCreateInvoice(), 50);
+          }} 
+          className="gap-2"
+        >
           <Receipt className="h-4 w-4" />
           {t('quotes.actions.createInvoice')}
         </DropdownMenuItem>
