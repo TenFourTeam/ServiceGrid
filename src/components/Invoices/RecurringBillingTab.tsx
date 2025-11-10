@@ -8,10 +8,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { MoreHorizontal, RefreshCw, ExternalLink, Calendar } from "lucide-react";
+import { MoreHorizontal, RefreshCw, ExternalLink, Calendar, Eye } from "lucide-react";
 import LoadingScreen from "@/components/LoadingScreen";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
+import RecurringScheduleDetailModal from "./RecurringScheduleDetailModal";
 
 const frequencyColors: Record<string, string> = {
   Weekly: "bg-blue-500/10 text-blue-700 dark:text-blue-300",
@@ -31,6 +32,9 @@ export default function RecurringBillingTab() {
     schedule: RecurringSchedule | null;
   }>({ open: false, schedule: null });
 
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(null);
+
   const handleGenerateNow = (schedule: RecurringSchedule) => {
     setConfirmDialog({ open: true, schedule });
   };
@@ -44,6 +48,11 @@ export default function RecurringBillingTab() {
 
   const handleViewQuote = (quoteId: string) => {
     navigate(`/quotes?id=${quoteId}`);
+  };
+
+  const handleViewDetails = (scheduleId: string) => {
+    setSelectedScheduleId(scheduleId);
+    setDetailModalOpen(true);
   };
 
   if (isLoading) {
@@ -95,6 +104,10 @@ export default function RecurringBillingTab() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleViewDetails(schedule.id)}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        View Details
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleGenerateNow(schedule)}>
                         <RefreshCw className="mr-2 h-4 w-4" />
                         Generate Next Invoice Now
@@ -183,10 +196,16 @@ export default function RecurringBillingTab() {
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
-        </AlertDialog>
-      </>
-    );
-  }
+      </AlertDialog>
+
+      <RecurringScheduleDetailModal
+        open={detailModalOpen}
+        onOpenChange={setDetailModalOpen}
+        scheduleId={selectedScheduleId}
+      />
+    </>
+  );
+}
 
   return (
     <>
@@ -218,7 +237,11 @@ export default function RecurringBillingTab() {
                 const isDueSoon = daysUntil <= 7;
                 
                 return (
-                  <TableRow key={schedule.id}>
+                  <TableRow 
+                    key={schedule.id} 
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleViewDetails(schedule.id)}
+                  >
                     <TableCell>
                       <div>
                         <div className="font-medium">{schedule.customer_name}</div>
@@ -268,7 +291,7 @@ export default function RecurringBillingTab() {
                         {schedule.total_invoices_generated}
                       </span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm">
@@ -276,6 +299,10 @@ export default function RecurringBillingTab() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleViewDetails(schedule.id)}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View Details
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleGenerateNow(schedule)}>
                             <RefreshCw className="mr-2 h-4 w-4" />
                             Generate Next Invoice Now
@@ -318,7 +345,13 @@ export default function RecurringBillingTab() {
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
-      </AlertDialog>
-    </>
-  );
-}
+        </AlertDialog>
+
+        <RecurringScheduleDetailModal
+          open={detailModalOpen}
+          onOpenChange={setDetailModalOpen}
+          scheduleId={selectedScheduleId}
+        />
+      </>
+    );
+  }

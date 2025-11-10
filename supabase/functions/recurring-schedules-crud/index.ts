@@ -237,6 +237,49 @@ Deno.serve(async (req) => {
       throw new Error('Invalid action');
     }
 
+    if (req.method === 'PATCH') {
+      const { action, scheduleId } = await req.json();
+      
+      if (action === 'pause') {
+        const { error } = await supabaseClient
+          .from('recurring_schedules')
+          .update({ is_active: false })
+          .eq('id', scheduleId);
+        
+        if (error) throw error;
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      
+      if (action === 'resume') {
+        const { error } = await supabaseClient
+          .from('recurring_schedules')
+          .update({ is_active: true })
+          .eq('id', scheduleId);
+        
+        if (error) throw error;
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    if (req.method === 'DELETE') {
+      const url = new URL(req.url);
+      const scheduleId = url.searchParams.get('id');
+      
+      const { error } = await supabaseClient
+        .from('recurring_schedules')
+        .update({ is_active: false })
+        .eq('id', scheduleId);
+      
+      if (error) throw error;
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     throw new Error('Method not allowed');
   } catch (error) {
     console.error('Error in recurring-schedules-crud:', error);

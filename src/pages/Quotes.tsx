@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Receipt, Users } from 'lucide-react';
+import { Receipt, Users, Repeat } from 'lucide-react';
 import { QuoteActions } from '@/components/Quotes/QuoteActions';
 import { QuoteDetailsModal } from '@/components/Quotes/QuoteDetailsModal';
 import QuoteErrorBoundary from '@/components/ErrorBoundaries/QuoteErrorBoundary';

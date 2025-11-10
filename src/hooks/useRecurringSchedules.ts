@@ -81,12 +81,119 @@ export function useGenerateNextInvoice() {
     onSuccess: (data) => {
       toast.success(`Invoice generated successfully! Next invoice scheduled for ${new Date(data.nextBillingDate).toLocaleDateString()}`);
       
-      // Invalidate both recurring schedules and invoices queries
       queryClient.invalidateQueries({ queryKey: queryKeys.data.recurringSchedules(businessId || '') });
       queryClient.invalidateQueries({ queryKey: queryKeys.data.invoices(businessId || '') });
     },
-    onError: (error: Error) => {
+    onError: (error: Error) {
       toast.error(error.message || 'Failed to generate invoice');
     }
+  });
+}
+
+export interface RecurringScheduleDetail extends RecurringSchedule {
+  invoices: Array<{
+    id: string;
+    number: string;
+    total: number;
+    status: string;
+    created_at: string;
+  }>;
+}
+
+export function useRecurringScheduleDetail(scheduleId: string | null) {
+  const authApi = useAuthApi();
+  const { businessId } = useBusinessContext();
+
+  return useQuery<RecurringScheduleDetail>({
+    queryKey: queryKeys.data.recurringSchedules(businessId || '').concat(['detail', scheduleId || '']),
+    enabled: !!businessId && !!scheduleId,
+    queryFn: async () => {
+      const { data, error } = await authApi.invoke(`recurring-schedules-crud?scheduleId=${scheduleId}`, {
+        method: 'GET',
+        headers: { 'x-business-id': businessId }
+      });
+
+      if (error) throw new Error(error.message || 'Failed to fetch schedule details');
+      
+      return {
+        ...data.schedule,
+        invoices: data.invoices || [],
+        customer_name: data.schedule.customer?.name,
+        customer_email: data.schedule.customer?.email,
+        quote_number: data.schedule.quote?.number,
+        amount: data.schedule.quote?.total || 0,
+      };
+    },
+  });
+}
+
+export function usePauseSubscription() {
+  const authApi = useAuthApi();
+  const queryClient = useQueryClient();
+  const { businessId } = useBusinessContext();
+
+  return useMutation({
+    mutationFn: async (scheduleId: string) => {
+      const { data, error } = await authApi.invoke('recurring-schedules-crud', {
+        method: 'PATCH',
+        body: { action: 'pause', scheduleId }
+      });
+      if (error) throw new Error(error.message || 'Failed to pause subscription');
+      return data;
+    },
+    onSuccess: () => {
+      toast.success('Subscription paused successfully');
+      queryClient.invalidateQueries({ queryKey: queryKeys.data.recurringSchedules(businessId || '') });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to pause subscription');
+    },
+  });
+}
+
+export function useResumeSubscription() {
+  const authApi = useAuthApi();
+  const queryClient = useQueryClient();
+  const { businessId } = useBusinessContext();
+
+  return useMutation({
+    mutationFn: async (scheduleId: string) => {
+      const { data, error } = await authApi.invoke('recurring-schedules-crud', {
+        method: 'PATCH',
+        body: { action: 'resume', scheduleId }
+      });
+      if (error) throw new Error(error.message || 'Failed to resume subscription');
+      return data;
+    },
+    onSuccess: () => {
+      toast.success('Subscription resumed successfully');
+      queryClient.invalidateQueries({ queryKey: queryKeys.data.recurringSchedules(businessId || '') });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to resume subscription');
+    },
+  });
+}
+
+export function useCancelSubscription() {
+  const authApi = useAuthApi();
+  const queryClient = useQueryClient();
+  const { businessId } = useBusinessContext();
+
+  return useMutation({
+    mutationFn: async (scheduleId: string) => {
+      const { data, error } = await authApi.invoke(`recurring-schedules-crud?id=${scheduleId}`, {
+        method: 'DELETE'
+      });
+      if (error) throw new Error(error.message || 'Failed to cancel subscription');
+      return data;
+    },
+    onSuccess: () => {
+      toast.success('Subscription canceled successfully');
+      queryClient.invalidateQueries({ queryKey: queryKeys.data.recurringSchedules(businessId || '') });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to cancel subscription');
+    },
   });
 }

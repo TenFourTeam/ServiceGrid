@@ -96,6 +96,13 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
     return;
   }
 
+  // Get recurring schedule by stripe subscription ID
+  const { data: recurringSchedule } = await supabase
+    .from('recurring_schedules')
+    .select('id')
+    .eq('stripe_subscription_id', subscription.id)
+    .single();
+
   // Create invoice record
   const { data: newInvoice, error: invoiceError } = await supabase
     .from('invoices')
@@ -104,6 +111,7 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
       business_id: businessId,
       customer_id: customerId,
       quote_id: quoteId,
+      recurring_schedule_id: recurringSchedule?.id,
       number: nextInvoiceNumber,
       tax_rate: quote.tax_rate,
       discount: quote.discount,
@@ -183,13 +191,15 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
     console.log("[stripe-webhooks] Created work order:", newJob.id);
   }
 
-  // Update recurring schedule next billing date
+  // Update recurring schedule with billing date and counters
   const nextBillingDate = new Date(subscription.current_period_end * 1000);
   
   const { error: scheduleError } = await supabase
     .from('recurring_schedules')
     .update({ 
       next_billing_date: nextBillingDate.toISOString(),
+      last_invoice_date: new Date().toISOString(),
+      total_invoices_generated: supabase.raw('total_invoices_generated + 1'),
       updated_at: new Date().toISOString()
     })
     .eq('stripe_subscription_id', subscription.id);
