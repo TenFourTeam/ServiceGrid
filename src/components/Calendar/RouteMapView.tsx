@@ -11,9 +11,11 @@ import { Button } from '@/components/Button';
 import { MapPin, ChevronLeft, ChevronRight, AlertCircle, Sparkles, Loader2, CheckSquare, Check, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useJobRouteOptimization } from '@/hooks/useJobRouteOptimization';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface RouteMapViewProps {
   date: Date;
@@ -115,6 +117,8 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
   // Refs for performance optimization
   const mapRef = useRef<google.maps.Map | null>(null);
   const initialBoundsSet = useRef(false);
+  const isMobile = useIsMobile();
+  const [showNavPanel, setShowNavPanel] = useState(false);
 
   // Check if Google Maps API key is configured
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
@@ -361,32 +365,32 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
         setMapError('Failed to load Google Maps. Check your API key and enabled APIs.');
       }}
     >
-      <ResizablePanelGroup direction="horizontal" className="h-full w-full">
-        {/* Job Navigation Panel */}
-        <ResizablePanel
-          defaultSize={isNavigationPanelCollapsed ? 5 : 20}
-          minSize={isNavigationPanelCollapsed ? 5 : 15}
-          maxSize={isNavigationPanelCollapsed ? 5 : 35}
-          collapsible={false}
-        >
-          <JobNavigationPanel
-            jobs={jobsWithCoords}
-            selectedJobId={selectedJobId}
-            currentJobIndex={currentJobIndex}
-            onJobSelect={handleJobSelect}
-            isCollapsed={isNavigationPanelCollapsed}
-            onCollapsedChange={setIsNavigationPanelCollapsed}
-          />
-        </ResizablePanel>
-
-        {/* Resize Handle */}
-        {!isNavigationPanelCollapsed && (
-          <ResizableHandle withHandle className="w-1 bg-border hover:bg-primary/20 transition-colors" />
-        )}
-
-        {/* Map Panel */}
-        <ResizablePanel defaultSize={isNavigationPanelCollapsed ? 95 : 80}>
-          <div className="relative w-full h-full">
+      {isMobile ? (
+        <div className="flex flex-col h-full w-full">
+          {/* Collapsible Navigation Panel on Mobile */}
+          <Collapsible open={showNavPanel} onOpenChange={setShowNavPanel}>
+            <CollapsibleTrigger asChild>
+              <Button variant="secondary" className="m-2 w-[calc(100%-1rem)]">
+                <MapPin className="h-4 w-4 mr-2" />
+                {showNavPanel ? 'Hide' : 'Show'} Jobs ({jobsWithCoords.length})
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="max-h-48 overflow-y-auto border-b">
+                <JobNavigationPanel
+                  jobs={jobsWithCoords}
+                  selectedJobId={selectedJobId}
+                  currentJobIndex={currentJobIndex}
+                  onJobSelect={handleJobSelect}
+                  isCollapsed={false}
+                  onCollapsedChange={() => {}}
+                />
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+          
+          {/* Map takes remaining space */}
+          <div className="flex-1 relative">
             {/* Multi-Select Mode Toggle */}
             {!isMultiSelectMode && jobsWithCoords.length > 1 && (
               <div className="absolute top-4 left-4 z-10">
@@ -523,8 +527,173 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
 
             <MapLegend jobs={jobs} selectedMemberId={selectedMemberId} />
           </div>
-        </ResizablePanel>
-      </ResizablePanelGroup>
+        </div>
+      ) : (
+        <ResizablePanelGroup direction="horizontal" className="h-full w-full">
+          {/* Job Navigation Panel */}
+          <ResizablePanel
+            defaultSize={isNavigationPanelCollapsed ? 5 : 20}
+            minSize={isNavigationPanelCollapsed ? 5 : 15}
+            maxSize={isNavigationPanelCollapsed ? 5 : 35}
+            collapsible={false}
+          >
+            <JobNavigationPanel
+              jobs={jobsWithCoords}
+              selectedJobId={selectedJobId}
+              currentJobIndex={currentJobIndex}
+              onJobSelect={handleJobSelect}
+              isCollapsed={isNavigationPanelCollapsed}
+              onCollapsedChange={setIsNavigationPanelCollapsed}
+            />
+          </ResizablePanel>
+
+          {/* Resize Handle */}
+          {!isNavigationPanelCollapsed && (
+            <ResizableHandle withHandle className="w-1 bg-border hover:bg-primary/20 transition-colors" />
+          )}
+
+          {/* Map Panel */}
+          <ResizablePanel defaultSize={isNavigationPanelCollapsed ? 95 : 80}>
+            <div className="relative w-full h-full">
+              {/* Multi-Select Mode Toggle */}
+              {!isMultiSelectMode && jobsWithCoords.length > 1 && (
+                <div className="absolute top-4 left-4 z-10">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setIsMultiSelectMode(true)}
+                    className="bg-background/95 backdrop-blur-sm shadow-lg"
+                  >
+                    <CheckSquare className="h-4 w-4 mr-2" />
+                    Select Multiple Jobs
+                  </Button>
+                </div>
+              )}
+
+              {/* Multi-Select Toolbar */}
+              {isMultiSelectMode && (
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg border p-3">
+                  <div className="flex items-center gap-3">
+                    <Badge variant="secondary" className="font-medium">
+                      {selectedJobIds.size} job{selectedJobIds.size !== 1 ? 's' : ''} selected
+                    </Badge>
+                    
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      disabled={selectedJobIds.size < 2 || isOptimizing}
+                      onClick={handleOptimizeRoute}
+                    >
+                      {isOptimizing ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Optimizing...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          Generate Route
+                        </>
+                      )}
+                    </Button>
+                    
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setSelectedJobIds(new Set())}
+                      disabled={selectedJobIds.size === 0}
+                    >
+                      Clear
+                    </Button>
+                    
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setIsMultiSelectMode(false);
+                        setSelectedJobIds(new Set());
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <Map
+                mapId="d174fd11e8cacedb35e319da"
+                defaultCenter={mapCenter}
+                defaultZoom={mapZoom}
+                gestureHandling="greedy"
+                disableDefaultUI={false}
+                className="w-full h-full"
+                style={{ width: '100%', height: '100%' }}
+              >
+                <MapContent
+                  jobsWithCoords={jobsWithCoords}
+                  selectedJobId={selectedJobId}
+                  selectedJobIds={selectedJobIds}
+                  isMultiSelectMode={isMultiSelectMode}
+                  selectedMemberId={selectedMemberId}
+                  onJobClick={onJobClick}
+                  onMarkerClick={(job, index) => {
+                    setSelectedJob(job);
+                    setSelectedJobId(job.id);
+                    setCurrentJobIndex(index);
+                  }}
+                  onToggleSelection={toggleJobSelection}
+                  mapRef={mapRef}
+                />
+              </Map>
+
+              {/* Job Info Window positioned over map */}
+              {selectedJob && !isMultiSelectMode && (
+                <div className="absolute top-4 right-4 z-10 w-80 pointer-events-auto">
+                  <JobInfoWindow
+                    job={selectedJob}
+                    jobNumber={currentJobIndex + 1}
+                    totalJobs={jobsWithCoords.length}
+                    onClose={() => {
+                      setSelectedJob(null);
+                      setSelectedJobId(null);
+                    }}
+                    onNavigate={navigateToJob}
+                  />
+                </div>
+              )}
+
+              {/* Navigation Controls */}
+              {jobsWithCoords.length > 1 && !isMultiSelectMode && (
+                <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg border p-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigateToJob('prev')}
+                    className="h-8 w-8 p-0"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  
+                  <Badge variant="secondary" className="px-3 py-1 text-sm font-medium">
+                    {currentJobIndex + 1} / {jobsWithCoords.length}
+                  </Badge>
+                  
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigateToJob('next')}
+                    className="h-8 w-8 p-0"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+
+              <MapLegend jobs={jobs} selectedMemberId={selectedMemberId} />
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      )}
 
       {/* Optimization Results Dialog */}
       <Dialog open={showOptimizationDialog} onOpenChange={setShowOptimizationDialog}>

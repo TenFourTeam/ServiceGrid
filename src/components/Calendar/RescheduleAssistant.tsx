@@ -8,9 +8,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerFooter,
+} from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuthApi } from '@/hooks/useAuthApi';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 
 interface RescheduleAssistantProps {
@@ -48,6 +57,7 @@ export function RescheduleAssistant({
   const [conflictImpact, setConflictImpact] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const authApi = useAuthApi();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (open) {
@@ -83,6 +93,157 @@ export function RescheduleAssistant({
     }
   };
 
+  const content = (
+    <div className="space-y-6">
+      {/* Conflict Details */}
+      <div className="space-y-2">
+        <h4 className="text-sm font-medium">Job Being Moved</h4>
+        <div className="p-3 bg-muted rounded-md">
+          <div className="font-medium">{jobTitle}</div>
+          <div className="text-sm text-muted-foreground mt-1">
+            New time: {proposedStartTime.toLocaleString([], {
+              weekday: 'short',
+              month: 'short',
+              day: 'numeric',
+              hour: 'numeric',
+              minute: '2-digit'
+            })}
+          </div>
+        </div>
+      </div>
+
+      {conflicts.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="text-sm font-medium text-destructive">Conflicts With</h4>
+          <div className="space-y-2">
+            {conflicts.map((conflict) => (
+              <div key={conflict.id} className="p-2 border border-destructive/50 rounded-md text-sm">
+                <div className="font-medium">{conflict.title}</div>
+                <div className="text-muted-foreground">
+                  {new Date(conflict.start_time).toLocaleString([], {
+                    hour: 'numeric',
+                    minute: '2-digit'
+                  })} - {new Date(conflict.end_time).toLocaleString([], {
+                    hour: 'numeric',
+                    minute: '2-digit'
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Impact Analysis */}
+      {conflictImpact && (
+        <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+          <div className="text-sm font-medium text-destructive mb-1">Impact Analysis</div>
+          <div className="text-sm text-muted-foreground">{conflictImpact}</div>
+        </div>
+      )}
+
+      {/* AI Suggestions */}
+      <div className="space-y-3">
+        <h4 className="text-sm font-medium flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-primary" />
+          Better Options
+        </h4>
+
+        {loading ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+            Analyzing alternatives...
+          </div>
+        ) : alternatives.length > 0 ? (
+          <div className="space-y-2">
+            {alternatives.map((alt, index) => (
+              <button
+                key={index}
+                onClick={() => onAcceptAlternative(alt.startTime, alt.endTime)}
+                className="w-full p-4 border rounded-lg hover:border-primary hover:bg-accent transition-colors text-left"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">
+                        {new Date(alt.startTime).toLocaleString([], {
+                          weekday: 'short',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit'
+                        })} - {new Date(alt.endTime).toLocaleString([], {
+                          hour: 'numeric',
+                          minute: '2-digit'
+                        })}
+                      </span>
+                    </div>
+                    <div className="text-sm text-muted-foreground">{alt.reasoning}</div>
+                    {alt.routeImpact && (
+                      <div className="text-xs text-muted-foreground italic">{alt.routeImpact}</div>
+                    )}
+                  </div>
+                  {alt.recommended && (
+                    <Badge variant="default" className="shrink-0">Recommended</Badge>
+                  )}
+                </div>
+              </button>
+            ))}
+
+            {/* Keep Original Option */}
+            <button
+              onClick={() => onOpenChange(false)}
+              className="w-full p-4 border rounded-lg hover:border-muted-foreground hover:bg-accent transition-colors text-left"
+            >
+              <div className="font-medium">Keep Original Time</div>
+              <div className="text-sm text-muted-foreground">Cancel the move and keep job at current time</div>
+            </button>
+          </div>
+        ) : (
+          <div className="text-center py-4 text-muted-foreground">
+            No alternative suggestions available
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const actions = (
+    <>
+      <Button variant="outline" onClick={() => onOpenChange(false)}>
+        Cancel
+      </Button>
+      <Button variant="destructive" onClick={onForceMove}>
+        Force Move Anyway
+      </Button>
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <Drawer open={open} onOpenChange={onOpenChange}>
+        <DrawerContent className="max-h-[90vh]">
+          <DrawerHeader>
+            <DrawerTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Scheduling Conflict Detected
+            </DrawerTitle>
+            <DrawerDescription>
+              Moving this job would create conflicts or impact route efficiency.
+            </DrawerDescription>
+          </DrawerHeader>
+          <div className="overflow-y-auto px-4 pb-4">
+            {content}
+          </div>
+          <DrawerFooter className="flex gap-2">
+            {actions}
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -95,128 +256,9 @@ export function RescheduleAssistant({
             Moving this job would create conflicts or impact route efficiency.
           </DialogDescription>
         </DialogHeader>
-
-        <div className="space-y-6">
-          {/* Conflict Details */}
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium">Job Being Moved</h4>
-            <div className="p-3 bg-muted rounded-md">
-              <div className="font-medium">{jobTitle}</div>
-              <div className="text-sm text-muted-foreground mt-1">
-                New time: {proposedStartTime.toLocaleString([], {
-                  weekday: 'short',
-                  month: 'short',
-                  day: 'numeric',
-                  hour: 'numeric',
-                  minute: '2-digit'
-                })}
-              </div>
-            </div>
-          </div>
-
-          {conflicts.length > 0 && (
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium text-destructive">Conflicts With</h4>
-              <div className="space-y-2">
-                {conflicts.map((conflict) => (
-                  <div key={conflict.id} className="p-2 border border-destructive/50 rounded-md text-sm">
-                    <div className="font-medium">{conflict.title}</div>
-                    <div className="text-muted-foreground">
-                      {new Date(conflict.start_time).toLocaleString([], {
-                        hour: 'numeric',
-                        minute: '2-digit'
-                      })} - {new Date(conflict.end_time).toLocaleString([], {
-                        hour: 'numeric',
-                        minute: '2-digit'
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Impact Analysis */}
-          {conflictImpact && (
-            <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-              <div className="text-sm font-medium text-destructive mb-1">Impact Analysis</div>
-              <div className="text-sm text-muted-foreground">{conflictImpact}</div>
-            </div>
-          )}
-
-          {/* AI Suggestions */}
-          <div className="space-y-3">
-            <h4 className="text-sm font-medium flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-primary" />
-              Better Options
-            </h4>
-
-            {loading ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-                Analyzing alternatives...
-              </div>
-            ) : alternatives.length > 0 ? (
-              <div className="space-y-2">
-                {alternatives.map((alt, index) => (
-                  <button
-                    key={index}
-                    onClick={() => onAcceptAlternative(alt.startTime, alt.endTime)}
-                    className="w-full p-4 border rounded-lg hover:border-primary hover:bg-accent transition-colors text-left"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium">
-                            {new Date(alt.startTime).toLocaleString([], {
-                              weekday: 'short',
-                              month: 'short',
-                              day: 'numeric',
-                              hour: 'numeric',
-                              minute: '2-digit'
-                            })} - {new Date(alt.endTime).toLocaleString([], {
-                              hour: 'numeric',
-                              minute: '2-digit'
-                            })}
-                          </span>
-                        </div>
-                        <div className="text-sm text-muted-foreground">{alt.reasoning}</div>
-                        {alt.routeImpact && (
-                          <div className="text-xs text-muted-foreground italic">{alt.routeImpact}</div>
-                        )}
-                      </div>
-                      {alt.recommended && (
-                        <Badge variant="default" className="shrink-0">Recommended</Badge>
-                      )}
-                    </div>
-                  </button>
-                ))}
-
-                {/* Keep Original Option */}
-                <button
-                  onClick={() => onOpenChange(false)}
-                  className="w-full p-4 border rounded-lg hover:border-muted-foreground hover:bg-accent transition-colors text-left"
-                >
-                  <div className="font-medium">Keep Original Time</div>
-                  <div className="text-sm text-muted-foreground">Cancel the move and keep job at current time</div>
-                </button>
-              </div>
-            ) : (
-              <div className="text-center py-4 text-muted-foreground">
-                No alternative suggestions available
-              </div>
-            )}
-          </div>
-        </div>
-
+        {content}
         <DialogFooter className="flex gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button variant="destructive" onClick={onForceMove}>
-            Force Move Anyway
-          </Button>
+          {actions}
         </DialogFooter>
       </DialogContent>
     </Dialog>
