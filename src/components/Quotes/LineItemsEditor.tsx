@@ -28,7 +28,13 @@ export function LineItemsEditor({
     setAmountInputs((prev) => {
       const next: Record<string, string> = {};
       for (const it of items) {
-        next[it.id] = prev[it.id] ?? (it.lineTotal ? formatCurrencyInputNoSymbol(it.lineTotal || 0) : '');
+        // If this item already has a formatted value, keep it
+        if (prev[it.id] !== undefined) {
+          next[it.id] = prev[it.id];
+        } else {
+          // New item: initialize with formatted value if lineTotal > 0, otherwise empty
+          next[it.id] = it.lineTotal > 0 ? formatCurrencyInputNoSymbol(it.lineTotal) : '';
+        }
       }
       return next;
     });
