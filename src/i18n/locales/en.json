@@ -524,7 +524,7 @@
       },
       "subscription": {
         "label": "Subscription Service",
-        "explanation": "(Work order and invoice will be sent based on interval selected)"
+        "explanation": "(Work order and invoice will be automatically generated in selected interval)"
       },
       "summary": {
         "subtotal": "Subtotal:",

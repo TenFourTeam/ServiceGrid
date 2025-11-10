@@ -523,7 +523,7 @@
       },
       "subscription": {
         "label": "Servicio de Suscripción",
-        "explanation": "(Se enviará orden de trabajo y factura según el intervalo seleccionado)"
+        "explanation": "(Orden de trabajo y factura se generarán automáticamente en el intervalo seleccionado)"
       },
       "summary": {
         "subtotal": "Subtotal:",
