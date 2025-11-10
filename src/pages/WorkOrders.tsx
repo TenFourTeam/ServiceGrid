@@ -225,11 +225,15 @@ function StatusChip({ status, t }: { status: Job['status'], t: (key: string) => 
 function TypeChip({ jobType, t }: { jobType: Job['jobType'], t: (key: string) => string }) {
   const typeKey = jobType === 'time_and_materials' 
     ? 'jobs.types.timeAndMaterials'
+    : jobType === 'estimate'
+    ? 'jobs.types.estimate'
     : 'jobs.types.appointment';
   
   const styles = jobType === 'time_and_materials'
     ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
-    : 'bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300';
+    : jobType === 'estimate'
+    ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300'
+    : 'bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-300';
   
   return <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${styles}`}>{t(typeKey)}</span>;
 }

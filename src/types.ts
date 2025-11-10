@@ -112,7 +112,7 @@ export interface Estimate extends Quote {
 }
 
 export type JobStatus = 'Scheduled' | 'Schedule Approved' | 'In Progress' | 'Completed';
-export type JobType = 'appointment' | 'time_and_materials';
+export type JobType = 'estimate' | 'appointment' | 'time_and_materials';
 
 export interface Job {
   id: ID;
@@ -135,7 +135,7 @@ export interface Job {
   clockOutTime?: ISODate | null;
   isClockedIn: boolean;
   assignedMembers?: BusinessMember[]; // NEW: assigned team members
-  isAssessment?: boolean; // NEW: marks if this is an assessment job
+  isAssessment?: boolean; // DEPRECATED: Use jobType === 'estimate' instead. Kept for backward compatibility with existing data.
   requestId?: string; // NEW: links back to the originating request
   confirmationToken?: string; // NEW: confirmation token for work order confirmations
   confirmedAt?: ISODate; // NEW: when confirmation was received

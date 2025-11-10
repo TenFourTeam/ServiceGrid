@@ -151,11 +151,11 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
                           if (!t) return []; // Skip if invalid date
                           
                           // Validate and normalize job
-                          const safeJobType = (j.jobType === 'appointment' || j.jobType === 'time_and_materials') 
+                          const safeJobType = (j.jobType === 'appointment' || j.jobType === 'time_and_materials' || j.jobType === 'estimate') 
                             ? j.jobType 
                             : 'appointment';
                           
-                          const statusColors = getJobStatusColors(j.status, j.isAssessment, safeJobType);
+                          const statusColors = getJobStatusColors(j.status, safeJobType);
                           blocks.push(
                             <li key={`${j.id}-scheduled`} className="truncate">
                               <button
@@ -164,13 +164,13 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
                                 className={`w-full truncate rounded px-2 py-1 text-xs border ${statusColors.bg} ${statusColors.text} ${statusColors.border} hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-primary ${displayMode === 'combined' ? 'opacity-60' : ''}`}
                                 aria-label={`Open job ${j.title || 'Job'} at ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
                               >
-                                <span className={`mr-2 inline-block h-2 w-2 rounded-full align-middle ${j.isAssessment ? 'bg-status-assessment-foreground' : j.status === 'Completed' ? 'bg-success' : 'bg-primary'}`} aria-hidden="true" />
+                                <span className={`mr-2 inline-block h-2 w-2 rounded-full align-middle ${j.jobType === 'estimate' ? 'bg-status-assessment-foreground' : j.status === 'Completed' ? 'bg-success' : 'bg-primary'}`} aria-hidden="true" />
                                 <span className="font-medium">
                                   {t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                                 </span>
                                 <span className="mx-1 opacity-70">•</span>
                                 <span className="truncate">{j.title || 'Job'}</span>
-                                {j.isAssessment && <span className="text-[10px] opacity-80 ml-1">(Assessment)</span>}
+                                {j.jobType === 'estimate' && <span className="text-[10px] opacity-80 ml-1">(Estimate)</span>}
                                 {customersMap.get(j.customerId) && (
                                    <span className="opacity-70"> — {(customersMap.get(j.customerId) ?? 'Customer') as string}</span>
                                 )}
@@ -230,7 +230,7 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
                               ? j.jobType 
                               : 'appointment';
                             
-                            const statusColors = getJobStatusColors(j.status, j.isAssessment, safeJobType);
+                            const statusColors = getJobStatusColors(j.status, safeJobType);
                             blocks.push(
                               <button
                                 key={`${j.id}-scheduled`}
@@ -240,7 +240,7 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
                                 style={{ width: `${widthPercent}%` }}
                                 aria-label={`Open job ${j.title || 'Job'} at ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
                               >
-                                <span className={`mr-1 inline-block h-2 w-2 rounded-full align-middle ${j.isAssessment ? 'bg-status-assessment-foreground' : j.status === 'Completed' ? 'bg-success' : 'bg-primary'}`} aria-hidden="true" />
+                                <span className={`mr-1 inline-block h-2 w-2 rounded-full align-middle ${j.jobType === 'estimate' ? 'bg-status-assessment-foreground' : j.status === 'Completed' ? 'bg-success' : 'bg-primary'}`} aria-hidden="true" />
                                 <span className="font-medium text-[10px]">
                                   {t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                                 </span>

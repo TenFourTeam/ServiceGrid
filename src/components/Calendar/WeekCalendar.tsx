@@ -871,14 +871,13 @@ function onDragStart(e: React.PointerEvent, job: Job) {
                         // Validate and normalize job before rendering
                         const safeJob = {
                           ...j,
-                          jobType: (j.jobType === 'appointment' || j.jobType === 'time_and_materials') 
+                          jobType: (j.jobType === 'appointment' || j.jobType === 'time_and_materials' || j.jobType === 'estimate') 
                             ? j.jobType 
                             : 'appointment', // Force valid value
-                          isAssessment: j.isAssessment || false,
                           status: j.status || 'Scheduled'
                         };
                         
-                        const statusColors = getJobStatusColors(safeJob.status, safeJob.isAssessment, safeJob.jobType);
+                        const statusColors = getJobStatusColors(safeJob.status, safeJob.jobType);
                         const currentTime = new Date();
                         const canDrag = canDragJob(safeJob.status, currentTime, startsAt);
                         const canResize = canResizeJob(safeJob.status, currentTime, startsAt, effectiveEndsAt);

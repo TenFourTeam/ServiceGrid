@@ -290,6 +290,7 @@
       "noMembersAvailable": "No hay miembros del equipo disponibles"
     },
     "types": {
+      "estimate": "Presupuesto",
       "appointment": "Cita",
       "timeAndMaterials": "Tiempo y Materiales",
       "selectType": "Seleccionar tipo de trabajo"

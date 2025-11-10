@@ -121,20 +121,20 @@ export default function DayCalendar({ date, displayMode = 'scheduled', selectedM
             
             // Validate and normalize job
             const job = j as Job;
-            const safeJobType = (job.jobType === 'appointment' || job.jobType === 'time_and_materials') 
+            const safeJobType = (job.jobType === 'appointment' || job.jobType === 'time_and_materials' || job.jobType === 'estimate') 
               ? job.jobType 
               : 'appointment';
             
-            const statusColors = getJobStatusColors(job.status, job.isAssessment, safeJobType);
+            const statusColors = getJobStatusColors(job.status, safeJobType);
             
             blocks.push(
               <li key={`${job.id}-scheduled`} className={`${statusColors.bg} ${statusColors.text} ${statusColors.border} rounded px-3 py-2 border ${displayMode === 'combined' ? 'opacity-60' : ''} cursor-pointer hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-primary`} onClick={(e) => { e.stopPropagation(); setActiveJob(job); setOpen(true); }}>
                 <div className="flex items-center gap-2 text-sm font-medium">
-                  <span className={`inline-block h-2 w-2 rounded-full ${job.isAssessment ? 'bg-status-assessment-foreground' : job.status === 'Completed' ? 'bg-success' : 'bg-primary'}`} aria-hidden="true" />
+                  <span className={`inline-block h-2 w-2 rounded-full ${job.jobType === 'estimate' ? 'bg-status-assessment-foreground' : job.status === 'Completed' ? 'bg-success' : 'bg-primary'}`} aria-hidden="true" />
                   <span>{s.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
                   <span className="opacity-70">–</span>
                   <span>{e ? e.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'End time'}</span>
-                  {job.isAssessment && <span className="text-xs opacity-80">(Assessment)</span>}
+                  {job.jobType === 'estimate' && <span className="text-xs opacity-80">(Estimate)</span>}
                 </div>
                 <div className="text-sm font-medium truncate">{job.title || 'Job'}</div>
                 <div className="text-xs opacity-70 truncate">{(customersMap.get(job.customerId) ?? 'Customer') as string}</div>

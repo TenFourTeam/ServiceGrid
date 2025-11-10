@@ -290,6 +290,7 @@
       "noMembersAvailable": "No team members available"
     },
     "types": {
+      "estimate": "Estimate",
       "appointment": "Appointment",
       "timeAndMaterials": "Time & Materials",
       "selectType": "Select job type"

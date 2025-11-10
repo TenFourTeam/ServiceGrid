@@ -110,7 +110,7 @@ export function RequestActions({ request }: RequestActionsProps) {
           notes: `Assessment for request: ${request.title}\n\nService Details: ${request.service_details}${request.notes ? `\n\nNotes: ${request.notes}` : ''}`,
           status: 'Scheduled',
           startsAt: calculateAssessmentStartTime(),
-          isAssessment: true,
+          jobType: 'estimate',
           requestId: request.id,
         },
         toast: {

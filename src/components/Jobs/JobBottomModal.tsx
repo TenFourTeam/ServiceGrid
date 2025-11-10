@@ -427,6 +427,7 @@ export function JobBottomModal({
                 <SelectValue placeholder={t('jobs.types.selectType')} />
               </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="estimate">{t('jobs.types.estimate')}</SelectItem>
                   <SelectItem value="appointment">{t('jobs.types.appointment')}</SelectItem>
                   <SelectItem value="time_and_materials">{t('jobs.types.timeAndMaterials')}</SelectItem>
                 </SelectContent>
