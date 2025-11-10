@@ -39,6 +39,7 @@ export function WorkOrderActions({
   const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
   const [isSendingConfirmation, setIsSendingConfirmation] = useState(false);
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const isOwner = userRole === 'owner';
   const canEdit = isOwner;
@@ -273,7 +274,7 @@ export function WorkOrderActions({
 
   return (
     <>
-      <DropdownMenu>
+      <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
             <MoreHorizontal className="h-4 w-4" />
@@ -281,7 +282,13 @@ export function WorkOrderActions({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="bg-background border shadow-md z-50">
           {/* Schedule/Reschedule */}
-          <DropdownMenuItem onClick={() => setRescheduleOpen(true)} className="gap-2">
+          <DropdownMenuItem 
+            onClick={() => {
+              setDropdownOpen(false);
+              setTimeout(() => setRescheduleOpen(true), 50);
+            }} 
+            className="gap-2"
+          >
             <Calendar className="h-4 w-4" />
             {job.startsAt ? t('workOrders.reschedule.title') : t('workOrders.reschedule.schedule')}
           </DropdownMenuItem>
