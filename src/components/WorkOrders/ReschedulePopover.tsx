@@ -2,7 +2,9 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Calendar as CalendarIcon } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { useAuthApi } from '@/hooks/useAuthApi';
@@ -27,6 +29,7 @@ export default function ReschedulePopover({ job, onDone, asDropdownItem = false,
   const queryClient = useQueryClient();
   const { businessId } = useBusinessContext();
   const { t } = useLanguage();
+  const isMobile = useIsMobile();
   const [internalOpen, setInternalOpen] = useState(false);
   
   // Use controlled or internal state
@@ -117,7 +120,7 @@ export default function ReschedulePopover({ job, onDone, asDropdownItem = false,
   };
 
   const content = (
-    <div className="space-y-3">
+    <div className="space-y-3 max-h-[70vh] overflow-y-auto">
       <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1">
@@ -150,6 +153,24 @@ export default function ReschedulePopover({ job, onDone, asDropdownItem = false,
 
   // Use Dialog when controlled externally (from dropdown), Popover for standalone button
   if (asDropdownItem) {
+    // Use Drawer on mobile, Dialog on desktop
+    if (isMobile) {
+      return (
+        <Drawer open={open} onOpenChange={setOpen}>
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle>
+                {job.startsAt ? t('workOrders.reschedule.title') : t('workOrders.reschedule.schedule')}
+              </DrawerTitle>
+            </DrawerHeader>
+            <div className="px-4 pb-4">
+              {content}
+            </div>
+          </DrawerContent>
+        </Drawer>
+      );
+    }
+    
     return (
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-md">
