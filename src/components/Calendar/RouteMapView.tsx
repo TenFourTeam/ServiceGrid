@@ -124,42 +124,15 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
   // Fetch Google Maps API key from edge function
   const { data: apiKey, isLoading: isLoadingApiKey, error: apiKeyError } = useGoogleMapsApiKey();
 
-  // Show loading state while fetching API key
-  if (isLoadingApiKey) {
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-muted/10">
-        <div className="space-y-4 w-full max-w-md p-8">
-          <Skeleton className="h-8 w-3/4" />
-          <Skeleton className="h-64 w-full" />
-          <Skeleton className="h-8 w-1/2" />
-        </div>
-      </div>
-    );
-  }
-
-  // Show error if API key fetch failed
-  if (apiKeyError || !apiKey) {
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-muted/10">
-        <div className="text-center space-y-4 max-w-md p-8">
-          <MapPin className="h-12 w-12 mx-auto text-destructive" />
-          <h3 className="text-lg font-semibold">Maps Configuration Error</h3>
-          <p className="text-sm text-muted-foreground">
-            Failed to load Google Maps API key. Please contact support.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   // Extract unique addresses from jobs
   const addresses = useMemo(() => {
+    if (!apiKey) return []; // Don't process addresses until we have API key
     return jobs
       .filter(j => j.address)
       .map(j => j.address!);
-  }, [jobs]);
+  }, [jobs, apiKey]);
 
-  // Geocode all addresses
+  // Geocode all addresses (only when we have an API key)
   const { data: coordinates, isLoading } = useGeocoding(addresses);
 
   // Calculate map bounds to fit all markers
@@ -303,6 +276,34 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentJobIndex, jobsWithCoords]);
+
+  // Show loading state while fetching API key
+  if (isLoadingApiKey) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-muted/10">
+        <div className="space-y-4 w-full max-w-md p-8">
+          <Skeleton className="h-8 w-3/4" />
+          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-8 w-1/2" />
+        </div>
+      </div>
+    );
+  }
+
+  // Show error if API key fetch failed
+  if (apiKeyError || !apiKey) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-muted/10">
+        <div className="text-center space-y-4 max-w-md p-8">
+          <MapPin className="h-12 w-12 mx-auto text-destructive" />
+          <h3 className="text-lg font-semibold">Maps Configuration Error</h3>
+          <p className="text-sm text-muted-foreground">
+            Failed to load Google Maps API key. Please contact support.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // Display error state if map fails to load
   if (mapError) {
