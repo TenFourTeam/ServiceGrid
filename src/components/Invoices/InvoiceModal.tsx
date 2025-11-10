@@ -9,7 +9,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { CalendarIcon, Send, DollarSign, Briefcase } from 'lucide-react';
+import { CalendarIcon, Send, DollarSign, Briefcase, Repeat } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { formatDate, formatMoney, formatCurrencyInputNoSymbol, parseCurrencyInput, sanitizeMoneyTyping } from '@/utils/format';
@@ -30,6 +30,7 @@ import PickJobModal from '@/components/Jobs/PickJobModal';
 import PickQuoteModal from '@/components/Jobs/PickQuoteModal';
 import { InvoiceForm, type InvoiceFormData } from '@/components/Invoices/InvoiceForm';
 import type { Invoice, InvoicesCacheData } from '@/types';
+import RecurringScheduleDetailModal from '@/components/Invoices/RecurringScheduleDetailModal';
 
 export interface InvoiceModalProps {
   open: boolean;
@@ -66,6 +67,7 @@ export default function InvoiceModal({
   const [showJobPicker, setShowJobPicker] = useState(false);
   const [showQuotePicker, setShowQuotePicker] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   
   const { data: payments = [] } = useInvoicePayments({ 
     invoiceId: invoice?.id,
@@ -601,6 +603,28 @@ export default function InvoiceModal({
 
     return (
       <div className="space-y-6">
+        {/* Recurring Billing Banner */}
+        {(invoice as any).recurringScheduleId && (
+          <div className="bg-primary/10 border border-primary/20 rounded-md p-4">
+            <div className="flex items-start gap-3">
+              <Repeat className="h-5 w-5 text-primary mt-0.5" />
+              <div className="flex-1">
+                <h4 className="font-medium text-sm">Part of Recurring Billing</h4>
+                <p className="text-sm text-muted-foreground mt-1">
+                  This invoice was automatically generated from a recurring billing schedule for {customerName}.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowSubscriptionModal(true)}
+              >
+                View Subscription Details
+              </Button>
+            </div>
+          </div>
+        )}
+        
         {/* Customer Information */}
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-muted-foreground">Customer Information</h3>
@@ -1058,6 +1082,15 @@ export default function InvoiceModal({
         onSelect={handleLinkQuote}
         customerId={invoice?.customerId}
       />
+
+      {/* Recurring Schedule Detail Modal */}
+      {(invoice as any)?.recurringScheduleId && (
+        <RecurringScheduleDetailModal
+          open={showSubscriptionModal}
+          onOpenChange={setShowSubscriptionModal}
+          scheduleId={(invoice as any).recurringScheduleId}
+        />
+      )}
     </>
   );
 }

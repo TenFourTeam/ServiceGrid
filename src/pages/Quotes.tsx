@@ -30,6 +30,8 @@ import { toast } from 'sonner';
 import { formatMoney as formatCurrency } from '@/utils/format';
 import type { Customer, QuoteListItem, QuoteStatus, LineItem, Quote } from '@/types';
 import { useAuthApi } from '@/hooks/useAuthApi';
+import { cn } from '@/lib/utils';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 
 const statusColors: Record<QuoteStatus, string> = {
@@ -175,6 +177,7 @@ export default function QuotesPage() {
 
   // Quote Card component for mobile view
   function QuoteCard({ quote, onClick }: { quote: QuoteListItem; onClick: () => void }) {
+    const isRecurring = (quote as any).isSubscription || false;
     return (
       <div 
         onClick={onClick}
@@ -185,11 +188,23 @@ export default function QuotesPage() {
         }`}
         data-quote-id={quote.id}
       >
+        {/* Recurring icon in top-left corner */}
+        {isRecurring && (
+          <div className="absolute top-2 left-2">
+            <span className="text-lg" title="Recurring Quote">🔁</span>
+          </div>
+        )}
+        
         {/* Status badge in top-right corner */}
-        <div className="absolute top-2 right-2">
+        <div className="absolute top-2 right-2 flex gap-1">
           <Badge className={statusColors[quote.status]}>
             {t(`quotes.status.${quote.status.toLowerCase().replace(/\s+/g, '')}`)}
           </Badge>
+          {isRecurring && (
+            <Badge variant="outline" className="text-xs">
+              Recurring
+            </Badge>
+          )}
         </div>
         
         {/* Actions menu halfway up right edge */}
@@ -202,7 +217,7 @@ export default function QuotesPage() {
         </div>
         
         {/* Content with right padding to avoid overlap */}
-        <div className="pr-20 pb-8">
+        <div className={cn("pr-20 pb-8", isRecurring && "pl-8")}>
           <div className="space-y-1">
             <div className="font-medium">#{quote.number}</div>
             <div className="text-sm text-muted-foreground">
@@ -339,37 +354,62 @@ export default function QuotesPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    sortedQuotes.map((quote) => (
-                    <TableRow 
-                      key={quote.id}
-                      data-quote-id={quote.id}
-                      className={`cursor-pointer hover:bg-muted/50 transition-all duration-500 ${
-                        highlightedQuoteId === quote.id 
-                          ? 'animate-bounce bg-success/20 border-l-4 border-l-success scale-[1.03] shadow-xl ring-2 ring-success/30' 
-                          : ''
-                      }`}
-                      onClick={() => {
-                        setSelectedQuoteId(quote.id);
-                        setDetailsModalMode('view');
-                      }}
-                    >
-                        <TableCell className="font-medium">{quote.number}</TableCell>
-                        <TableCell>{getCustomerName(quote.customerId)}</TableCell>
-                        <TableCell>{formatCurrency(quote.total)}</TableCell>
-                        <TableCell>
-                          <Badge className={statusColors[quote.status]}>
-                            {t(`quotes.status.${quote.status.toLowerCase().replace(/\s+/g, '')}`)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell onClick={(e) => e.stopPropagation()}>
-                          <QuoteActions 
-                            quote={quote} 
-                            onSendQuote={handleSendQuote}
-                            onEditQuote={handleEditQuote}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    ))
+                    sortedQuotes.map((quote) => {
+                      const isRecurring = (quote as any).isSubscription || false;
+                      return (
+                        <TableRow 
+                          key={quote.id}
+                          data-quote-id={quote.id}
+                          className={`cursor-pointer hover:bg-muted/50 transition-all duration-500 ${
+                            highlightedQuoteId === quote.id 
+                              ? 'animate-bounce bg-success/20 border-l-4 border-l-success scale-[1.03] shadow-xl ring-2 ring-success/30' 
+                              : ''
+                          }`}
+                          onClick={() => {
+                            setSelectedQuoteId(quote.id);
+                            setDetailsModalMode('view');
+                          }}
+                        >
+                            <TableCell className="font-medium">
+                              <div className="flex items-center gap-2">
+                                {isRecurring && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span className="text-base">🔁</span>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Recurring Quote</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                )}
+                                {quote.number}
+                              </div>
+                            </TableCell>
+                            <TableCell>{getCustomerName(quote.customerId)}</TableCell>
+                            <TableCell>{formatCurrency(quote.total)}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Badge className={statusColors[quote.status]}>
+                                  {t(`quotes.status.${quote.status.toLowerCase().replace(/\s+/g, '')}`)}
+                                </Badge>
+                                {isRecurring && (
+                                  <Badge variant="outline" className="text-xs">
+                                    Recurring
+                                  </Badge>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <QuoteActions 
+                                quote={quote} 
+                                onSendQuote={handleSendQuote}
+                                onEditQuote={handleEditQuote}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        );
+                      }
+                    )
                   )}
                 </TableBody>
               </Table>

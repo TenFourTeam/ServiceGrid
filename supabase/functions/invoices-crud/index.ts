@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
         .from('invoices')
         .select(`
           id, number, total, subtotal, tax_rate, discount, status, due_at, paid_at, 
-          created_at, updated_at, public_token, job_id, quote_id,
+          created_at, updated_at, public_token, job_id, quote_id, recurring_schedule_id,
           customer_id, address, payment_terms, frequency, 
           deposit_required, deposit_percent, notes_internal, terms,
           customers!inner(name, email)
@@ -142,6 +142,7 @@ Deno.serve(async (req) => {
         customerId: invoice.customer_id,
         jobId: invoice.job_id,
         quoteId: invoice.quote_id,
+        recurringScheduleId: invoice.recurring_schedule_id,
         customerName: invoice.customers?.name,
         customerEmail: invoice.customers?.email,
         address: invoice.address,

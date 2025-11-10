@@ -27,6 +27,7 @@ import { useAuthApi } from '@/hooks/useAuthApi';
 import { useLanguage } from '@/contexts/LanguageContext';
 import RecurringBillingTab from '@/components/Invoices/RecurringBillingTab';
 import { useRecurringSchedules } from '@/hooks/useRecurringSchedules';
+import { cn } from '@/lib/utils';
 
 const statusColors: Record<string, string> = {
   'Draft': 'bg-gray-100 text-gray-800',
@@ -81,6 +82,7 @@ export default function InvoicesPage() {
       customerId: row.customerId,
       jobId: row.jobId || undefined,
       quoteId: row.quoteId || undefined,
+      recurringScheduleId: row.recurringScheduleId || undefined,
       lineItems: [] as any[],
       taxRate: row.taxRate ?? 0,
       discount: row.discount,
@@ -234,16 +236,36 @@ export default function InvoicesPage() {
   // Invoice Card component for mobile view
   function InvoiceCard({ invoice, onClick }: { invoice: any; onClick: () => void }) {
     const customer = customers.find(c => c.id === invoice.customerId);
+    const isRecurring = !!invoice.recurringScheduleId;
     return (
       <div 
         onClick={onClick}
         className="relative p-4 border rounded-md bg-card shadow-sm cursor-pointer hover:bg-accent/30 transition-colors"
       >
+        {/* Recurring icon in top-left corner */}
+        {isRecurring && (
+          <div className="absolute top-2 left-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="text-lg">🔁</span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Generated from recurring billing</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        )}
+        
         {/* Status badge in top-right corner */}
         <div className="absolute top-2 right-2">
           <Badge variant="secondary" className={statusColors[invoice.status] || 'bg-gray-100 text-gray-800'}>
             {invoice.status}
           </Badge>
+          {isRecurring && (
+            <Badge variant="outline" className="ml-1 text-xs">
+              Recurring
+            </Badge>
+          )}
         </div>
 
         {/* Actions menu halfway up right edge */}
@@ -261,7 +283,7 @@ export default function InvoicesPage() {
         </div>
 
         {/* Content area with right padding */}
-        <div className="pr-20 pb-8">
+        <div className={cn("pr-20 pb-8", isRecurring && "pl-8")}>
           <div className="space-y-1">
             <div className="font-medium">#{invoice.number}</div>
             <div className="text-sm text-muted-foreground">
@@ -413,16 +435,32 @@ export default function InvoicesPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {sortedInvoices.map((i)=> (
-                      <TableRow 
-                        key={i.id} 
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => {
-                          setSelectedInvoice(i.id);
-                          setModalMode('view');
-                        }}
-                      >
-                        <TableCell>{i.number}</TableCell>
+                    {sortedInvoices.map((i)=> {
+                      const isRecurring = !!(i as any).recurringScheduleId;
+                      return (
+                        <TableRow 
+                          key={i.id} 
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => {
+                            setSelectedInvoice(i.id);
+                            setModalMode('view');
+                          }}
+                        >
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {isRecurring && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="text-base">🔁</span>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Generated from recurring billing</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+                              {i.number}
+                            </div>
+                          </TableCell>
                         <TableCell>{customers.find(c=>c.id===i.customerId)?.name}</TableCell>
                         <TableCell>{formatMoney(i.total)}</TableCell>
                         <TableCell>{formatDate(i.createdAt)}</TableCell>
@@ -441,7 +479,8 @@ export default function InvoicesPage() {
                           />
                         </TableCell>
                       </TableRow>
-                    ))}
+                    );
+                    })}
                   </TableBody>
                 </Table>
               )}
