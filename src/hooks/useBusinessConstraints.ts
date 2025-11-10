@@ -33,7 +33,7 @@ export function useBusinessConstraints() {
       });
 
       if (error) throw error;
-      return data as BusinessConstraint[];
+      return data.data as BusinessConstraint[];
     },
     enabled: !!businessId,
   });
