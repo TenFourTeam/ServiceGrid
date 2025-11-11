@@ -1,8 +1,5 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.54.0';
-import { corsHeaders } from '../_shared/cors.ts';
-
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import { corsHeaders, json, requireCtx } from '../_lib/auth.ts';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -10,24 +7,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Missing authorization header');
-    }
-
-    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    if (userError || !user) {
-      throw new Error('Unauthorized');
-    }
-
-    const businessId = req.headers.get('x-business-id');
-    if (!businessId) {
-      throw new Error('Missing business ID');
-    }
+    const ctx = await requireCtx(req);
+    const supabase = ctx.supaAdmin;
+    const businessId = ctx.businessId;
 
     const url = new URL(req.url);
     const scheduleId = url.searchParams.get('scheduleId');
@@ -35,7 +17,7 @@ Deno.serve(async (req) => {
     if (req.method === 'GET') {
       if (scheduleId) {
         // Get single schedule with invoice history
-        const { data: schedule, error: scheduleError } = await supabaseClient
+        const { data: schedule, error: scheduleError } = await supabase
           .from('recurring_schedules')
           .select(`
             *,
@@ -49,7 +31,7 @@ Deno.serve(async (req) => {
         if (scheduleError) throw scheduleError;
 
         // Get invoices generated from this schedule
-        const { data: invoices, error: invoicesError } = await supabaseClient
+        const { data: invoices, error: invoicesError } = await supabase
           .from('invoices')
           .select('id, number, total, status, created_at, paid_at')
           .eq('recurring_schedule_id', scheduleId)
@@ -63,7 +45,7 @@ Deno.serve(async (req) => {
         );
       } else {
         // List all active recurring schedules
-        const { data: schedules, error } = await supabaseClient
+        const { data: schedules, error } = await supabase
           .from('recurring_schedules')
           .select(`
             id,
@@ -111,7 +93,7 @@ Deno.serve(async (req) => {
         }
 
         // Get schedule details
-        const { data: schedule, error: scheduleError } = await supabaseClient
+        const { data: schedule, error: scheduleError } = await supabase
           .from('recurring_schedules')
           .select(`
             *,
@@ -125,7 +107,7 @@ Deno.serve(async (req) => {
         if (!schedule) throw new Error('Schedule not found');
 
         // Get the original quote to copy line items
-        const { data: lineItems, error: lineItemsError } = await supabaseClient
+        const { data: lineItems, error: lineItemsError } = await supabase
           .from('quote_line_items')
           .select('*')
           .eq('quote_id', schedule.quote_id)
@@ -133,31 +115,22 @@ Deno.serve(async (req) => {
 
         if (lineItemsError) throw lineItemsError;
 
-        // Get profile for owner_id
-        const { data: profile, error: profileError } = await supabaseClient
-          .from('profiles')
-          .select('id')
-          .eq('clerk_user_id', user.id)
-          .single();
-
-        if (profileError || !profile) throw new Error('Profile not found');
-
         // Generate invoice number
-        const { data: invoiceNumber, error: numberError } = await supabaseClient
+        const { data: invoiceNumber, error: numberError } = await supabase
           .rpc('next_inv_number', { 
             p_business_id: businessId,
-            p_user_id: profile.id 
+            p_user_id: ctx.userId 
           });
 
         if (numberError) throw numberError;
 
         // Create invoice
-        const { data: invoice, error: invoiceError } = await supabaseClient
+        const { data: invoice, error: invoiceError } = await supabase
           .from('invoices')
           .insert({
             number: invoiceNumber,
             business_id: businessId,
-            owner_id: profile.id,
+            owner_id: ctx.userId,
             customer_id: schedule.customer_id,
             quote_id: schedule.quote_id,
             recurring_schedule_id: scheduleId,
@@ -178,7 +151,7 @@ Deno.serve(async (req) => {
         // Copy line items
         const invoiceLineItems = lineItems?.map(item => ({
           invoice_id: invoice.id,
-          owner_id: profile.id,
+          owner_id: ctx.userId,
           name: item.name,
           qty: item.qty,
           unit: item.unit,
@@ -188,7 +161,7 @@ Deno.serve(async (req) => {
         }));
 
         if (invoiceLineItems && invoiceLineItems.length > 0) {
-          const { error: lineItemError } = await supabaseClient
+          const { error: lineItemError } = await supabase
             .from('invoice_line_items')
             .insert(invoiceLineItems);
 
@@ -215,7 +188,7 @@ Deno.serve(async (req) => {
         }
 
         // Update schedule
-        const { error: updateError } = await supabaseClient
+        const { error: updateError } = await supabase
           .from('recurring_schedules')
           .update({
             last_invoice_date: new Date().toISOString(),
@@ -241,7 +214,7 @@ Deno.serve(async (req) => {
       const { action, scheduleId } = await req.json();
       
       if (action === 'pause') {
-        const { error } = await supabaseClient
+        const { error } = await supabase
           .from('recurring_schedules')
           .update({ is_active: false })
           .eq('id', scheduleId);
@@ -253,7 +226,7 @@ Deno.serve(async (req) => {
       }
       
       if (action === 'resume') {
-        const { error } = await supabaseClient
+        const { error } = await supabase
           .from('recurring_schedules')
           .update({ is_active: true })
           .eq('id', scheduleId);
@@ -269,7 +242,7 @@ Deno.serve(async (req) => {
       const url = new URL(req.url);
       const scheduleId = url.searchParams.get('id');
       
-      const { error } = await supabaseClient
+      const { error } = await supabase
         .from('recurring_schedules')
         .update({ is_active: false })
         .eq('id', scheduleId);
