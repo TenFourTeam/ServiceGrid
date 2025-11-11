@@ -278,3 +278,7 @@ verify_jwt = false
 
 [functions.transcode-media-video]
 verify_jwt = false
+
+# Route planning with turn-by-turn directions
+[functions.calculate-route-directions]
+verify_jwt = false

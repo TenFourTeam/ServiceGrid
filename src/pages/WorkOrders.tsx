@@ -27,7 +27,7 @@ import JobShowModal from '@/components/Jobs/JobShowModal';
 import { JobBottomModal } from '@/components/Jobs/JobBottomModal';
 import { JobEditModal } from '@/components/Jobs/JobEditModal';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Plus, List, Map as MapIcon, Columns, MapPin } from 'lucide-react';
+import { Plus, List, Map as MapIcon, Columns, MapPin, Route } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { WorkOrderActions } from '@/components/WorkOrders/WorkOrderActions';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
@@ -38,6 +38,7 @@ import { WorkOrdersMapView } from '@/components/WorkOrders/WorkOrdersMapView';
 import { useJobLocationQuery, type RadiusFilter } from '@/hooks/useJobLocationQuery';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 
 const statusColors: Record<string, string> = {
   'Scheduled': 'bg-green-100 text-green-800',
@@ -366,6 +367,7 @@ export default function WorkOrdersPage() {
   const [showEditJob, setShowEditJob] = useState(false);
   const [selectedEditJob, setSelectedEditJob] = useState<Job | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'map' | 'split'>('list');
+  const [isRoutePlanningMode, setIsRoutePlanningMode] = useState(false);
   const isMobile = useIsMobile();
   const { t } = useLanguage();
   const { role } = useBusinessContext();

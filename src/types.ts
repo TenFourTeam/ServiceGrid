@@ -149,6 +149,8 @@ export interface Job {
   aiSuggested?: boolean;
   schedulingScore?: number; // 0.0 - 1.0
   optimizedOrder?: number; // Position in optimized route
+  latitude?: number; // Geocoded latitude for job location
+  longitude?: number; // Geocoded longitude for job location
   createdAt: ISODate;
   updatedAt: ISODate;
 }
