@@ -12,7 +12,6 @@ interface AddressAutocompleteProps {
   value: string;
   onChange: (value: string) => void;
   onPlaceSelect?: (placeId: string, description: string) => void;
-  onBlur?: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
   className?: string;
@@ -30,7 +29,7 @@ interface AddressAutocompleteProps {
 export const AddressAutocomplete = React.forwardRef<
   HTMLInputElement,
   AddressAutocompleteProps
->(({ value, onChange, onPlaceSelect, onBlur, placeholder, disabled, className, id }, ref) => {
+>(({ value, onChange, onPlaceSelect, placeholder, disabled, className, id }, ref) => {
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState(value);
   const debouncedInput = useDebouncedValue(inputValue, 500);
@@ -75,44 +74,30 @@ export const AddressAutocomplete = React.forwardRef<
     console.log('[AddressAutocomplete] Selected:', description);
   };
 
-  const handleBlur = () => {
-    setOpen(false);
-    if (onBlur && inputValue) {
-      onBlur(inputValue);
-    }
-  };
-
   return (
     <div className="relative">
-      {/* Input field - completely independent */}
-      <div className="relative">
-        <Input
-          ref={ref || inputRef}
-          id={id}
-          type="text"
-          value={inputValue}
-          onChange={handleInputChange}
-          onBlur={handleBlur}
-          onFocus={() => {
-            if (debouncedInput && predictions.length > 0) {
-              setOpen(true);
-            }
-          }}
-          placeholder={placeholder}
-          disabled={disabled}
-          className={cn("pr-8", className)}
-          autoComplete="off"
-        />
-        {isLoading && (
-          <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
-        )}
-        {!isLoading && inputValue && (
-          <MapPin className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        )}
-      </div>
-      
-      {/* Popover ONLY wraps the dropdown content */}
       <Popover open={open && predictions.length > 0} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <div className="relative">
+            <Input
+              ref={ref || inputRef}
+              id={id}
+              type="text"
+              value={inputValue}
+              onChange={handleInputChange}
+              placeholder={placeholder}
+              disabled={disabled}
+              className={cn("pr-8", className)}
+              autoComplete="off"
+            />
+            {isLoading && (
+              <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+            )}
+            {!isLoading && inputValue && (
+              <MapPin className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            )}
+          </div>
+        </PopoverTrigger>
         <PopoverContent 
           className="p-0 w-[var(--radix-popover-trigger-width)]" 
           align="start"
@@ -149,7 +134,6 @@ export const AddressAutocomplete = React.forwardRef<
           </Command>
         </PopoverContent>
       </Popover>
-      
       {error && (
         <p className="text-xs text-destructive mt-1">{error}</p>
       )}
