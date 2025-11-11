@@ -20,6 +20,9 @@ import { useNavigate } from 'react-router-dom';
 import { useClockInOut } from "@/hooks/useClockInOut";
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useMediaUpload } from '@/hooks/useMediaUpload';
+import { useJobMedia } from '@/hooks/useJobMedia';
+import { Badge } from "@/components/ui/badge";
 
 interface JobShowModalProps {
   open: boolean;
@@ -51,6 +54,8 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
   const [isSendingConfirmation, setIsSendingConfirmation] = useState(false);
   const { clockInOut, isLoading: isClockingInOut } = useClockInOut();
   const { t } = useLanguage();
+  const { uploadMedia, uploading: mediaUploading, progress: uploadProgress } = useMediaUpload();
+  const { data: jobMedia = [], isLoading: mediaLoading } = useJobMedia(job.id);
   
   // Fetch full quote details when job has quoteId
   useEffect(() => {
@@ -372,36 +377,33 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
     
     setUploadingPhotos(true);
     try {
-      const existingPhotos = Array.isArray((job as any).photos) ? (job as any).photos : [];
-      const newPhotoUrls: string[] = [];
+      const uploadResults: string[] = [];
       
-      // Upload each photo
+      // Upload each file with new media upload hook
       for (const file of photosToUpload) {
         try {
-          const fd = new FormData();
-          fd.append('file', file);
-          const { data, error } = await authApi.invoke('upload-job-photo', {
-            method: 'POST',
-            body: fd,
-            headers: {} // Let browser set Content-Type for FormData
+          const result = await uploadMedia(file, {
+            jobId: job.id,
+            businessId: businessId || '',
           });
           
-          if (error) {
-            console.warn('[JobShowModal] Photo upload failed:', error);
-            // Continue with other photos even if one fails
-          } else if (data?.url) {
-            newPhotoUrls.push(data.url as string);
+          if (result.isDuplicate) {
+            toast.info(`"${file.name}" already uploaded (duplicate detected)`);
           }
-        } catch (error) {
-          console.warn('[JobShowModal] Photo upload failed:', error);
-          // Continue with other photos even if one fails
+          
+          uploadResults.push(result.url);
+        } catch (error: any) {
+          console.error('[JobShowModal] Media upload failed:', error);
+          toast.error(`Failed to upload "${file.name}": ${error.message}`);
         }
       }
 
-      if (newPhotoUrls.length > 0) {
-        const allPhotos = [...existingPhotos, ...newPhotoUrls];
+      if (uploadResults.length > 0) {
+        // Still update job.photos for backward compatibility
+        const existingPhotos = Array.isArray((job as any).photos) ? (job as any).photos : [];
+        const allPhotos = [...existingPhotos, ...uploadResults];
         
-        // Optimistic update - immediately show photos in cache
+        // Optimistic update
         const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
         const previousData = queryClient.getQueryData(queryKey);
         
@@ -417,7 +419,6 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
           };
         });
         
-        // Update job with new photos
         const { error: updateError } = await authApi.invoke('jobs-crud', {
           method: 'PUT',
           body: {
@@ -427,19 +428,19 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
         });
         
         if (updateError) {
-          // Rollback optimistic update on error
           if (previousData) {
             queryClient.setQueryData(queryKey, previousData);
           }
           throw new Error(updateError.message || 'Failed to update job photos');
         }
         
-        // Invalidate cache to refresh UI
+        // Invalidate both jobs and media queries
         if (businessId) {
           invalidationHelpers.jobs(queryClient, businessId);
+          queryClient.invalidateQueries({ queryKey: ['job-media', job.id] });
         }
         
-        toast.success(`${newPhotoUrls.length} ${newPhotoUrls.length === 1 ? t('workOrders.modal.photos') : t('workOrders.modal.photos')} ${t('workOrders.modal.uploadPhotos')}`);
+        toast.success(`${uploadResults.length} file(s) uploaded successfully`);
       }
       
       // Clear selected files
@@ -658,8 +659,10 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
 
           <div>
             <div className="text-sm text-muted-foreground mb-1">{t('workOrders.modal.photos')}</div>
-            {Array.isArray((job as any).photos) && (job as any).photos.length > 0 ? (
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+            
+            {/* Display legacy job.photos */}
+            {Array.isArray((job as any).photos) && (job as any).photos.length > 0 && (
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 mb-2">
                 {(job as any).photos.map((url: string, idx: number) => (
                   <a key={idx} href={url} target="_blank" rel="noreferrer" className="block">
                     <img
@@ -671,10 +674,42 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                   </a>
                 ))}
               </div>
-            ) : (job as any).uploadingPhotos ? (
-              <div className="text-sm text-muted-foreground">{t('workOrders.modal.photosUploading')}</div>
+            )}
+            
+            {/* Display new sg_media items */}
+            {mediaLoading ? (
+              <div className="text-sm text-muted-foreground">{t('workOrders.modal.photosLoading')}</div>
+            ) : jobMedia.length > 0 ? (
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                {jobMedia.map((media) => (
+                  <div key={media.id} className="relative">
+                    <a href={media.public_url} target="_blank" rel="noreferrer" className="block">
+                      <img
+                        src={media.thumbnail_url || media.public_url}
+                        alt={media.original_filename}
+                        loading="lazy"
+                        className="w-full h-20 object-cover rounded-md border"
+                      />
+                      {media.file_type === 'video' && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-md">
+                          <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                          </svg>
+                        </div>
+                      )}
+                      {media.upload_status !== 'completed' && (
+                        <Badge className="absolute top-1 right-1 text-xs" variant="secondary">
+                          Processing...
+                        </Badge>
+                      )}
+                    </a>
+                  </div>
+                ))}
+              </div>
             ) : (
-              <div className="text-sm text-muted-foreground">{t('workOrders.modal.noPhotos')}</div>
+              !Array.isArray((job as any).photos) || (job as any).photos.length === 0 ? (
+                <div className="text-sm text-muted-foreground">{t('workOrders.modal.noPhotos')}</div>
+              ) : null
             )}
             
             {/* Photo Upload Section */}
@@ -683,10 +718,30 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                 <input
                   type="file"
                   multiple
-                  accept="image/*"
+                  accept="image/*,video/*"
                   onChange={(e) => {
                     const files = Array.from(e.target.files || []);
-                    setPhotosToUpload(files);
+                    
+                    // Validate each file
+                    const validFiles = files.filter(file => {
+                      const isPhoto = file.type.startsWith('image/');
+                      const isVideo = file.type.startsWith('video/');
+                      const maxSize = isPhoto ? 10 * 1024 * 1024 : 500 * 1024 * 1024;
+                      
+                      if (!isPhoto && !isVideo) {
+                        toast.error(`"${file.name}" is not a supported file type`);
+                        return false;
+                      }
+                      
+                      if (file.size > maxSize) {
+                        toast.error(`"${file.name}" exceeds ${isPhoto ? '10MB' : '500MB'} limit`);
+                        return false;
+                      }
+                      
+                      return true;
+                    });
+                    
+                    setPhotosToUpload(validFiles);
                   }}
                   className="text-sm text-muted-foreground file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-sm file:bg-secondary file:text-secondary-foreground hover:file:bg-secondary/80"
                 />
@@ -699,9 +754,13 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                   <Button 
                     size="sm" 
                     onClick={handlePhotoUpload}
-                    disabled={uploadingPhotos}
+                    disabled={uploadingPhotos || mediaUploading}
                   >
-                    {uploadingPhotos ? (photos.length > 0 ? t('workOrders.modal.addingPhotos') : t('workOrders.modal.uploadingPhotos')) : t('workOrders.modal.uploadPhotos')}
+                    {uploadingPhotos || mediaUploading ? (
+                      uploadProgress > 0 ? `Uploading... ${uploadProgress}%` : 'Uploading...'
+                    ) : (
+                      t('workOrders.modal.uploadPhotos')
+                    )}
                   </Button>
                   <Button 
                     size="sm" 

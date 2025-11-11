@@ -44,6 +44,7 @@ const queryKeys = {
     requests: (businessId: string) => ['data', 'requests', businessId] as const,
     members: (businessId: string) => ['data', 'members', businessId] as const,
     timesheet: (businessId: string) => ['data', 'timesheet', businessId] as const,
+    jobMedia: (jobId: string) => ['job-media', jobId] as const,
   },
   
   // Count-only queries for performance
@@ -99,6 +100,8 @@ const invalidationHelpers = {
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary() });
     // Cross-entity: jobs affect calendar view
     queryClient.invalidateQueries({ queryKey: ['calendar'] });
+    // Invalidate job media queries
+    queryClient.invalidateQueries({ queryKey: ['job-media'] });
   },
   
   quotes: (queryClient: QueryClient, businessId: string) => {
