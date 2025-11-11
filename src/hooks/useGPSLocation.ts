@@ -55,7 +55,7 @@ export function useGPSLocation(): UseGPSLocationReturn {
       const permissionStatus = await checkPermission();
       
       if (permissionStatus === 'denied') {
-        const errorMsg = 'Location access was previously denied.\n\nTo enable:\n• iPhone: Settings > Safari > Location > Allow\n• Android: Site Settings > Permissions > Location';
+        const errorMsg = 'Location access was previously denied for this site.\n\nTo enable:\n• iPhone: Tap "AA" in address bar → Website Settings → Location → Allow\n• Android: Tap 🔒 in address bar → Permissions → Location → Allow';
         console.error('[useGPSLocation] Permission denied');
         setError(errorMsg);
         setIsLoading(false);
@@ -86,7 +86,7 @@ export function useGPSLocation(): UseGPSLocationReturn {
           switch (error.code) {
             case error.PERMISSION_DENIED:
               errorMsg = 'Location permission denied';
-              userGuidance = '\n\nTo enable:\n• iPhone: Settings > Safari > Location > Allow\n• Android: Site Settings > Permissions > Location';
+              userGuidance = '\n\nTo enable for this site only:\n• iPhone: Tap "AA" in address bar → Website Settings → Location → Allow\n• Android: Tap 🔒 in address bar → Permissions → Location → Allow';
               break;
             case error.POSITION_UNAVAILABLE:
               errorMsg = 'Location information is unavailable';
@@ -94,7 +94,7 @@ export function useGPSLocation(): UseGPSLocationReturn {
               break;
             case error.TIMEOUT:
               errorMsg = 'Location request timed out';
-              userGuidance = '\n\nThis may happen if location permissions are blocked. Try enabling location access in browser settings.';
+              userGuidance = '\n\nThis may happen if location permissions are blocked. Tap the lock/info icon in the address bar to enable location for this site.';
               break;
           }
 

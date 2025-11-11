@@ -653,21 +653,20 @@ export function JobBottomModal({
                         variant="outline"
                         size="sm"
                         className="shrink-0 h-7 px-2 text-xs"
-                        onClick={() => {
-                          alert(
-                            'To enable location access:\n\n' +
-                            'iPhone:\n' +
-                            '1. Open Settings\n' +
-                            '2. Scroll to Safari\n' +
-                            '3. Tap Location\n' +
-                            '4. Select "Allow"\n\n' +
-                            'Android:\n' +
-                            '1. Open Chrome menu (⋮)\n' +
-                            '2. Go to Settings\n' +
-                            '3. Site Settings > Location\n' +
-                            '4. Enable location access'
-                          );
-                        }}
+                      onClick={() => {
+                        alert(
+                          '📍 Enable Location for This Site\n\n' +
+                          'iPhone Safari:\n' +
+                          '1. Tap "AA" icon in address bar\n' +
+                          '2. Tap "Website Settings"\n' +
+                          '3. Change "Location" to "Allow"\n\n' +
+                          'Android Chrome:\n' +
+                          '1. Tap lock icon (🔒) in address bar\n' +
+                          '2. Tap "Permissions"\n' +
+                          '3. Enable "Location"\n\n' +
+                          'This only affects this website, not all sites.'
+                        );
+                      }}
                       >
                         Help
                       </Button>
