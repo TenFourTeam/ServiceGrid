@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 interface GPSLocation {
   latitude: number;
@@ -17,11 +17,45 @@ interface UseGPSLocationReturn {
 /**
  * Hook to get current GPS location using navigator.geolocation
  * Includes loading states and error handling
+ * Auto-detects permission changes and clears errors when permission is granted
  */
 export function useGPSLocation(): UseGPSLocationReturn {
   const [location, setLocation] = useState<GPSLocation | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Listen for permission changes and auto-clear errors when granted
+  useEffect(() => {
+    if (!navigator.permissions) return;
+
+    let permissionStatus: PermissionStatus | null = null;
+
+    const setupPermissionListener = async () => {
+      try {
+        permissionStatus = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
+        
+        const handleChange = () => {
+          console.log('[useGPSLocation] Permission changed to:', permissionStatus?.state);
+          if (permissionStatus?.state === 'granted' && error) {
+            // Auto-clear error when permission is granted
+            setError(null);
+            console.log('[useGPSLocation] ✓ Error cleared - permission granted');
+          }
+        };
+
+        permissionStatus.addEventListener('change', handleChange);
+
+        // Cleanup
+        return () => {
+          permissionStatus?.removeEventListener('change', handleChange);
+        };
+      } catch (err) {
+        console.warn('[useGPSLocation] Could not set up permission listener:', err);
+      }
+    };
+
+    setupPermissionListener();
+  }, [error]);
 
   const checkPermission = async (): Promise<'granted' | 'denied' | 'prompt'> => {
     if (!navigator.permissions) {
@@ -55,7 +89,7 @@ export function useGPSLocation(): UseGPSLocationReturn {
       const permissionStatus = await checkPermission();
       
       if (permissionStatus === 'denied') {
-        const errorMsg = 'Location access was previously denied for this site.\n\nTo enable:\n• iPhone: Tap "AA" in address bar → Website Settings → Location → Allow\n• Android: Tap 🔒 in address bar → Permissions → Location → Allow';
+        const errorMsg = 'Location access was previously denied for this site.\n\nTo enable:\n• iPhone: Tap "AA" in address bar → Website Settings → Location → Allow\n• Android: Tap 🔒 in address bar → Permissions → Location → Allow\n\nAfter enabling, tap "Use My Location" again.';
         console.error('[useGPSLocation] Permission denied');
         setError(errorMsg);
         setIsLoading(false);
@@ -86,7 +120,7 @@ export function useGPSLocation(): UseGPSLocationReturn {
           switch (error.code) {
             case error.PERMISSION_DENIED:
               errorMsg = 'Location permission denied';
-              userGuidance = '\n\nTo enable for this site only:\n• iPhone: Tap "AA" in address bar → Website Settings → Location → Allow\n• Android: Tap 🔒 in address bar → Permissions → Location → Allow';
+              userGuidance = '\n\nTo enable for this site only:\n• iPhone: Tap "AA" in address bar → Website Settings → Location → Allow\n• Android: Tap 🔒 in address bar → Permissions → Location → Allow\n\nAfter enabling, tap "Use My Location" again.';
               break;
             case error.POSITION_UNAVAILABLE:
               errorMsg = 'Location information is unavailable';
@@ -94,7 +128,7 @@ export function useGPSLocation(): UseGPSLocationReturn {
               break;
             case error.TIMEOUT:
               errorMsg = 'Location request timed out';
-              userGuidance = '\n\nThis may happen if location permissions are blocked. Tap the lock/info icon in the address bar to enable location for this site.';
+              userGuidance = '\n\nThis may happen if location permissions are blocked. Tap the lock/info icon in the address bar to enable location for this site.\n\nAfter enabling, tap "Use My Location" again.';
               break;
           }
 
