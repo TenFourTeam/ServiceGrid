@@ -16,19 +16,33 @@ Deno.serve(async (req) => {
 
     if (req.method === 'GET') {
       if (scheduleId) {
-        // Get single schedule with invoice history
+        // Get single schedule
         const { data: schedule, error: scheduleError } = await supabase
           .from('recurring_schedules')
-          .select(`
-            *,
-            customer:customers(id, name, email),
-            quote:quotes(id, number, total)
-          `)
+          .select('*')
           .eq('id', scheduleId)
           .eq('business_id', businessId)
           .single();
 
         if (scheduleError) throw scheduleError;
+
+        // Get customer separately
+        const { data: customer, error: customerError } = await supabase
+          .from('customers')
+          .select('id, name, email')
+          .eq('id', schedule.customer_id)
+          .single();
+
+        if (customerError) throw customerError;
+
+        // Get quote separately
+        const { data: quote, error: quoteError } = await supabase
+          .from('quotes')
+          .select('id, number, total')
+          .eq('id', schedule.quote_id)
+          .single();
+
+        if (quoteError) throw quoteError;
 
         // Get invoices generated from this schedule
         const { data: invoices, error: invoicesError } = await supabase
@@ -40,41 +54,54 @@ Deno.serve(async (req) => {
         if (invoicesError) throw invoicesError;
 
         return new Response(
-          JSON.stringify({ schedule, invoices }),
+          JSON.stringify({ 
+            schedule: { ...schedule, customer, quote }, 
+            invoices 
+          }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       } else {
         // List all active recurring schedules
         const { data: schedules, error } = await supabase
           .from('recurring_schedules')
-          .select(`
-            id,
-            customer_id,
-            quote_id,
-            frequency,
-            next_billing_date,
-            last_invoice_date,
-            total_invoices_generated,
-            is_active,
-            stripe_subscription_id,
-            created_at,
-            customer:customers(id, name, email),
-            quote:quotes(id, number, total, subtotal, tax_rate, discount)
-          `)
+          .select('*')
           .eq('business_id', businessId)
           .eq('is_active', true)
           .order('next_billing_date', { ascending: true });
 
         if (error) throw error;
 
-        // Transform data to include calculated amount
-        const transformedSchedules = schedules?.map(schedule => ({
-          ...schedule,
-          customer_name: schedule.customer?.name,
-          customer_email: schedule.customer?.email,
-          quote_number: schedule.quote?.number,
-          amount: schedule.quote?.total || 0,
-        })) || [];
+        // Fetch customers and quotes separately
+        const customerIds = [...new Set(schedules?.map(s => s.customer_id) || [])];
+        const quoteIds = [...new Set(schedules?.map(s => s.quote_id) || [])];
+
+        const { data: customers } = await supabase
+          .from('customers')
+          .select('id, name, email')
+          .in('id', customerIds);
+
+        const { data: quotes } = await supabase
+          .from('quotes')
+          .select('id, number, total, subtotal, tax_rate, discount')
+          .in('id', quoteIds);
+
+        // Create lookup maps
+        const customerMap = new Map(customers?.map(c => [c.id, c]) || []);
+        const quoteMap = new Map(quotes?.map(q => [q.id, q]) || []);
+
+        // Transform data to include customer and quote info
+        const transformedSchedules = schedules?.map(schedule => {
+          const customer = customerMap.get(schedule.customer_id);
+          const quote = quoteMap.get(schedule.quote_id);
+          
+          return {
+            ...schedule,
+            customer_name: customer?.name,
+            customer_email: customer?.email,
+            quote_number: quote?.number,
+            amount: quote?.total || 0,
+          };
+        }) || [];
 
         return new Response(
           JSON.stringify({ schedules: transformedSchedules }),
@@ -256,6 +283,18 @@ Deno.serve(async (req) => {
     throw new Error('Method not allowed');
   } catch (error) {
     console.error('Error in recurring-schedules-crud:', error);
+    
+    // Handle auth errors specifically
+    if (error.message?.includes('Unauthorized') || error.message?.includes('JWT')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { 
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+    
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
