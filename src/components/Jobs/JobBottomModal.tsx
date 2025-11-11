@@ -637,7 +637,41 @@ export function JobBottomModal({
                     </div>
                   )}
                   {gpsError && (
-                    <p className="text-xs text-destructive">{gpsError}</p>
+                    <div className="flex items-start gap-2 p-3 bg-destructive/10 rounded-lg border border-destructive/20">
+                      <div className="flex-1 space-y-1">
+                        <p className="text-xs font-medium text-destructive">
+                          ❌ {gpsError.split('\n\n')[0]}
+                        </p>
+                        {gpsError.includes('\n\n') && (
+                          <p className="text-xs text-destructive/90 whitespace-pre-line">
+                            {gpsError.split('\n\n')[1]}
+                          </p>
+                        )}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="shrink-0 h-7 px-2 text-xs"
+                        onClick={() => {
+                          alert(
+                            'To enable location access:\n\n' +
+                            'iPhone:\n' +
+                            '1. Open Settings\n' +
+                            '2. Scroll to Safari\n' +
+                            '3. Tap Location\n' +
+                            '4. Select "Allow"\n\n' +
+                            'Android:\n' +
+                            '1. Open Chrome menu (⋮)\n' +
+                            '2. Go to Settings\n' +
+                            '3. Site Settings > Location\n' +
+                            '4. Enable location access'
+                          );
+                        }}
+                      >
+                        Help
+                      </Button>
+                    </div>
                   )}
           </div>
 
