@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { CalendarIcon, Upload, MapPin, Loader2 } from 'lucide-react';
+import { CalendarIcon, Upload, MapPin, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useCustomersData } from '@/queries/unified';
@@ -33,13 +33,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { ConflictDetector } from '@/components/Calendar/ConflictDetector';
 import { useJobsData } from '@/hooks/useJobsData';
-import { useGPSLocation } from '@/hooks/useGPSLocation';
-import { useReverseGeocode } from '@/hooks/useReverseGeocode';
 import { useGoogleMapsApiKey } from '@/hooks/useGoogleMapsApiKey';
 import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { MapCircle } from '@/components/ui/map-circle';
 import { usePlacesAutocomplete } from '@/hooks/usePlacesAutocomplete';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface JobBottomModalProps {
   open?: boolean;
@@ -81,6 +80,7 @@ export function JobBottomModal({
   const [assignedMemberIds, setAssignedMemberIds] = useState<string[]>([]);
   const [priority, setPriority] = useState(3); // Default: Normal priority
   const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [isMapOpen, setIsMapOpen] = useState(true); // Map collapsible state
 
   const { data: customers } = useCustomersData();
   const { data: allMembers } = useBusinessMembersData();
@@ -90,14 +90,6 @@ export function JobBottomModal({
   const { assignMembers } = useJobAssignments();
   const authApi = useAuthApi();
   const { t } = useLanguage();
-  const { getCurrentLocation, isLoading: isGettingLocation, error: gpsError } = useGPSLocation();
-
-  // Add reverse geocode query (only runs when gpsCoords is set)
-  const { data: reverseGeocodedAddress, isLoading: isReverseGeocoding } = useReverseGeocode(
-    gpsCoords?.lat || null,
-    gpsCoords?.lng || null,
-    !!gpsCoords
-  );
 
   // Fetch Google Maps API key for Places Autocomplete
   const { data: googleMapsApiKey, isLoading: isLoadingApiKey } = useGoogleMapsApiKey();
@@ -126,14 +118,6 @@ export function JobBottomModal({
   useEffect(() => {
     if (initialEndTime) setEndTime(initialEndTime);
   }, [initialEndTime]);
-
-  // Auto-populate address when reverse geocoding completes
-  useEffect(() => {
-    if (reverseGeocodedAddress?.address && gpsCoords) {
-      setAddress(reverseGeocodedAddress.address);
-      toast.success('Address populated from GPS');
-    }
-  }, [reverseGeocodedAddress, gpsCoords]);
 
   // Calculate duration when times change
   useEffect(() => {
@@ -403,19 +387,6 @@ export function JobBottomModal({
     }
   };
 
-  const handleUseMyLocation = async () => {
-    try {
-      const location = await getCurrentLocation();
-      setGpsCoords({
-        lat: location.latitude,
-        lng: location.longitude
-      });
-      toast.success('Location acquired! Fetching address...');
-    } catch (error) {
-      toast.error(gpsError || 'Failed to get location');
-    }
-  };
-
   const formatTimeRange = () => {
     if (!startTime || !endTime || !date) return '';
     const start = new Date(`2000-01-01T${startTime}:00`);
@@ -537,29 +508,7 @@ export function JobBottomModal({
 
           {/* Address */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="address">{t('jobs.form.address')}</Label>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleUseMyLocation}
-                disabled={isGettingLocation || isReverseGeocoding}
-                className="h-8 px-2 text-xs"
-              >
-                {isGettingLocation || isReverseGeocoding ? (
-                  <>
-                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                    {isGettingLocation ? 'Getting location...' : 'Fetching address...'}
-                  </>
-                ) : (
-                  <>
-                    <MapPin className="h-3 w-3 mr-1" />
-                    Use My Location
-                  </>
-                )}
-                    </Button>
-                  </div>
+            <Label htmlFor="address">{t('jobs.form.address')}</Label>
                   <AddressAutocomplete
                     id="address"
                     value={address}
@@ -583,95 +532,80 @@ export function JobBottomModal({
                     }}
                     placeholder={customer?.address || t('jobs.form.addressPlaceholder')}
                   />
-                  {gpsCoords && (
-                    <p className="text-xs text-muted-foreground">
-                      📍 GPS: {gpsCoords.lat.toFixed(4)}, {gpsCoords.lng.toFixed(4)}
-                    </p>
-                  )}
-                  {gpsCoords && (
-                    <div className="mt-3 space-y-2">
-                      <div 
-                        key={`${gpsCoords.lat}-${gpsCoords.lng}`}
-                        className="rounded-lg overflow-hidden border shadow-sm animate-in fade-in-50 slide-in-from-top-2 duration-300"
-                      >
-                        <Map
-                          mapId="job-location-preview"
-                          defaultCenter={gpsCoords}
-                          defaultZoom={15}
-                          gestureHandling="cooperative"
-                          disableDefaultUI={false}
-                          style={{ width: '100%', height: '250px' }}
-                          mapTypeControl={false}
-                          streetViewControl={false}
-                          fullscreenControl={false}
-                          zoomControl={true}
-                        >
-                          {/* Service area radius circle */}
-                          <MapCircle
-                            center={gpsCoords}
-                            radius={SERVICE_RADIUS_METERS}
-                            strokeColor="#3b82f6"
-                            strokeOpacity={0.8}
-                            strokeWeight={2}
-                            fillColor="#3b82f6"
-                            fillOpacity={0.15}
+            {gpsCoords && (
+              <p className="text-xs text-muted-foreground">
+                📍 GPS: {gpsCoords.lat.toFixed(4)}, {gpsCoords.lng.toFixed(4)}
+              </p>
+            )}
+            {gpsCoords && (
+              <Collapsible open={isMapOpen} onOpenChange={setIsMapOpen} className="mt-3 space-y-2">
+                <CollapsibleTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full flex items-center justify-between"
+                  >
+                    <span className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      Map Preview
+                    </span>
+                    {isMapOpen ? (
+                      <ChevronUp className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
+                  </Button>
+                </CollapsibleTrigger>
+                
+                <CollapsibleContent className="space-y-2">
+                  <div 
+                    key={`${gpsCoords.lat}-${gpsCoords.lng}`}
+                    className="rounded-lg overflow-hidden border shadow-sm animate-in fade-in-50 slide-in-from-top-2 duration-300"
+                  >
+                    <Map
+                      mapId="job-location-preview"
+                      defaultCenter={gpsCoords}
+                      defaultZoom={15}
+                      gestureHandling="cooperative"
+                      disableDefaultUI={false}
+                      style={{ width: '100%', height: '250px' }}
+                      mapTypeControl={false}
+                      streetViewControl={false}
+                      fullscreenControl={false}
+                      zoomControl={true}
+                    >
+                      {/* Service area radius circle */}
+                      <MapCircle
+                        center={gpsCoords}
+                        radius={SERVICE_RADIUS_METERS}
+                        strokeColor="#3b82f6"
+                        strokeOpacity={0.8}
+                        strokeWeight={2}
+                        fillColor="#3b82f6"
+                        fillOpacity={0.15}
+                      />
+                      
+                      {/* Marker stays on top of circle */}
+                      <AdvancedMarker position={gpsCoords}>
+                        <div className="relative flex items-center justify-center">
+                          <div 
+                            className="absolute inset-0 rounded-full bg-primary/20 animate-pulse" 
+                            style={{ width: '40px', height: '40px', left: '-5px', top: '-5px' }} 
                           />
-                          
-                          {/* Marker stays on top of circle */}
-                          <AdvancedMarker position={gpsCoords}>
-                            <div className="relative flex items-center justify-center">
-                              <div 
-                                className="absolute inset-0 rounded-full bg-primary/20 animate-pulse" 
-                                style={{ width: '40px', height: '40px', left: '-5px', top: '-5px' }} 
-                              />
-                              <div className="relative flex items-center justify-center rounded-full bg-primary shadow-lg border-2 border-white w-10 h-10 z-10">
-                                <MapPin className="text-white w-6 h-6" />
-                              </div>
-                            </div>
-                          </AdvancedMarker>
-                        </Map>
-                      </div>
-                      <p className="text-xs text-center text-muted-foreground">
-                        📍 Selected location • 5 mile service radius
-                      </p>
-                    </div>
-                  )}
-                  {gpsError && (
-                    <div className="flex items-start gap-2 p-3 bg-destructive/10 rounded-lg border border-destructive/20">
-                      <div className="flex-1 space-y-1">
-                        <p className="text-xs font-medium text-destructive">
-                          ❌ {gpsError.split('\n\n')[0]}
-                        </p>
-                        {gpsError.includes('\n\n') && (
-                          <p className="text-xs text-destructive/90 whitespace-pre-line">
-                            {gpsError.split('\n\n')[1]}
-                          </p>
-                        )}
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="shrink-0 h-7 px-2 text-xs"
-                      onClick={() => {
-                        alert(
-                          '📍 Enable Location for This Site\n\n' +
-                          'iPhone Safari:\n' +
-                          '1. Tap "AA" icon in address bar\n' +
-                          '2. Tap "Website Settings"\n' +
-                          '3. Change "Location" to "Allow"\n\n' +
-                          'Android Chrome:\n' +
-                          '1. Tap lock icon (🔒) in address bar\n' +
-                          '2. Tap "Permissions"\n' +
-                          '3. Enable "Location"\n\n' +
-                          'This only affects this website, not all sites.'
-                        );
-                      }}
-                      >
-                        Help
-                      </Button>
-                    </div>
-                  )}
+                          <div className="relative flex items-center justify-center rounded-full bg-primary shadow-lg border-2 border-white w-10 h-10 z-10">
+                            <MapPin className="text-white w-6 h-6" />
+                          </div>
+                        </div>
+                      </AdvancedMarker>
+                    </Map>
+                  </div>
+                  <p className="text-xs text-center text-muted-foreground">
+                    📍 Selected location • 5 mile service radius
+                  </p>
+                </CollapsibleContent>
+              </Collapsible>
+            )}
           </div>
 
           {/* Date */}
