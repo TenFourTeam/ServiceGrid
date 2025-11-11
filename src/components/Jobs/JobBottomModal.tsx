@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { CalendarIcon, Upload, MapPin, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { CalendarIcon, Upload, MapPin, Loader2, ChevronDown, ChevronUp, Target, Check } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useCustomersData } from '@/queries/unified';
@@ -98,8 +98,13 @@ export function JobBottomModal({
   // Places autocomplete for getting coordinates from selected address
   const { getPlaceDetails, isServiceReady } = usePlacesAutocomplete();
   const [isFetchingPlaceDetails, setIsFetchingPlaceDetails] = useState(false);
+  const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
 
-  // Handle map click to update marker position
+  // Default map center (Dallas, TX) when no coordinates set
+  const defaultMapCenter = { lat: 32.7763, lng: -96.7969 };
+  const mapCenter = gpsCoords || defaultMapCenter;
+
+  // Handle map click to update marker position with debouncing
   const handleMapClick = async (e: MapMouseEvent) => {
     if (!e.detail.latLng) return;
     
@@ -115,6 +120,7 @@ export function JobBottomModal({
     toast.info('Location updated, fetching address...');
     
     // Reverse geocode to get the address
+    setIsReverseGeocoding(true);
     try {
       const { data, error } = await authApi.invoke('geo-reverse', {
         method: 'GET',
@@ -127,6 +133,7 @@ export function JobBottomModal({
       if (error) {
         console.error('[JobBottomModal] Reverse geocoding error:', error);
         toast.error('Could not fetch address for this location');
+        setIsReverseGeocoding(false);
         return;
       }
       
@@ -138,6 +145,8 @@ export function JobBottomModal({
     } catch (err) {
       console.error('[JobBottomModal] Map click error:', err);
       toast.error('Failed to update address');
+    } finally {
+      setIsReverseGeocoding(false);
     }
   };
   
@@ -611,52 +620,63 @@ export function JobBottomModal({
                 Initializing address lookup...
               </p>
             )}
-            {gpsCoords && (
-              <p className="text-xs text-muted-foreground">
-                📍 GPS: {gpsCoords.lat.toFixed(4)}, {gpsCoords.lng.toFixed(4)}
-              </p>
-            )}
-            {gpsCoords && (
-              <Collapsible open={isMapOpen} onOpenChange={setIsMapOpen} className="mt-3 space-y-2">
-                <CollapsibleTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="w-full flex items-center justify-between"
+            
+            {/* Map Preview - Always Visible */}
+            <Collapsible open={isMapOpen} onOpenChange={setIsMapOpen} className="mt-3 space-y-2">
+              <CollapsibleTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full flex items-center justify-between"
+                >
+                  <span className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    {gpsCoords ? 'Map Preview' : 'Click Map to Set Location'}
+                    {gpsCoords && <Check className="h-3 w-3 text-green-500" />}
+                    {gpsCoords && <span className="text-xs text-muted-foreground ml-1">(Click to adjust)</span>}
+                  </span>
+                  {isMapOpen ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </Button>
+              </CollapsibleTrigger>
+              
+              <CollapsibleContent className="space-y-2">
+                <div 
+                  key={gpsCoords ? `${gpsCoords.lat}-${gpsCoords.lng}` : 'default'}
+                  className="rounded-lg overflow-hidden border shadow-sm animate-in fade-in-50 slide-in-from-top-2 duration-300 cursor-crosshair relative"
+                >
+                  <Map
+                    mapId="job-location-preview"
+                    defaultCenter={mapCenter}
+                    center={mapCenter}
+                    defaultZoom={gpsCoords ? 15 : 11}
+                    gestureHandling="cooperative"
+                    disableDefaultUI={false}
+                    style={{ width: '100%', height: '250px' }}
+                    mapTypeControl={false}
+                    streetViewControl={false}
+                    fullscreenControl={false}
+                    zoomControl={true}
+                    onClick={handleMapClick}
                   >
-                    <span className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      Map Preview
-                      <span className="text-xs text-muted-foreground ml-1">(Click to adjust)</span>
-                    </span>
-                    {isMapOpen ? (
-                      <ChevronUp className="h-4 w-4" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4" />
+                    {/* Empty state crosshair when no location set */}
+                    {!gpsCoords && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                        <div className="text-center animate-pulse">
+                          <Target className="w-12 h-12 text-primary/60 mx-auto" />
+                          <p className="text-sm font-medium text-primary mt-2 bg-background/90 px-3 py-1 rounded-full shadow-sm">
+                            Click to set location
+                          </p>
+                        </div>
+                      </div>
                     )}
-                  </Button>
-                </CollapsibleTrigger>
-                
-                <CollapsibleContent className="space-y-2">
-                  <div 
-                    key={`${gpsCoords.lat}-${gpsCoords.lng}`}
-                    className="rounded-lg overflow-hidden border shadow-sm animate-in fade-in-50 slide-in-from-top-2 duration-300"
-                  >
-                    <Map
-                      mapId="job-location-preview"
-                      defaultCenter={gpsCoords}
-                      defaultZoom={15}
-                      gestureHandling="cooperative"
-                      disableDefaultUI={false}
-                      style={{ width: '100%', height: '250px' }}
-                      mapTypeControl={false}
-                      streetViewControl={false}
-                      fullscreenControl={false}
-                      zoomControl={true}
-                      onClick={handleMapClick}
-                    >
-                      {/* Service area radius circle */}
+                    
+                    {/* Service area radius circle - only when location is set */}
+                    {gpsCoords && (
                       <MapCircle
                         center={gpsCoords}
                         radius={SERVICE_RADIUS_METERS}
@@ -666,30 +686,39 @@ export function JobBottomModal({
                         fillColor="#3b82f6"
                         fillOpacity={0.15}
                       />
-                      
-                      {/* Marker stays on top of circle */}
+                    )}
+                    
+                    {/* Marker - only when location is set */}
+                    {gpsCoords && (
                       <AdvancedMarker 
                         position={gpsCoords}
                         title="Click anywhere on the map to move this marker"
                       >
-                        <div className="relative flex items-center justify-center">
+                        <div className="relative flex items-center justify-center animate-in zoom-in-50 duration-300">
                           <div 
                             className="absolute inset-0 rounded-full bg-primary/20 animate-pulse" 
                             style={{ width: '40px', height: '40px', left: '-5px', top: '-5px' }} 
                           />
-                          <div className="relative flex items-center justify-center rounded-full bg-primary shadow-lg border-2 border-white w-10 h-10 z-10 cursor-move">
-                            <MapPin className="text-white w-6 h-6" />
+                          <div className="relative flex items-center justify-center rounded-full bg-primary shadow-lg border-2 border-white w-10 h-10 z-10 cursor-move hover:scale-110 transition-transform">
+                            {isReverseGeocoding ? (
+                              <Loader2 className="w-6 h-6 animate-spin text-white" />
+                            ) : (
+                              <MapPin className="text-white w-6 h-6" />
+                            )}
                           </div>
                         </div>
                       </AdvancedMarker>
-                    </Map>
-                  </div>
-                  <p className="text-xs text-center text-muted-foreground">
-                    📍 Click anywhere on the map to adjust location • 5 mile service radius
-                  </p>
-                </CollapsibleContent>
-              </Collapsible>
-            )}
+                    )}
+                  </Map>
+                </div>
+                <p className="text-xs text-center text-muted-foreground">
+                  {gpsCoords 
+                    ? `📍 Click anywhere to adjust • 5 mile radius • ${gpsCoords.lat.toFixed(4)}, ${gpsCoords.lng.toFixed(4)}`
+                    : '📍 Click anywhere on the map to set job location'
+                  }
+                </p>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
 
           {/* Date */}
