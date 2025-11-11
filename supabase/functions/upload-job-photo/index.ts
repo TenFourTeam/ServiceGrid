@@ -31,10 +31,10 @@ serve(async (req) => {
     
     console.log('[upload-job-photo] File type:', contentType, 'File name:', (file as File).name);
     
-    // Whitelist of supported MIME types (excludes SVG for security)
+    // Whitelist of supported MIME types
     const supportedImageTypes = [
       'image/jpeg', 'image/jpg', 'image/png', 'image/webp', 
-      'image/heic', 'image/heif'
+      'image/heic', 'image/heif', 'image/svg+xml'
     ];
     const supportedVideoTypes = [
       'video/mp4', 'video/quicktime', 'video/x-msvideo', 
@@ -43,11 +43,12 @@ serve(async (req) => {
     
     const isPhoto = supportedImageTypes.includes(contentType);
     const isVideo = supportedVideoTypes.includes(contentType);
+    const isSvg = contentType === 'image/svg+xml';
     
     if (!isPhoto && !isVideo) {
       console.error('[upload-job-photo] Unsupported file type:', contentType);
       return json({ 
-        error: `Unsupported file type: ${contentType}. Supported formats: JPEG, PNG, WebP, HEIC, MP4, MOV, AVI, WebM` 
+        error: `Unsupported file type: ${contentType}. Supported formats: JPEG, PNG, WebP, HEIC, SVG, MP4, MOV, AVI, WebM` 
       }, { status: 415 });
     }
 
@@ -86,7 +87,7 @@ serve(async (req) => {
     const origName = (file as File).name || "upload";
     const nameExt = origName.includes('.') ? origName.split('.').pop() || '' : '';
     const extByType: Record<string, string> = { 
-      "image/jpeg":"jpg", "image/png":"png", "image/webp":"webp", "image/heic":"heic", "image/heif":"heif",
+      "image/jpeg":"jpg", "image/png":"png", "image/webp":"webp", "image/heic":"heic", "image/heif":"heif", "image/svg+xml":"svg",
       "video/mp4":"mp4", "video/quicktime":"mov", "video/x-msvideo":"avi", "video/webm":"webm"
     };
     const ext = extByType[contentType] || (nameExt || "bin");
@@ -125,6 +126,7 @@ serve(async (req) => {
           content_hash: contentHash,
           storage_path: key,
           public_url: url,
+          thumbnail_url: isSvg ? url : undefined,
           upload_status: 'completed',
           metadata: {
             exif: exifData,
@@ -140,7 +142,7 @@ serve(async (req) => {
         mediaId = mediaRecord.id;
         
         // Trigger background processing (non-blocking)
-        if (isPhoto) {
+        if (isPhoto && !isSvg) {
           fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/process-media-thumbnail`, {
             method: 'POST',
             headers: {
