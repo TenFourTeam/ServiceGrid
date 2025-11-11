@@ -27,12 +27,17 @@ import JobShowModal from '@/components/Jobs/JobShowModal';
 import { JobBottomModal } from '@/components/Jobs/JobBottomModal';
 import { JobEditModal } from '@/components/Jobs/JobEditModal';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Plus } from 'lucide-react';
+import { Plus, List, Map as MapIcon, Columns, MapPin } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { WorkOrderActions } from '@/components/WorkOrders/WorkOrderActions';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { format } from 'date-fns';
 import { formatMoney as formatCurrency } from '@/utils/format';
+import { LocationFilter } from '@/components/WorkOrders/LocationFilter';
+import { WorkOrdersMapView } from '@/components/WorkOrders/WorkOrdersMapView';
+import { useJobLocationQuery, type RadiusFilter } from '@/hooks/useJobLocationQuery';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 const statusColors: Record<string, string> = {
   'Scheduled': 'bg-green-100 text-green-800',
@@ -54,6 +59,10 @@ function useFilteredJobs() {
   const [q, setQ] = useState('');
   const [sort, setSort] = useState<'all' | 'unscheduled' | 'today' | 'upcoming' | 'completed' | 'awaiting-confirmation'>('all');
   const [tableSort, setTableSort] = useState<{ column: string; direction: 'asc' | 'desc' } | null>(null);
+  const [locationFilter, setLocationFilter] = useState<RadiusFilter | null>(null);
+
+  // Location-based query (only when filter is active)
+  const { data: locationData } = useJobLocationQuery(locationFilter, businessId, !!locationFilter);
 
   const todayStart = useMemo(() => {
     const date = new Date();
@@ -103,7 +112,13 @@ function useFilteredJobs() {
 
   const filtered = useMemo(() => {
     const qLower = q.trim().toLowerCase();
-    let list = jobs.slice();
+    
+    // Start with location-filtered jobs if filter is active
+    let list = locationFilter && locationData?.jobs 
+      ? locationData.jobs.slice()
+      : jobs.slice();
+
+    // Apply status/date filters
     if (sort === 'all') {
       // Show all jobs, no filtering
     } else if (sort === 'unscheduled') {
@@ -122,6 +137,8 @@ function useFilteredJobs() {
         j.status !== 'Completed'
       );
     }
+
+    // Apply search filter
     if (qLower) {
       list = list.filter(j => {
         const c = customers.find(c=>c.id===j.customerId);
@@ -131,8 +148,15 @@ function useFilteredJobs() {
       });
     }
 
-    // Apply table sorting for desktop view
-    if (tableSort) {
+    // Apply table sorting (or distance sorting when location filter is active)
+    if (locationFilter && !tableSort) {
+      // Sort by distance when location filter is active
+      list.sort((a, b) => {
+        const aDist = (a as any).distance_meters ?? Infinity;
+        const bDist = (b as any).distance_meters ?? Infinity;
+        return aDist - bDist;
+      });
+    } else if (tableSort) {
       list.sort((a, b) => {
         let aValue: string | number = '';
         let bValue: string | number = '';
@@ -158,6 +182,10 @@ function useFilteredJobs() {
             aValue = a.total || 0;
             bValue = b.total || 0;
             break;
+          case 'distance':
+            aValue = (a as any).distance_meters ?? Infinity;
+            bValue = (b as any).distance_meters ?? Infinity;
+            break;
         }
 
         if (typeof aValue === 'number' && typeof bValue === 'number') {
@@ -170,7 +198,7 @@ function useFilteredJobs() {
     }
 
     return list;
-  }, [jobs, customers, sort, q, tableSort, sevenDaysAgo, todayStart, todayEnd]);
+  }, [jobs, locationData, locationFilter, customers, sort, q, tableSort, sevenDaysAgo, todayStart, todayEnd]);
 
   const counts = useMemo(() => ({
     all: jobs.length,
@@ -203,7 +231,21 @@ function useFilteredJobs() {
     });
   };
 
-  return { q, setQ, sort, setSort, jobs: filtered, counts, hasInvoice, getInvoiceForJob, tableSort, handleTableSort, isLoading, isError, error };
+  return { 
+    q, setQ, 
+    sort, setSort, 
+    jobs: filtered, 
+    counts, 
+    hasInvoice, 
+    getInvoiceForJob, 
+    tableSort, 
+    handleTableSort, 
+    isLoading, 
+    isError, 
+    error,
+    locationFilter,
+    setLocationFilter
+  };
 }
 
 function StatusChip({ status, t }: { status: Job['status'], t: (key: string) => string }) {
@@ -239,7 +281,7 @@ function TypeChip({ jobType, t }: { jobType: Job['jobType'], t: (key: string) =>
 }
 
 
-function WorkOrderRow({ job, uninvoiced, customerName, when, onOpen, onOpenJobEditModal, t, userRole, existingInvoice }: {
+function WorkOrderRow({ job, uninvoiced, customerName, when, onOpen, onOpenJobEditModal, t, userRole, existingInvoice, distance }: {
   job: Job;
   uninvoiced: boolean;
   customerName: string;
@@ -249,6 +291,7 @@ function WorkOrderRow({ job, uninvoiced, customerName, when, onOpen, onOpenJobEd
   t: (key: string) => string;
   userRole: string;
   existingInvoice?: any;
+  distance?: number;
 }) {
   const typeKey = job.jobType === 'time_and_materials' 
     ? 'jobs.types.timeAndMaterials'
@@ -279,10 +322,16 @@ function WorkOrderRow({ job, uninvoiced, customerName, when, onOpen, onOpenJobEd
       {/* Content with right padding to avoid overlap */}
       <div className="pr-20 pb-8">
         <div className="space-y-1">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <div className="font-medium truncate">{job.title || t('jobs.form.titlePlaceholder')}</div>
             <div className="text-sm text-muted-foreground">{formatMoney(job.total || 0)}</div>
             {uninvoiced && job.status==='Completed' && <Badge variant="secondary">{t('workOrders.badges.uninvoiced')}</Badge>}
+            {distance !== undefined && (
+              <Badge variant="outline" className="flex items-center gap-1">
+                <MapPin className="h-3 w-3" />
+                {(distance * 0.000621371).toFixed(1)} mi
+              </Badge>
+            )}
           </div>
           <div className="text-sm text-muted-foreground truncate">{t('workOrders.modal.customer')}: {customerName}</div>
           {job.address && <div className="text-sm text-muted-foreground truncate">{job.address}</div>}
@@ -296,13 +345,27 @@ function WorkOrderRow({ job, uninvoiced, customerName, when, onOpen, onOpenJobEd
 export default function WorkOrdersPage() {
   const { data: customers = [] } = useCustomersData();
   const { isSignedIn, getToken } = useClerkAuth();
-  const { q, setQ, sort, setSort, jobs, counts, hasInvoice, tableSort, handleTableSort, isLoading, isError, error } = useFilteredJobs();
+  const { 
+    q, setQ, 
+    sort, setSort, 
+    jobs, 
+    counts, 
+    hasInvoice, 
+    tableSort, 
+    handleTableSort, 
+    isLoading, 
+    isError, 
+    error,
+    locationFilter,
+    setLocationFilter
+  } = useFilteredJobs();
   const navigate = useNavigate();
   const lastSyncKeyRef = useRef<string | null>(null);
   const [activeJob, setActiveJob] = useState<Job | null>(null);
   const [createJobOpen, setCreateJobOpen] = useState(false);
   const [showEditJob, setShowEditJob] = useState(false);
   const [selectedEditJob, setSelectedEditJob] = useState<Job | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'map' | 'split'>('list');
   const isMobile = useIsMobile();
   const { t } = useLanguage();
   const { role } = useBusinessContext();
@@ -321,7 +384,25 @@ export default function WorkOrdersPage() {
       <section aria-label="work-orders" className="space-y-4">
         <Card>
           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <CardTitle>{t('workOrders.allWorkOrders')}</CardTitle>
+            <div className="flex items-center gap-4">
+              <CardTitle>{t('workOrders.allWorkOrders')}</CardTitle>
+              
+              {/* View Mode Toggle - Desktop only */}
+              {!isMobile && (
+                <ToggleGroup type="single" value={viewMode} onValueChange={(v) => v && setViewMode(v as any)}>
+                  <ToggleGroupItem value="list" aria-label="List view">
+                    <List className="h-4 w-4" />
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="map" aria-label="Map view">
+                    <MapIcon className="h-4 w-4" />
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="split" aria-label="Split view">
+                    <Columns className="h-4 w-4" />
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              )}
+            </div>
+            
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <Button 
                 onClick={async () => {
@@ -405,6 +486,28 @@ export default function WorkOrdersPage() {
                 <option value="completed">{t('workOrders.filters.completed')} ({counts.completed})</option>
               </select>
             </div>
+
+            {/* Location Filter - Show in map/split modes or as collapsible on mobile */}
+            {isMobile ? (
+              <Collapsible className="mb-4">
+                <CollapsibleTrigger asChild>
+                  <Button variant="outline" size="sm" className="w-full">
+                    <MapPin className="h-4 w-4 mr-2" />
+                    Location Filter {locationFilter && '✓'}
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-2">
+                  <LocationFilter
+                    onFilterChange={setLocationFilter}
+                  />
+                </CollapsibleContent>
+              </Collapsible>
+            ) : (viewMode === 'map' || viewMode === 'split') && (
+              <LocationFilter
+                onFilterChange={setLocationFilter}
+                className="mb-4"
+              />
+            )}
           </CardContent>
         </Card>
 
@@ -414,8 +517,9 @@ export default function WorkOrdersPage() {
           </Alert>
         )}
 
-        {isMobile ? (
-          // Mobile/Tablet Card View
+        {/* View Mode Rendering */}
+        {isMobile || viewMode === 'list' ? (
+          // Mobile/Tablet Card View or Desktop List View
           <Card>
             <CardContent className="p-3 space-y-3">
               {isLoading && jobs.length === 0 ? (
@@ -425,8 +529,12 @@ export default function WorkOrdersPage() {
                   <Skeleton className="h-20 w-full" />
                 </div>
               ) : jobs.length === 0 ? (
-                <div className="text-sm text-muted-foreground p-8 text-center">{t('workOrders.empty.noJobs')}</div>
-              ) : (
+                <div className="text-sm text-muted-foreground p-8 text-center">
+                  {locationFilter 
+                    ? 'No jobs found within the selected radius. Try expanding your search area.'
+                    : t('workOrders.empty.noJobs')}
+                </div>
+              ) : isMobile ? (
                 jobs.map((j)=>{
                   const customerName = customers.find(c=>c.id===j.customerId)?.name || t('workOrders.modal.customer');
                   const when = j.startsAt ? formatDateTime(j.startsAt) : t('workOrders.time.unscheduled');
@@ -444,25 +552,12 @@ export default function WorkOrdersPage() {
                       t={t}
                       userRole={role || 'member'}
                       existingInvoice={existingInvoice}
+                      distance={(j as any).distance_meters}
                     />
                   );
                 })
-              )}
-            </CardContent>
-          </Card>
-        ) : (
-          // Desktop Table View
-          <Card>
-            <CardContent className="p-0">
-              {isLoading && jobs.length === 0 ? (
-                <div className="p-6 space-y-2">
-                  <Skeleton className="h-12 w-full" />
-                  <Skeleton className="h-12 w-full" />
-                  <Skeleton className="h-12 w-full" />
-                </div>
-              ) : jobs.length === 0 ? (
-                <div className="text-sm text-muted-foreground p-8 text-center">{t('workOrders.empty.noJobs')}</div>
               ) : (
+                // Desktop Table View
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -491,6 +586,14 @@ export default function WorkOrdersPage() {
                       >
                         {t('workOrders.table.type')} {tableSort?.column === 'type' && (tableSort.direction === 'asc' ? '▲' : '▼')}
                       </TableHead>
+                      {locationFilter && (
+                        <TableHead 
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => handleTableSort('distance')}
+                        >
+                          Distance {tableSort?.column === 'distance' && (tableSort.direction === 'asc' ? '▲' : '▼')}
+                        </TableHead>
+                      )}
                       <TableHead 
                         className="cursor-pointer hover:bg-muted/50 text-right"
                         onClick={() => handleTableSort('amount')}
@@ -508,6 +611,7 @@ export default function WorkOrdersPage() {
                       const when = j.startsAt ? formatDateTime(j.startsAt) : t('workOrders.time.unscheduled');
                       const uninvoiced = j.status === 'Completed' && !hasInvoice(j.id);
                       const existingInvoice = invoices.find(inv => inv.jobId === j.id);
+                      const distance = (j as any).distance_meters;
                       
                       return (
                         <TableRow 
@@ -527,6 +631,16 @@ export default function WorkOrdersPage() {
                           <TableCell>
                             <TypeChip jobType={j.jobType || 'appointment'} t={t} />
                           </TableCell>
+                          {locationFilter && (
+                            <TableCell>
+                              {distance !== undefined ? (
+                                <Badge variant="outline" className="flex items-center gap-1 w-fit">
+                                  <MapPin className="h-3 w-3" />
+                                  {(distance * 0.000621371).toFixed(1)} mi
+                                </Badge>
+                              ) : '-'}
+                            </TableCell>
+                          )}
                           <TableCell className="text-right">{formatMoney(j.total || 0)}</TableCell>
                           <TableCell onClick={(e) => e.stopPropagation()}>
                             <WorkOrderActions 
@@ -544,7 +658,71 @@ export default function WorkOrdersPage() {
               )}
             </CardContent>
           </Card>
-        )}
+        ) : viewMode === 'map' ? (
+          // Full Map View
+          <Card className="h-[700px]">
+            <CardContent className="p-0 h-full">
+              <WorkOrdersMapView
+                jobs={jobs as any}
+                locationFilter={locationFilter}
+                onJobClick={setActiveJob}
+              />
+            </CardContent>
+          </Card>
+        ) : viewMode === 'split' ? (
+          // Split View - Desktop only
+          <Card className="h-[700px]">
+            <ResizablePanelGroup direction="horizontal">
+              <ResizablePanel defaultSize={40} minSize={30}>
+                <CardContent className="p-3 space-y-3 h-full overflow-auto">
+                  {isLoading && jobs.length === 0 ? (
+                    <div className="space-y-2">
+                      <Skeleton className="h-20 w-full" />
+                      <Skeleton className="h-20 w-full" />
+                      <Skeleton className="h-20 w-full" />
+                    </div>
+                  ) : jobs.length === 0 ? (
+                    <div className="text-sm text-muted-foreground p-8 text-center">
+                      {locationFilter 
+                        ? 'No jobs found within the selected radius.'
+                        : t('workOrders.empty.noJobs')}
+                    </div>
+                  ) : (
+                    jobs.map((j)=>{
+                      const customerName = customers.find(c=>c.id===j.customerId)?.name || t('workOrders.modal.customer');
+                      const when = j.startsAt ? formatDateTime(j.startsAt) : t('workOrders.time.unscheduled');
+                      const uninvoiced = j.status==='Completed' && !hasInvoice(j.id);
+                      const existingInvoice = invoices.find(inv => inv.jobId === j.id);
+                      return (
+                        <WorkOrderRow
+                          key={j.id}
+                          job={j as Job}
+                          customerName={customerName}
+                          when={when}
+                          uninvoiced={uninvoiced}
+                          onOpen={() => setActiveJob(j as Job)}
+                          onOpenJobEditModal={handleJobEditClick}
+                          t={t}
+                          userRole={role || 'member'}
+                          existingInvoice={existingInvoice}
+                          distance={(j as any).distance_meters}
+                        />
+                      );
+                    })
+                  )}
+                </CardContent>
+              </ResizablePanel>
+              <ResizableHandle withHandle />
+              <ResizablePanel defaultSize={60} minSize={40}>
+                <WorkOrdersMapView
+                  jobs={jobs as any}
+                  locationFilter={locationFilter}
+                  onJobClick={setActiveJob}
+                />
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          </Card>
+        ) : null}
         {activeJob && (
           <JobShowModal
             open={!!activeJob}
