@@ -261,3 +261,10 @@ verify_jwt = false
 
 [functions.auto-generate-recurring-invoices]
 verify_jwt = false
+
+# Media processing functions
+[functions.process-media-thumbnail]
+verify_jwt = false
+
+[functions.transcode-media-video]
+verify_jwt = false

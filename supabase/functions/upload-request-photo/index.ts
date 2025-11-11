@@ -19,7 +19,11 @@ serve(async (req) => {
       return json({ error: "Missing file" }, { status: 400 });
     }
 
-    // Validate type and size
+    // Get optional metadata from FormData
+    const exifData = form.get("exif") ? JSON.parse(form.get("exif") as string) : null;
+    const gpsData = form.get("gps") ? JSON.parse(form.get("gps") as string) : null;
+
+    // Validate type and size (requests are photo-only for now)
     const allowedTypes = ["image/jpeg","image/png","image/webp","image/heic","image/heif"];
     const maxMb = parseInt(Deno.env.get("REQUEST_PHOTO_MAX_MB") || "10", 10);
     const maxBytes = isFinite(maxMb) ? maxMb * 1024 * 1024 : 10 * 1024 * 1024;
@@ -51,7 +55,12 @@ serve(async (req) => {
       return json({ error: 'Failed to get public URL' }, { status: 500 });
     }
 
-    return json({ url, path: key });
+    // Return URL with optional metadata
+    return json({ 
+      url, 
+      path: key,
+      metadata: (exifData || gpsData) ? { exif: exifData, gps: gpsData } : undefined
+    });
   } catch (e: any) {
     console.error('[upload-request-photo] error', e);
     return json({ error: e?.message || String(e) }, { status: 500 });
