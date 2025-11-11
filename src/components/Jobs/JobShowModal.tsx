@@ -752,6 +752,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                   type="file"
                   multiple
                   accept="image/*,video/*"
+                  capture="environment"
                   onChange={(e) => {
                     const files = Array.from(e.target.files || []);
                     
