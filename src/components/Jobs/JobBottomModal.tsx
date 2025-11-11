@@ -34,7 +34,7 @@ import { cn } from '@/lib/utils';
 import { ConflictDetector } from '@/components/Calendar/ConflictDetector';
 import { useJobsData } from '@/hooks/useJobsData';
 import { useGoogleMapsApiKey } from '@/hooks/useGoogleMapsApiKey';
-import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
+import { APIProvider, Map, AdvancedMarker, MapMouseEvent } from '@vis.gl/react-google-maps';
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { MapCircle } from '@/components/ui/map-circle';
 import { usePlacesAutocomplete } from '@/hooks/usePlacesAutocomplete';
@@ -98,6 +98,48 @@ export function JobBottomModal({
   // Places autocomplete for getting coordinates from selected address
   const { getPlaceDetails, isServiceReady } = usePlacesAutocomplete();
   const [isFetchingPlaceDetails, setIsFetchingPlaceDetails] = useState(false);
+
+  // Handle map click to update marker position
+  const handleMapClick = async (e: MapMouseEvent) => {
+    if (!e.detail.latLng) return;
+    
+    const clickedLat = e.detail.latLng.lat;
+    const clickedLng = e.detail.latLng.lng;
+    
+    console.log('[JobBottomModal] Map clicked at:', { lat: clickedLat, lng: clickedLng });
+    
+    // Immediately update marker position for instant feedback
+    setGpsCoords({ lat: clickedLat, lng: clickedLng });
+    
+    // Show feedback toast
+    toast.info('Location updated, fetching address...');
+    
+    // Reverse geocode to get the address
+    try {
+      const { data, error } = await authApi.invoke('geo-reverse', {
+        method: 'GET',
+        queryParams: { 
+          lat: clickedLat.toString(), 
+          lng: clickedLng.toString() 
+        }
+      });
+      
+      if (error) {
+        console.error('[JobBottomModal] Reverse geocoding error:', error);
+        toast.error('Could not fetch address for this location');
+        return;
+      }
+      
+      // Update the address field
+      setAddress(data.address);
+      toast.success('Address updated from map selection');
+      console.log('[JobBottomModal] Reverse geocoded address:', data.address);
+      
+    } catch (err) {
+      console.error('[JobBottomModal] Map click error:', err);
+      toast.error('Failed to update address');
+    }
+  };
   
   // Geocoding fallback hook (for when Places API fails)
   const geocodingQuery = useGeocoding([address]);
@@ -586,6 +628,7 @@ export function JobBottomModal({
                     <span className="flex items-center gap-2">
                       <MapPin className="h-4 w-4" />
                       Map Preview
+                      <span className="text-xs text-muted-foreground ml-1">(Click to adjust)</span>
                     </span>
                     {isMapOpen ? (
                       <ChevronUp className="h-4 w-4" />
@@ -611,6 +654,7 @@ export function JobBottomModal({
                       streetViewControl={false}
                       fullscreenControl={false}
                       zoomControl={true}
+                      onClick={handleMapClick}
                     >
                       {/* Service area radius circle */}
                       <MapCircle
@@ -624,13 +668,16 @@ export function JobBottomModal({
                       />
                       
                       {/* Marker stays on top of circle */}
-                      <AdvancedMarker position={gpsCoords}>
+                      <AdvancedMarker 
+                        position={gpsCoords}
+                        title="Click anywhere on the map to move this marker"
+                      >
                         <div className="relative flex items-center justify-center">
                           <div 
                             className="absolute inset-0 rounded-full bg-primary/20 animate-pulse" 
                             style={{ width: '40px', height: '40px', left: '-5px', top: '-5px' }} 
                           />
-                          <div className="relative flex items-center justify-center rounded-full bg-primary shadow-lg border-2 border-white w-10 h-10 z-10">
+                          <div className="relative flex items-center justify-center rounded-full bg-primary shadow-lg border-2 border-white w-10 h-10 z-10 cursor-move">
                             <MapPin className="text-white w-6 h-6" />
                           </div>
                         </div>
@@ -638,7 +685,7 @@ export function JobBottomModal({
                     </Map>
                   </div>
                   <p className="text-xs text-center text-muted-foreground">
-                    📍 Selected location • 5 mile service radius
+                    📍 Click anywhere on the map to adjust location • 5 mile service radius
                   </p>
                 </CollapsibleContent>
               </Collapsible>
