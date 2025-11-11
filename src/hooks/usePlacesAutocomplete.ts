@@ -14,6 +14,7 @@ interface UsePlacesAutocompleteReturn {
   predictions: PlacePrediction[];
   isLoading: boolean;
   error: string | null;
+  isServiceReady: boolean;
   fetchPredictions: (input: string) => void;
   clearPredictions: () => void;
   getPlaceDetails: (placeId: string) => Promise<{
@@ -32,6 +33,7 @@ export function usePlacesAutocomplete(): UsePlacesAutocompleteReturn {
   const [predictions, setPredictions] = useState<PlacePrediction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isServiceReady, setIsServiceReady] = useState(false);
   const [autocompleteService, setAutocompleteService] = 
     useState<google.maps.places.AutocompleteService | null>(null);
   const [placesService, setPlacesService] = 
@@ -50,6 +52,10 @@ export function usePlacesAutocomplete(): UsePlacesAutocompleteReturn {
     // Create a dummy div for PlacesService (required by Google Maps API)
     const div = document.createElement('div');
     setPlacesService(new places.PlacesService(div));
+    
+    // Mark service as ready after initialization
+    setIsServiceReady(true);
+    console.log('[usePlacesAutocomplete] ✓ Places services ready');
   }, [places]);
 
   const fetchPredictions = useCallback((input: string) => {
@@ -93,21 +99,26 @@ export function usePlacesAutocomplete(): UsePlacesAutocompleteReturn {
   }> => {
     return new Promise((resolve, reject) => {
       if (!placesService) {
+        console.error('[usePlacesAutocomplete] Places service not initialized');
         reject(new Error('Places service not initialized'));
         return;
       }
+
+      console.log('[usePlacesAutocomplete] Getting place details for:', placeId);
 
       placesService.getDetails(
         { placeId, fields: ['formatted_address', 'geometry'] },
         (place, status) => {
           if (status === places!.PlacesServiceStatus.OK && place) {
+            console.log('[usePlacesAutocomplete] ✓ Place details:', place.formatted_address);
             resolve({
               address: place.formatted_address || '',
               lat: place.geometry?.location?.lat() || 0,
               lng: place.geometry?.location?.lng() || 0,
             });
           } else {
-            reject(new Error(`Failed to get place details: ${status}`));
+            console.error('[usePlacesAutocomplete] ✗ Failed to get place details:', status);
+            reject(new Error(`Places API error: ${status}`));
           }
         }
       );
@@ -123,6 +134,7 @@ export function usePlacesAutocomplete(): UsePlacesAutocompleteReturn {
     predictions,
     isLoading,
     error,
+    isServiceReady,
     fetchPredictions,
     clearPredictions,
     getPlaceDetails,

@@ -38,6 +38,7 @@ import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { MapCircle } from '@/components/ui/map-circle';
 import { usePlacesAutocomplete } from '@/hooks/usePlacesAutocomplete';
+import { useGeocoding } from '@/hooks/useGeocoding';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface JobBottomModalProps {
@@ -95,8 +96,11 @@ export function JobBottomModal({
   const { data: googleMapsApiKey, isLoading: isLoadingApiKey } = useGoogleMapsApiKey();
   
   // Places autocomplete for getting coordinates from selected address
-  const { getPlaceDetails } = usePlacesAutocomplete();
+  const { getPlaceDetails, isServiceReady } = usePlacesAutocomplete();
   const [isFetchingPlaceDetails, setIsFetchingPlaceDetails] = useState(false);
+  
+  // Geocoding fallback hook (for when Places API fails)
+  const geocodingQuery = useGeocoding([address]);
 
   // Reset state when modal closes
   useEffect(() => {
@@ -515,23 +519,56 @@ export function JobBottomModal({
                     onChange={setAddress}
                     onPlaceSelect={async (placeId, description) => {
                       console.log('Selected place:', placeId, description);
+                      setAddress(description);
                       setIsFetchingPlaceDetails(true);
+                      
                       try {
+                        // Try Places API first
                         const details = await getPlaceDetails(placeId);
                         setGpsCoords({
                           lat: details.lat,
                           lng: details.lng
                         });
+                        console.log('[JobBottomModal] ✓ Got coordinates from Places API:', details);
                         toast.success('Address and coordinates set');
-                      } catch (error) {
-                        console.error('Failed to get place details:', error);
-                        toast.error('Could not get coordinates for this address');
+                      } catch (placesError) {
+                        console.warn('[JobBottomModal] Places API failed, trying geocoding fallback:', placesError);
+                        
+                        // Fallback to batch-geocode edge function
+                        try {
+                          toast.info('Trying alternate geocoding method...');
+                          
+                          // Trigger geocoding query with the address
+                          const result = await geocodingQuery.refetch();
+                          
+                          if (result.data) {
+                            const coords = result.data.get(description);
+                            if (coords) {
+                              setGpsCoords(coords);
+                              console.log('[JobBottomModal] ✓ Got coordinates from Geocoding API:', coords);
+                              toast.success('Location geocoded successfully');
+                            } else {
+                              throw new Error('No coordinates found for address');
+                            }
+                          } else {
+                            throw new Error('Geocoding query failed');
+                          }
+                        } catch (geocodeError) {
+                          console.error('[JobBottomModal] ✗ All geocoding methods failed:', geocodeError);
+                          toast.error('Could not get coordinates for the address. Please try a different address.');
+                        }
                       } finally {
                         setIsFetchingPlaceDetails(false);
                       }
                     }}
                     placeholder={customer?.address || t('jobs.form.addressPlaceholder')}
+                    disabled={!isServiceReady}
                   />
+            {!isServiceReady && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Initializing address lookup...
+              </p>
+            )}
             {gpsCoords && (
               <p className="text-xs text-muted-foreground">
                 📍 GPS: {gpsCoords.lat.toFixed(4)}, {gpsCoords.lng.toFixed(4)}
