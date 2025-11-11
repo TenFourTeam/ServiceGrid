@@ -1,5 +1,9 @@
 project_id = "ijudkzqfriazabiosnvb"
 
+# Location-based queries
+[functions.jobs-location-query]
+verify_jwt = false
+
 # Configure authentication
 [auth]
 site_url = "http://localhost:3000"
