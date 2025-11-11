@@ -1,8 +1,9 @@
 import * as React from "react";
 import { useState, useEffect, useRef } from "react";
-import { MapPin, Loader2 } from "lucide-react";
+import { MapPin, Loader2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
 import { usePlacesAutocomplete } from "@/hooks/usePlacesAutocomplete";
@@ -93,9 +94,30 @@ export const AddressAutocomplete = React.forwardRef<
           onChange={handleInputChange}
           placeholder={placeholder}
           disabled={disabled}
-          className={cn("pr-8", className)}
+          className={cn("pr-16", className)}
           autoComplete="off"
         />
+        
+        {/* Clear button - shows when there's text and not loading */}
+        {!isLoading && inputValue && !disabled && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="absolute right-8 top-1/2 -translate-y-1/2 h-6 w-6 hover:bg-accent"
+            onClick={() => {
+              setInputValue('');
+              onChange('');
+              clearPredictions();
+              if (inputRef.current) {
+                inputRef.current.focus();
+              }
+            }}
+          >
+            <X className="h-3 w-3" />
+          </Button>
+        )}
+        
         {isLoading && (
           <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
         )}

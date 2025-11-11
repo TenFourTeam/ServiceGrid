@@ -40,6 +40,7 @@ import { MapCircle } from '@/components/ui/map-circle';
 import { usePlacesAutocomplete } from '@/hooks/usePlacesAutocomplete';
 import { useGeocoding } from '@/hooks/useGeocoding';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Badge } from "@/components/ui/badge";
 
 interface JobBottomModalProps {
   open?: boolean;
@@ -564,62 +565,77 @@ export function JobBottomModal({
           {/* Address */}
           <div className="space-y-2">
             <Label htmlFor="address">{t('jobs.form.address')}</Label>
-                  <AddressAutocomplete
-                    id="address"
-                    value={address}
-                    onChange={setAddress}
-                    onPlaceSelect={async (placeId, description) => {
-                      console.log('Selected place:', placeId, description);
-                      setAddress(description);
-                      setIsFetchingPlaceDetails(true);
-                      
-                      try {
-                        // Try Places API first
-                        const details = await getPlaceDetails(placeId);
-                        setGpsCoords({
-                          lat: details.lat,
-                          lng: details.lng
-                        });
-                        console.log('[JobBottomModal] ✓ Got coordinates from Places API:', details);
-                        toast.success('Address and coordinates set');
-                      } catch (placesError) {
-                        console.warn('[JobBottomModal] Places API failed, trying geocoding fallback:', placesError);
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="address" className="flex items-center gap-2">
+                        {t('jobs.form.address')}
+                        {customer?.address && address && address !== customer.address && (
+                          <Badge variant="secondary" className="text-xs">
+                            Modified
+                          </Badge>
+                        )}
+                      </Label>
+                      {customer?.address && address && address !== customer.address && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 text-xs"
+                          onClick={() => setAddress(customer.address)}
+                        >
+                          <MapPin className="h-3 w-3 mr-1" />
+                          Use customer address
+                        </Button>
+                      )}
+                    </div>
+                    <AddressAutocomplete
+                      id="address"
+                      value={address}
+                      onChange={setAddress}
+                      onPlaceSelect={async (placeId, description) => {
+                        console.log('[JobBottomModal] Place selected:', { placeId, description });
+                        setIsFetchingPlaceDetails(true);
                         
-                        // Fallback to batch-geocode edge function
                         try {
-                          toast.info('Trying alternate geocoding method...');
+                          // Get place details with coordinates
+                          const details = await getPlaceDetails(placeId);
                           
-                          // Trigger geocoding query with the address
-                          const result = await geocodingQuery.refetch();
-                          
-                          if (result.data) {
-                            const coords = result.data.get(description);
-                            if (coords) {
-                              setGpsCoords(coords);
-                              console.log('[JobBottomModal] ✓ Got coordinates from Geocoding API:', coords);
-                              toast.success('Location geocoded successfully');
-                            } else {
-                              throw new Error('No coordinates found for address');
-                            }
+                          if (details?.lat && details?.lng) {
+                            console.log('[JobBottomModal] ✓ Got coordinates from place details:', { lat: details.lat, lng: details.lng });
+                            setGpsCoords({ lat: details.lat, lng: details.lng });
+                            setAddress(details.address || description);
+                            toast.success('Location geocoded successfully');
                           } else {
-                            throw new Error('Geocoding query failed');
+                            console.error('[JobBottomModal] No coordinates found for address');
+                            toast.error('Could not get coordinates for the address. Please try a different address.');
                           }
                         } catch (geocodeError) {
-                          console.error('[JobBottomModal] ✗ All geocoding methods failed:', geocodeError);
+                          console.error('[JobBottomModal] ✗ Geocoding failed:', geocodeError);
                           toast.error('Could not get coordinates for the address. Please try a different address.');
+                        } finally {
+                          setIsFetchingPlaceDetails(false);
                         }
-                      } finally {
-                        setIsFetchingPlaceDetails(false);
+                      }}
+                      placeholder={
+                        address 
+                          ? "Type to change address..." 
+                          : customer?.address 
+                            ? `Default: ${customer.address}` 
+                            : "Type an address or click the map"
                       }
-                    }}
-                    placeholder={customer?.address || t('jobs.form.addressPlaceholder')}
-                    disabled={!isServiceReady}
-                  />
-            {!isServiceReady && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Initializing address lookup...
-              </p>
-            )}
+                      disabled={!isServiceReady}
+                    />
+                    {!isServiceReady && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Initializing address lookup...
+                      </p>
+                    )}
+                    {isServiceReady && (
+                      <p className="text-xs text-muted-foreground mt-1 flex items-center justify-between">
+                        <span>💡 Type to search, or click the map below</span>
+                      </p>
+                    )}
+                  </div>
             
             {/* Map Preview - Always Visible */}
             <Collapsible open={isMapOpen} onOpenChange={setIsMapOpen} className="mt-3 space-y-2">
