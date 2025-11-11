@@ -35,6 +35,10 @@ import { ConflictDetector } from '@/components/Calendar/ConflictDetector';
 import { useJobsData } from '@/hooks/useJobsData';
 import { useGPSLocation } from '@/hooks/useGPSLocation';
 import { useReverseGeocode } from '@/hooks/useReverseGeocode';
+import { useGoogleMapsApiKey } from '@/hooks/useGoogleMapsApiKey';
+import { APIProvider } from '@vis.gl/react-google-maps';
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
+import { usePlacesAutocomplete } from '@/hooks/usePlacesAutocomplete';
 
 interface JobBottomModalProps {
   open?: boolean;
@@ -90,6 +94,13 @@ export function JobBottomModal({
     gpsCoords?.lng || null,
     !!gpsCoords
   );
+
+  // Fetch Google Maps API key for Places Autocomplete
+  const { data: googleMapsApiKey, isLoading: isLoadingApiKey } = useGoogleMapsApiKey();
+  
+  // Places autocomplete for getting coordinates from selected address
+  const { getPlaceDetails } = usePlacesAutocomplete();
+  const [isFetchingPlaceDetails, setIsFetchingPlaceDetails] = useState(false);
 
   // Reset state when modal closes
   useEffect(() => {
@@ -445,12 +456,18 @@ export function JobBottomModal({
     );
   }
 
+  if (!googleMapsApiKey && !isLoadingApiKey) {
+    return null;
+  }
+
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="max-h-[90vh]">
-        <DrawerHeader>
-          <DrawerTitle>{t('jobs.createTitle')}</DrawerTitle>
-        </DrawerHeader>
+        {googleMapsApiKey ? (
+          <APIProvider apiKey={googleMapsApiKey}>
+            <DrawerHeader>
+              <DrawerTitle>{t('jobs.createTitle')}</DrawerTitle>
+            </DrawerHeader>
 
         <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-4">
           {/* Job Type */}
@@ -537,14 +554,31 @@ export function JobBottomModal({
                     Use My Location
                   </>
                 )}
-              </Button>
-            </div>
-            <Input
-              id="address"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder={customer?.address || t('jobs.form.addressPlaceholder')}
-            />
+                    </Button>
+                  </div>
+                  <AddressAutocomplete
+                    id="address"
+                    value={address}
+                    onChange={setAddress}
+                    onPlaceSelect={async (placeId, description) => {
+                      console.log('Selected place:', placeId, description);
+                      setIsFetchingPlaceDetails(true);
+                      try {
+                        const details = await getPlaceDetails(placeId);
+                        setGpsCoords({
+                          lat: details.lat,
+                          lng: details.lng
+                        });
+                        toast.success('Address and coordinates set');
+                      } catch (error) {
+                        console.error('Failed to get place details:', error);
+                        toast.error('Could not get coordinates for this address');
+                      } finally {
+                        setIsFetchingPlaceDetails(false);
+                      }
+                    }}
+                    placeholder={customer?.address || t('jobs.form.addressPlaceholder')}
+                  />
             {gpsCoords && (
               <p className="text-xs text-muted-foreground">
                 📍 GPS: {gpsCoords.lat.toFixed(4)}, {gpsCoords.lng.toFixed(4)}
@@ -733,6 +767,13 @@ export function JobBottomModal({
             </Button>
           </div>
         </DrawerFooter>
+          </APIProvider>
+        ) : (
+          <div className="p-8 text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-sm text-muted-foreground">Loading...</p>
+          </div>
+        )}
       </DrawerContent>
       
       {/* Inline Customer Creation Modal */}
