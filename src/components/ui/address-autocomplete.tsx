@@ -85,28 +85,31 @@ export const AddressAutocomplete = React.forwardRef<
   return (
     <div className="relative">
       <Popover open={open && predictions.length > 0} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <div className="relative">
-            <Input
-              ref={ref || inputRef}
-              id={id}
-              type="text"
-              value={inputValue}
-              onChange={handleInputChange}
-              onBlur={handleBlur}
-              placeholder={placeholder}
-              disabled={disabled}
-              className={cn("pr-8", className)}
-              autoComplete="off"
-            />
-            {isLoading && (
-              <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
-            )}
-            {!isLoading && inputValue && (
-              <MapPin className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            )}
-          </div>
-        </PopoverTrigger>
+        <div className="relative">
+          <Input
+            ref={ref || inputRef}
+            id={id}
+            type="text"
+            value={inputValue}
+            onChange={handleInputChange}
+            onBlur={handleBlur}
+            onFocus={() => {
+              if (debouncedInput && predictions.length > 0) {
+                setOpen(true);
+              }
+            }}
+            placeholder={placeholder}
+            disabled={disabled}
+            className={cn("pr-8", className)}
+            autoComplete="off"
+          />
+          {isLoading && (
+            <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+          )}
+          {!isLoading && inputValue && (
+            <MapPin className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          )}
+        </div>
         <PopoverContent 
           className="p-0 w-[var(--radix-popover-trigger-width)]" 
           align="start"
