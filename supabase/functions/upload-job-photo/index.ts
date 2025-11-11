@@ -31,12 +31,24 @@ serve(async (req) => {
     
     console.log('[upload-job-photo] File type:', contentType, 'File name:', (file as File).name);
     
-    const isPhoto = contentType.startsWith('image/');
-    const isVideo = contentType.startsWith('video/');
+    // Whitelist of supported MIME types (excludes SVG for security)
+    const supportedImageTypes = [
+      'image/jpeg', 'image/jpg', 'image/png', 'image/webp', 
+      'image/heic', 'image/heif'
+    ];
+    const supportedVideoTypes = [
+      'video/mp4', 'video/quicktime', 'video/x-msvideo', 
+      'video/webm', 'video/mpeg'
+    ];
+    
+    const isPhoto = supportedImageTypes.includes(contentType);
+    const isVideo = supportedVideoTypes.includes(contentType);
     
     if (!isPhoto && !isVideo) {
       console.error('[upload-job-photo] Unsupported file type:', contentType);
-      return json({ error: `Unsupported file type: ${contentType}` }, { status: 415 });
+      return json({ 
+        error: `Unsupported file type: ${contentType}. Supported formats: JPEG, PNG, WebP, HEIC, MP4, MOV, AVI, WebM` 
+      }, { status: 415 });
     }
 
     // Validate size based on type
