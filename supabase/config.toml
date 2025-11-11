@@ -222,6 +222,9 @@ verify_jwt = false
 [functions.batch-geocode]
 verify_jwt = false
 
+[functions.geo-reverse]
+verify_jwt = false
+
 [functions.analytics-summary]
 verify_jwt = false
 

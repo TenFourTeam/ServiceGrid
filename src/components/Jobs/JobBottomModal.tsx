@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { CalendarIcon, Upload } from 'lucide-react';
+import { CalendarIcon, Upload, MapPin, Loader2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useCustomersData } from '@/queries/unified';
@@ -33,6 +33,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { ConflictDetector } from '@/components/Calendar/ConflictDetector';
 import { useJobsData } from '@/hooks/useJobsData';
+import { useGPSLocation } from '@/hooks/useGPSLocation';
+import { useReverseGeocode } from '@/hooks/useReverseGeocode';
 
 interface JobBottomModalProps {
   open?: boolean;
@@ -70,6 +72,7 @@ export function JobBottomModal({
   const [showCreateCustomer, setShowCreateCustomer] = useState(false);
   const [assignedMemberIds, setAssignedMemberIds] = useState<string[]>([]);
   const [priority, setPriority] = useState(3); // Default: Normal priority
+  const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   const { data: customers } = useCustomersData();
   const { data: allMembers } = useBusinessMembersData();
@@ -79,6 +82,14 @@ export function JobBottomModal({
   const { assignMembers } = useJobAssignments();
   const authApi = useAuthApi();
   const { t } = useLanguage();
+  const { getCurrentLocation, isLoading: isGettingLocation, error: gpsError } = useGPSLocation();
+
+  // Add reverse geocode query (only runs when gpsCoords is set)
+  const { data: reverseGeocodedAddress, isLoading: isReverseGeocoding } = useReverseGeocode(
+    gpsCoords?.lat || null,
+    gpsCoords?.lng || null,
+    !!gpsCoords
+  );
 
   // Reset state when modal closes
   useEffect(() => {
@@ -100,6 +111,14 @@ export function JobBottomModal({
   useEffect(() => {
     if (initialEndTime) setEndTime(initialEndTime);
   }, [initialEndTime]);
+
+  // Auto-populate address when reverse geocoding completes
+  useEffect(() => {
+    if (reverseGeocodedAddress?.address && gpsCoords) {
+      setAddress(reverseGeocodedAddress.address);
+      toast.success('Address populated from GPS');
+    }
+  }, [reverseGeocodedAddress, gpsCoords]);
 
   // Calculate duration when times change
   useEffect(() => {
@@ -223,10 +242,12 @@ export function JobBottomModal({
     resetState();
 
     try {
-      const newJobData: Partial<Job> = {
+      const newJobData = {
         title: title || undefined,
         customerId: customer.id,
         address: address || customer.address || undefined,
+        latitude: gpsCoords?.lat,
+        longitude: gpsCoords?.lng,
         startsAt: start.toISOString(),
         endsAt: end.toISOString(),
         status: 'Scheduled',
@@ -367,6 +388,19 @@ export function JobBottomModal({
     }
   };
 
+  const handleUseMyLocation = async () => {
+    try {
+      const location = await getCurrentLocation();
+      setGpsCoords({
+        lat: location.latitude,
+        lng: location.longitude
+      });
+      toast.success('Location acquired! Fetching address...');
+    } catch (error) {
+      toast.error(gpsError || 'Failed to get location');
+    }
+  };
+
   const formatTimeRange = () => {
     if (!startTime || !endTime || !date) return '';
     const start = new Date(`2000-01-01T${startTime}:00`);
@@ -482,13 +516,43 @@ export function JobBottomModal({
 
           {/* Address */}
           <div className="space-y-2">
-            <Label htmlFor="address">{t('jobs.form.address')}</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="address">{t('jobs.form.address')}</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleUseMyLocation}
+                disabled={isGettingLocation || isReverseGeocoding}
+                className="h-8 px-2 text-xs"
+              >
+                {isGettingLocation || isReverseGeocoding ? (
+                  <>
+                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                    {isGettingLocation ? 'Getting location...' : 'Fetching address...'}
+                  </>
+                ) : (
+                  <>
+                    <MapPin className="h-3 w-3 mr-1" />
+                    Use My Location
+                  </>
+                )}
+              </Button>
+            </div>
             <Input
               id="address"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               placeholder={customer?.address || t('jobs.form.addressPlaceholder')}
             />
+            {gpsCoords && (
+              <p className="text-xs text-muted-foreground">
+                📍 GPS: {gpsCoords.lat.toFixed(4)}, {gpsCoords.lng.toFixed(4)}
+              </p>
+            )}
+            {gpsError && (
+              <p className="text-xs text-destructive">{gpsError}</p>
+            )}
           </div>
 
           {/* Date */}
