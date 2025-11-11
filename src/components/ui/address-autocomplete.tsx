@@ -34,6 +34,7 @@ export const AddressAutocomplete = React.forwardRef<
   const [inputValue, setInputValue] = useState(value);
   const debouncedInput = useDebouncedValue(inputValue, 500);
   const inputRef = useRef<HTMLInputElement>(null);
+  const justSelectedRef = useRef(false);
   
   const { predictions, isLoading, error, fetchPredictions, clearPredictions } = 
     usePlacesAutocomplete();
@@ -45,6 +46,12 @@ export const AddressAutocomplete = React.forwardRef<
 
   // Fetch predictions when debounced input changes
   useEffect(() => {
+    // Skip if we just selected a prediction
+    if (justSelectedRef.current) {
+      justSelectedRef.current = false;
+      return;
+    }
+    
     if (debouncedInput && debouncedInput.length >= 3) {
       fetchPredictions(debouncedInput);
       setOpen(true);
@@ -62,6 +69,7 @@ export const AddressAutocomplete = React.forwardRef<
 
   const handleSelectPrediction = (prediction: any) => {
     const description = prediction.description;
+    justSelectedRef.current = true;
     setInputValue(description);
     onChange(description);
     setOpen(false);
