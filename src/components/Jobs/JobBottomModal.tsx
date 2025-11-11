@@ -38,6 +38,7 @@ import { useReverseGeocode } from '@/hooks/useReverseGeocode';
 import { useGoogleMapsApiKey } from '@/hooks/useGoogleMapsApiKey';
 import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
+import { MapCircle } from '@/components/ui/map-circle';
 import { usePlacesAutocomplete } from '@/hooks/usePlacesAutocomplete';
 
 interface JobBottomModalProps {
@@ -61,6 +62,9 @@ export function JobBottomModal({
   initialEndTime,
   onJobCreated
 }: JobBottomModalProps) {
+  // Service area radius in meters (5 miles = 8047 meters)
+  const SERVICE_RADIUS_METERS = 5 * 1609.34;
+  
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [date, setDate] = useState<Date | undefined>(initialDate || new Date());
   const [startTime, setStartTime] = useState(initialStartTime || '09:00');
@@ -585,34 +589,51 @@ export function JobBottomModal({
                     </p>
                   )}
                   {gpsCoords && (
-                    <div 
-                      key={`${gpsCoords.lat}-${gpsCoords.lng}`}
-                      className="mt-3 rounded-lg overflow-hidden border shadow-sm animate-in fade-in-50 slide-in-from-top-2 duration-300"
-                    >
-                      <Map
-                        mapId="job-location-preview"
-                        defaultCenter={gpsCoords}
-                        defaultZoom={15}
-                        gestureHandling="cooperative"
-                        disableDefaultUI={false}
-                        style={{ width: '100%', height: '250px' }}
-                        mapTypeControl={false}
-                        streetViewControl={false}
-                        fullscreenControl={false}
-                        zoomControl={true}
+                    <div className="mt-3 space-y-2">
+                      <div 
+                        key={`${gpsCoords.lat}-${gpsCoords.lng}`}
+                        className="rounded-lg overflow-hidden border shadow-sm animate-in fade-in-50 slide-in-from-top-2 duration-300"
                       >
-                        <AdvancedMarker position={gpsCoords}>
-                          <div className="relative flex items-center justify-center">
-                            <div 
-                              className="absolute inset-0 rounded-full bg-primary/20 animate-pulse" 
-                              style={{ width: '40px', height: '40px', left: '-5px', top: '-5px' }} 
-                            />
-                            <div className="relative flex items-center justify-center rounded-full bg-primary shadow-lg border-2 border-white w-10 h-10 z-10">
-                              <MapPin className="text-white w-6 h-6" />
+                        <Map
+                          mapId="job-location-preview"
+                          defaultCenter={gpsCoords}
+                          defaultZoom={15}
+                          gestureHandling="cooperative"
+                          disableDefaultUI={false}
+                          style={{ width: '100%', height: '250px' }}
+                          mapTypeControl={false}
+                          streetViewControl={false}
+                          fullscreenControl={false}
+                          zoomControl={true}
+                        >
+                          {/* Service area radius circle */}
+                          <MapCircle
+                            center={gpsCoords}
+                            radius={SERVICE_RADIUS_METERS}
+                            strokeColor="#3b82f6"
+                            strokeOpacity={0.8}
+                            strokeWeight={2}
+                            fillColor="#3b82f6"
+                            fillOpacity={0.15}
+                          />
+                          
+                          {/* Marker stays on top of circle */}
+                          <AdvancedMarker position={gpsCoords}>
+                            <div className="relative flex items-center justify-center">
+                              <div 
+                                className="absolute inset-0 rounded-full bg-primary/20 animate-pulse" 
+                                style={{ width: '40px', height: '40px', left: '-5px', top: '-5px' }} 
+                              />
+                              <div className="relative flex items-center justify-center rounded-full bg-primary shadow-lg border-2 border-white w-10 h-10 z-10">
+                                <MapPin className="text-white w-6 h-6" />
+                              </div>
                             </div>
-                          </div>
-                        </AdvancedMarker>
-                      </Map>
+                          </AdvancedMarker>
+                        </Map>
+                      </div>
+                      <p className="text-xs text-center text-muted-foreground">
+                        📍 Selected location • 5 mile service radius
+                      </p>
                     </div>
                   )}
                   {gpsError && (
