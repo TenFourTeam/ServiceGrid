@@ -27,15 +27,16 @@ serve(async (req) => {
     const gpsData = form.get("gps") ? JSON.parse(form.get("gps") as string) : null;
 
     // Determine file type (photo or video)
-    const imageTypes = ["image/jpeg","image/png","image/webp","image/heic","image/heif"];
-    const videoTypes = ["video/mp4","video/quicktime","video/x-msvideo","video/webm"];
-    const contentType = (file as File).type || "application/octet-stream";
+    const contentType = (file as File).type || "";
     
-    const isPhoto = imageTypes.includes(contentType);
-    const isVideo = videoTypes.includes(contentType);
+    console.log('[upload-job-photo] File type:', contentType, 'File name:', (file as File).name);
+    
+    const isPhoto = contentType.startsWith('image/');
+    const isVideo = contentType.startsWith('video/');
     
     if (!isPhoto && !isVideo) {
-      return json({ error: "Unsupported file type" }, { status: 415 });
+      console.error('[upload-job-photo] Unsupported file type:', contentType);
+      return json({ error: `Unsupported file type: ${contentType}` }, { status: 415 });
     }
 
     // Validate size based on type
