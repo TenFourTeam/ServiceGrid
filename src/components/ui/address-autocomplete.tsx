@@ -12,6 +12,7 @@ interface AddressAutocompleteProps {
   value: string;
   onChange: (value: string) => void;
   onPlaceSelect?: (placeId: string, description: string) => void;
+  onBlur?: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
   className?: string;
@@ -29,7 +30,7 @@ interface AddressAutocompleteProps {
 export const AddressAutocomplete = React.forwardRef<
   HTMLInputElement,
   AddressAutocompleteProps
->(({ value, onChange, onPlaceSelect, placeholder, disabled, className, id }, ref) => {
+>(({ value, onChange, onPlaceSelect, onBlur, placeholder, disabled, className, id }, ref) => {
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState(value);
   const debouncedInput = useDebouncedValue(inputValue, 500);
@@ -74,6 +75,13 @@ export const AddressAutocomplete = React.forwardRef<
     console.log('[AddressAutocomplete] Selected:', description);
   };
 
+  const handleBlur = () => {
+    setOpen(false);
+    if (onBlur && inputValue) {
+      onBlur(inputValue);
+    }
+  };
+
   return (
     <div className="relative">
       <Popover open={open && predictions.length > 0} onOpenChange={setOpen}>
@@ -85,6 +93,7 @@ export const AddressAutocomplete = React.forwardRef<
               type="text"
               value={inputValue}
               onChange={handleInputChange}
+              onBlur={handleBlur}
               placeholder={placeholder}
               disabled={disabled}
               className={cn("pr-8", className)}

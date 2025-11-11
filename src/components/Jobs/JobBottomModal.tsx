@@ -81,7 +81,13 @@ export function JobBottomModal({
   const [assignedMemberIds, setAssignedMemberIds] = useState<string[]>([]);
   const [priority, setPriority] = useState(3); // Default: Normal priority
   const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [isMapOpen, setIsMapOpen] = useState(true); // Map collapsible state
+  const [isMapOpen, setIsMapOpen] = useState(true);
+  const [addressForGeocoding, setAddressForGeocoding] = useState<string | null>(null);
+
+  // Geocode typed address
+  const { data: geocodedCoords, isLoading: isGeocoding } = useGeocoding(
+    addressForGeocoding ? [addressForGeocoding] : []
+  );
 
   const { data: customers } = useCustomersData();
   const { data: allMembers } = useBusinessMembersData();
@@ -100,9 +106,20 @@ export function JobBottomModal({
   const [isFetchingPlaceDetails, setIsFetchingPlaceDetails] = useState(false);
   const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
 
-  // Default map center (Dallas, TX) when no coordinates set
   const defaultMapCenter = { lat: 32.7763, lng: -96.7969 };
   const mapCenter = gpsCoords || defaultMapCenter;
+
+  // Update map when geocoding completes
+  useEffect(() => {
+    if (geocodedCoords && addressForGeocoding) {
+      const coords = geocodedCoords.get(addressForGeocoding);
+      if (coords) {
+        setGpsCoords(coords);
+        setAddressForGeocoding(null);
+        toast.success('Address located on map');
+      }
+    }
+  }, [geocodedCoords, addressForGeocoding]);
 
   // Handle map click to update marker position with debouncing
   const handleMapClick = async (e: MapMouseEvent) => {
@@ -173,6 +190,12 @@ export function JobBottomModal({
   useEffect(() => {
     if (initialEndTime) setEndTime(initialEndTime);
   }, [initialEndTime]);
+
+  const handleAddressBlur = (typedAddress: string) => {
+    if (typedAddress && typedAddress !== addressForGeocoding) {
+      setAddressForGeocoding(typedAddress);
+    }
+  };
 
   // Calculate duration when times change
   useEffect(() => {
@@ -564,10 +587,12 @@ export function JobBottomModal({
           {/* Address */}
           <div className="space-y-2">
             <Label htmlFor="address">{t('jobs.form.address')}</Label>
+            <div className="flex gap-2">
                   <AddressAutocomplete
                     id="address"
                     value={address}
                     onChange={setAddress}
+                    onBlur={handleAddressBlur}
                     onPlaceSelect={async (placeId, description) => {
                       console.log('Selected place:', placeId, description);
                       setAddress(description);
@@ -614,7 +639,20 @@ export function JobBottomModal({
                     }}
                     placeholder={customer?.address || t('jobs.form.addressPlaceholder')}
                     disabled={!isServiceReady}
+                    className="flex-1"
                   />
+              {address && !gpsCoords && !isGeocoding && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setAddressForGeocoding(address)}
+                  className="shrink-0"
+                >
+                  <MapPin className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
             {!isServiceReady && (
               <p className="text-xs text-muted-foreground mt-1">
                 Initializing address lookup...
