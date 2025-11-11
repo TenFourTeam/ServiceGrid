@@ -36,7 +36,7 @@ import { useJobsData } from '@/hooks/useJobsData';
 import { useGPSLocation } from '@/hooks/useGPSLocation';
 import { useReverseGeocode } from '@/hooks/useReverseGeocode';
 import { useGoogleMapsApiKey } from '@/hooks/useGoogleMapsApiKey';
-import { APIProvider } from '@vis.gl/react-google-maps';
+import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { usePlacesAutocomplete } from '@/hooks/usePlacesAutocomplete';
 
@@ -579,14 +579,45 @@ export function JobBottomModal({
                     }}
                     placeholder={customer?.address || t('jobs.form.addressPlaceholder')}
                   />
-            {gpsCoords && (
-              <p className="text-xs text-muted-foreground">
-                📍 GPS: {gpsCoords.lat.toFixed(4)}, {gpsCoords.lng.toFixed(4)}
-              </p>
-            )}
-            {gpsError && (
-              <p className="text-xs text-destructive">{gpsError}</p>
-            )}
+                  {gpsCoords && (
+                    <p className="text-xs text-muted-foreground">
+                      📍 GPS: {gpsCoords.lat.toFixed(4)}, {gpsCoords.lng.toFixed(4)}
+                    </p>
+                  )}
+                  {gpsCoords && (
+                    <div 
+                      key={`${gpsCoords.lat}-${gpsCoords.lng}`}
+                      className="mt-3 rounded-lg overflow-hidden border shadow-sm animate-in fade-in-50 slide-in-from-top-2 duration-300"
+                    >
+                      <Map
+                        mapId="job-location-preview"
+                        defaultCenter={gpsCoords}
+                        defaultZoom={15}
+                        gestureHandling="cooperative"
+                        disableDefaultUI={false}
+                        style={{ width: '100%', height: '250px' }}
+                        mapTypeControl={false}
+                        streetViewControl={false}
+                        fullscreenControl={false}
+                        zoomControl={true}
+                      >
+                        <AdvancedMarker position={gpsCoords}>
+                          <div className="relative flex items-center justify-center">
+                            <div 
+                              className="absolute inset-0 rounded-full bg-primary/20 animate-pulse" 
+                              style={{ width: '40px', height: '40px', left: '-5px', top: '-5px' }} 
+                            />
+                            <div className="relative flex items-center justify-center rounded-full bg-primary shadow-lg border-2 border-white w-10 h-10 z-10">
+                              <MapPin className="text-white w-6 h-6" />
+                            </div>
+                          </div>
+                        </AdvancedMarker>
+                      </Map>
+                    </div>
+                  )}
+                  {gpsError && (
+                    <p className="text-xs text-destructive">{gpsError}</p>
+                  )}
           </div>
 
           {/* Date */}
