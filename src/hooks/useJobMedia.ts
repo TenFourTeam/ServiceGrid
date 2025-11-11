@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuthApi } from '@/hooks/useAuthApi';
 
 export interface MediaItem {
   id: string;
@@ -25,19 +25,20 @@ export interface MediaItem {
 }
 
 export function useJobMedia(jobId: string | undefined) {
+  const authApi = useAuthApi();
+  
   return useQuery({
     queryKey: ['job-media', jobId],
     queryFn: async () => {
       if (!jobId) return [];
 
-      const { data, error } = await supabase
-        .from('sg_media')
-        .select('*')
-        .eq('job_id', jobId)
-        .order('created_at', { ascending: false });
+      const { data, error } = await authApi.invoke(
+        `job-media-crud?jobId=${jobId}`,
+        { method: 'GET' }
+      );
 
       if (error) throw error;
-      return data as MediaItem[];
+      return (data?.media || []) as MediaItem[];
     },
     enabled: !!jobId
   });

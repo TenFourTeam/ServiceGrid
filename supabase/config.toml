@@ -263,6 +263,9 @@ verify_jwt = false
 verify_jwt = false
 
 # Media processing functions
+[functions.job-media-crud]
+verify_jwt = false
+
 [functions.process-media-thumbnail]
 verify_jwt = false
 
