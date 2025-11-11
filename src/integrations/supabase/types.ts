@@ -1621,6 +1621,88 @@ export type Database = {
         }
         Relationships: []
       }
+      sg_media: {
+        Row: {
+          business_id: string
+          content_hash: string | null
+          created_at: string
+          file_size: number
+          file_type: string
+          hls_manifest_url: string | null
+          id: string
+          job_id: string
+          metadata: Json | null
+          mime_type: string
+          original_filename: string
+          public_url: string | null
+          storage_path: string
+          thumbnail_url: string | null
+          updated_at: string
+          upload_status: string
+          user_id: string
+        }
+        Insert: {
+          business_id: string
+          content_hash?: string | null
+          created_at?: string
+          file_size: number
+          file_type: string
+          hls_manifest_url?: string | null
+          id?: string
+          job_id: string
+          metadata?: Json | null
+          mime_type: string
+          original_filename: string
+          public_url?: string | null
+          storage_path: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          upload_status?: string
+          user_id: string
+        }
+        Update: {
+          business_id?: string
+          content_hash?: string | null
+          created_at?: string
+          file_size?: number
+          file_type?: string
+          hls_manifest_url?: string | null
+          id?: string
+          job_id?: string
+          metadata?: Json | null
+          mime_type?: string
+          original_filename?: string
+          public_url?: string | null
+          storage_path?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          upload_status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sg_media_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_media_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_media_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscribers: {
         Row: {
           created_at: string
