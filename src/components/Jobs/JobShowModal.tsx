@@ -23,6 +23,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useMediaUpload } from '@/hooks/useMediaUpload';
 import { useJobMedia } from '@/hooks/useJobMedia';
 import { Badge } from "@/components/ui/badge";
+import { MediaGallery } from './MediaGallery';
+import { MediaViewer } from './MediaViewer';
 
 interface JobShowModalProps {
   open: boolean;
@@ -56,6 +58,11 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
   const { t } = useLanguage();
   const { uploadMedia, uploading: mediaUploading, progress: uploadProgress } = useMediaUpload();
   const { data: jobMedia = [], isLoading: mediaLoading } = useJobMedia(job.id);
+
+  const handleMediaClick = (mediaItem: any, index: number) => {
+    setViewerIndex(index);
+    setViewerOpen(true);
+  };
   
   // Fetch full quote details when job has quoteId
   useEffect(() => {
@@ -677,40 +684,18 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
             )}
             
             {/* Display new sg_media items */}
-            {mediaLoading ? (
-              <div className="text-sm text-muted-foreground">{t('workOrders.modal.photosLoading')}</div>
-            ) : jobMedia.length > 0 ? (
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                {jobMedia.map((media) => (
-                  <div key={media.id} className="relative">
-                    <a href={media.public_url} target="_blank" rel="noreferrer" className="block">
-                      <img
-                        src={media.thumbnail_url || media.public_url}
-                        alt={media.original_filename}
-                        loading="lazy"
-                        className="w-full h-20 object-cover rounded-md border"
-                      />
-                      {media.file_type === 'video' && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-md">
-                          <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-                          </svg>
-                        </div>
-                      )}
-                      {media.upload_status !== 'completed' && (
-                        <Badge className="absolute top-1 right-1 text-xs" variant="secondary">
-                          Processing...
-                        </Badge>
-                      )}
-                    </a>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              !Array.isArray((job as any).photos) || (job as any).photos.length === 0 ? (
-                <div className="text-sm text-muted-foreground">{t('workOrders.modal.noPhotos')}</div>
-              ) : null
-            )}
+            <MediaGallery
+              media={jobMedia}
+              isLoading={mediaLoading}
+              onMediaClick={handleMediaClick}
+            />
+            
+            <MediaViewer
+              media={jobMedia}
+              initialIndex={viewerIndex}
+              isOpen={viewerOpen}
+              onClose={() => setViewerOpen(false)}
+            />
             
             {/* Photo Upload Section */}
             <div className="mt-3 space-y-2">
