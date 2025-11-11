@@ -48,7 +48,7 @@ export function MediaGallery({ media, isLoading, onMediaClick }: MediaGalleryPro
                 className="relative cursor-pointer group overflow-hidden rounded-md border border-border hover:border-primary transition-all"
               >
                 <img
-                  src={item.thumbnail_url || item.public_url}
+                  src={item.blobUrl || item.thumbnail_url || item.public_url}
                   alt={item.original_filename}
                   loading="lazy"
                   className="w-full h-20 object-cover transition-transform group-hover:scale-105"
@@ -69,6 +69,21 @@ export function MediaGallery({ media, isLoading, onMediaClick }: MediaGalleryPro
                 {item.metadata?.gps && (
                   <MapPin className="absolute bottom-1 left-1 w-4 h-4 text-white drop-shadow-lg" />
                 )}
+                {item.isOptimistic && item.upload_status === 'uploading' && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                    <div className="text-white text-xs font-semibold">
+                      {item.uploadProgress || 0}%
+                    </div>
+                  </div>
+                )}
+                
+                {item.upload_status === 'failed' && (
+                  <div className="absolute inset-0 bg-red-500/20 flex items-center justify-center">
+                    <Badge variant="destructive" className="text-xs">
+                      Failed
+                    </Badge>
+                  </div>
+                )}
               </div>
             </TooltipTrigger>
             
@@ -78,6 +93,9 @@ export function MediaGallery({ media, isLoading, onMediaClick }: MediaGalleryPro
                 <p className="text-muted-foreground">
                   {formatFileSize(item.file_size)} • {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
                 </p>
+                {item.uploadError && (
+                  <p className="text-destructive">Error: {item.uploadError}</p>
+                )}
                 {item.metadata?.exif?.make && (
                   <p className="flex items-center gap-1">
                     <Camera className="w-3 h-3" />

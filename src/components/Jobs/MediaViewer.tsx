@@ -3,6 +3,8 @@ import { MediaItem } from '@/hooks/useJobMedia';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { 
   ChevronLeft, 
@@ -12,7 +14,8 @@ import {
   MapPin, 
   Calendar, 
   File,
-  ExternalLink 
+  ExternalLink,
+  AlertCircle
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -105,13 +108,13 @@ export function MediaViewer({ media, initialIndex, isOpen, onClose }: MediaViewe
             <div className="flex-1 flex items-center justify-center p-4">
               {currentMedia.file_type === 'photo' ? (
                 <img
-                  src={currentMedia.public_url}
+                  src={currentMedia.blobUrl || currentMedia.public_url}
                   alt={currentMedia.original_filename}
                   className="max-w-full max-h-full object-contain"
                 />
               ) : (
                 <video
-                  src={currentMedia.public_url}
+                  src={currentMedia.blobUrl || currentMedia.public_url}
                   poster={currentMedia.thumbnail_url}
                   controls
                   className="max-w-full max-h-full"
@@ -144,7 +147,7 @@ export function MediaViewer({ media, initialIndex, isOpen, onClose }: MediaViewe
                           )}
                         >
                           <img
-                            src={item.thumbnail_url || item.public_url}
+                            src={item.blobUrl || item.thumbnail_url || item.public_url}
                             alt={item.original_filename}
                             className="w-16 h-16 object-cover"
                           />
@@ -223,6 +226,29 @@ export function MediaViewer({ media, initialIndex, isOpen, onClose }: MediaViewe
                       Open in Maps
                     </Button>
                   </div>
+                </div>
+              )}
+
+              {currentMedia.isOptimistic && (
+                <div className="border-t border-border pt-4">
+                  {currentMedia.upload_status === 'uploading' && (
+                    <div>
+                      <p className="text-sm font-semibold mb-2">Uploading...</p>
+                      <Progress value={currentMedia.uploadProgress || 0} className="h-2" />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {currentMedia.uploadProgress || 0}%
+                      </p>
+                    </div>
+                  )}
+                  {currentMedia.upload_status === 'failed' && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>Upload Failed</AlertTitle>
+                      <AlertDescription className="text-xs">
+                        {currentMedia.uploadError || 'Unknown error'}
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </div>
               )}
             </div>

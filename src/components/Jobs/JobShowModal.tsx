@@ -21,7 +21,7 @@ import { useClockInOut } from "@/hooks/useClockInOut";
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMediaUpload } from '@/hooks/useMediaUpload';
-import { useJobMedia } from '@/hooks/useJobMedia';
+import { useJobMedia, createOptimisticMediaItem, MediaItem } from '@/hooks/useJobMedia';
 import { Badge } from "@/components/ui/badge";
 import { MediaGallery } from './MediaGallery';
 import { MediaViewer } from './MediaViewer';
@@ -58,6 +58,11 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
   const { t } = useLanguage();
   const { uploadMedia, uploading: mediaUploading, progress: uploadProgress } = useMediaUpload();
   const { data: jobMedia = [], isLoading: mediaLoading } = useJobMedia(job.id);
+  const [optimisticMedia, setOptimisticMedia] = useState<MediaItem[]>([]);
+
+  const allMedia = useMemo(() => {
+    return [...optimisticMedia, ...jobMedia];
+  }, [optimisticMedia, jobMedia]);
 
   const handleMediaClick = (mediaItem: any, index: number) => {
     setViewerIndex(index);
@@ -119,6 +124,17 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
       setLinkedQuoteId(job.quoteId);
     }
   }, [open, job.quoteId, linkedQuoteId]);
+
+  // Cleanup blob URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      optimisticMedia.forEach(item => {
+        if (item.blobUrl) {
+          URL.revokeObjectURL(item.blobUrl);
+        }
+      });
+    };
+  }, [optimisticMedia]);
 
   const customerName = useMemo(() => customers.find(c => c.id === job.customerId)?.name || t('workOrders.modal.customer'), [customers, job.customerId, t]);
   const currentQuoteId = linkedQuoteId ?? job.quoteId ?? null;
@@ -379,85 +395,117 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
     }
   }
 
-  async function handlePhotoUpload() {
-    if (photosToUpload.length === 0) return;
+  async function handleOptimisticUpload(files: File[], optimisticItems: MediaItem[]) {
+    const uploadResults: string[] = [];
     
-    setUploadingPhotos(true);
-    try {
-      const uploadResults: string[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const optimisticItem = optimisticItems[i];
       
-      // Upload each file with new media upload hook
-      for (const file of photosToUpload) {
-        try {
-          const result = await uploadMedia(file, {
-            jobId: job.id,
-            businessId: businessId || '',
-          });
-          
-          if (result.isDuplicate) {
-            toast.info(`"${file.name}" already uploaded (duplicate detected)`);
+      try {
+        const result = await uploadMedia(file, {
+          jobId: job.id,
+          businessId: businessId || '',
+          onProgress: (progress) => {
+            setOptimisticMedia(prev => 
+              prev.map(item => 
+                item.id === optimisticItem.id 
+                  ? { ...item, uploadProgress: progress }
+                  : item
+              )
+            );
           }
-          
-          uploadResults.push(result.url);
-        } catch (error: any) {
-          console.error('[JobShowModal] Media upload failed:', error);
-          toast.error(`Failed to upload "${file.name}": ${error.message}`);
-        }
-      }
-
-      if (uploadResults.length > 0) {
-        // Still update job.photos for backward compatibility
-        const existingPhotos = Array.isArray((job as any).photos) ? (job as any).photos : [];
-        const allPhotos = [...existingPhotos, ...uploadResults];
+        });
         
-        // Optimistic update
-        const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
-        const previousData = queryClient.getQueryData(queryKey);
-        
-        queryClient.setQueryData(queryKey, (old: JobsCacheData | undefined) => {
-          if (!old) return old;
-          return {
-            ...old,
-            jobs: old.jobs.map((j: Job) => 
-              j.id === job.id 
-                ? { ...j, photos: allPhotos }
-                : j
+        if (result.isDuplicate) {
+          toast.info(`"${file.name}" already uploaded (duplicate detected)`);
+          setOptimisticMedia(prev => prev.filter(item => item.id !== optimisticItem.id));
+        } else {
+          setOptimisticMedia(prev => 
+            prev.map(item => 
+              item.id === optimisticItem.id 
+                ? {
+                    ...item,
+                    upload_status: 'completed',
+                    uploadProgress: 100,
+                    public_url: result.url,
+                    thumbnail_url: result.url,
+                    isOptimistic: false
+                  }
+                : item
             )
-          };
-        });
-        
-        const { error: updateError } = await authApi.invoke('jobs-crud', {
-          method: 'PUT',
-          body: {
-            id: job.id,
-            photos: allPhotos,
-          }
-        });
-        
-        if (updateError) {
-          if (previousData) {
-            queryClient.setQueryData(queryKey, previousData);
-          }
-          throw new Error(updateError.message || 'Failed to update job photos');
+          );
+          uploadResults.push(result.url);
         }
         
-        // Invalidate both jobs and media queries
-        if (businessId) {
-          invalidationHelpers.jobs(queryClient, businessId);
-          queryClient.invalidateQueries({ queryKey: ['job-media', job.id] });
+        if (optimisticItem.blobUrl) {
+          URL.revokeObjectURL(optimisticItem.blobUrl);
         }
-        
-        toast.success(`${uploadResults.length} file(s) uploaded successfully`);
+      } catch (error: any) {
+        console.error('[JobShowModal] Media upload failed:', error);
+        setOptimisticMedia(prev => 
+          prev.map(item => 
+            item.id === optimisticItem.id 
+              ? {
+                  ...item,
+                  upload_status: 'failed',
+                  uploadError: error.message
+                }
+              : item
+          )
+        );
+        toast.error(`Failed to upload "${file.name}": ${error.message}`);
+      }
+    }
+
+    if (uploadResults.length > 0) {
+      const existingPhotos = Array.isArray((job as any).photos) ? (job as any).photos : [];
+      const allPhotos = [...existingPhotos, ...uploadResults];
+      
+      const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
+      const previousData = queryClient.getQueryData(queryKey);
+      
+      queryClient.setQueryData(queryKey, (old: JobsCacheData | undefined) => {
+        if (!old) return old;
+        return {
+          ...old,
+          jobs: old.jobs.map((j: Job) => 
+            j.id === job.id 
+              ? { ...j, photos: allPhotos }
+              : j
+          )
+        };
+      });
+      
+      const { error: updateError } = await authApi.invoke('jobs-crud', {
+        method: 'PUT',
+        body: {
+          id: job.id,
+          photos: allPhotos,
+        }
+      });
+      
+      if (updateError) {
+        if (previousData) {
+          queryClient.setQueryData(queryKey, previousData);
+        }
       }
       
-      // Clear selected files
-      setPhotosToUpload([]);
-    } catch (error) {
-      console.error('[JobShowModal] Photo upload failed:', error);
-      toast.error(t('workOrders.modal.uploadPhotos'));
-    } finally {
-      setUploadingPhotos(false);
+      if (businessId) {
+        invalidationHelpers.jobs(queryClient, businessId);
+        queryClient.invalidateQueries({ queryKey: ['job-media', job.id] });
+      }
+      
+      toast.success(`${uploadResults.length} file(s) uploaded successfully`);
     }
+    
+    setPhotosToUpload([]);
+    
+    setTimeout(() => {
+      setOptimisticMedia(prev => 
+        prev.filter(item => item.upload_status === 'uploading' || item.upload_status === 'failed')
+      );
+    }, 2000);
   }
 
 
@@ -685,13 +733,13 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
             
             {/* Display new sg_media items */}
             <MediaGallery
-              media={jobMedia}
+              media={allMedia}
               isLoading={mediaLoading}
               onMediaClick={handleMediaClick}
             />
             
             <MediaViewer
-              media={jobMedia}
+              media={allMedia}
               initialIndex={viewerIndex}
               isOpen={viewerOpen}
               onClose={() => setViewerOpen(false)}
@@ -707,7 +755,6 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                   onChange={(e) => {
                     const files = Array.from(e.target.files || []);
                     
-                    // Validate each file
                     const validFiles = files.filter(file => {
                       const isPhoto = file.type.startsWith('image/');
                       const isVideo = file.type.startsWith('video/');
@@ -727,36 +774,18 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                     });
                     
                     setPhotosToUpload(validFiles);
+                    
+                    if (validFiles.length > 0) {
+                      const optimisticItems = validFiles.map(createOptimisticMediaItem);
+                      setOptimisticMedia(prev => [...prev, ...optimisticItems]);
+                      handleOptimisticUpload(validFiles, optimisticItems);
+                    }
+                    
+                    e.target.value = '';
                   }}
                   className="text-sm text-muted-foreground file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-sm file:bg-secondary file:text-secondary-foreground hover:file:bg-secondary/80"
                 />
               </div>
-              {photosToUpload.length > 0 && (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">
-                    {photosToUpload.length} {photosToUpload.length === 1 ? t('workOrders.modal.photos') : t('workOrders.modal.photos')} {t('workOrders.modal.selectPhotos')}
-                  </span>
-                  <Button 
-                    size="sm" 
-                    onClick={handlePhotoUpload}
-                    disabled={uploadingPhotos || mediaUploading}
-                  >
-                    {uploadingPhotos || mediaUploading ? (
-                      uploadProgress > 0 ? `Uploading... ${uploadProgress}%` : 'Uploading...'
-                    ) : (
-                      t('workOrders.modal.uploadPhotos')
-                    )}
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    onClick={() => setPhotosToUpload([])}
-                    disabled={uploadingPhotos}
-                  >
-                    {t('workOrders.modal.cancel')}
-                  </Button>
-                </div>
-              )}
             </div>
           </div>
           

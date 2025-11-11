@@ -15,7 +15,13 @@ export interface MediaItem {
     gps?: { latitude: number; longitude: number };
   };
   created_at: string;
-  upload_status: string;
+  upload_status: 'uploading' | 'processing' | 'completed' | 'failed';
+  
+  // Optimistic update fields
+  blobUrl?: string;
+  isOptimistic?: boolean;
+  uploadProgress?: number;
+  uploadError?: string;
 }
 
 export function useJobMedia(jobId: string | undefined) {
@@ -35,4 +41,24 @@ export function useJobMedia(jobId: string | undefined) {
     },
     enabled: !!jobId
   });
+}
+
+export function createOptimisticMediaItem(file: File): MediaItem {
+  const blobUrl = URL.createObjectURL(file);
+  const isPhoto = file.type.startsWith('image/');
+  
+  return {
+    id: `optimistic-${Date.now()}-${Math.random()}`,
+    file_type: isPhoto ? 'photo' : 'video',
+    mime_type: file.type,
+    original_filename: file.name,
+    file_size: file.size,
+    public_url: blobUrl,
+    thumbnail_url: isPhoto ? blobUrl : undefined,
+    created_at: new Date().toISOString(),
+    upload_status: 'uploading',
+    blobUrl,
+    isOptimistic: true,
+    uploadProgress: 0
+  };
 }
