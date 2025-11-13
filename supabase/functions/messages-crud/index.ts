@@ -38,6 +38,7 @@ Deno.serve(async (req) => {
 
     // GET: Fetch unread mentions for current user
     if (req.method === 'GET' && action === 'unreadMentions') {
+      // Use RPC or filter to check if userId exists in mentions JSONB array
       const { data, error } = await supabase
         .from('sg_messages')
         .select(`
@@ -45,21 +46,27 @@ Deno.serve(async (req) => {
           conversation_id,
           content,
           created_at,
+          mentions,
           sender:sender_id (
             full_name
           )
         `)
-        .contains('mentions', [ctx.userId])
         .eq('business_id', ctx.businessId)
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(100);
 
       if (error) {
         console.error('[messages-crud] Error fetching unread mentions:', error);
         return ok({ error: error.message }, 500);
       }
 
-      const mentions = (data || []).map(msg => ({
+      // Filter messages where mentions array contains the current userId
+      const filteredMentions = (data || []).filter(msg => {
+        const mentionsArray = Array.isArray(msg.mentions) ? msg.mentions : [];
+        return mentionsArray.includes(ctx.userId);
+      });
+
+      const mentions = filteredMentions.map(msg => ({
         id: msg.id,
         conversation_id: msg.conversation_id,
         content: msg.content,
