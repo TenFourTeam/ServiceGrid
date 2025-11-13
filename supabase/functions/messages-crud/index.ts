@@ -113,8 +113,8 @@ Deno.serve(async (req) => {
           sender_id: ctx.userId,
           business_id: ctx.businessId,
           content,
-          mentions: JSON.stringify(parsedMentions),
-          attachments: JSON.stringify(attachments || []),
+          mentions: parsedMentions,
+          attachments: attachments || [],
         })
         .select(`
           *,
