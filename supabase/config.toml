@@ -1,5 +1,12 @@
 project_id = "ijudkzqfriazabiosnvb"
 
+# Conversation media functions
+[functions.upload-conversation-media]
+verify_jwt = false
+
+[functions.conversation-media-fetch]
+verify_jwt = false
+
 # Location-based queries
 [functions.jobs-location-query]
 verify_jwt = false

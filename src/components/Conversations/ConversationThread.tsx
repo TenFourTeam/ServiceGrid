@@ -50,7 +50,10 @@ export function ConversationThread({ conversationId, onBack }: ConversationThrea
           )}
         </ScrollArea>
         <div className="border-t p-4 flex-shrink-0">
-          <MessageComposer onSend={(content, attachments) => sendMessage({ content, attachments })} />
+          <MessageComposer 
+            conversationId={conversationId}
+            onSend={(content, attachments) => sendMessage({ content, attachments })} 
+          />
         </div>
       </CardContent>
     </Card>

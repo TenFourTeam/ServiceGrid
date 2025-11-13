@@ -1679,6 +1679,7 @@ export type Database = {
         Row: {
           business_id: string
           content_hash: string | null
+          conversation_id: string | null
           created_at: string
           file_size: number
           file_type: string
@@ -1698,6 +1699,7 @@ export type Database = {
         Insert: {
           business_id: string
           content_hash?: string | null
+          conversation_id?: string | null
           created_at?: string
           file_size: number
           file_type: string
@@ -1717,6 +1719,7 @@ export type Database = {
         Update: {
           business_id?: string
           content_hash?: string | null
+          conversation_id?: string | null
           created_at?: string
           file_size?: number
           file_type?: string
@@ -1739,6 +1742,13 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_media_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "sg_conversations"
             referencedColumns: ["id"]
           },
           {
