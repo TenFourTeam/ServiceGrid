@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { formatDistanceToNow } from 'date-fns';
-import { CheckSquare, Camera, Calendar, MapPin, Briefcase, Video } from 'lucide-react';
+import { CheckSquare, Camera, Calendar, MapPin, Briefcase, Video, Clock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -22,11 +22,19 @@ export function TaskCompletionHistoryView() {
   // Compute stats from data
   const stats = useMemo(() => {
     if (!data) return null;
+    
+    const totalTime = data.completedTasks.reduce((sum, task) => 
+      sum + (task.timeSpentMinutes || 0), 0
+    );
+    const tasksWithTime = data.completedTasks.filter(t => t.timeSpentMinutes).length;
+    
     return {
       totalCompleted: data.stats.totalCompleted,
       totalPhotos: data.stats.totalPhotos,
       avgPhotosPerTask: data.stats.totalPhotos / Math.max(1, data.stats.completedInRange),
-      completedInRange: data.stats.completedInRange
+      completedInRange: data.stats.completedInRange,
+      totalTime,
+      avgTimePerTask: tasksWithTime > 0 ? totalTime / tasksWithTime : 0,
     };
   }, [data]);
   
@@ -52,7 +60,7 @@ export function TaskCompletionHistoryView() {
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-foreground">{stats?.completedInRange || 0}</div>
@@ -77,6 +85,22 @@ export function TaskCompletionHistoryView() {
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-foreground">{stats?.totalCompleted || 0}</div>
             <div className="text-xs text-muted-foreground">All Time Total</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-foreground">
+              {Math.floor((stats?.totalTime || 0) / 60)}h {(stats?.totalTime || 0) % 60}m
+            </div>
+            <div className="text-xs text-muted-foreground">Total Time</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-foreground">
+              {stats?.avgTimePerTask ? `${Math.round(stats.avgTimePerTask)}m` : '—'}
+            </div>
+            <div className="text-xs text-muted-foreground">Avg Time/Task</div>
           </CardContent>
         </Card>
       </div>
@@ -151,6 +175,12 @@ export function TaskCompletionHistoryView() {
                         </AvatarFallback>
                       </Avatar>
                       <span>by {task.completedBy.name || task.completedBy.email}</span>
+                    </div>
+                  )}
+                  {task.timeSpentMinutes && (
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      <span>{task.timeSpentMinutes} min</span>
                     </div>
                   )}
                   <div className="flex items-center gap-1">

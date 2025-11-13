@@ -54,7 +54,7 @@ export default function Team() {
   const { data: recurringTemplates, isLoading: isLoadingRecurring } = useRecurringJobTemplates();
   const { unreadCount } = useUnreadMentions();
   const myTasksData = useMyTasks();
-  const myTasksCount = myTasksData.data?.length || 0;
+  const myTasksCount = myTasksData.data?.tasks?.length || 0;
   
   const completedTasksData = useMyCompletedTasks(30);
   const completedCount = completedTasksData.data?.stats.completedInRange || 0;

@@ -29,6 +29,8 @@ export interface CompletedTask {
   jobAddress: string | null;
   jobStartsAt: string | null;
   media: CompletedTaskMedia[];
+  timeSpentMinutes?: number | null;
+  timesheetEntryId?: string | null;
 }
 
 export interface CompletedTasksResponse {

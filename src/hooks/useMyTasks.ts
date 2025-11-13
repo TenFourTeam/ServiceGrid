@@ -17,6 +17,15 @@ interface MyTask {
   jobAddress: string | null;
 }
 
+interface MyTasksResponse {
+  tasks: MyTask[];
+  currentTimesheet: {
+    id: string;
+    jobId: string | null;
+    clockInTime: string;
+  } | null;
+}
+
 /**
  * Hook to fetch tasks assigned to the current user
  */
@@ -24,7 +33,7 @@ export function useMyTasks() {
   const authApi = useAuthApi();
   const queryClient = useQueryClient();
   
-  const query = useQuery<MyTask[]>({
+  const query = useQuery<MyTasksResponse>({
     queryKey: ['my-checklist-tasks'],
     queryFn: async () => {
       const { data, error } = await authApi.invoke('my-checklist-tasks', {
@@ -32,7 +41,7 @@ export function useMyTasks() {
       });
       
       if (error) throw new Error(error.message || 'Failed to fetch tasks');
-      return data.tasks || [];
+      return data;
     },
   });
 

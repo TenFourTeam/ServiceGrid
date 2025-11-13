@@ -38,6 +38,8 @@ Deno.serve(async (req) => {
         completed_at,
         completed_by,
         is_completed,
+        time_spent_minutes,
+        timesheet_entry_id,
         checklist:sg_checklists!inner(
           id,
           title,
@@ -102,6 +104,8 @@ Deno.serve(async (req) => {
           jobAddress: item.checklist.job.address,
           jobStartsAt: item.checklist.job.starts_at,
           media: mediaData || [],
+          timeSpentMinutes: item.time_spent_minutes,
+          timesheetEntryId: item.timesheet_entry_id,
         };
       })
     );
