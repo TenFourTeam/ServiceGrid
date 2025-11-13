@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Camera, Check, Image as ImageIcon, MoreVertical } from 'lucide-react';
+import { Camera, Check, Image as ImageIcon, MoreVertical, UserCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card } from '@/components/ui/card';
@@ -8,12 +8,22 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useCompleteChecklistItem, type ChecklistItem as ChecklistItemType } from '@/hooks/useJobChecklist';
 import { useJobMedia, createOptimisticMediaItem } from '@/hooks/useJobMedia';
 import { useMediaUpload } from '@/hooks/useMediaUpload';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { useChecklistAssignment } from '@/hooks/useChecklistAssignment';
+import { useBusinessMembersData } from '@/hooks/useBusinessMembers';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -28,6 +38,8 @@ export function ChecklistItem({ item, jobId }: ChecklistItemProps) {
   const { data: allMedia } = useJobMedia(jobId);
   const { uploadMedia } = useMediaUpload();
   const { businessId } = useBusinessContext();
+  const { assignItem } = useChecklistAssignment();
+  const { data: members } = useBusinessMembersData({ businessId });
 
   // Filter media for this checklist item
   const itemMedia = allMedia?.filter(m => 
@@ -150,6 +162,14 @@ export function ChecklistItem({ item, jobId }: ChecklistItemProps) {
             )}
           </div>
 
+          {/* Assigned To Badge */}
+          {item.assigned_to && (
+            <Badge variant="outline" className="flex items-center gap-1">
+              <UserCircle className="h-3 w-3" />
+              <span className="text-xs">Assigned</span>
+            </Badge>
+          )}
+
           {/* Actions */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -173,6 +193,29 @@ export function ChecklistItem({ item, jobId }: ChecklistItemProps) {
                   />
                 </label>
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <div className="px-2 py-1.5 text-sm font-semibold">Assign to</div>
+              <DropdownMenuItem
+                onClick={() => assignItem.mutate({ 
+                  itemId: item.id, 
+                  assignedTo: null 
+                })}
+              >
+                <UserCircle className="mr-2 h-4 w-4" />
+                Unassigned
+              </DropdownMenuItem>
+              {members?.map(member => (
+                <DropdownMenuItem
+                  key={member.id}
+                  onClick={() => assignItem.mutate({ 
+                    itemId: item.id, 
+                    assignedTo: member.id 
+                  })}
+                >
+                  <UserCircle className="mr-2 h-4 w-4" />
+                  {member.name || member.email}
+                </DropdownMenuItem>
+              ))}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

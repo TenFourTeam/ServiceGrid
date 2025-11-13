@@ -17,6 +17,9 @@ verify_jwt = false
 [functions.checklist-templates-crud]
 verify_jwt = false
 
+[functions.my-checklist-tasks]
+verify_jwt = false
+
 # Location-based queries
 [functions.jobs-location-query]
 verify_jwt = false

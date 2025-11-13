@@ -163,6 +163,76 @@ Deno.serve(async (req) => {
       });
     }
 
+    // PATCH - Assign checklist or item
+    if (method === 'PATCH') {
+      const pathParts = url.pathname.split('/');
+      
+      // Assign checklist: PATCH /checklists-crud/:checklistId/assign
+      if (pathParts.includes('assign') && checklistId && checklistId !== 'checklists-crud') {
+        const { assignedTo } = await req.json();
+        
+        const { error } = await supabase
+          .from('sg_checklists')
+          .update({ 
+            assigned_to: assignedTo, 
+            updated_at: new Date().toISOString() 
+          })
+          .eq('id', checklistId);
+        
+        if (error) throw error;
+        
+        // Log event
+        await supabase.from('sg_checklist_events').insert({
+          checklist_id: checklistId,
+          event_type: 'checklist_assigned',
+          user_id: ctx.userId,
+          metadata: { assigned_to: assignedTo }
+        });
+        
+        console.log('[checklists-crud] Assigned checklist:', checklistId);
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
+      // Assign item: PATCH /checklists-crud/items/:itemId/assign
+      if (pathParts.includes('items')) {
+        const itemId = pathParts[pathParts.indexOf('items') + 1];
+        const { assignedTo } = await req.json();
+        
+        const { error } = await supabase
+          .from('sg_checklist_items')
+          .update({ 
+            assigned_to: assignedTo, 
+            updated_at: new Date().toISOString() 
+          })
+          .eq('id', itemId);
+        
+        if (error) throw error;
+        
+        // Get checklist_id for event logging
+        const { data: item } = await supabase
+          .from('sg_checklist_items')
+          .select('checklist_id')
+          .eq('id', itemId)
+          .single();
+        
+        if (item) {
+          await supabase.from('sg_checklist_events').insert({
+            checklist_id: item.checklist_id,
+            event_type: 'item_assigned',
+            user_id: ctx.userId,
+            metadata: { item_id: itemId, assigned_to: assignedTo }
+          });
+        }
+        
+        console.log('[checklists-crud] Assigned item:', itemId);
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     // DELETE - Delete checklist
     if (method === 'DELETE') {
       const { error } = await supabase
