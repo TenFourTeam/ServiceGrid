@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Plus, ListChecks, CheckCircle2, UserCircle } from 'lucide-react';
+import { Plus, ListChecks, CheckCircle2, UserCircle, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
@@ -13,6 +14,7 @@ import {
 } from '@/components/ui/select';
 import { useJobChecklist, useCreateChecklist, type ChecklistItem } from '@/hooks/useJobChecklist';
 import { ChecklistItem as ChecklistItemComponent } from './ChecklistItem';
+import { ChecklistActivityFeed } from './ChecklistActivityFeed';
 import { TemplatePickerDialog } from './TemplatePickerDialog';
 import { useChecklistAssignment } from '@/hooks/useChecklistAssignment';
 import { useBusinessMembersData } from '@/hooks/useBusinessMembers';
