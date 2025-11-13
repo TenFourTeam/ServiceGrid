@@ -1624,6 +1624,57 @@ export type Database = {
         }
         Relationships: []
       }
+      sg_conversations: {
+        Row: {
+          business_id: string
+          created_at: string | null
+          created_by: string
+          id: string
+          is_archived: boolean | null
+          last_message_at: string | null
+          metadata: Json | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          business_id: string
+          created_at?: string | null
+          created_by: string
+          id?: string
+          is_archived?: boolean | null
+          last_message_at?: string | null
+          metadata?: Json | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          business_id?: string
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          is_archived?: boolean | null
+          last_message_at?: string | null
+          metadata?: Json | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sg_conversations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_conversations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sg_media: {
         Row: {
           business_id: string
@@ -1700,6 +1751,70 @@ export type Database = {
           {
             foreignKeyName: "sg_media_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sg_messages: {
+        Row: {
+          attachments: Json | null
+          business_id: string
+          content: string
+          conversation_id: string
+          created_at: string | null
+          edited: boolean | null
+          id: string
+          mentions: Json | null
+          metadata: Json | null
+          sender_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          attachments?: Json | null
+          business_id: string
+          content: string
+          conversation_id: string
+          created_at?: string | null
+          edited?: boolean | null
+          id?: string
+          mentions?: Json | null
+          metadata?: Json | null
+          sender_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          attachments?: Json | null
+          business_id?: string
+          content?: string
+          conversation_id?: string
+          created_at?: string | null
+          edited?: boolean | null
+          id?: string
+          mentions?: Json | null
+          metadata?: Json | null
+          sender_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sg_messages_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "sg_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_messages_sender_id_fkey"
+            columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -2310,6 +2425,22 @@ export type Database = {
           next_billing_date: string
           quote_id: string
           subscription_id: string
+        }[]
+      }
+      get_conversations_with_preview: {
+        Args: { p_business_id: string }
+        Returns: {
+          business_id: string
+          created_at: string
+          created_by: string
+          id: string
+          is_archived: boolean
+          last_message_at: string
+          latest_message: string
+          latest_sender_name: string
+          title: string
+          unread_count: number
+          updated_at: string
         }[]
       }
       gettransactionid: { Args: never; Returns: unknown }
