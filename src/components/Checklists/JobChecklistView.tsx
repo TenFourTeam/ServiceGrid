@@ -1,12 +1,22 @@
 import { useState } from 'react';
-import { Plus, ListChecks, CheckCircle2 } from 'lucide-react';
+import { Plus, ListChecks, CheckCircle2, UserCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useJobChecklist, useCreateChecklist, type ChecklistItem } from '@/hooks/useJobChecklist';
 import { ChecklistItem as ChecklistItemComponent } from './ChecklistItem';
 import { TemplatePickerDialog } from './TemplatePickerDialog';
+import { useChecklistAssignment } from '@/hooks/useChecklistAssignment';
+import { useBusinessMembersData } from '@/hooks/useBusinessMembers';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 interface JobChecklistViewProps {
   jobId: string;
@@ -16,6 +26,9 @@ export function JobChecklistView({ jobId }: JobChecklistViewProps) {
   const { data, isLoading } = useJobChecklist(jobId);
   const createChecklist = useCreateChecklist();
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const { assignChecklist } = useChecklistAssignment();
+  const { businessId } = useBusinessContext();
+  const { data: members } = useBusinessMembersData({ businessId });
 
   if (isLoading) {
     return (
@@ -61,19 +74,43 @@ export function JobChecklistView({ jobId }: JobChecklistViewProps) {
         {/* Progress Header */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="space-y-1">
                 <CardTitle className="text-xl">{checklist.title}</CardTitle>
                 <p className="text-sm text-muted-foreground">
                   {progress?.completed || 0} of {progress?.total || 0} tasks completed
                 </p>
               </div>
-              {progress && progress.percentage === 100 && (
-                <div className="flex items-center gap-2 text-green-600">
-                  <CheckCircle2 className="h-5 w-5" />
-                  <span className="font-semibold">Complete!</span>
-                </div>
-              )}
+              <div className="flex items-center gap-3">
+                {/* Assign Checklist */}
+                <Select
+                  value={checklist.assigned_to || ''}
+                  onValueChange={(userId) => assignChecklist.mutate({ 
+                    checklistId: checklist.id, 
+                    assignedTo: userId || null 
+                  })}
+                >
+                  <SelectTrigger className="w-[200px]">
+                    <UserCircle className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Assign to..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Unassigned</SelectItem>
+                    {members?.map(member => (
+                      <SelectItem key={member.id} value={member.id}>
+                        {member.name || member.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                {progress && progress.percentage === 100 && (
+                  <div className="flex items-center gap-2 text-green-600">
+                    <CheckCircle2 className="h-5 w-5" />
+                    <span className="font-semibold">Complete!</span>
+                  </div>
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardContent>

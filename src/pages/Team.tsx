@@ -22,7 +22,8 @@ import {
   Calendar,
   Repeat,
   Plus,
-  Package
+  Package,
+  CheckSquare
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { RequireRole } from "@/components/Auth/RequireRole";
@@ -39,6 +40,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { List, Map as MapIcon, MessageSquare } from "lucide-react";
 import { ConversationsTab } from "@/components/Conversations/ConversationsTab";
 import { useUnreadMentions } from "@/hooks/useUnreadMentions";
+import { MyTasksView } from "@/components/Team/MyTasksView";
 
 export default function Team() {
   const { t } = useLanguage();
@@ -205,6 +207,10 @@ export default function Team() {
                   {unreadCount}
                 </Badge>
               )}
+            </TabsTrigger>
+            <TabsTrigger value="mytasks" className="flex items-center gap-2">
+              <CheckSquare className="h-4 w-4" />
+              <span className="hidden sm:inline">My Tasks</span>
             </TabsTrigger>
           </TabsList>
 
@@ -437,6 +443,11 @@ export default function Team() {
           {/* Conversations Tab */}
           <TabsContent value="conversations">
             <ConversationsTab />
+          </TabsContent>
+
+          {/* My Tasks Tab */}
+          <TabsContent value="mytasks">
+            <MyTasksView />
           </TabsContent>
         </Tabs>
 
