@@ -1,8 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { corsHeaders } from '../_shared/cors.ts';
-
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+import { corsHeaders, requireCtx } from '../_lib/auth.ts';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -10,19 +6,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const authHeader = req.headers.get('Authorization');
+    console.log('[checklist-templates-crud] Processing request');
     
-    if (!authHeader) {
-      throw new Error('No authorization header');
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
-    if (authError || !user) {
-      throw new Error('Unauthorized');
-    }
+    const ctx = await requireCtx(req);
+    const supabase = ctx.supaAdmin;
 
     const url = new URL(req.url);
     const method = req.method;
@@ -82,14 +69,6 @@ Deno.serve(async (req) => {
     if (method === 'POST') {
       const { businessId, name, description, category, items } = await req.json();
       
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('clerk_user_id', user.id)
-        .single();
-      
-      if (!profile) throw new Error('Profile not found');
-      
       // Create template
       const { data: template, error: templateError } = await supabase
         .from('sg_checklist_templates')
@@ -98,7 +77,7 @@ Deno.serve(async (req) => {
           name,
           description,
           category,
-          created_by: profile.id
+          created_by: ctx.userId
         })
         .select()
         .single();
@@ -130,10 +109,10 @@ Deno.serve(async (req) => {
     }
 
     throw new Error('Method not allowed');
-  } catch (error) {
-    console.error('Error:', error);
+  } catch (error: any) {
+    console.error('[checklist-templates-crud] Error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
-      status: 400,
+      status: error.message.includes('authentication') ? 401 : 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
