@@ -18,7 +18,7 @@ Deno.serve(async (req: Request) => {
 
     if (req.method === 'POST') {
       // Assign members to job
-      const { jobId, userIds } = await req.json();
+      const { jobId, userIds, syncChecklists = true } = await req.json();
       
       if (!jobId || !userIds || !Array.isArray(userIds)) {
         return json({ error: 'Missing required fields: jobId, userIds' }, { status: 400, headers: corsHeaders });
@@ -58,12 +58,28 @@ Deno.serve(async (req: Request) => {
       }
 
       console.log(`[jobs-crud-assign] Created ${data?.length || 0} assignments for job ${jobId}`);
+      
+      // Optionally sync with checklist items
+      if (syncChecklists) {
+        const { error: syncError } = await supabase.rpc('sync_job_checklist_assignments', {
+          p_job_id: jobId,
+          p_user_ids: userIds,
+          p_assign: true
+        });
+        
+        if (syncError) {
+          console.warn('[jobs-crud-assign] Checklist sync warning:', syncError);
+        } else {
+          console.log('[jobs-crud-assign] Synced checklist assignments');
+        }
+      }
+      
       return json({ assignments: data }, { headers: corsHeaders });
     }
 
     if (req.method === 'DELETE') {
       // Unassign members from job
-      const { jobId, userIds } = await req.json();
+      const { jobId, userIds, syncChecklists = true } = await req.json();
       
       if (!jobId || !userIds || !Array.isArray(userIds)) {
         return json({ error: 'Missing required fields: jobId, userIds' }, { status: 400, headers: corsHeaders });
@@ -96,6 +112,22 @@ Deno.serve(async (req: Request) => {
       }
 
       console.log(`[jobs-crud-assign] Removed ${data?.length || 0} assignments for job ${jobId}`);
+      
+      // Optionally sync with checklist items
+      if (syncChecklists) {
+        const { error: syncError } = await supabase.rpc('sync_job_checklist_assignments', {
+          p_job_id: jobId,
+          p_user_ids: userIds,
+          p_assign: false
+        });
+        
+        if (syncError) {
+          console.warn('[jobs-crud-assign] Checklist unsync warning:', syncError);
+        } else {
+          console.log('[jobs-crud-assign] Unsynced checklist assignments');
+        }
+      }
+      
       return json({ removed: data?.length || 0 }, { headers: corsHeaders });
     }
 

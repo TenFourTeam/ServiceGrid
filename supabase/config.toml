@@ -23,6 +23,12 @@ verify_jwt = false
 [functions.my-completed-tasks]
 verify_jwt = false
 
+[functions.time-tracking-analytics]
+verify_jwt = false
+
+[functions.unified-assignments]
+verify_jwt = false
+
 [functions.checklist-activity]
 verify_jwt = false
 

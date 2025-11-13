@@ -42,6 +42,7 @@ import { ConversationsTab } from "@/components/Conversations/ConversationsTab";
 import { useUnreadMentions } from "@/hooks/useUnreadMentions";
 import { MyTasksView } from "@/components/Team/MyTasksView";
 import { TaskCompletionHistoryView } from "@/components/Team/TaskCompletionHistoryView";
+import { TimeTrackingTab } from "@/components/Team/TimeTrackingTab";
 import { useMyTasks } from "@/hooks/useMyTasks";
 import { useMyCompletedTasks } from "@/hooks/useMyCompletedTasks";
 import { useTaskNotifications } from "@/hooks/useTaskNotifications";
@@ -190,7 +191,7 @@ export default function Team() {
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange}>
-          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 gap-1">
+          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7 gap-1">
             <TabsTrigger value="members" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               <span className="hidden sm:inline">{t('team.tabs.members', 'Members')}</span>
@@ -202,6 +203,10 @@ export default function Team() {
             <TabsTrigger value="timeoff" className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               <span className="hidden sm:inline">{t('team.tabs.timeOff', 'Time Off')}</span>
+            </TabsTrigger>
+            <TabsTrigger value="timetracking" className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              <span className="hidden sm:inline">Time Tracking</span>
             </TabsTrigger>
             <TabsTrigger value="recurring" className="flex items-center gap-2">
               <Repeat className="h-4 w-4" />
@@ -460,6 +465,11 @@ export default function Team() {
           {/* Conversations Tab */}
           <TabsContent value="conversations">
             <ConversationsTab />
+          </TabsContent>
+
+          {/* Time Tracking Tab */}
+          <TabsContent value="timetracking">
+            <TimeTrackingTab />
           </TabsContent>
 
           {/* My Tasks Tab */}
