@@ -1,8 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { corsHeaders } from '../_shared/cors.ts';
-
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+import { corsHeaders, requireCtx } from '../_lib/auth.ts';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -10,28 +6,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const authHeader = req.headers.get('Authorization');
+    console.log('[checklist-item-complete] Processing request');
     
-    if (!authHeader) {
-      throw new Error('No authorization header');
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
-    if (authError || !user) {
-      throw new Error('Unauthorized');
-    }
-
-    // Get user's profile ID
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('clerk_user_id', user.id)
-      .single();
-    
-    if (!profile) throw new Error('Profile not found');
+    const ctx = await requireCtx(req);
+    const supabase = ctx.supaAdmin;
 
     const { itemId, isCompleted } = await req.json();
 
@@ -53,11 +31,17 @@ Deno.serve(async (req) => {
       
       if ((photoCount || 0) < item.required_photo_count) {
         // Log failed attempt
+        console.log('[checklist-item-complete] Photo validation failed:', {
+          itemId,
+          required: item.required_photo_count,
+          current: photoCount || 0
+        });
+        
         await supabase.from('sg_checklist_events').insert({
           checklist_id: item.checklist.id,
           item_id: itemId,
           event_type: 'photo_required_failed',
-          user_id: profile.id,
+          user_id: ctx.userId,
           metadata: { 
             required: item.required_photo_count,
             current: photoCount || 0
@@ -82,7 +66,7 @@ Deno.serve(async (req) => {
       .update({
         is_completed: isCompleted,
         completed_at: isCompleted ? new Date().toISOString() : null,
-        completed_by: isCompleted ? profile.id : null,
+        completed_by: isCompleted ? ctx.userId : null,
         updated_at: new Date().toISOString()
       })
       .eq('id', itemId)
@@ -92,11 +76,17 @@ Deno.serve(async (req) => {
     if (updateError) throw updateError;
 
     // Log event
+    console.log('[checklist-item-complete] Item updated:', {
+      itemId,
+      isCompleted,
+      requiredPhotos: item.required_photo_count
+    });
+    
     await supabase.from('sg_checklist_events').insert({
       checklist_id: item.checklist.id,
       item_id: itemId,
       event_type: isCompleted ? 'item_completed' : 'item_uncompleted',
-      user_id: profile.id,
+      user_id: ctx.userId,
       metadata: {}
     });
 
@@ -106,10 +96,10 @@ Deno.serve(async (req) => {
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
-  } catch (error) {
-    console.error('Error:', error);
+  } catch (error: any) {
+    console.error('[checklist-item-complete] Error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
-      status: 400,
+      status: error.message.includes('authentication') ? 401 : 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
