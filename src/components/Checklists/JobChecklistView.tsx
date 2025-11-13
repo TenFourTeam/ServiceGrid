@@ -131,26 +131,45 @@ export function JobChecklistView({ jobId }: JobChecklistViewProps) {
           </CardContent>
         </Card>
 
-        {/* Checklist Items by Category */}
-        <div className="space-y-6">
-          {Object.entries(itemsByCategory).map(([category, categoryItems]) => {
-            const typedItems = categoryItems as ChecklistItem[];
-            return (
-              <div key={category} className="space-y-2">
-                <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-                  {category}
-                </h3>
-                <div className="space-y-2">
-                  {typedItems
-                    .sort((a, b) => a.position - b.position)
-                    .map((item) => (
-                      <ChecklistItemComponent key={item.id} item={item} jobId={jobId} />
-                    ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        {/* Tabs for Items and Activity */}
+        <Tabs defaultValue="items" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 max-w-md">
+            <TabsTrigger value="items" className="flex items-center gap-2">
+              <ListChecks className="h-4 w-4" />
+              Items ({items.length})
+            </TabsTrigger>
+            <TabsTrigger value="activity" className="flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              Activity
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="items" className="mt-6">
+            <div className="space-y-6">
+              {Object.entries(itemsByCategory).map(([category, categoryItems]) => {
+                const typedItems = categoryItems as ChecklistItem[];
+                return (
+                  <div key={category} className="space-y-2">
+                    <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                      {category}
+                    </h3>
+                    <div className="space-y-2">
+                      {typedItems
+                        .sort((a, b) => a.position - b.position)
+                        .map((item) => (
+                          <ChecklistItemComponent key={item.id} item={item} jobId={jobId} />
+                        ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="activity" className="mt-6">
+            <ChecklistActivityFeed checklistId={checklist.id} />
+          </TabsContent>
+        </Tabs>
       </div>
 
       <TemplatePickerDialog
