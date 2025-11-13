@@ -41,7 +41,9 @@ import { List, Map as MapIcon, MessageSquare } from "lucide-react";
 import { ConversationsTab } from "@/components/Conversations/ConversationsTab";
 import { useUnreadMentions } from "@/hooks/useUnreadMentions";
 import { MyTasksView } from "@/components/Team/MyTasksView";
+import { TaskCompletionHistoryView } from "@/components/Team/TaskCompletionHistoryView";
 import { useMyTasks } from "@/hooks/useMyTasks";
+import { useMyCompletedTasks } from "@/hooks/useMyCompletedTasks";
 import { useTaskNotifications } from "@/hooks/useTaskNotifications";
 
 export default function Team() {
@@ -50,7 +52,11 @@ export default function Team() {
   const { data: members, isLoading, error } = useBusinessMembersData({ businessId, enabled: !!businessId });
   const { data: recurringTemplates, isLoading: isLoadingRecurring } = useRecurringJobTemplates();
   const { unreadCount } = useUnreadMentions();
-  const { data: myTasksData } = useMyTasks();
+  const myTasksData = useMyTasks();
+  const myTasksCount = myTasksData.data?.length || 0;
+  
+  const completedTasksData = useMyCompletedTasks(30);
+  const completedCount = completedTasksData.data?.stats.completedInRange || 0;
   
   // Enable task notifications
   useTaskNotifications();
@@ -217,9 +223,9 @@ export default function Team() {
             <TabsTrigger value="mytasks" className="flex items-center gap-2">
               <CheckSquare className="h-4 w-4" />
               <span className="hidden sm:inline">My Tasks</span>
-              {myTasksData && myTasksData.length > 0 && (
+              {myTasksCount > 0 && (
                 <Badge variant="destructive" className="h-4 min-w-4 flex items-center justify-center px-1 text-xs">
-                  {myTasksData.length}
+                  {myTasksCount}
                 </Badge>
               )}
             </TabsTrigger>

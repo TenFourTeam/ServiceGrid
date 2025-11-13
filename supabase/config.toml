@@ -20,6 +20,9 @@ verify_jwt = false
 [functions.my-checklist-tasks]
 verify_jwt = false
 
+[functions.my-completed-tasks]
+verify_jwt = false
+
 [functions.checklist-activity]
 verify_jwt = false
 
