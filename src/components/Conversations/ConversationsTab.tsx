@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { MessageSquare, Plus, Search } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ConversationThread } from './ConversationThread';
@@ -15,15 +17,22 @@ export function ConversationsTab() {
   const { unreadCount } = useUnreadMentions();
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [newConversationTitle, setNewConversationTitle] = useState('');
 
   const filteredConversations = conversations.filter(c =>
     c.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleNewConversation = () => {
-    const title = prompt('Enter conversation title:');
-    if (title) {
-      createConversation(title);
+    setIsCreateDialogOpen(true);
+  };
+
+  const handleCreateConversation = () => {
+    if (newConversationTitle.trim()) {
+      createConversation(newConversationTitle.trim());
+      setNewConversationTitle('');
+      setIsCreateDialogOpen(false);
     }
   };
 
@@ -37,7 +46,8 @@ export function ConversationsTab() {
   }
 
   return (
-    <Card>
+    <>
+      <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
@@ -110,5 +120,51 @@ export function ConversationsTab() {
         )}
       </CardContent>
     </Card>
+
+    <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Create New Conversation</DialogTitle>
+          <DialogDescription>
+            Start a new team conversation. Give it a descriptive title.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="title">Conversation Title</Label>
+            <Input
+              id="title"
+              placeholder="e.g., Project Updates, Team Coordination..."
+              value={newConversationTitle}
+              onChange={(e) => setNewConversationTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && newConversationTitle.trim()) {
+                  handleCreateConversation();
+                }
+              }}
+              autoFocus
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setIsCreateDialogOpen(false);
+              setNewConversationTitle('');
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleCreateConversation}
+            disabled={!newConversationTitle.trim()}
+          >
+            Create Conversation
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
