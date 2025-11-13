@@ -1,8 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { corsHeaders } from '../_shared/cors.ts';
-
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+import { corsHeaders, requireCtx } from '../_lib/auth.ts';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -10,19 +6,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const authHeader = req.headers.get('Authorization');
+    console.log(`[checklists-crud] ${req.method} request received`);
     
-    if (!authHeader) {
-      throw new Error('No authorization header');
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
-    if (authError || !user) {
-      throw new Error('Unauthorized');
-    }
+    const ctx = await requireCtx(req);
+    const supabase = ctx.supaAdmin;
 
     const url = new URL(req.url);
     const method = req.method;
@@ -98,15 +85,6 @@ Deno.serve(async (req) => {
     if (method === 'POST') {
       const { jobId, businessId, templateId, title, assignedTo } = await req.json();
       
-      // Get user's profile ID
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('clerk_user_id', user.id)
-        .single();
-      
-      if (!profile) throw new Error('Profile not found');
-      
       // Create checklist
       const { data: checklist, error: checklistError } = await supabase
         .from('sg_checklists')
@@ -116,7 +94,7 @@ Deno.serve(async (req) => {
           template_id: templateId,
           title: title || 'Job Checklist',
           assigned_to: assignedTo,
-          created_by: profile.id
+          created_by: ctx.userId,
         })
         .select()
         .single();
@@ -156,10 +134,11 @@ Deno.serve(async (req) => {
       await supabase.from('sg_checklist_events').insert({
         checklist_id: checklist.id,
         event_type: 'created',
-        user_id: profile.id,
+        user_id: ctx.userId,
         metadata: { template_id: templateId }
       });
       
+      console.log('[checklists-crud] Created checklist:', checklist.id);
       return new Response(JSON.stringify({ checklist }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -178,6 +157,7 @@ Deno.serve(async (req) => {
       
       if (error) throw error;
       
+      console.log('[checklists-crud] Updated checklist:', data.id);
       return new Response(JSON.stringify({ checklist: data }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -192,16 +172,20 @@ Deno.serve(async (req) => {
       
       if (error) throw error;
       
+      console.log('[checklists-crud] Deleted checklist:', checklistId);
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    throw new Error('Method not allowed');
-  } catch (error) {
-    console.error('Error:', error);
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (error: any) {
+    console.error('[checklists-crud] Error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
-      status: 400,
+      status: error.message.includes('authentication') ? 401 : 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
