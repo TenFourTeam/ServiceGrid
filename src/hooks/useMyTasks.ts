@@ -1,5 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthApi } from '@/hooks/useAuthApi';
+import { supabase } from '@/integrations/supabase/client';
+import { useEffect } from 'react';
 
 interface MyTask {
   itemId: string;
@@ -20,8 +22,9 @@ interface MyTask {
  */
 export function useMyTasks() {
   const authApi = useAuthApi();
+  const queryClient = useQueryClient();
   
-  return useQuery<MyTask[]>({
+  const query = useQuery<MyTask[]>({
     queryKey: ['my-checklist-tasks'],
     queryFn: async () => {
       const { data, error } = await authApi.invoke('my-checklist-tasks', {
@@ -32,4 +35,29 @@ export function useMyTasks() {
       return data.tasks || [];
     },
   });
+
+  // Real-time subscription for task updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('my-tasks-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to all changes (INSERT, UPDATE, DELETE)
+          schema: 'public',
+          table: 'sg_checklist_items',
+        },
+        () => {
+          console.log('[useMyTasks] Checklist item changed, invalidating query');
+          queryClient.invalidateQueries({ queryKey: ['my-checklist-tasks'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
+  return query;
 }
