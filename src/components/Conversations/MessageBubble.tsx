@@ -46,7 +46,23 @@ export function MessageBubble({ message }: MessageBubbleProps) {
               : 'bg-muted'
           }`}
         >
-          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+          <p className="text-sm whitespace-pre-wrap">
+            {/* Render message with mentions highlighted */}
+            {message.content.split(/(@\[[^\]]+\]\([^)]+\))/g).map((part, i) => {
+              // Check if this part is a mention
+              const mentionMatch = part.match(/@\[([^\]]+)\]\(([^)]+)\)/);
+              if (mentionMatch) {
+                const [, displayName] = mentionMatch;
+                return (
+                  <Badge key={i} variant="secondary" className="text-xs mx-1 inline-flex">
+                    @{displayName}
+                  </Badge>
+                );
+              }
+              // Regular text
+              return part ? <span key={i}>{part}</span> : null;
+            })}
+          </p>
         </div>
         {message.attachments && message.attachments.length > 0 && (
           <div className="mt-2">

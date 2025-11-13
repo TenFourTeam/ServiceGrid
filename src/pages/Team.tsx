@@ -38,12 +38,14 @@ import { useRecurringJobTemplates } from "@/hooks/useRecurringJobs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { List, Map as MapIcon, MessageSquare } from "lucide-react";
 import { ConversationsTab } from "@/components/Conversations/ConversationsTab";
+import { useUnreadMentions } from "@/hooks/useUnreadMentions";
 
 export default function Team() {
   const { t } = useLanguage();
   const { role, businessId } = useBusinessContext();
   const { data: members, isLoading, error } = useBusinessMembersData({ businessId, enabled: !!businessId });
   const { data: recurringTemplates, isLoading: isLoadingRecurring } = useRecurringJobTemplates();
+  const { unreadCount } = useUnreadMentions();
   
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -198,6 +200,11 @@ export default function Team() {
             <TabsTrigger value="conversations" className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
               <span className="hidden sm:inline">Chat</span>
+              {unreadCount > 0 && (
+                <Badge variant="destructive" className="h-4 min-w-4 flex items-center justify-center px-1 text-xs">
+                  {unreadCount}
+                </Badge>
+              )}
             </TabsTrigger>
           </TabsList>
 

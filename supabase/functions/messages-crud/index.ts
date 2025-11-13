@@ -34,6 +34,42 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const conversationId = url.searchParams.get('conversationId');
     const messageId = url.searchParams.get('messageId');
+    const action = url.searchParams.get('action');
+
+    // GET: Fetch unread mentions for current user
+    if (req.method === 'GET' && action === 'unreadMentions') {
+      const { data, error } = await supabase
+        .from('sg_messages')
+        .select(`
+          id,
+          conversation_id,
+          content,
+          created_at,
+          sender:sender_id (
+            full_name
+          )
+        `)
+        .contains('mentions', [ctx.userId])
+        .eq('business_id', ctx.businessId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) {
+        console.error('[messages-crud] Error fetching unread mentions:', error);
+        return ok({ error: error.message }, 500);
+      }
+
+      const mentions = (data || []).map(msg => ({
+        id: msg.id,
+        conversation_id: msg.conversation_id,
+        content: msg.content,
+        sender_name: (msg.sender as any)?.full_name || 'Unknown',
+        created_at: msg.created_at,
+      }));
+
+      console.log('[messages-crud] Fetched', mentions.length, 'unread mentions');
+      return ok({ mentions });
+    }
 
     // GET: Fetch messages for conversation
     if (req.method === 'GET' && conversationId) {

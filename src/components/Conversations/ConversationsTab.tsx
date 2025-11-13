@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useConversations } from '@/hooks/useConversations';
+import { useUnreadMentions } from '@/hooks/useUnreadMentions';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +12,7 @@ import { ConversationThread } from './ConversationThread';
 
 export function ConversationsTab() {
   const { conversations, isLoading, createConversation } = useConversations();
+  const { unreadCount } = useUnreadMentions();
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -41,6 +43,11 @@ export function ConversationsTab() {
           <CardTitle className="flex items-center gap-2">
             <MessageSquare className="h-5 w-5" />
             Conversations
+            {unreadCount > 0 && (
+              <Badge variant="destructive" className="h-5 min-w-5 flex items-center justify-center px-1">
+                {unreadCount}
+              </Badge>
+            )}
           </CardTitle>
           <Button onClick={handleNewConversation} size="sm">
             <Plus className="h-4 w-4 mr-2" />
