@@ -41,6 +41,8 @@ import { List, Map as MapIcon, MessageSquare } from "lucide-react";
 import { ConversationsTab } from "@/components/Conversations/ConversationsTab";
 import { useUnreadMentions } from "@/hooks/useUnreadMentions";
 import { MyTasksView } from "@/components/Team/MyTasksView";
+import { useMyTasks } from "@/hooks/useMyTasks";
+import { useTaskNotifications } from "@/hooks/useTaskNotifications";
 
 export default function Team() {
   const { t } = useLanguage();
@@ -48,6 +50,10 @@ export default function Team() {
   const { data: members, isLoading, error } = useBusinessMembersData({ businessId, enabled: !!businessId });
   const { data: recurringTemplates, isLoading: isLoadingRecurring } = useRecurringJobTemplates();
   const { unreadCount } = useUnreadMentions();
+  const { data: myTasksData } = useMyTasks();
+  
+  // Enable task notifications
+  useTaskNotifications();
   
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -211,6 +217,11 @@ export default function Team() {
             <TabsTrigger value="mytasks" className="flex items-center gap-2">
               <CheckSquare className="h-4 w-4" />
               <span className="hidden sm:inline">My Tasks</span>
+              {myTasksData && myTasksData.length > 0 && (
+                <Badge variant="destructive" className="h-4 min-w-4 flex items-center justify-center px-1 text-xs">
+                  {myTasksData.length}
+                </Badge>
+              )}
             </TabsTrigger>
           </TabsList>
 
