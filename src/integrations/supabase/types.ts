@@ -2762,6 +2762,7 @@ export type Database = {
           last_message_at: string
           latest_message: string
           latest_sender_name: string
+          metadata: Json
           title: string
           unread_count: number
           updated_at: string
