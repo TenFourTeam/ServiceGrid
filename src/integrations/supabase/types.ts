@@ -1624,6 +1624,310 @@ export type Database = {
         }
         Relationships: []
       }
+      sg_checklist_events: {
+        Row: {
+          checklist_id: string
+          created_at: string
+          event_type: string
+          id: string
+          item_id: string | null
+          metadata: Json | null
+          user_id: string
+        }
+        Insert: {
+          checklist_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          item_id?: string | null
+          metadata?: Json | null
+          user_id: string
+        }
+        Update: {
+          checklist_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          item_id?: string | null
+          metadata?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sg_checklist_events_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "sg_checklists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_checklist_events_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "sg_checklist_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_checklist_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sg_checklist_items: {
+        Row: {
+          assigned_to: string | null
+          category: string | null
+          checklist_id: string
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          description: string | null
+          estimated_duration_minutes: number | null
+          id: string
+          is_completed: boolean | null
+          position: number
+          required_photo_count: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          category?: string | null
+          checklist_id: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          description?: string | null
+          estimated_duration_minutes?: number | null
+          id?: string
+          is_completed?: boolean | null
+          position: number
+          required_photo_count?: number | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          category?: string | null
+          checklist_id?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          description?: string | null
+          estimated_duration_minutes?: number | null
+          id?: string
+          is_completed?: boolean | null
+          position?: number
+          required_photo_count?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sg_checklist_items_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_checklist_items_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "sg_checklists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_checklist_items_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sg_checklist_template_items: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          estimated_duration_minutes: number | null
+          id: string
+          position: number
+          required_photo_count: number | null
+          template_id: string
+          title: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          estimated_duration_minutes?: number | null
+          id?: string
+          position: number
+          required_photo_count?: number | null
+          template_id: string
+          title: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          estimated_duration_minutes?: number | null
+          id?: string
+          position?: number
+          required_photo_count?: number | null
+          template_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sg_checklist_template_items_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "sg_checklist_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sg_checklist_templates: {
+        Row: {
+          business_id: string
+          category: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          is_archived: boolean | null
+          is_system_template: boolean | null
+          name: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          business_id: string
+          category?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          is_archived?: boolean | null
+          is_system_template?: boolean | null
+          name: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          business_id?: string
+          category?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_archived?: boolean | null
+          is_system_template?: boolean | null
+          name?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sg_checklist_templates_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_checklist_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sg_checklists: {
+        Row: {
+          assigned_to: string | null
+          business_id: string
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          id: string
+          job_id: string
+          started_at: string | null
+          template_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          business_id: string
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          job_id: string
+          started_at?: string | null
+          template_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          business_id?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          job_id?: string
+          started_at?: string | null
+          template_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sg_checklists_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_checklists_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_checklists_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_checklists_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: true
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_checklists_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "sg_checklist_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sg_conversations: {
         Row: {
           business_id: string
@@ -1678,6 +1982,7 @@ export type Database = {
       sg_media: {
         Row: {
           business_id: string
+          checklist_item_id: string | null
           content_hash: string | null
           conversation_id: string | null
           created_at: string
@@ -1698,6 +2003,7 @@ export type Database = {
         }
         Insert: {
           business_id: string
+          checklist_item_id?: string | null
           content_hash?: string | null
           conversation_id?: string | null
           created_at?: string
@@ -1718,6 +2024,7 @@ export type Database = {
         }
         Update: {
           business_id?: string
+          checklist_item_id?: string | null
           content_hash?: string | null
           conversation_id?: string | null
           created_at?: string
@@ -1742,6 +2049,13 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_media_checklist_item_id_fkey"
+            columns: ["checklist_item_id"]
+            isOneToOne: false
+            referencedRelation: "sg_checklist_items"
             referencedColumns: ["id"]
           },
           {
