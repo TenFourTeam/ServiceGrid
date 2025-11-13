@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, CheckSquare, MapPin, Camera, Bell, Check, Upload } from 'lucide-react';
+import { Calendar, CheckSquare, MapPin, Camera, Bell, Check, Upload, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +15,9 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 
 export function MyTasksView() {
-  const { data: tasks, isLoading } = useMyTasks();
+  const { data, isLoading } = useMyTasks();
+  const tasks = data?.tasks || [];
+  const currentTimesheet = data?.currentTimesheet;
   const navigate = useNavigate();
   const completeItem = useCompleteChecklistItem();
   const { uploadMedia } = useMediaUpload();
@@ -183,6 +185,25 @@ export function MyTasksView() {
 
   return (
     <div className="space-y-4">
+      {/* Clock-In Status Alert */}
+      {currentTimesheet && (
+        <Alert className="border-primary/20 bg-primary/5">
+          <Clock className="h-4 w-4" />
+          <AlertTitle>Currently Clocked In</AlertTitle>
+          <AlertDescription>
+            {currentTimesheet.jobId ? (
+              <span>
+                Working on job since {format(new Date(currentTimesheet.clockInTime), 'h:mm a')}
+                {' • '}
+                {Math.floor((Date.now() - new Date(currentTimesheet.clockInTime).getTime()) / 60000)} min elapsed
+              </span>
+            ) : (
+              <span>Clocked in since {format(new Date(currentTimesheet.clockInTime), 'h:mm a')}</span>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Header */}
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
