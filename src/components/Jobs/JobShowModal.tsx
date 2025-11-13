@@ -806,6 +806,8 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
               </div>
             </div>
           </div>
+            </TabsContent>
+          </Tabs>
           
           {/* Team Assignment Section */}
           <JobMemberAssignments job={job} />
