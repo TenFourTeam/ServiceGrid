@@ -7,6 +7,16 @@ verify_jwt = false
 [functions.conversation-media-fetch]
 verify_jwt = false
 
+# Checklist system functions
+[functions.checklists-crud]
+verify_jwt = false
+
+[functions.checklist-item-complete]
+verify_jwt = false
+
+[functions.checklist-templates-crud]
+verify_jwt = false
+
 # Location-based queries
 [functions.jobs-location-query]
 verify_jwt = false

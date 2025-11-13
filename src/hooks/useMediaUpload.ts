@@ -6,6 +6,7 @@ import CryptoJS from 'crypto-js';
 interface UploadOptions {
   jobId: string;
   businessId: string;
+  checklistItemId?: string;
   onProgress?: (progress: number) => void;
 }
 
@@ -82,6 +83,10 @@ export function useMediaUpload() {
       formData.append('jobId', options.jobId);
       formData.append('businessId', options.businessId);
       formData.append('contentHash', contentHash);
+      
+      if (options.checklistItemId) {
+        formData.append('checklistItemId', options.checklistItemId);
+      }
       
       if (exifData) {
         formData.append('exif', JSON.stringify(exifData));

@@ -25,6 +25,8 @@ import { useJobMedia, createOptimisticMediaItem, MediaItem } from '@/hooks/useJo
 import { Badge } from "@/components/ui/badge";
 import { MediaGallery } from './MediaGallery';
 import { MediaViewer } from './MediaViewer';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { JobChecklistView } from '@/components/Checklists';
 
 interface JobShowModalProps {
   open: boolean;
@@ -670,9 +672,18 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
             </div>
             </div>
           </div>
-          <div>
-            <div className="text-sm text-muted-foreground mb-1">{t('workOrders.modal.notes')}</div>
-            <Textarea
+          
+          <Tabs defaultValue="overview" className="w-full">
+            <TabsList>
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="checklist">Checklist</TabsTrigger>
+              <TabsTrigger value="media">Media</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="overview" className="space-y-4">
+              <div>
+                <div className="text-sm text-muted-foreground mb-1">{t('workOrders.modal.notes')}</div>
+                <Textarea
               value={localNotes}
               onChange={(e)=>{
                 const val = e.target.value;
@@ -710,10 +721,16 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                 }, 600) as unknown as number;
               }}
             />
-          </div>
-
-          <div>
-            <div className="text-sm text-muted-foreground mb-1">{t('workOrders.modal.photos')}</div>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="checklist">
+              <JobChecklistView jobId={job.id} />
+            </TabsContent>
+            
+            <TabsContent value="media" className="space-y-4">
+              <div>
+                <div className="text-sm text-muted-foreground mb-1">{t('workOrders.modal.photos')}</div>
             
             {/* Display legacy job.photos */}
             {Array.isArray((job as any).photos) && (job as any).photos.length > 0 && (

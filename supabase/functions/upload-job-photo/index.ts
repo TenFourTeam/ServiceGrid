@@ -23,6 +23,7 @@ serve(async (req) => {
     const jobId = form.get("jobId") as string;
     const businessId = form.get("businessId") as string;
     const contentHash = form.get("contentHash") as string | null;
+    const checklistItemId = form.get("checklistItemId") as string | null;
     const exifData = form.get("exif") ? JSON.parse(form.get("exif") as string) : null;
     const gpsData = form.get("gps") ? JSON.parse(form.get("gps") as string) : null;
 
@@ -130,7 +131,8 @@ serve(async (req) => {
           upload_status: 'completed',
           metadata: {
             exif: exifData,
-            gps: gpsData
+            gps: gpsData,
+            checklist_item_id: checklistItemId
           }
         })
         .select('id')
