@@ -282,3 +282,10 @@ verify_jwt = false
 # Route planning with turn-by-turn directions
 [functions.calculate-route-directions]
 verify_jwt = false
+
+# Team conversations and messaging
+[functions.conversations-crud]
+verify_jwt = false
+
+[functions.messages-crud]
+verify_jwt = false

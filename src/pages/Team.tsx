@@ -36,7 +36,8 @@ import { InventoryManagement } from "@/components/Team/InventoryManagement";
 import { InventoryItemModal } from "@/components/Team/InventoryItemModal";
 import { useRecurringJobTemplates } from "@/hooks/useRecurringJobs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { List, Map as MapIcon } from "lucide-react";
+import { List, Map as MapIcon, MessageSquare } from "lucide-react";
+import { ConversationsTab } from "@/components/Conversations/ConversationsTab";
 
 export default function Team() {
   const { t } = useLanguage();
@@ -173,7 +174,7 @@ export default function Team() {
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange}>
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 gap-1">
+          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 gap-1">
             <TabsTrigger value="members" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               <span className="hidden sm:inline">{t('team.tabs.members', 'Members')}</span>
@@ -193,6 +194,10 @@ export default function Team() {
             <TabsTrigger value="inventory" className="flex items-center gap-2">
               <Package className="h-4 w-4" />
               <span className="hidden sm:inline">{t('team.tabs.inventory', 'Inventory')}</span>
+            </TabsTrigger>
+            <TabsTrigger value="conversations" className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" />
+              <span className="hidden sm:inline">Chat</span>
             </TabsTrigger>
           </TabsList>
 
@@ -420,6 +425,11 @@ export default function Team() {
                 <InventoryManagement />
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Conversations Tab */}
+          <TabsContent value="conversations">
+            <ConversationsTab />
           </TabsContent>
         </Tabs>
 
