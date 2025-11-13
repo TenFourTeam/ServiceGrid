@@ -8,6 +8,7 @@ export interface TimesheetEntry {
   id: string;
   user_id: string;
   business_id: string;
+  job_id: string | null;
   clock_in_time: string;
   clock_out_time: string | null;
   notes: string | null;
@@ -49,12 +50,12 @@ export function useTimesheet(targetBusinessId?: string) {
 
   // Clock in mutation
   const clockInMutation = useMutation({
-    mutationFn: async ({ notes }: { notes?: string }) => {
+    mutationFn: async ({ notes, jobId }: { notes?: string; jobId?: string }) => {
       if (!businessId) throw new Error('No business selected');
 
       const { data, error } = await authApi.invoke('timesheet-crud', {
         method: 'POST',
-        body: { notes },
+        body: { notes, jobId },
         headers: {
           'x-business-id': businessId
         }

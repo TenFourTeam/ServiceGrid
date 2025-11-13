@@ -12,6 +12,34 @@ Deno.serve(async (req) => {
     const supabase = ctx.supaAdmin;
 
     const { itemId, isCompleted } = await req.json();
+    
+    // Get current timesheet entry if user is clocked in
+    let currentTimesheetEntry = null;
+    let timeSpent = null;
+    
+    if (isCompleted) {
+      const { data: timesheetData } = await supabase
+        .from('timesheet_entries')
+        .select('id, clock_in_time, job_id')
+        .eq('user_id', ctx.userId)
+        .is('clock_out_time', null)
+        .single();
+      
+      currentTimesheetEntry = timesheetData;
+      
+      // Calculate time spent from assignment to completion
+      const { data: itemData } = await supabase
+        .from('sg_checklist_items')
+        .select('created_at')
+        .eq('id', itemId)
+        .single();
+      
+      if (itemData) {
+        const startTime = new Date(itemData.created_at);
+        const endTime = new Date();
+        timeSpent = Math.round((endTime.getTime() - startTime.getTime()) / 60000); // minutes
+      }
+    }
 
     // Fetch item details
     const { data: item, error: itemError } = await supabase
@@ -67,6 +95,8 @@ Deno.serve(async (req) => {
         is_completed: isCompleted,
         completed_at: isCompleted ? new Date().toISOString() : null,
         completed_by: isCompleted ? ctx.userId : null,
+        time_spent_minutes: isCompleted ? timeSpent : null,
+        timesheet_entry_id: isCompleted && currentTimesheetEntry ? currentTimesheetEntry.id : null,
         updated_at: new Date().toISOString()
       })
       .eq('id', itemId)

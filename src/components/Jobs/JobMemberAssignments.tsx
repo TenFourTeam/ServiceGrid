@@ -4,6 +4,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { useJobAssignments } from "@/hooks/useJobAssignments";
 import { useBusinessMembersData } from "@/hooks/useBusinessMembers";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
@@ -20,6 +22,7 @@ export function JobMemberAssignments({ job }: JobMemberAssignmentsProps) {
   const { data: allMembers, isLoading: membersLoading } = useBusinessMembersData();
   const { assignMembers, unassignMembers } = useJobAssignments();
   const [showAssignment, setShowAssignment] = useState(false);
+  const [syncChecklists, setSyncChecklists] = useState(true);
 
   // Only show this component to owners
   if (!canManage) {
@@ -49,14 +52,16 @@ export function JobMemberAssignments({ job }: JobMemberAssignmentsProps) {
   const handleAssign = (member: BusinessMember) => {
     assignMembers.mutate({
       jobId: job.id,
-      userIds: [member.user_id]
+      userIds: [member.user_id],
+      syncChecklists
     });
   };
 
   const handleUnassign = (member: BusinessMember) => {
     unassignMembers.mutate({
       jobId: job.id,
-      userIds: [member.user_id]
+      userIds: [member.user_id],
+      syncChecklists
     });
   };
 
@@ -110,7 +115,17 @@ export function JobMemberAssignments({ job }: JobMemberAssignmentsProps) {
 
       {/* Assignment Interface */}
       {showAssignment && unassignedMembers.length > 0 && (
-        <div className="space-y-2 pt-2 border-t">
+        <div className="space-y-3 pt-2 border-t">
+          <div className="flex items-center space-x-2">
+            <Checkbox 
+              id="sync-checklists" 
+              checked={syncChecklists}
+              onCheckedChange={(checked) => setSyncChecklists(checked as boolean)}
+            />
+            <Label htmlFor="sync-checklists" className="text-sm font-normal cursor-pointer">
+              Also assign to all checklist items
+            </Label>
+          </div>
           <div className="text-sm text-muted-foreground">Available members:</div>
           <div className="space-y-2">
             {unassignedMembers.map((member) => (

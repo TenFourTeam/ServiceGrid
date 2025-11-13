@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
 
     if (req.method === 'POST') {
       const body = await req.json();
-      const { notes } = body;
+      const { notes, jobId } = body;
 
       const { data, error } = await supabase
         .from('timesheet_entries')
@@ -115,6 +115,7 @@ Deno.serve(async (req) => {
           business_id: ctx.businessId,
           user_id: ctx.userId,
           notes: notes || null,
+          job_id: jobId || null,
         }])
         .select()
         .single();

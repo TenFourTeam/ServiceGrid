@@ -10,6 +10,15 @@ Deno.serve(async (req) => {
     
     const ctx = await requireCtx(req);
     const supabase = ctx.supaAdmin;
+    
+    // Get current timesheet status
+    const { data: currentTimesheet } = await supabase
+      .from('timesheet_entries')
+      .select('id, job_id, clock_in_time')
+      .eq('user_id', ctx.userId)
+      .eq('business_id', ctx.businessId)
+      .is('clock_out_time', null)
+      .single();
 
     // Fetch all incomplete items assigned to current user
     const { data: items, error } = await supabase
@@ -61,7 +70,14 @@ Deno.serve(async (req) => {
       })
     );
 
-    return new Response(JSON.stringify({ tasks: itemsWithMedia }), {
+    return new Response(JSON.stringify({ 
+      tasks: itemsWithMedia,
+      currentTimesheet: currentTimesheet ? {
+        id: currentTimesheet.id,
+        jobId: currentTimesheet.job_id,
+        clockInTime: currentTimesheet.clock_in_time,
+      } : null
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error: any) {

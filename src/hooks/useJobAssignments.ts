@@ -7,6 +7,7 @@ import type { JobsCacheData, BusinessMember } from "@/types";
 export interface JobAssignmentRequest {
   jobId: string;
   userIds: string[];
+  syncChecklists?: boolean;
 }
 
 /**
@@ -18,10 +19,10 @@ export function useJobAssignments() {
   const authApi = useAuthApi();
 
   const assignMembers = useMutation({
-    mutationFn: async ({ jobId, userIds }: JobAssignmentRequest) => {
+    mutationFn: async ({ jobId, userIds, syncChecklists = true }: JobAssignmentRequest) => {
       const { data, error } = await authApi.invoke('jobs-crud-assign', {
         method: "POST",
-        body: { jobId, userIds },
+        body: { jobId, userIds, syncChecklists },
         toast: {
           success: "Team members assigned successfully",
           loading: "Assigning team members...",
@@ -74,10 +75,10 @@ export function useJobAssignments() {
   });
 
   const unassignMembers = useMutation({
-    mutationFn: async ({ jobId, userIds }: JobAssignmentRequest) => {
+    mutationFn: async ({ jobId, userIds, syncChecklists = true }: JobAssignmentRequest) => {
       const { data, error } = await authApi.invoke('jobs-crud-assign', {
         method: "DELETE",
-        body: { jobId, userIds },
+        body: { jobId, userIds, syncChecklists },
         toast: {
           success: "Team members unassigned successfully",
           loading: "Unassigning team members...",
