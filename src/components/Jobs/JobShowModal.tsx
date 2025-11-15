@@ -27,7 +27,7 @@ import { MediaGallery } from './MediaGallery';
 import { MediaViewer } from './MediaViewer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { JobChecklistView } from '@/components/Checklists';
-import { PagesContainer } from '@/components/Pages/PagesContainer';
+import { NotesContainer } from '@/components/Notes/NotesContainer';
 
 interface JobShowModalProps {
   open: boolean;
@@ -44,8 +44,6 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
   const queryClient = useQueryClient();
   const { businessId, userId, role } = useBusinessContext();
   const navigate = useNavigate();
-  const [localNotes, setLocalNotes] = useState(job.notes ?? "");
-  const notesTimer = useRef<number | null>(null);
   const authApi = useAuthApi();
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
@@ -108,10 +106,6 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
   
   // Use cached job if available (includes optimistic updates), otherwise use prop
   const displayJob = cachedJob || job;
-  
-  useEffect(() => {
-    setLocalNotes(displayJob.notes ?? "");
-  }, [displayJob.id, displayJob.notes]);
 
   // Clear optimistic state when modal closes
   useEffect(() => {
@@ -674,57 +668,12 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
             </div>
           </div>
           
-          <Tabs defaultValue="overview" className="w-full">
+          <Tabs defaultValue="checklist" className="w-full">
             <TabsList>
-              <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="checklist">Checklist</TabsTrigger>
               <TabsTrigger value="media">Media</TabsTrigger>
-              <TabsTrigger value="pages">Pages</TabsTrigger>
+              <TabsTrigger value="notes">Notes</TabsTrigger>
             </TabsList>
-            
-            <TabsContent value="overview" className="space-y-4">
-              <div>
-                <div className="text-sm text-muted-foreground mb-1">{t('workOrders.modal.notes')}</div>
-                <Textarea
-              value={localNotes}
-              onChange={(e)=>{
-                const val = e.target.value;
-                setLocalNotes(val);
-                
-                // Optimistic update - immediately update notes in cache
-                const queryKey = queryKeys.data.jobs(businessId || '', userId || '');
-                queryClient.setQueryData(queryKey, (old: JobsCacheData | undefined) => {
-                  if (!old) return old;
-                  return {
-                    ...old,
-                    jobs: old.jobs.map((j: Job) => 
-                      j.id === job.id 
-                        ? { ...j, notes: val }
-                        : j
-                    )
-                  };
-                });
-                
-                if (notesTimer.current) window.clearTimeout(notesTimer.current);
-                notesTimer.current = window.setTimeout(async ()=>{
-                    try {
-                      const { error } = await authApi.invoke('jobs-crud', {
-                        method: 'PUT',
-                        body: { 
-                          id: job.id,
-                          notes: val 
-                        }
-                      });
-                      
-                      if (!error && businessId) {
-                        invalidationHelpers.jobs(queryClient, businessId);
-                      }
-                    } catch {}
-                }, 600) as unknown as number;
-              }}
-            />
-              </div>
-            </TabsContent>
             
             <TabsContent value="checklist">
               <JobChecklistView jobId={job.id} />
@@ -810,8 +759,8 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
           </div>
             </TabsContent>
             
-            <TabsContent value="pages" className="h-[500px]">
-              <PagesContainer jobId={job.id} />
+            <TabsContent value="notes" className="h-[500px]">
+              <NotesContainer jobId={job.id} />
             </TabsContent>
           </Tabs>
           
