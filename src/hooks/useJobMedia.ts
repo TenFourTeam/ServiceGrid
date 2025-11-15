@@ -10,6 +10,7 @@ export interface MediaItem {
   public_url: string;
   thumbnail_url?: string;
   hls_manifest_url?: string;
+  checklist_item_id?: string | null;
   metadata?: {
     exif?: any;
     gps?: { latitude: number; longitude: number };

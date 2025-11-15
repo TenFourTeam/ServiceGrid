@@ -128,11 +128,11 @@ serve(async (req) => {
           storage_path: key,
           public_url: url,
           thumbnail_url: isSvg ? url : undefined,
+          checklist_item_id: checklistItemId,
           upload_status: 'completed',
           metadata: {
             exif: exifData,
-            gps: gpsData,
-            checklist_item_id: checklistItemId
+            gps: gpsData
           }
         })
         .select('id')
