@@ -59,7 +59,10 @@ export function TemplatePickerDialog({
           {/* Blank Option */}
           <Card
             className="cursor-pointer hover:border-primary transition-colors"
-            onClick={() => onSelectTemplate(null)}
+            onClick={() => {
+              console.log('🔘 Blank checklist clicked');
+              onSelectTemplate(null);
+            }}
           >
             <CardHeader>
               <div className="flex items-center gap-3">
@@ -91,7 +94,10 @@ export function TemplatePickerDialog({
                   <Card
                     key={template.id}
                     className="cursor-pointer hover:border-primary transition-colors"
-                    onClick={() => onSelectTemplate(template.id)}
+                    onClick={() => {
+                      console.log('🔘 Template clicked:', template.id, template.name);
+                      onSelectTemplate(template.id);
+                    }}
                   >
                     <CardHeader>
                       <div className="flex items-start justify-between">

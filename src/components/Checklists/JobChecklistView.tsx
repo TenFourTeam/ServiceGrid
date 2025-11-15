@@ -29,15 +29,40 @@ export function JobChecklistView({ jobId }: JobChecklistViewProps) {
   const createChecklist = useCreateChecklist();
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const { assignChecklist } = useChecklistAssignment();
-  const { businessId } = useBusinessContext();
+  const { businessId, isLoadingBusiness } = useBusinessContext();
   const { data: members } = useBusinessMembersData({ businessId });
 
-  if (isLoading) {
+  // Debug logging
+  console.log('🔘 JobChecklistView render:', { 
+    jobId, 
+    businessId, 
+    isLoadingBusiness,
+    hasChecklist: !!data?.checklist,
+    mutationObject: {
+      mutate: typeof createChecklist.mutate,
+      isPending: createChecklist.isPending,
+    }
+  });
+
+  if (isLoading || isLoadingBusiness) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-20 w-full" />
         <Skeleton className="h-40 w-full" />
       </div>
+    );
+  }
+
+  // Guard for missing businessId
+  if (!businessId) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-12">
+          <p className="text-sm text-destructive">
+            Business context not available. Please refresh the page.
+          </p>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -53,7 +78,12 @@ export function JobChecklistView({ jobId }: JobChecklistViewProps) {
           <p className="text-sm text-muted-foreground mb-4 text-center max-w-sm">
             Create a checklist to track job completion tasks and requirements.
           </p>
-          <Button onClick={() => setShowTemplatePicker(true)}>
+          <Button onClick={() => {
+            console.log('🔘 Create Checklist button clicked');
+            console.log('🔘 Current businessId:', businessId);
+            console.log('🔘 Current jobId:', jobId);
+            setShowTemplatePicker(true);
+          }}>
             <Plus className="h-4 w-4 mr-2" />
             Create Checklist
           </Button>
@@ -174,8 +204,18 @@ export function JobChecklistView({ jobId }: JobChecklistViewProps) {
 
       <TemplatePickerDialog
         open={showTemplatePicker}
-        onOpenChange={setShowTemplatePicker}
+        onOpenChange={(open) => {
+          console.log('🔘 Dialog state changing to:', open);
+          setShowTemplatePicker(open);
+        }}
         onSelectTemplate={(templateId) => {
+          console.log('🔘 Template selected:', templateId);
+          console.log('🔘 About to call createChecklist.mutate with:', {
+            jobId,
+            templateId: templateId || undefined,
+            businessId,
+          });
+          
           createChecklist.mutate({
             jobId,
             templateId: templateId || undefined,
