@@ -1,9 +1,11 @@
+import { useState, useMemo } from 'react';
 import { MediaItem } from '@/hooks/useJobMedia';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Video, MapPin, Camera } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface MediaGalleryProps {
   media: MediaItem[];
@@ -12,6 +14,32 @@ interface MediaGalleryProps {
 }
 
 export function MediaGallery({ media, isLoading, onMediaClick }: MediaGalleryProps) {
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+  // Extract all unique tags from media
+  const allTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    media.forEach(item => {
+      item.tags?.forEach(tag => tagSet.add(tag));
+    });
+    return Array.from(tagSet).sort();
+  }, [media]);
+
+  // Filter media by selected tags
+  const filteredMedia = useMemo(() => {
+    if (selectedTags.length === 0) return media;
+    return media.filter(item => 
+      selectedTags.some(tag => item.tags?.includes(tag))
+    );
+  }, [media, selectedTags]);
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) 
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    );
+  };
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
@@ -39,8 +67,27 @@ export function MediaGallery({ media, isLoading, onMediaClick }: MediaGalleryPro
 
   return (
     <TooltipProvider>
+      {/* Tag Filter UI */}
+      {allTags.length > 0 && (
+        <div className="mb-3 flex items-center gap-2 overflow-x-auto pb-2">
+          <span className="text-sm text-muted-foreground whitespace-nowrap">Filter:</span>
+          <div className="flex gap-2">
+            {allTags.map(tag => (
+              <Badge
+                key={tag}
+                variant={selectedTags.includes(tag) ? 'default' : 'outline'}
+                className="cursor-pointer whitespace-nowrap"
+                onClick={() => toggleTag(tag)}
+              >
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-        {media.map((item, index) => (
+        {filteredMedia.map((item, index) => (
           <Tooltip key={item.id}>
             <TooltipTrigger asChild>
               <div
@@ -69,6 +116,30 @@ export function MediaGallery({ media, isLoading, onMediaClick }: MediaGalleryPro
                 {item.metadata?.gps && (
                   <MapPin className="absolute bottom-1 left-1 w-4 h-4 text-white drop-shadow-lg" />
                 )}
+                
+                {/* Tag badges on thumbnails */}
+                {item.tags && item.tags.length > 0 && (
+                  <div className="absolute bottom-1 right-1 flex gap-1">
+                    {item.tags.slice(0, 2).map((tag, idx) => (
+                      <Badge 
+                        key={idx} 
+                        variant="secondary" 
+                        className="text-[10px] px-1 py-0 h-4 bg-black/70 text-white border-none"
+                      >
+                        {tag}
+                      </Badge>
+                    ))}
+                    {item.tags.length > 2 && (
+                      <Badge 
+                        variant="secondary" 
+                        className="text-[10px] px-1 py-0 h-4 bg-black/70 text-white border-none"
+                      >
+                        +{item.tags.length - 2}
+                      </Badge>
+                    )}
+                  </div>
+                )}
+                
                 {item.isOptimistic && item.upload_status === 'uploading' && (
                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                     <div className="text-white text-xs font-semibold">

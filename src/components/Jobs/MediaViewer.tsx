@@ -15,10 +15,16 @@ import {
   Calendar, 
   File,
   ExternalLink,
-  AlertCircle
+  AlertCircle,
+  Pencil,
+  Tag
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { TagInput } from '@/components/Media/TagInput';
+import { AnnotationEditor } from '@/components/Media/AnnotationEditor';
+import { useUpdateMediaTags } from '@/hooks/useMediaTags';
+import { useUpdateMediaAnnotations } from '@/hooks/useMediaAnnotations';
 
 interface MediaViewerProps {
   media: MediaItem[];
@@ -29,7 +35,10 @@ interface MediaViewerProps {
 
 export function MediaViewer({ media, initialIndex, isOpen, onClose }: MediaViewerProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  const [showAnnotationEditor, setShowAnnotationEditor] = useState(false);
   const currentMedia = media[currentIndex];
+  const updateMediaTags = useUpdateMediaTags();
+  const updateMediaAnnotations = useUpdateMediaAnnotations();
 
   useEffect(() => {
     setCurrentIndex(initialIndex);
@@ -71,14 +80,30 @@ export function MediaViewer({ media, initialIndex, isOpen, onClose }: MediaViewe
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[95vw] h-[95vh] p-0 border-0 bg-black/95">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onClose}
-          className="absolute top-4 right-4 z-50 text-white hover:bg-white/20"
-        >
-          <X className="w-6 h-6" />
-        </Button>
+        <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
+          {currentMedia.file_type === 'photo' && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowAnnotationEditor(true)}
+              className="text-white hover:bg-white/20"
+              title="Annotate image"
+            >
+              <Pencil className="w-5 h-5" />
+              {currentMedia.has_annotations && (
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full" />
+              )}
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="text-white hover:bg-white/20"
+          >
+            <X className="w-6 h-6" />
+          </Button>
+        </div>
 
         <div className="flex h-full">
           <div className="flex-1 flex flex-col">
@@ -229,6 +254,25 @@ export function MediaViewer({ media, initialIndex, isOpen, onClose }: MediaViewe
                 </div>
               )}
 
+              {/* Tags Section */}
+              <div className="border-t border-border pt-4">
+                <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                  <Tag className="w-4 h-4" />
+                  Tags
+                </h4>
+                <TagInput
+                  tags={currentMedia.tags || []}
+                  availableTags={[]}
+                  onTagsChange={(newTags) => {
+                    updateMediaTags.mutate({ 
+                      mediaId: currentMedia.id, 
+                      tags: newTags 
+                    });
+                  }}
+                  placeholder="Add tags..."
+                />
+              </div>
+
               {currentMedia.isOptimistic && (
                 <div className="border-t border-border pt-4">
                   {currentMedia.upload_status === 'uploading' && (
@@ -254,6 +298,26 @@ export function MediaViewer({ media, initialIndex, isOpen, onClose }: MediaViewe
             </div>
           </div>
         </div>
+
+        {/* Annotation Editor Dialog */}
+        {currentMedia.file_type === 'photo' && (
+          <Dialog open={showAnnotationEditor} onOpenChange={setShowAnnotationEditor}>
+            <DialogContent className="max-w-[95vw] h-[95vh] p-0">
+              <AnnotationEditor
+                imageUrl={currentMedia.blobUrl || currentMedia.public_url}
+                existingAnnotations={currentMedia.annotations || []}
+                onSave={(annotations) => {
+                  updateMediaAnnotations.mutate({
+                    mediaId: currentMedia.id,
+                    annotations
+                  });
+                  setShowAnnotationEditor(false);
+                }}
+                onCancel={() => setShowAnnotationEditor(false)}
+              />
+            </DialogContent>
+          </Dialog>
+        )}
       </DialogContent>
     </Dialog>
   );
