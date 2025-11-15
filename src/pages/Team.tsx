@@ -23,7 +23,8 @@ import {
   Repeat,
   Plus,
   Package,
-  CheckSquare
+  CheckSquare,
+  BarChart3
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { RequireRole } from "@/components/Auth/RequireRole";
