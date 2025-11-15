@@ -43,7 +43,7 @@ export function ChecklistItem({ item, jobId }: ChecklistItemProps) {
 
   // Filter media for this checklist item
   const itemMedia = allMedia?.filter(m => 
-    m.metadata && (m.metadata as any).checklist_item_id === item.id
+    m.checklist_item_id === item.id
   ) || [];
 
   const hasEnoughPhotos = itemMedia.length >= item.required_photo_count;
