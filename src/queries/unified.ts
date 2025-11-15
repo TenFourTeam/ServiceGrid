@@ -69,3 +69,12 @@ export {
   useGenerateRecurringJobs,
   useCheckSchedulingCapacity
 } from '@/hooks/useRecurringJobs';
+
+export { 
+  usePages, 
+  usePage, 
+  useCreatePage, 
+  useUpdatePage, 
+  useDeletePage 
+} from '@/hooks/usePages';
+export { usePagePresence } from '@/hooks/usePagePresence';

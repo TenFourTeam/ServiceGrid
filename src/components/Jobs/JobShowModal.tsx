@@ -27,6 +27,7 @@ import { MediaGallery } from './MediaGallery';
 import { MediaViewer } from './MediaViewer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { JobChecklistView } from '@/components/Checklists';
+import { PagesContainer } from '@/components/Pages/PagesContainer';
 
 interface JobShowModalProps {
   open: boolean;
@@ -678,6 +679,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="checklist">Checklist</TabsTrigger>
               <TabsTrigger value="media">Media</TabsTrigger>
+              <TabsTrigger value="pages">Pages</TabsTrigger>
             </TabsList>
             
             <TabsContent value="overview" className="space-y-4">
@@ -806,6 +808,10 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
               </div>
             </div>
           </div>
+            </TabsContent>
+            
+            <TabsContent value="pages" className="h-[500px]">
+              <PagesContainer jobId={job.id} />
             </TabsContent>
           </Tabs>
           
