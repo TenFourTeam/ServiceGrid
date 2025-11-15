@@ -12,6 +12,7 @@ Deno.serve(async (req) => {
     if (req.method === 'GET') {
       const url = new URL(req.url);
       const jobId = url.searchParams.get('jobId');
+      const tags = url.searchParams.get('tags');
       
       if (!jobId) {
         return json({ error: 'jobId is required' }, { status: 400 });
@@ -34,12 +35,18 @@ Deno.serve(async (req) => {
         return json({ error: 'Access denied' }, { status: 403 });
       }
 
-      // Fetch media with admin privileges (bypasses RLS)
-      const { data, error } = await ctx.supaAdmin
+      // Build query with optional tag filtering
+      let query = ctx.supaAdmin
         .from('sg_media')
         .select('*')
-        .eq('job_id', jobId)
-        .order('created_at', { ascending: false });
+        .eq('job_id', jobId);
+
+      if (tags) {
+        const tagArray = tags.split(',').map(t => t.trim());
+        query = query.overlaps('tags', tagArray);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) {
         console.error('[job-media-crud] Error fetching media:', error);

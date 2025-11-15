@@ -18,11 +18,36 @@ export interface MediaItem {
   created_at: string;
   upload_status: 'uploading' | 'processing' | 'completed' | 'failed';
   
+  // Tagging fields
+  tags?: string[];
+  
+  // Annotation fields
+  annotations?: Annotation[];
+  has_annotations?: boolean;
+  annotated_image_url?: string;
+  
   // Optimistic update fields
   blobUrl?: string;
   isOptimistic?: boolean;
   uploadProgress?: number;
   uploadError?: string;
+}
+
+export interface Annotation {
+  id: string;
+  type: 'arrow' | 'rect' | 'ellipse' | 'line' | 'text' | 'path';
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+  stroke: string;
+  strokeWidth: number;
+  fill?: string;
+  text?: string;
+  points?: number[];
+  rotation?: number;
+  created_by: string;
+  created_at: string;
 }
 
 export function useJobMedia(jobId: string | undefined) {
