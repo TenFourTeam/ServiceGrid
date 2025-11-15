@@ -71,24 +71,110 @@ export function JobChecklistView({ jobId }: JobChecklistViewProps) {
 
   if (!checklist) {
     return (
-      <Card>
-        <CardContent className="flex flex-col items-center justify-center py-12">
-          <ListChecks className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No Checklist Yet</h3>
-          <p className="text-sm text-muted-foreground mb-4 text-center max-w-sm">
-            Create a checklist to track job completion tasks and requirements.
-          </p>
-          <Button onClick={() => {
-            console.log('🔘 Create Checklist button clicked');
-            console.log('🔘 Current businessId:', businessId);
-            console.log('🔘 Current jobId:', jobId);
+      <div style={{
+        border: '1px solid #e2e8f0',
+        borderRadius: '8px',
+        padding: '48px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'white'
+      }}>
+        <div style={{
+          width: '48px',
+          height: '48px',
+          marginBottom: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <ListChecks className="h-12 w-12 text-muted-foreground" />
+        </div>
+        
+        <h3 style={{
+          fontSize: '18px',
+          fontWeight: '600',
+          marginBottom: '8px'
+        }}>No Checklist Yet</h3>
+        
+        <p style={{
+          fontSize: '14px',
+          color: '#64748b',
+          marginBottom: '16px',
+          textAlign: 'center',
+          maxWidth: '420px'
+        }}>
+          Create a checklist to track job completion tasks and requirements.
+        </p>
+        
+        <button
+          style={{
+            padding: '12px 24px',
+            background: '#3b82f6',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: '500',
+            fontSize: '14px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            window.alert('🚨 STEP 1: Button was clicked!');
+            console.log('🚨 EMERGENCY LOG: Button clicked');
+            console.log('🚨 jobId:', jobId);
+            console.log('🚨 businessId:', businessId);
+            console.log('🚨 createChecklist object:', createChecklist);
+            console.log('🚨 createChecklist.mutate type:', typeof createChecklist?.mutate);
+            console.log('🚨 createChecklist.isPending:', createChecklist.isPending);
+            
+            window.alert('🚨 STEP 2: About to open template picker');
             setShowTemplatePicker(true);
+            console.log('🚨 setShowTemplatePicker(true) called');
+            console.log('🚨 Current showTemplatePicker state:', showTemplatePicker);
+            
+            window.alert('🚨 STEP 3: Template picker should be opening now');
+          }}
+        >
+          <Plus className="h-4 w-4" />
+          🔧 CREATE CHECKLIST (DEBUG MODE)
+        </button>
+        
+        {showTemplatePicker && (
+          <div style={{
+            marginTop: '20px',
+            padding: '20px',
+            border: '3px solid #ef4444',
+            borderRadius: '8px',
+            backgroundColor: '#fee2e2'
           }}>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Checklist
-          </Button>
-        </CardContent>
-      </Card>
+            <p style={{ color: '#991b1b', fontWeight: 'bold' }}>
+              ⚠️ TEMPLATE PICKER IS OPEN (showTemplatePicker = true)
+            </p>
+          </div>
+        )}
+        
+        <div style={{
+          marginTop: '20px',
+          padding: '12px',
+          backgroundColor: '#f1f5f9',
+          borderRadius: '6px',
+          fontSize: '12px',
+          fontFamily: 'monospace'
+        }}>
+          <div><strong>Debug Info:</strong></div>
+          <div>jobId: {jobId}</div>
+          <div>businessId: {businessId}</div>
+          <div>showTemplatePicker: {showTemplatePicker.toString()}</div>
+          <div>createChecklist.isPending: {createChecklist.isPending.toString()}</div>
+        </div>
+      </div>
     );
   }
 
