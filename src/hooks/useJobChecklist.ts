@@ -117,6 +117,9 @@ export function useCreateChecklist() {
       title?: string;
       assignedTo?: string;
     }) => {
+      console.log('🔧 [useCreateChecklist] Mutation started with params:', params);
+      console.log('🔧 [useCreateChecklist] businessId:', businessId);
+      
       const { data, error } = await authApi.invoke('checklists-crud', {
         method: 'POST',
         body: {
@@ -125,14 +128,21 @@ export function useCreateChecklist() {
         },
       });
 
-      if (error) throw error;
+      console.log('🔧 [useCreateChecklist] Response:', { data, error });
+
+      if (error) {
+        console.error('❌ [useCreateChecklist] Error:', error);
+        throw error;
+      }
       return data;
     },
     onSuccess: (_, variables) => {
+      console.log('✅ [useCreateChecklist] Success, invalidating queries');
       queryClient.invalidateQueries({ queryKey: ['job-checklist', variables.jobId] });
       toast.success('Checklist created!');
     },
     onError: (error: Error) => {
+      console.error('❌ [useCreateChecklist] onError:', error);
       toast.error(`Failed to create checklist: ${error.message}`);
     },
   });
