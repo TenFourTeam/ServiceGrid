@@ -26,6 +26,9 @@ verify_jwt = false
 [functions.time-tracking-analytics]
 verify_jwt = false
 
+[functions.time-breakdown-report]
+verify_jwt = false
+
 [functions.unified-assignments]
 verify_jwt = false
 

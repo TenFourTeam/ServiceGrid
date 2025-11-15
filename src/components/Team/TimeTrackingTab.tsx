@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Clock, TrendingUp, Users, Briefcase, CheckSquare } from 'lucide-react';
+import { Clock, TrendingUp, Users, Briefcase, CheckSquare, BarChart3 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -8,8 +8,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useTimeTrackingAnalytics } from '@/hooks/useTimeTrackingAnalytics';
 import { useBusinessMembersData } from '@/hooks/useBusinessMembers';
 import { format } from 'date-fns';
+import { TimeBreakdownReport } from './TimeBreakdownReport';
 
 export function TimeTrackingTab() {
+  const [activeTab, setActiveTab] = useState<'summary' | 'detailed'>('summary');
   const [selectedUserId, setSelectedUserId] = useState<string>('all');
   const { data: summaryData, isLoading: summaryLoading } = useTimeTrackingAnalytics('summary');
   const { data: jobReport, isLoading: jobLoading } = useTimeTrackingAnalytics('time-by-job');
@@ -40,6 +42,19 @@ export function TimeTrackingTab() {
 
   return (
     <div className="space-y-6">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'summary' | 'detailed')}>
+        <TabsList>
+          <TabsTrigger value="summary" className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
+            Summary
+          </TabsTrigger>
+          <TabsTrigger value="detailed" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Detailed Reports
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="summary" className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card>
@@ -211,6 +226,12 @@ export function TimeTrackingTab() {
           </Tabs>
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="detailed">
+          <TimeBreakdownReport />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

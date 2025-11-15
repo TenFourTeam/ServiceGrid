@@ -2659,6 +2659,37 @@ export type Database = {
       }
     }
     Views: {
+      daily_time_breakdown: {
+        Row: {
+          business_id: string | null
+          job_address: string | null
+          job_id: string | null
+          job_title: string | null
+          task_categories: Json | null
+          task_minutes: number | null
+          tasks_completed: number | null
+          timesheet_minutes: number | null
+          user_id: string | null
+          user_name: string | null
+          work_date: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timesheet_entries_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timesheet_entries_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "time_by_job_report"
+            referencedColumns: ["job_id"]
+          },
+        ]
+      }
       geography_columns: {
         Row: {
           coord_dimension: number | null
@@ -2700,6 +2731,42 @@ export type Database = {
           type?: string | null
         }
         Relationships: []
+      }
+      task_category_breakdown: {
+        Row: {
+          avg_minutes_per_task: number | null
+          business_id: string | null
+          category: string | null
+          completion_date: string | null
+          task_count: number | null
+          tasks: Json | null
+          total_minutes: number | null
+          user_id: string | null
+          user_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sg_checklist_items_completed_by_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_checklist_items_completed_by_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "sg_checklists_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       time_by_job_report: {
         Row: {
@@ -2804,6 +2871,36 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "businesses"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      weekly_time_breakdown: {
+        Row: {
+          all_task_categories: Json | null
+          business_id: string | null
+          job_id: string | null
+          job_title: string | null
+          total_task_minutes: number | null
+          total_tasks_completed: number | null
+          total_timesheet_minutes: number | null
+          user_id: string | null
+          user_name: string | null
+          week_start: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timesheet_entries_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timesheet_entries_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "time_by_job_report"
+            referencedColumns: ["job_id"]
           },
         ]
       }
