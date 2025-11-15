@@ -28,6 +28,9 @@ import { MediaViewer } from './MediaViewer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { JobChecklistView } from '@/components/Checklists';
 import { NotesContainer } from '@/components/Notes/NotesContainer';
+import { BulkTagManager } from '@/components/Media/BulkTagManager';
+import { useBulkUpdateMediaTags } from '@/hooks/useMediaTags';
+import { Tags } from 'lucide-react';
 
 interface JobShowModalProps {
   open: boolean;
@@ -60,6 +63,8 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
   const { uploadMedia, uploading: mediaUploading, progress: uploadProgress } = useMediaUpload();
   const { data: jobMedia = [], isLoading: mediaLoading } = useJobMedia(job.id);
   const [optimisticMedia, setOptimisticMedia] = useState<MediaItem[]>([]);
+  const [showBulkTagManager, setShowBulkTagManager] = useState(false);
+  const bulkUpdateTags = useBulkUpdateMediaTags();
 
   const allMedia = useMemo(() => {
     return [...optimisticMedia, ...jobMedia];
@@ -681,7 +686,20 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
             
             <TabsContent value="media" className="space-y-4">
               <div>
-                <div className="text-sm text-muted-foreground mb-1">{t('workOrders.modal.photos')}</div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-sm text-muted-foreground">{t('workOrders.modal.photos')}</div>
+                  {allMedia.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowBulkTagManager(true)}
+                      className="h-8"
+                    >
+                      <Tags className="w-4 h-4 mr-2" />
+                      Bulk Tag
+                    </Button>
+                  )}
+                </div>
             
             {/* Display legacy job.photos */}
             {Array.isArray((job as any).photos) && (job as any).photos.length > 0 && (
@@ -711,6 +729,16 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
               initialIndex={viewerIndex}
               isOpen={viewerOpen}
               onClose={() => setViewerOpen(false)}
+            />
+            
+            <BulkTagManager
+              media={allMedia}
+              isOpen={showBulkTagManager}
+              onClose={() => setShowBulkTagManager(false)}
+              onSave={async (mediaIds, tags) => {
+                await bulkUpdateTags.mutateAsync({ mediaIds, tags });
+                setShowBulkTagManager(false);
+              }}
             />
             
             {/* Photo Upload Section */}
