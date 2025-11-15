@@ -1,11 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthApi } from '@/hooks/useAuthApi';
-import { useToast } from '@/hooks/useToast';
+import { toast } from 'sonner';
 
 export function useUpdateMediaTags() {
   const authApi = useAuthApi();
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async ({ mediaId, tags }: { mediaId: string; tags: string[] }) => {
@@ -19,10 +18,10 @@ export function useUpdateMediaTags() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['job-media'] });
-      toast({ title: 'Tags updated successfully' });
+      toast.success('Tags updated successfully');
     },
     onError: (error: any) => {
-      toast({ title: 'Failed to update tags', description: error.message, variant: 'destructive' });
+      toast.error('Failed to update tags', { description: error.message });
     }
   });
 }
@@ -30,7 +29,6 @@ export function useUpdateMediaTags() {
 export function useBulkUpdateMediaTags() {
   const authApi = useAuthApi();
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async ({ mediaIds, tags }: { mediaIds: string[]; tags: string[] }) => {
@@ -44,10 +42,10 @@ export function useBulkUpdateMediaTags() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['job-media'] });
-      toast({ title: `${data.updated} items tagged successfully` });
+      toast.success(`${data.updated} items tagged successfully`);
     },
     onError: (error: any) => {
-      toast({ title: 'Failed to update tags', description: error.message, variant: 'destructive' });
+      toast.error('Failed to update tags', { description: error.message });
     }
   });
 }

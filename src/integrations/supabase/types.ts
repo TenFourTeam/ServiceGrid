@@ -2176,6 +2176,8 @@ export type Database = {
       }
       sg_media: {
         Row: {
+          annotated_image_url: string | null
+          annotations: Json | null
           business_id: string
           checklist_item_id: string | null
           content_hash: string | null
@@ -2183,6 +2185,7 @@ export type Database = {
           created_at: string
           file_size: number
           file_type: string
+          has_annotations: boolean | null
           hls_manifest_url: string | null
           id: string
           job_id: string
@@ -2192,12 +2195,15 @@ export type Database = {
           original_filename: string
           public_url: string | null
           storage_path: string
+          tags: string[] | null
           thumbnail_url: string | null
           updated_at: string
           upload_status: string
           user_id: string
         }
         Insert: {
+          annotated_image_url?: string | null
+          annotations?: Json | null
           business_id: string
           checklist_item_id?: string | null
           content_hash?: string | null
@@ -2205,6 +2211,7 @@ export type Database = {
           created_at?: string
           file_size: number
           file_type: string
+          has_annotations?: boolean | null
           hls_manifest_url?: string | null
           id?: string
           job_id: string
@@ -2214,12 +2221,15 @@ export type Database = {
           original_filename: string
           public_url?: string | null
           storage_path: string
+          tags?: string[] | null
           thumbnail_url?: string | null
           updated_at?: string
           upload_status?: string
           user_id: string
         }
         Update: {
+          annotated_image_url?: string | null
+          annotations?: Json | null
           business_id?: string
           checklist_item_id?: string | null
           content_hash?: string | null
@@ -2227,6 +2237,7 @@ export type Database = {
           created_at?: string
           file_size?: number
           file_type?: string
+          has_annotations?: boolean | null
           hls_manifest_url?: string | null
           id?: string
           job_id?: string
@@ -2236,6 +2247,7 @@ export type Database = {
           original_filename?: string
           public_url?: string | null
           storage_path?: string
+          tags?: string[] | null
           thumbnail_url?: string | null
           updated_at?: string
           upload_status?: string
@@ -2304,6 +2316,44 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "user_productivity_report"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      sg_media_tags: {
+        Row: {
+          business_id: string
+          created_at: string | null
+          id: string
+          tag_color: string | null
+          tag_name: string
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          business_id: string
+          created_at?: string | null
+          id?: string
+          tag_color?: string | null
+          tag_name: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          business_id?: string
+          created_at?: string | null
+          id?: string
+          tag_color?: string | null
+          tag_name?: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sg_media_tags_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
           },
         ]
       }
