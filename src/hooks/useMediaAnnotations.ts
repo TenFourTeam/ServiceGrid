@@ -1,12 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthApi } from '@/hooks/useAuthApi';
-import { useToast } from '@/hooks/useToast';
+import { toast } from 'sonner';
 import { Annotation } from '@/hooks/useJobMedia';
 
 export function useUpdateMediaAnnotations() {
   const authApi = useAuthApi();
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async ({ mediaId, annotations }: { mediaId: string; annotations: Annotation[] }) => {
@@ -20,10 +19,10 @@ export function useUpdateMediaAnnotations() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['job-media'] });
-      toast({ title: 'Annotations saved successfully' });
+      toast.success('Annotations saved successfully');
     },
     onError: (error: any) => {
-      toast({ title: 'Failed to save annotations', description: error.message, variant: 'destructive' });
+      toast.error('Failed to save annotations', { description: error.message });
     }
   });
 }

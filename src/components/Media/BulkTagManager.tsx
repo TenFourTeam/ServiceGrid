@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { TagInput } from './TagInput';
 import { MediaItem } from '@/hooks/useJobMedia';
-import { useToast } from '@/hooks/useToast';
+import { toast } from 'sonner';
 
 interface BulkTagManagerProps {
   media: MediaItem[];
@@ -16,7 +16,6 @@ interface BulkTagManagerProps {
 export function BulkTagManager({ media, isOpen, onClose, onSave }: BulkTagManagerProps) {
   const [selectedMedia, setSelectedMedia] = useState<Set<string>>(new Set());
   const [tags, setTags] = useState<string[]>([]);
-  const { toast } = useToast();
 
   const toggleMedia = (id: string) => {
     const newSet = new Set(selectedMedia);
@@ -30,7 +29,7 @@ export function BulkTagManager({ media, isOpen, onClose, onSave }: BulkTagManage
 
   const handleSave = async () => {
     if (selectedMedia.size === 0) {
-      toast({ title: 'Select at least one item', variant: 'destructive' });
+      toast.error('Select at least one item');
       return;
     }
     
