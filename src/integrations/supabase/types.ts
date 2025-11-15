@@ -2188,8 +2188,8 @@ export type Database = {
           job_id: string
           metadata: Json | null
           mime_type: string
+          note_id: string | null
           original_filename: string
-          page_id: string | null
           public_url: string | null
           storage_path: string
           thumbnail_url: string | null
@@ -2210,8 +2210,8 @@ export type Database = {
           job_id: string
           metadata?: Json | null
           mime_type: string
+          note_id?: string | null
           original_filename: string
-          page_id?: string | null
           public_url?: string | null
           storage_path: string
           thumbnail_url?: string | null
@@ -2232,8 +2232,8 @@ export type Database = {
           job_id?: string
           metadata?: Json | null
           mime_type?: string
+          note_id?: string | null
           original_filename?: string
-          page_id?: string | null
           public_url?: string | null
           storage_path?: string
           thumbnail_url?: string | null
@@ -2286,9 +2286,9 @@ export type Database = {
           },
           {
             foreignKeyName: "sg_media_page_id_fkey"
-            columns: ["page_id"]
+            columns: ["note_id"]
             isOneToOne: false
-            referencedRelation: "sg_pages"
+            referencedRelation: "sg_notes"
             referencedColumns: ["id"]
           },
           {
@@ -2378,14 +2378,14 @@ export type Database = {
           },
         ]
       }
-      sg_page_collaborators: {
+      sg_note_collaborators: {
         Row: {
           cursor_position: Json | null
           id: string
           is_viewing: boolean | null
           last_edited_at: string | null
           last_viewed_at: string | null
-          page_id: string
+          note_id: string
           user_id: string
         }
         Insert: {
@@ -2394,7 +2394,7 @@ export type Database = {
           is_viewing?: boolean | null
           last_edited_at?: string | null
           last_viewed_at?: string | null
-          page_id: string
+          note_id: string
           user_id: string
         }
         Update: {
@@ -2403,15 +2403,15 @@ export type Database = {
           is_viewing?: boolean | null
           last_edited_at?: string | null
           last_viewed_at?: string | null
-          page_id?: string
+          note_id?: string
           user_id?: string
         }
         Relationships: [
           {
             foreignKeyName: "sg_page_collaborators_page_id_fkey"
-            columns: ["page_id"]
+            columns: ["note_id"]
             isOneToOne: false
-            referencedRelation: "sg_pages"
+            referencedRelation: "sg_notes"
             referencedColumns: ["id"]
           },
           {
@@ -2430,14 +2430,14 @@ export type Database = {
           },
         ]
       }
-      sg_page_versions: {
+      sg_note_versions: {
         Row: {
           change_summary: string | null
           content_json: Json
           created_at: string
           created_by: string
           id: string
-          page_id: string
+          note_id: string
           version_number: number
         }
         Insert: {
@@ -2446,7 +2446,7 @@ export type Database = {
           created_at?: string
           created_by: string
           id?: string
-          page_id: string
+          note_id: string
           version_number: number
         }
         Update: {
@@ -2455,7 +2455,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           id?: string
-          page_id?: string
+          note_id?: string
           version_number?: number
         }
         Relationships: [
@@ -2475,14 +2475,14 @@ export type Database = {
           },
           {
             foreignKeyName: "sg_page_versions_page_id_fkey"
-            columns: ["page_id"]
+            columns: ["note_id"]
             isOneToOne: false
-            referencedRelation: "sg_pages"
+            referencedRelation: "sg_notes"
             referencedColumns: ["id"]
           },
         ]
       }
-      sg_pages: {
+      sg_notes: {
         Row: {
           business_id: string
           content_json: Json
@@ -2492,7 +2492,7 @@ export type Database = {
           id: string
           is_archived: boolean
           job_id: string | null
-          parent_page_id: string | null
+          parent_note_id: string | null
           position: number
           title: string
           updated_at: string
@@ -2506,7 +2506,7 @@ export type Database = {
           id?: string
           is_archived?: boolean
           job_id?: string | null
-          parent_page_id?: string | null
+          parent_note_id?: string | null
           position?: number
           title?: string
           updated_at?: string
@@ -2520,7 +2520,7 @@ export type Database = {
           id?: string
           is_archived?: boolean
           job_id?: string | null
-          parent_page_id?: string | null
+          parent_note_id?: string | null
           position?: number
           title?: string
           updated_at?: string
@@ -2563,9 +2563,9 @@ export type Database = {
           },
           {
             foreignKeyName: "sg_pages_parent_page_id_fkey"
-            columns: ["parent_page_id"]
+            columns: ["parent_note_id"]
             isOneToOne: false
-            referencedRelation: "sg_pages"
+            referencedRelation: "sg_notes"
             referencedColumns: ["id"]
           },
         ]

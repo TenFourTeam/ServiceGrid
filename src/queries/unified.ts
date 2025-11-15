@@ -71,10 +71,10 @@ export {
 } from '@/hooks/useRecurringJobs';
 
 export { 
-  usePages, 
-  usePage, 
-  useCreatePage, 
-  useUpdatePage, 
-  useDeletePage 
-} from '@/hooks/usePages';
-export { usePagePresence } from '@/hooks/usePagePresence';
+  useNotes, 
+  useNote, 
+  useCreateNote, 
+  useUpdateNote, 
+  useDeleteNote 
+} from '@/hooks/useNotes';
+export { useNotePresence } from '@/hooks/useNotePresence';

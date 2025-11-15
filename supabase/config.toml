@@ -1,10 +1,10 @@
 project_id = "ijudkzqfriazabiosnvb"
 
-# Pages functions
-[functions.pages-crud]
+# Notes functions
+[functions.notes-crud]
 verify_jwt = false
 
-[functions.page-presence]
+[functions.note-presence]
 verify_jwt = false
 
 # Conversation media functions
