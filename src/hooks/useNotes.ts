@@ -40,7 +40,7 @@ export function useNotes(jobId?: string) {
     queryFn: async () => {
       const { data } = await authApi.invoke('notes-crud', {
         method: 'GET',
-        queryParams: { jobId },
+        queryParams: jobId ? { jobId } : {},
       });
       return data?.notes || [];
     },
@@ -57,7 +57,7 @@ export function useNote(noteId: string | undefined) {
     queryFn: async () => {
       const { data } = await authApi.invoke('notes-crud', {
         method: 'GET',
-        queryParams: { noteId },
+        queryParams: noteId ? { noteId } : {},
       });
       return data?.note;
     },
@@ -75,7 +75,7 @@ export function useCreateNote() {
     mutationFn: async (newNote: { title: string; content_json: any; job_id: string }) => {
       const { data } = await authApi.invoke('notes-crud', {
         method: 'POST',
-        body: JSON.stringify(newNote),
+        body: newNote,
       });
       return data?.note;
     },
@@ -105,7 +105,7 @@ export function useUpdateNote() {
       const { data } = await authApi.invoke('notes-crud', {
         method: 'PATCH',
         queryParams: { noteId },
-        body: JSON.stringify(updates),
+        body: updates,
       });
       return data?.note;
     },
