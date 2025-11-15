@@ -1,5 +1,12 @@
 project_id = "ijudkzqfriazabiosnvb"
 
+# Pages functions
+[functions.pages-crud]
+verify_jwt = false
+
+[functions.page-presence]
+verify_jwt = false
+
 # Conversation media functions
 [functions.upload-conversation-media]
 verify_jwt = false

@@ -2189,6 +2189,7 @@ export type Database = {
           metadata: Json | null
           mime_type: string
           original_filename: string
+          page_id: string | null
           public_url: string | null
           storage_path: string
           thumbnail_url: string | null
@@ -2210,6 +2211,7 @@ export type Database = {
           metadata?: Json | null
           mime_type: string
           original_filename: string
+          page_id?: string | null
           public_url?: string | null
           storage_path: string
           thumbnail_url?: string | null
@@ -2231,6 +2233,7 @@ export type Database = {
           metadata?: Json | null
           mime_type?: string
           original_filename?: string
+          page_id?: string | null
           public_url?: string | null
           storage_path?: string
           thumbnail_url?: string | null
@@ -2280,6 +2283,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "time_by_job_report"
             referencedColumns: ["job_id"]
+          },
+          {
+            foreignKeyName: "sg_media_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "sg_pages"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "sg_media_user_id_fkey"
@@ -2365,6 +2375,198 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "user_productivity_report"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      sg_page_collaborators: {
+        Row: {
+          cursor_position: Json | null
+          id: string
+          is_viewing: boolean | null
+          last_edited_at: string | null
+          last_viewed_at: string | null
+          page_id: string
+          user_id: string
+        }
+        Insert: {
+          cursor_position?: Json | null
+          id?: string
+          is_viewing?: boolean | null
+          last_edited_at?: string | null
+          last_viewed_at?: string | null
+          page_id: string
+          user_id: string
+        }
+        Update: {
+          cursor_position?: Json | null
+          id?: string
+          is_viewing?: boolean | null
+          last_edited_at?: string | null
+          last_viewed_at?: string | null
+          page_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sg_page_collaborators_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "sg_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_page_collaborators_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_page_collaborators_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      sg_page_versions: {
+        Row: {
+          change_summary: string | null
+          content_json: Json
+          created_at: string
+          created_by: string
+          id: string
+          page_id: string
+          version_number: number
+        }
+        Insert: {
+          change_summary?: string | null
+          content_json: Json
+          created_at?: string
+          created_by: string
+          id?: string
+          page_id: string
+          version_number: number
+        }
+        Update: {
+          change_summary?: string | null
+          content_json?: Json
+          created_at?: string
+          created_by?: string
+          id?: string
+          page_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sg_page_versions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_page_versions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "sg_page_versions_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "sg_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sg_pages: {
+        Row: {
+          business_id: string
+          content_json: Json
+          created_at: string
+          created_by: string
+          icon: string | null
+          id: string
+          is_archived: boolean
+          job_id: string | null
+          parent_page_id: string | null
+          position: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          content_json?: Json
+          created_at?: string
+          created_by: string
+          icon?: string | null
+          id?: string
+          is_archived?: boolean
+          job_id?: string | null
+          parent_page_id?: string | null
+          position?: number
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          content_json?: Json
+          created_at?: string
+          created_by?: string
+          icon?: string | null
+          id?: string
+          is_archived?: boolean
+          job_id?: string | null
+          parent_page_id?: string | null
+          position?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sg_pages_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_pages_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_pages_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "sg_pages_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_pages_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "time_by_job_report"
+            referencedColumns: ["job_id"]
+          },
+          {
+            foreignKeyName: "sg_pages_parent_page_id_fkey"
+            columns: ["parent_page_id"]
+            isOneToOne: false
+            referencedRelation: "sg_pages"
+            referencedColumns: ["id"]
           },
         ]
       }
