@@ -95,6 +95,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ai_chat_conversations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       ai_chat_messages: {
@@ -256,11 +263,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "business_permissions_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "business_permissions_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_permissions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -480,6 +501,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "inventory_items_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       inventory_transactions: {
@@ -542,11 +570,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "inventory_transactions_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "time_by_job_report"
+            referencedColumns: ["job_id"]
+          },
+          {
             foreignKeyName: "inventory_transactions_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -602,11 +644,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "invites_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "invites_invited_user_id_fkey"
             columns: ["invited_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invites_invited_user_id_fkey"
+            columns: ["invited_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -765,6 +821,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "invoices_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "time_by_job_report"
+            referencedColumns: ["job_id"]
+          },
+          {
             foreignKeyName: "invoices_quote_id_fkey"
             columns: ["quote_id"]
             isOneToOne: false
@@ -817,6 +880,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "job_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "job_assignments_job_id_fkey"
             columns: ["job_id"]
             isOneToOne: false
@@ -824,11 +894,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "job_assignments_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "time_by_job_report"
+            referencedColumns: ["job_id"]
+          },
+          {
             foreignKeyName: "job_assignments_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_assignments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -1020,6 +1104,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lifecycle_emails_sent_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -1562,11 +1653,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "referrals_referred_user_id_fkey"
+            columns: ["referred_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "referrals_referrer_user_id_fkey"
             columns: ["referrer_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referrer_user_id_fkey"
+            columns: ["referrer_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -1661,6 +1766,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "sg_checklist_events_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "time_by_task_report"
+            referencedColumns: ["checklist_id"]
+          },
+          {
             foreignKeyName: "sg_checklist_events_item_id_fkey"
             columns: ["item_id"]
             isOneToOne: false
@@ -1668,11 +1780,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "sg_checklist_events_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "time_by_task_report"
+            referencedColumns: ["item_id"]
+          },
+          {
             foreignKeyName: "sg_checklist_events_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_checklist_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -1690,6 +1816,8 @@ export type Database = {
           is_completed: boolean | null
           position: number
           required_photo_count: number | null
+          time_spent_minutes: number | null
+          timesheet_entry_id: string | null
           title: string
           updated_at: string
         }
@@ -1706,6 +1834,8 @@ export type Database = {
           is_completed?: boolean | null
           position: number
           required_photo_count?: number | null
+          time_spent_minutes?: number | null
+          timesheet_entry_id?: string | null
           title: string
           updated_at?: string
         }
@@ -1722,6 +1852,8 @@ export type Database = {
           is_completed?: boolean | null
           position?: number
           required_photo_count?: number | null
+          time_spent_minutes?: number | null
+          timesheet_entry_id?: string | null
           title?: string
           updated_at?: string
         }
@@ -1734,6 +1866,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "sg_checklist_items_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "sg_checklist_items_checklist_id_fkey"
             columns: ["checklist_id"]
             isOneToOne: false
@@ -1741,10 +1880,31 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "sg_checklist_items_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "time_by_task_report"
+            referencedColumns: ["checklist_id"]
+          },
+          {
             foreignKeyName: "sg_checklist_items_completed_by_fkey"
             columns: ["completed_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_checklist_items_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "sg_checklist_items_timesheet_entry_id_fkey"
+            columns: ["timesheet_entry_id"]
+            isOneToOne: false
+            referencedRelation: "timesheet_entries"
             referencedColumns: ["id"]
           },
         ]
@@ -1848,6 +2008,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "sg_checklist_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       sg_checklists: {
@@ -1899,6 +2066,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "sg_checklists_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "sg_checklists_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: false
@@ -1913,11 +2087,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "sg_checklists_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "sg_checklists_job_id_fkey"
             columns: ["job_id"]
             isOneToOne: true
             referencedRelation: "jobs"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_checklists_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: true
+            referencedRelation: "time_by_job_report"
+            referencedColumns: ["job_id"]
           },
           {
             foreignKeyName: "sg_checklists_template_id_fkey"
@@ -1976,6 +2164,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_conversations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -2059,6 +2254,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "sg_media_checklist_item_id_fkey"
+            columns: ["checklist_item_id"]
+            isOneToOne: false
+            referencedRelation: "time_by_task_report"
+            referencedColumns: ["item_id"]
+          },
+          {
             foreignKeyName: "sg_media_conversation_id_fkey"
             columns: ["conversation_id"]
             isOneToOne: false
@@ -2073,11 +2275,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "sg_media_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "time_by_job_report"
+            referencedColumns: ["job_id"]
+          },
+          {
             foreignKeyName: "sg_media_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_media_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -2142,6 +2358,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -2254,6 +2477,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "team_availability_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       time_off_requests: {
@@ -2312,11 +2542,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "time_off_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "time_off_requests_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_off_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -2327,6 +2571,7 @@ export type Database = {
           clock_out_time: string | null
           created_at: string
           id: string
+          job_id: string | null
           notes: string | null
           updated_at: string
           user_id: string
@@ -2337,6 +2582,7 @@ export type Database = {
           clock_out_time?: string | null
           created_at?: string
           id?: string
+          job_id?: string | null
           notes?: string | null
           updated_at?: string
           user_id: string
@@ -2347,11 +2593,27 @@ export type Database = {
           clock_out_time?: string | null
           created_at?: string
           id?: string
+          job_id?: string | null
           notes?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "timesheet_entries_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timesheet_entries_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "time_by_job_report"
+            referencedColumns: ["job_id"]
+          },
+        ]
       }
       travel_time_cache: {
         Row: {
@@ -2438,6 +2700,112 @@ export type Database = {
           type?: string | null
         }
         Relationships: []
+      }
+      time_by_job_report: {
+        Row: {
+          business_id: string | null
+          job_id: string | null
+          job_title: string | null
+          total_entries: number | null
+          total_minutes: number | null
+          unique_workers: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jobs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      time_by_task_report: {
+        Row: {
+          business_id: string | null
+          checklist_id: string | null
+          checklist_title: string | null
+          completed_at: string | null
+          completed_by: string | null
+          completed_by_name: string | null
+          item_id: string | null
+          item_title: string | null
+          job_id: string | null
+          job_title: string | null
+          time_spent_minutes: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jobs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_checklist_items_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_checklist_items_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "sg_checklists_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: true
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_checklists_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: true
+            referencedRelation: "time_by_job_report"
+            referencedColumns: ["job_id"]
+          },
+        ]
+      }
+      unified_assignments: {
+        Row: {
+          assigned_at: string | null
+          assignment_type: string | null
+          business_id: string | null
+          checklist_id: string | null
+          item_id: string | null
+          item_title: string | null
+          job_id: string | null
+          job_title: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      user_productivity_report: {
+        Row: {
+          business_id: string | null
+          full_name: string | null
+          task_minutes: number | null
+          tasks_completed: number | null
+          tasks_per_hour: number | null
+          timesheet_entries: number | null
+          timesheet_minutes: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_permissions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
@@ -3477,6 +3845,10 @@ export type Database = {
           p_is_subscription?: boolean
           p_new_quote_id: string
         }
+        Returns: undefined
+      }
+      sync_job_checklist_assignments: {
+        Args: { p_assign?: boolean; p_job_id: string; p_user_ids: string[] }
         Returns: undefined
       }
       unlockrows: { Args: { "": string }; Returns: number }
