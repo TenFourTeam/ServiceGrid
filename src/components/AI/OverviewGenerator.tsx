@@ -9,9 +9,9 @@ import { format, subDays, startOfWeek, endOfWeek } from 'date-fns';
 import { useGenerateOverview, type OverviewScope } from '@/hooks/useAIArtifacts';
 import { useBusinessMembersData } from '@/hooks/useBusinessMembers';
 import { useJobsData } from '@/hooks/useJobsData';
-import { useAuthApi } from '@/hooks/useAuthApi';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
@@ -33,27 +33,38 @@ export function OverviewGenerator({ open, onOpenChange, defaultDateRange }: Over
   const { data: members } = useBusinessMembersData();
   const { data: jobsData } = useJobsData();
   const generateMutation = useGenerateOverview();
-  const authApi = useAuthApi();
   const { businessId } = useBusinessContext();
 
   // Fetch unique tags from media
   useEffect(() => {
     if (!businessId) return;
     
-    authApi.invoke(`job-media-crud?businessId=${businessId}`, { method: 'GET' })
-      .then(({ data }) => {
-        if (data?.media) {
-          const tags = new Set<string>();
-          data.media.forEach((item: any) => {
-            if (item.tags) {
-              item.tags.forEach((tag: string) => tags.add(tag));
-            }
-          });
-          setAvailableTags(Array.from(tags).sort());
+    const fetchTags = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('sg_media')
+          .select('tags')
+          .eq('business_id', businessId);
+        
+        if (error) {
+          console.error('Error fetching tags:', error);
+          return;
         }
-      })
-      .catch(console.error);
-  }, [businessId, authApi]);
+        
+        const tags = new Set<string>();
+        data?.forEach((item: any) => {
+          if (item.tags && Array.isArray(item.tags)) {
+            item.tags.forEach((tag: string) => tags.add(tag));
+          }
+        });
+        setAvailableTags(Array.from(tags).sort());
+      } catch (err) {
+        console.error('Error fetching tags:', err);
+      }
+    };
+    
+    fetchTags();
+  }, [businessId]);
 
   const jobs = useMemo(() => jobsData?.data || [], [jobsData]);
 
