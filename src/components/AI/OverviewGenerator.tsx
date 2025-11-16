@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -9,6 +9,9 @@ import { format, subDays, startOfWeek, endOfWeek } from 'date-fns';
 import { useGenerateOverview, type OverviewScope } from '@/hooks/useAIArtifacts';
 import { useBusinessMembersData } from '@/hooks/useBusinessMembers';
 import { useJobsData } from '@/hooks/useJobsData';
+import { useAuthApi } from '@/hooks/useAuthApi';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
@@ -23,11 +26,34 @@ export function OverviewGenerator({ open, onOpenChange, defaultDateRange }: Over
   const [dateRange, setDateRange] = useState<{ start: Date; end: Date } | undefined>(defaultDateRange);
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
   const [selectedJobIds, setSelectedJobIds] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [generatedContent, setGeneratedContent] = useState<string>('');
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
   
   const { data: members } = useBusinessMembersData();
   const { data: jobsData } = useJobsData();
   const generateMutation = useGenerateOverview();
+  const authApi = useAuthApi();
+  const { businessId } = useBusinessContext();
+
+  // Fetch unique tags from media
+  useEffect(() => {
+    if (!businessId) return;
+    
+    authApi.invoke(`job-media-crud?businessId=${businessId}`, { method: 'GET' })
+      .then(({ data }) => {
+        if (data?.media) {
+          const tags = new Set<string>();
+          data.media.forEach((item: any) => {
+            if (item.tags) {
+              item.tags.forEach((tag: string) => tags.add(tag));
+            }
+          });
+          setAvailableTags(Array.from(tags).sort());
+        }
+      })
+      .catch(console.error);
+  }, [businessId, authApi]);
 
   const jobs = useMemo(() => jobsData?.data || [], [jobsData]);
 
@@ -62,6 +88,7 @@ export function OverviewGenerator({ open, onOpenChange, defaultDateRange }: Over
       },
       ...(selectedAssignees.length > 0 && { assignees: selectedAssignees }),
       ...(selectedJobIds.length > 0 && { jobIds: selectedJobIds }),
+      ...(selectedTags.length > 0 && { tags: selectedTags }),
     };
 
     try {
@@ -166,6 +193,56 @@ export function OverviewGenerator({ open, onOpenChange, defaultDateRange }: Over
                     </Button>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Tags Filter */}
+            {availableTags.length > 0 && (
+              <div className="space-y-2">
+                <Label>Filter by Tags (Optional)</Label>
+                <Select
+                  value={selectedTags[0] || 'all'}
+                  onValueChange={(value) => {
+                    if (value === 'all') {
+                      setSelectedTags([]);
+                    } else {
+                      setSelectedTags(prev => 
+                        prev.includes(value) 
+                          ? prev.filter(t => t !== value)
+                          : [...prev, value]
+                      );
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={
+                      selectedTags.length === 0 
+                        ? 'All tags' 
+                        : `${selectedTags.length} tag${selectedTags.length > 1 ? 's' : ''} selected`
+                    } />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All tags</SelectItem>
+                    {availableTags.map(tag => (
+                      <SelectItem key={tag} value={tag}>
+                        {tag} {selectedTags.includes(tag) ? '✓' : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedTags.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {selectedTags.map(tag => (
+                      <span 
+                        key={tag}
+                        className="text-xs bg-secondary px-2 py-1 rounded cursor-pointer hover:bg-secondary/80"
+                        onClick={() => setSelectedTags(prev => prev.filter(t => t !== tag))}
+                      >
+                        {tag} ×
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
