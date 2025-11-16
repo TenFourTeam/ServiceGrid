@@ -31,6 +31,7 @@ import { NotesContainer } from '@/components/Notes/NotesContainer';
 import { BulkTagManager } from '@/components/Media/BulkTagManager';
 import { useBulkUpdateMediaTags } from '@/hooks/useMediaTags';
 import { Tags } from 'lucide-react';
+import { SummaryGenerator } from '@/components/AI';
 
 interface JobShowModalProps {
   open: boolean;
@@ -64,6 +65,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
   const { data: jobMedia = [], isLoading: mediaLoading } = useJobMedia(job.id);
   const [optimisticMedia, setOptimisticMedia] = useState<MediaItem[]>([]);
   const [showBulkTagManager, setShowBulkTagManager] = useState(false);
+  const [showAISummary, setShowAISummary] = useState(false);
   const bulkUpdateTags = useBulkUpdateMediaTags();
 
   const allMedia = useMemo(() => {
@@ -674,10 +676,11 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
           </div>
           
           <Tabs defaultValue="checklist" className="w-full">
-            <TabsList>
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="checklist">Checklist</TabsTrigger>
               <TabsTrigger value="media">Media</TabsTrigger>
               <TabsTrigger value="notes">Notes</TabsTrigger>
+              <TabsTrigger value="summary">AI Summary</TabsTrigger>
             </TabsList>
             
             <TabsContent value="checklist">
@@ -790,7 +793,25 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
             <TabsContent value="notes" className="h-[500px]">
               <NotesContainer jobId={job.id} />
             </TabsContent>
+            
+            <TabsContent value="summary" className="space-y-4">
+              <div className="text-center py-8">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Generate an AI-powered summary of this job
+                </p>
+                <Button onClick={() => setShowAISummary(true)}>
+                  Generate Summary
+                </Button>
+              </div>
+            </TabsContent>
           </Tabs>
+          
+          <SummaryGenerator
+            open={showAISummary}
+            onOpenChange={setShowAISummary}
+            jobId={job.id}
+            defaultType="customer"
+          />
           
           {/* Team Assignment Section */}
           <JobMemberAssignments job={job} />

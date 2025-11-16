@@ -8,7 +8,8 @@ import DayCalendar from "@/components/Calendar/DayCalendar";
 import { RouteMapView } from "@/components/Calendar/RouteMapView";
 import { useMemo, useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { addMonths, startOfDay, addDays, format, startOfWeek, endOfWeek } from "date-fns";
-import { ChevronLeft, ChevronRight, Map } from "lucide-react";
+import { ChevronLeft, ChevronRight, Map, Sparkles } from "lucide-react";
+import { OverviewGenerator } from '@/components/AI';
 import { useJobsData } from "@/hooks/useJobsData";
 import { useBusinessMembersData } from "@/hooks/useBusinessMembers";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -31,6 +32,7 @@ export default function CalendarShell({
   const [showMap, setShowMap] = useState(false);
   const [displayMode, setDisplayMode] = useState<CalendarDisplayMode>('scheduled');
   const [date, setDate] = useState<Date>(startOfDay(new Date()));
+  const [showOverviewGenerator, setShowOverviewGenerator] = useState(false);
   const { role, userId, businessId, businessName } = useBusinessContext(routeBusinessId);
   const { data: jobs, refetch: refetchJobs } = useJobsData(businessId);
   const { data: businessMembers } = useBusinessMembersData();
@@ -173,6 +175,17 @@ export default function CalendarShell({
               </Select>
             )}
             
+            {/* Generate Overview Button */}
+            <Button 
+              variant="secondary"
+              size={isPhone ? "md" : "sm"}
+              onClick={() => setShowOverviewGenerator(true)}
+              className="gap-2"
+            >
+              <Sparkles className="h-4 w-4" />
+              {!isPhone && <span>Overview</span>}
+            </Button>
+            
             {/* Map Toggle - Separate from time views */}
             <Button 
               variant={showMap ? "primary" : "secondary"} 
@@ -266,5 +279,11 @@ export default function CalendarShell({
         {/* Right rail (search/shortcuts placeholder) */}
         
       </div>
+      
+      <OverviewGenerator
+        open={showOverviewGenerator}
+        onOpenChange={setShowOverviewGenerator}
+        defaultDateRange={view === 'week' ? { start: startOfWeek(date), end: endOfWeek(date) } : undefined}
+      />
     </div>;
 }
