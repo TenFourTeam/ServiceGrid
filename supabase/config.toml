@@ -331,3 +331,13 @@ verify_jwt = false
 
 [functions.messages-crud]
 verify_jwt = false
+
+# Phase 2: AI Document Generation
+[functions.generate-overview-doc]
+verify_jwt = false
+
+[functions.generate-summary]
+verify_jwt = false
+
+[functions.artifacts-list]
+verify_jwt = false

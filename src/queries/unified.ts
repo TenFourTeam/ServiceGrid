@@ -78,3 +78,13 @@ export {
   useDeleteNote 
 } from '@/hooks/useNotes';
 export { useNotePresence } from '@/hooks/useNotePresence';
+
+// Phase 2: AI Document Generation
+export { 
+  useGenerateOverview, 
+  useGenerateSummary, 
+  useAIArtifacts,
+  type OverviewScope,
+  type SummaryRequest,
+  type AIArtifact
+} from '@/hooks/useAIArtifacts';
