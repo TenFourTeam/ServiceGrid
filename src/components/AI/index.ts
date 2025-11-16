@@ -6,3 +6,6 @@ export { ChatInput } from './ChatInput';
 export { TypingIndicator } from './TypingIndicator';
 export { ConversationStarters } from './ConversationStarters';
 export { ActionButton } from './ActionButton';
+export { OverviewGenerator } from './OverviewGenerator';
+export { SummaryGenerator } from './SummaryGenerator';
+export { ArtifactsViewer } from './ArtifactsViewer';
