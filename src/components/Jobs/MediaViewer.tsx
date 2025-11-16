@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { MediaItem } from '@/hooks/useJobMedia';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -22,9 +22,15 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { TagInput } from '@/components/Media/TagInput';
-import { AnnotationEditor } from '@/components/Media/AnnotationEditor';
 import { useUpdateMediaTags } from '@/hooks/useMediaTags';
 import { useUpdateMediaAnnotations } from '@/hooks/useMediaAnnotations';
+
+// Lazy load AnnotationEditor to avoid eager loading react-konva
+const AnnotationEditor = lazy(() => 
+  import('@/components/Media/AnnotationEditor').then(mod => ({ 
+    default: mod.AnnotationEditor 
+  }))
+);
 
 interface MediaViewerProps {
   media: MediaItem[];
@@ -303,18 +309,27 @@ export function MediaViewer({ media, initialIndex, isOpen, onClose }: MediaViewe
         {currentMedia.file_type === 'photo' && (
           <Dialog open={showAnnotationEditor} onOpenChange={setShowAnnotationEditor}>
             <DialogContent className="max-w-[95vw] h-[95vh] p-0">
-              <AnnotationEditor
-                imageUrl={currentMedia.blobUrl || currentMedia.public_url}
-                existingAnnotations={currentMedia.annotations || []}
-                onSave={(annotations) => {
-                  updateMediaAnnotations.mutate({
-                    mediaId: currentMedia.id,
-                    annotations
-                  });
-                  setShowAnnotationEditor(false);
-                }}
-                onCancel={() => setShowAnnotationEditor(false)}
-              />
+              <Suspense fallback={
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Loading annotation editor...</p>
+                  </div>
+                </div>
+              }>
+                <AnnotationEditor
+                  imageUrl={currentMedia.blobUrl || currentMedia.public_url}
+                  existingAnnotations={currentMedia.annotations || []}
+                  onSave={(annotations) => {
+                    updateMediaAnnotations.mutate({
+                      mediaId: currentMedia.id,
+                      annotations
+                    });
+                    setShowAnnotationEditor(false);
+                  }}
+                  onCancel={() => setShowAnnotationEditor(false)}
+                />
+              </Suspense>
             </DialogContent>
           </Dialog>
         )}
