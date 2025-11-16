@@ -9,7 +9,7 @@ import { RouteMapView } from "@/components/Calendar/RouteMapView";
 import { useMemo, useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { addMonths, startOfDay, addDays, format, startOfWeek, endOfWeek } from "date-fns";
 import { ChevronLeft, ChevronRight, Map, Sparkles } from "lucide-react";
-import { OverviewGenerator } from '@/components/AI';
+import { OverviewGenerator, ArtifactsViewer } from '@/components/AI';
 import { useJobsData } from "@/hooks/useJobsData";
 import { useBusinessMembersData } from "@/hooks/useBusinessMembers";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -33,6 +33,7 @@ export default function CalendarShell({
   const [displayMode, setDisplayMode] = useState<CalendarDisplayMode>('scheduled');
   const [date, setDate] = useState<Date>(startOfDay(new Date()));
   const [showOverviewGenerator, setShowOverviewGenerator] = useState(false);
+  const [showArtifactsViewer, setShowArtifactsViewer] = useState(false);
   const { role, userId, businessId, businessName } = useBusinessContext(routeBusinessId);
   const { data: jobs, refetch: refetchJobs } = useJobsData(businessId);
   const { data: businessMembers } = useBusinessMembersData();
