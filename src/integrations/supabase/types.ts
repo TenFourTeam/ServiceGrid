@@ -1729,6 +1729,76 @@ export type Database = {
         }
         Relationships: []
       }
+      sg_ai_artifacts: {
+        Row: {
+          artifact_type: string
+          business_id: string
+          content_html: string
+          content_markdown: string
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          id: string
+          input_hash: string
+          metadata: Json | null
+          provenance: Json | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          artifact_type: string
+          business_id: string
+          content_html: string
+          content_markdown: string
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          input_hash: string
+          metadata?: Json | null
+          provenance?: Json | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          artifact_type?: string
+          business_id?: string
+          content_html?: string
+          content_markdown?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          input_hash?: string
+          metadata?: Json | null
+          provenance?: Json | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sg_ai_artifacts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_ai_artifacts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_ai_artifacts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       sg_checklist_events: {
         Row: {
           checklist_id: string
@@ -2171,6 +2241,183 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "user_productivity_report"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      sg_documents: {
+        Row: {
+          business_id: string
+          created_at: string
+          created_by: string
+          customer_id: string | null
+          document_type: string
+          file_size: number
+          id: string
+          job_id: string | null
+          mime_type: string
+          public_url: string
+          storage_path: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          created_by: string
+          customer_id?: string | null
+          document_type: string
+          file_size: number
+          id?: string
+          job_id?: string | null
+          mime_type: string
+          public_url: string
+          storage_path: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          created_by?: string
+          customer_id?: string | null
+          document_type?: string
+          file_size?: number
+          id?: string
+          job_id?: string | null
+          mime_type?: string
+          public_url?: string
+          storage_path?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sg_documents_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_documents_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_documents_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "sg_documents_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_documents_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_documents_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "time_by_job_report"
+            referencedColumns: ["job_id"]
+          },
+        ]
+      }
+      sg_esign_envelopes: {
+        Row: {
+          audit_trail: Json | null
+          business_id: string
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          document_id: string
+          id: string
+          metadata: Json | null
+          provider: string
+          provider_envelope_id: string | null
+          recipients: Json
+          sent_at: string | null
+          signed_document_url: string | null
+          status: string
+          updated_at: string
+          voided_at: string | null
+        }
+        Insert: {
+          audit_trail?: Json | null
+          business_id: string
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          document_id: string
+          id?: string
+          metadata?: Json | null
+          provider: string
+          provider_envelope_id?: string | null
+          recipients?: Json
+          sent_at?: string | null
+          signed_document_url?: string | null
+          status?: string
+          updated_at?: string
+          voided_at?: string | null
+        }
+        Update: {
+          audit_trail?: Json | null
+          business_id?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          document_id?: string
+          id?: string
+          metadata?: Json | null
+          provider?: string
+          provider_envelope_id?: string | null
+          recipients?: Json
+          sent_at?: string | null
+          signed_document_url?: string | null
+          status?: string
+          updated_at?: string
+          voided_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sg_esign_envelopes_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_esign_envelopes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_esign_envelopes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "sg_esign_envelopes_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "sg_documents"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -2617,6 +2864,76 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "sg_notes"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      sg_timeline_shares: {
+        Row: {
+          business_id: string
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          filters_json: Json | null
+          id: string
+          is_active: boolean
+          last_viewed_at: string | null
+          title: string
+          token: string
+          updated_at: string
+          view_count: number
+          watermark_settings: Json | null
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          filters_json?: Json | null
+          id?: string
+          is_active?: boolean
+          last_viewed_at?: string | null
+          title: string
+          token: string
+          updated_at?: string
+          view_count?: number
+          watermark_settings?: Json | null
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          filters_json?: Json | null
+          id?: string
+          is_active?: boolean
+          last_viewed_at?: string | null
+          title?: string
+          token?: string
+          updated_at?: string
+          view_count?: number
+          watermark_settings?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sg_timeline_shares_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_timeline_shares_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_timeline_shares_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
           },
         ]
       }
