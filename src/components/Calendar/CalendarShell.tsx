@@ -8,7 +8,7 @@ import DayCalendar from "@/components/Calendar/DayCalendar";
 import { RouteMapView } from "@/components/Calendar/RouteMapView";
 import { useMemo, useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { addMonths, startOfDay, addDays, format, startOfWeek, endOfWeek } from "date-fns";
-import { ChevronLeft, ChevronRight, Map, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Map, Sparkles, FileText } from "lucide-react";
 import { OverviewGenerator, ArtifactsViewer } from '@/components/AI';
 import { useJobsData } from "@/hooks/useJobsData";
 import { useBusinessMembersData } from "@/hooks/useBusinessMembers";
@@ -187,6 +187,19 @@ export default function CalendarShell({
               {!isPhone && <span>Overview</span>}
             </Button>
             
+            {/* AI Documents Button */}
+            {role === 'owner' && (
+              <Button 
+                variant="secondary"
+                size={isPhone ? "md" : "sm"}
+                onClick={() => setShowArtifactsViewer(true)}
+                className="gap-2"
+              >
+                <FileText className="h-4 w-4" />
+                {!isPhone && <span>AI Docs</span>}
+              </Button>
+            )}
+            
             {/* Map Toggle - Separate from time views */}
             <Button 
               variant={showMap ? "primary" : "secondary"} 
@@ -285,6 +298,10 @@ export default function CalendarShell({
         open={showOverviewGenerator}
         onOpenChange={setShowOverviewGenerator}
         defaultDateRange={view === 'week' ? { start: startOfWeek(date), end: endOfWeek(date) } : undefined}
+      />
+      <ArtifactsViewer
+        open={showArtifactsViewer}
+        onOpenChange={setShowArtifactsViewer}
       />
     </div>;
 }
