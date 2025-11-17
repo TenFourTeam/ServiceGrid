@@ -100,7 +100,30 @@ export function useAIChat(options?: UseAIChatOptions) {
         }
       );
 
+      // Handle rate limit and payment errors
       if (!response.ok) {
+        if (response.status === 429) {
+          toast.error('AI is experiencing high demand. Please try again in a moment.');
+          setIsStreaming(false);
+          setCurrentStreamingMessage('');
+          abortControllerRef.current = null;
+          return;
+        }
+        
+        if (response.status === 402) {
+          toast.error('AI credits exhausted. Please add credits to continue.', {
+            action: {
+              label: 'Add Credits',
+              onClick: () => window.open('https://lovable.dev/settings/usage', '_blank')
+            },
+            duration: 10000
+          });
+          setIsStreaming(false);
+          setCurrentStreamingMessage('');
+          abortControllerRef.current = null;
+          return;
+        }
+        
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 

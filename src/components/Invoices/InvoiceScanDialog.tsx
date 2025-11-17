@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Camera, Loader2, AlertCircle, CheckCircle2, RefreshCw } from 'lucide-react';
 import { useInvoiceExtraction, type ExtractedInvoiceData } from '@/hooks/useInvoiceExtraction';
-import { useConversationMediaUpload } from '@/hooks/useConversationMediaUpload';
+import { useInvoiceMediaUpload } from '@/hooks/useInvoiceMediaUpload';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -22,48 +22,47 @@ export function InvoiceScanDialog({ open, onOpenChange, onDataExtracted }: Invoi
   const [extractedData, setExtractedData] = useState<ExtractedInvoiceData | null>(null);
   const [confidence, setConfidence] = useState<'high' | 'medium' | 'low' | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
+  const [errorType, setErrorType] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const { uploadMedia, uploading } = useConversationMediaUpload();
+  const mediaUpload = useInvoiceMediaUpload();
   const extractMutation = useInvoiceExtraction();
 
   const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     if (!file.type.startsWith('image/')) {
       toast.error('Please select an image file');
       return;
     }
-
     setSelectedFile(file);
     setPreviewUrl(URL.createObjectURL(file));
     setExtractedData(null);
     setConfidence(null);
     setWarnings([]);
+    setErrorType(null);
   };
 
   const handleExtract = async () => {
     if (!selectedFile) return;
-
+    setErrorType(null);
     try {
-      // Upload image first
-      const uploadResult = await uploadMedia(selectedFile, {
-        conversationId: 'invoice-scan', // Temporary conversation for invoices
-        onProgress: (progress) => console.log(`Upload: ${progress}%`)
-      });
-
-      // Extract data using AI
+      const uploadResult = await mediaUpload.uploadMedia(selectedFile);
       const result = await extractMutation.mutateAsync(uploadResult.mediaId);
-      
       setExtractedData(result.extracted);
       setConfidence(result.confidence);
       setWarnings(result.warnings || []);
-      
       toast.success('Invoice data extracted successfully!');
-    } catch (error) {
-      console.error('Extraction error:', error);
-      toast.error('Failed to extract invoice data. Please try again.');
+    } catch (error: any) {
+      if (error.errorType === 'RATE_LIMIT') {
+        setErrorType('RATE_LIMIT');
+        toast.error('AI is busy. Please try again in a moment.');
+      } else if (error.errorType === 'PAYMENT_REQUIRED') {
+        setErrorType('PAYMENT_REQUIRED');
+        toast.error('AI credits exhausted. Please add credits to continue.');
+      } else {
+        toast.error('Failed to extract invoice data. Please try again.');
+      }
     }
   };
 
@@ -86,178 +85,62 @@ export function InvoiceScanDialog({ open, onOpenChange, onDataExtracted }: Invoi
     setExtractedData(null);
     setConfidence(null);
     setWarnings([]);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    setErrorType(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const isLoading = uploading || extractMutation.isPending;
+  const isLoading = mediaUpload.uploading || extractMutation.isPending;
 
   return (
-    <Dialog open={open} onOpenChange={(newOpen) => {
-      onOpenChange(newOpen);
-      if (!newOpen) resetDialog();
-    }}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={(newOpen) => { onOpenChange(newOpen); if (!newOpen) resetDialog(); }}>
+      <DialogContent className="max-w-full md:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Scan Receipt or Invoice</DialogTitle>
+          <p className="text-sm text-muted-foreground mt-1">For best results, ensure the receipt is well-lit and text is clearly visible</p>
         </DialogHeader>
-
         <div className="space-y-4">
-          {/* File Input */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-
-          {/* Image Preview */}
-          {!previewUrl ? (
-            <div className="border-2 border-dashed border-border rounded-lg p-12 text-center">
-              <Camera className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-              <Button onClick={() => fileInputRef.current?.click()}>
-                Take Photo or Select Image
-              </Button>
-              <p className="text-xs text-muted-foreground mt-2">
-                For best results, ensure the receipt is well-lit and text is clear
-              </p>
+          {errorType === 'RATE_LIMIT' && (
+            <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>AI is experiencing high demand. Please wait a moment and try again.</AlertDescription></Alert>
+          )}
+          {errorType === 'PAYMENT_REQUIRED' && (
+            <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription className="flex items-center justify-between"><span>AI credits exhausted.</span><Button size="sm" variant="outline" onClick={() => window.open('https://lovable.dev/settings/usage', '_blank')}>Add Credits</Button></AlertDescription></Alert>
+          )}
+          <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handleFileSelect} className="hidden" />
+          {!selectedFile ? (
+            <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors">
+              <Camera className="mx-auto h-12 w-12 text-muted-foreground mb-3" />
+              <h3 className="font-medium mb-2">Scan a Receipt or Invoice</h3>
+              <p className="text-sm text-muted-foreground mb-3">Click to take a photo or select an image</p>
+              <ul className="text-sm text-muted-foreground space-y-1"><li>• Ensure text is clear and readable</li><li>• Include all line items</li><li>• Capture total and tax amounts</li></ul>
             </div>
           ) : (
             <div className="space-y-4">
-              <img
-                src={previewUrl}
-                alt="Receipt preview"
-                className="w-full rounded-lg border border-border max-h-96 object-contain"
-              />
-
-              {!extractedData && (
-                <div className="flex gap-2">
-                  <Button
-                    onClick={handleExtract}
-                    disabled={isLoading}
-                    className="flex-1"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Extracting...
-                      </>
-                    ) : (
-                      'Extract Data'
-                    )}
-                  </Button>
-                  <Button
-                    onClick={handleRetake}
-                    variant="outline"
-                    disabled={isLoading}
-                  >
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Retake
-                  </Button>
-                </div>
-              )}
+              {previewUrl && <div className="relative rounded-lg overflow-hidden border"><img src={previewUrl} alt="Receipt preview" className="w-full h-auto max-h-96 object-contain bg-muted" /></div>}
+              <div className="flex gap-2">
+                <Button onClick={handleExtract} disabled={isLoading} className="flex-1">{extractMutation.isPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Analyzing receipt...</> : 'Extract Data'}</Button>
+                <Button variant="outline" onClick={handleRetake} disabled={isLoading}><RefreshCw className="w-4 h-4 mr-2" />Retake</Button>
+              </div>
             </div>
           )}
-
-          {/* Extracted Data */}
-          {extractedData && confidence && (
-            <div className="space-y-4">
-              {/* Confidence Badge */}
-              <div className="flex items-center gap-2">
-                {confidence === 'high' ? (
-                  <CheckCircle2 className="w-5 h-5 text-green-600" />
-                ) : (
-                  <AlertCircle className="w-5 h-5 text-yellow-600" />
-                )}
-                <Badge variant={confidence === 'high' ? 'default' : 'secondary'}>
-                  {confidence.toUpperCase()} Confidence
-                </Badge>
+          {extractedData && (
+            <div className="space-y-4 border-t pt-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-medium">Extracted Data</h3>
+                {confidence && <Badge variant={confidence === 'high' ? 'default' : confidence === 'medium' ? 'secondary' : 'destructive'}>{confidence === 'high' && <CheckCircle2 className="w-3 h-3 mr-1" />}{confidence !== 'high' && <AlertCircle className="w-3 h-3 mr-1" />}{confidence.toUpperCase()} CONFIDENCE</Badge>}
               </div>
-
-              {/* Warnings */}
-              {warnings.length > 0 && (
-                <Alert>
-                  <AlertCircle className="w-4 h-4" />
-                  <AlertDescription>
-                    <ul className="list-disc list-inside text-sm">
-                      {warnings.map((warning, idx) => (
-                        <li key={idx}>{warning}</li>
-                      ))}
-                    </ul>
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {/* Data Preview */}
-              <Card>
-                <CardContent className="pt-6 space-y-3">
-                  {extractedData.vendor && (
-                    <div>
-                      <span className="text-sm text-muted-foreground">Vendor:</span>
-                      <p className="font-medium">{extractedData.vendor}</p>
-                    </div>
-                  )}
-                  
-                  {extractedData.date && (
-                    <div>
-                      <span className="text-sm text-muted-foreground">Date:</span>
-                      <p className="font-medium">{extractedData.date}</p>
-                    </div>
-                  )}
-
-                  {extractedData.invoiceNumber && (
-                    <div>
-                      <span className="text-sm text-muted-foreground">Invoice #:</span>
-                      <p className="font-medium">{extractedData.invoiceNumber}</p>
-                    </div>
-                  )}
-
-                  <div>
-                    <span className="text-sm text-muted-foreground">Line Items:</span>
-                    <div className="mt-2 space-y-2">
-                      {extractedData.lineItems.map((item, idx) => (
-                        <div key={idx} className="flex justify-between text-sm border-b border-border pb-2">
-                          <span>{item.description} ({item.quantity}x)</span>
-                          <span className="font-medium">{formatMoney(item.total)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {extractedData.subtotal && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Subtotal:</span>
-                      <span>{formatMoney(extractedData.subtotal)}</span>
-                    </div>
-                  )}
-
-                  {extractedData.taxRate && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Tax ({(extractedData.taxRate * 100).toFixed(1)}%):</span>
-                      <span>{formatMoney(extractedData.taxAmount || 0)}</span>
-                    </div>
-                  )}
-
-                  <div className="flex justify-between text-lg font-bold border-t border-border pt-2">
-                    <span>Total:</span>
-                    <span>{formatMoney(extractedData.total)}</span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Action Buttons */}
-              <div className="flex gap-2">
-                <Button onClick={handleUseData} className="flex-1">
-                  Use This Data
-                </Button>
-                <Button onClick={handleRetake} variant="outline">
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Try Another
-                </Button>
-              </div>
+              {warnings.length > 0 && <Alert><AlertCircle className="h-4 w-4" /><AlertDescription><p className="font-medium mb-1">Please review carefully:</p><ul className="list-disc pl-4 space-y-1 text-sm">{warnings.map((w, i) => <li key={i}>{w}</li>)}</ul></AlertDescription></Alert>}
+              <Card><CardContent className="pt-6 space-y-3">
+                {extractedData.vendor && <div><span className="text-sm text-muted-foreground">Vendor:</span><p className="font-medium">{extractedData.vendor}</p></div>}
+                {extractedData.date && <div><span className="text-sm text-muted-foreground">Date:</span><p className="font-medium">{extractedData.date}</p></div>}
+                {extractedData.invoiceNumber && <div><span className="text-sm text-muted-foreground">Invoice #:</span><p className="font-medium">{extractedData.invoiceNumber}</p></div>}
+                {extractedData.lineItems.length > 0 && <div className="border-t pt-3"><span className="text-sm text-muted-foreground mb-2 block">Line Items:</span><div className="space-y-2">{extractedData.lineItems.map((item, i) => <div key={i} className="flex justify-between text-sm"><span>{item.description} (x{item.quantity})</span><span className="font-medium">{formatMoney(item.total)}</span></div>)}</div></div>}
+                <div className="border-t pt-3 space-y-2">
+                  {extractedData.subtotal !== undefined && <div className="flex justify-between text-sm"><span>Subtotal:</span><span>{formatMoney(extractedData.subtotal)}</span></div>}
+                  {extractedData.taxAmount !== undefined && <div className="flex justify-between text-sm"><span>Tax ({extractedData.taxRate ? `${extractedData.taxRate}%` : ''}):</span><span>{formatMoney(extractedData.taxAmount)}</span></div>}
+                  <div className="flex justify-between font-medium"><span>Total:</span><span>{formatMoney(extractedData.total)}</span></div>
+                </div>
+              </CardContent></Card>
+              <Button onClick={handleUseData} className="w-full" size="lg">Use This Data</Button>
             </div>
           )}
         </div>
