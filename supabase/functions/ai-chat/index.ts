@@ -1188,14 +1188,8 @@ Deno.serve(async (req) => {
       if (convError) throw convError;
       convId = newConv.id;
       
-      // Link uploaded media to this conversation
-      if (mediaIds && mediaIds.length > 0) {
-        await supaAdmin
-          .from('sg_media')
-          .update({ conversation_id: convId })
-          .in('id', mediaIds)
-          .eq('business_id', businessId);
-      }
+      // Note: Media is stored with conversation_id = null for AI chat
+      // and is linked via mediaId in the message metadata
     }
 
     // Save user message
