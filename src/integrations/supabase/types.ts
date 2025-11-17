@@ -2435,7 +2435,7 @@ export type Database = {
           has_annotations: boolean | null
           hls_manifest_url: string | null
           id: string
-          job_id: string
+          job_id: string | null
           metadata: Json | null
           mime_type: string
           note_id: string | null
@@ -2461,7 +2461,7 @@ export type Database = {
           has_annotations?: boolean | null
           hls_manifest_url?: string | null
           id?: string
-          job_id: string
+          job_id?: string | null
           metadata?: Json | null
           mime_type: string
           note_id?: string | null
@@ -2487,7 +2487,7 @@ export type Database = {
           has_annotations?: boolean | null
           hls_manifest_url?: string | null
           id?: string
-          job_id?: string
+          job_id?: string | null
           metadata?: Json | null
           mime_type?: string
           note_id?: string | null
