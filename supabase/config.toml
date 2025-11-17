@@ -341,3 +341,8 @@ verify_jwt = false
 
 [functions.artifacts-list]
 verify_jwt = false
+
+# AI photo-based features
+[functions.extract-invoice-from-photo]
+verify_jwt = false
+

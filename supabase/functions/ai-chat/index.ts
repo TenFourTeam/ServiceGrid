@@ -1148,7 +1148,23 @@ Deno.serve(async (req) => {
     // Authenticate using Clerk JWT
     const { userId, businessId, supaAdmin } = await requireCtx(req);
 
-    const { conversationId, message, includeContext } = await req.json();
+    const { conversationId, message, mediaIds, includeContext } = await req.json();
+
+    // Fetch media URLs if mediaIds provided
+    let imageUrls: string[] = [];
+    if (mediaIds && mediaIds.length > 0) {
+      const { data: mediaItems, error: mediaError } = await supaAdmin
+        .from('sg_media')
+        .select('public_url')
+        .in('id', mediaIds)
+        .eq('business_id', businessId);
+
+      if (mediaError) {
+        console.error('Error fetching media:', mediaError);
+      } else if (mediaItems) {
+        imageUrls = mediaItems.map((m: any) => m.public_url);
+      }
+    }
 
     let convId = conversationId;
     let isNewConversation = false;
@@ -1193,8 +1209,12 @@ Deno.serve(async (req) => {
     const messages: Message[] = history || [];
 
     // Build system prompt with context
+    const visionNote = imageUrls.length > 0 
+      ? '\n\nIMAGE ANALYSIS CAPABILITY:\nYou can analyze images shared by field workers. When images are provided:\n- Identify problems, defects, or issues visible in photos\n- Provide step-by-step guidance for repairs or installations\n- Reference safety considerations\n- Suggest tools or materials needed\n- Give clear, actionable instructions'
+      : '';
+
     const systemPrompt = `You are a proactive AI scheduling assistant for a service business management system.
-You can both QUERY information and TAKE ACTIONS to help manage the business efficiently.
+You can both QUERY information and TAKE ACTIONS to help manage the business efficiently.${visionNote}
 
 Current Context:
 - Business ID: ${businessId}
@@ -1337,11 +1357,30 @@ INTELLIGENCE NOTES:
 - Always explain YOUR reasoning for scheduling decisions`;
 
 
-    // Prepare messages for AI
-    const aiMessages = [
-      { role: 'system', content: systemPrompt },
-      ...messages
+    // Prepare messages for AI - support vision
+    const aiMessages: any[] = [
+      { role: 'system', content: systemPrompt }
     ];
+
+    // Add history and current message with vision support
+    for (const msg of messages) {
+      if (msg.role === 'user' && imageUrls.length > 0 && msg === messages[messages.length - 1]) {
+        // Last user message with images - use vision format
+        aiMessages.push({
+          role: 'user',
+          content: [
+            { type: 'text', text: msg.content },
+            ...imageUrls.map(url => ({
+              type: 'image_url',
+              image_url: { url }
+            }))
+          ]
+        });
+      } else {
+        // Regular text message
+        aiMessages.push(msg);
+      }
+    }
 
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
     if (!lovableApiKey) throw new Error('LOVABLE_API_KEY not configured');

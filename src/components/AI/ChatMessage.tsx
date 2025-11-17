@@ -59,6 +59,24 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
   const isSystemMessage = message.role === 'system';
   const { navigateToDate } = useCalendarNavigation();
   const [parsedContent] = useState(() => parseMessageContent(message.content));
+  const [mediaUrls, setMediaUrls] = useState<string[]>([]);
+
+  // Fetch media URLs if message has attachments
+  useState(() => {
+    if (message.mediaIds && message.mediaIds.length > 0) {
+      import('@/integrations/supabase/client').then(({ supabase }) => {
+        supabase
+          .from('sg_media')
+          .select('public_url')
+          .in('id', message.mediaIds)
+          .then(({ data }) => {
+            if (data) {
+              setMediaUrls(data.map(m => m.public_url));
+            }
+          });
+      });
+    }
+  });
 
   return (
     <div className={cn(
@@ -93,6 +111,21 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
             : 'bg-muted'
         )}>
           <div className="space-y-3">
+            {/* Display attached images for user messages */}
+            {isUser && mediaUrls.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {mediaUrls.map((url, idx) => (
+                  <img
+                    key={idx}
+                    src={url}
+                    alt={`Attachment ${idx + 1}`}
+                    className="w-32 h-32 object-cover rounded-lg border border-border cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => window.open(url, '_blank')}
+                  />
+                ))}
+              </div>
+            )}
+
             {parsedContent.map((part, idx) => {
               if (part.type === 'text') {
                 return (

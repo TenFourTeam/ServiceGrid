@@ -8,6 +8,7 @@ export interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Date;
+  mediaIds?: string[];
   toolCalls?: Array<{
     tool: string;
     status: 'executing' | 'complete' | 'error';
@@ -35,8 +36,32 @@ export function useAIChat(options?: UseAIChatOptions) {
   const { businessId } = useBusinessContext();
   const { getToken } = useAuth();
 
-  const sendMessage = useCallback(async (content: string, context?: any) => {
-    if (!businessId || !content.trim()) return;
+  const sendMessage = useCallback(async (content: string, attachments?: File[], context?: any) => {
+    if (!businessId || (!content.trim() && (!attachments || attachments.length === 0))) return;
+
+    // Upload attachments first if any
+    let mediaIds: string[] = [];
+    if (attachments && attachments.length > 0) {
+      try {
+        const { useConversationMediaUpload } = await import('./useConversationMediaUpload');
+        const uploadPromises = attachments.map(async (file) => {
+          const { uploadMedia } = useConversationMediaUpload();
+          const result = await uploadMedia(file, {
+            conversationId: conversationId || 'temp',
+            onProgress: (progress) => {
+              console.log(`Upload progress: ${progress}%`);
+            }
+          });
+          return result.mediaId;
+        });
+        
+        mediaIds = await Promise.all(uploadPromises);
+      } catch (error) {
+        console.error('Error uploading attachments:', error);
+        toast.error('Failed to upload images. Please try again.');
+        return;
+      }
+    }
 
     // Add user message immediately
     const userMessage: Message = {
@@ -44,6 +69,7 @@ export function useAIChat(options?: UseAIChatOptions) {
       role: 'user',
       content,
       timestamp: new Date(),
+      mediaIds,
     };
     setMessages(prev => [...prev, userMessage]);
     setIsStreaming(true);
@@ -64,6 +90,7 @@ export function useAIChat(options?: UseAIChatOptions) {
           body: JSON.stringify({
             conversationId,
             message: content,
+            mediaIds: mediaIds.length > 0 ? mediaIds : undefined,
             includeContext: {
               currentPage: window.location.pathname,
               ...context
