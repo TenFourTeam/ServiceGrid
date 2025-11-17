@@ -1,10 +1,10 @@
-import { useState, useRef, KeyboardEvent } from 'react';
+import { useState, useRef, KeyboardEvent, ChangeEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, StopCircle } from 'lucide-react';
+import { Send, StopCircle, Camera, X } from 'lucide-react';
 
 interface ChatInputProps {
-  onSend: (message: string) => void;
+  onSend: (message: string, attachments?: File[]) => void;
   onStop?: () => void;
   isStreaming?: boolean;
   placeholder?: string;
@@ -19,12 +19,15 @@ export function ChatInput({
   suggestions = []
 }: ChatInputProps) {
   const [message, setMessage] = useState('');
+  const [attachments, setAttachments] = useState<File[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSend = () => {
-    if (!message.trim() || isStreaming) return;
-    onSend(message);
+    if ((!message.trim() && attachments.length === 0) || isStreaming) return;
+    onSend(message, attachments);
     setMessage('');
+    setAttachments([]);
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
@@ -37,7 +40,7 @@ export function ChatInput({
     }
   };
 
-  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleInput = (e: ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(e.target.value);
     // Auto-resize
     const textarea = e.target;
@@ -51,10 +54,30 @@ export function ChatInput({
     }
   };
 
+  const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const imageFiles = files.filter(f => f.type.startsWith('image/'));
+    
+    if (imageFiles.length !== files.length) {
+      // Show toast for non-image files
+      console.warn('Only image files are supported');
+    }
+    
+    setAttachments(prev => [...prev, ...imageFiles]);
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
   return (
     <div className="border-t border-border bg-background p-4">
       {/* Quick Suggestions */}
-      {suggestions.length > 0 && !isStreaming && !message && (
+      {suggestions.length > 0 && !isStreaming && !message && attachments.length === 0 && (
         <div className="flex flex-wrap gap-2 mb-3">
           {suggestions.map((suggestion, idx) => (
             <Button
@@ -70,8 +93,49 @@ export function ChatInput({
         </div>
       )}
 
+      {/* Image Previews */}
+      {attachments.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-3">
+          {attachments.map((file, idx) => (
+            <div key={idx} className="relative group">
+              <img
+                src={URL.createObjectURL(file)}
+                alt={file.name}
+                className="w-20 h-20 object-cover rounded-lg border border-border"
+              />
+              <button
+                onClick={() => removeAttachment(idx)}
+                className="absolute -top-2 -right-2 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Input Area */}
       <div className="flex gap-2 items-end">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          multiple
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+        
+        <Button
+          onClick={() => fileInputRef.current?.click()}
+          size="icon"
+          variant="ghost"
+          className="flex-shrink-0"
+          disabled={isStreaming}
+        >
+          <Camera className="w-4 h-4" />
+        </Button>
+
         <Textarea
           ref={textareaRef}
           value={message}
@@ -95,7 +159,7 @@ export function ChatInput({
         ) : (
           <Button
             onClick={handleSend}
-            disabled={!message.trim()}
+            disabled={!message.trim() && attachments.length === 0}
             size="icon"
             className="flex-shrink-0"
           >
@@ -106,7 +170,7 @@ export function ChatInput({
 
       {/* Helper Text */}
       <p className="text-xs text-muted-foreground mt-2">
-        Press Enter to send, Shift+Enter for new line
+        Press Enter to send, Shift+Enter for new line{attachments.length > 0 && ` • ${attachments.length} image${attachments.length > 1 ? 's' : ''} attached`}
       </p>
     </div>
   );

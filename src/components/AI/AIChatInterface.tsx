@@ -232,7 +232,7 @@ export function AIChatInterface({
 
             {/* Input */}
             <ChatInput
-              onSend={(msg) => sendMessage(msg, context)}
+              onSend={(msg, attachments) => sendMessage(msg, attachments, context)}
               onStop={stopStreaming}
               isStreaming={isStreaming}
               suggestions={suggestions}

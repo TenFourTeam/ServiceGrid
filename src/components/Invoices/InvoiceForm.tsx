@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Camera } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { formatCurrencyInputNoSymbol, parseCurrencyInput, sanitizeMoneyTyping, formatMoney } from '@/utils/format';
@@ -17,7 +17,10 @@ import { CustomerCombobox } from '@/components/Quotes/CustomerCombobox';
 import { LineItemsEditor } from '@/components/Quotes/LineItemsEditor';
 import { CustomerBottomModal } from '@/components/Customers/CustomerBottomModal';
 import { useQuoteCalculations } from '@/hooks/useQuoteCalculations';
+import { InvoiceScanDialog } from './InvoiceScanDialog';
+import { toast } from 'sonner';
 import type { Invoice, Customer, LineItem, PaymentTerms, QuoteFrequency } from '@/types';
+import type { ExtractedInvoiceData } from '@/hooks/useInvoiceExtraction';
 
 export interface InvoiceFormData {
   customerId: string;
@@ -69,6 +72,7 @@ export function InvoiceForm({
     initialData?.dueDate ? new Date(initialData.dueDate) : undefined
   );
   const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [showScanDialog, setShowScanDialog] = useState(false);
 
   // Initialize discount display
   useEffect(() => {
@@ -143,6 +147,36 @@ export function InvoiceForm({
     });
   };
 
+  const handleDataExtracted = (data: ExtractedInvoiceData) => {
+    // Pre-populate form with extracted data
+    if (data.lineItems && data.lineItems.length > 0) {
+      const formattedLineItems: LineItem[] = data.lineItems.map(item => ({
+        id: crypto.randomUUID(),
+        name: item.description,
+        qty: item.quantity,
+        unitPrice: item.unitPrice,
+        lineTotal: item.total,
+        unit: 'ea'
+      }));
+      setLineItems(formattedLineItems);
+    }
+
+    if (data.taxRate !== undefined) {
+      setTaxRateInput(data.taxRate * 100);
+    }
+
+    // Add vendor and invoice number to internal notes
+    if (data.vendor || data.invoiceNumber || data.date) {
+      const notesParts = [];
+      if (data.vendor) notesParts.push(`Vendor: ${data.vendor}`);
+      if (data.invoiceNumber) notesParts.push(`Invoice #: ${data.invoiceNumber}`);
+      if (data.date) notesParts.push(`Date: ${data.date}`);
+      setNotesInternal(notesParts.join('\n') + (notesInternal ? '\n\n' + notesInternal : ''));
+    }
+
+    toast.success('Invoice data extracted! Please review and adjust as needed.');
+  };
+
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -150,7 +184,20 @@ export function InvoiceForm({
           {/* Customer Selection */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Customer Information</CardTitle>
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg">Customer Information</CardTitle>
+                {mode === 'create' && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowScanDialog(true)}
+                  >
+                    <Camera className="w-4 h-4 mr-2" />
+                    Scan Receipt
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -405,6 +452,12 @@ export function InvoiceForm({
           setCustomerId(customer.id);
           setShowCustomerModal(false);
         }}
+      />
+
+      <InvoiceScanDialog
+        open={showScanDialog}
+        onOpenChange={setShowScanDialog}
+        onDataExtracted={handleDataExtracted}
       />
     </>
   );
