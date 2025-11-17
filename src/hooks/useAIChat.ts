@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { useBusinessContext } from './useBusinessContext';
 import { useAuth } from '@clerk/clerk-react';
 import { toast } from 'sonner';
+import { useConversationMediaUpload } from './useConversationMediaUpload';
 
 export interface Message {
   id: string;
@@ -35,6 +36,7 @@ export function useAIChat(options?: UseAIChatOptions) {
   const abortControllerRef = useRef<AbortController | null>(null);
   const { businessId } = useBusinessContext();
   const { getToken } = useAuth();
+  const { uploadMedia } = useConversationMediaUpload();
 
   const sendMessage = useCallback(async (content: string, attachments?: File[], context?: any) => {
     if (!businessId || (!content.trim() && (!attachments || attachments.length === 0))) return;
@@ -43,9 +45,7 @@ export function useAIChat(options?: UseAIChatOptions) {
     let mediaIds: string[] = [];
     if (attachments && attachments.length > 0) {
       try {
-        const { useConversationMediaUpload } = await import('./useConversationMediaUpload');
         const uploadPromises = attachments.map(async (file) => {
-          const { uploadMedia } = useConversationMediaUpload();
           const result = await uploadMedia(file, {
             conversationId: conversationId || 'temp',
             onProgress: (progress) => {
