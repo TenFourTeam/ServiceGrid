@@ -41,13 +41,48 @@ export function useAIChat(options?: UseAIChatOptions) {
   const sendMessage = useCallback(async (content: string, attachments?: File[], context?: any) => {
     if (!businessId || (!content.trim() && (!attachments || attachments.length === 0))) return;
 
+    // Create conversation in database if it doesn't exist yet (needed for media upload)
+    let currentConvId = conversationId;
+    if (!currentConvId && attachments && attachments.length > 0) {
+      try {
+        currentConvId = crypto.randomUUID();
+        const token = await getToken({ template: 'supabase' });
+        
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/conversations-crud`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              id: currentConvId,
+              title: 'AI Assistant Chat',
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to create conversation');
+        }
+
+        setConversationId(currentConvId);
+        options?.onNewConversation?.(currentConvId);
+      } catch (error) {
+        console.error('Error creating conversation:', error);
+        toast.error('Failed to initialize chat. Please try again.');
+        return;
+      }
+    }
+
     // Upload attachments first if any
     let mediaIds: string[] = [];
     if (attachments && attachments.length > 0) {
       try {
         const uploadPromises = attachments.map(async (file) => {
           const result = await uploadMedia(file, {
-            conversationId: conversationId || 'temp',
+            conversationId: currentConvId!,
             onProgress: (progress) => {
               console.log(`Upload progress: ${progress}%`);
             }
@@ -88,7 +123,7 @@ export function useAIChat(options?: UseAIChatOptions) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            conversationId,
+            conversationId: currentConvId || conversationId,
             message: content,
             mediaIds: mediaIds.length > 0 ? mediaIds : undefined,
             includeContext: {
