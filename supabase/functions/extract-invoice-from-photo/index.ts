@@ -165,16 +165,22 @@ Deno.serve(async (req) => {
       warnings.push('No line items detected');
     }
 
-    // Log extraction activity
+    // Enhanced logging with detailed metadata
+    const extractionTime = Date.now() - Date.now();
     await ctx.supabase.from('ai_activity_log').insert({
       business_id: ctx.businessId,
       user_id: ctx.userId,
       activity_type: 'invoice_extraction',
-      description: `Extracted invoice data from ${media.original_filename}`,
+      description: `Extracted invoice data from ${media.original_filename} with ${confidence} confidence`,
       metadata: {
         mediaId,
         confidence,
-        lineItemCount: extracted.lineItems?.length || 0
+        lineItemCount: extracted.lineItems?.length || 0,
+        has_vendor: !!extracted.vendor,
+        has_date: !!extracted.date,
+        has_tax_rate: !!extracted.taxRate,
+        warnings_count: warnings.length,
+        total_amount: extracted.total
       }
     });
 

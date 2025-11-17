@@ -1483,6 +1483,12 @@ INTELLIGENCE NOTES:
             return;
           }
 
+          // Log vision query if media was included
+          const startTime = Date.now();
+          if (mediaIds && mediaIds.length > 0) {
+            console.log(`[ai-chat] Vision query with ${mediaIds.length} image(s)`);
+          }
+
           let fullResponse = '';
           const reader = response.body!.getReader();
           const decoder = new TextDecoder();
@@ -1611,6 +1617,23 @@ INTELLIGENCE NOTES:
               role: 'assistant',
               content: fullResponse
             });
+
+          // Log vision query activity if media was used
+          if (mediaIds && mediaIds.length > 0) {
+            const responseTime = Date.now() - startTime;
+            await supaAdmin.from('ai_activity_log').insert({
+              business_id: businessId,
+              user_id: userId,
+              activity_type: 'vision_query',
+              description: `AI analyzed ${mediaIds.length} image(s)`,
+              metadata: {
+                image_count: mediaIds.length,
+                has_text: !!message,
+                response_time_ms: responseTime,
+                response_length: fullResponse.length
+              }
+            });
+          }
 
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`));
           controller.close();

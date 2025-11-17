@@ -1,7 +1,9 @@
 import { useState, useRef, KeyboardEvent, ChangeEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Send, StopCircle, Camera, X } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface ChatInputProps {
   onSend: (message: string, attachments?: File[]) => void;
@@ -59,8 +61,6 @@ export function ChatInput({
     const imageFiles = files.filter(f => f.type.startsWith('image/'));
     
     if (imageFiles.length !== files.length) {
-      // Show toast for non-image files
-      const { toast } = require('sonner');
       toast.error('Only image files are supported for AI chat');
     }
     
@@ -96,22 +96,27 @@ export function ChatInput({
 
       {/* Image Previews */}
       {attachments.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-3">
-          {attachments.map((file, idx) => (
-            <div key={idx} className="relative group">
-              <img
-                src={URL.createObjectURL(file)}
-                alt={file.name}
-                className="w-20 h-20 object-cover rounded-lg border border-border"
-              />
-              <button
-                onClick={() => removeAttachment(idx)}
-                className="absolute -top-2 -right-2 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          ))}
+        <div className="space-y-2 mb-3">
+          <div className="flex flex-wrap gap-2">
+            {attachments.map((file, idx) => (
+              <div key={idx} className="relative group">
+                <img
+                  src={URL.createObjectURL(file)}
+                  alt={file.name}
+                  className="w-12 h-12 md:w-16 md:h-16 object-cover rounded-lg border border-border"
+                />
+                <button
+                  onClick={() => removeAttachment(idx)}
+                  className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {attachments.length} image{attachments.length > 1 ? 's' : ''} attached
+          </p>
         </div>
       )}
 
@@ -127,15 +132,24 @@ export function ChatInput({
           className="hidden"
         />
         
-        <Button
-          onClick={() => fileInputRef.current?.click()}
-          size="icon"
-          variant="ghost"
-          className="flex-shrink-0"
-          disabled={isStreaming}
-        >
-          <Camera className="w-4 h-4" />
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                size="icon"
+                variant="ghost"
+                className="flex-shrink-0"
+                disabled={isStreaming}
+              >
+                <Camera className="w-4 h-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Take a photo to get instant AI guidance</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
 
         <Textarea
           ref={textareaRef}

@@ -111,7 +111,7 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
             : 'bg-muted'
         )}>
           <div className="space-y-3">
-            {/* Display attached images for user messages */}
+            {/* Display attached images for user messages - optimized for mobile */}
             {isUser && mediaUrls.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-2">
                 {mediaUrls.map((url, idx) => (
@@ -119,8 +119,9 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
                     key={idx}
                     src={url}
                     alt={`Attachment ${idx + 1}`}
-                    className="w-32 h-32 object-cover rounded-lg border border-border cursor-pointer hover:opacity-80 transition-opacity"
+                    className="w-24 h-24 md:w-32 md:h-32 object-cover rounded-lg border border-border cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={() => window.open(url, '_blank')}
+                    loading="lazy"
                   />
                 ))}
               </div>
