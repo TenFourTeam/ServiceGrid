@@ -78,7 +78,7 @@ const tools: Record<string, Tool> = {
 
       const { data: members, error: membersError } = await context.supabase
         .from('business_permissions')
-        .select('user_id, profiles(id, full_name, email)')
+        .select('user_id, profiles!business_permissions_user_id_fkey(id, full_name, email)')
         .eq('business_id', context.businessId);
 
       if (membersError) throw membersError;
@@ -1187,6 +1187,15 @@ Deno.serve(async (req) => {
 
       if (convError) throw convError;
       convId = newConv.id;
+      
+      // Link uploaded media to this conversation
+      if (mediaIds && mediaIds.length > 0) {
+        await supaAdmin
+          .from('sg_media')
+          .update({ conversation_id: convId })
+          .in('id', mediaIds)
+          .eq('business_id', businessId);
+      }
     }
 
     // Save user message

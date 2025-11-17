@@ -3,7 +3,7 @@ import { useAuth } from '@clerk/clerk-react';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 interface UploadOptions {
-  conversationId: string;
+  conversationId: string | null;
   onProgress?: (progress: number) => void;
 }
 
@@ -56,7 +56,9 @@ export function useConversationMediaUpload() {
       // Create form data
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('conversationId', conversationId);
+      if (conversationId) {
+        formData.append('conversationId', conversationId);
+      }
 
       onProgress?.(30);
 
@@ -78,7 +80,19 @@ export function useConversationMediaUpload() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Upload failed: ${response.statusText}`);
+        const errorMessage = errorData.error || `Upload failed: ${response.statusText}`;
+        
+        // Add more context for specific error codes
+        if (response.status === 413) {
+          throw new Error('File too large. Maximum size is 100MB');
+        } else if (response.status === 415) {
+          throw new Error('Unsupported file type. Please use images or videos');
+        } else if (response.status === 500 && errorData.details) {
+          console.error('Server error details:', errorData.details);
+          throw new Error(`Server error: ${errorMessage}`);
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();

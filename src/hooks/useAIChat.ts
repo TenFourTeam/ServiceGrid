@@ -41,59 +41,45 @@ export function useAIChat(options?: UseAIChatOptions) {
   const sendMessage = useCallback(async (content: string, attachments?: File[], context?: any) => {
     if (!businessId || (!content.trim() && (!attachments || attachments.length === 0))) return;
 
-    // Create conversation in database if it doesn't exist yet (needed for media upload)
-    let currentConvId = conversationId;
-    if (!currentConvId && attachments && attachments.length > 0) {
-      try {
-        currentConvId = crypto.randomUUID();
-        const token = await getToken({ template: 'supabase' });
-        
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/conversations-crud`,
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              id: currentConvId,
-              title: 'AI Assistant Chat',
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error('Failed to create conversation');
-        }
-
-        setConversationId(currentConvId);
-        options?.onNewConversation?.(currentConvId);
-      } catch (error) {
-        console.error('Error creating conversation:', error);
-        toast.error('Failed to initialize chat. Please try again.');
-        return;
-      }
-    }
-
-    // Upload attachments first if any
+    // Upload attachments first if any (without linking to conversation)
     let mediaIds: string[] = [];
     if (attachments && attachments.length > 0) {
+      // Validate files before uploading
+      const invalidFiles = attachments.filter(file => {
+        const isValidType = file.type.startsWith('image/') || file.type.startsWith('video/');
+        const isValidSize = file.size <= 100 * 1024 * 1024; // 100MB
+        return !isValidType || !isValidSize;
+      });
+
+      if (invalidFiles.length > 0) {
+        const tooLarge = invalidFiles.filter(f => f.size > 100 * 1024 * 1024);
+        const invalidType = invalidFiles.filter(f => !f.type.startsWith('image/') && !f.type.startsWith('video/'));
+        
+        if (tooLarge.length > 0) {
+          toast.error(`${tooLarge.length} file(s) exceed 100MB limit`);
+        }
+        if (invalidType.length > 0) {
+          toast.error('Only images and videos are supported');
+        }
+        return;
+      }
+
       try {
         const uploadPromises = attachments.map(async (file) => {
           const result = await uploadMedia(file, {
-            conversationId: currentConvId!,
+            conversationId: null, // Don't link to conversation - ai-chat will handle it
             onProgress: (progress) => {
               console.log(`Upload progress: ${progress}%`);
             }
           });
           return result.mediaId;
         });
-        
+
         mediaIds = await Promise.all(uploadPromises);
       } catch (error) {
         console.error('Error uploading attachments:', error);
-        toast.error('Failed to upload images. Please try again.');
+        const errorMessage = error instanceof Error ? error.message : 'Failed to upload images';
+        toast.error(errorMessage);
         return;
       }
     }
@@ -123,7 +109,7 @@ export function useAIChat(options?: UseAIChatOptions) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            conversationId: currentConvId || conversationId,
+            conversationId,
             message: content,
             mediaIds: mediaIds.length > 0 ? mediaIds : undefined,
             includeContext: {

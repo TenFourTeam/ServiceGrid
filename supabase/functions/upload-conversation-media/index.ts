@@ -19,17 +19,10 @@ Deno.serve(async (req) => {
 
     const formData = await req.formData();
     const file = formData.get('file') as File;
-    const conversationId = formData.get('conversationId') as string;
+    const conversationId = formData.get('conversationId') as string | null;
 
     if (!file) {
       return new Response(JSON.stringify({ error: 'No file provided' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    if (!conversationId) {
-      return new Response(JSON.stringify({ error: 'No conversationId provided' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
@@ -64,13 +57,19 @@ Deno.serve(async (req) => {
     const contentHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
     // Check for duplicate
-    const { data: existingMedia } = await ctx.supaAdmin
+    let duplicateQuery = ctx.supaAdmin
       .from('sg_media')
       .select('id, public_url, thumbnail_url, file_size, mime_type')
       .eq('business_id', businessId)
-      .eq('conversation_id', conversationId)
-      .eq('content_hash', contentHash)
-      .maybeSingle();
+      .eq('content_hash', contentHash);
+    
+    if (conversationId) {
+      duplicateQuery = duplicateQuery.eq('conversation_id', conversationId);
+    } else {
+      duplicateQuery = duplicateQuery.is('conversation_id', null);
+    }
+    
+    const { data: existingMedia } = await duplicateQuery.maybeSingle();
 
     if (existingMedia) {
       console.log('Duplicate media found, returning existing:', existingMedia.id);
