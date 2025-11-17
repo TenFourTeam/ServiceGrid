@@ -1442,8 +1442,45 @@ INTELLIGENCE NOTES:
             }),
           });
 
+          // Handle rate limit and payment errors
           if (!response.ok) {
-            throw new Error(`AI API error: ${response.statusText}`);
+            if (response.status === 429) {
+              console.error('[ai-chat] Rate limit exceeded');
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ 
+                  type: 'error',
+                  error: 'AI is experiencing high demand. Please try again in a moment.',
+                  errorType: 'RATE_LIMIT'
+                })}\n\n`)
+              );
+              controller.close();
+              return;
+            }
+            if (response.status === 402) {
+              console.error('[ai-chat] Payment required - credits exhausted');
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ 
+                  type: 'error',
+                  error: 'AI credits exhausted. Please add credits to your workspace.',
+                  errorType: 'PAYMENT_REQUIRED',
+                  link: 'https://lovable.dev/settings/usage'
+                })}\n\n`)
+              );
+              controller.close();
+              return;
+            }
+            
+            const errorText = await response.text();
+            console.error('[ai-chat] AI API error:', response.status, errorText);
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ 
+                type: 'error',
+                error: 'AI service error', 
+                details: errorText 
+              })}\n\n`)
+            );
+            controller.close();
+            return;
           }
 
           let fullResponse = '';

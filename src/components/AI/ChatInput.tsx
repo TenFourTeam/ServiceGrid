@@ -60,7 +60,8 @@ export function ChatInput({
     
     if (imageFiles.length !== files.length) {
       // Show toast for non-image files
-      console.warn('Only image files are supported');
+      const { toast } = require('sonner');
+      toast.error('Only image files are supported for AI chat');
     }
     
     setAttachments(prev => [...prev, ...imageFiles]);

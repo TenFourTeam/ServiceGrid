@@ -124,6 +124,9 @@ verify_jwt = false
 [functions.upload-job-photo]
 verify_jwt = false
 
+[functions.upload-invoice-media]
+verify_jwt = false
+
 # Business operations (require authentication)
 [functions.business-update]
 verify_jwt = false
