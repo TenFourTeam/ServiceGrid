@@ -58,13 +58,13 @@ export function ChatInput({
 
   const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    const imageFiles = files.filter(f => f.type.startsWith('image/'));
+    const mediaFiles = files.filter(f => f.type.startsWith('image/') || f.type.startsWith('video/'));
     
-    if (imageFiles.length !== files.length) {
-      toast.error('Only image files are supported for AI chat');
+    if (mediaFiles.length !== files.length) {
+      toast.error('Only images and videos are supported for AI chat');
     }
     
-    setAttachments(prev => [...prev, ...imageFiles]);
+    setAttachments(prev => [...prev, ...mediaFiles]);
     // Reset input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -125,7 +125,7 @@ export function ChatInput({
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept="image/*,video/*"
           capture="environment"
           multiple
           onChange={handleFileSelect}
