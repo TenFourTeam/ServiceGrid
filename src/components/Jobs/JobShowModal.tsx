@@ -699,15 +699,26 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
               </Button>
               
               {allMedia.length > 0 && (
-                <Button 
-                  onClick={() => setShowEstimateDialog(true)}
-                  variant="outline"
-                  disabled={isCreatingInvoice}
-                  className="gap-2"
-                >
-                  <Sparkles className="h-4 w-4" />
-                  AI
-                </Button>
+                <>
+                  <Button 
+                    onClick={() => setShowEstimateDialog(true)}
+                    variant="outline"
+                    disabled={isCreatingInvoice}
+                    className="gap-2"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    AI Estimate
+                  </Button>
+                  <Button 
+                    onClick={() => setShowChecklistDialog(true)}
+                    variant="outline"
+                    disabled={isCreatingInvoice}
+                    className="gap-2"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    AI Checklist
+                  </Button>
+                </>
               )}
             </div>
           </div>
@@ -721,7 +732,10 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
             </TabsList>
             
             <TabsContent value="checklist">
-              <JobChecklistView jobId={job.id} />
+              <JobChecklistView 
+                jobId={job.id} 
+                onGenerateFromPhoto={() => setShowChecklistDialog(true)}
+              />
             </TabsContent>
             
             <TabsContent value="media" className="space-y-4">

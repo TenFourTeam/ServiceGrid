@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, ListChecks, CheckCircle2, UserCircle, Activity } from 'lucide-react';
+import { Plus, ListChecks, CheckCircle2, UserCircle, Activity, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -22,9 +22,10 @@ import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 interface JobChecklistViewProps {
   jobId: string;
+  onGenerateFromPhoto?: () => void;
 }
 
-export function JobChecklistView({ jobId }: JobChecklistViewProps) {
+export function JobChecklistView({ jobId, onGenerateFromPhoto }: JobChecklistViewProps) {
   const { data, isLoading } = useJobChecklist(jobId);
   const createChecklist = useCreateChecklist();
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
@@ -88,10 +89,18 @@ export function JobChecklistView({ jobId }: JobChecklistViewProps) {
             <p className="text-sm text-muted-foreground mb-4 text-center max-w-sm">
               Create a checklist to track job completion tasks and requirements.
             </p>
-            <Button onClick={() => setShowTemplatePicker(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Checklist
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={() => setShowTemplatePicker(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Checklist
+              </Button>
+              {onGenerateFromPhoto && (
+                <Button onClick={onGenerateFromPhoto} variant="outline" className="gap-2">
+                  <Sparkles className="h-4 w-4" />
+                  Generate from Photo
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
       ) : (
