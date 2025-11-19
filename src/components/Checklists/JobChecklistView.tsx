@@ -16,6 +16,8 @@ import { useJobChecklist, useCreateChecklist, type ChecklistItem } from '@/hooks
 import { ChecklistItem as ChecklistItemComponent } from './ChecklistItem';
 import { ChecklistActivityFeed } from './ChecklistActivityFeed';
 import { TemplatePickerDialog } from './TemplatePickerDialog';
+import { DraftChecklistBanner } from './DraftChecklistBanner';
+import { ChecklistApprovalDialog } from './ChecklistApprovalDialog';
 import { useChecklistAssignment } from '@/hooks/useChecklistAssignment';
 import { useBusinessMembersData } from '@/hooks/useBusinessMembers';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
@@ -29,8 +31,9 @@ export function JobChecklistView({ jobId, onGenerateFromPhoto }: JobChecklistVie
   const { data, isLoading } = useJobChecklist(jobId);
   const createChecklist = useCreateChecklist();
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const { assignChecklist } = useChecklistAssignment();
-  const { businessId, isLoadingBusiness } = useBusinessContext();
+  const { businessId, isLoadingBusiness, role } = useBusinessContext();
   const { data: members } = useBusinessMembersData({ businessId });
 
   // Debug logging
@@ -69,6 +72,8 @@ export function JobChecklistView({ jobId, onGenerateFromPhoto }: JobChecklistVie
 
   const checklist = data?.checklist;
   const progress = data?.progress;
+  const isDraft = checklist?.status === 'draft';
+  const canManage = role !== 'worker';
 
   // Prepare items grouped by category
   const items = checklist?.items || [];
@@ -81,6 +86,19 @@ export function JobChecklistView({ jobId, onGenerateFromPhoto }: JobChecklistVie
 
   return (
     <>
+      {isDraft && canManage && (
+        <DraftChecklistBanner onReview={() => setShowApprovalDialog(true)} />
+      )}
+      
+      {showApprovalDialog && checklist && (
+        <ChecklistApprovalDialog
+          open={showApprovalDialog}
+          onOpenChange={setShowApprovalDialog}
+          checklist={checklist}
+          jobId={jobId}
+        />
+      )}
+      
       {!checklist ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">

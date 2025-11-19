@@ -2242,6 +2242,8 @@ export type Database = {
       }
       sg_checklists: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           assigned_to: string | null
           business_id: string
           completed_at: string | null
@@ -2250,11 +2252,15 @@ export type Database = {
           id: string
           job_id: string
           started_at: string | null
+          status: string | null
           template_id: string | null
           title: string
           updated_at: string
+          version: number | null
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           assigned_to?: string | null
           business_id: string
           completed_at?: string | null
@@ -2263,11 +2269,15 @@ export type Database = {
           id?: string
           job_id: string
           started_at?: string | null
+          status?: string | null
           template_id?: string | null
           title: string
           updated_at?: string
+          version?: number | null
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           assigned_to?: string | null
           business_id?: string
           completed_at?: string | null
@@ -2276,11 +2286,27 @@ export type Database = {
           id?: string
           job_id?: string
           started_at?: string | null
+          status?: string | null
           template_id?: string | null
           title?: string
           updated_at?: string
+          version?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "sg_checklists_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_checklists_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
+          },
           {
             foreignKeyName: "sg_checklists_assigned_to_fkey"
             columns: ["assigned_to"]

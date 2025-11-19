@@ -20,6 +20,8 @@ export interface ChecklistItem {
   assigned_to?: string;
   created_at: string;
   updated_at: string;
+  currentPhotoCount?: number;
+  photos?: any[];
 }
 
 export interface Checklist {
@@ -34,6 +36,10 @@ export interface Checklist {
   updated_at: string;
   started_at?: string;
   completed_at?: string;
+  status?: string;
+  approved_by?: string;
+  approved_at?: string;
+  version?: number;
   items?: ChecklistItem[];
 }
 
@@ -58,6 +64,31 @@ export function useJobChecklist(jobId: string | undefined) {
       );
 
       if (error) throw error;
+      
+      // Fetch photo counts for each item if checklist exists
+      if (data?.checklist?.items) {
+        const itemsWithPhotos = await Promise.all(
+          data.checklist.items.map(async (item: ChecklistItem) => {
+            const { data: mediaData } = await authApi.invoke(
+              `job-media-crud?jobId=${jobId}`,
+              { method: 'GET' }
+            );
+            
+            const photos = mediaData?.media?.filter(
+              (m: any) => m.checklist_item_id === item.id
+            ) || [];
+            
+            return {
+              ...item,
+              currentPhotoCount: photos.length,
+              photos,
+            };
+          })
+        );
+        
+        data.checklist.items = itemsWithPhotos;
+      }
+      
       return data;
     },
     enabled: !!jobId,
