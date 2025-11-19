@@ -31,7 +31,7 @@ import PickQuoteModal from '@/components/Jobs/PickQuoteModal';
 import { InvoiceForm, type InvoiceFormData } from '@/components/Invoices/InvoiceForm';
 import type { Invoice, InvoicesCacheData } from '@/types';
 import RecurringScheduleDetailModal from '@/components/Invoices/RecurringScheduleDetailModal';
-import { InvoiceScanDialog } from '@/components/Invoices/InvoiceScanDialog';
+import { AIScanDialog } from '@/components/Invoices/AIScanDialog';
 import type { JobEstimate } from '@/hooks/useJobEstimation';
 
 export interface InvoiceModalProps {
@@ -1119,7 +1119,7 @@ export default function InvoiceModal({
         />
       )}
       
-      <InvoiceScanDialog
+      <AIScanDialog
         open={showEstimateDialog}
         onOpenChange={setShowEstimateDialog}
         mode="photo"

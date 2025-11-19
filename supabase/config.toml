@@ -31,6 +31,9 @@ verify_jwt = false
 [functions.checklist-templates-crud]
 verify_jwt = false
 
+[functions.generate-checklist-from-photo]
+verify_jwt = false
+
 [functions.my-checklist-tasks]
 verify_jwt = false
 
