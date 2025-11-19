@@ -105,7 +105,7 @@ serve(async (req) => {
       .insert({
         business_id: businessId,
         user_id: userId,
-        file_type: 'image',
+        file_type: 'photo',
         mime_type: contentType,
         original_filename: origName,
         file_size: size,
