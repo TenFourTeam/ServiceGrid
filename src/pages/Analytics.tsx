@@ -11,6 +11,7 @@ const AnalyticsDashboard = lazy(() => import('@/components/Analytics/AnalyticsDa
 const TeamUtilizationView = lazy(() => import('@/components/Analytics/TeamUtilizationView'));
 const RouteAnalyticsView = lazy(() => import('@/components/Analytics/RouteAnalyticsView'));
 const AISuggestionsView = lazy(() => import('@/components/Analytics/AISuggestionsView'));
+const AIVisionAnalyticsView = lazy(() => import('@/components/Analytics/AIVisionAnalyticsView'));
 const PredictiveInsightsView = lazy(() => import('@/components/Analytics/PredictiveInsightsView'));
 
 export default function AnalyticsPage() {
@@ -51,6 +52,7 @@ export default function AnalyticsPage() {
               <TabsTrigger value="team" className="whitespace-nowrap">Team</TabsTrigger>
               <TabsTrigger value="routes" className="whitespace-nowrap">Routes</TabsTrigger>
               <TabsTrigger value="ai" className="whitespace-nowrap">AI Performance</TabsTrigger>
+              <TabsTrigger value="ai-vision" className="whitespace-nowrap">AI Vision</TabsTrigger>
               <TabsTrigger value="predictions" className="whitespace-nowrap">Predictions</TabsTrigger>
             </TabsList>
           </div>
@@ -87,6 +89,14 @@ export default function AnalyticsPage() {
               <AISuggestionsView 
                 dateRange={dateRange}
                 onDateRangeChange={setDateRange}
+              />
+            </Suspense>
+          </TabsContent>
+
+          <TabsContent value="ai-vision" className="space-y-4">
+            <Suspense fallback={<LoadingSkeleton />}>
+              <AIVisionAnalyticsView 
+                dateRange={dateRange}
               />
             </Suspense>
           </TabsContent>

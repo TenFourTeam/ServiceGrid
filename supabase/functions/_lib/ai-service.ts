@@ -6,6 +6,8 @@ export interface AIVisionRequest {
   imageUrl: string;
   tools?: any[];
   model?: string;
+  enableCache?: boolean; // Check cache before calling AI
+  cacheKey?: string; // Optional custom cache key
 }
 
 export interface AIVisionResponse {
@@ -37,7 +39,7 @@ export interface AIGenerationLog {
 
 /**
  * Shared AI service for calling Lovable AI API with vision capabilities
- * Handles rate limiting, error formatting, and audit logging
+ * Handles rate limiting, error formatting, audit logging, and result caching
  */
 export async function callAIWithVision(
   request: AIVisionRequest,
@@ -45,6 +47,38 @@ export async function callAIWithVision(
   log?: AIGenerationLog
 ): Promise<AIVisionResponse> {
   const startTime = Date.now();
+  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+  
+  // Check cache if enabled
+  if (request.enableCache && log) {
+    const cacheKey = request.cacheKey || `${log.sourceMediaId}_${log.generationType}`;
+    const { data: cachedResult } = await supabase
+      .from('sg_ai_generations')
+      .select('output_data, metadata, confidence, created_at')
+      .eq('source_media_id', log.sourceMediaId)
+      .eq('generation_type', log.generationType)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    // Return cached result if less than 24 hours old
+    if (cachedResult && cachedResult.output_data) {
+      const cacheAge = Date.now() - new Date(cachedResult.created_at).getTime();
+      if (cacheAge < 24 * 60 * 60 * 1000) { // 24 hours
+        console.log('[AI Service] Returning cached result for', cacheKey);
+        return {
+          success: true,
+          data: cachedResult.output_data,
+          metadata: {
+            ...cachedResult.metadata,
+            cached: true,
+            cacheAge: Math.floor(cacheAge / 1000), // seconds
+          }
+        };
+      }
+    }
+  }
+  
   const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
   
   if (!LOVABLE_API_KEY) {
@@ -58,8 +92,15 @@ export async function callAIWithVision(
     };
   }
 
-  try {
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+  // Exponential backoff retry logic
+  const maxRetries = 3;
+  let lastError: any = null;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`[AI Service] Attempt ${attempt}/${maxRetries}`);
+      
+      const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${LOVABLE_API_KEY}`,
@@ -101,6 +142,14 @@ export async function callAIWithVision(
 
       // Handle specific error types
       if (aiResponse.status === 429) {
+        // Rate limit - retry with exponential backoff
+        if (attempt < maxRetries) {
+          const backoffMs = Math.min(1000 * Math.pow(2, attempt), 10000);
+          console.log(`[AI Service] Rate limited. Retrying in ${backoffMs}ms...`);
+          await new Promise(resolve => setTimeout(resolve, backoffMs));
+          continue;
+        }
+        
         return {
           success: false,
           error: {
@@ -110,7 +159,8 @@ export async function callAIWithVision(
           },
           metadata: {
             model: request.model || 'google/gemini-2.5-flash',
-            latencyMs
+            latencyMs,
+            attempts: attempt
           }
         };
       }
@@ -130,6 +180,14 @@ export async function callAIWithVision(
         };
       }
 
+      // Retry transient errors
+      if (aiResponse.status >= 500 && attempt < maxRetries) {
+        const backoffMs = Math.min(500 * Math.pow(2, attempt), 5000);
+        console.log(`[AI Service] Server error. Retrying in ${backoffMs}ms...`);
+        await new Promise(resolve => setTimeout(resolve, backoffMs));
+        continue;
+      }
+
       return {
         success: false,
         error: {
@@ -139,7 +197,8 @@ export async function callAIWithVision(
         },
         metadata: {
           model: request.model || 'google/gemini-2.5-flash',
-          latencyMs
+          latencyMs,
+          attempts: attempt
         }
       };
     }
@@ -174,7 +233,9 @@ export async function callAIWithVision(
     const metadata = {
       model: request.model || 'google/gemini-2.5-flash',
       tokensUsed: result.usage?.total_tokens,
-      latencyMs
+      latencyMs,
+      attempts: attempt,
+      cached: false
     };
 
     // Log to sg_ai_generations if log data provided
@@ -210,21 +271,34 @@ export async function callAIWithVision(
     };
 
   } catch (error) {
-    const latencyMs = Date.now() - startTime;
-    console.error('[AI Service] Unexpected error:', error);
-    return {
-      success: false,
-      error: {
-        type: 'API_ERROR',
-        message: error instanceof Error ? error.message : 'Unknown error',
-        status: 500
-      },
-      metadata: {
-        model: request.model || 'google/gemini-2.5-flash',
-        latencyMs
-      }
-    };
+    lastError = error;
+    
+    // Retry on network errors
+    if (attempt < maxRetries) {
+      const backoffMs = Math.min(500 * Math.pow(2, attempt), 5000);
+      console.log(`[AI Service] Network error. Retrying in ${backoffMs}ms...`);
+      await new Promise(resolve => setTimeout(resolve, backoffMs));
+      continue;
+    }
   }
+}
+
+  // All retries failed
+  const latencyMs = Date.now() - startTime;
+  console.error('[AI Service] All retry attempts failed:', lastError);
+  return {
+    success: false,
+    error: {
+      type: 'API_ERROR',
+      message: lastError instanceof Error ? lastError.message : 'Unknown error after retries',
+      status: 500
+    },
+    metadata: {
+      model: request.model || 'google/gemini-2.5-flash',
+      latencyMs,
+      attempts: maxRetries
+    }
+  };
 }
 
 /**

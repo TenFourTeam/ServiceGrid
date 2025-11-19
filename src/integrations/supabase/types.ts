@@ -287,6 +287,9 @@ export type Database = {
       }
       businesses: {
         Row: {
+          ai_credits_used_this_month: number | null
+          ai_monthly_credit_limit: number | null
+          ai_vision_enabled: boolean | null
           application_fee_bps: number
           clerk_org_id: string | null
           created_at: string
@@ -312,6 +315,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_credits_used_this_month?: number | null
+          ai_monthly_credit_limit?: number | null
+          ai_vision_enabled?: boolean | null
           application_fee_bps?: number
           clerk_org_id?: string | null
           created_at?: string
@@ -337,6 +343,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ai_credits_used_this_month?: number | null
+          ai_monthly_credit_limit?: number | null
+          ai_vision_enabled?: boolean | null
           application_fee_bps?: number
           clerk_org_id?: string | null
           created_at?: string
@@ -1851,6 +1860,9 @@ export type Database = {
           business_id: string
           confidence: string | null
           created_at: string
+          feedback_rating: number | null
+          feedback_text: string | null
+          final_version: Json | null
           generation_type: string
           id: string
           input_params: Json
@@ -1859,11 +1871,15 @@ export type Database = {
           output_data: Json
           source_media_id: string
           user_id: string
+          was_edited: boolean | null
         }
         Insert: {
           business_id: string
           confidence?: string | null
           created_at?: string
+          feedback_rating?: number | null
+          feedback_text?: string | null
+          final_version?: Json | null
           generation_type: string
           id?: string
           input_params?: Json
@@ -1872,11 +1888,15 @@ export type Database = {
           output_data?: Json
           source_media_id: string
           user_id: string
+          was_edited?: boolean | null
         }
         Update: {
           business_id?: string
           confidence?: string | null
           created_at?: string
+          feedback_rating?: number | null
+          feedback_text?: string | null
+          final_version?: Json | null
           generation_type?: string
           id?: string
           input_params?: Json
@@ -1885,6 +1905,7 @@ export type Database = {
           output_data?: Json
           source_media_id?: string
           user_id?: string
+          was_edited?: boolean | null
         }
         Relationships: [
           {
@@ -3777,6 +3798,9 @@ export type Database = {
       ensure_default_business: {
         Args: never
         Returns: {
+          ai_credits_used_this_month: number | null
+          ai_monthly_credit_limit: number | null
+          ai_vision_enabled: boolean | null
           application_fee_bps: number
           clerk_org_id: string | null
           created_at: string
@@ -4055,6 +4079,7 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
+      reset_monthly_ai_credits: { Args: never; Returns: undefined }
       st_3dclosestpoint: {
         Args: { geom1: unknown; geom2: unknown }
         Returns: unknown

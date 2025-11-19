@@ -143,6 +143,9 @@ verify_jwt = false
 [functions.estimate-job-from-photo]
 verify_jwt = false
 
+[functions.ai-generations-analytics]
+verify_jwt = false
+
 # Business operations (require authentication)
 [functions.business-update]
 verify_jwt = false
