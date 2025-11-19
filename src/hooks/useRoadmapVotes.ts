@@ -70,6 +70,12 @@ export function useVote() {
       
       if (error.message?.includes('Already voted')) {
         toast.error('You have already voted for this feature');
+      } else if (error.message?.includes('not found')) {
+        toast.error('This feature is still being created. Please try again in a moment.');
+        // Refetch to get the real feature data
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['roadmap-features'] });
+        }, 1000);
       } else {
         toast.error(error.message || 'Failed to vote');
       }
