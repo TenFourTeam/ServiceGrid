@@ -74,6 +74,7 @@
     "@tiptap/extension-text-style": "^3.10.7",
     "@tiptap/react": "^3.10.7",
     "@tiptap/starter-kit": "^3.10.7",
+    "@twilio/voice-sdk": "^2.16.0",
     "@types/crypto-js": "^4.2.2",
     "@types/papaparse": "^5.3.16",
     "@types/supertest": "^6.0.3",
