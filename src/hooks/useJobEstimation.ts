@@ -11,6 +11,7 @@ export interface EstimatedLineItem {
 }
 
 export interface JobEstimate {
+  id: string; // Generation ID
   lineItems: EstimatedLineItem[];
   workDescription: string;
   additionalNotes?: string;

@@ -21,6 +21,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Textarea } from '@/components/ui/textarea';
 import { BusinessConstraintsSettings } from '@/components/Settings/BusinessConstraintsSettings';
 import { ServiceCatalogManager } from '@/components/Settings/ServiceCatalogManager';
+import { AISettingsCard } from '@/components/Settings/AISettingsCard';
 
 export default function SettingsPage() {
   const { business, role } = useBusinessContext();
@@ -204,6 +205,11 @@ export default function SettingsPage() {
           {/* Service Catalog - only for owners */}
           {role === 'owner' && (
             <ServiceCatalogManager />
+          )}
+
+          {/* AI Settings - only for owners */}
+          {role === 'owner' && (
+            <AISettingsCard />
           )}
 
           <Card>

@@ -18,6 +18,7 @@ export interface ExtractedInvoiceData {
 }
 
 export interface InvoiceExtractionResult {
+  id: string; // Generation ID
   extracted: ExtractedInvoiceData;
   confidence: 'high' | 'medium' | 'low';
   warnings?: string[];
