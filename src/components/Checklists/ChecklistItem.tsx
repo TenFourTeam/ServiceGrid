@@ -46,7 +46,8 @@ export function ChecklistItem({ item, jobId }: ChecklistItemProps) {
     m.checklist_item_id === item.id
   ) || [];
 
-  const hasEnoughPhotos = itemMedia.length >= item.required_photo_count;
+  const currentPhotoCount = item.currentPhotoCount ?? itemMedia.length;
+  const hasEnoughPhotos = currentPhotoCount >= item.required_photo_count;
   const isPhotoGated = item.required_photo_count > 0 && !hasEnoughPhotos;
 
   const handleToggle = async () => {
@@ -112,26 +113,25 @@ export function ChecklistItem({ item, jobId }: ChecklistItemProps) {
 
             {/* Photo Requirement */}
             {item.required_photo_count > 0 && (
-              <div className="flex items-center gap-2 flex-wrap">
-                <Badge
-                  variant={hasEnoughPhotos ? "default" : "destructive"}
-                  className="gap-1"
-                >
-                  <Camera className="h-3 w-3" />
-                  Requires {item.required_photo_count} photo{item.required_photo_count > 1 ? 's' : ''}
-                </Badge>
-                
-                {itemMedia.length > 0 && (
-                  <div className="flex items-center gap-1">
-                    <Badge variant="outline" className="gap-1">
-                      <ImageIcon className="h-3 w-3" />
-                      {itemMedia.length} uploaded
-                    </Badge>
-                    {hasEnoughPhotos && (
-                      <Check className="h-4 w-4 text-green-600" />
-                    )}
-                  </div>
-                )}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge
+                    variant={hasEnoughPhotos ? "default" : "destructive"}
+                    className="gap-1"
+                  >
+                    <Camera className="h-3 w-3" />
+                    {currentPhotoCount}/{item.required_photo_count} photos
+                  </Badge>
+                  
+                  {!hasEnoughPhotos && (
+                    <span className="text-xs text-muted-foreground">
+                      Upload {item.required_photo_count - currentPhotoCount} more to complete
+                    </span>
+                  )}
+                  {hasEnoughPhotos && (
+                    <Check className="h-4 w-4 text-green-600" />
+                  )}
+                </div>
 
                 {/* Photo Thumbnails */}
                 {itemMedia.length > 0 && (

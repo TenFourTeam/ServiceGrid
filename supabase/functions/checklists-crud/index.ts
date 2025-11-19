@@ -163,9 +163,63 @@ Deno.serve(async (req) => {
       });
     }
 
-    // PATCH - Assign checklist or item
+    // PATCH - Assign, approve, or reject checklist
     if (method === 'PATCH') {
       const pathParts = url.pathname.split('/');
+      
+      // Approve checklist: PATCH /checklists-crud/:checklistId/approve
+      if (pathParts.includes('approve') && checklistId && checklistId !== 'checklists-crud') {
+        const { error } = await supabase
+          .from('sg_checklists')
+          .update({
+            status: 'active',
+            approved_by: ctx.userId,
+            approved_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', checklistId);
+
+        if (error) throw error;
+
+        // Log event
+        await supabase.from('sg_checklist_events').insert({
+          checklist_id: checklistId,
+          event_type: 'approved',
+          user_id: ctx.userId,
+          metadata: {},
+        });
+
+        console.log('[checklists-crud] Approved checklist:', checklistId);
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Reject checklist: PATCH /checklists-crud/:checklistId/reject
+      if (pathParts.includes('reject') && checklistId && checklistId !== 'checklists-crud') {
+        const { reason } = await req.json();
+
+        // Delete the checklist
+        const { error } = await supabase
+          .from('sg_checklists')
+          .delete()
+          .eq('id', checklistId);
+
+        if (error) throw error;
+
+        // Log event
+        await supabase.from('sg_checklist_events').insert({
+          checklist_id: checklistId,
+          event_type: 'rejected',
+          user_id: ctx.userId,
+          metadata: { reason: reason || 'No reason provided' },
+        });
+
+        console.log('[checklists-crud] Rejected checklist:', checklistId);
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       
       // Assign checklist: PATCH /checklists-crud/:checklistId/assign
       if (pathParts.includes('assign') && checklistId && checklistId !== 'checklists-crud') {
