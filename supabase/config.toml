@@ -69,6 +69,12 @@ verify_jwt = false
 [functions.voip-webhook-handler]
 verify_jwt = false
 
+[functions.roadmap-features-crud]
+verify_jwt = false
+
+[functions.roadmap-vote]
+verify_jwt = false
+
 # Configure authentication
 [auth]
 site_url = "http://localhost:3000"

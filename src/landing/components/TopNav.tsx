@@ -44,6 +44,11 @@ export function TopNav() {
           <NavigationMenu className="hidden sm:flex">
             <NavigationMenuList>
               <NavigationMenuItem>
+                <Link to="/roadmap" className="text-sm font-medium px-3 py-2 hover:text-primary transition-colors">
+                  Roadmap
+                </Link>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
                 <NavigationMenuTrigger className="text-sm font-medium">
                   {t('landing.nav.resources')}
                 </NavigationMenuTrigger>
@@ -106,6 +111,15 @@ export function TopNav() {
           </SheetTrigger>
           <SheetContent side="right" className="w-[300px] sm:w-[350px]">
             <nav className="flex flex-col gap-6 mt-8">
+              {/* Roadmap Link */}
+              <Link
+                to="/roadmap"
+                onClick={() => setMobileMenuOpen(false)}
+                className="font-semibold text-foreground hover:text-brand-600"
+              >
+                Roadmap
+              </Link>
+
               {/* Industries Section */}
               <Collapsible>
                 <CollapsibleTrigger className="flex items-center justify-between w-full text-left font-semibold text-foreground hover:text-brand-600">
