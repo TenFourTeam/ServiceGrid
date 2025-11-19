@@ -99,7 +99,11 @@ export function useVoIP() {
     } catch (error: any) {
       console.error('[useVoIP] Connection error:', error);
       setState(prev => ({ ...prev, deviceStatus: 'error' }));
-      toast.error(error.message || 'Failed to connect to VoIP service');
+      
+      // Don't show error toast if Twilio isn't configured (expected state)
+      if (!error.message?.includes('Twilio not configured')) {
+        toast.error(error.message || 'Failed to connect to VoIP service');
+      }
     }
   }, [authApi]);
 
