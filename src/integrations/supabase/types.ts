@@ -1729,6 +1729,53 @@ export type Database = {
         }
         Relationships: []
       }
+      service_catalog: {
+        Row: {
+          business_id: string
+          category: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          service_name: string
+          unit_price: number
+          unit_type: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          service_name: string
+          unit_price: number
+          unit_type?: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          service_name?: string
+          unit_price?: number
+          unit_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_catalog_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sg_ai_artifacts: {
         Row: {
           artifact_type: string

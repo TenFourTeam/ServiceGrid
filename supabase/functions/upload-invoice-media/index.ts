@@ -28,16 +28,16 @@ serve(async (req) => {
     
     console.log('[upload-invoice-media] File type:', contentType, 'File name:', (file as File).name);
     
-    // Only support images for invoice scanning
-    const supportedImageTypes = [
+    // Support images and PDFs for invoice scanning
+    const supportedTypes = [
       'image/jpeg', 'image/jpg', 'image/png', 'image/webp', 
-      'image/heic', 'image/heif'
+      'image/heic', 'image/heif', 'application/pdf'
     ];
     
-    if (!supportedImageTypes.includes(contentType)) {
+    if (!supportedTypes.includes(contentType)) {
       console.error('[upload-invoice-media] Unsupported file type:', contentType);
       return json({ 
-        error: `Unsupported file type: ${contentType}. Supported formats: JPEG, PNG, WebP, HEIC` 
+        error: `Unsupported file type: ${contentType}. Supported formats: JPEG, PNG, WebP, HEIC, PDF` 
       }, { status: 415 });
     }
 
@@ -78,7 +78,7 @@ serve(async (req) => {
     const nameExt = origName.includes('.') ? origName.split('.').pop() || '' : '';
     const extByType: Record<string, string> = { 
       "image/jpeg":"jpg", "image/png":"png", "image/webp":"webp", 
-      "image/heic":"heic", "image/heif":"heif"
+      "image/heic":"heic", "image/heif":"heif", "application/pdf":"pdf"
     };
     const ext = extByType[contentType] || (nameExt || "bin");
     const key = `${userId}/invoices/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
@@ -105,7 +105,7 @@ serve(async (req) => {
       .insert({
         business_id: businessId,
         user_id: userId,
-        file_type: 'photo',
+        file_type: contentType.startsWith('image/') ? 'photo' : 'document',
         mime_type: contentType,
         original_filename: origName,
         file_size: size,
