@@ -5,9 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Phone, PhoneOff, Mic, MicOff, Pause, Play, X, Minimize2 } from 'lucide-react';
 import { useVoIP } from '@/hooks/useVoIP';
+import { usePhoneNumbers } from '@/hooks/usePhoneNumbers';
 import { cn } from '@/lib/utils';
 
 export function Softphone() {
+  const { phoneNumbers, isLoading: loadingNumbers } = usePhoneNumbers();
+  
   const {
     deviceStatus,
     activeCall,
@@ -29,11 +32,15 @@ export function Softphone() {
   const [isMinimized, setIsMinimized] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [callTimer, setCallTimer] = useState(0);
+  const [hasAttemptedConnect, setHasAttemptedConnect] = useState(false);
 
-  // Auto-connect on mount
+  // Only auto-connect if we have phone numbers
   useEffect(() => {
-    connect();
-  }, [connect]);
+    if (!loadingNumbers && phoneNumbers && phoneNumbers.length > 0 && !hasAttemptedConnect) {
+      setHasAttemptedConnect(true);
+      connect();
+    }
+  }, [phoneNumbers, loadingNumbers, hasAttemptedConnect, connect]);
 
   // Call timer
   useEffect(() => {
@@ -73,6 +80,11 @@ export function Softphone() {
   const handleKeypadClick = (digit: string) => {
     setPhoneNumber(prev => prev + digit);
   };
+
+  // Don't show FAB if no phone numbers configured
+  if (!phoneNumbers || phoneNumbers.length === 0) {
+    return null;
+  }
 
   if (!isOpen) {
     return (
