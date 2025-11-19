@@ -32,6 +32,7 @@ const ClerkAuthPage = lazy(() => import("./pages/ClerkAuth"));
 const QuoteActionPage = lazy(() => import("./pages/QuoteAction"));
 const JobActionPage = lazy(() => import("./pages/JobAction"));
 const QuoteViewerPage = lazy(() => import("./pages/QuoteViewer"));
+const QuotePresentationPage = lazy(() => import("./pages/QuotePresentation"));
 const QuoteEditFormPage = lazy(() => import("./pages/QuoteEditForm"));
 const PaymentSuccessPage = lazy(() => import("./pages/PaymentSuccess"));
 const PaymentCanceledPage = lazy(() => import("./pages/PaymentCanceled"));
@@ -132,6 +133,7 @@ function App({ clerkKey }: AppProps) {
                 <Route path="/quote-action" element={<QuoteActionPage />} />
                 <Route path="/job-action" element={<JobActionPage />} />
                 <Route path="/quote/:token" element={<QuoteViewerPage />} />
+                <Route path="/quote-present/:token" element={<QuotePresentationPage />} />
                 <Route path="/quote-edit/:quoteId/:token" element={<QuoteEditFormPage />} />
                 <Route path="/payment-success" element={<PaymentSuccessPage />} />
                 <Route path="/payment-canceled" element={<PaymentCanceledPage />} />

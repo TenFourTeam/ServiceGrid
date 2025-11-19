@@ -7,6 +7,8 @@ import { useInvoiceExtraction, type ExtractedInvoiceData } from '@/hooks/useInvo
 import { useInvoiceMediaUpload } from '@/hooks/useInvoiceMediaUpload';
 import { useJobEstimation, type JobEstimate } from '@/hooks/useJobEstimation';
 import { useChecklistGeneration, type GeneratedChecklist } from '@/hooks/useChecklistGeneration';
+import { useQuoteFromPhoto } from '@/hooks/useQuoteFromPhoto';
+import type { Quote } from '@/types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -25,8 +27,11 @@ interface AIScanDialogProps {
   onOpenChange: (open: boolean) => void;
   onDataExtracted?: (data: ExtractedInvoiceData) => void;
   onEstimateExtracted?: (estimate: JobEstimate) => void;
+  onQuoteCreated?: (quote: Quote) => void;
   onChecklistGenerated?: (checklist: GeneratedChecklist) => void;
+  customerId?: string;
   jobId?: string;
+  address?: string;
   mode?: ScanMode;
 }
 
@@ -35,8 +40,11 @@ export function AIScanDialog({
   onOpenChange, 
   onDataExtracted,
   onEstimateExtracted,
+  onQuoteCreated,
   onChecklistGenerated,
+  customerId,
   jobId,
+  address,
   mode: initialMode = 'receipt'
 }: AIScanDialogProps) {
   const [scanMode, setScanMode] = useState<ScanMode>(initialMode);
@@ -58,6 +66,7 @@ export function AIScanDialog({
   const extractMutation = useInvoiceExtraction();
   const estimateMutation = useJobEstimation();
   const checklistMutation = useChecklistGeneration();
+  const createQuoteMutation = useQuoteFromPhoto();
   const feedbackMutation = useAIGenerationFeedback();
 
   const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
@@ -107,7 +116,20 @@ export function AIScanDialog({
         setEstimate(result);
         setConfidence(result.confidence);
         setGenerationId(result.id);
-        toast.success('Estimate generated!');
+        
+        // If customerId provided, automatically create quote
+        if (customerId) {
+          const quote = await createQuoteMutation.mutateAsync({
+            estimate: result,
+            customerId,
+            jobId,
+            address
+          });
+          onQuoteCreated?.(quote);
+          toast.success('Quote created from photo!');
+        } else {
+          toast.success('Estimate generated!');
+        }
       } else if (scanMode === 'checklist') {
         const result = await checklistMutation.mutateAsync({ 
           mediaId: uploadResult.mediaId,
@@ -138,9 +160,15 @@ export function AIScanDialog({
     if (extractedData && onDataExtracted) {
       onDataExtracted(extractedData);
       onOpenChange(false);
-    } else if (estimate && onEstimateExtracted) {
-      onEstimateExtracted(estimate);
-      onOpenChange(false);
+    } else if (estimate) {
+      // If quote was already created (customerId provided), just close
+      if (customerId && onQuoteCreated) {
+        onOpenChange(false);
+      } else if (onEstimateExtracted) {
+        // Otherwise, pass estimate to parent
+        onEstimateExtracted(estimate);
+        onOpenChange(false);
+      }
     } else if (checklist && onChecklistGenerated) {
       // Check if there are similar templates to show
       if (checklist.similarTemplates && checklist.similarTemplates.length > 0) {
@@ -280,7 +308,7 @@ export function AIScanDialog({
                   ) : (
                     <>
                       <Sparkles className="mr-2 h-4 w-4" />
-                      {scanMode === 'receipt' ? 'Extract Data' : scanMode === 'photo' ? 'Generate Estimate' : 'Generate Checklist'}
+                      {scanMode === 'receipt' ? 'Extract Data' : scanMode === 'photo' ? (customerId ? 'Create Quote' : 'Generate Estimate') : 'Generate Checklist'}
                     </>
                   )}
                 </Button>
