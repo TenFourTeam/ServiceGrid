@@ -8,6 +8,7 @@ import { formatDateTime, formatMoney } from "@/utils/format";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { useAuthApi } from '@/hooks/useAuthApi';
 import { toast } from "sonner";
+import { Sparkles } from "lucide-react";
 import ReschedulePopover from "@/components/WorkOrders/ReschedulePopover";
 import type { Job, Quote, JobsCacheData, InvoicesCacheData } from "@/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle as ModalTitle } from "@/components/ui/dialog";
@@ -518,6 +519,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
 
 
   return (
+    <>
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="max-h-[85vh]">
         <DrawerHeader>
@@ -689,7 +691,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                 {isCreatingInvoice ? t('common.loading') : t('workOrders.createInvoice')}
               </Button>
               
-              {mediaItems.length > 0 && (
+              {allMedia.length > 0 && (
                 <Button 
                   onClick={() => setShowEstimateDialog(true)}
                   variant="outline"
@@ -1130,11 +1132,13 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
       onOpenChange={setShowEstimateDialog}
       mode="photo"
       jobId={job.id}
+      onDataExtracted={() => {}}
       onEstimateExtracted={(estimate) => {
         setEstimatedData(estimate);
         setShowEstimateDialog(false);
         toast.success('AI estimate ready - click "Create Invoice" to continue');
       }}
     />
+    </>
   );
 }

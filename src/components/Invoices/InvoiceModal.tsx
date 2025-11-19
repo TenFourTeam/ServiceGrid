@@ -599,7 +599,7 @@ export default function InvoiceModal({
         <>
           <InvoiceForm
             customers={customers}
-            onSubmit={mode === 'create' ? handleCreate : handleSave}
+            onSubmit={handleSave}
             onCancel={() => mode === 'create' ? onOpenChange(false) : setMode('view')}
             initialData={initialData}
             mode={mode}
@@ -1123,6 +1123,7 @@ export default function InvoiceModal({
         open={showEstimateDialog}
         onOpenChange={setShowEstimateDialog}
         mode="photo"
+        onDataExtracted={() => {}}
         onEstimateExtracted={(estimate) => {
           setEstimatedData(estimate);
           setShowEstimateDialog(false);
