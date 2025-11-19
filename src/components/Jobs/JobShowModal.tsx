@@ -33,8 +33,11 @@ import { BulkTagManager } from '@/components/Media/BulkTagManager';
 import { useBulkUpdateMediaTags } from '@/hooks/useMediaTags';
 import { Tags } from 'lucide-react';
 import { SummaryGenerator } from '@/components/AI';
-import { InvoiceScanDialog } from '@/components/Invoices/InvoiceScanDialog';
+import { AIScanDialog } from '@/components/Invoices/AIScanDialog';
 import type { JobEstimate } from '@/hooks/useJobEstimation';
+import type { GeneratedChecklist } from '@/hooks/useChecklistGeneration';
+import { useCreateChecklist } from '@/hooks/useJobChecklist';
+import { useCreateChecklistTemplate } from '@/hooks/useChecklistTemplates';
 
 interface JobShowModalProps {
   open: boolean;
@@ -70,8 +73,12 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
   const [showBulkTagManager, setShowBulkTagManager] = useState(false);
   const [showAISummary, setShowAISummary] = useState(false);
   const [showEstimateDialog, setShowEstimateDialog] = useState(false);
+  const [showChecklistDialog, setShowChecklistDialog] = useState(false);
   const [estimatedData, setEstimatedData] = useState<JobEstimate | null>(null);
+  const [generatedChecklist, setGeneratedChecklist] = useState<GeneratedChecklist | null>(null);
   const bulkUpdateTags = useBulkUpdateMediaTags();
+  const createChecklistMutation = useCreateChecklist();
+  const createTemplateMutation = useCreateChecklistTemplate();
 
   const allMedia = useMemo(() => {
     return [...optimisticMedia, ...jobMedia];
@@ -1127,7 +1134,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
       </DrawerContent>
     </Drawer>
     
-    <InvoiceScanDialog
+    <AIScanDialog
       open={showEstimateDialog}
       onOpenChange={setShowEstimateDialog}
       mode="photo"
@@ -1137,6 +1144,48 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
         setEstimatedData(estimate);
         setShowEstimateDialog(false);
         toast.success('AI estimate ready - click "Create Invoice" to continue');
+      }}
+    />
+
+    <AIScanDialog
+      open={showChecklistDialog}
+      onOpenChange={setShowChecklistDialog}
+      mode="checklist"
+      jobId={job.id}
+      onChecklistGenerated={async (checklist) => {
+        setGeneratedChecklist(checklist);
+        setShowChecklistDialog(false);
+        
+        // Save as a template first, then create checklist from it
+        try {
+          const templateResult = await createTemplateMutation.mutateAsync({
+            name: checklist.checklist_title,
+            description: `AI-generated checklist${checklist.notes ? `: ${checklist.notes}` : ''}`,
+            category: 'AI Generated',
+            items: checklist.tasks.map(task => ({
+              title: task.title,
+              description: task.description,
+              position: task.position,
+              category: task.category,
+              estimated_duration_minutes: task.estimated_duration_minutes,
+              required_photo_count: task.required_photo_count
+            }))
+          });
+          
+          // Now create a checklist from the template
+          if (templateResult?.template?.id) {
+            await createChecklistMutation.mutateAsync({
+              jobId: job.id,
+              templateId: templateResult.template.id,
+              title: checklist.checklist_title
+            });
+          }
+          
+          toast.success(`Checklist "${checklist.checklist_title}" created with ${checklist.tasks.length} tasks!`);
+        } catch (error) {
+          console.error('Failed to create checklist:', error);
+          toast.error('Failed to create checklist');
+        }
       }}
     />
     </>
