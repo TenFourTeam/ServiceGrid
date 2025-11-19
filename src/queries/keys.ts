@@ -82,6 +82,14 @@ const queryKeys = {
       ['ai', 'generations', businessId, 'user', userId] as const,
   },
   
+  // VoIP queries
+  voip: {
+    phoneNumbers: (businessId: string) => ['voip', 'phone-numbers', businessId] as const,
+    callLogs: (businessId: string, filters?: any) => 
+      filters ? ['voip', 'call-logs', businessId, filters] as const : ['voip', 'call-logs', businessId] as const,
+    deviceStatus: (userId: string) => ['voip', 'device', userId] as const,
+  },
+  
 } as const;
 
 /**
@@ -154,6 +162,11 @@ const invalidationHelpers = {
   billing: (queryClient: QueryClient, businessId: string, userId: string) => {
     queryClient.invalidateQueries({ queryKey: queryKeys.billing.stripeStatus(businessId) });
     queryClient.invalidateQueries({ queryKey: queryKeys.billing.subscription(userId) });
+  },
+  
+  voip: (queryClient: QueryClient, businessId: string) => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.voip.phoneNumbers(businessId) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.voip.callLogs(businessId) });
   },
   
   all: (queryClient: QueryClient, businessId: string, userId: string) => {

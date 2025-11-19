@@ -18,6 +18,7 @@ import { AIStatusBadge } from '@/components/AI/AIStatusBadge';
 import { AskAIButton } from '@/components/AI/AskAIButton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
+import { Softphone } from '@/components/VoIP/Softphone';
 
 export default function AppLayout({ children, title, businessId }: { children: ReactNode; title?: string; businessId?: string }) {
   const isMobile = useIsMobile();
@@ -55,6 +56,7 @@ export default function AppLayout({ children, title, businessId }: { children: R
         
         <MobileNavigation />
         <AskAIButton />
+        {role === 'owner' && <Softphone />}
       </div>
     );
   }
@@ -118,6 +120,7 @@ export default function AppLayout({ children, title, businessId }: { children: R
       </div>
 
       <AskAIButton />
+      {role === 'owner' && <Softphone />}
     </SidebarProvider>
   );
 }
