@@ -1221,6 +1221,50 @@ export type Database = {
           },
         ]
       }
+      pricing_rules: {
+        Row: {
+          business_id: string
+          created_at: string | null
+          emergency_multiplier: number | null
+          equipment_markup_percent: number | null
+          id: string
+          labor_rate_per_hour: number | null
+          material_markup_percent: number | null
+          minimum_charge: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          business_id: string
+          created_at?: string | null
+          emergency_multiplier?: number | null
+          equipment_markup_percent?: number | null
+          id?: string
+          labor_rate_per_hour?: number | null
+          material_markup_percent?: number | null
+          minimum_charge?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          business_id?: string
+          created_at?: string | null
+          emergency_multiplier?: number | null
+          equipment_markup_percent?: number | null
+          id?: string
+          labor_rate_per_hour?: number | null
+          material_markup_percent?: number | null
+          minimum_charge?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_rules_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           clerk_user_id: string | null

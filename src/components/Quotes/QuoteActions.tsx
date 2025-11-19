@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { MoreHorizontal, Send, FileText, Receipt, Edit, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Send, FileText, Receipt, Edit, Trash2, Smartphone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuthApi } from '@/hooks/useAuthApi';
@@ -167,6 +167,19 @@ export function QuoteActions({ quote, onSendQuote, onEditQuote }: QuoteActionsPr
           <Edit className="h-4 w-4" />
           {t('quotes.actions.editQuote')}
         </DropdownMenuItem>
+
+        <DropdownMenuItem 
+          onClick={() => {
+            const url = `${window.location.origin}/quote-present/${quote.publicToken}`;
+            window.open(url, '_blank');
+            setDropdownOpen(false);
+          }} 
+          className="gap-2"
+        >
+          <Smartphone className="h-4 w-4" />
+          View Mobile Presentation
+        </DropdownMenuItem>
+
         <DropdownMenuItem 
           onClick={() => {
             setDropdownOpen(false);

@@ -22,6 +22,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { BusinessConstraintsSettings } from '@/components/Settings/BusinessConstraintsSettings';
 import { ServiceCatalogManager } from '@/components/Settings/ServiceCatalogManager';
 import { AISettingsCard } from '@/components/Settings/AISettingsCard';
+import { PricingRulesCard } from '@/components/Settings/PricingRulesCard';
 
 export default function SettingsPage() {
   const { business, role } = useBusinessContext();
@@ -210,6 +211,11 @@ export default function SettingsPage() {
           {/* AI Settings - only for owners */}
           {role === 'owner' && (
             <AISettingsCard />
+          )}
+
+          {/* Pricing Rules - only for owners */}
+          {role === 'owner' && (
+            <PricingRulesCard />
           )}
 
           <Card>

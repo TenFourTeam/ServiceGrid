@@ -92,10 +92,12 @@ serve(async (req) => {
     console.log('[estimate-job-from-photo] Calling AI service');
     const aiResult = await callAIWithVision(
       {
-        systemPrompt: `You are an AI assistant that analyzes photos of completed work and generates detailed estimates with materials, labor, and equipment breakdown.
+      systemPrompt: `You are an AI assistant that analyzes photos of completed work and generates detailed estimates with materials, labor, and equipment breakdown.
 
 Available Services Catalog:
 ${catalogText}
+
+${pricingContext}
 
 ${jobContext ? `\n${jobContext}` : ''}
 

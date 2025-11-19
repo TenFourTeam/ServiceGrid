@@ -340,7 +340,7 @@ Deno.serve(async (req) => {
 
         const { data: quote, error: verifyError } = await supabase
           .from('quotes')
-          .select('id, public_token')
+          .select('id, public_token, business_id, customer_id, number, customers!inner(name, email)')
           .eq('id', quoteId)
           .eq('public_token', token)
           .single();
@@ -360,6 +360,65 @@ Deno.serve(async (req) => {
 
         if (updateError) {
           return json({ error: `Failed to ${action} quote` }, { status: 500 });
+        }
+
+        // Send email notification to business owner
+        try {
+          const { data: business } = await supabase
+            .from('businesses')
+            .select('name, owner_id, profiles!inner(email)')
+            .eq('id', quote.business_id)
+            .single();
+
+          if (business) {
+            const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
+            const customerName = (quote.customers as any)?.name || 'Customer';
+            const actionText = action === 'accept' ? 'accepted' : 'declined';
+            
+            await resend.emails.send({
+              from: `ServiceGrid <${Deno.env.get('RESEND_FROM_EMAIL') || 'onboarding@resend.dev'}>`,
+              to: [(business.profiles as any).email],
+              subject: `Quote ${quote.number} ${actionText} by ${customerName}`,
+              html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                  <h2>Quote ${actionText.charAt(0).toUpperCase() + actionText.slice(1)}</h2>
+                  <p><strong>${customerName}</strong> has ${actionText} quote <strong>${quote.number}</strong>.</p>
+                  <p>View details in your <a href="${Deno.env.get('FRONTEND_URL') || 'https://servicegrid.app'}/quotes">quotes dashboard</a>.</p>
+                </div>
+              `
+            });
+          }
+        } catch (emailError) {
+          console.error('[quotes-crud] Email notification error:', emailError);
+          // Don't fail the acceptance if email fails
+        }
+
+        // Auto-convert accepted quotes to jobs
+        if (action === 'accept') {
+          try {
+            const { data: fullQuote } = await supabase
+              .from('quotes')
+              .select('address, notes_internal, customer_id, business_id, owner_id')
+              .eq('id', quoteId)
+              .single();
+
+            if (fullQuote) {
+              await supabase.from('jobs').insert({
+                business_id: fullQuote.business_id,
+                owner_id: fullQuote.owner_id,
+                customer_id: fullQuote.customer_id,
+                quote_id: quoteId,
+                title: `Job from Quote ${quote.number}`,
+                status: 'Scheduled',
+                address: fullQuote.address,
+                notes: fullQuote.notes_internal
+              });
+              console.log('[quotes-crud] Auto-converted quote to job');
+            }
+          } catch (jobError) {
+            console.error('[quotes-crud] Auto-convert to job error:', jobError);
+            // Don't fail the acceptance if job creation fails
+          }
         }
 
         return json({ success: true, message: `Quote ${action}ed` });

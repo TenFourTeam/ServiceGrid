@@ -20,10 +20,10 @@ export function generateQuoteEmail({
 }: QuoteEmailConfig) {
   const baseUrl = getAppUrl();
   
-  // Generate action URLs - use /quote-action route for branded confirmation pages
-  const approveUrl = `${baseUrl}/quote-action?type=approve&quote_id=${quote.id}&token=${quote.publicToken}`;
+  // Generate action URLs - use /quote-present route for mobile presentation
+  const approveUrl = `${baseUrl}/quote-present/${quote.publicToken}`;
   const editUrl = `${baseUrl}/quote-edit/${quote.id}/${quote.publicToken}`;
-  const viewUrl = `${baseUrl}/quote/${encodeURIComponent(quote.publicToken)}`;
+  const viewUrl = `${baseUrl}/quote-present/${quote.publicToken}`;
   
   // Generate tracking pixel URL - goes directly to edge function
   const pixelUrl = `${baseUrl}/quote-action?type=open&quote_id=${quote.id}&token=${quote.publicToken}`;

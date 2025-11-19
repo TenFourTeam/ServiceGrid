@@ -122,7 +122,7 @@ export default function QuotesPage() {
   }
 
   function copyPublicLink(quote: QuoteListItem) {
-    const url = `${window.location.origin}/quote/${quote.publicToken}`;
+    const url = `${window.location.origin}/quote-present/${quote.publicToken}`;
     navigator.clipboard.writeText(url);
     toast.success(t('quotes.messages.linkCopied'));
   }
