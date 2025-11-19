@@ -20,6 +20,10 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // Check AI access before processing
+    const { requireAIAccess, incrementAICredits } = await import('../_lib/auth.ts');
+    await requireAIAccess(ctx, supabase);
+
     const { mediaId, jobId } = await req.json();
 
     if (!mediaId) {
@@ -173,21 +177,53 @@ Be thorough but realistic. Only include tasks you can clearly identify from the 
 
     console.log('[generate-checklist-from-photo] Generated checklist with', checklist.tasks.length, 'tasks');
 
-    return new Response(
-      JSON.stringify({
-        checklist: {
-          checklist_title: checklist.checklist_title,
-          tasks: checklist.tasks,
-          confidence,
-          notes: checklist.notes,
-          sourceMediaId: mediaId,
-          metadata: aiResult.metadata
-        }
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    // Increment AI credits after successful generation
+    const { incrementAICredits } = await import('../_lib/auth.ts');
+    await incrementAICredits(ctx, supabase, 1);
 
+    // Return the generation record with the checklist
+    const response = {
+      id: aiResult.generationId,
+      checklist: {
+        checklist_title: checklist.checklist_title,
+        tasks: checklist.tasks,
+        confidence,
+        notes: checklist.notes,
+        sourceMediaId: mediaId,
+        metadata: aiResult.metadata
+      }
+    };
+
+    return new Response(
+      JSON.stringify(response),
+      { 
+        status: 200, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    );
   } catch (error: any) {
+    // Handle AI access errors with specific messages
+    if (error.message === 'AI_DISABLED') {
+      return new Response(
+        JSON.stringify({ 
+          error: 'AI features are disabled',
+          message: 'Contact your administrator to enable AI features.',
+          errorType: 'AI_DISABLED'
+        }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (error.message === 'CREDIT_LIMIT_EXCEEDED') {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Monthly credit limit reached',
+          message: 'Your monthly AI credit limit has been reached. Please increase your limit in Settings.',
+          errorType: 'CREDIT_LIMIT_EXCEEDED'
+        }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     console.error('[generate-checklist-from-photo] Error:', error);
     return new Response(
       JSON.stringify({ error: error.message || 'Internal server error' }),

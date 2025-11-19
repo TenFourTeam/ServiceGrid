@@ -11,6 +11,7 @@ export interface GeneratedChecklistTask {
 }
 
 export interface GeneratedChecklist {
+  id: string; // Generation ID
   checklist_title: string;
   tasks: GeneratedChecklistTask[];
   confidence: 'high' | 'medium' | 'low';

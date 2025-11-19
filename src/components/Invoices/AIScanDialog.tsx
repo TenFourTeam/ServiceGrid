@@ -12,6 +12,9 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatMoney } from '@/utils/format';
 import { toast } from 'sonner';
+import { AIFeedbackForm } from '@/components/AI/AIFeedbackForm';
+import { useAIGenerationFeedback } from '@/hooks/useAIGenerations';
+import { useNavigate } from 'react-router-dom';
 
 type ScanMode = 'receipt' | 'photo' | 'checklist';
 
@@ -43,12 +46,15 @@ export function AIScanDialog({
   const [confidence, setConfidence] = useState<'high' | 'medium' | 'low' | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [errorType, setErrorType] = useState<string | null>(null);
+  const [generationId, setGenerationId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
   
   const mediaUpload = useInvoiceMediaUpload();
   const extractMutation = useInvoiceExtraction();
   const estimateMutation = useJobEstimation();
   const checklistMutation = useChecklistGeneration();
+  const feedbackMutation = useAIGenerationFeedback();
 
   const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -87,6 +93,7 @@ export function AIScanDialog({
         setExtractedData(result.extracted);
         setConfidence(result.confidence);
         setWarnings(result.warnings || []);
+        setGenerationId(result.id);
         toast.success('Invoice data extracted!');
       } else if (scanMode === 'photo') {
         const result = await estimateMutation.mutateAsync({ 
@@ -95,6 +102,7 @@ export function AIScanDialog({
         });
         setEstimate(result);
         setConfidence(result.confidence);
+        setGenerationId(result.id);
         toast.success('Estimate generated!');
       } else if (scanMode === 'checklist') {
         const result = await checklistMutation.mutateAsync({ 
@@ -103,15 +111,19 @@ export function AIScanDialog({
         });
         setChecklist(result);
         setConfidence(result.confidence);
+        setGenerationId(result.id);
         toast.success('Checklist generated!');
       }
     } catch (error: any) {
       if (error.errorType === 'RATE_LIMIT') {
         setErrorType('RATE_LIMIT');
         toast.error('AI is busy. Try again in a moment.');
-      } else if (error.errorType === 'PAYMENT_REQUIRED') {
-        setErrorType('PAYMENT_REQUIRED');
-        toast.error('AI credits exhausted.');
+      } else if (error.errorType === 'PAYMENT_REQUIRED' || error.errorType === 'CREDIT_LIMIT_EXCEEDED') {
+        setErrorType('CREDIT_LIMIT_EXCEEDED');
+        toast.error(error.message || 'AI credits exhausted.');
+      } else if (error.errorType === 'AI_DISABLED') {
+        setErrorType('AI_DISABLED');
+        toast.error('AI features are disabled. Contact your administrator.');
       } else {
         toast.error(error.message || 'Failed to process file.');
       }
@@ -138,6 +150,8 @@ export function AIScanDialog({
     setConfidence(null);
     setWarnings([]);
     setErrorType(null);
+    setGenerationId(null);
+    setGenerationId(null);
   };
 
   const resetDialog = () => {

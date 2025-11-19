@@ -234,6 +234,49 @@ export async function requireCtx(req: Request, options: { autoCreate?: boolean, 
   };
 }
 
+/**
+ * Check if the business has AI access and sufficient credits
+ * Throws an error if AI is disabled or credit limit exceeded
+ */
+export async function requireAIAccess(ctx: AuthContext, supabase: any): Promise<void> {
+  const { data: business, error } = await supabase
+    .from('businesses')
+    .select('ai_vision_enabled, ai_monthly_credit_limit, ai_credits_used_this_month')
+    .eq('id', ctx.businessId)
+    .single();
+
+  if (error) {
+    console.error('[requireAIAccess] Error fetching business:', error);
+    throw new Error('Failed to verify AI access');
+  }
+
+  if (!business.ai_vision_enabled) {
+    throw new Error('AI_DISABLED');
+  }
+
+  if (business.ai_monthly_credit_limit !== null && 
+      business.ai_credits_used_this_month >= business.ai_monthly_credit_limit) {
+    throw new Error('CREDIT_LIMIT_EXCEEDED');
+  }
+}
+
+/**
+ * Increment AI credits used for the business
+ */
+export async function incrementAICredits(ctx: AuthContext, supabase: any, credits: number = 1): Promise<void> {
+  const { error } = await supabase
+    .from('businesses')
+    .update({ 
+      ai_credits_used_this_month: supabase.raw(`ai_credits_used_this_month + ${credits}`)
+    })
+    .eq('id', ctx.businessId);
+
+  if (error) {
+    console.error('[incrementAICredits] Error incrementing credits:', error);
+    // Don't throw - this shouldn't block the operation
+  }
+}
+
 export async function requireCtxWithUserClient(req: Request, options: { autoCreate?: boolean, businessId?: string } = { autoCreate: true }): Promise<AuthContextWithUserClient> {
   // Get the standard auth context using service role
   const authCtx = await requireCtx(req, options);

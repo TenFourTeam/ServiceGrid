@@ -9,4 +9,4 @@ export { ActionButton } from './ActionButton';
 export { OverviewGenerator } from './OverviewGenerator';
 export { SummaryGenerator } from './SummaryGenerator';
 export { ArtifactsViewer } from './ArtifactsViewer';
-export { default as AIGenerationHistory } from './AIGenerationHistory';
+export { AIFeedbackForm } from './AIFeedbackForm';
