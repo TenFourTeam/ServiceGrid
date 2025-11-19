@@ -143,6 +143,9 @@ verify_jwt = false
 [functions.estimate-job-from-photo]
 verify_jwt = false
 
+[functions.pricing-rules-crud]
+verify_jwt = false
+
 [functions.ai-generations-analytics]
 verify_jwt = false
 
