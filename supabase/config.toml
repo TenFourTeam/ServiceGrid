@@ -134,6 +134,12 @@ verify_jwt = false
 [functions.upload-invoice-media]
 verify_jwt = false
 
+[functions.service-catalog-crud]
+verify_jwt = false
+
+[functions.estimate-job-from-photo]
+verify_jwt = false
+
 # Business operations (require authentication)
 [functions.business-update]
 verify_jwt = false
