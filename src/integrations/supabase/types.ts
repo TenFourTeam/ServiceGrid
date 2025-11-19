@@ -372,6 +372,108 @@ export type Database = {
         }
         Relationships: []
       }
+      call_logs: {
+        Row: {
+          ai_handled: boolean | null
+          ai_summary: string | null
+          business_id: string
+          call_sid: string
+          created_at: string | null
+          customer_id: string | null
+          direction: string
+          duration_seconds: number | null
+          ended_at: string | null
+          from_number: string
+          id: string
+          phone_number_id: string | null
+          recording_url: string | null
+          started_at: string | null
+          status: string
+          to_number: string
+          transcript: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          ai_handled?: boolean | null
+          ai_summary?: string | null
+          business_id: string
+          call_sid: string
+          created_at?: string | null
+          customer_id?: string | null
+          direction: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          from_number: string
+          id?: string
+          phone_number_id?: string | null
+          recording_url?: string | null
+          started_at?: string | null
+          status: string
+          to_number: string
+          transcript?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          ai_handled?: boolean | null
+          ai_summary?: string | null
+          business_id?: string
+          call_sid?: string
+          created_at?: string | null
+          customer_id?: string | null
+          direction?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          from_number?: string
+          id?: string
+          phone_number_id?: string | null
+          recording_url?: string | null
+          started_at?: string | null
+          status?: string
+          to_number?: string
+          transcript?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_logs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_logs_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_logs_phone_number_id_fkey"
+            columns: ["phone_number_id"]
+            isOneToOne: false
+            referencedRelation: "phone_numbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           address: string | null
@@ -1217,6 +1319,59 @@ export type Database = {
             columns: ["invoice_id"]
             isOneToOne: false
             referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      phone_numbers: {
+        Row: {
+          ai_agent_config: Json | null
+          ai_agent_enabled: boolean | null
+          business_hours: Json | null
+          business_id: string
+          capabilities: Json | null
+          created_at: string | null
+          friendly_name: string | null
+          id: string
+          phone_number: string
+          status: string | null
+          twilio_sid: string
+          updated_at: string | null
+        }
+        Insert: {
+          ai_agent_config?: Json | null
+          ai_agent_enabled?: boolean | null
+          business_hours?: Json | null
+          business_id: string
+          capabilities?: Json | null
+          created_at?: string | null
+          friendly_name?: string | null
+          id?: string
+          phone_number: string
+          status?: string | null
+          twilio_sid: string
+          updated_at?: string | null
+        }
+        Update: {
+          ai_agent_config?: Json | null
+          ai_agent_enabled?: boolean | null
+          business_hours?: Json | null
+          business_id?: string
+          capabilities?: Json | null
+          created_at?: string | null
+          friendly_name?: string | null
+          id?: string
+          phone_number?: string
+          status?: string | null
+          twilio_sid?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phone_numbers_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
@@ -3448,6 +3603,67 @@ export type Database = {
           travel_time_minutes?: number
         }
         Relationships: []
+      }
+      voip_devices: {
+        Row: {
+          business_id: string
+          created_at: string | null
+          device_name: string
+          device_type: string | null
+          id: string
+          is_active: boolean | null
+          last_seen_at: string | null
+          push_token: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string | null
+          device_name: string
+          device_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_seen_at?: string | null
+          push_token?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string | null
+          device_name?: string
+          device_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_seen_at?: string | null
+          push_token?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voip_devices_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voip_devices_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voip_devices_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
     }
     Views: {
