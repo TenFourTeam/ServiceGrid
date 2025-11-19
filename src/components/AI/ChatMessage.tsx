@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { ActionButton } from './ActionButton';
 import { SchedulePreviewCard } from './SchedulePreviewCard';
 import { useCalendarNavigation } from '@/hooks/useCalendarNavigation';
+import { useConversationMedia } from '@/hooks/useConversationMedia';
 
 interface ChatMessageProps {
   message: Message;
@@ -59,24 +60,9 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
   const isSystemMessage = message.role === 'system';
   const { navigateToDate } = useCalendarNavigation();
   const [parsedContent] = useState(() => parseMessageContent(message.content));
-  const [mediaUrls, setMediaUrls] = useState<string[]>([]);
-
-  // Fetch media URLs if message has attachments
-  useState(() => {
-    if (message.mediaIds && message.mediaIds.length > 0) {
-      import('@/integrations/supabase/client').then(({ supabase }) => {
-        supabase
-          .from('sg_media')
-          .select('public_url')
-          .in('id', message.mediaIds)
-          .then(({ data }) => {
-            if (data) {
-              setMediaUrls(data.map(m => m.public_url));
-            }
-          });
-      });
-    }
-  });
+  
+  // Fetch media using authenticated hook
+  const { data: mediaItems } = useConversationMedia(message.mediaIds);
 
   return (
     <div className={cn(
@@ -111,18 +97,28 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
             : 'bg-muted'
         )}>
           <div className="space-y-3">
-            {/* Display attached images for user messages - optimized for mobile */}
-            {isUser && mediaUrls.length > 0 && (
+            {/* Display attached media (photos and videos) for user messages */}
+            {isUser && mediaItems && mediaItems.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-2">
-                {mediaUrls.map((url, idx) => (
-                  <img
-                    key={idx}
-                    src={url}
-                    alt={`Attachment ${idx + 1}`}
-                    className="w-24 h-24 md:w-32 md:h-32 object-cover rounded-lg border border-border cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => window.open(url, '_blank')}
-                    loading="lazy"
-                  />
+                {mediaItems.map((media) => (
+                  media.file_type === 'photo' ? (
+                    <img
+                      key={media.id}
+                      src={media.public_url}
+                      alt={media.original_filename}
+                      className="w-24 h-24 md:w-32 md:h-32 object-cover rounded-lg border border-border cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={() => window.open(media.public_url, '_blank')}
+                      loading="lazy"
+                    />
+                  ) : media.file_type === 'video' ? (
+                    <video
+                      key={media.id}
+                      src={media.public_url}
+                      controls
+                      className="w-40 h-24 md:w-48 md:h-32 rounded-lg border border-border"
+                      preload="metadata"
+                    />
+                  ) : null
                 ))}
               </div>
             )}

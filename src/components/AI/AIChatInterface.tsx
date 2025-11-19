@@ -35,6 +35,7 @@ export function AIChatInterface({
     sendMessage,
     stopStreaming,
     clearMessages,
+    loadConversation,
   } = useAIChat({
     onNewConversation: (id) => {
       console.log('New conversation created:', id);
@@ -125,7 +126,17 @@ export function AIChatInterface({
                         <ConversationItem
                           key={conv.id}
                           conversation={conv}
+                          isActive={conversationId === conv.id}
+                          onSelect={() => {
+                            if (conversationId === conv.id) return;
+                            if (isStreaming) {
+                              toast.error('Cannot switch conversations while streaming');
+                              return;
+                            }
+                            loadConversation(conv.id);
+                          }}
                           onDelete={() => deleteConversation(conv.id)}
+                          disabled={isStreaming}
                         />
                       ))}
                     </div>
@@ -137,7 +148,17 @@ export function AIChatInterface({
                         <ConversationItem
                           key={conv.id}
                           conversation={conv}
+                          isActive={conversationId === conv.id}
+                          onSelect={() => {
+                            if (conversationId === conv.id) return;
+                            if (isStreaming) {
+                              toast.error('Cannot switch conversations while streaming');
+                              return;
+                            }
+                            loadConversation(conv.id);
+                          }}
                           onDelete={() => deleteConversation(conv.id)}
+                          disabled={isStreaming}
                         />
                       ))}
                     </div>
@@ -149,7 +170,17 @@ export function AIChatInterface({
                         <ConversationItem
                           key={conv.id}
                           conversation={conv}
+                          isActive={conversationId === conv.id}
+                          onSelect={() => {
+                            if (conversationId === conv.id) return;
+                            if (isStreaming) {
+                              toast.error('Cannot switch conversations while streaming');
+                              return;
+                            }
+                            loadConversation(conv.id);
+                          }}
                           onDelete={() => deleteConversation(conv.id)}
+                          disabled={isStreaming}
                         />
                       ))}
                     </div>
@@ -161,7 +192,17 @@ export function AIChatInterface({
                         <ConversationItem
                           key={conv.id}
                           conversation={conv}
+                          isActive={conversationId === conv.id}
+                          onSelect={() => {
+                            if (conversationId === conv.id) return;
+                            if (isStreaming) {
+                              toast.error('Cannot switch conversations while streaming');
+                              return;
+                            }
+                            loadConversation(conv.id);
+                          }}
                           onDelete={() => deleteConversation(conv.id)}
+                          disabled={isStreaming}
                         />
                       ))}
                     </div>
@@ -246,17 +287,28 @@ export function AIChatInterface({
 
 function ConversationItem({ 
   conversation, 
-  onDelete 
+  onDelete,
+  isActive,
+  onSelect,
+  disabled
 }: { 
   conversation: any; 
   onDelete: () => void;
+  isActive: boolean;
+  onSelect: () => void;
+  disabled?: boolean;
 }) {
   return (
     <div className="group relative mb-2">
       <Button
         variant="ghost"
         size="sm"
-        className="w-full justify-start text-left text-xs h-auto py-2 px-2"
+        className={cn(
+          "w-full justify-start text-left text-xs h-auto py-2 px-2 transition-colors",
+          isActive && "bg-primary/10 border-l-2 border-primary"
+        )}
+        onClick={onSelect}
+        disabled={disabled}
       >
         <MessageSquare className="w-3 h-3 mr-2 flex-shrink-0" />
         <span className="truncate">{conversation.title || 'New conversation'}</span>

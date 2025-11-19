@@ -1,5 +1,12 @@
 project_id = "ijudkzqfriazabiosnvb"
 
+# AI Assistant functions
+[functions.ai-chat]
+verify_jwt = false
+
+[functions.ai-chat-messages]
+verify_jwt = false
+
 # Notes functions
 [functions.notes-crud]
 verify_jwt = false

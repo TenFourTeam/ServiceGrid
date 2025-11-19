@@ -346,6 +346,42 @@ export function useAIChat(options?: UseAIChatOptions) {
     setConversationId(undefined);
   }, []);
 
+  const loadConversation = useCallback(async (convId: string) => {
+    if (!businessId) return;
+    
+    try {
+      const token = await getToken({ template: 'supabase' });
+      const response = await fetch(
+        `https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/ai-chat-messages?conversationId=${convId}`,
+        {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }
+      );
+      
+      if (!response.ok) throw new Error('Failed to load conversation');
+      
+      const { messages: loadedMessages } = await response.json();
+      
+      // Transform backend messages to frontend Message format
+      const transformedMessages: Message[] = loadedMessages.map((msg: any) => ({
+        id: msg.id,
+        role: msg.role,
+        content: msg.content,
+        timestamp: new Date(msg.created_at),
+        mediaIds: msg.metadata?.mediaIds || [],
+        toolCalls: msg.tool_calls || [],
+        actions: parseMessageActions(msg.content).actions
+      }));
+      
+      setMessages(transformedMessages);
+      setConversationId(convId);
+      toast.success('Conversation loaded');
+    } catch (error) {
+      console.error('Error loading conversation:', error);
+      toast.error('Failed to load conversation');
+    }
+  }, [businessId, getToken]);
+
   return {
     messages,
     isStreaming,
@@ -355,6 +391,7 @@ export function useAIChat(options?: UseAIChatOptions) {
     sendMessage,
     stopStreaming,
     clearMessages,
+    loadConversation,
   };
 }
 
