@@ -67,11 +67,43 @@ export function useCreateFeature() {
       if (error) throw error;
       return data as RoadmapFeature;
     },
+    onMutate: async (newFeature) => {
+      // Cancel outgoing queries
+      await queryClient.cancelQueries({ queryKey: ['roadmap-features'] });
+
+      // Snapshot previous state
+      const previousFeatures = queryClient.getQueriesData({ queryKey: ['roadmap-features'] });
+
+      // Optimistically add new feature
+      const tempFeature: RoadmapFeature = {
+        id: crypto.randomUUID(),
+        title: newFeature.title,
+        description: newFeature.description,
+        status: (newFeature.status || 'under-consideration') as any,
+        vote_count: 0,
+        comment_count: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      queryClient.setQueriesData({ queryKey: ['roadmap-features'] }, (old: any) => {
+        if (!old) return [tempFeature];
+        return [tempFeature, ...old];
+      });
+
+      return { previousFeatures };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['roadmap-features'] });
       toast.success('Feature created successfully');
     },
-    onError: (error: any) => {
+    onError: (error: any, _variables, context) => {
+      // Rollback on error
+      if (context?.previousFeatures) {
+        context.previousFeatures.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
       toast.error(error.message || 'Failed to create feature');
     },
   });
@@ -95,12 +127,50 @@ export function useUpdateFeature() {
       if (error) throw error;
       return data as RoadmapFeature;
     },
+    onMutate: async (updatedFeature) => {
+      // Cancel outgoing queries
+      await queryClient.cancelQueries({ queryKey: ['roadmap-features'] });
+      await queryClient.cancelQueries({ queryKey: ['roadmap-feature', updatedFeature.id] });
+
+      // Snapshot previous state
+      const previousFeatures = queryClient.getQueriesData({ queryKey: ['roadmap-features'] });
+      const previousSingle = queryClient.getQueryData(['roadmap-feature', updatedFeature.id]);
+
+      // Optimistically update feature
+      queryClient.setQueriesData({ queryKey: ['roadmap-features'] }, (old: any) => {
+        if (!old) return old;
+        return old.map((feature: RoadmapFeature) =>
+          feature.id === updatedFeature.id
+            ? { ...feature, ...updatedFeature, updated_at: new Date().toISOString() }
+            : feature
+        );
+      });
+
+      if (previousSingle) {
+        queryClient.setQueryData(['roadmap-feature', updatedFeature.id], (old: any) => ({
+          ...old,
+          ...updatedFeature,
+          updated_at: new Date().toISOString(),
+        }));
+      }
+
+      return { previousFeatures, previousSingle };
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['roadmap-features'] });
       queryClient.invalidateQueries({ queryKey: ['roadmap-feature', variables.id] });
       toast.success('Feature updated successfully');
     },
-    onError: (error: any) => {
+    onError: (error: any, variables, context) => {
+      // Rollback on error
+      if (context?.previousFeatures) {
+        context.previousFeatures.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+      if (context?.previousSingle) {
+        queryClient.setQueryData(['roadmap-feature', variables.id], context.previousSingle);
+      }
       toast.error(error.message || 'Failed to update feature');
     },
   });
@@ -119,11 +189,32 @@ export function useDeleteFeature() {
       if (error) throw error;
       return data;
     },
+    onMutate: async (deletedId) => {
+      // Cancel outgoing queries
+      await queryClient.cancelQueries({ queryKey: ['roadmap-features'] });
+
+      // Snapshot previous state
+      const previousFeatures = queryClient.getQueriesData({ queryKey: ['roadmap-features'] });
+
+      // Optimistically remove feature
+      queryClient.setQueriesData({ queryKey: ['roadmap-features'] }, (old: any) => {
+        if (!old) return old;
+        return old.filter((feature: RoadmapFeature) => feature.id !== deletedId);
+      });
+
+      return { previousFeatures };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['roadmap-features'] });
       toast.success('Feature deleted successfully');
     },
-    onError: (error: any) => {
+    onError: (error: any, _variables, context) => {
+      // Rollback on error
+      if (context?.previousFeatures) {
+        context.previousFeatures.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
       toast.error(error.message || 'Failed to delete feature');
     },
   });
