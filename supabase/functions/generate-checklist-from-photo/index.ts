@@ -61,7 +61,6 @@ serve(async (req) => {
       }
     }
 
-    // Call AI service
     console.log('[generate-checklist-from-photo] Calling AI service');
     const aiResult = await callAIWithVision(
       {
@@ -80,6 +79,7 @@ Analyze the photo and identify all tasks that need to be completed based on the 
 Be thorough but realistic. Only include tasks you can clearly identify from the photo.`,
         userPrompt: 'Analyze this photo and generate a detailed task checklist for completing the work.',
         imageUrl: media.public_url,
+        enableCache: true, // Enable 24-hour caching
         tools: [
           {
             type: 'function',

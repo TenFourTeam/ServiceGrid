@@ -70,7 +70,12 @@ const queryKeys = {
   
   // AI queries
   ai: {
-    generations: (businessId: string) => ['ai', 'generations', businessId] as const,
+    all: (businessId: string) => ['ai', businessId] as const,
+    generations: (businessId: string, filters?: any) => 
+      filters ? ['ai', 'generations', businessId, filters] as const : ['ai', 'generations', businessId] as const,
+    generation: (generationId: string) => ['ai', 'generation', generationId] as const,
+    stats: (businessId: string, filters?: any) => 
+      filters ? ['ai', 'stats', businessId, filters] as const : ['ai', 'stats', businessId] as const,
     generationsByType: (businessId: string, type: 'invoice_estimate' | 'checklist_generation') => 
       ['ai', 'generations', businessId, type] as const,
     generationsByUser: (businessId: string, userId: string) => 

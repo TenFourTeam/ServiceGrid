@@ -85,7 +85,6 @@ serve(async (req) => {
       `- ${s.service_name} (${s.category || 'General'}): $${(s.unit_price / 100).toFixed(2)} ${s.unit_type}${s.description ? ` - ${s.description}` : ''}`
     ).join('\n');
 
-    // Call AI service
     console.log('[estimate-job-from-photo] Calling AI service');
     const aiResult = await callAIWithVision(
       {
@@ -99,6 +98,7 @@ ${jobContext ? `\n${jobContext}` : ''}
 Analyze the photo and estimate which services were performed based on visible work. Match services to the catalog and provide quantities. Be conservative in estimates - only include services you can clearly see evidence of in the photo.`,
         userPrompt: 'Analyze this photo of completed work and estimate the services performed.',
         imageUrl: media.public_url,
+        enableCache: true, // Enable 24-hour caching
         tools: [
           {
             type: 'function',
