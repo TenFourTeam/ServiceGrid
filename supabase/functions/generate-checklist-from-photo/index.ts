@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { requireCtx } from '../_lib/auth.ts';
+import { callAIWithVision, calculateConfidence } from '../_lib/ai-service.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -27,6 +28,8 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log('[generate-checklist-from-photo] Processing request', { mediaId, jobId, userId: ctx.userId });
 
     // Fetch media
     const { data: media, error: mediaError } = await supabase
@@ -58,24 +61,11 @@ serve(async (req) => {
       }
     }
 
-    // Call Lovable AI with vision
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
-    }
-
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'system',
-            content: `You are an AI assistant that analyzes photos of work sites and generates detailed task checklists (SOPs).
+    // Call AI service
+    console.log('[generate-checklist-from-photo] Calling AI service');
+    const aiResult = await callAIWithVision(
+      {
+        systemPrompt: `You are an AI assistant that analyzes photos of work sites and generates detailed task checklists (SOPs).
 
 ${jobContext ? `\n${jobContext}` : ''}
 
@@ -87,24 +77,9 @@ Analyze the photo and identify all tasks that need to be completed based on the 
 - Specify how many photos are required (0-5)
 - Order tasks logically
 
-Be thorough but realistic. Only include tasks you can clearly identify from the photo.`
-          },
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: 'Analyze this photo and generate a detailed task checklist for completing the work.'
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: media.public_url
-                }
-              }
-            ]
-          }
-        ],
+Be thorough but realistic. Only include tasks you can clearly identify from the photo.`,
+        userPrompt: 'Analyze this photo and generate a detailed task checklist for completing the work.',
+        imageUrl: media.public_url,
         tools: [
           {
             type: 'function',
@@ -116,11 +91,11 @@ Be thorough but realistic. Only include tasks you can clearly identify from the 
                 properties: {
                   checklist_title: {
                     type: 'string',
-                    description: 'Overall title for the checklist based on the work type'
+                    description: 'A clear title for this checklist based on the work visible'
                   },
                   tasks: {
                     type: 'array',
-                    description: 'List of tasks in logical order',
+                    description: 'Ordered list of tasks to complete',
                     items: {
                       type: 'object',
                       properties: {
@@ -130,23 +105,23 @@ Be thorough but realistic. Only include tasks you can clearly identify from the 
                         },
                         description: {
                           type: 'string',
-                          description: 'Optional detailed description or notes'
+                          description: 'Detailed instructions or context'
                         },
                         position: {
-                          type: 'number',
-                          description: 'Order position (starting from 0)'
+                          type: 'integer',
+                          description: 'Order position (0-based)'
                         },
                         category: {
                           type: 'string',
-                          description: 'Task category (e.g., "Preparation", "Main Work", "Cleanup", "Inspection")'
+                          description: 'Task category (e.g., "Preparation", "Main Work", "Cleanup")'
                         },
                         estimated_duration_minutes: {
-                          type: 'number',
+                          type: 'integer',
                           description: 'Estimated time to complete in minutes'
                         },
                         required_photo_count: {
-                          type: 'number',
-                          description: 'Number of verification photos required (0-5)',
+                          type: 'integer',
+                          description: 'Number of photos required (0-5)',
                           minimum: 0,
                           maximum: 5
                         }
@@ -154,75 +129,69 @@ Be thorough but realistic. Only include tasks you can clearly identify from the 
                       required: ['title', 'position', 'required_photo_count']
                     }
                   },
-                  confidence: {
-                    type: 'string',
-                    enum: ['high', 'medium', 'low'],
-                    description: 'Confidence level in the generated checklist'
-                  },
                   notes: {
                     type: 'string',
-                    description: 'Any additional context or warnings'
+                    description: 'Additional notes or safety considerations'
                   }
                 },
-                required: ['checklist_title', 'tasks', 'confidence']
+                required: ['checklist_title', 'tasks']
               }
             }
           }
-        ],
-        tool_choice: { type: 'function', function: { name: 'generate_checklist' } }
-      }),
-    });
-
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('[generate-checklist-from-photo] AI error:', aiResponse.status, errorText);
-      
-      if (aiResponse.status === 429) {
-        return new Response(
-          JSON.stringify({ error: 'AI rate limit', errorType: 'RATE_LIMIT' }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      if (aiResponse.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'Payment required', errorType: 'PAYMENT_REQUIRED' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      throw new Error('AI request failed');
-    }
-
-    const aiData = await aiResponse.json();
-    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
-    
-    if (!toolCall) {
-      throw new Error('No checklist generated');
-    }
-
-    const checklist = JSON.parse(toolCall.function.arguments);
-
-    return new Response(
-      JSON.stringify({ 
-        checklist: {
-          ...checklist,
-          sourceMediaId: mediaId
-        }
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
+        ]
+      },
+      supabase,
+      {
+        businessId: ctx.businessId,
+        userId: ctx.userId,
+        generationType: 'checklist_generation',
+        sourceMediaId: mediaId,
+        jobId: jobId || undefined,
+        inputParams: { mediaId, jobId },
+        outputData: {}, // Will be filled by callAIWithVision
+        confidence: 'medium', // Will be calculated
+        metadata: { hasJobContext: !!jobContext }
       }
     );
+
+    if (!aiResult.success) {
+      console.error('[generate-checklist-from-photo] AI error:', aiResult.error);
+      return new Response(
+        JSON.stringify({ 
+          error: aiResult.error?.message || 'AI processing failed',
+          errorType: aiResult.error?.type
+        }),
+        { 
+          status: aiResult.error?.status || 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    const checklist = aiResult.data;
+    const confidence = calculateConfidence(checklist, 'checklist_generation');
+
+    console.log('[generate-checklist-from-photo] Generated checklist with', checklist.tasks.length, 'tasks');
+
+    return new Response(
+      JSON.stringify({
+        checklist: {
+          checklist_title: checklist.checklist_title,
+          tasks: checklist.tasks,
+          confidence,
+          notes: checklist.notes,
+          sourceMediaId: mediaId,
+          metadata: aiResult.metadata
+        }
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
   } catch (error: any) {
     console.error('[generate-checklist-from-photo] Error:', error);
     return new Response(
       JSON.stringify({ error: error.message || 'Internal server error' }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

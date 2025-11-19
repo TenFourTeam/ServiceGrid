@@ -1846,6 +1846,91 @@ export type Database = {
           },
         ]
       }
+      sg_ai_generations: {
+        Row: {
+          business_id: string
+          confidence: string | null
+          created_at: string
+          generation_type: string
+          id: string
+          input_params: Json
+          job_id: string | null
+          metadata: Json
+          output_data: Json
+          source_media_id: string
+          user_id: string
+        }
+        Insert: {
+          business_id: string
+          confidence?: string | null
+          created_at?: string
+          generation_type: string
+          id?: string
+          input_params?: Json
+          job_id?: string | null
+          metadata?: Json
+          output_data?: Json
+          source_media_id: string
+          user_id: string
+        }
+        Update: {
+          business_id?: string
+          confidence?: string | null
+          created_at?: string
+          generation_type?: string
+          id?: string
+          input_params?: Json
+          job_id?: string | null
+          metadata?: Json
+          output_data?: Json
+          source_media_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sg_ai_generations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_ai_generations_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_ai_generations_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "time_by_job_report"
+            referencedColumns: ["job_id"]
+          },
+          {
+            foreignKeyName: "sg_ai_generations_source_media_id_fkey"
+            columns: ["source_media_id"]
+            isOneToOne: false
+            referencedRelation: "sg_media"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_ai_generations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_ai_generations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       sg_checklist_events: {
         Row: {
           checklist_id: string
