@@ -56,6 +56,19 @@ verify_jwt = false
 [functions.jobs-location-query]
 verify_jwt = false
 
+# VoIP functions
+[functions.voip-purchase-number]
+verify_jwt = false
+
+[functions.voip-get-access-token]
+verify_jwt = false
+
+[functions.voip-initiate-call]
+verify_jwt = false
+
+[functions.voip-webhook-handler]
+verify_jwt = false
+
 # Configure authentication
 [auth]
 site_url = "http://localhost:3000"

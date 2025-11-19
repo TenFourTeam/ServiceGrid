@@ -23,6 +23,10 @@ import { BusinessConstraintsSettings } from '@/components/Settings/BusinessConst
 import { ServiceCatalogManager } from '@/components/Settings/ServiceCatalogManager';
 import { AISettingsCard } from '@/components/Settings/AISettingsCard';
 import { PricingRulesCard } from '@/components/Settings/PricingRulesCard';
+import { PhoneNumberSettings } from '@/components/VoIP/PhoneNumberSettings';
+import { CallLogList } from '@/components/VoIP/CallLogList';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Phone } from 'lucide-react';
 
 export default function SettingsPage() {
   const { business, role } = useBusinessContext();
@@ -216,6 +220,32 @@ export default function SettingsPage() {
           {/* Pricing Rules - only for owners */}
           {role === 'owner' && (
             <PricingRulesCard />
+          )}
+
+          {/* Communications - only for owners */}
+          {role === 'owner' && (
+            <Card className="md:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Phone className="h-5 w-5" />
+                  Communications
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="phone-numbers" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 mb-4">
+                    <TabsTrigger value="phone-numbers">Phone Numbers</TabsTrigger>
+                    <TabsTrigger value="call-history">Call History</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="phone-numbers">
+                    <PhoneNumberSettings />
+                  </TabsContent>
+                  <TabsContent value="call-history">
+                    <CallLogList />
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
           )}
 
           <Card>
