@@ -1937,6 +1937,68 @@ export type Database = {
         }
         Relationships: []
       }
+      roadmap_features: {
+        Row: {
+          comment_count: number
+          created_at: string
+          description: string
+          id: string
+          status: string
+          title: string
+          updated_at: string
+          vote_count: number
+        }
+        Insert: {
+          comment_count?: number
+          created_at?: string
+          description: string
+          id?: string
+          status?: string
+          title: string
+          updated_at?: string
+          vote_count?: number
+        }
+        Update: {
+          comment_count?: number
+          created_at?: string
+          description?: string
+          id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          vote_count?: number
+        }
+        Relationships: []
+      }
+      roadmap_votes: {
+        Row: {
+          created_at: string
+          feature_id: string
+          id: string
+          voter_identifier: string
+        }
+        Insert: {
+          created_at?: string
+          feature_id: string
+          id?: string
+          voter_identifier: string
+        }
+        Update: {
+          created_at?: string
+          feature_id?: string
+          id?: string
+          voter_identifier?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roadmap_votes_feature_id_fkey"
+            columns: ["feature_id"]
+            isOneToOne: false
+            referencedRelation: "roadmap_features"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_catalog: {
         Row: {
           business_id: string
