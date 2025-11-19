@@ -329,10 +329,46 @@ Deno.serve(async (req) => {
     }
 
     if (req.method === 'PATCH') {
-      const url = new URL(req.url);
-      const action = url.searchParams.get('action');
+      const body = await req.json();
+      const { action, token, quoteId, signature } = body;
       
-      if (action === 'send-email') {
+      // Public accept/decline actions
+      if (action === 'accept' || action === 'decline') {
+        if (!token || !quoteId) {
+          return json({ error: 'Missing token or quoteId' }, { status: 400 });
+        }
+
+        const { data: quote, error: verifyError } = await supabase
+          .from('quotes')
+          .select('id, public_token')
+          .eq('id', quoteId)
+          .eq('public_token', token)
+          .single();
+
+        if (verifyError || !quote) {
+          return json({ error: 'Invalid quote or token' }, { status: 404 });
+        }
+
+        const updates = action === 'accept' 
+          ? { status: 'Approved', approved_at: new Date().toISOString(), approved_by: 'Customer (E-Signature)' }
+          : { status: 'Declined' };
+
+        const { error: updateError } = await supabase
+          .from('quotes')
+          .update(updates)
+          .eq('id', quoteId);
+
+        if (updateError) {
+          return json({ error: `Failed to ${action} quote` }, { status: 500 });
+        }
+
+        return json({ success: true, message: `Quote ${action}ed` });
+      }
+      
+      const url = new URL(req.url);
+      const urlAction = url.searchParams.get('action');
+      
+      if (urlAction === 'send-email') {
         let body;
         try {
           body = await req.json();
