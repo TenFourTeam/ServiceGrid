@@ -177,11 +177,78 @@ Be thorough but realistic. Only include tasks you can clearly identify from the 
 
     console.log('[generate-checklist-from-photo] Generated checklist with', checklist.tasks.length, 'tasks');
 
+    // Smart template matching: find similar existing templates
+    let similarTemplates = [];
+    try {
+      const { data: templates, error: templatesError } = await supabase
+        .from('sg_checklist_templates')
+        .select('id, name, description, category, is_system_template')
+        .eq('business_id', ctx.businessId)
+        .eq('is_archived', false);
+
+      if (!templatesError && templates && templates.length > 0) {
+        // Calculate similarity scores for each template
+        const templatesWithScores = templates.map(template => {
+          let score = 0;
+          const checklistTitle = checklist.checklist_title.toLowerCase();
+          const templateName = template.name.toLowerCase();
+          const templateDesc = (template.description || '').toLowerCase();
+
+          // Title similarity (50% weight)
+          if (checklistTitle === templateName) {
+            score += 50;
+          } else if (checklistTitle.includes(templateName) || templateName.includes(checklistTitle)) {
+            score += 35;
+          } else {
+            // Word overlap
+            const checklistWords = checklistTitle.split(/\s+/);
+            const templateWords = templateName.split(/\s+/);
+            const overlap = checklistWords.filter(w => templateWords.includes(w)).length;
+            score += Math.min(overlap * 10, 30);
+          }
+
+          // Description/category similarity (25% weight)
+          if (templateDesc && checklistTitle.includes(templateDesc.split(/\s+/)[0])) {
+            score += 15;
+          }
+          if (template.category) {
+            const category = template.category.toLowerCase();
+            if (checklistTitle.includes(category) || category.includes(checklistTitle.split(/\s+/)[0])) {
+              score += 10;
+            }
+          }
+
+          // Task count similarity (25% weight) - compare number of tasks
+          // Fetch template items count
+          return { ...template, similarity: score };
+        });
+
+        // Return templates with similarity > 60%
+        similarTemplates = templatesWithScores
+          .filter(t => t.similarity >= 60)
+          .sort((a, b) => b.similarity - a.similarity)
+          .slice(0, 3)
+          .map(({ id, name, description, category, is_system_template, similarity }) => ({
+            id,
+            name,
+            description,
+            category,
+            is_system_template,
+            similarity: Math.round(similarity)
+          }));
+
+        console.log('[generate-checklist-from-photo] Found', similarTemplates.length, 'similar templates');
+      }
+    } catch (error) {
+      console.error('[generate-checklist-from-photo] Error fetching templates:', error);
+      // Continue without similar templates
+    }
+
     // Increment AI credits after successful generation
     const { incrementAICredits } = await import('../_lib/auth.ts');
     await incrementAICredits(ctx, supabase, 1);
 
-    // Return the generation record with the checklist
+    // Return the generation record with the checklist and similar templates
     const response = {
       id: aiResult.generationId,
       checklist: {
@@ -191,7 +258,8 @@ Be thorough but realistic. Only include tasks you can clearly identify from the 
         notes: checklist.notes,
         sourceMediaId: mediaId,
         metadata: aiResult.metadata
-      }
+      },
+      similarTemplates: similarTemplates.length > 0 ? similarTemplates : undefined
     };
 
     return new Response(

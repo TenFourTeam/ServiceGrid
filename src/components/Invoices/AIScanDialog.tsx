@@ -15,6 +15,8 @@ import { toast } from 'sonner';
 import { AIFeedbackForm } from '@/components/AI/AIFeedbackForm';
 import { useAIGenerationFeedback } from '@/hooks/useAIGenerations';
 import { useNavigate } from 'react-router-dom';
+import { SimilarTemplatesDialog } from '@/components/Checklists/SimilarTemplatesDialog';
+import { useChecklistTemplate } from '@/hooks/useChecklistTemplates';
 
 type ScanMode = 'receipt' | 'photo' | 'checklist';
 
@@ -47,6 +49,8 @@ export function AIScanDialog({
   const [warnings, setWarnings] = useState<string[]>([]);
   const [errorType, setErrorType] = useState<string | null>(null);
   const [generationId, setGenerationId] = useState<string | null>(null);
+  const [showSimilarTemplates, setShowSimilarTemplates] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   
@@ -133,9 +137,34 @@ export function AIScanDialog({
   const handleUseData = () => {
     if (extractedData && onDataExtracted) {
       onDataExtracted(extractedData);
+      onOpenChange(false);
     } else if (estimate && onEstimateExtracted) {
       onEstimateExtracted(estimate);
+      onOpenChange(false);
     } else if (checklist && onChecklistGenerated) {
+      // Check if there are similar templates to show
+      if (checklist.similarTemplates && checklist.similarTemplates.length > 0) {
+        setShowSimilarTemplates(true);
+      } else {
+        onChecklistGenerated(checklist);
+        onOpenChange(false);
+      }
+    }
+  };
+
+  const handleUseTemplate = (templateId: string) => {
+    setSelectedTemplateId(templateId);
+    setShowSimilarTemplates(false);
+    // Pass the template ID to the parent instead of the generated checklist
+    if (onChecklistGenerated && checklist) {
+      onChecklistGenerated({ ...checklist, useTemplateId: templateId } as any);
+    }
+    onOpenChange(false);
+  };
+
+  const handleCreateNew = () => {
+    setShowSimilarTemplates(false);
+    if (checklist && onChecklistGenerated) {
       onChecklistGenerated(checklist);
     }
     onOpenChange(false);
@@ -516,6 +545,17 @@ export function AIScanDialog({
           )}
         </div>
       </DialogContent>
+
+      {checklist && checklist.similarTemplates && (
+        <SimilarTemplatesDialog
+          open={showSimilarTemplates}
+          onOpenChange={setShowSimilarTemplates}
+          similarTemplates={checklist.similarTemplates}
+          generatedTitle={checklist.checklist_title}
+          onUseTemplate={handleUseTemplate}
+          onCreateNew={handleCreateNew}
+        />
+      )}
     </Dialog>
   );
 }

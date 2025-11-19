@@ -10,6 +10,15 @@ export interface GeneratedChecklistTask {
   required_photo_count: number;
 }
 
+export interface SimilarTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  category?: string;
+  is_system_template: boolean;
+  similarity: number;
+}
+
 export interface GeneratedChecklist {
   id: string; // Generation ID
   checklist_title: string;
@@ -17,6 +26,7 @@ export interface GeneratedChecklist {
   confidence: 'high' | 'medium' | 'low';
   notes?: string;
   sourceMediaId: string;
+  similarTemplates?: SimilarTemplate[];
 }
 
 export function useChecklistGeneration() {
@@ -43,7 +53,10 @@ export function useChecklistGeneration() {
         throw new Error(error.message || 'Failed to generate checklist');
       }
 
-      return data?.checklist as GeneratedChecklist;
+      return {
+        ...data?.checklist,
+        similarTemplates: data?.similarTemplates
+      } as GeneratedChecklist;
     },
   });
 }
