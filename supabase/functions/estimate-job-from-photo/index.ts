@@ -92,15 +92,39 @@ serve(async (req) => {
     console.log('[estimate-job-from-photo] Calling AI service');
     const aiResult = await callAIWithVision(
       {
-        systemPrompt: `You are an AI assistant that analyzes photos of completed work and generates invoice estimates.
+        systemPrompt: `You are an AI assistant that analyzes photos of completed work and generates detailed estimates with materials, labor, and equipment breakdown.
 
-Available Services:
+Available Services Catalog:
 ${catalogText}
 
 ${jobContext ? `\n${jobContext}` : ''}
 
-Analyze the photo and estimate which services were performed based on visible work. Match services to the catalog and provide quantities. Be conservative in estimates - only include services you can clearly see evidence of in the photo.`,
-        userPrompt: 'Analyze this photo of completed work and estimate the services performed.',
+**ANALYSIS GUIDELINES:**
+
+1. **Materials**: Identify physical materials visible or implied in the photo
+   - Examples: Paint (gallons), lumber (board feet), fertilizer (bags), mulch (cubic yards)
+   - Estimate quantities conservatively based on visible area/work
+   - Use market-standard pricing if not in catalog
+
+2. **Labor**: Calculate labor requirements based on visible work scope
+   - Estimate total hours required for the visible work
+   - Recommend crew size (1-5 workers typically)
+   - Consider complexity, safety requirements, skill level needed
+   - Standard labor rate: Use catalog rates or estimate $45-85/hour based on skill
+
+3. **Equipment**: Identify specialized equipment or tools required
+   - Examples: Equipment rental (days), disposal fees (loads), permits
+   - Only include if clearly necessary for the work shown
+
+4. **Services**: General services from catalog that don't fit above categories
+   - Examples: "Lawn Mowing Service", "General Maintenance"
+
+**IMPORTANT**: 
+- Be conservative in estimates - only include what you can clearly see evidence of
+- Separate line items by type (don't combine materials + labor into one line)
+- For labor, ALWAYS provide labor_hours and crew_size estimates
+- Match to catalog prices when possible, otherwise estimate market rates`,
+        userPrompt: 'Analyze this photo of completed work and estimate the materials, labor, equipment, and services required.',
         imageUrl: media.public_url,
         enableCache: true, // Enable 24-hour caching
         tools: [
@@ -108,23 +132,40 @@ Analyze the photo and estimate which services were performed based on visible wo
             type: 'function',
             function: {
               name: 'generate_estimate',
-              description: 'Generate a structured estimate from a job photo',
+              description: 'Generate a structured estimate with materials, labor, and equipment breakdown',
               parameters: {
                 type: 'object',
                 properties: {
-                  services: {
+                  line_items: {
                     type: 'array',
-                    description: 'List of services matched to the service catalog',
+                    description: 'Detailed breakdown of materials, labor, equipment, and services',
                     items: {
                       type: 'object',
                       properties: {
-                        service_name: { type: 'string', description: 'Name from catalog' },
-                        quantity: { type: 'number', description: 'Estimated quantity' },
-                        unit_price_cents: { type: 'integer', description: 'Price in cents from catalog' },
-                        unit_type: { type: 'string', description: 'Unit type from catalog' },
-                        notes: { type: 'string', description: 'Optional specific notes about this service' }
+                        item_name: { type: 'string', description: 'Name of item/service' },
+                        item_type: { 
+                          type: 'string', 
+                          enum: ['material', 'labor', 'equipment', 'service'],
+                          description: 'Type classification'
+                        },
+                        quantity: { type: 'number', description: 'Quantity needed' },
+                        unit_price_cents: { type: 'integer', description: 'Price per unit in cents' },
+                        unit_type: { type: 'string', description: 'Unit of measurement' },
+                        notes: { type: 'string', description: 'Specific notes' },
+                        labor_hours: { 
+                          type: 'number', 
+                          description: 'For labor items: estimated hours to complete' 
+                        },
+                        crew_size: { 
+                          type: 'number', 
+                          description: 'For labor items: recommended number of workers' 
+                        },
+                        material_category: { 
+                          type: 'string', 
+                          description: 'For materials: category like Paint, Lumber, etc.' 
+                        }
                       },
-                      required: ['service_name', 'quantity', 'unit_price_cents', 'unit_type']
+                      required: ['item_name', 'item_type', 'quantity', 'unit_price_cents', 'unit_type']
                     }
                   },
                   workDescription: {
@@ -133,10 +174,10 @@ Analyze the photo and estimate which services were performed based on visible wo
                   },
                   additionalNotes: {
                     type: 'string',
-                    description: 'Any additional observations or recommendations'
+                    description: 'Observations or recommendations'
                   }
                 },
-                required: ['services', 'workDescription']
+                required: ['line_items', 'workDescription']
               }
             }
           }
@@ -173,15 +214,50 @@ Analyze the photo and estimate which services were performed based on visible wo
     const estimate = aiResult.data;
     const confidence = calculateConfidence(estimate, 'invoice_estimate');
 
-    // Transform services into line items with IDs
-    const lineItems = estimate.services.map((service: any, index: number) => ({
+    // Transform line items with new fields
+    const lineItems = estimate.line_items.map((item: any, index: number) => ({
       id: `est-${Date.now()}-${index}`,
-      name: service.service_name,
-      quantity: service.quantity,
-      unit_price: service.unit_price_cents,
-      unit: service.unit_type,
-      notes: service.notes
+      name: item.item_name,
+      quantity: item.quantity,
+      unit_price: item.unit_price_cents,
+      unit: item.unit_type,
+      notes: item.notes,
+      item_type: item.item_type,
+      labor_hours: item.labor_hours,
+      crew_size: item.crew_size,
+      material_category: item.material_category
     }));
+
+    // Calculate breakdown totals
+    const breakdown = lineItems.reduce((acc: any, item: any) => {
+      const itemTotal = item.quantity * item.unit_price;
+      
+      switch (item.item_type) {
+        case 'material':
+          acc.materials_total += itemTotal;
+          break;
+        case 'labor':
+          acc.labor_total += itemTotal;
+          acc.total_labor_hours = (acc.total_labor_hours || 0) + (item.labor_hours || 0);
+          acc.total_crew_size = Math.max(acc.total_crew_size || 0, item.crew_size || 0);
+          break;
+        case 'equipment':
+          acc.equipment_total += itemTotal;
+          break;
+        case 'service':
+          acc.services_total += itemTotal;
+          break;
+      }
+      
+      return acc;
+    }, {
+      materials_total: 0,
+      labor_total: 0,
+      equipment_total: 0,
+      services_total: 0,
+      total_labor_hours: 0,
+      total_crew_size: 0
+    });
 
     console.log('[estimate-job-from-photo] Successfully created generation record');
 
@@ -198,6 +274,7 @@ Analyze the photo and estimate which services were performed based on visible wo
         additionalNotes: estimate.additionalNotes,
         confidence,
         sourceMediaId: mediaId,
+        breakdown,
         metadata: aiResult.metadata
       }
     };
