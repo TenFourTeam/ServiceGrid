@@ -68,6 +68,15 @@ const queryKeys = {
     onboarding: () => ['dashboard', 'onboarding'] as const,
   },
   
+  // AI queries
+  ai: {
+    generations: (businessId: string) => ['ai', 'generations', businessId] as const,
+    generationsByType: (businessId: string, type: 'invoice_estimate' | 'checklist_generation') => 
+      ['ai', 'generations', businessId, type] as const,
+    generationsByUser: (businessId: string, userId: string) => 
+      ['ai', 'generations', businessId, 'user', userId] as const,
+  },
+  
 } as const;
 
 /**
