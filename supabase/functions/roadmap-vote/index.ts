@@ -68,6 +68,20 @@ Deno.serve(async (req) => {
         );
       }
 
+      // Verify feature exists before allowing vote
+      const { data: featureExists, error: checkError } = await supabase
+        .from('roadmap_features')
+        .select('id')
+        .eq('id', featureId)
+        .single();
+
+      if (checkError || !featureExists) {
+        return new Response(
+          JSON.stringify({ error: 'Feature not found. Please refresh the page and try again.' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       // Insert vote
       const { error: insertError } = await supabase
         .from('roadmap_votes')
