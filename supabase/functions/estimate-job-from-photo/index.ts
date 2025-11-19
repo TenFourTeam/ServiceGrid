@@ -89,6 +89,25 @@ serve(async (req) => {
       `- ${s.service_name} (${s.category || 'General'}): $${(s.unit_price / 100).toFixed(2)} ${s.unit_type}${s.description ? ` - ${s.description}` : ''}`
     ).join('\n');
 
+    // Fetch pricing rules
+    const { data: pricingRules } = await supabase
+      .from('pricing_rules')
+      .select('*')
+      .eq('business_id', ctx.businessId)
+      .maybeSingle();
+
+    // Format pricing context for AI
+    const pricingContext = pricingRules ? `
+**Business Pricing Rules:**
+- Material Markup: ${pricingRules.material_markup_percent || 50}%
+- Labor Rate: $${((pricingRules.labor_rate_per_hour || 8500) / 100).toFixed(2)}/hour
+- Equipment Markup: ${pricingRules.equipment_markup_percent || 30}%
+- Minimum Charge: $${((pricingRules.minimum_charge || 15000) / 100).toFixed(2)}
+- Emergency Multiplier: ${pricingRules.emergency_multiplier || 1.5}x
+
+Apply these rules when calculating prices for materials, labor, and equipment.
+` : '';
+
     console.log('[estimate-job-from-photo] Calling AI service');
     const aiResult = await callAIWithVision(
       {
