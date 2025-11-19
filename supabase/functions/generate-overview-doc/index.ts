@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
         id, title, status, notes, address,
         starts_at, ends_at, created_at, estimated_duration_minutes,
         customers!inner(id, name, address),
-        job_assignments(user_id, profiles(full_name))
+        job_assignments(user_id, profiles!job_assignments_user_id_fkey(full_name))
       `)
       .eq('business_id', ctx.businessId);
 
