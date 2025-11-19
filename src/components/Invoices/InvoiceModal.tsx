@@ -9,7 +9,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { CalendarIcon, Send, DollarSign, Briefcase, Repeat } from 'lucide-react';
+import { CalendarIcon, Send, DollarSign, Briefcase, Repeat, Camera, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { formatDate, formatMoney, formatCurrencyInputNoSymbol, parseCurrencyInput, sanitizeMoneyTyping } from '@/utils/format';
@@ -31,6 +31,8 @@ import PickQuoteModal from '@/components/Jobs/PickQuoteModal';
 import { InvoiceForm, type InvoiceFormData } from '@/components/Invoices/InvoiceForm';
 import type { Invoice, InvoicesCacheData } from '@/types';
 import RecurringScheduleDetailModal from '@/components/Invoices/RecurringScheduleDetailModal';
+import { InvoiceScanDialog } from '@/components/Invoices/InvoiceScanDialog';
+import type { JobEstimate } from '@/hooks/useJobEstimation';
 
 export interface InvoiceModalProps {
   open: boolean;
@@ -68,6 +70,8 @@ export default function InvoiceModal({
   const [showQuotePicker, setShowQuotePicker] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [showEstimateDialog, setShowEstimateDialog] = useState(false);
+  const [estimatedData, setEstimatedData] = useState<JobEstimate | null>(null);
   
   const { data: payments = [] } = useInvoicePayments({ 
     invoiceId: invoice?.id,
@@ -560,39 +564,62 @@ export default function InvoiceModal({
 
     if (mode === 'edit' || mode === 'create') {
       let initialData: Partial<InvoiceFormData> | undefined;
+      const navState = window.history.state?.usr;
+      const hasEstimatedData = mode === 'create' && navState?.createMode && navState?.initialData;
 
-      try {
-        initialData = invoice ? {
-          customerId: invoice.customerId || '',
-          address: invoice.address || '',
-          lineItems: invoice.lineItems || [],
-          taxRate: invoice.taxRate || 0,
-          discount: invoice.discount || 0,
-          paymentTerms: invoice.paymentTerms,
-          frequency: invoice.frequency,
-          depositRequired: Boolean(invoice.depositRequired),
-          depositPercent: invoice.depositPercent || 50,
-          notesInternal: invoice.notesInternal || (relatedJob?.notes || ''),
-          terms: invoice.terms || '',
-          dueDate: invoice.dueAt ? (
-            typeof invoice.dueAt === 'string' ? new Date(invoice.dueAt) : invoice.dueAt
-          ) : undefined
-        } : undefined;
-      } catch (error) {
-        console.error('Error initializing invoice form data:', error, invoice);
-        initialData = undefined;
+      if (mode === 'create' && hasEstimatedData) {
+        initialData = navState.initialData;
+      } else if (mode === 'create') {
+        initialData = { customerId };
+      } else {
+        try {
+          initialData = invoice ? {
+            customerId: invoice.customerId || '',
+            address: invoice.address || '',
+            lineItems: invoice.lineItems || [],
+            taxRate: invoice.taxRate || 0,
+            discount: invoice.discount || 0,
+            paymentTerms: invoice.paymentTerms,
+            frequency: invoice.frequency,
+            depositRequired: Boolean(invoice.depositRequired),
+            depositPercent: invoice.depositPercent || 50,
+            notesInternal: invoice.notesInternal || (relatedJob?.notes || ''),
+            terms: invoice.terms || '',
+            dueDate: invoice.dueAt ? (
+              typeof invoice.dueAt === 'string' ? new Date(invoice.dueAt) : invoice.dueAt
+            ) : undefined
+          } : undefined;
+        } catch (error) {
+          console.error('Error initializing invoice form data:', error, invoice);
+          initialData = undefined;
+        }
       }
 
       return (
-        <InvoiceForm
-          customers={customers}
-          onSubmit={handleSave}
-          onCancel={() => onOpenChange(false)}
-          initialData={initialData}
-          mode={mode}
-          loading={loading}
-          businessTaxRateDefault={business?.taxRateDefault}
-        />
+        <>
+          <InvoiceForm
+            customers={customers}
+            onSubmit={mode === 'create' ? handleCreate : handleSave}
+            onCancel={() => mode === 'create' ? onOpenChange(false) : setMode('view')}
+            initialData={initialData}
+            mode={mode}
+            loading={loading}
+            businessTaxRateDefault={business?.taxRateDefault}
+            onEstimateExtracted={(estimate) => setEstimatedData(estimate)}
+          />
+          {mode === 'create' && !hasEstimatedData && (
+            <div className="mt-4 border-t pt-4">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowEstimateDialog(true)}
+                className="w-full gap-2"
+              >
+                <Sparkles className="h-4 w-4" />
+                Or Estimate from Photo
+              </Button>
+            </div>
+          )}
+        </>
       );
     }
 
@@ -1091,6 +1118,16 @@ export default function InvoiceModal({
           scheduleId={(invoice as any).recurringScheduleId}
         />
       )}
+      
+      <InvoiceScanDialog
+        open={showEstimateDialog}
+        onOpenChange={setShowEstimateDialog}
+        mode="photo"
+        onEstimateExtracted={(estimate) => {
+          setEstimatedData(estimate);
+          setShowEstimateDialog(false);
+        }}
+      />
     </>
   );
 }

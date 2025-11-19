@@ -6,6 +6,8 @@ import { useServiceCatalog } from '@/hooks/useServiceCatalog';
 import { ServiceCatalogTable } from './ServiceCatalogTable';
 import { ServiceCatalogForm } from './ServiceCatalogForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Info } from 'lucide-react';
 import type { ServiceCatalogItem } from '@/hooks/useServiceCatalog';
 
 export function ServiceCatalogManager() {
@@ -58,9 +60,15 @@ export function ServiceCatalogManager() {
             <div className="text-center py-12">
               <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">No services yet</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Add your services and pricing to enable AI-powered invoice estimation
+              <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
+                Add your services and pricing to enable AI-powered job estimation from photos
               </p>
+              <Alert className="mb-4 max-w-md mx-auto">
+                <Info className="h-4 w-4" />
+                <AlertDescription className="text-xs text-left">
+                  <strong>Tip:</strong> Start with common services like "Lawn Mowing", "Hedge Trimming", or "Pressure Washing" with typical hourly or per-unit rates.
+                </AlertDescription>
+              </Alert>
               <Button onClick={() => setShowForm(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Your First Service
