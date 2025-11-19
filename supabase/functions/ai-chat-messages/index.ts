@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { requireCtx } from '../_shared/auth.ts';
+import { requireCtx } from '../_lib/auth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
