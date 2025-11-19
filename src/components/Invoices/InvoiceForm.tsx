@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Badge } from '@/components/ui/badge';
 import { CalendarIcon, Camera } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -21,6 +22,9 @@ import { InvoiceScanDialog } from './InvoiceScanDialog';
 import { toast } from 'sonner';
 import type { Invoice, Customer, LineItem, PaymentTerms, QuoteFrequency } from '@/types';
 import type { ExtractedInvoiceData } from '@/hooks/useInvoiceExtraction';
+import type { JobEstimate } from '@/hooks/useJobEstimation';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ChevronDown, Sparkles } from 'lucide-react';
 
 export interface InvoiceFormData {
   customerId: string;
@@ -45,6 +49,8 @@ export interface InvoiceFormProps {
   mode: 'create' | 'edit';
   loading?: boolean;
   businessTaxRateDefault?: number;
+  onEstimateExtracted?: (estimate: JobEstimate) => void;
+  jobId?: string;
 }
 
 export function InvoiceForm({
@@ -54,7 +60,9 @@ export function InvoiceForm({
   initialData,
   mode,
   loading = false,
-  businessTaxRateDefault = 0.1
+  businessTaxRateDefault = 0.1,
+  onEstimateExtracted,
+  jobId
 }: InvoiceFormProps) {
   // Form state
   const [customerId, setCustomerId] = useState(initialData?.customerId || '');
@@ -73,6 +81,8 @@ export function InvoiceForm({
   );
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [showScanDialog, setShowScanDialog] = useState(false);
+  const [scanMode, setScanMode] = useState<'receipt' | 'photo'>('receipt');
+  const [estimateConfidence, setEstimateConfidence] = useState<'high' | 'medium' | 'low' | null>(null);
 
   // Initialize discount display
   useEffect(() => {
@@ -147,6 +157,30 @@ export function InvoiceForm({
     });
   };
 
+  const handleEstimateExtracted = (estimate: JobEstimate) => {
+    // Convert estimate line items to form line items
+    const newLineItems: LineItem[] = estimate.lineItems.map(item => ({
+      id: item.id,
+      name: item.name,
+      qty: item.quantity,
+      unitPrice: item.unit_price,
+      unit: item.unit,
+      lineTotal: item.quantity * item.unit_price,
+      notes: item.notes
+    }));
+
+    setLineItems(newLineItems);
+    setNotesInternal(estimate.workDescription + (estimate.additionalNotes ? '\n\n' + estimate.additionalNotes : ''));
+    setEstimateConfidence(estimate.confidence);
+    setShowScanDialog(false);
+    
+    toast.success('AI estimate applied - please review and adjust as needed');
+    
+    if (onEstimateExtracted) {
+      onEstimateExtracted(estimate);
+    }
+  };
+
   const handleDataExtracted = (data: ExtractedInvoiceData) => {
     // Pre-populate form with extracted data
     if (data.lineItems && data.lineItems.length > 0) {
@@ -187,15 +221,25 @@ export function InvoiceForm({
               <div className="flex justify-between items-center">
                 <CardTitle className="text-lg">Customer Information</CardTitle>
                 {mode === 'create' && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowScanDialog(true)}
-                  >
-                    <Camera className="w-4 h-4 mr-2" />
-                    Scan Receipt
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button type="button" variant="outline" size="sm" className="gap-2">
+                        <Camera className="h-4 w-4" />
+                        Scan
+                        <ChevronDown className="h-3 w-3" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => { setScanMode('receipt'); setShowScanDialog(true); }}>
+                        <Camera className="h-4 w-4 mr-2" />
+                        Scan Vendor Receipt
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => { setScanMode('photo'); setShowScanDialog(true); }}>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Estimate from Photo
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
               </div>
             </CardHeader>
@@ -224,8 +268,27 @@ export function InvoiceForm({
             </CardContent>
           </Card>
 
-          {/* Terms & Settings */}
+          {/* Line Items */}
           <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Line Items</CardTitle>
+                {estimateConfidence && (
+                  <Badge 
+                    variant={estimateConfidence === 'high' ? 'default' : estimateConfidence === 'medium' ? 'secondary' : 'outline'}
+                    className="gap-1"
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    AI Estimated ({estimateConfidence} confidence)
+                  </Badge>
+                )}
+              </div>
+              {estimateConfidence && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Please review AI suggestions and adjust as needed
+                </p>
+              )}
+            </CardHeader>
             <CardHeader className="pb-3">
               <CardTitle className="text-lg">Terms & Settings</CardTitle>
             </CardHeader>
@@ -458,6 +521,9 @@ export function InvoiceForm({
         open={showScanDialog}
         onOpenChange={setShowScanDialog}
         onDataExtracted={handleDataExtracted}
+        onEstimateExtracted={handleEstimateExtracted}
+        mode={scanMode}
+        jobId={jobId}
       />
     </>
   );

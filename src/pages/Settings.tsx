@@ -20,6 +20,7 @@ import { useBusinessDetailsForm } from '@/hooks/useBusinessDetailsForm';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Textarea } from '@/components/ui/textarea';
 import { BusinessConstraintsSettings } from '@/components/Settings/BusinessConstraintsSettings';
+import { ServiceCatalogManager } from '@/components/Settings/ServiceCatalogManager';
 
 export default function SettingsPage() {
   const { business, role } = useBusinessContext();
@@ -199,6 +200,11 @@ export default function SettingsPage() {
               </form>
             </CardContent>
           </Card>
+
+          {/* Service Catalog - only for owners */}
+          {role === 'owner' && (
+            <ServiceCatalogManager />
+          )}
 
           <Card>
             <CardHeader><CardTitle>{t('settings.branding.title')}</CardTitle></CardHeader>

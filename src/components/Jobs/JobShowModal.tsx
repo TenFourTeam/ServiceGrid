@@ -32,6 +32,8 @@ import { BulkTagManager } from '@/components/Media/BulkTagManager';
 import { useBulkUpdateMediaTags } from '@/hooks/useMediaTags';
 import { Tags } from 'lucide-react';
 import { SummaryGenerator } from '@/components/AI';
+import { InvoiceScanDialog } from '@/components/Invoices/InvoiceScanDialog';
+import type { JobEstimate } from '@/hooks/useJobEstimation';
 
 interface JobShowModalProps {
   open: boolean;
@@ -66,6 +68,8 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
   const [optimisticMedia, setOptimisticMedia] = useState<MediaItem[]>([]);
   const [showBulkTagManager, setShowBulkTagManager] = useState(false);
   const [showAISummary, setShowAISummary] = useState(false);
+  const [showEstimateDialog, setShowEstimateDialog] = useState(false);
+  const [estimatedData, setEstimatedData] = useState<JobEstimate | null>(null);
   const bulkUpdateTags = useBulkUpdateMediaTags();
 
   const allMedia = useMemo(() => {
@@ -675,6 +679,30 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
             </div>
           </div>
           
+          <div className="grid gap-3 pt-3 border-t">
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleCreateInvoice}
+                disabled={isCreatingInvoice}
+                className="flex-1"
+              >
+                {isCreatingInvoice ? t('common.loading') : t('workOrders.createInvoice')}
+              </Button>
+              
+              {mediaItems.length > 0 && (
+                <Button 
+                  onClick={() => setShowEstimateDialog(true)}
+                  variant="outline"
+                  disabled={isCreatingInvoice}
+                  className="gap-2"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  AI
+                </Button>
+              )}
+            </div>
+          </div>
+          
           <Tabs defaultValue="checklist" className="w-full">
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="checklist">Checklist</TabsTrigger>
@@ -1096,5 +1124,17 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
         />
       </DrawerContent>
     </Drawer>
+    
+    <InvoiceScanDialog
+      open={showEstimateDialog}
+      onOpenChange={setShowEstimateDialog}
+      mode="photo"
+      jobId={job.id}
+      onEstimateExtracted={(estimate) => {
+        setEstimatedData(estimate);
+        setShowEstimateDialog(false);
+        toast.success('AI estimate ready - click "Create Invoice" to continue');
+      }}
+    />
   );
 }
