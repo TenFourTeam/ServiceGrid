@@ -1,7 +1,7 @@
 import { useState, useRef, ChangeEvent } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Camera, Loader2, AlertCircle, CheckCircle2, RefreshCw, FileText, Image, Sparkles } from 'lucide-react';
+import { Camera, Loader2, AlertCircle, CheckCircle2, RefreshCw, FileText, Image, Sparkles, Clock, Users } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useInvoiceExtraction, type ExtractedInvoiceData } from '@/hooks/useInvoiceExtraction';
 import { useInvoiceMediaUpload } from '@/hooks/useInvoiceMediaUpload';
@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatMoney } from '@/utils/format';
 import { toast } from 'sonner';
+import { EstimateBreakdown } from './EstimateBreakdown';
 
 type ScanMode = 'receipt' | 'photo';
 
@@ -190,7 +191,96 @@ export function InvoiceScanDialog({
                 </Button>
               </div>
             )}
-            {estimate && <Button onClick={handleUseData} className="w-full">Use Estimate</Button>}
+            {estimate && (
+              <div className="space-y-4">
+                {estimate.breakdown && <EstimateBreakdown breakdown={estimate.breakdown} />}
+
+                <div>
+                  <h4 className="font-semibold mb-2">Work Summary</h4>
+                  <p className="text-sm text-muted-foreground">{estimate.workDescription}</p>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold mb-3">Detailed Breakdown</h4>
+                  <div className="space-y-2">
+                    {estimate.lineItems.map((item) => {
+                      const typeConfig = {
+                        material: { label: 'Material', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
+                        labor: { label: 'Labor', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
+                        equipment: { label: 'Equipment', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' },
+                        service: { label: 'Service', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' }
+                      }[item.item_type || 'service'];
+
+                      return (
+                        <Card key={item.id}>
+                          <CardContent className="p-3">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Badge variant="outline" className={typeConfig.color}>
+                                    {typeConfig.label}
+                                  </Badge>
+                                  <span className="font-medium">{item.name}</span>
+                                </div>
+                                
+                                <div className="text-sm text-muted-foreground">
+                                  {item.quantity} {item.unit} × {formatMoney(item.unit_price)}
+                                </div>
+
+                                {item.item_type === 'labor' && (item.labor_hours || item.crew_size) && (
+                                  <div className="text-xs text-muted-foreground mt-1 flex gap-3">
+                                    {item.labor_hours && (
+                                      <span className="flex items-center gap-1">
+                                        <Clock className="h-3 w-3" />
+                                        {item.labor_hours}hrs
+                                      </span>
+                                    )}
+                                    {item.crew_size && (
+                                      <span className="flex items-center gap-1">
+                                        <Users className="h-3 w-3" />
+                                        {item.crew_size} worker{item.crew_size > 1 ? 's' : ''}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+
+                                {item.item_type === 'material' && item.material_category && (
+                                  <div className="text-xs text-muted-foreground mt-1">
+                                    Category: {item.material_category}
+                                  </div>
+                                )}
+
+                                {item.notes && (
+                                  <p className="text-xs text-muted-foreground mt-1">{item.notes}</p>
+                                )}
+                              </div>
+                              
+                              <div className="text-right">
+                                <div className="font-semibold">
+                                  {formatMoney(item.quantity * item.unit_price)}
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {estimate.additionalNotes && (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{estimate.additionalNotes}</AlertDescription>
+                  </Alert>
+                )}
+
+                <Button onClick={handleUseData} className="w-full">Use Estimate</Button>
+              </div>
+            )}
+            {!estimate && selectedFile && !isLoading && (
+              <Button onClick={handleUseData} className="w-full" disabled>Use Estimate</Button>
+            )}
           </TabsContent>
         </Tabs>
       </DialogContent>

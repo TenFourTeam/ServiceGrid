@@ -49,6 +49,9 @@ export interface LineItem {
   unit?: string;
   unitPrice: Money;
   lineTotal: Money; // computed
+  itemType?: 'material' | 'labor' | 'equipment' | 'service';
+  laborHours?: number;
+  crewSize?: number;
 }
 
 export type QuoteStatus = 'Draft' | 'Sent' | 'Viewed' | 'Approved' | 'Declined' | 'Edits Requested';

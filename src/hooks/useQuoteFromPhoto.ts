@@ -31,7 +31,10 @@ export function useQuoteFromPhoto() {
             qty: item.quantity,
             unit: item.unit,
             unitPrice: item.unit_price,
-            position: index
+            position: index,
+            itemType: item.item_type,
+            laborHours: item.labor_hours,
+            crewSize: item.crew_size
           })),
           notesInternal: `AI-generated from photo. ${estimate.additionalNotes || ''}`,
           terms: estimate.workDescription,

@@ -8,6 +8,10 @@ export interface EstimatedLineItem {
   unit_price: number;
   unit: string;
   notes?: string;
+  item_type: 'material' | 'labor' | 'equipment' | 'service';
+  labor_hours?: number;
+  crew_size?: number;
+  material_category?: string;
 }
 
 export interface JobEstimate {
@@ -17,6 +21,14 @@ export interface JobEstimate {
   additionalNotes?: string;
   confidence: 'high' | 'medium' | 'low';
   sourceMediaId: string;
+  breakdown: {
+    materials_total: number;
+    labor_total: number;
+    equipment_total: number;
+    services_total: number;
+    total_labor_hours?: number;
+    total_crew_size?: number;
+  };
 }
 
 export function useJobEstimation() {
