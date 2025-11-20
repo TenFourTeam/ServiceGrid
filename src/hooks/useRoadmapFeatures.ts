@@ -26,9 +26,11 @@ export function useRoadmapFeatures(filters?: FeaturesFilters) {
       if (filters?.status) params.set('status', filters.status);
       if (filters?.sortBy) params.set('sortBy', filters.sortBy);
 
-      const { data, error } = await supabase.functions.invoke('roadmap-features-crud', {
+      const queryString = params.toString();
+      const url = `roadmap-features-crud${queryString ? `?${queryString}` : ''}`;
+      
+      const { data, error } = await supabase.functions.invoke(url, {
         method: 'GET',
-        body: params,
       });
 
       if (error) throw error;
@@ -41,10 +43,8 @@ export function useRoadmapFeature(id: string) {
   return useQuery({
     queryKey: ['roadmap-feature', id],
     queryFn: async () => {
-      const params = new URLSearchParams({ id });
-      const { data, error } = await supabase.functions.invoke('roadmap-features-crud', {
+      const { data, error } = await supabase.functions.invoke(`roadmap-features-crud?id=${id}`, {
         method: 'GET',
-        body: params,
       });
 
       if (error) throw error;

@@ -11,11 +11,10 @@ export function useVoteStatus(featureId: string) {
     queryFn: async () => {
       if (!voterIdentifier) return { hasVoted: false };
 
-      const params = new URLSearchParams({ featureId, voterIdentifier });
-      const { data, error } = await supabase.functions.invoke('roadmap-vote', {
-        method: 'GET',
-        body: params,
-      });
+      const { data, error } = await supabase.functions.invoke(
+        `roadmap-vote?featureId=${featureId}&voterIdentifier=${voterIdentifier}`,
+        { method: 'GET' }
+      );
 
       if (error) throw error;
       return data as { hasVoted: boolean };
