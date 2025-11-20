@@ -65,7 +65,7 @@ export default function SettingsPage() {
   }
   async function startCheckout(plan: 'monthly' | 'yearly') {
     try {
-      const url = await createCheckout.mutateAsync(plan);
+      const url = await createCheckout.mutateAsync({ plan, tier: 'pro' });
       if (url) window.open(url, '_blank');
     } catch (e: Error | unknown) {
       console.error('[startCheckout] error:', e);

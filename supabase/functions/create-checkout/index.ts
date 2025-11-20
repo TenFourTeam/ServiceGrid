@@ -12,6 +12,7 @@ serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const plan = (body?.plan as string) || "monthly"; // 'monthly' | 'yearly'
+    const tier = (body?.tier as string) || "pro"; // 'basic' | 'pro'
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2023-10-16",
@@ -20,7 +21,18 @@ serve(async (req) => {
     const customers = await stripe.customers.list({ email, limit: 1 });
     const customerId = customers.data[0]?.id;
 
-    const unitAmount = plan === "yearly" ? 50400 : 5000; // $504/yr or $50/mo
+    // Define pricing based on tier
+    let unitAmount: number;
+    let productName: string;
+
+    if (tier === "basic") {
+      unitAmount = plan === "yearly" ? 24000 : 2500; // $240/yr or $25/mo
+      productName = plan === "yearly" ? "Basic Yearly" : "Basic Monthly";
+    } else {
+      unitAmount = plan === "yearly" ? 48000 : 5000; // $480/yr or $50/mo
+      productName = plan === "yearly" ? "Pro Yearly" : "Pro Monthly";
+    }
+
     const interval = plan === "yearly" ? "year" : "month";
 
     const origin = req.headers.get("origin") || "http://localhost:8080";
@@ -32,7 +44,7 @@ serve(async (req) => {
         {
           price_data: {
             currency: "usd",
-            product_data: { name: plan === "yearly" ? "Pro Yearly" : "Pro Monthly" },
+            product_data: { name: productName },
             unit_amount: unitAmount,
             recurring: { interval },
           },
