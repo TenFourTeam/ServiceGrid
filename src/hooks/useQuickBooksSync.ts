@@ -15,7 +15,7 @@ export function useQuickBooksSync() {
         customer: 'quickbooks-sync-customers',
         invoice: 'quickbooks-sync-invoices',
         payment: 'quickbooks-sync-payments',
-        time_entry: 'quickbooks-sync-payments', // Placeholder
+        time_entry: 'quickbooks-sync-time',
       };
 
       const { data, error } = await authApi.invoke(functionMap[type as keyof typeof functionMap], {

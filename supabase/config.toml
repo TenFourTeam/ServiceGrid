@@ -409,3 +409,6 @@ verify_jwt = false
 [functions.quickbooks-connection-status]
 verify_jwt = false
 
+[functions.quickbooks-sync-time]
+verify_jwt = false
+
