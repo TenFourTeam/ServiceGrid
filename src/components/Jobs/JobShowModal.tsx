@@ -38,6 +38,9 @@ import type { JobEstimate } from '@/hooks/useJobEstimation';
 import type { GeneratedChecklist } from '@/hooks/useChecklistGeneration';
 import { useCreateChecklist } from '@/hooks/useJobChecklist';
 import { useCreateChecklistTemplate } from '@/hooks/useChecklistTemplates';
+import { useGoogleDriveSync } from '@/hooks/useGoogleDriveSync';
+import { useGoogleDriveConnection } from '@/hooks/useGoogleDriveConnection';
+import { Cloud } from 'lucide-react';
 
 interface JobShowModalProps {
   open: boolean;
@@ -77,6 +80,8 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
   const [estimatedData, setEstimatedData] = useState<JobEstimate | null>(null);
   const [generatedChecklist, setGeneratedChecklist] = useState<GeneratedChecklist | null>(null);
   const bulkUpdateTags = useBulkUpdateMediaTags();
+  const { syncMedia, isSyncing: isDriveSyncing } = useGoogleDriveSync();
+  const { isConnected: isDriveConnected } = useGoogleDriveConnection();
   const createChecklistMutation = useCreateChecklist();
   const createTemplateMutation = useCreateChecklistTemplate();
 
@@ -718,6 +723,17 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                     <Sparkles className="h-4 w-4" />
                     AI Checklist
                   </Button>
+                  {isDriveConnected && (
+                    <Button 
+                      onClick={() => syncMedia({ entityType: 'media', jobId: job.id })}
+                      variant="outline"
+                      disabled={isDriveSyncing}
+                      className="gap-2"
+                    >
+                      <Cloud className="h-4 w-4" />
+                      {isDriveSyncing ? 'Syncing...' : 'Backup to Drive'}
+                    </Button>
+                  )}
                 </>
               )}
             </div>
