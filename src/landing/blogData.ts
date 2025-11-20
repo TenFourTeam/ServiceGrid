@@ -13,6 +13,8 @@ export interface BlogPost {
   category: string;
   tags: string[];
   featuredImage?: string;
+  videoUrl?: string;
+  difficulty?: 'Beginner' | 'Intermediate' | 'Advanced';
   seo: {
     title: string;
     description: string;
@@ -630,7 +632,27 @@ export function getBlogPost(slug: string): BlogPost | undefined {
 }
 
 export function getBlogCategories(): string[] {
-  return Array.from(new Set(blogPosts.map((post) => post.category)));
+  const categories = Array.from(new Set(blogPosts.map((post) => post.category)));
+  return ["All", ...categories];
+}
+
+export function searchBlogPosts(query: string): BlogPost[] {
+  const lowerQuery = query.toLowerCase();
+  return blogPosts.filter(
+    (post) =>
+      post.title.toLowerCase().includes(lowerQuery) ||
+      post.excerpt.toLowerCase().includes(lowerQuery) ||
+      post.tags.some((tag) => tag.toLowerCase().includes(lowerQuery))
+  );
+}
+
+export function getBlogPostsByCategory(category: string): BlogPost[] {
+  if (category === "All") return getBlogPosts();
+  return blogPosts.filter((post) => post.category === category);
+}
+
+export function getBlogPostsByDifficulty(difficulty: string): BlogPost[] {
+  return blogPosts.filter((post) => post.difficulty === difficulty);
 }
 
 export function getRelatedPosts(currentSlug: string, category: string, limit: number = 3): BlogPost[] {

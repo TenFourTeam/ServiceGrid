@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Calendar, Clock } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, GraduationCap } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { TopNav } from "@/landing/components/TopNav";
 import { Footer } from "@/landing/components/Footer";
@@ -57,9 +57,17 @@ export default function BlogPost() {
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <header className="mb-12 space-y-4">
-            <Badge variant="secondary" className="mb-4">
-              {post.category}
-            </Badge>
+            <div className="flex items-center gap-2 mb-4">
+              <Badge variant="secondary">
+                {post.category}
+              </Badge>
+              {post.difficulty && (
+                <Badge variant="outline" className="flex items-center gap-1">
+                  <GraduationCap className="h-3 w-3" />
+                  {post.difficulty}
+                </Badge>
+              )}
+            </div>
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
               {post.title}
             </h1>
@@ -75,6 +83,24 @@ export default function BlogPost() {
               <span>By {post.author.name}</span>
             </div>
           </header>
+
+          {/* Video Tutorial */}
+          {post.videoUrl && (
+            <div className="mb-12">
+              <div className="aspect-video rounded-lg overflow-hidden border bg-muted">
+                <iframe
+                  src={post.videoUrl}
+                  title={post.title}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="w-full h-full"
+                />
+              </div>
+              <p className="text-sm text-muted-foreground mt-2 text-center">
+                Watch the video tutorial for a visual walkthrough
+              </p>
+            </div>
+          )}
 
           {/* Content */}
           <div className="prose prose-lg max-w-none mb-12">
