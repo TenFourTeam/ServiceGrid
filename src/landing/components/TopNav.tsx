@@ -48,6 +48,13 @@ export function TopNav() {
                   Pricing
                 </Link>
               </NavigationMenuItem>
+              
+              <NavigationMenuItem>
+                <Link to="/blog" className="text-sm font-medium px-3 py-2 hover:text-primary transition-colors">
+                  Blog
+                </Link>
+              </NavigationMenuItem>
+              
               <NavigationMenuItem>
                 <Link to="/roadmap" className="text-sm font-medium px-3 py-2 hover:text-primary transition-colors">
                   Roadmap
@@ -128,6 +135,15 @@ export function TopNav() {
                 className="font-semibold text-foreground hover:text-brand-600"
               >
                 Pricing
+              </Link>
+
+              {/* Blog Link */}
+              <Link
+                to="/blog"
+                onClick={() => setMobileMenuOpen(false)}
+                className="font-semibold text-foreground hover:text-brand-600"
+              >
+                Blog
               </Link>
 
               {/* Roadmap Link */}
