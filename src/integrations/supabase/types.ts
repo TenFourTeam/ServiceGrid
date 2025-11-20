@@ -1561,6 +1561,70 @@ export type Database = {
           },
         ]
       }
+      quickbooks_conflict_resolutions: {
+        Row: {
+          business_id: string
+          created_at: string | null
+          entity_id: string
+          entity_type: string
+          id: string
+          qb_data: Json
+          resolution: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          resolved_data: Json | null
+          sg_data: Json
+        }
+        Insert: {
+          business_id: string
+          created_at?: string | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          qb_data: Json
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          resolved_data?: Json | null
+          sg_data: Json
+        }
+        Update: {
+          business_id?: string
+          created_at?: string | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          qb_data?: Json
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          resolved_data?: Json | null
+          sg_data?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quickbooks_conflict_resolutions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quickbooks_conflict_resolutions_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quickbooks_conflict_resolutions_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       quickbooks_connections: {
         Row: {
           access_token: string | null
@@ -1652,6 +1716,47 @@ export type Database = {
           },
         ]
       }
+      quickbooks_field_mappings: {
+        Row: {
+          business_id: string
+          created_at: string | null
+          entity_type: string
+          id: string
+          is_required: boolean | null
+          qb_field: string
+          sg_field: string
+          transform_function: string | null
+        }
+        Insert: {
+          business_id: string
+          created_at?: string | null
+          entity_type: string
+          id?: string
+          is_required?: boolean | null
+          qb_field: string
+          sg_field: string
+          transform_function?: string | null
+        }
+        Update: {
+          business_id?: string
+          created_at?: string | null
+          entity_type?: string
+          id?: string
+          is_required?: boolean | null
+          qb_field?: string
+          sg_field?: string
+          transform_function?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quickbooks_field_mappings_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quickbooks_sync_log: {
         Row: {
           business_id: string
@@ -1692,6 +1797,103 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "quickbooks_sync_log_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quickbooks_sync_schedules: {
+        Row: {
+          business_id: string
+          created_at: string | null
+          direction: string | null
+          enabled: boolean | null
+          entity_type: string
+          filters: Json | null
+          frequency_minutes: number | null
+          id: string
+          last_run_at: string | null
+          next_run_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          business_id: string
+          created_at?: string | null
+          direction?: string | null
+          enabled?: boolean | null
+          entity_type: string
+          filters?: Json | null
+          frequency_minutes?: number | null
+          id?: string
+          last_run_at?: string | null
+          next_run_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          business_id?: string
+          created_at?: string | null
+          direction?: string | null
+          enabled?: boolean | null
+          entity_type?: string
+          filters?: Json | null
+          frequency_minutes?: number | null
+          id?: string
+          last_run_at?: string | null
+          next_run_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quickbooks_sync_schedules_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quickbooks_webhook_events: {
+        Row: {
+          business_id: string
+          created_at: string | null
+          entity_type: string
+          error_message: string | null
+          event_type: string
+          id: string
+          payload: Json
+          processed: boolean | null
+          processed_at: string | null
+          qb_entity_id: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string | null
+          entity_type: string
+          error_message?: string | null
+          event_type: string
+          id?: string
+          payload: Json
+          processed?: boolean | null
+          processed_at?: string | null
+          qb_entity_id: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string | null
+          entity_type?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json
+          processed?: boolean | null
+          processed_at?: string | null
+          qb_entity_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quickbooks_webhook_events_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
