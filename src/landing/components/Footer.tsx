@@ -1,5 +1,4 @@
 import { useLanguage } from "@/contexts/LanguageContext";
-import { LanguageToggle } from "./LanguageToggle";
 import { getIndustries } from "../industryData";
 import { Briefcase, Github, MessageCircle } from "lucide-react";
 
@@ -132,17 +131,10 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Footer Bottom - Integrated */}
-        <div className="mt-12 pt-8 border-t border-border/30 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Briefcase className="h-5 w-5 text-primary" />
-            <span className="font-semibold text-foreground">ServiceGrid</span>
-          </div>
-          <p className="text-sm text-muted-foreground text-center">
-            {t('landing.footer.copyright')}
-          </p>
-          <LanguageToggle />
-        </div>
+        {/* Minimal Copyright */}
+        <p className="mt-12 pt-8 border-t border-border/30 text-center text-sm text-muted-foreground">
+          {t('landing.footer.copyright')}
+        </p>
       </div>
     </footer>
   );
