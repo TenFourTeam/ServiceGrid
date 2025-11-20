@@ -633,6 +633,209 @@ export type Database = {
           },
         ]
       }
+      google_drive_connections: {
+        Row: {
+          access_token: string | null
+          business_id: string
+          connected_at: string | null
+          created_at: string | null
+          google_account_email: string
+          id: string
+          is_active: boolean | null
+          last_synced_at: string | null
+          refresh_token: string | null
+          root_folder_id: string | null
+          sync_enabled: boolean | null
+          token_expires_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          access_token?: string | null
+          business_id: string
+          connected_at?: string | null
+          created_at?: string | null
+          google_account_email: string
+          id?: string
+          is_active?: boolean | null
+          last_synced_at?: string | null
+          refresh_token?: string | null
+          root_folder_id?: string | null
+          sync_enabled?: boolean | null
+          token_expires_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          access_token?: string | null
+          business_id?: string
+          connected_at?: string | null
+          created_at?: string | null
+          google_account_email?: string
+          id?: string
+          is_active?: boolean | null
+          last_synced_at?: string | null
+          refresh_token?: string | null
+          root_folder_id?: string | null
+          sync_enabled?: boolean | null
+          token_expires_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "google_drive_connections_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      google_drive_file_mappings: {
+        Row: {
+          business_id: string
+          connection_id: string
+          created_at: string | null
+          drive_file_id: string
+          drive_file_name: string
+          drive_folder_id: string | null
+          drive_web_content_link: string | null
+          drive_web_view_link: string | null
+          error_message: string | null
+          file_size_bytes: number | null
+          id: string
+          last_synced_at: string | null
+          mime_type: string | null
+          sg_entity_id: string
+          sg_entity_type: string
+          sync_status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          business_id: string
+          connection_id: string
+          created_at?: string | null
+          drive_file_id: string
+          drive_file_name: string
+          drive_folder_id?: string | null
+          drive_web_content_link?: string | null
+          drive_web_view_link?: string | null
+          error_message?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          last_synced_at?: string | null
+          mime_type?: string | null
+          sg_entity_id: string
+          sg_entity_type: string
+          sync_status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          business_id?: string
+          connection_id?: string
+          created_at?: string | null
+          drive_file_id?: string
+          drive_file_name?: string
+          drive_folder_id?: string | null
+          drive_web_content_link?: string | null
+          drive_web_view_link?: string | null
+          error_message?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          last_synced_at?: string | null
+          mime_type?: string | null
+          sg_entity_id?: string
+          sg_entity_type?: string
+          sync_status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "google_drive_file_mappings_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "google_drive_file_mappings_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "google_drive_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      google_drive_sync_log: {
+        Row: {
+          business_id: string
+          completed_at: string | null
+          connection_id: string
+          created_at: string | null
+          direction: string
+          entity_id: string | null
+          entity_type: string
+          error_message: string | null
+          id: string
+          items_failed: number | null
+          items_processed: number | null
+          items_succeeded: number | null
+          metadata: Json | null
+          started_at: string | null
+          status: string
+          sync_type: string
+        }
+        Insert: {
+          business_id: string
+          completed_at?: string | null
+          connection_id: string
+          created_at?: string | null
+          direction: string
+          entity_id?: string | null
+          entity_type: string
+          error_message?: string | null
+          id?: string
+          items_failed?: number | null
+          items_processed?: number | null
+          items_succeeded?: number | null
+          metadata?: Json | null
+          started_at?: string | null
+          status: string
+          sync_type: string
+        }
+        Update: {
+          business_id?: string
+          completed_at?: string | null
+          connection_id?: string
+          created_at?: string | null
+          direction?: string
+          entity_id?: string | null
+          entity_type?: string
+          error_message?: string | null
+          id?: string
+          items_failed?: number | null
+          items_processed?: number | null
+          items_succeeded?: number | null
+          metadata?: Json | null
+          started_at?: string | null
+          status?: string
+          sync_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "google_drive_sync_log_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "google_drive_sync_log_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "google_drive_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory_items: {
         Row: {
           business_id: string
