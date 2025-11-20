@@ -45,10 +45,16 @@ export function useSubscriptions() {
   });
 
   const createCheckout = useMutation({
-    mutationFn: async (plan: 'monthly' | 'yearly') => {
+    mutationFn: async ({ 
+      plan, 
+      tier = 'pro' 
+    }: { 
+      plan: 'monthly' | 'yearly'; 
+      tier?: 'basic' | 'pro' 
+    }) => {
       const { data, error } = await authApi.invoke('subscriptions-crud', {
         method: 'POST',
-        body: { action: 'create_checkout', plan }
+        body: { action: 'create_checkout', plan, tier }
       });
 
       if (error) {

@@ -44,6 +44,11 @@ export function TopNav() {
           <NavigationMenu className="hidden sm:flex">
             <NavigationMenuList>
               <NavigationMenuItem>
+                <Link to="/pricing" className="text-sm font-medium px-3 py-2 hover:text-primary transition-colors">
+                  Pricing
+                </Link>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
                 <Link to="/roadmap" className="text-sm font-medium px-3 py-2 hover:text-primary transition-colors">
                   Roadmap
                 </Link>
@@ -116,6 +121,15 @@ export function TopNav() {
           </SheetTrigger>
           <SheetContent side="right" className="w-[300px] sm:w-[350px]">
             <nav className="flex flex-col gap-6 mt-8">
+              {/* Pricing Link */}
+              <Link
+                to="/pricing"
+                onClick={() => setMobileMenuOpen(false)}
+                className="font-semibold text-foreground hover:text-brand-600"
+              >
+                Pricing
+              </Link>
+
               {/* Roadmap Link */}
               <Link
                 to="/roadmap"
