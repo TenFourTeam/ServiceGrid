@@ -3,9 +3,10 @@ import { MediaItem } from '@/hooks/useJobMedia';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Video, MapPin, Camera } from 'lucide-react';
+import { Video, MapPin, Camera, Cloud } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useGoogleDriveFileMappings } from '@/hooks/useGoogleDriveFiles';
 
 interface MediaGalleryProps {
   media: MediaItem[];
@@ -15,6 +16,7 @@ interface MediaGalleryProps {
 
 export function MediaGallery({ media, isLoading, onMediaClick }: MediaGalleryProps) {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const { data: driveMappings } = useGoogleDriveFileMappings('media');
 
   // Extract all unique tags from media
   const allTags = useMemo(() => {
@@ -24,6 +26,13 @@ export function MediaGallery({ media, isLoading, onMediaClick }: MediaGalleryPro
     });
     return Array.from(tagSet).sort();
   }, [media]);
+
+  // Check if media item is synced to Drive
+  const isSyncedToDrive = (mediaId: string) => {
+    return driveMappings?.some(
+      mapping => mapping.sg_entity_id === mediaId && mapping.sync_status === 'synced'
+    );
+  };
 
   // Filter media by selected tags
   const filteredMedia = useMemo(() => {
@@ -115,6 +124,14 @@ export function MediaGallery({ media, isLoading, onMediaClick }: MediaGalleryPro
                 
                 {item.metadata?.gps && (
                   <MapPin className="absolute bottom-1 left-1 w-4 h-4 text-white drop-shadow-lg" />
+                )}
+                
+                {isSyncedToDrive(item.id) && (
+                  <div className="absolute top-1 left-1">
+                    <Badge variant="secondary" className="text-xs px-1 py-0 h-4 bg-blue-500/90 text-white border-none flex items-center gap-0.5">
+                      <Cloud className="w-3 h-3" />
+                    </Badge>
+                  </div>
                 )}
                 
                 {/* Tag badges on thumbnails */}

@@ -33,6 +33,9 @@ import type { Invoice, InvoicesCacheData } from '@/types';
 import RecurringScheduleDetailModal from '@/components/Invoices/RecurringScheduleDetailModal';
 import { AIScanDialog } from '@/components/Invoices/AIScanDialog';
 import type { JobEstimate } from '@/hooks/useJobEstimation';
+import { useGoogleDriveSync } from '@/hooks/useGoogleDriveSync';
+import { useGoogleDriveConnection } from '@/hooks/useGoogleDriveConnection';
+import { Cloud } from 'lucide-react';
 
 export interface InvoiceModalProps {
   open: boolean;
@@ -62,6 +65,8 @@ export default function InvoiceModal({
   const recordPaymentMutation = useRecordPayment();
   const deleteInvoice = useDeleteInvoice();
   const { t } = useLanguage();
+  const { exportInvoice, isSyncing: isDriveSyncing } = useGoogleDriveSync();
+  const { isConnected: isDriveConnected } = useGoogleDriveConnection();
 
   const [mode, setMode] = useState(initialMode);
   const [loading, setLoading] = useState(false);
@@ -982,6 +987,18 @@ export default function InvoiceModal({
           <Button variant="outline" onClick={() => setMode('send')} className="w-full">
             Send Email
           </Button>
+          
+          {isDriveConnected && (
+            <Button 
+              variant="outline" 
+              onClick={() => exportInvoice(invoice.id)} 
+              disabled={isDriveSyncing}
+              className="w-full gap-2"
+            >
+              <Cloud className="h-4 w-4" />
+              {isDriveSyncing ? 'Exporting...' : 'Export to Drive'}
+            </Button>
+          )}
           
           {/* Edit action before destructive action */}
           <Button variant="default" onClick={() => setMode('edit')} className="w-full">

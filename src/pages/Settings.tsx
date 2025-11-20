@@ -30,6 +30,15 @@ import { Phone } from 'lucide-react';
 import { QuickBooksSettings } from '@/components/Settings/QuickBooksSettings';
 import { QuickBooksSyncPanel } from '@/components/Settings/QuickBooksSyncPanel';
 import { QuickBooksSyncHistory } from '@/components/Settings/QuickBooksSyncHistory';
+import { GoogleDriveSettings } from '@/components/Settings/GoogleDriveSettings';
+import { GoogleDriveSyncDashboard } from '@/components/Settings/GoogleDriveSyncDashboard';
+import { GoogleDriveSyncHistory } from '@/components/Settings/GoogleDriveSyncHistory';
+import { GoogleDriveFolderBrowser } from '@/components/Settings/GoogleDriveFolderBrowser';
+import { GoogleDriveFileMappings } from '@/components/Settings/GoogleDriveFileMappings';
+import { GoogleDriveMediaBackup } from '@/components/Settings/GoogleDriveMediaBackup';
+import { GoogleDriveDocumentExport } from '@/components/Settings/GoogleDriveDocumentExport';
+import { GoogleDriveBulkOperations } from '@/components/Settings/GoogleDriveBulkOperations';
+import { GoogleDriveSharingPanel } from '@/components/Settings/GoogleDriveSharingPanel';
 
 export default function SettingsPage() {
   const { business, role } = useBusinessContext();
@@ -323,6 +332,53 @@ export default function SettingsPage() {
                 <QuickBooksSettings />
                 <QuickBooksSyncPanel />
                 <QuickBooksSyncHistory />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Google Drive Integration - only for owners */}
+          {role === 'owner' && (
+            <Card className="md:col-span-2">
+              <CardHeader>
+                <CardTitle>Google Drive Integration</CardTitle>
+                <CardDescription>
+                  Backup media and export documents to Google Drive
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="connection" className="w-full">
+                  <TabsList className="grid w-full grid-cols-5 mb-4">
+                    <TabsTrigger value="connection">Connection</TabsTrigger>
+                    <TabsTrigger value="sync">Sync</TabsTrigger>
+                    <TabsTrigger value="files">Files</TabsTrigger>
+                    <TabsTrigger value="sharing">Sharing</TabsTrigger>
+                    <TabsTrigger value="history">History</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="connection" className="space-y-4">
+                    <GoogleDriveSettings />
+                  </TabsContent>
+                  
+                  <TabsContent value="sync" className="space-y-4">
+                    <GoogleDriveSyncDashboard />
+                    <GoogleDriveMediaBackup />
+                    <GoogleDriveDocumentExport />
+                    <GoogleDriveBulkOperations />
+                  </TabsContent>
+                  
+                  <TabsContent value="files" className="space-y-4">
+                    <GoogleDriveFolderBrowser />
+                    <GoogleDriveFileMappings />
+                  </TabsContent>
+                  
+                  <TabsContent value="sharing" className="space-y-4">
+                    <GoogleDriveSharingPanel />
+                  </TabsContent>
+                  
+                  <TabsContent value="history" className="space-y-4">
+                    <GoogleDriveSyncHistory />
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
           )}
