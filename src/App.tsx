@@ -42,6 +42,7 @@ const PublicRequestFormPage = lazy(() => import("./pages/PublicRequestForm"));
 const IndustryResourcePage = lazy(() => import("./pages/IndustryResource"));
 const RecurringJobsPage = lazy(() => import("./pages/RecurringJobs"));
 const RoadmapPage = lazy(() => import("./pages/Roadmap"));
+const ChangelogPage = lazy(() => import("./pages/Changelog"));
 
 // Routes are now properly lazy-loaded without aggressive prefetching
 
@@ -67,6 +68,7 @@ function App({ clerkKey }: AppProps) {
                 <Route element={<PublicOnly redirectTo="/calendar" />}>
                   <Route path="/" element={<LandingPage />} />
                   <Route path="/roadmap" element={<RoadmapPage />} />
+                  <Route path="/changelog" element={<ChangelogPage />} />
                 </Route>
                 
                 {/* Protected routes */}

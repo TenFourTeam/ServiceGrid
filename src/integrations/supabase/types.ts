@@ -474,6 +474,106 @@ export type Database = {
           },
         ]
       }
+      changelog_entries: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          publish_date: string
+          reaction_counts: Json | null
+          tag: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          publish_date: string
+          reaction_counts?: Json | null
+          tag?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          publish_date?: string
+          reaction_counts?: Json | null
+          tag?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      changelog_items: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          section_id: string
+          sort_order: number
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          section_id: string
+          sort_order: number
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          section_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "changelog_items_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "changelog_sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      changelog_sections: {
+        Row: {
+          created_at: string
+          emoji: string
+          entry_id: string
+          id: string
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          entry_id: string
+          id?: string
+          sort_order: number
+          title: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          entry_id?: string
+          id?: string
+          sort_order?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "changelog_sections_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "changelog_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           address: string | null
