@@ -773,7 +773,11 @@
       "signIn": "Sign in",
       "tryFree": "Try for free (no credit card required)",
       "tryFreeShort": "Try free",
-      "business": "Business Software"
+      "business": "Business Software",
+      "pricing": "Pricing",
+      "blog": "Blog",
+      "roadmap": "Roadmap",
+      "changelog": "Changelog"
     },
     "hero": {
       "A": {
@@ -877,7 +881,15 @@
       }
     },
     "footer": {
-      "copyright": "2025 ServiceGrid"
+      "copyright": "2025 ServiceGrid",
+      "company": "Company",
+      "resources": "Industries",
+      "product": "Product",
+      "community": "Community",
+      "features": "Features",
+      "pricing": "Pricing",
+      "documentation": "Documentation",
+      "testimonials": "Testimonials"
     }
   },
   "industryPages": {
