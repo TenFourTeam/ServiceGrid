@@ -393,3 +393,19 @@ verify_jwt = false
 [functions.extract-invoice-from-photo]
 verify_jwt = false
 
+# QuickBooks Integration
+[functions.quickbooks-oauth]
+verify_jwt = false
+
+[functions.quickbooks-sync-customers]
+verify_jwt = false
+
+[functions.quickbooks-sync-invoices]
+verify_jwt = false
+
+[functions.quickbooks-sync-payments]
+verify_jwt = false
+
+[functions.quickbooks-connection-status]
+verify_jwt = false
+

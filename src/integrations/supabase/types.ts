@@ -1561,6 +1561,144 @@ export type Database = {
           },
         ]
       }
+      quickbooks_connections: {
+        Row: {
+          access_token: string | null
+          business_id: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          last_sync_at: string | null
+          realm_id: string
+          refresh_token: string | null
+          scope: string | null
+          token_expires_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          access_token?: string | null
+          business_id: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          realm_id: string
+          refresh_token?: string | null
+          scope?: string | null
+          token_expires_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          access_token?: string | null
+          business_id?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          realm_id?: string
+          refresh_token?: string | null
+          scope?: string | null
+          token_expires_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quickbooks_connections_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quickbooks_entity_mappings: {
+        Row: {
+          business_id: string
+          created_at: string | null
+          id: string
+          last_synced_at: string | null
+          qb_entity_id: string
+          qb_sync_token: string | null
+          sg_entity_id: string
+          sg_entity_type: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string | null
+          id?: string
+          last_synced_at?: string | null
+          qb_entity_id: string
+          qb_sync_token?: string | null
+          sg_entity_id: string
+          sg_entity_type: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string | null
+          id?: string
+          last_synced_at?: string | null
+          qb_entity_id?: string
+          qb_sync_token?: string | null
+          sg_entity_id?: string
+          sg_entity_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quickbooks_entity_mappings_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quickbooks_sync_log: {
+        Row: {
+          business_id: string
+          created_at: string | null
+          direction: string
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          records_failed: number | null
+          records_processed: number | null
+          status: string
+          sync_type: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string | null
+          direction: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          records_failed?: number | null
+          records_processed?: number | null
+          status: string
+          sync_type: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string | null
+          direction?: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          records_failed?: number | null
+          records_processed?: number | null
+          status?: string
+          sync_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quickbooks_sync_log_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quote_events: {
         Row: {
           created_at: string

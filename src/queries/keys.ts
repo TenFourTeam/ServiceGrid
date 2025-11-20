@@ -90,6 +90,12 @@ const queryKeys = {
     deviceStatus: (userId: string) => ['voip', 'device', userId] as const,
   },
   
+  // Integration queries
+  integrations: {
+    quickbooks: (businessId: string) => ['integrations', 'quickbooks', businessId] as const,
+    quickbooksSyncLogs: (businessId: string) => ['integrations', 'quickbooks', 'sync-logs', businessId] as const,
+  },
+  
 } as const;
 
 /**
