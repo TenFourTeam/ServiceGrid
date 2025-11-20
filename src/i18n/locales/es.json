@@ -772,7 +772,11 @@
       "signIn": "Iniciar sesión",
       "tryFree": "Prueba gratis (sin tarjeta de crédito)",
       "tryFreeShort": "Prueba gratis",
-      "business": "Software Empresarial"
+      "business": "Software Empresarial",
+      "pricing": "Precios",
+      "blog": "Blog",
+      "roadmap": "Hoja de Ruta",
+      "changelog": "Registro de Cambios"
     },
     "hero": {
       "A": {
@@ -876,7 +880,15 @@
       }
     },
     "footer": {
-      "copyright": "2025 ServiceGrid"
+      "copyright": "2025 ServiceGrid",
+      "company": "Empresa",
+      "resources": "Industrias",
+      "product": "Producto",
+      "community": "Comunidad",
+      "features": "Características",
+      "pricing": "Precios",
+      "documentation": "Documentación",
+      "testimonials": "Testimonios"
     }
   },
   "industries": {
