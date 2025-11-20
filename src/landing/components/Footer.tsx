@@ -132,16 +132,12 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="pt-8 border-t">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground text-center sm:text-left">
-              {t('landing.footer.copyright')}
-            </p>
-            <div className="flex items-center gap-4">
-              <LanguageToggle />
-            </div>
-          </div>
+        {/* Footer Bottom - Integrated */}
+        <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-sm text-muted-foreground text-center sm:text-left">
+            {t('landing.footer.copyright')}
+          </p>
+          <LanguageToggle />
         </div>
       </div>
     </footer>
