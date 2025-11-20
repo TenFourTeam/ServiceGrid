@@ -1,6 +1,6 @@
 import AppLayout from '@/components/Layout/AppLayout';
 import { RequireRole } from '@/components/Auth/RequireRole';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,9 @@ import { PhoneNumberSettings } from '@/components/VoIP/PhoneNumberSettings';
 import { CallLogList } from '@/components/VoIP/CallLogList';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Phone } from 'lucide-react';
+import { QuickBooksSettings } from '@/components/Settings/QuickBooksSettings';
+import { QuickBooksSyncPanel } from '@/components/Settings/QuickBooksSyncPanel';
+import { QuickBooksSyncHistory } from '@/components/Settings/QuickBooksSyncHistory';
 
 export default function SettingsPage() {
   const { business, role } = useBusinessContext();
@@ -306,6 +309,23 @@ export default function SettingsPage() {
               <BusinessConstraintsSettings />
             </CardContent>
           </Card>
+
+          {/* QuickBooks Integration - only for owners */}
+          {role === 'owner' && (
+            <Card className="md:col-span-2">
+              <CardHeader>
+                <CardTitle>QuickBooks Integration</CardTitle>
+                <CardDescription>
+                  Sync financial data between ServiceGrid and QuickBooks Online
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <QuickBooksSettings />
+                <QuickBooksSyncPanel />
+                <QuickBooksSyncHistory />
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>
