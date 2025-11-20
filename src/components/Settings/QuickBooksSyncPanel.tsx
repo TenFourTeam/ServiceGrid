@@ -58,6 +58,17 @@ export function QuickBooksSyncPanel() {
           <ArrowRight className="h-4 w-4 mr-2" />
           Send Payments to QuickBooks
         </Button>
+
+        <Button
+          size="sm"
+          variant="outline"
+          className="w-full"
+          onClick={() => sync({ type: 'time_entry', direction: 'to_qb' })}
+          disabled={isLoading}
+        >
+          <ArrowRight className="h-4 w-4 mr-2" />
+          Export Time Tracking to QuickBooks
+        </Button>
       </CardContent>
     </Card>
   );
