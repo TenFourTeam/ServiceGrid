@@ -49,6 +49,11 @@ export function TopNav() {
                 </Link>
               </NavigationMenuItem>
               <NavigationMenuItem>
+                <Link to="/changelog" className="text-sm font-medium px-3 py-2 hover:text-primary transition-colors">
+                  Changelog
+                </Link>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
                 <NavigationMenuTrigger className="text-sm font-medium">
                   {t('landing.nav.resources')}
                 </NavigationMenuTrigger>
@@ -118,6 +123,15 @@ export function TopNav() {
                 className="font-semibold text-foreground hover:text-brand-600"
               >
                 Roadmap
+              </Link>
+
+              {/* Changelog Link */}
+              <Link
+                to="/changelog"
+                onClick={() => setMobileMenuOpen(false)}
+                className="font-semibold text-foreground hover:text-brand-600"
+              >
+                Changelog
               </Link>
 
               {/* Industries Section */}
