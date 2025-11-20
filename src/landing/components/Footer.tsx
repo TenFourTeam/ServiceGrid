@@ -1,6 +1,5 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getIndustries } from "../industryData";
-import { Briefcase, Github, MessageCircle } from "lucide-react";
 
 export function Footer() {
   const { t } = useLanguage();
@@ -13,8 +12,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12 mb-12">
           {/* Company */}
           <div>
-            <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-              <Briefcase className="h-4 w-4" />
+            <h3 className="font-semibold text-foreground mb-4">
               {t('landing.footer.company')}
             </h3>
             <ul className="space-y-3">
@@ -96,7 +94,7 @@ export function Footer() {
             </h3>
             <ul className="space-y-3">
               <li>
-                <a href="/roadmap" className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-2">
+                <a href="/roadmap" className="text-muted-foreground hover:text-foreground transition-colors">
                   {t('landing.nav.roadmap')}
                 </a>
               </li>
@@ -110,9 +108,8 @@ export function Footer() {
                   href="https://github.com/yourusername/servicegrid" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-2"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  <Github className="h-4 w-4" />
                   GitHub
                 </a>
               </li>
@@ -121,9 +118,8 @@ export function Footer() {
                   href="https://discord.gg/servicegrid" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-2"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  <MessageCircle className="h-4 w-4" />
                   Discord
                 </a>
               </li>
