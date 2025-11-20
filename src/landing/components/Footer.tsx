@@ -40,6 +40,9 @@ export function Footer() {
                 </a>
               </li>
             </ul>
+            <p className="text-xs text-muted-foreground/70 mt-6">
+              {t('landing.footer.copyright')}
+            </p>
           </div>
 
           {/* Resources - Industries */}
@@ -132,17 +135,6 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Footer Bottom - Integrated */}
-        <div className="mt-12 pt-8 border-t border-border/30 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Briefcase className="h-5 w-5 text-primary" />
-            <span className="font-semibold text-foreground">ServiceGrid</span>
-          </div>
-          <p className="text-sm text-muted-foreground text-center">
-            {t('landing.footer.copyright')}
-          </p>
-          <LanguageToggle />
-        </div>
       </div>
     </footer>
   );
