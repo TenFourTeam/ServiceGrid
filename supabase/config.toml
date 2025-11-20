@@ -412,3 +412,58 @@ verify_jwt = false
 [functions.quickbooks-sync-time]
 verify_jwt = false
 
+# Google Drive Integration
+[functions.google-drive-oauth]
+verify_jwt = false
+
+[functions.google-drive-disconnect]
+verify_jwt = false
+
+[functions.google-drive-health-check]
+verify_jwt = false
+
+[functions.google-drive-sync-media]
+verify_jwt = false
+
+[functions.google-drive-upload-file]
+verify_jwt = false
+
+[functions.google-drive-create-folder-structure]
+verify_jwt = false
+
+[functions.google-drive-export-invoice-pdf]
+verify_jwt = false
+
+[functions.google-drive-export-quote-pdf]
+verify_jwt = false
+
+[functions.google-drive-import-document]
+verify_jwt = false
+
+[functions.google-drive-export-report]
+verify_jwt = false
+
+[functions.google-drive-create-share-link]
+verify_jwt = false
+
+[functions.google-drive-share-with-email]
+verify_jwt = false
+
+[functions.google-drive-revoke-access]
+verify_jwt = false
+
+[functions.google-drive-get-access-log]
+verify_jwt = false
+
+[functions.google-drive-share-with-team]
+verify_jwt = false
+
+[functions.google-drive-create-shared-doc]
+verify_jwt = false
+
+[functions.google-drive-list-files]
+verify_jwt = false
+
+[functions.google-drive-get-file-mappings]
+verify_jwt = false
+
