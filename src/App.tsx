@@ -46,6 +46,7 @@ const ChangelogPage = lazy(() => import("./pages/Changelog"));
 const PricingPage = lazy(() => import("./pages/Pricing"));
 const BlogPage = lazy(() => import("./pages/Blog"));
 const BlogPostPage = lazy(() => import("./pages/BlogPost"));
+const GoogleDriveCallback = lazy(() => import("./pages/GoogleDriveCallback"));
 
 // Routes are now properly lazy-loaded without aggressive prefetching
 
@@ -151,6 +152,7 @@ function App({ clerkKey }: AppProps) {
                 <Route path="/invite" element={<InvitePage />} />
                 <Route path="/invite/referral" element={<ReferralLanding />} />
                 <Route path="/request/:businessId" element={<PublicRequestFormPage />} />
+                <Route path="/auth/google-drive/callback" element={<GoogleDriveCallback />} />
                 
                  <Route path="*" element={<NotFound />} />
                   </Routes>

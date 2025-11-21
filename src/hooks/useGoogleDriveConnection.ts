@@ -2,12 +2,35 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useAuthApi } from '@/hooks/useAuthApi';
 import { toast } from 'sonner';
+import { useEffect } from 'react';
 import type { GoogleDriveConnection, DriveHealthMetrics } from '@/types/googleDrive';
 
 export function useGoogleDriveConnection() {
   const { businessId } = useBusinessContext();
   const authApi = useAuthApi();
   const queryClient = useQueryClient();
+
+  // Listen for OAuth callback success messages from popup window
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Verify message origin for security
+      if (event.origin !== window.location.origin) return;
+
+      const { type, businessId: messageBizId, error } = event.data;
+
+      if (type === 'google-drive-oauth-success') {
+        // Invalidate queries to fetch new connection data
+        queryClient.invalidateQueries({ queryKey: ['google-drive', 'connection', messageBizId] });
+        queryClient.invalidateQueries({ queryKey: ['google-drive', 'health', messageBizId] });
+        toast.success('Google Drive connected successfully!');
+      } else if (type === 'google-drive-oauth-error') {
+        toast.error(`Connection failed: ${error}`);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [queryClient]);
 
   const connectionQuery = useQuery<GoogleDriveConnection | null>({
     queryKey: ['google-drive', 'connection', businessId],
