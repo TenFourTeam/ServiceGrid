@@ -467,3 +467,7 @@ verify_jwt = false
 [functions.google-drive-get-file-mappings]
 verify_jwt = false
 
+# AI Property Visualization
+[functions.generate-property-visualization]
+verify_jwt = false
+
