@@ -1,9 +1,16 @@
 import { useState, useMemo } from 'react';
 import { MediaItem } from '@/hooks/useJobMedia';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Video, MapPin, Camera, Cloud } from 'lucide-react';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
+import { Video, MapPin, Camera, Cloud, Sparkles, MoreVertical } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useGoogleDriveFileMappings } from '@/hooks/useGoogleDriveFiles';
@@ -12,9 +19,11 @@ interface MediaGalleryProps {
   media: MediaItem[];
   isLoading?: boolean;
   onMediaClick: (mediaItem: MediaItem, index: number) => void;
+  onGenerateVisualization?: (mediaItem: MediaItem) => void;
+  visualizationSourceIds?: Set<string>;
 }
 
-export function MediaGallery({ media, isLoading, onMediaClick }: MediaGalleryProps) {
+export function MediaGallery({ media, isLoading, onMediaClick, onGenerateVisualization, visualizationSourceIds }: MediaGalleryProps) {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const { data: driveMappings } = useGoogleDriveFileMappings('media');
 
@@ -109,6 +118,44 @@ export function MediaGallery({ media, isLoading, onMediaClick }: MediaGalleryPro
                   loading="lazy"
                   className="w-full h-20 object-cover transition-transform group-hover:scale-105"
                 />
+                
+                {/* Context menu for photos */}
+                {item.file_type === 'photo' && onGenerateVisualization && (
+                  <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6 bg-black/50 hover:bg-black/70 text-white"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreVertical className="w-3 h-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={(e) => {
+                          e.stopPropagation();
+                          onGenerateVisualization(item);
+                        }}>
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          Generate Visualization
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                )}
+                
+                {/* Badge if this photo has visualizations */}
+                {visualizationSourceIds?.has(item.id) && (
+                  <Badge 
+                    className="absolute bottom-1 right-1 text-xs bg-primary/90" 
+                    variant="default"
+                  >
+                    <Sparkles className="w-3 h-3 mr-1" />
+                    Has Viz
+                  </Badge>
+                )}
                 
                 {item.file_type === 'video' && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/30">

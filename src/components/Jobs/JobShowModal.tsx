@@ -27,6 +27,9 @@ import { Badge } from "@/components/ui/badge";
 import { MediaGallery } from './MediaGallery';
 import { MediaViewer } from './MediaViewer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { VisualizationGallery } from '@/components/Visualizations/VisualizationGallery';
+import { BeforeAfterVisualizationDialog } from '@/components/Visualizations/BeforeAfterVisualizationDialog';
+import { useVisualizationsByJob } from '@/hooks/useVisualizationsByJob';
 import { JobChecklistView } from '@/components/Checklists';
 import { NotesContainer } from '@/components/Notes/NotesContainer';
 import { BulkTagManager } from '@/components/Media/BulkTagManager';
@@ -60,6 +63,9 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
   const authApi = useAuthApi();
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
+  const [activeTab, setActiveTab] = useState('checklist');
+  const [visualizationDialogOpen, setVisualizationDialogOpen] = useState(false);
+  const [selectedBeforePhoto, setSelectedBeforePhoto] = useState<MediaItem | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [photosToUpload, setPhotosToUpload] = useState<File[]>([]);
@@ -73,6 +79,8 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
   const { uploadMedia, uploading: mediaUploading, progress: uploadProgress } = useMediaUpload();
   const { data: jobMedia = [], isLoading: mediaLoading } = useJobMedia(job.id);
   const [optimisticMedia, setOptimisticMedia] = useState<MediaItem[]>([]);
+  const { data: visualizationPairs = [] } = useVisualizationsByJob(job.id);
+  const visualizationCount = visualizationPairs.length;
   const [showBulkTagManager, setShowBulkTagManager] = useState(false);
   const [showAISummary, setShowAISummary] = useState(false);
   const [showEstimateDialog, setShowEstimateDialog] = useState(false);
@@ -89,9 +97,36 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
     return [...optimisticMedia, ...jobMedia];
   }, [optimisticMedia, jobMedia]);
 
+  // Calculate visualization source IDs for MediaGallery badges
+  const visualizationSourceIds = useMemo(() => {
+    const ids = new Set<string>();
+    visualizationPairs.forEach(pair => {
+      ids.add(pair.beforePhoto.id);
+    });
+    return ids;
+  }, [visualizationPairs]);
+
+  // Calculate visualization counts for MediaViewer
+  const visualizationCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    visualizationPairs.forEach(pair => {
+      counts.set(pair.beforePhoto.id, pair.variations.length);
+    });
+    return counts;
+  }, [visualizationPairs]);
+
   const handleMediaClick = (mediaItem: any, index: number) => {
     setViewerIndex(index);
     setViewerOpen(true);
+  };
+
+  const handleGenerateVisualization = (mediaItem: MediaItem) => {
+    if (mediaItem.file_type !== 'photo') {
+      toast.error('Can only generate visualizations from photos');
+      return;
+    }
+    setSelectedBeforePhoto(mediaItem);
+    setVisualizationDialogOpen(true);
   };
   
   // Fetch full quote details when job has quoteId
@@ -739,10 +774,16 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
             </div>
           </div>
           
-          <Tabs defaultValue="checklist" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="checklist">Checklist</TabsTrigger>
               <TabsTrigger value="media">Media</TabsTrigger>
+              <TabsTrigger value="visualizations">
+                Visualizations
+                {visualizationCount > 0 && (
+                  <Badge className="ml-2" variant="secondary">{visualizationCount}</Badge>
+                )}
+              </TabsTrigger>
               <TabsTrigger value="notes">Notes</TabsTrigger>
               <TabsTrigger value="summary">AI Summary</TabsTrigger>
             </TabsList>
@@ -788,18 +829,38 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
             )}
             
             {/* Display new sg_media items */}
-            <MediaGallery
-              media={allMedia}
-              isLoading={mediaLoading}
-              onMediaClick={handleMediaClick}
-            />
+                    <MediaGallery
+                      media={allMedia}
+                      isLoading={mediaLoading}
+                      onMediaClick={handleMediaClick}
+                      onGenerateVisualization={handleGenerateVisualization}
+                      visualizationSourceIds={visualizationSourceIds}
+                    />
             
-            <MediaViewer
-              media={allMedia}
-              initialIndex={viewerIndex}
-              isOpen={viewerOpen}
-              onClose={() => setViewerOpen(false)}
-            />
+        <MediaViewer
+          media={allMedia}
+          initialIndex={viewerIndex}
+          isOpen={viewerOpen}
+          onClose={() => setViewerOpen(false)}
+          onGenerateVisualization={handleGenerateVisualization}
+          onSwitchToVisualizationsTab={() => {
+            setViewerOpen(false);
+            setActiveTab('visualizations');
+          }}
+          visualizationCounts={visualizationCounts}
+        />
+        
+        <BeforeAfterVisualizationDialog
+          open={visualizationDialogOpen}
+          onOpenChange={setVisualizationDialogOpen}
+          beforePhoto={selectedBeforePhoto!}
+          jobId={job.id}
+          jobType={job.jobType}
+          onVisualizationsGenerated={() => {
+            setVisualizationDialogOpen(false);
+            setActiveTab('visualizations');
+          }}
+        />
             
             <BulkTagManager
               media={allMedia}
@@ -859,6 +920,17 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
             
             <TabsContent value="notes" className="h-[500px]">
               <NotesContainer jobId={job.id} />
+            </TabsContent>
+            
+            {/* Visualizations Tab */}
+            <TabsContent value="visualizations">
+              <VisualizationGallery
+                jobId={job.id}
+                onGenerateNew={() => {
+                  toast.info('Switch to Media tab to select a "before" photo');
+                  setActiveTab('media');
+                }}
+              />
             </TabsContent>
             
             <TabsContent value="summary" className="space-y-4">
