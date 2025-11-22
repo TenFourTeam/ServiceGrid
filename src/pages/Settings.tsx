@@ -21,6 +21,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Textarea } from '@/components/ui/textarea';
 import { BusinessConstraintsSettings } from '@/components/Settings/BusinessConstraintsSettings';
 import { ServiceCatalogManager } from '@/components/Settings/ServiceCatalogManager';
+import { IndustrySelectionCard } from '@/components/Settings/IndustrySelectionCard';
 import { AISettingsCard } from '@/components/Settings/AISettingsCard';
 import { PricingRulesCard } from '@/components/Settings/PricingRulesCard';
 import { PhoneNumberSettings } from '@/components/VoIP/PhoneNumberSettings';
@@ -218,6 +219,9 @@ export default function SettingsPage() {
               </form>
             </CardContent>
           </Card>
+
+          {/* Industry Selection & SOP Auto-Population */}
+          <IndustrySelectionCard />
 
           {/* Service Catalog - only for owners */}
           {role === 'owner' && (

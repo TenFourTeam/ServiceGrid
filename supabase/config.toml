@@ -162,6 +162,9 @@ verify_jwt = false
 [functions.service-catalog-crud]
 verify_jwt = false
 
+[functions.populate-industry-sops]
+verify_jwt = false
+
 [functions.estimate-job-from-photo]
 verify_jwt = false
 
