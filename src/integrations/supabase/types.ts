@@ -3515,6 +3515,7 @@ export type Database = {
           created_at: string
           file_size: number
           file_type: string
+          generation_metadata: Json | null
           has_annotations: boolean | null
           hls_manifest_url: string | null
           id: string
@@ -3541,6 +3542,7 @@ export type Database = {
           created_at?: string
           file_size: number
           file_type: string
+          generation_metadata?: Json | null
           has_annotations?: boolean | null
           hls_manifest_url?: string | null
           id?: string
@@ -3567,6 +3569,7 @@ export type Database = {
           created_at?: string
           file_size?: number
           file_type?: string
+          generation_metadata?: Json | null
           has_annotations?: boolean | null
           hls_manifest_url?: string | null
           id?: string
