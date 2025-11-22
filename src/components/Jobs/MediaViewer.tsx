@@ -17,7 +17,8 @@ import {
   ExternalLink,
   AlertCircle,
   Pencil,
-  Tag
+  Tag,
+  Sparkles
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -37,9 +38,12 @@ interface MediaViewerProps {
   initialIndex: number;
   isOpen: boolean;
   onClose: () => void;
+  onGenerateVisualization?: (mediaItem: MediaItem) => void;
+  onSwitchToVisualizationsTab?: () => void;
+  visualizationCounts?: Map<string, number>;
 }
 
-export function MediaViewer({ media, initialIndex, isOpen, onClose }: MediaViewerProps) {
+export function MediaViewer({ media, initialIndex, isOpen, onClose, onGenerateVisualization, onSwitchToVisualizationsTab, visualizationCounts }: MediaViewerProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [showAnnotationEditor, setShowAnnotationEditor] = useState(false);
   const currentMedia = media[currentIndex];
@@ -278,6 +282,52 @@ export function MediaViewer({ media, initialIndex, isOpen, onClose }: MediaViewe
                   placeholder="Add tags..."
                 />
               </div>
+
+              {/* AI Visualizations Section */}
+              {currentMedia.file_type === 'photo' && (
+                <div className="border-t border-border pt-4">
+                  <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" />
+                    AI Visualizations
+                  </h4>
+                  
+                  {visualizationCounts?.get(currentMedia.id) ? (
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">
+                        {visualizationCounts.get(currentMedia.id)} visualization{visualizationCounts.get(currentMedia.id) !== 1 ? 's' : ''} created from this photo
+                      </p>
+                      {onSwitchToVisualizationsTab && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          onClick={onSwitchToVisualizationsTab}
+                        >
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          View Visualizations
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">
+                        Generate AI-powered "after" preview from this photo
+                      </p>
+                      {onGenerateVisualization && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          onClick={() => onGenerateVisualization(currentMedia)}
+                        >
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          Generate Visualization
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {currentMedia.isOptimistic && (
                 <div className="border-t border-border pt-4">
