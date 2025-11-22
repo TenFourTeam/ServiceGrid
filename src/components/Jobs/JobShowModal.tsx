@@ -128,6 +128,13 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
     setSelectedBeforePhoto(mediaItem);
     setVisualizationDialogOpen(true);
   };
+
+  const handleVisualizationDialogChange = (open: boolean) => {
+    setVisualizationDialogOpen(open);
+    if (!open) {
+      setSelectedBeforePhoto(null);
+    }
+  };
   
   // Fetch full quote details when job has quoteId
   useEffect(() => {
@@ -850,17 +857,19 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
           visualizationCounts={visualizationCounts}
         />
         
-        <BeforeAfterVisualizationDialog
-          open={visualizationDialogOpen}
-          onOpenChange={setVisualizationDialogOpen}
-          beforePhoto={selectedBeforePhoto!}
-          jobId={job.id}
-          jobType={job.jobType}
-          onVisualizationsGenerated={() => {
-            setVisualizationDialogOpen(false);
-            setActiveTab('visualizations');
-          }}
-        />
+        {selectedBeforePhoto && (
+          <BeforeAfterVisualizationDialog
+            open={visualizationDialogOpen}
+            onOpenChange={handleVisualizationDialogChange}
+            beforePhoto={selectedBeforePhoto}
+            jobId={job.id}
+            jobType={job.jobType}
+            onVisualizationsGenerated={() => {
+              setVisualizationDialogOpen(false);
+              setActiveTab('visualizations');
+            }}
+          />
+        )}
             
             <BulkTagManager
               media={allMedia}

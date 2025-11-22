@@ -136,22 +136,32 @@ export function BeforeAfterVisualizationDialog({
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Before Photo Preview */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex gap-4 items-center">
-                <img
-                  src={beforePhoto.thumbnail_url || beforePhoto.public_url}
-                  alt="Before photo"
-                  className="w-24 h-24 rounded object-cover border"
-                />
-                <div className="flex-1">
-                  <p className="font-medium">Before Photo</p>
-                  <p className="text-sm text-muted-foreground">{beforePhoto.original_filename}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Safety check */}
+          {!beforePhoto ? (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                No photo selected. Please select a photo first.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <>
+              {/* Before Photo Preview */}
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex gap-4 items-center">
+                    <img
+                      src={beforePhoto.thumbnail_url || beforePhoto.public_url}
+                      alt="Before photo"
+                      className="w-24 h-24 rounded object-cover border"
+                    />
+                    <div className="flex-1">
+                      <p className="font-medium">Before Photo</p>
+                      <p className="text-sm text-muted-foreground">{beforePhoto.original_filename}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
           {/* Prompt Input */}
           <div className="space-y-2">
@@ -272,6 +282,8 @@ export function BeforeAfterVisualizationDialog({
                 </div>
               </CardContent>
             </Card>
+          )}
+            </>
           )}
         </div>
 
