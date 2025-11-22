@@ -103,8 +103,17 @@ Deno.serve(async (req) => {
     const userId = ctx.userId;
 
     // Only business owners can populate SOPs
-    const canManage = await ctx.can_manage_business();
-    if (!canManage) {
+    const { data: business, error: businessError } = await supabase
+      .from('businesses')
+      .select('owner_id')
+      .eq('id', businessId)
+      .single();
+
+    if (businessError) {
+      throw new Error('Failed to verify business ownership');
+    }
+
+    if (business.owner_id !== userId) {
       throw new Error('Only business owners can populate SOPs');
     }
 
