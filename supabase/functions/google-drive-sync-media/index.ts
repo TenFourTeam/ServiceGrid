@@ -13,20 +13,13 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { persistSession: false } }
-    );
-
-    const authHeader = req.headers.get('Authorization');
-    const ctx = await requireCtx(supabase, authHeader);
+    const ctx = await requireCtx(req);
     const { entityIds, syncAll, jobId, customerId } = await req.json();
 
     console.log('[Google Drive Sync Media] Starting sync for business:', ctx.businessId);
 
     // Get connection
-    const { data: connection } = await supabase
+    const { data: connection } = await ctx.supaAdmin
       .from('google_drive_connections')
       .select('*')
       .eq('business_id', ctx.businessId)
@@ -38,7 +31,7 @@ serve(async (req) => {
     }
 
     // Build query for media
-    let query = supabase
+    let query = ctx.supaAdmin
       .from('sg_media')
       .select('*, jobs!inner(customer_id, customers!inner(name), title)')
       .eq('jobs.business_id', ctx.businessId);

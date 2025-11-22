@@ -13,20 +13,13 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { persistSession: false } }
-    );
-
-    const authHeader = req.headers.get('Authorization');
-    const ctx = await requireCtx(supabase, authHeader);
+    const ctx = await requireCtx(req);
     const { driveFileId, role } = await req.json();
 
     console.log('[Google Drive Create Share Link] Creating share link for:', driveFileId);
 
     // Get connection
-    const { data: connection } = await supabase
+    const { data: connection } = await ctx.supaAdmin
       .from('google_drive_connections')
       .select('*')
       .eq('business_id', ctx.businessId)
@@ -41,7 +34,7 @@ serve(async (req) => {
     const mockShareLink = `https://drive.google.com/file/d/${driveFileId}/view?usp=sharing`;
 
     // Log sync
-    await supabase.from('google_drive_sync_log').insert({
+    await ctx.supaAdmin.from('google_drive_sync_log').insert({
       business_id: ctx.businessId,
       connection_id: connection.id,
       sync_type: 'share',

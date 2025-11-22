@@ -13,20 +13,13 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { persistSession: false } }
-    );
-
-    const authHeader = req.headers.get('Authorization');
-    const ctx = await requireCtx(supabase, authHeader);
+    const ctx = await requireCtx(req);
     const { invoiceId } = await req.json();
 
     console.log('[Google Drive Export Invoice] Exporting invoice:', invoiceId);
 
     // Get connection
-    const { data: connection } = await supabase
+    const { data: connection } = await ctx.supaAdmin
       .from('google_drive_connections')
       .select('*')
       .eq('business_id', ctx.businessId)
