@@ -96,6 +96,13 @@ const queryKeys = {
     quickbooksSyncLogs: (businessId: string) => ['integrations', 'quickbooks', 'sync-logs', businessId] as const,
   },
   
+  // Visualization queries
+  visualizations: {
+    byJob: (jobId: string) => ['visualizations', 'job', jobId] as const,
+    byMedia: (mediaId: string) => ['visualizations', 'source', mediaId] as const,
+    all: (businessId: string) => ['visualizations', businessId] as const,
+  },
+  
 } as const;
 
 /**
@@ -173,6 +180,15 @@ const invalidationHelpers = {
   voip: (queryClient: QueryClient, businessId: string) => {
     queryClient.invalidateQueries({ queryKey: queryKeys.voip.phoneNumbers(businessId) });
     queryClient.invalidateQueries({ queryKey: queryKeys.voip.callLogs(businessId) });
+  },
+  
+  visualizations: (queryClient: QueryClient, jobId?: string) => {
+    if (jobId) {
+      queryClient.invalidateQueries({ queryKey: queryKeys.visualizations.byJob(jobId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.data.jobMedia(jobId) });
+    }
+    queryClient.invalidateQueries({ queryKey: ['visualizations'] });
+    queryClient.invalidateQueries({ queryKey: ['ai'] });
   },
   
   all: (queryClient: QueryClient, businessId: string, userId: string) => {

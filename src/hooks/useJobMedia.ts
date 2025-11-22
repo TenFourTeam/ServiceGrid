@@ -15,6 +15,17 @@ export interface MediaItem {
     exif?: any;
     gps?: { latitude: number; longitude: number };
   };
+  generation_metadata?: {
+    is_ai_generated: boolean;
+    generation_type: string;
+    source_media_id?: string;
+    prompt?: string;
+    model?: string;
+    variation_number?: number;
+    total_variations?: number;
+    generation_id?: string;
+    style?: string;
+  };
   created_at: string;
   upload_status: 'uploading' | 'processing' | 'completed' | 'failed';
   
