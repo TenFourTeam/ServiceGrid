@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Sparkles } from 'lucide-react';
 import { downloadAllVariations } from '@/utils/visualization-helpers';
+import { toast } from 'sonner';
 
 interface VisualizationGalleryProps {
   jobId: string;
@@ -94,7 +95,10 @@ export function VisualizationGallery({ jobId, onGenerateNew }: VisualizationGall
           Generate AI-powered before/after previews from your job photos
         </p>
         {onGenerateNew && (
-          <Button onClick={onGenerateNew}>
+          <Button onClick={() => {
+            onGenerateNew();
+            toast.info('Switch to the Media tab, select a photo, then click "Generate Visualization" from the context menu');
+          }}>
             <Sparkles className="mr-2 h-4 w-4" />
             Generate Visualization
           </Button>
