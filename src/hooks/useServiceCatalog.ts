@@ -12,6 +12,7 @@ export interface ServiceCatalogItem {
   unit_type: string;
   category?: string;
   is_active: boolean;
+  infographic_url?: string | null;
   created_at: string;
   updated_at: string;
 }
