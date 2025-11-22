@@ -2652,6 +2652,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          infographic_url: string | null
           is_active: boolean
           service_name: string
           unit_price: number
@@ -2664,6 +2665,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          infographic_url?: string | null
           is_active?: boolean
           service_name: string
           unit_price: number
@@ -2676,6 +2678,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          infographic_url?: string | null
           is_active?: boolean
           service_name?: string
           unit_price?: number

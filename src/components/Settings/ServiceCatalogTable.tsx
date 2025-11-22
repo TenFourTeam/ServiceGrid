@@ -1,10 +1,12 @@
+import { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Edit, Trash2, Power, BookOpen } from 'lucide-react';
+import { Edit, Trash2, Power, BookOpen, ImageIcon } from 'lucide-react';
 import { formatMoney } from '@/utils/format';
 import type { ServiceCatalogItem } from '@/hooks/useServiceCatalog';
+import { SOPInfographicDialog } from './SOPInfographicDialog';
 
 interface ServiceCatalogTableProps {
   services: ServiceCatalogItem[];
@@ -14,6 +16,8 @@ interface ServiceCatalogTableProps {
 }
 
 export function ServiceCatalogTable({ services, onEdit, onDelete, onToggleActive }: ServiceCatalogTableProps) {
+  const [selectedService, setSelectedService] = useState<ServiceCatalogItem | null>(null);
+  
   // Group by category
   const grouped = services.reduce((acc, service) => {
     const cat = service.category || 'General';
@@ -81,6 +85,23 @@ export function ServiceCatalogTable({ services, onEdit, onDelete, onToggleActive
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setSelectedService(service)}
+                                title="View process infographic"
+                              >
+                                <ImageIcon className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>View AI-generated process infographic</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -116,6 +137,12 @@ export function ServiceCatalogTable({ services, onEdit, onDelete, onToggleActive
           </div>
         </div>
       ))}
+      
+      <SOPInfographicDialog
+        service={selectedService}
+        open={!!selectedService}
+        onClose={() => setSelectedService(null)}
+      />
     </div>
   );
 }
