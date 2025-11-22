@@ -1,7 +1,8 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Trash2, Power } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Edit, Trash2, Power, BookOpen } from 'lucide-react';
 import { formatMoney } from '@/utils/format';
 import type { ServiceCatalogItem } from '@/hooks/useServiceCatalog';
 
@@ -42,7 +43,26 @@ export function ServiceCatalogTable({ services, onEdit, onDelete, onToggleActive
                   <TableRow key={service.id} className={!service.is_active ? 'opacity-50' : ''}>
                     <TableCell>
                       <div>
-                        <div className="font-medium">{service.service_name}</div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{service.service_name}</span>
+                          {service.category === 'SOP' && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge variant="outline" className="gap-1">
+                                    <BookOpen className="h-3 w-3" />
+                                    SOP
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="text-xs max-w-xs">
+                                    Auto-populated from your industry best practices. You can edit or deactivate these.
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </div>
                         {service.description && (
                           <div className="text-sm text-muted-foreground">{service.description}</div>
                         )}

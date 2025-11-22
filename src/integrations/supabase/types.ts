@@ -297,6 +297,7 @@ export type Database = {
           est_prefix: string
           est_seq: number
           id: string
+          industry: string | null
           inv_prefix: string
           inv_seq: number
           light_logo_url: string | null
@@ -325,6 +326,7 @@ export type Database = {
           est_prefix?: string
           est_seq?: number
           id?: string
+          industry?: string | null
           inv_prefix?: string
           inv_seq?: number
           light_logo_url?: string | null
@@ -353,6 +355,7 @@ export type Database = {
           est_prefix?: string
           est_seq?: number
           id?: string
+          industry?: string | null
           inv_prefix?: string
           inv_seq?: number
           light_logo_url?: string | null
@@ -4802,6 +4805,7 @@ export type Database = {
           est_prefix: string
           est_seq: number
           id: string
+          industry: string | null
           inv_prefix: string
           inv_seq: number
           light_logo_url: string | null
