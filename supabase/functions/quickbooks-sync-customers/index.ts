@@ -13,14 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { persistSession: false } }
-    );
-
-    const authHeader = req.headers.get('Authorization');
-    const ctx = await requireCtx(supabase, authHeader);
+    const ctx = await requireCtx(req);
     const { direction } = await req.json(); // 'to_qb' or 'from_qb'
 
     console.log(`[QB Sync Customers] ${direction} for business ${ctx.businessId}`);

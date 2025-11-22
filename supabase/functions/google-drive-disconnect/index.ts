@@ -13,19 +13,12 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { persistSession: false } }
-    );
-
-    const authHeader = req.headers.get('Authorization');
-    const ctx = await requireCtx(supabase, authHeader);
+    const ctx = await requireCtx(req);
 
     console.log('[Google Drive Disconnect] Disconnecting for business:', ctx.businessId);
 
     // Get connection
-    const { data: connection } = await supabase
+    const { data: connection } = await ctx.supaAdmin
       .from('google_drive_connections')
       .select('*')
       .eq('business_id', ctx.businessId)
@@ -36,7 +29,7 @@ serve(async (req) => {
       // TODO: Revoke tokens with Google when API credentials available
       
       // Deactivate connection
-      await supabase
+      await ctx.supaAdmin
         .from('google_drive_connections')
         .update({ is_active: false, sync_enabled: false })
         .eq('id', connection.id);

@@ -14,14 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { persistSession: false } }
-    );
-
-    const authHeader = req.headers.get('Authorization');
-    const ctx = await requireCtx(supabase, authHeader);
+    const ctx = await requireCtx(req);
     const { direction, dryRun = false } = await req.json(); // 'to_qb' or 'from_qb'
 
     console.log(`[QB Sync Time] ${direction} for business ${ctx.businessId}, dryRun=${dryRun}`);
@@ -32,7 +25,7 @@ serve(async (req) => {
 
     if (direction === 'to_qb') {
       // Fetch timesheet entries from ServiceGrid
-      const { data: timesheetEntries, error: timesheetError } = await supabase
+      const { data: timesheetEntries, error: timesheetError } = await ctx.supaAdmin
         .from('timesheet_entries')
         .select(`
           *,

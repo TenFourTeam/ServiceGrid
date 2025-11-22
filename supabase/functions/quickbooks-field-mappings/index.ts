@@ -13,18 +13,11 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { persistSession: false } }
-    );
-
-    const authHeader = req.headers.get('Authorization');
-    const ctx = await requireCtx(supabase, authHeader);
+    const ctx = await requireCtx(req);
 
     // GET - List field mappings
     if (req.method === 'GET') {
-      const { data, error } = await supabase
+      const { data, error } = await ctx.supaAdmin
         .from('quickbooks_field_mappings')
         .select('*')
         .eq('business_id', ctx.businessId)

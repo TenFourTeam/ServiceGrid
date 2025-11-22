@@ -13,19 +13,12 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { persistSession: false } }
-    );
-
-    const authHeader = req.headers.get('Authorization');
-    const ctx = await requireCtx(supabase, authHeader);
+    const ctx = await requireCtx(req);
 
     console.log('[QB Health Check] Running for business:', ctx.businessId);
 
     // Check connection status
-    const { data: connection } = await supabase
+    const { data: connection } = await ctx.supaAdmin
       .from('quickbooks_connections')
       .select('*')
       .eq('business_id', ctx.businessId)
@@ -55,7 +48,7 @@ serve(async (req) => {
 
     // Get sync statistics for last 24 hours
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { data: logs24h } = await supabase
+    const { data: logs24h } = await ctx.supaAdmin
       .from('quickbooks_sync_log')
       .select('status, records_processed, records_failed, created_at, metadata')
       .eq('business_id', ctx.businessId)
@@ -63,7 +56,7 @@ serve(async (req) => {
 
     // Get sync statistics for last 7 days
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const { data: logs7d } = await supabase
+    const { data: logs7d } = await ctx.supaAdmin
       .from('quickbooks_sync_log')
       .select('status')
       .eq('business_id', ctx.businessId)
@@ -85,7 +78,7 @@ serve(async (req) => {
       : 0;
 
     // Get pending conflicts
-    const { data: conflicts } = await supabase
+    const { data: conflicts } = await ctx.supaAdmin
       .from('quickbooks_conflict_resolutions')
       .select('id')
       .eq('business_id', ctx.businessId)

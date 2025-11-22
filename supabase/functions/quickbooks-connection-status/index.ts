@@ -13,19 +13,12 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { persistSession: false } }
-    );
-
-    const authHeader = req.headers.get('Authorization');
-    const ctx = await requireCtx(supabase, authHeader);
+    const ctx = await requireCtx(req);
 
     console.log('[QB Connection Status] Checking for business:', ctx.businessId);
 
     // Check if connection exists
-    const { data: connection, error } = await supabase
+    const { data: connection, error } = await ctx.supaAdmin
       .from('quickbooks_connections')
       .select('*')
       .eq('business_id', ctx.businessId)

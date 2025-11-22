@@ -13,20 +13,13 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { persistSession: false } }
-    );
-
-    const authHeader = req.headers.get('Authorization');
-    const ctx = await requireCtx(supabase, authHeader);
+    const ctx = await requireCtx(req);
     const { customerId, jobId } = await req.json();
 
     console.log('[Google Drive Create Folders] Creating structure for customer:', customerId);
 
     // Get connection
-    const { data: connection } = await supabase
+    const { data: connection } = await ctx.supaAdmin
       .from('google_drive_connections')
       .select('*')
       .eq('business_id', ctx.businessId)
@@ -38,7 +31,7 @@ serve(async (req) => {
     }
 
     // Get customer info
-    const { data: customer } = await supabase
+    const { data: customer } = await ctx.supaAdmin
       .from('customers')
       .select('name')
       .eq('id', customerId)
