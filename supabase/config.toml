@@ -69,6 +69,9 @@ verify_jwt = false
 [functions.voip-webhook-handler]
 verify_jwt = false
 
+[functions.voip-phone-numbers-list]
+verify_jwt = false
+
 [functions.roadmap-features-crud]
 verify_jwt = false
 
