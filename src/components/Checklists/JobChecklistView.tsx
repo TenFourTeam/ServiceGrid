@@ -149,7 +149,7 @@ export function JobChecklistView({ jobId, onGenerateFromPhoto }: JobChecklistVie
                   <SelectContent>
                     <SelectItem value="unassigned">Unassigned</SelectItem>
                     {members?.map(member => (
-                      <SelectItem key={member.id} value={member.id}>
+                      <SelectItem key={member.id} value={member.user_id}>
                         {member.name || member.email}
                       </SelectItem>
                     ))}
