@@ -211,3 +211,42 @@ export function useCompleteChecklistItem() {
     },
   });
 }
+
+export function useAddChecklistItem() {
+  const authApi = useAuthApi();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: {
+      checklistId: string;
+      title: string;
+      description?: string;
+      category?: string;
+      required_photo_count?: number;
+      jobId: string;
+    }) => {
+      const { data, error } = await authApi.invoke(
+        `checklists-crud/${params.checklistId}/items`,
+        {
+          method: 'POST',
+          body: {
+            title: params.title,
+            description: params.description,
+            category: params.category,
+            required_photo_count: params.required_photo_count,
+          },
+        }
+      );
+
+      if (error) throw new Error(error.message || 'Failed to add task');
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['job-checklist', variables.jobId] });
+      toast.success('Task added successfully!');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+}

@@ -96,8 +96,55 @@ Deno.serve(async (req) => {
       throw new Error('Missing jobId parameter');
     }
 
-    // POST - Create checklist from template or blank
+    // POST - Create checklist from template or blank OR Add item to existing checklist
     if (method === 'POST') {
+      // Add item to checklist: POST /checklists-crud/:checklistId/items
+      if (checklistId && pathParts.includes('items')) {
+        const { title, description, category, required_photo_count } = await req.json();
+        
+        // Get current max position
+        const { data: existingItems } = await supabase
+          .from('sg_checklist_items')
+          .select('position')
+          .eq('checklist_id', checklistId)
+          .order('position', { ascending: false })
+          .limit(1);
+        
+        const nextPosition = existingItems && existingItems.length > 0 
+          ? existingItems[0].position + 1 
+          : 0;
+        
+        // Insert new item
+        const { data: newItem, error: itemError } = await supabase
+          .from('sg_checklist_items')
+          .insert({
+            checklist_id: checklistId,
+            title,
+            description,
+            category,
+            required_photo_count: required_photo_count || 0,
+            position: nextPosition,
+            is_completed: false,
+          })
+          .select()
+          .single();
+        
+        if (itemError) throw itemError;
+        
+        // Log event
+        await supabase.from('sg_checklist_events').insert({
+          checklist_id: checklistId,
+          event_type: 'item_added',
+          user_id: ctx.userId,
+          metadata: { item_id: newItem.id, title }
+        });
+        
+        console.log('[checklists-crud] Added item to checklist:', checklistId);
+        return new Response(JSON.stringify({ item: newItem }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
       const { jobId, businessId, templateId, title, assignedTo } = await req.json();
       
       // Create checklist
