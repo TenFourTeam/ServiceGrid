@@ -63,7 +63,7 @@ function decodePolyline(encoded: string): Array<{ lat: number; lng: number }> {
   return poly;
 }
 
-// Route polyline component
+// Route polyline component with glow effect and directional arrows
 function RoutePolyline({ encodedPolyline }: { encodedPolyline: string }) {
   const map = useMap();
 
@@ -71,17 +71,66 @@ function RoutePolyline({ encodedPolyline }: { encodedPolyline: string }) {
     if (!map || !encodedPolyline) return;
 
     const path = decodePolyline(encodedPolyline);
-    const polyline = new google.maps.Polyline({
+    
+    // Get stroke widths based on zoom level
+    const getStrokeWidth = (zoom: number) => {
+      if (zoom < 10) return { glow: 10, main: 6 };
+      if (zoom <= 14) return { glow: 8, main: 5 };
+      return { glow: 6, main: 4 };
+    };
+    
+    const initialZoom = map.getZoom() || 12;
+    const { glow: glowWidth, main: mainWidth } = getStrokeWidth(initialZoom);
+
+    // Directional arrow symbol
+    const arrowSymbol: google.maps.Symbol = {
+      path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+      scale: 3,
+      strokeColor: '#3B82F6',
+      strokeWeight: 2,
+      fillColor: '#3B82F6',
+      fillOpacity: 1,
+    };
+
+    // Glow effect - white layer underneath for visibility
+    const glowPolyline = new google.maps.Polyline({
+      path,
+      geodesic: true,
+      strokeColor: '#FFFFFF',
+      strokeOpacity: 0.4,
+      strokeWeight: glowWidth,
+      map,
+      zIndex: 999,
+    });
+
+    // Main blue route with directional arrows
+    const mainPolyline = new google.maps.Polyline({
       path,
       geodesic: true,
       strokeColor: '#3B82F6',
-      strokeOpacity: 0.8,
-      strokeWeight: 4,
+      strokeOpacity: 0.9,
+      strokeWeight: mainWidth,
       map,
+      zIndex: 1000,
+      icons: [{
+        icon: arrowSymbol,
+        offset: '0',
+        repeat: '100px'
+      }],
+    });
+
+    // Dynamically adjust stroke width on zoom change
+    const zoomListener = map.addListener('zoom_changed', () => {
+      const zoom = map.getZoom() || 12;
+      const { glow, main } = getStrokeWidth(zoom);
+      glowPolyline.setOptions({ strokeWeight: glow });
+      mainPolyline.setOptions({ strokeWeight: main });
     });
 
     return () => {
-      polyline.setMap(null);
+      google.maps.event.removeListener(zoomListener);
+      glowPolyline.setMap(null);
+      mainPolyline.setMap(null);
     };
   }, [map, encodedPolyline]);
 
