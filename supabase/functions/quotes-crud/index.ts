@@ -428,17 +428,7 @@ Deno.serve(async (req) => {
       const urlAction = url.searchParams.get('action');
       
       if (urlAction === 'send-email') {
-        let body;
-        try {
-          body = await req.json();
-          if (!body) {
-            throw new Error('Request body is empty');
-          }
-        } catch (jsonError) {
-          console.error('[quotes-crud] JSON parsing error:', jsonError);
-          return json({ error: 'Invalid JSON in request body' }, { status: 400 });
-        }
-
+        // Body was already parsed at the start of the PATCH handler
         const { quoteId, to, subject, message } = body;
 
         // 1. Fetch quote with full details
