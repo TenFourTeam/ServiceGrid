@@ -256,19 +256,20 @@ export function WorkOrdersMapView({
             <AdvancedMarker
               key={job.id}
               position={coords}
-              onClick={() => {
-                if (isRoutePlanningMode) {
-                  toggleJobSelection(job.id);
-                } else {
-                  setSelectedJob(job);
-                  if (onJobClick) onJobClick(job);
-                }
-              }}
             >
               <JobMarker 
                 job={job} 
                 isSelected={selectedJob?.id === job.id}
                 isMultiSelected={selectedJobIds.has(job.id)}
+                onClick={() => {
+                  console.log('[WorkOrdersMapView] Marker clicked:', { jobId: job.id, isRoutePlanningMode });
+                  if (isRoutePlanningMode) {
+                    toggleJobSelection(job.id);
+                  } else {
+                    setSelectedJob(job);
+                    if (onJobClick) onJobClick(job);
+                  }
+                }}
               />
             </AdvancedMarker>
           ))}

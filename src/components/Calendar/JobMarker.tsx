@@ -9,13 +9,14 @@ interface JobMarkerProps {
   selectedMemberId?: string | null;
   isSelected?: boolean;
   isMultiSelected?: boolean;
+  onClick?: () => void;
 }
 
 /**
  * Custom map marker for jobs
  * Color-coded by status, priority, and team member
  */
-export function JobMarker({ job, selectedMemberId, isSelected = false, isMultiSelected = false }: JobMarkerProps) {
+export function JobMarker({ job, selectedMemberId, isSelected = false, isMultiSelected = false, onClick }: JobMarkerProps) {
   // Determine marker color based on priority and status
   const getMarkerColor = () => {
     // Urgent jobs (high priority)
@@ -42,13 +43,15 @@ export function JobMarker({ job, selectedMemberId, isSelected = false, isMultiSe
 
   return (
     <div 
-      className="relative"
+      className="relative cursor-pointer"
       title={getJobDisplayName(job)}
+      onClick={onClick}
+      style={{ pointerEvents: 'auto' }}
     >
       {/* Selection ring */}
       {isSelected && (
         <div 
-          className="absolute inset-0 rounded-full animate-pulse"
+          className="absolute inset-0 rounded-full animate-pulse pointer-events-none"
           style={{ 
             backgroundColor: markerColor, 
             opacity: 0.3,
@@ -62,7 +65,7 @@ export function JobMarker({ job, selectedMemberId, isSelected = false, isMultiSe
 
       {isPulsing && (
         <div 
-          className="absolute inset-0 rounded-full animate-ping"
+          className="absolute inset-0 rounded-full animate-ping pointer-events-none"
           style={{ backgroundColor: markerColor, opacity: 0.4 }}
         />
       )}
