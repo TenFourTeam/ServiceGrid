@@ -13,7 +13,18 @@ Deno.serve(async (req) => {
 
     const url = new URL(req.url);
     const method = req.method;
-    const checklistId = url.pathname.split('/').pop();
+    const pathParts = url.pathname.split('/').filter(Boolean);
+    
+    // Extract checklistId correctly based on path structure
+    // Paths: /checklists-crud/:checklistId or /checklists-crud/:checklistId/action
+    let checklistId = null;
+    if (pathParts.length >= 2 && pathParts[0] === 'checklists-crud') {
+      // Get the second segment if it's not 'items' and looks like a UUID
+      const secondSegment = pathParts[1];
+      if (secondSegment && secondSegment !== 'items' && secondSegment.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+        checklistId = secondSegment;
+      }
+    }
 
     // GET - List or fetch single checklist
     if (method === 'GET') {
@@ -165,8 +176,6 @@ Deno.serve(async (req) => {
 
     // PATCH - Assign, approve, or reject checklist
     if (method === 'PATCH') {
-      const pathParts = url.pathname.split('/');
-      
       // Approve checklist: PATCH /checklists-crud/:checklistId/approve
       if (pathParts.includes('approve') && checklistId && checklistId !== 'checklists-crud') {
         const { error } = await supabase
