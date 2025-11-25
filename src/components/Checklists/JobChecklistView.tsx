@@ -136,10 +136,10 @@ export function JobChecklistView({ jobId, onGenerateFromPhoto }: JobChecklistVie
               <div className="flex items-center gap-3">
                 {/* Assign Checklist */}
                 <Select
-                  value={checklist.assigned_to || ''}
+                  value={checklist.assigned_to || 'unassigned'}
                   onValueChange={(userId) => assignChecklist.mutate({ 
                     checklistId: checklist.id, 
-                    assignedTo: userId || null 
+                    assignedTo: userId === 'unassigned' ? null : userId 
                   })}
                 >
                   <SelectTrigger className="w-[200px]">
@@ -147,7 +147,7 @@ export function JobChecklistView({ jobId, onGenerateFromPhoto }: JobChecklistVie
                     <SelectValue placeholder="Assign to..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Unassigned</SelectItem>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
                     {members?.map(member => (
                       <SelectItem key={member.id} value={member.id}>
                         {member.name || member.email}
