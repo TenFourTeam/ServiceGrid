@@ -203,11 +203,57 @@ export function useCompleteChecklistItem() {
       
       return data;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['job-checklist', variables.jobId] });
+    onMutate: async (params) => {
+      // Cancel outgoing queries
+      await queryClient.cancelQueries({ queryKey: ['job-checklist', params.jobId] });
+      
+      // Snapshot previous state
+      const previous = queryClient.getQueryData(['job-checklist', params.jobId]);
+      
+      // Optimistically update the cache
+      queryClient.setQueryData(['job-checklist', params.jobId], (old: any) => {
+        if (!old) return old;
+        
+        // Update the specific item
+        const updatedItems = old.items?.map((item: ChecklistItem) => 
+          item.id === params.itemId 
+            ? { 
+                ...item, 
+                is_completed: params.isCompleted,
+                completed_at: params.isCompleted ? new Date().toISOString() : null 
+              }
+            : item
+        );
+        
+        // Recalculate progress
+        const completedCount = updatedItems?.filter((item: ChecklistItem) => item.is_completed).length || 0;
+        const totalCount = updatedItems?.length || 0;
+        const completionPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+        
+        return {
+          ...old,
+          items: updatedItems,
+          progress: {
+            ...old.progress,
+            completed_count: completedCount,
+            completion_percent: completionPercent,
+            is_complete: completionPercent === 100
+          }
+        };
+      });
+      
+      return { previous };
     },
-    onError: (error: Error) => {
+    onError: (error: Error, variables, context: any) => {
+      // Rollback on error
+      if (context?.previous) {
+        queryClient.setQueryData(['job-checklist', variables.jobId], context.previous);
+      }
       toast.error(error.message);
+    },
+    onSettled: (_, __, variables) => {
+      // Always refetch to sync with server
+      queryClient.invalidateQueries({ queryKey: ['job-checklist', variables.jobId] });
     },
   });
 }

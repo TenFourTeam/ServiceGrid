@@ -82,8 +82,8 @@ export function ChecklistItem({ item, jobId }: ChecklistItemProps) {
 
   return (
     <Card className={cn(
-      "transition-all",
-      item.is_completed && "opacity-75 bg-muted/50"
+      "transition-all duration-300 ease-out",
+      item.is_completed && "opacity-75 bg-muted/50 scale-[0.98]"
     )}>
       <div className="p-4">
         <div className="flex items-start gap-3">
@@ -99,7 +99,7 @@ export function ChecklistItem({ item, jobId }: ChecklistItemProps) {
           <div className="flex-1 space-y-2">
             <div>
               <h4 className={cn(
-                "font-medium",
+                "font-medium transition-all duration-300",
                 item.is_completed && "line-through text-muted-foreground"
               )}>
                 {item.title}
