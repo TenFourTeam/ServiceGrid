@@ -456,6 +456,7 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
             )}
 
             <Map
+              mapId="calendar-route-map"
               defaultCenter={mapCenter}
               defaultZoom={mapZoom}
               gestureHandling="greedy"
@@ -619,6 +620,7 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
               )}
 
               <Map
+                mapId="calendar-route-map"
                 defaultCenter={mapCenter}
                 defaultZoom={mapZoom}
                 gestureHandling="greedy"
