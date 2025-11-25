@@ -271,17 +271,20 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
 
   // Calculate waypoints for route directions
   const routeWaypoints = useMemo(() => {
-    if (!appliedRoute || appliedRoute.length < 2) return [];
+    if (!appliedRoute || appliedRoute.length < 2 || !coordinates) return [];
     
     return appliedRoute
-      .filter(job => job.latitude && job.longitude && job.address)
-      .map(job => ({
-        lat: job.latitude!,
-        lng: job.longitude!,
-        address: job.address!,
-        jobId: job.id
-      }));
-  }, [appliedRoute]);
+      .filter(job => job.address && coordinates.has(job.address))
+      .map(job => {
+        const coords = coordinates.get(job.address!);
+        return {
+          lat: coords!.lat,
+          lng: coords!.lng,
+          address: job.address!,
+          jobId: job.id
+        };
+      });
+  }, [appliedRoute, coordinates]);
 
   // Fetch route directions for the applied route
   const { data: routeDirections } = useRouteDirections(routeWaypoints, {
