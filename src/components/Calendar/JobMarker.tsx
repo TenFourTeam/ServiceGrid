@@ -9,6 +9,7 @@ interface JobMarkerProps {
   selectedMemberId?: string | null;
   isSelected?: boolean;
   isMultiSelected?: boolean;
+  routeOrder?: number;
   onClick?: () => void;
 }
 
@@ -16,7 +17,7 @@ interface JobMarkerProps {
  * Custom map marker for jobs
  * Color-coded by status, priority, and team member
  */
-export function JobMarker({ job, selectedMemberId, isSelected = false, isMultiSelected = false, onClick }: JobMarkerProps) {
+export function JobMarker({ job, selectedMemberId, isSelected = false, isMultiSelected = false, routeOrder, onClick }: JobMarkerProps) {
   // Determine marker color based on priority and status
   const getMarkerColor = () => {
     // Urgent jobs (high priority)
@@ -88,8 +89,16 @@ export function JobMarker({ job, selectedMemberId, isSelected = false, isMultiSe
         </div>
       )}
 
-      {/* Job number badge */}
-      {job.priority && (
+      {/* Route order badge - takes priority over job priority */}
+      {routeOrder ? (
+        <div
+          className={`absolute -top-1 -right-1 rounded-full bg-primary text-primary-foreground border-2 border-background flex items-center justify-center text-xs font-bold shadow-lg ${
+            isSelected ? 'w-7 h-7' : 'w-6 h-6'
+          }`}
+        >
+          {routeOrder}
+        </div>
+      ) : job.priority ? (
         <div
           className={`absolute -top-1 -right-1 rounded-full bg-white border-2 flex items-center justify-center text-xs font-bold ${
             isSelected ? 'w-6 h-6' : 'w-5 h-5'
@@ -98,7 +107,7 @@ export function JobMarker({ job, selectedMemberId, isSelected = false, isMultiSe
         >
           {job.priority}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
