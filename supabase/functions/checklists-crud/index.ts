@@ -99,8 +99,16 @@ Deno.serve(async (req) => {
     // POST - Create checklist from template or blank OR Add item to existing checklist
     if (method === 'POST') {
       // Add item to checklist: POST /checklists-crud/:checklistId/items
-      if (checklistId && pathParts.includes('items')) {
+      if (pathParts.includes('items')) {
+        if (!checklistId) {
+          throw new Error('Checklist ID is required to add items');
+        }
+        
         const { title, description, category, required_photo_count } = await req.json();
+        
+        if (!title) {
+          throw new Error('Task title is required');
+        }
         
         // Get current max position
         const { data: existingItems } = await supabase
@@ -145,7 +153,12 @@ Deno.serve(async (req) => {
         });
       }
       
+      // Regular checklist creation
       const { jobId, businessId, templateId, title, assignedTo } = await req.json();
+      
+      if (!jobId) {
+        throw new Error('jobId is required to create a checklist');
+      }
       
       // Create checklist
       const { data: checklist, error: checklistError } = await supabase
