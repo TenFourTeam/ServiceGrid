@@ -181,18 +181,9 @@ export function createAuthEdgeApi(getToken: (options?: { template?: string }) =>
  * Get default success message based on HTTP method
  */
 function getDefaultSuccessMessage(method: string): string | false {
-  switch (method.toUpperCase()) {
-    case 'POST':
-      return 'Created successfully';
-    case 'PUT':
-    case 'PATCH':
-      return 'Updated successfully';
-    case 'DELETE':
-      return 'Deleted successfully';
-    case 'GET':
-    default:
-      return false; // No success toast for GET requests by default
-  }
+  // Remove automatic success toasts - let callers handle their own
+  // This prevents duplicate toasts when hooks also have onSuccess handlers
+  return false;
 }
 
 // Declare global Clerk types for TypeScript
