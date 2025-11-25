@@ -66,6 +66,17 @@ function MapContent({
         <AdvancedMarker
           key={`${job.id}-${coords.lat}-${coords.lng}`}
           position={coords}
+          onClick={() => {
+            console.log('[RouteMapView] AdvancedMarker clicked:', { jobId: job.id, isMultiSelectMode });
+            if (isMultiSelectMode) {
+              onToggleSelection(job.id);
+            } else {
+              startTransition(() => {
+                onMarkerClick(job, index);
+              });
+              if (onJobClick) onJobClick(job);
+            }
+          }}
         >
           <JobMarker 
             job={job} 
@@ -73,7 +84,7 @@ function MapContent({
             isSelected={job.id === selectedJobId}
             isMultiSelected={selectedJobIds.has(job.id)}
             onClick={() => {
-              console.log('[RouteMapView] Marker clicked:', { jobId: job.id, isMultiSelectMode });
+              console.log('[RouteMapView] JobMarker clicked (fallback):', { jobId: job.id, isMultiSelectMode });
               if (isMultiSelectMode) {
                 onToggleSelection(job.id);
               } else {
