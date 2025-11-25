@@ -192,32 +192,32 @@ export default function Team() {
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange}>
-          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7 gap-1">
-            <TabsTrigger value="members" className="flex items-center gap-2">
+          <TabsList className="flex w-full overflow-x-auto scrollbar-hide gap-1">
+            <TabsTrigger value="members" className="flex items-center gap-2 flex-shrink-0">
               <Users className="h-4 w-4" />
               <span className="hidden sm:inline">{t('team.tabs.members', 'Members')}</span>
             </TabsTrigger>
-            <TabsTrigger value="availability" className="flex items-center gap-2">
+            <TabsTrigger value="availability" className="flex items-center gap-2 flex-shrink-0">
               <Clock className="h-4 w-4" />
               <span className="hidden sm:inline">{t('team.tabs.availability', 'Availability')}</span>
             </TabsTrigger>
-            <TabsTrigger value="timeoff" className="flex items-center gap-2">
+            <TabsTrigger value="timeoff" className="flex items-center gap-2 flex-shrink-0">
               <Calendar className="h-4 w-4" />
               <span className="hidden sm:inline">{t('team.tabs.timeOff', 'Time Off')}</span>
             </TabsTrigger>
-            <TabsTrigger value="timetracking" className="flex items-center gap-2">
+            <TabsTrigger value="timetracking" className="flex items-center gap-2 flex-shrink-0">
               <Clock className="h-4 w-4" />
               <span className="hidden sm:inline">Time Tracking</span>
             </TabsTrigger>
-            <TabsTrigger value="recurring" className="flex items-center gap-2">
+            <TabsTrigger value="recurring" className="flex items-center gap-2 flex-shrink-0">
               <Repeat className="h-4 w-4" />
               <span className="hidden sm:inline">{t('team.tabs.recurring', 'Recurring Jobs')}</span>
             </TabsTrigger>
-            <TabsTrigger value="inventory" className="flex items-center gap-2">
+            <TabsTrigger value="inventory" className="flex items-center gap-2 flex-shrink-0">
               <Package className="h-4 w-4" />
               <span className="hidden sm:inline">{t('team.tabs.inventory', 'Inventory')}</span>
             </TabsTrigger>
-            <TabsTrigger value="conversations" className="flex items-center gap-2">
+            <TabsTrigger value="conversations" className="flex items-center gap-2 flex-shrink-0">
               <MessageSquare className="h-4 w-4" />
               <span className="hidden sm:inline">Chat</span>
               {unreadCount > 0 && (
@@ -226,7 +226,7 @@ export default function Team() {
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="mytasks" className="flex items-center gap-2">
+            <TabsTrigger value="mytasks" className="flex items-center gap-2 flex-shrink-0">
               <CheckSquare className="h-4 w-4" />
               <span className="hidden sm:inline">My Tasks</span>
               {myTasksCount > 0 && (
