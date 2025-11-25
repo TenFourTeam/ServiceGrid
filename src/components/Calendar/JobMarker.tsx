@@ -10,6 +10,8 @@ interface JobMarkerProps {
   isSelected?: boolean;
   isMultiSelected?: boolean;
   routeOrder?: number;
+  eta?: string;
+  isRouteMode?: boolean;
   onClick?: () => void;
 }
 
@@ -17,7 +19,7 @@ interface JobMarkerProps {
  * Custom map marker for jobs
  * Color-coded by status, priority, and team member
  */
-export function JobMarker({ job, selectedMemberId, isSelected = false, isMultiSelected = false, routeOrder, onClick }: JobMarkerProps) {
+export function JobMarker({ job, selectedMemberId, isSelected = false, isMultiSelected = false, routeOrder, eta, isRouteMode = false, onClick }: JobMarkerProps) {
   // Determine marker color based on priority and status
   const getMarkerColor = () => {
     // Urgent jobs (high priority)
@@ -42,6 +44,15 @@ export function JobMarker({ job, selectedMemberId, isSelected = false, isMultiSe
   const markerColor = getMarkerColor();
   const isPulsing = job.status === 'In Progress';
 
+  // Dynamic sizing based on route mode
+  const markerSize = isRouteMode 
+    ? 'w-8 h-8' 
+    : (isSelected ? 'w-12 h-12' : 'w-10 h-10');
+  
+  const iconSize = isRouteMode 
+    ? 'w-4 h-4' 
+    : (isSelected ? 'w-7 h-7' : 'w-6 h-6');
+
   return (
     <div 
       className="relative cursor-pointer"
@@ -49,6 +60,16 @@ export function JobMarker({ job, selectedMemberId, isSelected = false, isMultiSe
       onClick={onClick}
       style={{ pointerEvents: 'auto' }}
     >
+      {/* ETA badge above marker */}
+      {eta && (
+        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap shadow-lg z-10">
+          {eta}
+          {routeOrder && (
+            <span className="ml-1 opacity-70">#{routeOrder}</span>
+          )}
+        </div>
+      )}
+
       {/* Selection ring */}
       {isSelected && (
         <div 
@@ -74,12 +95,13 @@ export function JobMarker({ job, selectedMemberId, isSelected = false, isMultiSe
       <div
         className={cn(
           "relative flex items-center justify-center rounded-full shadow-lg border-2 transition-all",
-          isSelected ? 'w-12 h-12 border-white border-4' : 'w-10 h-10 border-white',
+          isRouteMode && markerSize,
+          !isRouteMode && (isSelected ? 'w-12 h-12 border-white border-4' : 'w-10 h-10 border-white'),
           isMultiSelected && 'ring-4 ring-primary/50 border-primary'
         )}
         style={{ backgroundColor: markerColor }}
       >
-        <MapPin className={`text-white ${isSelected ? 'w-7 h-7' : 'w-6 h-6'}`} />
+        <MapPin className={cn('text-white', iconSize)} />
       </div>
 
       {/* Multi-select checkmark overlay */}
@@ -89,16 +111,8 @@ export function JobMarker({ job, selectedMemberId, isSelected = false, isMultiSe
         </div>
       )}
 
-      {/* Route order badge - takes priority over job priority */}
-      {routeOrder ? (
-        <div
-          className={`absolute -top-1 -right-1 rounded-full bg-primary text-primary-foreground border-2 border-background flex items-center justify-center text-xs font-bold shadow-lg ${
-            isSelected ? 'w-7 h-7' : 'w-6 h-6'
-          }`}
-        >
-          {routeOrder}
-        </div>
-      ) : job.priority ? (
+      {/* Priority badge - only show when not in route mode */}
+      {!eta && job.priority && (
         <div
           className={`absolute -top-1 -right-1 rounded-full bg-white border-2 flex items-center justify-center text-xs font-bold ${
             isSelected ? 'w-6 h-6' : 'w-5 h-5'
@@ -107,7 +121,7 @@ export function JobMarker({ job, selectedMemberId, isSelected = false, isMultiSe
         >
           {job.priority}
         </div>
-      ) : null}
+      )}
     </div>
   );
 }

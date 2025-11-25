@@ -151,7 +151,8 @@ function MapContent({
   onToggleSelection,
   mapRef,
   routePolyline,
-  appliedRoute
+  appliedRoute,
+  routeETAs
 }: {
   jobsWithCoords: Array<{ job: Job; coords: { lat: number; lng: number } }>;
   selectedJobId: string | null;
@@ -164,6 +165,7 @@ function MapContent({
   mapRef: React.MutableRefObject<google.maps.Map | null>;
   routePolyline?: string;
   appliedRoute?: Job[] | null;
+  routeETAs?: Map<string, string>;
 }) {
   const map = useMap();
 
@@ -183,6 +185,8 @@ function MapContent({
       {jobsWithCoords.map(({ job, coords }, index) => {
         const routeOrder = appliedRoute?.findIndex(j => j.id === job.id);
         const displayOrder = routeOrder !== undefined && routeOrder >= 0 ? routeOrder + 1 : undefined;
+        const eta = routeETAs?.get(job.id);
+        const isRouteMode = !!appliedRoute && appliedRoute.length > 0;
 
         return (
           <AdvancedMarker
@@ -206,6 +210,8 @@ function MapContent({
               isSelected={job.id === selectedJobId}
               isMultiSelected={selectedJobIds.has(job.id)}
               routeOrder={displayOrder}
+              eta={eta}
+              isRouteMode={isRouteMode}
               onClick={() => {
                 console.log('[RouteMapView] JobMarker clicked (fallback):', { jobId: job.id, isMultiSelectMode });
                 if (isMultiSelectMode) {
@@ -340,6 +346,35 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
     optimize: false,
     enabled: routeWaypoints.length >= 2
   });
+
+  // Calculate ETAs for each stop based on route directions
+  const routeETAs = useMemo(() => {
+    if (!appliedRoute || !routeDirections?.legs) return new globalThis.Map<string, string>();
+    
+    const etaMap = new globalThis.Map<string, string>();
+    const startTime = new globalThis.Date();
+    startTime.setHours(8, 0, 0, 0); // Default start: 8:00 AM
+    
+    let cumulativeSeconds = 0;
+    
+    appliedRoute.forEach((job, index) => {
+      // Add travel time from previous leg
+      if (index > 0 && routeDirections.legs[index - 1]) {
+        cumulativeSeconds += routeDirections.legs[index - 1].duration.value;
+      }
+      
+      const arrivalTime = new globalThis.Date(startTime.getTime() + cumulativeSeconds * 1000);
+      const timeString = arrivalTime.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+      });
+      
+      etaMap.set(job.id, timeString);
+    });
+    
+    return etaMap;
+  }, [appliedRoute, routeDirections]);
 
   // Focus on a specific job by centering map and opening info window
   const focusJob = (jobId: string) => {
@@ -844,6 +879,7 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
                   mapRef={mapRef}
                   routePolyline={routeDirections?.polyline}
                   appliedRoute={appliedRoute}
+                  routeETAs={routeETAs}
                 />
               </Map>
 
