@@ -126,7 +126,7 @@ export function TimeTrackingTab() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Users</SelectItem>
-                {membersData?.data.map((member) => (
+                {membersData?.map((member) => (
                   <SelectItem key={member.id} value={member.id}>
                     {member.full_name || member.email}
                   </SelectItem>
