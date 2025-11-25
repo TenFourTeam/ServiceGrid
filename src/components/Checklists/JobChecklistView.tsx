@@ -143,7 +143,7 @@ export function JobChecklistView({ jobId, onGenerateFromPhoto }: JobChecklistVie
                     assignedTo: userId === 'unassigned' ? null : userId 
                   })}
                 >
-                  <SelectTrigger className="w-[200px]">
+                  <SelectTrigger className="w-full sm:w-[200px]">
                     <UserCircle className="h-4 w-4 mr-2" />
                     <SelectValue placeholder="Assign to..." />
                   </SelectTrigger>

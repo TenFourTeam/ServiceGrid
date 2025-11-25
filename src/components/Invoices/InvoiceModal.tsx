@@ -684,21 +684,23 @@ export default function InvoiceModal({
         {invoice.lineItems && invoice.lineItems.length > 0 && (
           <div className="space-y-3">
             <h3 className="text-sm font-medium text-muted-foreground">Line Items</h3>
-            <div className="border rounded-md">
-              <div className="grid grid-cols-12 gap-2 p-3 border-b bg-muted/30 text-xs font-medium text-muted-foreground">
-                <div className="col-span-6">Description</div>
-                <div className="col-span-2 text-right">Qty</div>
-                <div className="col-span-2 text-right">Rate</div>
-                <div className="col-span-2 text-right">Amount</div>
-              </div>
-              {invoice.lineItems.map((item: any, index: number) => (
-                <div key={item.id || index} className="grid grid-cols-12 gap-2 p-3 text-sm border-b last:border-b-0">
-                  <div className="col-span-6">{item.name}</div>
-                  <div className="col-span-2 text-right">{item.qty}</div>
-                  <div className="col-span-2 text-right">{formatMoney(item.unitPrice)}</div>
-                  <div className="col-span-2 text-right font-medium">{formatMoney(item.lineTotal)}</div>
+            <div className="overflow-x-auto">
+              <div className="border rounded-md min-w-[600px]">
+                <div className="grid grid-cols-12 gap-2 p-3 border-b bg-muted/30 text-xs font-medium text-muted-foreground">
+                  <div className="col-span-6">Description</div>
+                  <div className="col-span-2 text-right">Qty</div>
+                  <div className="col-span-2 text-right">Rate</div>
+                  <div className="col-span-2 text-right">Amount</div>
                 </div>
-              ))}
+                {invoice.lineItems.map((item: any, index: number) => (
+                  <div key={item.id || index} className="grid grid-cols-12 gap-2 p-3 text-sm border-b last:border-b-0">
+                    <div className="col-span-6">{item.name}</div>
+                    <div className="col-span-2 text-right">{item.qty}</div>
+                    <div className="col-span-2 text-right">{formatMoney(item.unitPrice)}</div>
+                    <div className="col-span-2 text-right font-medium">{formatMoney(item.lineTotal)}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}

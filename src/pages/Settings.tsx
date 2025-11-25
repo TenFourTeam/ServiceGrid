@@ -351,12 +351,12 @@ export default function SettingsPage() {
               </CardHeader>
               <CardContent>
                 <Tabs defaultValue="connection" className="w-full">
-                  <TabsList className="grid w-full grid-cols-5 mb-4">
-                    <TabsTrigger value="connection">Connection</TabsTrigger>
-                    <TabsTrigger value="sync">Sync</TabsTrigger>
-                    <TabsTrigger value="files">Files</TabsTrigger>
-                    <TabsTrigger value="sharing">Sharing</TabsTrigger>
-                    <TabsTrigger value="history">History</TabsTrigger>
+                  <TabsList className="flex w-full overflow-x-auto scrollbar-hide gap-1 mb-4">
+                    <TabsTrigger value="connection" className="flex-shrink-0 whitespace-nowrap">Connection</TabsTrigger>
+                    <TabsTrigger value="sync" className="flex-shrink-0 whitespace-nowrap">Sync</TabsTrigger>
+                    <TabsTrigger value="files" className="flex-shrink-0 whitespace-nowrap">Files</TabsTrigger>
+                    <TabsTrigger value="sharing" className="flex-shrink-0 whitespace-nowrap">Sharing</TabsTrigger>
+                    <TabsTrigger value="history" className="flex-shrink-0 whitespace-nowrap">History</TabsTrigger>
                   </TabsList>
                   
                   <TabsContent value="connection" className="space-y-4">

@@ -279,7 +279,7 @@ export function WorkOrdersMapView({
 
           {/* Multi-select toolbar */}
           {isRoutePlanningMode && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg border p-3">
+            <div className="absolute top-4 left-4 right-4 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto z-10 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg border p-3">
               <div className="flex items-center gap-3">
                 <span className="text-sm font-medium">
                   {selectedJobIds.size} selected
@@ -308,7 +308,7 @@ export function WorkOrdersMapView({
 
           {/* Starting location selector */}
           {isRoutePlanningMode && selectedJobIds.size > 0 && (
-            <div className="absolute top-20 left-4 z-10 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg border p-3 max-w-sm">
+            <div className="absolute top-20 left-4 right-4 sm:right-auto z-10 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg border p-3 sm:max-w-sm">
               <label className="text-sm font-medium mb-2 block">
                 Starting Location (Optional)
               </label>
