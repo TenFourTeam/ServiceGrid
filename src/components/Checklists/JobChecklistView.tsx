@@ -18,6 +18,7 @@ import { ChecklistActivityFeed } from './ChecklistActivityFeed';
 import { TemplatePickerDialog } from './TemplatePickerDialog';
 import { DraftChecklistBanner } from './DraftChecklistBanner';
 import { ChecklistApprovalDialog } from './ChecklistApprovalDialog';
+import { AddTaskDialog } from './AddTaskDialog';
 import { useChecklistAssignment } from '@/hooks/useChecklistAssignment';
 import { useBusinessMembersData } from '@/hooks/useBusinessMembers';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
@@ -196,6 +197,15 @@ export function JobChecklistView({ jobId, onGenerateFromPhoto }: JobChecklistVie
 
           <TabsContent value="items" className="mt-6">
             <div className="space-y-6">
+              {canManage && (
+                <div className="flex justify-end">
+                  <AddTaskDialog
+                    checklistId={checklist.id}
+                    jobId={jobId}
+                    existingCategories={Object.keys(itemsByCategory)}
+                  />
+                </div>
+              )}
               {Object.entries(itemsByCategory).map(([category, categoryItems]) => {
                 const typedItems = categoryItems as ChecklistItem[];
                 return (
