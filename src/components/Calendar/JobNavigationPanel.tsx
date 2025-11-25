@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Clock, MapPin, Search, X, ChevronRight, ChevronLeft, List } from 'lucide-react';
+import { Clock, MapPin, Search, X, ChevronRight, ChevronLeft, List, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { getJobDisplayName } from '@/utils/jobDisplay';
@@ -16,6 +16,9 @@ interface JobNavigationPanelProps {
   onJobSelect: (jobId: string, index: number) => void;
   isCollapsed: boolean;
   onCollapsedChange: (collapsed: boolean) => void;
+  isMultiSelectMode?: boolean;
+  selectedJobIds?: Set<string>;
+  onToggleSelection?: (jobId: string) => void;
 }
 
 /**
@@ -29,7 +32,10 @@ export function JobNavigationPanel({
   currentJobIndex,
   onJobSelect,
   isCollapsed,
-  onCollapsedChange
+  onCollapsedChange,
+  isMultiSelectMode = false,
+  selectedJobIds = new Set(),
+  onToggleSelection
 }: JobNavigationPanelProps) {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -141,24 +147,39 @@ export function JobNavigationPanel({
           ) : (
             filteredJobs.map(({ job }, index) => {
               const isSelected = job.id === selectedJobId;
+              const isMultiSelected = selectedJobIds.has(job.id);
               const actualIndex = jobs.findIndex(j => j.job.id === job.id);
               
               return (
                 <button
                   key={job.id}
-                  onClick={() => onJobSelect(job.id, actualIndex)}
+                  onClick={() => {
+                    if (isMultiSelectMode && onToggleSelection) {
+                      onToggleSelection(job.id);
+                    } else {
+                      onJobSelect(job.id, actualIndex);
+                    }
+                  }}
                   className={cn(
-                    "w-full text-left p-3 rounded-lg border transition-all",
+                    "w-full text-left p-3 rounded-lg border transition-all relative",
                     "hover:shadow-md hover:border-primary/30",
-                    isSelected 
-                      ? "border-primary bg-primary/5 shadow-sm" 
-                      : "border-border bg-card"
+                    isMultiSelected
+                      ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                      : isSelected 
+                        ? "border-primary bg-primary/5 shadow-sm" 
+                        : "border-border bg-card"
                   )}
                 >
+                  {isMultiSelected && (
+                    <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
+                      <Check className="h-3 w-3" />
+                    </div>
+                  )}
+                  
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <h4 className={cn(
                       "font-medium text-sm line-clamp-1",
-                      isSelected && "text-primary"
+                      isMultiSelected ? "text-primary" : isSelected && "text-primary"
                     )}>
                       {getJobDisplayName(job)}
                     </h4>

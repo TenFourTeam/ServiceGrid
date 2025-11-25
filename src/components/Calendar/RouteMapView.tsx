@@ -247,7 +247,7 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
       .filter(({ job }) => selectedJobIds.has(job.id))
       .map(({ job }) => job);
     
-    if (selectedJobs.length < 2) return;
+    if (selectedJobs.length < 1) return;
     
     optimizeRoute({
       businessId: selectedJobs[0].businessId,
@@ -393,6 +393,9 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
                   onJobSelect={handleJobSelect}
                   isCollapsed={false}
                   onCollapsedChange={() => {}}
+                  isMultiSelectMode={isMultiSelectMode}
+                  selectedJobIds={selectedJobIds}
+                  onToggleSelection={toggleJobSelection}
                 />
               </div>
             </CollapsibleContent>
@@ -425,9 +428,9 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
                   
                   <Button
                     variant="primary"
-                    size="sm"
-                    disabled={selectedJobIds.size < 2 || isOptimizing}
-                    onClick={handleOptimizeRoute}
+                  size="sm"
+                  disabled={selectedJobIds.size < 1 || isOptimizing}
+                  onClick={handleOptimizeRoute}
                   >
                     {isOptimizing ? (
                       <>
@@ -546,14 +549,17 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
             maxSize={isNavigationPanelCollapsed ? 5 : 35}
             collapsible={false}
           >
-            <JobNavigationPanel
-              jobs={jobsWithCoords}
-              selectedJobId={selectedJobId}
-              currentJobIndex={currentJobIndex}
-              onJobSelect={handleJobSelect}
-              isCollapsed={isNavigationPanelCollapsed}
-              onCollapsedChange={setIsNavigationPanelCollapsed}
-            />
+          <JobNavigationPanel
+            jobs={jobsWithCoords}
+            selectedJobId={selectedJobId}
+            currentJobIndex={currentJobIndex}
+            onJobSelect={handleJobSelect}
+            isCollapsed={isNavigationPanelCollapsed}
+            onCollapsedChange={setIsNavigationPanelCollapsed}
+            isMultiSelectMode={isMultiSelectMode}
+            selectedJobIds={selectedJobIds}
+            onToggleSelection={toggleJobSelection}
+          />
           </ResizablePanel>
 
           {/* Resize Handle */}
@@ -589,9 +595,9 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
                     
                     <Button
                       variant="primary"
-                      size="sm"
-                      disabled={selectedJobIds.size < 2 || isOptimizing}
-                      onClick={handleOptimizeRoute}
+                size="sm"
+                disabled={selectedJobIds.size < 1 || isOptimizing}
+                onClick={handleOptimizeRoute}
                     >
                       {isOptimizing ? (
                         <>
