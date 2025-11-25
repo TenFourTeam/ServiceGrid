@@ -8,7 +8,7 @@ import { formatDateTime, formatMoney } from "@/utils/format";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { useAuthApi } from '@/hooks/useAuthApi';
 import { toast } from "sonner";
-import { Sparkles } from "lucide-react";
+import { Sparkles, CheckSquare, Image, Eye, StickyNote, Brain } from "lucide-react";
 import ReschedulePopover from "@/components/WorkOrders/ReschedulePopover";
 import type { Job, Quote, JobsCacheData, InvoicesCacheData } from "@/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle as ModalTitle } from "@/components/ui/dialog";
@@ -782,17 +782,30 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
           </div>
           
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="checklist">Checklist</TabsTrigger>
-              <TabsTrigger value="media">Media</TabsTrigger>
-              <TabsTrigger value="visualizations">
-                Visualizations
+            <TabsList className="flex w-full overflow-x-auto scrollbar-hide gap-1">
+              <TabsTrigger value="checklist" className="flex items-center gap-2 flex-shrink-0">
+                <CheckSquare className="h-4 w-4" />
+                <span className="hidden sm:inline">Checklist</span>
+              </TabsTrigger>
+              <TabsTrigger value="media" className="flex items-center gap-2 flex-shrink-0">
+                <Image className="h-4 w-4" />
+                <span className="hidden sm:inline">Media</span>
+              </TabsTrigger>
+              <TabsTrigger value="visualizations" className="flex items-center gap-2 flex-shrink-0">
+                <Eye className="h-4 w-4" />
+                <span className="hidden sm:inline">Visualizations</span>
                 {visualizationCount > 0 && (
-                  <Badge className="ml-2" variant="secondary">{visualizationCount}</Badge>
+                  <Badge className="ml-1" variant="secondary">{visualizationCount}</Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="notes">Notes</TabsTrigger>
-              <TabsTrigger value="summary">AI Summary</TabsTrigger>
+              <TabsTrigger value="notes" className="flex items-center gap-2 flex-shrink-0">
+                <StickyNote className="h-4 w-4" />
+                <span className="hidden sm:inline">Notes</span>
+              </TabsTrigger>
+              <TabsTrigger value="summary" className="flex items-center gap-2 flex-shrink-0">
+                <Brain className="h-4 w-4" />
+                <span className="hidden sm:inline">AI Summary</span>
+              </TabsTrigger>
             </TabsList>
             
             <TabsContent value="checklist">
