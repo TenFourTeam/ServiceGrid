@@ -8,6 +8,7 @@ import { useAIScheduling, ScheduleSuggestion } from '@/hooks/useAIScheduling';
 import { Job, BusinessMember } from '@/types';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { getJobDisplayName } from '@/utils/jobDisplay';
 
 interface AIScheduleSuggestionsProps {
   unscheduledJobs: Partial<Job>[];
@@ -167,7 +168,7 @@ export function AIScheduleSuggestions({
                   <CardContent className="pt-4">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 space-y-2">
-                        <h4 className="font-medium">{job.title || 'Untitled Job'}</h4>
+                        <h4 className="font-medium">{getJobDisplayName(job)}</h4>
                         
                         <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1">

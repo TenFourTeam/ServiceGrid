@@ -36,6 +36,7 @@ import type { JobEstimate } from '@/hooks/useJobEstimation';
 import { useGoogleDriveSync } from '@/hooks/useGoogleDriveSync';
 import { useGoogleDriveConnection } from '@/hooks/useGoogleDriveConnection';
 import { Cloud } from 'lucide-react';
+import { getJobDisplayName } from '@/utils/jobDisplay';
 
 export interface InvoiceModalProps {
   open: boolean;
@@ -789,7 +790,7 @@ export default function InvoiceModal({
             {relatedJob ? (
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">{relatedJob.title || 'Work Order'}</span>
+                  <span className="text-sm font-medium">{getJobDisplayName(relatedJob)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button

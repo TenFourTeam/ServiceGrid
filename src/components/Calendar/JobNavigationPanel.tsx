@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Clock, MapPin, Search, X, ChevronRight, ChevronLeft, List } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { getJobDisplayName } from '@/utils/jobDisplay';
 
 interface JobNavigationPanelProps {
   jobs: Array<{ job: Job; coords: { lat: number; lng: number } }>;
@@ -159,7 +160,7 @@ export function JobNavigationPanel({
                       "font-medium text-sm line-clamp-1",
                       isSelected && "text-primary"
                     )}>
-                      {job.title || 'Untitled Job'}
+                      {getJobDisplayName(job)}
                     </h4>
                     <Badge className={cn("text-xs", getStatusColor(job.status))}>
                       {job.status}

@@ -11,6 +11,7 @@ import { useTravelTimes } from "@/hooks/useTravelTimes";
 import type { Job } from "@/types";
 import { getJobStatusColors } from "@/utils/jobStatus";
 import { calculateJobColumns } from "@/utils/jobOverlap";
+import { getJobDisplayName } from "@/utils/jobDisplay";
 
 export default function DayCalendar({ date, displayMode = 'scheduled', selectedMemberId }: { date: Date; displayMode?: 'scheduled' | 'clocked' | 'combined'; selectedMemberId?: string | null; }) {
   const { businessId, role } = useBusinessContext();
@@ -136,7 +137,7 @@ export default function DayCalendar({ date, displayMode = 'scheduled', selectedM
                   <span>{e ? e.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'End time'}</span>
                   {job.jobType === 'estimate' && <span className="text-xs opacity-80">(Estimate)</span>}
                 </div>
-                <div className="text-sm font-medium truncate">{job.title || 'Job'}</div>
+                <div className="text-sm font-medium truncate">{getJobDisplayName(job)}</div>
                 <div className="text-xs opacity-70 truncate">{(customersMap.get(job.customerId) ?? 'Customer') as string}</div>
                 {job.address && <div className="text-xs opacity-70">{job.address}</div>}
               </li>
@@ -159,7 +160,7 @@ export default function DayCalendar({ date, displayMode = 'scheduled', selectedM
                   <span>{clockEnd.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
                   <span className="text-xs opacity-80">(Worked)</span>
                 </div>
-                <div className="text-sm font-medium truncate">{(j as Job).title || 'Job'}</div>
+                <div className="text-sm font-medium truncate">{getJobDisplayName(j as Job)}</div>
                 <div className="text-xs text-white/70 truncate">{(customersMap.get((j as Job).customerId) ?? 'Customer') as string}</div>
                 {(j as Job).address && <div className="text-xs text-white/70">{(j as Job).address}</div>}
               </li>
