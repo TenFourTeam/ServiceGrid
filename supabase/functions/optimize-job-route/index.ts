@@ -43,10 +43,26 @@ serve(async (req) => {
 
     console.log('[optimize-job-route] Optimizing route for', jobs.length, 'jobs');
 
-    if (!jobs || jobs.length < 2) {
+    if (!jobs || jobs.length < 1) {
       return new Response(
-        JSON.stringify({ error: 'At least 2 jobs required for route optimization' }),
+        JSON.stringify({ error: 'At least 1 job required for route optimization' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Handle single job case - no AI needed
+    if (jobs.length === 1) {
+      console.log('[optimize-job-route] Single job - no optimization needed');
+      return new Response(
+        JSON.stringify({
+          optimizedJobs: jobs,
+          reasoning: 'Single job route - no optimization needed.',
+          estimatedTimeSaved: 0,
+          estimatedTravelTime: 0,
+          suggestions: ['Add more jobs to optimize your route.'],
+          originalOrder: [0]
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
