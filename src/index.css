@@ -267,6 +267,15 @@ All colors MUST be HSL.
 }
 
 @layer utilities {
+  /* Hide scrollbar while maintaining functionality */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
   /* AI Pulse Animation */
   @keyframes ai-pulse {
     0%, 100% {
