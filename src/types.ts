@@ -123,6 +123,10 @@ export interface Job {
   ownerId: ID;
   quoteId?: ID;
   customerId: ID;
+  // Customer fields for display (populated by backend)
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
   address?: string;
   title?: string;
   startsAt?: ISODate;

@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Clock, MapPin, User, X, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
+import { getJobDisplayName } from '@/utils/jobDisplay';
 
 interface JobInfoWindowProps {
   job: Job;
@@ -53,7 +54,7 @@ export function JobInfoWindow({
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1">
-              <CardTitle className="text-lg">{job.title || 'Untitled Job'}</CardTitle>
+              <CardTitle className="text-lg">{getJobDisplayName(job)}</CardTitle>
               {jobNumber && totalJobs && (
                 <p className="text-xs text-muted-foreground mt-1">
                   Job {jobNumber} of {totalJobs}

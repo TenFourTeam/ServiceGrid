@@ -17,6 +17,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useJobRouteOptimization } from '@/hooks/useJobRouteOptimization';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { getJobDisplayName } from '@/utils/jobDisplay';
 
 interface RouteMapViewProps {
   date: Date;
@@ -744,7 +745,7 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
                         {index + 1}
                       </Badge>
                       <div className="flex-1">
-                        <div className="font-medium">{job.title || 'Untitled Job'}</div>
+                        <div className="font-medium">{getJobDisplayName(job)}</div>
                         <div className="text-sm text-muted-foreground">{job.address}</div>
                       </div>
                     </div>

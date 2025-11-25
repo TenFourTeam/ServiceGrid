@@ -18,6 +18,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { invalidationHelpers, queryKeys } from '@/queries/keys';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useNavigate } from 'react-router-dom';
+import { getJobDisplayName } from '@/utils/jobDisplay';
 import { useClockInOut } from "@/hooks/useClockInOut";
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -577,7 +578,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="max-h-[85vh]">
         <DrawerHeader>
-          <DrawerTitle>{job.title || t('workOrders.modal.title')}</DrawerTitle>
+          <DrawerTitle>{getJobDisplayName(job)}</DrawerTitle>
         </DrawerHeader>
         <div className="px-4 space-y-4 overflow-y-auto">
           <div className="grid grid-cols-2 gap-3">

@@ -8,6 +8,7 @@ import { Calendar, Clock, Users, Briefcase, Download, TrendingUp, BarChart3 } fr
 import { format, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns';
 import { useBusinessMembersData } from '@/hooks/useBusinessMembers';
 import { useJobsData } from '@/hooks/useJobsData';
+import { getJobDisplayName } from '@/utils/jobDisplay';
 
 export function TimeBreakdownReport() {
   const [dateRange, setDateRange] = useState<'week' | 'month' | '30days' | 'custom'>('30days');
@@ -203,9 +204,9 @@ export function TimeBreakdownReport() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Jobs</SelectItem>
-                  {jobs?.map(job => (
+                   {jobs?.map(job => (
                     <SelectItem key={job.id} value={job.id}>
-                      {job.title || `Job at ${job.address}`}
+                      {getJobDisplayName(job)}
                     </SelectItem>
                   ))}
                 </SelectContent>

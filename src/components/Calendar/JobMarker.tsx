@@ -2,6 +2,7 @@ import { Job } from '@/types';
 import { getTeamMemberColor } from '@/utils/teamColors';
 import { MapPin, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getJobDisplayName } from '@/utils/jobDisplay';
 
 interface JobMarkerProps {
   job: Job;
@@ -42,7 +43,7 @@ export function JobMarker({ job, selectedMemberId, isSelected = false, isMultiSe
   return (
     <div 
       className="relative"
-      title={`${job.title || 'Untitled Job'}`}
+      title={getJobDisplayName(job)}
     >
       {/* Selection ring */}
       {isSelected && (

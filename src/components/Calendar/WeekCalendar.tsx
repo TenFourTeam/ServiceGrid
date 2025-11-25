@@ -21,6 +21,7 @@ import JobShowModal from '@/components/Jobs/JobShowModal';
 import { getJobStatusColors, canDragJob, canResizeJob, validateJobTiming, checkJobTimeConflict } from '@/utils/jobStatus';
 import { calculateJobColumns } from '@/utils/jobOverlap';
 import { RescheduleAssistant } from '@/components/Calendar/RescheduleAssistant';
+import { getJobDisplayName } from '@/utils/jobDisplay';
 const START_ANCHOR_HOUR = 5; // visual start at 5:00
 const TOTAL_MIN = 24 * 60;
 function dayKey(d: Date) {
@@ -426,7 +427,7 @@ function onDragStart(e: React.PointerEvent, job: Job) {
         // Show AI reschedule assistant instead of just showing error
         setRescheduleData({
           jobId: job.id,
-          jobTitle: job.title || 'Job',
+          jobTitle: getJobDisplayName(job),
           proposedStartTime: new Date(latest.startsAt),
           proposedEndTime: new Date(latest.endsAt),
           conflicts: finalConflictCheck.conflicts.map(c => ({

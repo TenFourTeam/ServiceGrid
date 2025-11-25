@@ -39,6 +39,7 @@ import { useJobLocationQuery, type RadiusFilter } from '@/hooks/useJobLocationQu
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
+import { getJobDisplayName } from '@/utils/jobDisplay';
 
 const statusColors: Record<string, string> = {
   'Scheduled': 'bg-green-100 text-green-800',
@@ -324,7 +325,7 @@ function WorkOrderRow({ job, uninvoiced, customerName, when, onOpen, onOpenJobEd
       <div className="pr-20 pb-8">
         <div className="space-y-1">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <div className="font-medium truncate">{job.title || t('jobs.form.titlePlaceholder')}</div>
+            <div className="font-medium truncate">{getJobDisplayName(job)}</div>
             <div className="text-sm text-muted-foreground">{formatMoney(job.total || 0)}</div>
             {uninvoiced && job.status==='Completed' && <Badge variant="secondary">{t('workOrders.badges.uninvoiced')}</Badge>}
             {distance !== undefined && (

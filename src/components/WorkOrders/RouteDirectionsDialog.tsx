@@ -8,6 +8,7 @@ import { useGoogleMapsApiKey } from '@/hooks/useGoogleMapsApiKey';
 import type { RouteDirections } from '@/hooks/useRouteDirections';
 import type { Job } from '@/types';
 import { useEffect, useMemo } from 'react';
+import { getJobDisplayName } from '@/utils/jobDisplay';
 
 interface RouteDirectionsDialogProps {
   open: boolean;
@@ -95,7 +96,7 @@ function RouteMarkers({ jobs }: { jobs: Job[] }) {
       const marker = new google.maps.marker.AdvancedMarkerElement({
         position: { lat: job.latitude!, lng: job.longitude! },
         map,
-        title: job.title || job.address || `Stop ${index + 1}`,
+        title: getJobDisplayName(job) || job.address || `Stop ${index + 1}`,
         content: (() => {
           const div = document.createElement('div');
           div.className = 'bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center font-bold shadow-lg';
