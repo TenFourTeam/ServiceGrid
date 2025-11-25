@@ -3,6 +3,7 @@ import { APIProvider, Map, AdvancedMarker, useMap } from '@vis.gl/react-google-m
 import { Job } from '@/types';
 import { useGeocoding } from '@/hooks/useGeocoding';
 import { useGoogleMapsApiKey } from '@/hooks/useGoogleMapsApiKey';
+import { useRouteDirections } from '@/hooks/useRouteDirections';
 import { JobMarker } from './JobMarker';
 import { JobInfoWindow } from './JobInfoWindow';
 import { JobNavigationPanel } from './JobNavigationPanel';
@@ -26,10 +27,71 @@ interface RouteMapViewProps {
   onJobClick?: (job: Job) => void;
 }
 
+// Polyline decoder
+function decodePolyline(encoded: string): Array<{ lat: number; lng: number }> {
+  const poly: Array<{ lat: number; lng: number }> = [];
+  let index = 0;
+  const len = encoded.length;
+  let lat = 0;
+  let lng = 0;
+
+  while (index < len) {
+    let b;
+    let shift = 0;
+    let result = 0;
+    do {
+      b = encoded.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    const dlat = ((result & 1) !== 0 ? ~(result >> 1) : (result >> 1));
+    lat += dlat;
+
+    shift = 0;
+    result = 0;
+    do {
+      b = encoded.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    const dlng = ((result & 1) !== 0 ? ~(result >> 1) : (result >> 1));
+    lng += dlng;
+
+    poly.push({ lat: lat / 1e5, lng: lng / 1e5 });
+  }
+
+  return poly;
+}
+
+// Route polyline component
+function RoutePolyline({ encodedPolyline }: { encodedPolyline: string }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!map || !encodedPolyline) return;
+
+    const path = decodePolyline(encodedPolyline);
+    const polyline = new google.maps.Polyline({
+      path,
+      geodesic: true,
+      strokeColor: '#3B82F6',
+      strokeOpacity: 0.8,
+      strokeWeight: 4,
+      map,
+    });
+
+    return () => {
+      polyline.setMap(null);
+    };
+  }, [map, encodedPolyline]);
+
+  return null;
+}
+
 /**
  * Internal map component that uses the map instance
  */
-function MapContent({ 
+function MapContent({
   jobsWithCoords, 
   selectedJobId,
   selectedJobIds,
@@ -38,7 +100,9 @@ function MapContent({
   onJobClick,
   onMarkerClick,
   onToggleSelection,
-  mapRef
+  mapRef,
+  routePolyline,
+  appliedRoute
 }: {
   jobsWithCoords: Array<{ job: Job; coords: { lat: number; lng: number } }>;
   selectedJobId: string | null;
@@ -49,6 +113,8 @@ function MapContent({
   onMarkerClick: (job: Job, index: number) => void;
   onToggleSelection: (jobId: string) => void;
   mapRef: React.MutableRefObject<google.maps.Map | null>;
+  routePolyline?: string;
+  appliedRoute?: Job[] | null;
 }) {
   const map = useMap();
 
@@ -62,29 +128,19 @@ function MapContent({
 
   return (
     <>
-      {jobsWithCoords.map(({ job, coords }, index) => (
-        <AdvancedMarker
-          key={`${job.id}-${coords.lat}-${coords.lng}`}
-          position={coords}
-          onClick={() => {
-            console.log('[RouteMapView] AdvancedMarker clicked:', { jobId: job.id, isMultiSelectMode });
-            if (isMultiSelectMode) {
-              onToggleSelection(job.id);
-            } else {
-              startTransition(() => {
-                onMarkerClick(job, index);
-              });
-              if (onJobClick) onJobClick(job);
-            }
-          }}
-        >
-          <JobMarker 
-            job={job} 
-            selectedMemberId={selectedMemberId}
-            isSelected={job.id === selectedJobId}
-            isMultiSelected={selectedJobIds.has(job.id)}
+      {/* Draw route polyline if available */}
+      {routePolyline && <RoutePolyline encodedPolyline={routePolyline} />}
+
+      {jobsWithCoords.map(({ job, coords }, index) => {
+        const routeOrder = appliedRoute?.findIndex(j => j.id === job.id);
+        const displayOrder = routeOrder !== undefined && routeOrder >= 0 ? routeOrder + 1 : undefined;
+
+        return (
+          <AdvancedMarker
+            key={`${job.id}-${coords.lat}-${coords.lng}`}
+            position={coords}
             onClick={() => {
-              console.log('[RouteMapView] JobMarker clicked (fallback):', { jobId: job.id, isMultiSelectMode });
+              console.log('[RouteMapView] AdvancedMarker clicked:', { jobId: job.id, isMultiSelectMode });
               if (isMultiSelectMode) {
                 onToggleSelection(job.id);
               } else {
@@ -94,9 +150,28 @@ function MapContent({
                 if (onJobClick) onJobClick(job);
               }
             }}
-          />
-        </AdvancedMarker>
-      ))}
+          >
+            <JobMarker 
+              job={job} 
+              selectedMemberId={selectedMemberId}
+              isSelected={job.id === selectedJobId}
+              isMultiSelected={selectedJobIds.has(job.id)}
+              routeOrder={displayOrder}
+              onClick={() => {
+                console.log('[RouteMapView] JobMarker clicked (fallback):', { jobId: job.id, isMultiSelectMode });
+                if (isMultiSelectMode) {
+                  onToggleSelection(job.id);
+                } else {
+                  startTransition(() => {
+                    onMarkerClick(job, index);
+                  });
+                  if (onJobClick) onJobClick(job);
+                }
+              }}
+            />
+          </AdvancedMarker>
+        );
+      })}
     </>
   );
 }
@@ -125,6 +200,7 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
   const { mutate: optimizeRoute, isPending: isOptimizing } = useJobRouteOptimization();
   const [optimizationResult, setOptimizationResult] = useState<any>(null);
   const [showOptimizationDialog, setShowOptimizationDialog] = useState(false);
+  const [appliedRoute, setAppliedRoute] = useState<Job[] | null>(null);
 
   // Refs for performance optimization
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -193,6 +269,26 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
       .filter(Boolean) as Array<{ job: Job; coords: { lat: number; lng: number } }>;
   }, [jobs, coordinates]);
 
+  // Calculate waypoints for route directions
+  const routeWaypoints = useMemo(() => {
+    if (!appliedRoute || appliedRoute.length < 2) return [];
+    
+    return appliedRoute
+      .filter(job => job.latitude && job.longitude && job.address)
+      .map(job => ({
+        lat: job.latitude!,
+        lng: job.longitude!,
+        address: job.address!,
+        jobId: job.id
+      }));
+  }, [appliedRoute]);
+
+  // Fetch route directions for the applied route
+  const { data: routeDirections } = useRouteDirections(routeWaypoints, {
+    optimize: false,
+    enabled: routeWaypoints.length >= 2
+  });
+
   // Focus on a specific job by centering map and opening info window
   const focusJob = (jobId: string) => {
     const jobWithCoords = jobsWithCoords.find(j => j.job.id === jobId);
@@ -240,6 +336,10 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
       }
       return newSet;
     });
+  };
+
+  const handleClearRoute = () => {
+    setAppliedRoute(null);
   };
 
   const handleOptimizeRoute = () => {
@@ -428,9 +528,9 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
                   
                   <Button
                     variant="primary"
-                  size="sm"
-                  disabled={selectedJobIds.size < 1 || isOptimizing}
-                  onClick={handleOptimizeRoute}
+                    size="sm"
+                    disabled={selectedJobIds.size < 1 || isOptimizing}
+                    onClick={handleOptimizeRoute}
                   >
                     {isOptimizing ? (
                       <>
@@ -468,6 +568,21 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
               </div>
             )}
 
+            {/* Clear Route Button */}
+            {appliedRoute && (
+              <div className="absolute top-4 right-4 z-10">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleClearRoute}
+                  className="shadow-lg"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Clear Route
+                </Button>
+              </div>
+            )}
+
             <Map
               mapId="calendar-route-map"
               defaultCenter={mapCenter}
@@ -491,6 +606,8 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
                 }}
                 onToggleSelection={toggleJobSelection}
                 mapRef={mapRef}
+                routePolyline={routeDirections?.polyline}
+                appliedRoute={appliedRoute}
               />
             </Map>
 
@@ -595,9 +712,9 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
                     
                     <Button
                       variant="primary"
-                size="sm"
-                disabled={selectedJobIds.size < 1 || isOptimizing}
-                onClick={handleOptimizeRoute}
+                      size="sm"
+                      disabled={selectedJobIds.size < 1 || isOptimizing}
+                      onClick={handleOptimizeRoute}
                     >
                       {isOptimizing ? (
                         <>
@@ -635,6 +752,21 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
                 </div>
               )}
 
+              {/* Clear Route Button */}
+              {appliedRoute && (
+                <div className="absolute top-4 right-4 z-10">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleClearRoute}
+                    className="shadow-lg"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Clear Route
+                  </Button>
+                </div>
+              )}
+
               <Map
                 mapId="calendar-route-map"
                 defaultCenter={mapCenter}
@@ -658,6 +790,8 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
                   }}
                   onToggleSelection={toggleJobSelection}
                   mapRef={mapRef}
+                  routePolyline={routeDirections?.polyline}
+                  appliedRoute={appliedRoute}
                 />
               </Map>
 
@@ -799,7 +933,7 @@ export function RouteMapView({ date, jobs, selectedMemberId, onJobClick }: Route
                   variant="primary"
                   className="flex-1"
                   onClick={() => {
-                    // Apply the optimized order - future enhancement
+                    setAppliedRoute(optimizationResult.optimizedJobs);
                     setShowOptimizationDialog(false);
                     setIsMultiSelectMode(false);
                     setSelectedJobIds(new Set());
