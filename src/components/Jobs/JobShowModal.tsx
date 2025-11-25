@@ -742,7 +742,7 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                 disabled={isCreatingInvoice}
                 className="flex-1"
               >
-                {isCreatingInvoice ? t('common.loading') : t('workOrders.createInvoice')}
+                {isCreatingInvoice ? t('common.loading') : t('workOrders.modal.createInvoice')}
               </Button>
               
               {allMedia.length > 0 && (

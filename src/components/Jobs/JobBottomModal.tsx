@@ -564,7 +564,6 @@ export function JobBottomModal({
 
           {/* Address */}
           <div className="space-y-2">
-            <Label htmlFor="address">{t('jobs.form.address')}</Label>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="address" className="flex items-center gap-2">
