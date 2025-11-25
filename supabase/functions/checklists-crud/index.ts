@@ -25,6 +25,10 @@ Deno.serve(async (req) => {
         checklistId = secondSegment;
       }
     }
+    
+    console.log('[checklists-crud] Path:', url.pathname);
+    console.log('[checklists-crud] PathParts:', pathParts);
+    console.log('[checklists-crud] Extracted checklistId:', checklistId);
 
     // GET - List or fetch single checklist
     if (method === 'GET') {
