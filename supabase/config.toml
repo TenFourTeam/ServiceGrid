@@ -268,6 +268,9 @@ verify_jwt = false
 [functions.public-request-submit]
 verify_jwt = false
 
+[functions.public-upload-request-photo]
+verify_jwt = false
+
 [functions.send-work-order-confirmations]
 verify_jwt = false
 

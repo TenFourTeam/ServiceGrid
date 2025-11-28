@@ -76,8 +76,9 @@ export default function PublicRequestForm() {
     const uploadPromises = files.map(async (file) => {
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('businessId', businessId!);
 
-      const { data, error } = await supabase.functions.invoke('upload-request-photo', {
+      const { data, error } = await supabase.functions.invoke('public-upload-request-photo', {
         body: formData
       });
 
