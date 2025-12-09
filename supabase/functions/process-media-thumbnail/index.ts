@@ -35,19 +35,25 @@ serve(async (req) => {
       return new Response(JSON.stringify({ message: "Thumbnail already exists" }), { status: 200 });
     }
 
+    // Determine which bucket to use based on media type
+    const storageBucket = media.job_id ? 'job-media' : 'conversation-media';
+    console.log(`[process-media-thumbnail] Using bucket: ${storageBucket}`);
+
     // Download original image
     const { data: fileData, error: downloadError } = await supabase.storage
-      .from('job-media')
+      .from(storageBucket)
       .download(media.storage_path);
     
     if (downloadError || !fileData) {
       console.error('[process-media-thumbnail] Download failed:', downloadError);
+      // Mark as completed anyway so it's not stuck
+      await supabase.from('sg_media').update({ upload_status: 'completed' }).eq('id', mediaId);
       return new Response(JSON.stringify({ error: "Failed to download original" }), { status: 500 });
     }
 
-    // For now, we'll use a simple approach: re-upload at smaller size
-    // In production, you'd use image processing library here
-    const thumbnailPath = `${media.user_id}/${media.job_id}/thumb-${Date.now()}.webp`;
+    // Generate thumbnail path based on media type
+    const identifier = media.job_id || media.conversation_id || media.user_id;
+    const thumbnailPath = `${media.user_id || media.business_id}/${identifier}/thumb-${Date.now()}.webp`;
     
     // Upload thumbnail (using original for now - actual resizing would happen here)
     const { error: uploadError } = await supabase.storage
@@ -68,10 +74,13 @@ serve(async (req) => {
       .from('job-media-thumbnails')
       .getPublicUrl(thumbnailPath);
     
-    // Update sg_media record
+    // Update sg_media record with thumbnail and mark as completed
     const { error: updateError } = await supabase
       .from('sg_media')
-      .update({ thumbnail_url: publicData.publicUrl })
+      .update({ 
+        thumbnail_url: publicData.publicUrl,
+        upload_status: 'completed'
+      })
       .eq('id', mediaId);
     
     if (updateError) {
