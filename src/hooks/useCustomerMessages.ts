@@ -3,6 +3,14 @@ import { useCustomerAuth } from '@/hooks/useCustomerAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect } from 'react';
 
+export interface CustomerMessageAttachment {
+  id: string;
+  url: string;
+  type: string;
+  name?: string;
+  thumbnail_url?: string;
+}
+
 export interface CustomerMessage {
   id: string;
   content: string;
@@ -12,6 +20,7 @@ export interface CustomerMessage {
   sender_name: string;
   is_own_message: boolean;
   metadata?: Record<string, any>;
+  attachments?: CustomerMessageAttachment[];
 }
 
 export interface CustomerConversation {
