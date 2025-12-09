@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
           );
         }
 
-        // Get messages
+        // Get messages with attachments
         const { data: messages, error: msgError } = await supabase
           .from('sg_messages')
           .select(`
@@ -113,7 +113,8 @@ Deno.serve(async (req) => {
             created_at,
             sender_id,
             sender_type,
-            metadata
+            metadata,
+            attachments
           `)
           .eq('conversation_id', conversationId)
           .order('created_at', { ascending: true });
@@ -123,29 +124,50 @@ Deno.serve(async (req) => {
           throw msgError;
         }
 
-        // Enrich messages with sender info
-        const enrichedMessages = await Promise.all(messages.map(async (msg: any) => {
+        // Get all user sender IDs for batch profile lookup
+        const userSenderIds = [...new Set(
+          messages.filter((m: any) => m.sender_type !== 'customer' && m.sender_id)
+            .map((m: any) => m.sender_id)
+        )];
+
+        // Batch fetch user profiles
+        let userProfiles: Record<string, any> = {};
+        if (userSenderIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, full_name, email')
+            .in('id', userSenderIds);
+          
+          if (profiles) {
+            userProfiles = profiles.reduce((acc: any, p: any) => {
+              acc[p.id] = p;
+              return acc;
+            }, {});
+          }
+        }
+
+        // Enrich messages with sender info and format attachments
+        const enrichedMessages = messages.map((msg: any) => {
+          // Parse attachments from JSONB field
+          const attachments = msg.attachments || [];
+          
           if (msg.sender_type === 'customer') {
             return {
               ...msg,
               sender_name: customer_name,
               is_own_message: true,
+              attachments,
             };
           } else {
-            // Get profile info for business user
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('full_name, email')
-              .eq('id', msg.sender_id)
-              .single();
-
+            const profile = userProfiles[msg.sender_id];
             return {
               ...msg,
               sender_name: profile?.full_name || profile?.email || 'Business',
               is_own_message: false,
+              attachments,
             };
           }
-        }));
+        });
 
         return new Response(
           JSON.stringify({ messages: enrichedMessages, conversation }),
