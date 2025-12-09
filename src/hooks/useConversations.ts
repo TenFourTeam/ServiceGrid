@@ -77,11 +77,13 @@ export function useConversations() {
       });
 
       if (error) throw error;
-      return data.conversation;
+      return { conversation: data.conversation, existed: data.existed };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['conversations', businessId] });
-      toast.success('Customer chat created');
+      if (result.existed) {
+        toast.info('Opened existing conversation');
+      }
     },
     onError: (error) => {
       console.error('Error creating customer conversation:', error);

@@ -55,6 +55,22 @@ Deno.serve(async (req) => {
     if (req.method === 'POST') {
       const { title, customerId, metadata } = await req.json();
 
+      // Check for existing conversation with this customer (prevent duplicates)
+      if (customerId) {
+        const { data: existing } = await supabase
+          .from('sg_conversations')
+          .select('*')
+          .eq('business_id', ctx.businessId)
+          .eq('customer_id', customerId)
+          .eq('is_archived', false)
+          .maybeSingle();
+
+        if (existing) {
+          console.log('[conversations-crud] Found existing conversation for customer:', customerId);
+          return ok({ conversation: existing, existed: true });
+        }
+      }
+
       const { data, error } = await supabase
         .from('sg_conversations')
         .insert({
@@ -70,6 +86,23 @@ Deno.serve(async (req) => {
       if (error) {
         console.error('[conversations-crud] Error creating conversation:', error);
         return ok({ error: error.message }, 500);
+      }
+
+      // If metadata has references, create initial message with the reference
+      if (metadata?.references?.length > 0) {
+        const ref = metadata.references[0];
+        const refContent = `/${ref.type}[${ref.title}](${ref.id})`;
+        
+        await supabase
+          .from('sg_messages')
+          .insert({
+            conversation_id: data.id,
+            business_id: ctx.businessId,
+            sender_id: ctx.userId,
+            content: refContent,
+          });
+        
+        console.log('[conversations-crud] Created initial reference message');
       }
 
       console.log('[conversations-crud] Created conversation:', data.id, customerId ? '(customer chat)' : '(team chat)');
