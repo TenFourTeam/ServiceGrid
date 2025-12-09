@@ -16,6 +16,8 @@ export interface Message {
   edited: boolean;
   mentions: string[];
   attachments: any[];
+  sender_type?: 'user' | 'customer';
+  customer_name?: string;
   sender?: {
     id: string;
     full_name: string;
@@ -24,7 +26,7 @@ export interface Message {
 
 export function useMessages(conversationId: string | null) {
   const authApi = useAuthApi();
-  const { businessId } = useBusinessContext();
+  const { businessId, userId } = useBusinessContext();
   const queryClient = useQueryClient();
 
   const messages = useQuery({
@@ -70,6 +72,32 @@ export function useMessages(conversationId: string | null) {
     };
   }, [conversationId, queryClient, businessId]);
 
+  // Mark conversation as read when messages are fetched
+  useEffect(() => {
+    if (!conversationId || !userId || !businessId) return;
+    if (messages.isLoading || messages.data?.length === 0) return;
+
+    // Mark as read by upserting to sg_conversation_reads
+    const markAsRead = async () => {
+      try {
+        await supabase
+          .from('sg_conversation_reads')
+          .upsert(
+            {
+              conversation_id: conversationId,
+              user_id: userId,
+              last_read_at: new Date().toISOString(),
+            },
+            { onConflict: 'conversation_id,user_id' }
+          );
+      } catch (error) {
+        console.error('[useMessages] Error marking conversation as read:', error);
+      }
+    };
+
+    markAsRead();
+  }, [conversationId, userId, businessId, messages.data?.length, messages.isLoading]);
+
   const sendMessage = useMutation({
     mutationFn: async ({ content, attachments }: { content: string; attachments?: any[] }) => {
       if (!conversationId) throw new Error('No conversation selected');
@@ -92,10 +120,52 @@ export function useMessages(conversationId: string | null) {
     },
   });
 
+  const editMessage = useMutation({
+    mutationFn: async ({ messageId, content }: { messageId: string; content: string }) => {
+      const { data, error } = await authApi.invoke(`messages-crud?messageId=${messageId}`, {
+        method: 'PATCH',
+        body: { content },
+      });
+
+      if (error) throw error;
+      return data.message;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
+    },
+    onError: (error: any) => {
+      console.error('Error editing message:', error);
+      toast.error(error.message || 'Failed to edit message');
+    },
+  });
+
+  const deleteMessage = useMutation({
+    mutationFn: async (messageId: string) => {
+      const { error } = await authApi.invoke(`messages-crud?messageId=${messageId}`, {
+        method: 'DELETE',
+      });
+
+      if (error) throw error;
+      return { success: true };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
+      queryClient.invalidateQueries({ queryKey: ['conversations', businessId] });
+    },
+    onError: (error) => {
+      console.error('Error deleting message:', error);
+      toast.error('Failed to delete message');
+    },
+  });
+
   return {
     messages: messages.data || [],
     isLoading: messages.isLoading,
     sendMessage: sendMessage.mutate,
     isSending: sendMessage.isPending,
+    editMessage: editMessage.mutate,
+    isEditing: editMessage.isPending,
+    deleteMessage: deleteMessage.mutate,
+    isDeleting: deleteMessage.isPending,
   };
 }
