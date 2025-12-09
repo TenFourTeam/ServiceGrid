@@ -4,6 +4,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { FileText } from 'lucide-react';
 import type { CustomerMessage, CustomerMessageAttachment } from '@/hooks/useCustomerMessages';
+import { MediaViewer } from '@/components/Jobs/MediaViewer';
+import type { MediaItem } from '@/hooks/useJobMedia';
 
 interface CustomerMessageBubbleProps {
   message: CustomerMessage;
@@ -11,7 +13,8 @@ interface CustomerMessageBubbleProps {
 
 export function CustomerMessageBubble({ message }: CustomerMessageBubbleProps) {
   const isOwnMessage = message.is_own_message;
-  const [expandedImage, setExpandedImage] = useState<string | null>(null);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerIndex, setViewerIndex] = useState(0);
   
   const initials = message.sender_name
     ?.split(' ')
@@ -24,19 +27,42 @@ export function CustomerMessageBubble({ message }: CustomerMessageBubbleProps) {
   const hasAttachments = attachments.length > 0;
   const hasContent = message.content && message.content.trim().length > 0;
 
+  // Convert attachments to MediaItem format for MediaViewer
+  const mediaItems: MediaItem[] = attachments
+    .filter(att => att.type === 'image' || att.type === 'video')
+    .map((att, idx) => ({
+      id: `${message.id}-${idx}`,
+      public_url: att.url,
+      thumbnail_url: att.thumbnail_url || att.url,
+      file_type: att.type === 'video' ? 'video' : 'photo',
+      original_filename: att.name || 'Attachment',
+      upload_status: 'completed' as const,
+      mime_type: att.type === 'video' ? 'video/mp4' : 'image/jpeg',
+      file_size: 0,
+      created_at: message.created_at,
+    }));
+
+  const handleMediaClick = (attachmentIndex: number) => {
+    // Find the index in mediaItems (which excludes non-media files)
+    const mediaOnlyIndex = attachments
+      .slice(0, attachmentIndex + 1)
+      .filter(att => att.type === 'image' || att.type === 'video')
+      .length - 1;
+    setViewerIndex(Math.max(0, mediaOnlyIndex));
+    setViewerOpen(true);
+  };
+
   const renderAttachment = (attachment: CustomerMessageAttachment, index: number) => {
-    // Use simplified type from edge function: 'image', 'video', 'file'
     const isImage = attachment.type === 'image';
     const isVideo = attachment.type === 'video';
 
     if (isImage) {
-      // Use thumbnail for display if available, full URL for lightbox
       const displayUrl = attachment.thumbnail_url || attachment.url;
       return (
         <div 
           key={index} 
           className="relative cursor-pointer overflow-hidden rounded-lg"
-          onClick={() => setExpandedImage(attachment.url)}
+          onClick={() => handleMediaClick(index)}
         >
           <img
             src={displayUrl}
@@ -48,40 +74,27 @@ export function CustomerMessageBubble({ message }: CustomerMessageBubbleProps) {
     }
 
     if (isVideo) {
-      // Show thumbnail for video if available, otherwise show video player
-      if (attachment.thumbnail_url) {
-        return (
-          <div 
-            key={index} 
-            className="relative cursor-pointer overflow-hidden rounded-lg"
-            onClick={() => window.open(attachment.url, '_blank')}
-          >
-            <img
-              src={attachment.thumbnail_url}
-              alt={attachment.name || 'Video thumbnail'}
-              className="max-w-[200px] max-h-[200px] object-cover rounded-lg"
-            />
-            <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-lg">
-              <div className="h-10 w-10 rounded-full bg-white/90 flex items-center justify-center">
-                <div className="w-0 h-0 border-t-[6px] border-t-transparent border-l-[10px] border-l-primary border-b-[6px] border-b-transparent ml-1" />
-              </div>
+      return (
+        <div 
+          key={index} 
+          className="relative cursor-pointer overflow-hidden rounded-lg"
+          onClick={() => handleMediaClick(index)}
+        >
+          <img
+            src={attachment.thumbnail_url || attachment.url}
+            alt={attachment.name || 'Video thumbnail'}
+            className="max-w-[200px] max-h-[200px] object-cover rounded-lg"
+          />
+          <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-lg">
+            <div className="h-10 w-10 rounded-full bg-white/90 flex items-center justify-center">
+              <div className="w-0 h-0 border-t-[6px] border-t-transparent border-l-[10px] border-l-primary border-b-[6px] border-b-transparent ml-1" />
             </div>
           </div>
-        );
-      }
-      
-      return (
-        <div key={index} className="relative overflow-hidden rounded-lg">
-          <video
-            src={attachment.url}
-            controls
-            className="max-w-[250px] max-h-[200px] rounded-lg"
-          />
         </div>
       );
     }
 
-    // Generic file
+    // Generic file - open in new tab
     return (
       <a
         key={index}
@@ -154,18 +167,14 @@ export function CustomerMessageBubble({ message }: CustomerMessageBubbleProps) {
         </div>
       </div>
 
-      {/* Expanded image modal */}
-      {expandedImage && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
-          onClick={() => setExpandedImage(null)}
-        >
-          <img
-            src={expandedImage}
-            alt="Expanded attachment"
-            className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg"
-          />
-        </div>
+      {/* Media Viewer */}
+      {mediaItems.length > 0 && (
+        <MediaViewer
+          media={mediaItems}
+          initialIndex={viewerIndex}
+          isOpen={viewerOpen}
+          onClose={() => setViewerOpen(false)}
+        />
       )}
     </>
   );
