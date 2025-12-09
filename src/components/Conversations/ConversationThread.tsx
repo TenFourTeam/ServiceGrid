@@ -36,7 +36,7 @@ export function ConversationThread({ conversationId, onBack, title, isCustomerCh
         </div>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col p-0 min-h-0">
-        <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+        <ScrollArea className="flex-1 p-4" viewportRef={scrollRef}>
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground">Loading messages...</div>
           ) : messages.length === 0 ? (
