@@ -51,7 +51,9 @@ const GoogleDriveCallback = lazy(() => import("./pages/GoogleDriveCallback"));
 // Customer Portal pages
 const CustomerLogin = lazy(() => import("./pages/CustomerLogin"));
 const CustomerMagicLink = lazy(() => import("./pages/CustomerMagicLink"));
-const CustomerPortal = lazy(() => import("./pages/CustomerPortal"));
+
+// Customer Portal components
+import { CustomerAuthProvider, CustomerProtectedRoute, CustomerPortalLayout, CustomerDashboard, CustomerDocuments, CustomerSchedule, CustomerMessages } from './components/CustomerPortal';
 
 // Routes are now properly lazy-loaded without aggressive prefetching
 
@@ -162,7 +164,18 @@ function App({ clerkKey }: AppProps) {
                 {/* Customer Portal routes */}
                 <Route path="/customer-login" element={<CustomerLogin />} />
                 <Route path="/customer-magic/:token" element={<CustomerMagicLink />} />
-                <Route path="/portal" element={<CustomerPortal />} />
+                <Route path="/portal" element={
+                  <CustomerAuthProvider>
+                    <CustomerProtectedRoute>
+                      <CustomerPortalLayout />
+                    </CustomerProtectedRoute>
+                  </CustomerAuthProvider>
+                }>
+                  <Route index element={<CustomerDashboard />} />
+                  <Route path="documents" element={<CustomerDocuments />} />
+                  <Route path="schedule" element={<CustomerSchedule />} />
+                  <Route path="messages" element={<CustomerMessages />} />
+                </Route>
                 
                 <Route path="*" element={<NotFound />} />
               </Routes>
