@@ -22,7 +22,7 @@ export function ConversationsTab() {
   const [newConversationTitle, setNewConversationTitle] = useState('');
 
   const filteredConversations = conversations.filter(c =>
-    c.title.toLowerCase().includes(searchQuery.toLowerCase())
+    (c.title || c.customer_name || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleNewConversation = () => {

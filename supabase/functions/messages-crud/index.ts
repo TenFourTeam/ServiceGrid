@@ -170,8 +170,8 @@ Deno.serve(async (req) => {
         return ok({ error: 'Missing conversationId or content/attachments' }, 400);
       }
 
-      // Parse mentions from content
-      const parsedMentions = parseMentions(content);
+      // Parse mentions from content (guard against null/empty content)
+      const parsedMentions = content ? parseMentions(content) : [];
 
       const { data, error } = await supabase
         .from('sg_messages')
