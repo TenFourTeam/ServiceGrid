@@ -129,7 +129,11 @@ Deno.serve(async (req) => {
       duplicateQuery = duplicateQuery.eq('conversation_id', conversationId);
     }
     
-    const { data: existingMedia } = await duplicateQuery.maybeSingle();
+    const { data: existingMedia, error: dupError } = await duplicateQuery.maybeSingle();
+    
+    if (dupError) {
+      console.warn('[customer-upload-media] Deduplication check failed (non-blocking):', dupError.message);
+    }
 
     if (existingMedia) {
       console.log('[customer-upload-media] Duplicate media found:', existingMedia.id);
