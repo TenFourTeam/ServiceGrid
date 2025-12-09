@@ -30,9 +30,10 @@ import { toast } from 'sonner';
 interface CustomerMessageBubbleProps {
   message: CustomerMessage;
   conversationId: string;
+  isGrouped?: boolean;
 }
 
-export function CustomerMessageBubble({ message, conversationId }: CustomerMessageBubbleProps) {
+export function CustomerMessageBubble({ message, conversationId, isGrouped = false }: CustomerMessageBubbleProps) {
   const isOwnMessage = message.is_own_message;
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
@@ -189,7 +190,7 @@ export function CustomerMessageBubble({ message, conversationId }: CustomerMessa
           isOwnMessage ? 'ml-auto flex-row-reverse' : 'mr-auto'
         )}
       >
-        <Avatar className="h-8 w-8 shrink-0">
+        <Avatar className={cn('h-8 w-8 shrink-0', isGrouped && 'invisible')}>
           <AvatarFallback 
             className={cn(
               'text-xs',
@@ -203,17 +204,19 @@ export function CustomerMessageBubble({ message, conversationId }: CustomerMessa
         </Avatar>
 
         <div className={cn('flex flex-col', isOwnMessage ? 'items-end' : 'items-start')}>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-medium text-muted-foreground">
-              {message.sender_name}
-            </span>
-            <span className="text-xs text-muted-foreground/60">
-              {format(new Date(message.created_at), 'MMM d, h:mm a')}
-            </span>
-            {message.edited && (
-              <span className="text-xs text-muted-foreground/50 italic">(edited)</span>
-            )}
-          </div>
+          {!isGrouped && (
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs font-medium text-muted-foreground">
+                {message.sender_name}
+              </span>
+              <span className="text-xs text-muted-foreground/60">
+                {format(new Date(message.created_at), 'MMM d, h:mm a')}
+              </span>
+              {message.edited && (
+                <span className="text-xs text-muted-foreground/50 italic">(edited)</span>
+              )}
+            </div>
+          )}
 
           <div className="flex items-start gap-1">
             {/* Message content */}
