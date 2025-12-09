@@ -98,8 +98,26 @@ Deno.serve(async (req) => {
         return ok({ error: error.message }, 500);
       }
 
-      console.log('[messages-crud] Fetched', data?.length || 0, 'messages');
-      return ok({ messages: data || [] });
+      // Enrich customer messages with customer name
+      const enrichedMessages = await Promise.all((data || []).map(async (msg: any) => {
+        if (msg.sender_type === 'customer' && msg.sender_id) {
+          // Fetch customer name
+          const { data: customer } = await supabase
+            .from('customers')
+            .select('name')
+            .eq('id', msg.sender_id)
+            .single();
+
+          return {
+            ...msg,
+            customer_name: customer?.name || 'Customer',
+          };
+        }
+        return msg;
+      }));
+
+      console.log('[messages-crud] Fetched', enrichedMessages.length, 'messages');
+      return ok({ messages: enrichedMessages });
     }
 
     // POST: Send message

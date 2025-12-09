@@ -16,6 +16,8 @@ interface MessageBubbleProps {
     created_at: string;
     edited: boolean;
     sender_id: string;
+    sender_type?: 'user' | 'customer';
+    customer_name?: string;
     sender?: {
       id: string;
       full_name: string;
@@ -26,7 +28,8 @@ interface MessageBubbleProps {
 
 export function MessageBubble({ message }: MessageBubbleProps) {
   const { userId } = useBusinessContext();
-  const isOwnMessage = message.sender_id === userId;
+  const isCustomerMessage = message.sender_type === 'customer';
+  const isOwnMessage = !isCustomerMessage && message.sender_id === userId;
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
 
@@ -38,7 +41,10 @@ export function MessageBubble({ message }: MessageBubbleProps) {
     attachmentIds.length > 0 ? attachmentIds : undefined
   );
 
-  const senderName = message.sender?.full_name || 'Unknown';
+  // For customer messages, use customer_name; for team messages, use sender.full_name
+  const senderName = isCustomerMessage 
+    ? message.customer_name || 'Customer' 
+    : message.sender?.full_name || 'Unknown';
 
   return (
     <>
@@ -52,6 +58,11 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         <div className={`flex flex-col gap-1 max-w-[70%] ${isOwnMessage ? 'items-end' : 'items-start'}`}>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span className="font-medium">{senderName}</span>
+            {isCustomerMessage && (
+              <Badge variant="secondary" className="text-xs bg-primary/10 text-primary">
+                Customer
+              </Badge>
+            )}
             <span>{formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}</span>
             {message.edited && <Badge variant="outline" className="text-xs">Edited</Badge>}
           </div>
