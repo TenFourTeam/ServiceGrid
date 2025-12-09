@@ -11,11 +11,13 @@ import { useAuth } from '@clerk/clerk-react';
 import { useAuthApi } from "@/hooks/useAuthApi";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useCustomerPortalInvite } from "@/hooks/useCustomerPortalInvite";
+import { useCustomerPortalStatus } from "@/hooks/useCustomerPortalStatus";
+import { Badge } from "@/components/ui/badge";
 import type { Customer } from "@/types";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
-import { ChevronDown, Send, Loader2 } from 'lucide-react';
+import { ChevronDown, Send, Loader2, CheckCircle, Clock, UserX } from 'lucide-react';
 
 // Email validation regex - requires a valid email format
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -66,6 +68,7 @@ export function CustomerBottomModal({
   const authApi = useAuthApi();
   const isMobile = useIsMobile();
   const { sendInvite, isLoading: isInviteLoading } = useCustomerPortalInvite();
+  const { data: portalStatus } = useCustomerPortalStatus(mode === 'view' ? customer?.id : undefined);
   
   const [formData, setFormData] = useState<CustomerFormData>({
     name: "",
@@ -276,9 +279,23 @@ export function CustomerBottomModal({
     <Drawer open={open} onOpenChange={handleOpenChange}>
       <DrawerContent className="max-h-[90vh]">
         <DrawerHeader className="text-left">
-          <DrawerTitle>
-            {mode === 'view' ? 'Customer Details' : (customer?.id ? "Edit Customer" : "New Customer")}
-          </DrawerTitle>
+          <div className="flex items-center justify-between">
+            <DrawerTitle>
+              {mode === 'view' ? 'Customer Details' : (customer?.id ? "Edit Customer" : "New Customer")}
+            </DrawerTitle>
+            {mode === 'view' && portalStatus && (
+              <Badge 
+                variant={portalStatus.status === 'active' ? 'default' : portalStatus.status === 'pending' ? 'secondary' : 'outline'}
+                className="flex items-center gap-1"
+              >
+                {portalStatus.status === 'active' && <CheckCircle className="h-3 w-3" />}
+                {portalStatus.status === 'pending' && <Clock className="h-3 w-3" />}
+                {portalStatus.status === 'none' && <UserX className="h-3 w-3" />}
+                {portalStatus.status === 'active' ? 'Portal Active' : 
+                 portalStatus.status === 'pending' ? 'Invite Pending' : 'No Portal Access'}
+              </Badge>
+            )}
+          </div>
         </DrawerHeader>
         
         <div className="px-4 pb-4 overflow-y-auto">
@@ -449,7 +466,7 @@ export function CustomerBottomModal({
                 <Button
                   variant="outline"
                   onClick={handleSendPortalInvite}
-                  disabled={isInviteLoading}
+                  disabled={isInviteLoading || portalStatus?.status === 'active'}
                   className="w-full"
                 >
                   {isInviteLoading ? (
@@ -457,7 +474,8 @@ export function CustomerBottomModal({
                   ) : (
                     <Send className="mr-2 h-4 w-4" />
                   )}
-                  Invite to Portal
+                  {portalStatus?.status === 'active' ? 'Already Has Portal Access' : 
+                   portalStatus?.status === 'pending' ? 'Resend Invite' : 'Invite to Portal'}
                 </Button>
                 <Button
                   variant="default"
@@ -479,14 +497,15 @@ export function CustomerBottomModal({
                 <Button
                   variant="outline"
                   onClick={handleSendPortalInvite}
-                  disabled={isInviteLoading}
+                  disabled={isInviteLoading || portalStatus?.status === 'active'}
                 >
                   {isInviteLoading ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
                     <Send className="mr-2 h-4 w-4" />
                   )}
-                  Invite to Portal
+                  {portalStatus?.status === 'active' ? 'Already Has Portal Access' : 
+                   portalStatus?.status === 'pending' ? 'Resend Invite' : 'Invite to Portal'}
                 </Button>
                 <div className="flex gap-2">
                   <Button
