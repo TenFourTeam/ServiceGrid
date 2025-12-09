@@ -8,6 +8,7 @@ import { useConversationMedia } from '@/hooks/useConversationMedia';
 import { useState } from 'react';
 import { MediaViewer } from '@/components/Jobs/MediaViewer';
 import { Video, Loader2 } from 'lucide-react';
+import { ReferenceCard } from './ReferenceCard';
 
 interface MessageBubbleProps {
   message: {
@@ -27,6 +28,23 @@ interface MessageBubbleProps {
   isGrouped?: boolean;
 }
 
+// Parse entity references like /job[Title](id)
+const REFERENCE_PATTERN = /\/(job|quote|invoice)\[([^\]]+)\]\(([^)]+)\)/g;
+
+function parseReferences(content: string): Array<{ type: 'job' | 'quote' | 'invoice'; title: string; id: string }> {
+  const refs: Array<{ type: 'job' | 'quote' | 'invoice'; title: string; id: string }> = [];
+  let match;
+  const regex = new RegExp(REFERENCE_PATTERN.source, 'g');
+  while ((match = regex.exec(content)) !== null) {
+    refs.push({ type: match[1] as 'job' | 'quote' | 'invoice', title: match[2], id: match[3] });
+  }
+  return refs;
+}
+
+function removeReferencesFromContent(content: string): string {
+  return content.replace(REFERENCE_PATTERN, '').trim();
+}
+
 export function MessageBubble({ message, isGrouped = false }: MessageBubbleProps) {
   const { userId } = useBusinessContext();
   const isCustomerMessage = message.sender_type === 'customer';
@@ -41,6 +59,10 @@ export function MessageBubble({ message, isGrouped = false }: MessageBubbleProps
   const { data: mediaItems = [], isLoading: mediaLoading } = useConversationMedia(
     attachmentIds.length > 0 ? attachmentIds : undefined
   );
+
+  // Parse references from message content
+  const references = parseReferences(message.content || '');
+  const textContent = removeReferencesFromContent(message.content || '');
 
   // For customer messages, use customer_name; for team messages, use sender.full_name
   const senderName = isCustomerMessage 
@@ -71,24 +93,42 @@ export function MessageBubble({ message, isGrouped = false }: MessageBubbleProps
           )}
 
           <Card className={`p-3 ${isOwnMessage ? 'bg-primary text-primary-foreground' : ''}`}>
-            <div className="text-sm whitespace-pre-wrap break-words">
-              {message.content ? message.content.split(/(@\[[^\]]+\]\([^)]+\))/).map((part, idx) => {
-                const mentionMatch = part.match(/@\[([^\]]+)\]\([^)]+\)/);
-                if (mentionMatch) {
-                  return (
-                    <Badge 
-                      key={idx} 
-                      variant={isOwnMessage ? 'secondary' : 'default'}
-                      className="text-xs mx-0.5"
-                    >
-                      @{mentionMatch[1]}
-                    </Badge>
-                  );
-                }
-                return <span key={idx}>{part}</span>;
-              }) : null}
-            </div>
+            {/* Text content with mentions */}
+            {textContent && (
+              <div className="text-sm whitespace-pre-wrap break-words">
+                {textContent.split(/(@\[[^\]]+\]\([^)]+\))/).map((part, idx) => {
+                  const mentionMatch = part.match(/@\[([^\]]+)\]\([^)]+\)/);
+                  if (mentionMatch) {
+                    return (
+                      <Badge 
+                        key={idx} 
+                        variant={isOwnMessage ? 'secondary' : 'default'}
+                        className="text-xs mx-0.5"
+                      >
+                        @{mentionMatch[1]}
+                      </Badge>
+                    );
+                  }
+                  return <span key={idx}>{part}</span>;
+                })}
+              </div>
+            )}
 
+            {/* Entity references */}
+            {references.length > 0 && (
+              <div className={`flex flex-wrap gap-2 ${textContent ? 'mt-2' : ''}`}>
+                {references.map((ref, idx) => (
+                  <ReferenceCard
+                    key={idx}
+                    type={ref.type}
+                    title={ref.title}
+                    compact
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Attachments */}
             {attachmentIds.length > 0 && (
               <div className="mt-3">
                 {mediaLoading ? (

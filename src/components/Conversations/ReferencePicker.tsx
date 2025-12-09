@@ -1,6 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Popover, PopoverContent } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { useCustomerEntities } from '@/hooks/useCustomerEntities';
 import { Briefcase, FileText, Receipt, Loader2 } from 'lucide-react';
 
@@ -19,184 +18,159 @@ interface ReferencePickerProps {
 }
 
 export function ReferencePicker({ isOpen, onClose, onSelect, customerId, anchorRect }: ReferencePickerProps) {
+  const { jobs, quotes, invoices, isLoading } = useCustomerEntities(customerId ?? null);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const itemsRef = useRef<(HTMLDivElement | null)[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const { jobs, quotes, invoices, isLoading } = useCustomerEntities(customerId || null);
-
-  // Create flat list of all items for keyboard navigation
   const allItems: EntityReference[] = [
-    ...jobs.slice(0, 5).map(j => ({ type: 'job' as const, id: j.id, title: j.title })),
-    ...quotes.slice(0, 5).map(q => ({ type: 'quote' as const, id: q.id, title: q.number })),
-    ...invoices.slice(0, 5).map(i => ({ type: 'invoice' as const, id: i.id, title: i.number })),
+    ...jobs.map(j => ({ type: 'job' as const, id: j.id, title: j.title || 'Untitled Job' })),
+    ...quotes.map(q => ({ type: 'quote' as const, id: q.id, title: q.number })),
+    ...invoices.map(i => ({ type: 'invoice' as const, id: i.id, title: i.number })),
   ];
 
-  // Reset selected index when list changes
   useEffect(() => {
-    setSelectedIndex(0);
-  }, [customerId]);
-
-  // Handle keyboard navigation
-  useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      setSelectedIndex(0);
+      return;
+    }
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowDown') {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      } else if (e.key === 'ArrowDown') {
         e.preventDefault();
         setSelectedIndex(prev => Math.min(prev + 1, allItems.length - 1));
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         setSelectedIndex(prev => Math.max(prev - 1, 0));
-      } else if (e.key === 'Enter') {
+      } else if (e.key === 'Enter' && allItems[selectedIndex]) {
         e.preventDefault();
-        const item = allItems[selectedIndex];
-        if (item) {
-          onSelect(item);
-        }
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
+        onSelect(allItems[selectedIndex]);
         onClose();
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, selectedIndex, allItems, onSelect, onClose]);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, allItems, selectedIndex, onSelect, onClose]);
 
-  // Scroll selected item into view
   useEffect(() => {
-    itemsRef.current[selectedIndex]?.scrollIntoView({ block: 'nearest' });
+    const selectedEl = containerRef.current?.querySelector(`[data-index="${selectedIndex}"]`);
+    selectedEl?.scrollIntoView({ block: 'nearest' });
   }, [selectedIndex]);
 
   if (!isOpen || !anchorRect) return null;
 
-  const getIcon = (type: 'job' | 'quote' | 'invoice') => {
+  const getIcon = (type: string) => {
     switch (type) {
-      case 'job': return <Briefcase className="h-4 w-4 text-muted-foreground" />;
-      case 'quote': return <FileText className="h-4 w-4 text-muted-foreground" />;
-      case 'invoice': return <Receipt className="h-4 w-4 text-muted-foreground" />;
+      case 'job': return <Briefcase className="h-4 w-4 text-primary" />;
+      case 'quote': return <FileText className="h-4 w-4 text-blue-500" />;
+      case 'invoice': return <Receipt className="h-4 w-4 text-green-500" />;
+      default: return null;
     }
   };
-
-  const getTypeLabel = (type: 'job' | 'quote' | 'invoice') => {
-    switch (type) {
-      case 'job': return 'Work Order';
-      case 'quote': return 'Quote';
-      case 'invoice': return 'Invoice';
-    }
-  };
-
-  let itemIndex = 0;
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        left: anchorRect.left,
-        top: anchorRect.top - 240,
-        zIndex: 100,
-      }}
-      className="w-72"
-    >
-      <Popover open={isOpen} onOpenChange={onClose}>
-        <PopoverContent 
-          className="w-72 p-0" 
-          onOpenAutoFocus={(e) => e.preventDefault()}
-        >
-          <Command>
-            <CommandList>
-              {isLoading && (
-                <div className="py-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Loading...
-                </div>
-              )}
-              
-              {!isLoading && allItems.length === 0 && (
-                <CommandEmpty>
-                  {customerId ? 'No items for this customer' : 'Type / to reference items'}
-                </CommandEmpty>
-              )}
-
-              {!isLoading && jobs.length > 0 && (
-                <CommandGroup heading="Work Orders">
-                  {jobs.slice(0, 5).map((job) => {
-                    const currentIndex = itemIndex++;
-                    return (
+    <>
+      <div 
+        className="fixed inset-0 z-40" 
+        onClick={onClose}
+      />
+      <div
+        ref={containerRef}
+        style={{
+          position: 'fixed',
+          left: Math.min(anchorRect.left, window.innerWidth - 300),
+          top: Math.max(anchorRect.top - 280, 8),
+          zIndex: 50,
+        }}
+        className="w-72 bg-popover border border-border rounded-lg shadow-lg overflow-hidden"
+      >
+        <Command className="border-0">
+          <CommandInput placeholder="Search references..." className="border-b" />
+          <CommandList className="max-h-64">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-6">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : allItems.length === 0 ? (
+              <CommandEmpty>No items found</CommandEmpty>
+            ) : (
+              <>
+                {jobs.length > 0 && (
+                  <CommandGroup heading="Work Orders">
+                    {jobs.map((job, idx) => (
                       <CommandItem
                         key={job.id}
-                        ref={el => itemsRef.current[currentIndex] = el}
-                        onSelect={() => onSelect({ type: 'job', id: job.id, title: job.title })}
-                        className={selectedIndex === currentIndex ? 'bg-accent' : ''}
+                        data-index={idx}
+                        onSelect={() => {
+                          onSelect({ type: 'job', id: job.id, title: job.title || 'Untitled Job' });
+                          onClose();
+                        }}
+                        className={selectedIndex === idx ? 'bg-accent' : ''}
                       >
-                        <div className="flex items-center gap-2">
-                          {getIcon('job')}
-                          <div className="flex flex-col">
-                            <span className="text-sm font-medium">{job.title}</span>
-                            <span className="text-xs text-muted-foreground capitalize">{job.status}</span>
-                          </div>
-                        </div>
+                        {getIcon('job')}
+                        <span className="ml-2 truncate">{job.title || 'Untitled Job'}</span>
                       </CommandItem>
-                    );
-                  })}
-                </CommandGroup>
-              )}
-
-              {!isLoading && quotes.length > 0 && (
-                <CommandGroup heading="Quotes">
-                  {quotes.slice(0, 5).map((quote) => {
-                    const currentIndex = itemIndex++;
-                    return (
-                      <CommandItem
-                        key={quote.id}
-                        ref={el => itemsRef.current[currentIndex] = el}
-                        onSelect={() => onSelect({ type: 'quote', id: quote.id, title: quote.number })}
-                        className={selectedIndex === currentIndex ? 'bg-accent' : ''}
-                      >
-                        <div className="flex items-center gap-2">
+                    ))}
+                  </CommandGroup>
+                )}
+                {quotes.length > 0 && (
+                  <CommandGroup heading="Quotes">
+                    {quotes.map((quote, idx) => {
+                      const globalIdx = jobs.length + idx;
+                      return (
+                        <CommandItem
+                          key={quote.id}
+                          data-index={globalIdx}
+                          onSelect={() => {
+                            onSelect({ type: 'quote', id: quote.id, title: quote.number });
+                            onClose();
+                          }}
+                          className={selectedIndex === globalIdx ? 'bg-accent' : ''}
+                        >
                           {getIcon('quote')}
-                          <div className="flex flex-col">
-                            <span className="text-sm font-medium">{quote.number}</span>
-                            <span className="text-xs text-muted-foreground">
-                              ${quote.total.toLocaleString()} • {quote.status}
+                          <span className="ml-2 truncate">{quote.number}</span>
+                          {quote.total && (
+                            <span className="ml-auto text-xs text-muted-foreground">
+                              ${quote.total.toFixed(2)}
                             </span>
-                          </div>
-                        </div>
-                      </CommandItem>
-                    );
-                  })}
-                </CommandGroup>
-              )}
-
-              {!isLoading && invoices.length > 0 && (
-                <CommandGroup heading="Invoices">
-                  {invoices.slice(0, 5).map((invoice) => {
-                    const currentIndex = itemIndex++;
-                    return (
-                      <CommandItem
-                        key={invoice.id}
-                        ref={el => itemsRef.current[currentIndex] = el}
-                        onSelect={() => onSelect({ type: 'invoice', id: invoice.id, title: invoice.number })}
-                        className={selectedIndex === currentIndex ? 'bg-accent' : ''}
-                      >
-                        <div className="flex items-center gap-2">
+                          )}
+                        </CommandItem>
+                      );
+                    })}
+                  </CommandGroup>
+                )}
+                {invoices.length > 0 && (
+                  <CommandGroup heading="Invoices">
+                    {invoices.map((invoice, idx) => {
+                      const globalIdx = jobs.length + quotes.length + idx;
+                      return (
+                        <CommandItem
+                          key={invoice.id}
+                          data-index={globalIdx}
+                          onSelect={() => {
+                            onSelect({ type: 'invoice', id: invoice.id, title: invoice.number });
+                            onClose();
+                          }}
+                          className={selectedIndex === globalIdx ? 'bg-accent' : ''}
+                        >
                           {getIcon('invoice')}
-                          <div className="flex flex-col">
-                            <span className="text-sm font-medium">{invoice.number}</span>
-                            <span className="text-xs text-muted-foreground">
-                              ${invoice.total.toLocaleString()} • {invoice.status}
-                            </span>
-                          </div>
-                        </div>
-                      </CommandItem>
-                    );
-                  })}
-                </CommandGroup>
-              )}
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
-    </div>
+                          <span className="ml-2 truncate">{invoice.number}</span>
+                          <span className={`ml-auto text-xs ${invoice.status === 'paid' ? 'text-green-500' : 'text-muted-foreground'}`}>
+                            {invoice.status}
+                          </span>
+                        </CommandItem>
+                      );
+                    })}
+                  </CommandGroup>
+                )}
+              </>
+            )}
+          </CommandList>
+        </Command>
+      </div>
+    </>
   );
 }
