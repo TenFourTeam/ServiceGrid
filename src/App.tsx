@@ -53,7 +53,7 @@ const CustomerLogin = lazy(() => import("./pages/CustomerLogin"));
 const CustomerMagicLink = lazy(() => import("./pages/CustomerMagicLink"));
 
 // Customer Portal components
-import { CustomerAuthProvider, CustomerProtectedRoute, CustomerPortalLayout, CustomerDashboard, CustomerDocuments, CustomerSchedule, CustomerMessages } from './components/CustomerPortal';
+import { CustomerAuthProvider, CustomerProtectedRoute, CustomerPortalLayout, CustomerDashboard, CustomerDocuments, CustomerSchedule, CustomerMessages, PasswordResetConfirm } from './components/CustomerPortal';
 
 // Routes are now properly lazy-loaded without aggressive prefetching
 
@@ -164,6 +164,7 @@ function App({ clerkKey }: AppProps) {
                 {/* Customer Portal routes */}
                 <Route path="/customer-login" element={<CustomerLogin />} />
                 <Route path="/customer-magic/:token" element={<CustomerMagicLink />} />
+                <Route path="/customer-reset-password/:token" element={<PasswordResetConfirm />} />
                 <Route path="/portal" element={
                   <CustomerAuthProvider>
                     <CustomerProtectedRoute>

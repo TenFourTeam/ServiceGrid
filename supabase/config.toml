@@ -492,3 +492,7 @@ verify_jwt = false
 [functions.customer-job-data]
 verify_jwt = false
 
+# Customer Portal Invites
+[functions.customer-portal-invite]
+verify_jwt = false
+

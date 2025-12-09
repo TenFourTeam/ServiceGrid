@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MagicLinkForm } from '@/components/CustomerPortal/MagicLinkForm';
 import { CustomerLoginForm } from '@/components/CustomerPortal/CustomerLoginForm';
 import { CustomerRegisterForm } from '@/components/CustomerPortal/CustomerRegisterForm';
+import { PasswordResetForm } from '@/components/CustomerPortal/PasswordResetForm';
 import { useCustomerAuth } from '@/hooks/useCustomerAuth';
 import { CustomerAuthProvider } from '@/components/CustomerPortal/CustomerAuthProvider';
 import { Chrome, Mail, Lock, ArrowLeft, Loader2 } from 'lucide-react';
@@ -18,6 +19,7 @@ function CustomerLoginContent() {
   const { isSignedIn } = useAuth();
   const { isAuthenticated, isLoading } = useCustomerAuth();
   const [activeTab, setActiveTab] = useState<'magic' | 'password' | 'register'>('magic');
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
   
   const from = (location.state as any)?.from?.pathname || '/portal';
 
@@ -57,67 +59,73 @@ function CustomerLoginContent() {
           </CardHeader>
 
           <CardContent className="space-y-6">
-            {/* Clerk Sign In - Primary option */}
-            <div className="space-y-3">
-              <SignInButton 
-                mode="modal" 
-                forceRedirectUrl="/portal"
-              >
-                <Button variant="outline" className="w-full h-11">
-                  <Chrome className="mr-2 h-5 w-5" />
-                  Continue with Google
-                </Button>
-              </SignInButton>
-              <p className="text-xs text-center text-muted-foreground">
-                Recommended for repeat customers
-              </p>
-            </div>
+            {showPasswordReset ? (
+              <PasswordResetForm onBack={() => setShowPasswordReset(false)} />
+            ) : (
+              <>
+                {/* Clerk Sign In - Primary option */}
+                <div className="space-y-3">
+                  <SignInButton 
+                    mode="modal" 
+                    forceRedirectUrl="/portal"
+                  >
+                    <Button variant="outline" className="w-full h-11">
+                      <Chrome className="mr-2 h-5 w-5" />
+                      Continue with Google
+                    </Button>
+                  </SignInButton>
+                  <p className="text-xs text-center text-muted-foreground">
+                    Recommended for repeat customers
+                  </p>
+                </div>
 
-            <div className="relative">
-              <Separator />
-              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
-                or
-              </span>
-            </div>
+                <div className="relative">
+                  <Separator />
+                  <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
+                    or
+                  </span>
+                </div>
 
-            {/* Tab-based auth options */}
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="magic" className="text-xs sm:text-sm">
-                  <Mail className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">Magic Link</span>
-                  <span className="sm:hidden">Magic</span>
-                </TabsTrigger>
-                <TabsTrigger value="password" className="text-xs sm:text-sm">
-                  <Lock className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">Password</span>
-                  <span className="sm:hidden">Login</span>
-                </TabsTrigger>
-                <TabsTrigger value="register" className="text-xs sm:text-sm">
-                  <span className="hidden sm:inline">Create Account</span>
-                  <span className="sm:hidden">Register</span>
-                </TabsTrigger>
-              </TabsList>
+                {/* Tab-based auth options */}
+                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="magic" className="text-xs sm:text-sm">
+                      <Mail className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />
+                      <span className="hidden sm:inline">Magic Link</span>
+                      <span className="sm:hidden">Magic</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="password" className="text-xs sm:text-sm">
+                      <Lock className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />
+                      <span className="hidden sm:inline">Password</span>
+                      <span className="sm:hidden">Login</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="register" className="text-xs sm:text-sm">
+                      <span className="hidden sm:inline">Create Account</span>
+                      <span className="sm:hidden">Register</span>
+                    </TabsTrigger>
+                  </TabsList>
 
-              <TabsContent value="magic" className="mt-4">
-                <MagicLinkForm />
-              </TabsContent>
+                  <TabsContent value="magic" className="mt-4">
+                    <MagicLinkForm />
+                  </TabsContent>
 
-              <TabsContent value="password" className="mt-4">
-                <CustomerLoginForm 
-                  onForgotPassword={() => setActiveTab('magic')} 
-                />
-              </TabsContent>
+                  <TabsContent value="password" className="mt-4">
+                    <CustomerLoginForm 
+                      onForgotPassword={() => setShowPasswordReset(true)} 
+                    />
+                  </TabsContent>
 
-              <TabsContent value="register" className="mt-4">
-                <CustomerRegisterForm />
-              </TabsContent>
-            </Tabs>
+                  <TabsContent value="register" className="mt-4">
+                    <CustomerRegisterForm />
+                  </TabsContent>
+                </Tabs>
 
-            {/* Help text */}
-            <p className="text-xs text-center text-muted-foreground pt-2">
-              Don't have an account? Ask your contractor to send you an invitation.
-            </p>
+                {/* Help text */}
+                <p className="text-xs text-center text-muted-foreground pt-2">
+                  Don't have an account? Ask your contractor to send you an invitation.
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
 
