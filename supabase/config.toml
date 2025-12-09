@@ -488,3 +488,7 @@ verify_jwt = false
 [functions.customer-auth]
 verify_jwt = false
 
+# Customer Portal Job Data
+[functions.customer-job-data]
+verify_jwt = false
+

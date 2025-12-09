@@ -1,6 +1,11 @@
 // Customer Portal components barrel export
 export { CustomerAuthProvider } from './CustomerAuthProvider';
 export { CustomerProtectedRoute } from './CustomerProtectedRoute';
+export { CustomerPortalLayout } from './CustomerPortalLayout';
+export { CustomerDashboard } from './CustomerDashboard';
+export { CustomerDocuments } from './CustomerDocuments';
+export { CustomerSchedule } from './CustomerSchedule';
+export { CustomerMessages } from './CustomerMessages';
 export { MagicLinkForm } from './MagicLinkForm';
 export { CustomerLoginForm } from './CustomerLoginForm';
 export { CustomerRegisterForm } from './CustomerRegisterForm';
