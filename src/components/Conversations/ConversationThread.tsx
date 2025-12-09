@@ -14,9 +14,10 @@ interface ConversationThreadProps {
   onBack: () => void;
   title?: string;
   isCustomerChat?: boolean;
+  customerId?: string;
 }
 
-export function ConversationThread({ conversationId, onBack, title, isCustomerChat }: ConversationThreadProps) {
+export function ConversationThread({ conversationId, onBack, title, isCustomerChat, customerId }: ConversationThreadProps) {
   const { messages, isLoading, sendMessage } = useMessages(conversationId);
   const viewportRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -85,6 +86,7 @@ export function ConversationThread({ conversationId, onBack, title, isCustomerCh
         <div className="border-t p-4 flex-shrink-0">
           <MessageComposer 
             conversationId={conversationId}
+            customerId={customerId}
             onSend={(content, attachments) => sendMessage({ content, attachments })} 
           />
         </div>

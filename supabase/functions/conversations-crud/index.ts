@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
 
     // POST: Create new conversation
     if (req.method === 'POST') {
-      const { title } = await req.json();
+      const { title, customerId, metadata } = await req.json();
 
       const { data, error } = await supabase
         .from('sg_conversations')
@@ -61,6 +61,8 @@ Deno.serve(async (req) => {
           business_id: ctx.businessId,
           created_by: ctx.userId,
           title: title || 'Team Chat',
+          customer_id: customerId || null,
+          metadata: metadata || null,
         })
         .select()
         .single();
@@ -70,7 +72,7 @@ Deno.serve(async (req) => {
         return ok({ error: error.message }, 500);
       }
 
-      console.log('[conversations-crud] Created conversation:', data.id);
+      console.log('[conversations-crud] Created conversation:', data.id, customerId ? '(customer chat)' : '(team chat)');
       return ok({ conversation: data });
     }
 

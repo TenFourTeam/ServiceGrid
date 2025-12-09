@@ -6,20 +6,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
 import { MessageSquare, Plus, Search, User, Paperclip } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ConversationThread } from './ConversationThread';
+import { NewConversationDialog } from './NewConversationDialog';
 
 export function ConversationsTab() {
-  const { conversations, isLoading, createConversation } = useConversations();
+  const { conversations, isLoading, createConversation, createCustomerConversation } = useConversations();
   const { unreadCount } = useUnreadMentions();
-  const [selectedConversation, setSelectedConversation] = useState<{ id: string; title: string; isCustomer: boolean } | null>(null);
+  const [selectedConversation, setSelectedConversation] = useState<{ id: string; title: string; isCustomer: boolean; customerId?: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [newConversationTitle, setNewConversationTitle] = useState('');
 
   const filteredConversations = conversations.filter(c =>
     (c.title || c.customer_name || '').toLowerCase().includes(searchQuery.toLowerCase())
@@ -29,12 +27,12 @@ export function ConversationsTab() {
     setIsCreateDialogOpen(true);
   };
 
-  const handleCreateConversation = () => {
-    if (newConversationTitle.trim()) {
-      createConversation(newConversationTitle.trim());
-      setNewConversationTitle('');
-      setIsCreateDialogOpen(false);
-    }
+  const handleCreateTeamConversation = (title: string) => {
+    createConversation(title);
+  };
+
+  const handleCreateCustomerConversation = (customerId: string, customerName: string, initialReference?: { type: 'job' | 'quote' | 'invoice'; id: string; title: string }) => {
+    createCustomerConversation({ customerId, customerName, initialReference });
   };
 
   if (selectedConversation) {
@@ -44,6 +42,7 @@ export function ConversationsTab() {
         onBack={() => setSelectedConversation(null)}
         title={selectedConversation.title}
         isCustomerChat={selectedConversation.isCustomer}
+        customerId={selectedConversation.customerId}
       />
     );
   }
@@ -96,10 +95,11 @@ export function ConversationsTab() {
                 return (
                   <div
                     key={conversation.id}
-                    onClick={() => setSelectedConversation({
+                  onClick={() => setSelectedConversation({
                       id: conversation.id,
                       title: isCustomerChat ? conversation.customer_name || 'Customer' : conversation.title,
                       isCustomer: isCustomerChat,
+                      customerId: conversation.customer_id,
                     })}
                     className={cn(
                       "p-4 rounded-lg border cursor-pointer hover:bg-accent transition-colors",
@@ -150,50 +150,12 @@ export function ConversationsTab() {
       </CardContent>
     </Card>
 
-    <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Create New Conversation</DialogTitle>
-          <DialogDescription>
-            Start a new team conversation. Give it a descriptive title.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="title">Conversation Title</Label>
-            <Input
-              id="title"
-              placeholder="e.g., Project Updates, Team Coordination..."
-              value={newConversationTitle}
-              onChange={(e) => setNewConversationTitle(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && newConversationTitle.trim()) {
-                  handleCreateConversation();
-                }
-              }}
-              autoFocus
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => {
-              setIsCreateDialogOpen(false);
-              setNewConversationTitle('');
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleCreateConversation}
-            disabled={!newConversationTitle.trim()}
-          >
-            Create Conversation
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <NewConversationDialog
+      open={isCreateDialogOpen}
+      onOpenChange={setIsCreateDialogOpen}
+      onCreateTeamConversation={handleCreateTeamConversation}
+      onCreateCustomerConversation={handleCreateCustomerConversation}
+    />
     </>
   );
 }

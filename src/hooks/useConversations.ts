@@ -59,6 +59,36 @@ export function useConversations() {
     },
   });
 
+  const createCustomerConversation = useMutation({
+    mutationFn: async ({ customerId, customerName, initialReference }: { 
+      customerId: string; 
+      customerName: string; 
+      initialReference?: { type: 'job' | 'quote' | 'invoice'; id: string; title: string } 
+    }) => {
+      const metadata = initialReference ? { references: [initialReference] } : undefined;
+      
+      const { data, error } = await authApi.invoke('conversations-crud', {
+        method: 'POST',
+        body: { 
+          customerId,
+          title: customerName,
+          metadata,
+        },
+      });
+
+      if (error) throw error;
+      return data.conversation;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['conversations', businessId] });
+      toast.success('Customer chat created');
+    },
+    onError: (error) => {
+      console.error('Error creating customer conversation:', error);
+      toast.error('Failed to create customer chat');
+    },
+  });
+
   const archiveConversation = useMutation({
     mutationFn: async (conversationId: string) => {
       const { error } = await authApi.invoke(`conversations-crud?conversationId=${conversationId}`, {
@@ -82,6 +112,7 @@ export function useConversations() {
     conversations: conversations.data || [],
     isLoading: conversations.isLoading,
     createConversation: createConversation.mutate,
+    createCustomerConversation: createCustomerConversation.mutate,
     archiveConversation: archiveConversation.mutate,
   };
 }

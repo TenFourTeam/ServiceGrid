@@ -1,9 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, Paperclip, AtSign, X, Loader2, Image as ImageIcon, Video } from 'lucide-react';
+import { Send, Paperclip, AtSign, X, Loader2, Video, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { MentionPicker } from './MentionPicker';
+import { ReferencePicker, EntityReference } from './ReferencePicker';
+import { ReferenceCard } from './ReferenceCard';
 import { Badge } from '@/components/ui/badge';
 import { useConversationMediaUpload } from '@/hooks/useConversationMediaUpload';
 import { createOptimisticMediaItem, MediaItem } from '@/hooks/useJobMedia';
@@ -13,10 +15,11 @@ const MAX_ATTACHMENTS = 10;
 
 interface MessageComposerProps {
   conversationId: string;
+  customerId?: string;
   onSend: (content: string, attachments?: string[]) => void;
 }
 
-export function MessageComposer({ conversationId, onSend }: MessageComposerProps) {
+export function MessageComposer({ conversationId, customerId, onSend }: MessageComposerProps) {
   const [content, setContent] = useState('');
   const [attachments, setAttachments] = useState<MediaItem[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState<Map<string, number>>(new Map());
@@ -25,12 +28,14 @@ export function MessageComposer({ conversationId, onSend }: MessageComposerProps
   const [cursorPosition, setCursorPosition] = useState(0);
   const [mentionStartPos, setMentionStartPos] = useState(-1);
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
+  const [showReferencePicker, setShowReferencePicker] = useState(false);
+  const [references, setReferences] = useState<EntityReference[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadMedia } = useConversationMediaUpload();
 
   const handleSend = async () => {
-    if (!content.trim() && attachments.length === 0) return;
+    if (!content.trim() && attachments.length === 0 && references.length === 0) return;
     if (uploadingFiles.size > 0) {
       toast.error('Please wait for uploads to complete');
       return;
@@ -41,14 +46,20 @@ export function MessageComposer({ conversationId, onSend }: MessageComposerProps
       .filter(item => !item.isOptimistic)
       .map(item => item.id);
 
-    onSend(content, mediaIds);
+    // Include references in the message content
+    const messageContent = references.length > 0
+      ? `${content}\n\n${references.map(r => `/${r.type}[${r.title}](${r.id})`).join('\n')}`
+      : content;
+
+    onSend(messageContent, mediaIds);
     setContent('');
     setAttachments([]);
+    setReferences([]);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Don't handle Enter if mention picker is open - let picker handle it
-    if (showMentionPicker && ['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(e.key)) {
+    // Don't handle Enter if mention or reference picker is open
+    if ((showMentionPicker || showReferencePicker) && ['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(e.key)) {
       return;
     }
 
@@ -282,6 +293,18 @@ export function MessageComposer({ conversationId, onSend }: MessageComposerProps
           searchQuery={mentionQuery}
           anchorRect={anchorRect}
         />
+        <ReferencePicker
+          isOpen={showReferencePicker}
+          onClose={() => setShowReferencePicker(false)}
+          onSelect={(ref) => {
+            if (!references.find(r => r.id === ref.id)) {
+              setReferences(prev => [...prev, ref]);
+            }
+            setShowReferencePicker(false);
+          }}
+          customerId={customerId}
+          anchorRect={anchorRect}
+        />
       </div>
       
       {mentions.length > 0 && (
@@ -294,6 +317,25 @@ export function MessageComposer({ conversationId, onSend }: MessageComposerProps
               </Badge>
             );
           })}
+        </div>
+      )}
+
+      {/* Reference Previews */}
+      {references.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {references.map((ref) => (
+            <div key={ref.id} className="relative group">
+              <ReferenceCard type={ref.type} title={ref.title} compact />
+              <Button
+                variant="destructive"
+                size="icon"
+                className="absolute -top-1 -right-1 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={() => setReferences(prev => prev.filter(r => r.id !== ref.id))}
+              >
+                <X className="h-2 w-2" />
+              </Button>
+            </div>
+          ))}
         </div>
       )}
 
@@ -353,11 +395,24 @@ export function MessageComposer({ conversationId, onSend }: MessageComposerProps
           <Button variant="ghost" size="sm" onClick={insertMention}>
             <AtSign className="h-4 w-4" />
           </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => {
+              if (textareaRef.current) {
+                const rect = textareaRef.current.getBoundingClientRect();
+                setAnchorRect(rect);
+              }
+              setShowReferencePicker(true);
+            }}
+          >
+            <Link2 className="h-4 w-4" />
+          </Button>
         </div>
         <Button 
           onClick={handleSend} 
           size="sm" 
-          disabled={!content.trim() && attachments.length === 0}
+          disabled={!content.trim() && attachments.length === 0 && references.length === 0}
         >
           <Send className="h-4 w-4 mr-2" />
           Send
