@@ -16,7 +16,7 @@ import { ConversationThread } from './ConversationThread';
 export function ConversationsTab() {
   const { conversations, isLoading, createConversation } = useConversations();
   const { unreadCount } = useUnreadMentions();
-  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [selectedConversation, setSelectedConversation] = useState<{ id: string; title: string; isCustomer: boolean } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newConversationTitle, setNewConversationTitle] = useState('');
@@ -37,11 +37,13 @@ export function ConversationsTab() {
     }
   };
 
-  if (selectedConversationId) {
+  if (selectedConversation) {
     return (
       <ConversationThread
-        conversationId={selectedConversationId}
-        onBack={() => setSelectedConversationId(null)}
+        conversationId={selectedConversation.id}
+        onBack={() => setSelectedConversation(null)}
+        title={selectedConversation.title}
+        isCustomerChat={selectedConversation.isCustomer}
       />
     );
   }
@@ -94,7 +96,11 @@ export function ConversationsTab() {
                 return (
                   <div
                     key={conversation.id}
-                    onClick={() => setSelectedConversationId(conversation.id)}
+                    onClick={() => setSelectedConversation({
+                      id: conversation.id,
+                      title: isCustomerChat ? conversation.customer_name || 'Customer' : conversation.title,
+                      isCustomer: isCustomerChat,
+                    })}
                     className={cn(
                       "p-4 rounded-lg border cursor-pointer hover:bg-accent transition-colors",
                       isCustomerChat && "border-primary/20 bg-primary/5"

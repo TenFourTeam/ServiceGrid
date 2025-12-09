@@ -10,9 +10,11 @@ import { MessageBubble } from './MessageBubble';
 interface ConversationThreadProps {
   conversationId: string;
   onBack: () => void;
+  title?: string;
+  isCustomerChat?: boolean;
 }
 
-export function ConversationThread({ conversationId, onBack }: ConversationThreadProps) {
+export function ConversationThread({ conversationId, onBack, title, isCustomerChat }: ConversationThreadProps) {
   const { messages, isLoading, sendMessage } = useMessages(conversationId);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -30,7 +32,7 @@ export function ConversationThread({ conversationId, onBack }: ConversationThrea
           <Button variant="ghost" size="sm" onClick={onBack}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <CardTitle>Team Chat</CardTitle>
+          <CardTitle>{isCustomerChat ? `Customer: ${title}` : title || 'Team Chat'}</CardTitle>
         </div>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col p-0 min-h-0">
