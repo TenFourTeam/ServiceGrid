@@ -109,7 +109,7 @@ async function handleMagicLink(req: Request, supabase: any) {
   }
 
   // Send magic link email
-  const baseUrl = redirect_url || 'https://servicegrid.lovable.app';
+  const baseUrl = redirect_url || 'https://servicegrid.app';
   const magicLinkUrl = `${baseUrl}/customer-magic/${magicToken}`;
 
   if (resendApiKey) {
