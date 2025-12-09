@@ -117,7 +117,15 @@ export function useSendCustomerMessage() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ content, conversationId }: { content: string; conversationId?: string }) => {
+    mutationFn: async ({ 
+      content, 
+      conversationId, 
+      attachments 
+    }: { 
+      content: string; 
+      conversationId?: string; 
+      attachments?: string[];
+    }) => {
       if (!sessionToken) throw new Error('Not authenticated');
 
       const url = conversationId 
@@ -130,7 +138,7 @@ export function useSendCustomerMessage() {
           'Content-Type': 'application/json',
           'x-session-token': sessionToken,
         },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ content, attachments }),
       });
 
       if (!response.ok) {

@@ -263,11 +263,15 @@ Deno.serve(async (req) => {
 
     if (req.method === 'POST') {
       const body = await req.json();
-      const { content } = body;
+      const { content, attachments } = body;
 
-      if (!content || !content.trim()) {
+      // Require either content or attachments
+      const hasContent = content && content.trim();
+      const hasAttachments = Array.isArray(attachments) && attachments.length > 0;
+
+      if (!hasContent && !hasAttachments) {
         return new Response(
-          JSON.stringify({ error: 'Message content is required' }),
+          JSON.stringify({ error: 'Message content or attachments required' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -331,10 +335,11 @@ Deno.serve(async (req) => {
         .insert({
           conversation_id: targetConversationId,
           business_id, // Required field
-          content: content.trim(),
+          content: hasContent ? content.trim() : null,
           sender_id: customer_id,
           sender_type: 'customer',
           metadata: { customer_name },
+          attachments: hasAttachments ? attachments : [],
         })
         .select()
         .single();
