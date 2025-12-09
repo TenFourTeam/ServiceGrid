@@ -227,13 +227,25 @@ Deno.serve(async (req) => {
         if (existingConv) {
           targetConversationId = existingConv.id;
         } else {
-          // Create new conversation - use customer_id as created_by for customer-initiated conversations
+          // Get business owner_id for created_by (FK requires profiles.id)
+          const { data: business, error: bizError } = await supabase
+            .from('businesses')
+            .select('owner_id')
+            .eq('id', business_id)
+            .single();
+
+          if (bizError || !business) {
+            console.error('[customer-messages-crud] Error fetching business owner:', bizError);
+            throw new Error('Could not find business owner');
+          }
+
+          // Create new conversation - use business owner_id as created_by (FK constraint)
           const { data: newConv, error: convError } = await supabase
             .from('sg_conversations')
             .insert({
               business_id,
               customer_id,
-              created_by: customer_id, // Customer initiates
+              created_by: business.owner_id, // Use business owner for FK constraint
               title: `Chat with ${customer_name}`,
             })
             .select('id')
