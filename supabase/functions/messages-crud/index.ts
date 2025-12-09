@@ -17,6 +17,70 @@ function parseMentions(content: string): string[] {
   return mentions;
 }
 
+// Helper: Enrich messages with sender info (handles both users and customers)
+async function enrichMessagesWithSender(supabase: any, messages: any[]) {
+  if (!messages || messages.length === 0) return [];
+
+  // Separate user and customer sender IDs
+  const userSenderIds = [...new Set(
+    messages.filter(m => m.sender_type !== 'customer' && m.sender_id)
+      .map(m => m.sender_id)
+  )];
+  const customerSenderIds = [...new Set(
+    messages.filter(m => m.sender_type === 'customer' && m.sender_id)
+      .map(m => m.sender_id)
+  )];
+
+  // Fetch user profiles
+  let userProfiles: Record<string, any> = {};
+  if (userSenderIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', userSenderIds);
+    
+    if (profiles) {
+      userProfiles = profiles.reduce((acc: any, p: any) => {
+        acc[p.id] = p;
+        return acc;
+      }, {});
+    }
+  }
+
+  // Fetch customer names
+  let customerNames: Record<string, string> = {};
+  if (customerSenderIds.length > 0) {
+    const { data: customers } = await supabase
+      .from('customers')
+      .select('id, name')
+      .in('id', customerSenderIds);
+    
+    if (customers) {
+      customerNames = customers.reduce((acc: any, c: any) => {
+        acc[c.id] = c.name;
+        return acc;
+      }, {});
+    }
+  }
+
+  // Enrich messages
+  return messages.map(msg => {
+    if (msg.sender_type === 'customer') {
+      return {
+        ...msg,
+        sender: null,
+        customer_name: customerNames[msg.sender_id] || 'Customer',
+      };
+    } else {
+      const profile = userProfiles[msg.sender_id];
+      return {
+        ...msg,
+        sender: profile ? { id: profile.id, full_name: profile.full_name } : null,
+      };
+    }
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -38,19 +102,9 @@ Deno.serve(async (req) => {
 
     // GET: Fetch unread mentions for current user
     if (req.method === 'GET' && action === 'unreadMentions') {
-      // Use RPC or filter to check if userId exists in mentions JSONB array
       const { data, error } = await supabase
         .from('sg_messages')
-        .select(`
-          id,
-          conversation_id,
-          content,
-          created_at,
-          mentions,
-          sender:sender_id (
-            full_name
-          )
-        `)
+        .select('id, conversation_id, content, created_at, mentions, sender_id, sender_type')
         .eq('business_id', ctx.businessId)
         .order('created_at', { ascending: false })
         .limit(100);
@@ -66,11 +120,16 @@ Deno.serve(async (req) => {
         return mentionsArray.includes(ctx.userId);
       });
 
-      const mentions = filteredMentions.map(msg => ({
+      // Enrich with sender info
+      const enrichedMentions = await enrichMessagesWithSender(supabase, filteredMentions);
+
+      const mentions = enrichedMentions.map(msg => ({
         id: msg.id,
         conversation_id: msg.conversation_id,
         content: msg.content,
-        sender_name: (msg.sender as any)?.full_name || 'Unknown',
+        sender_name: msg.sender_type === 'customer' 
+          ? msg.customer_name 
+          : (msg.sender?.full_name || 'Unknown'),
         created_at: msg.created_at,
       }));
 
@@ -82,13 +141,7 @@ Deno.serve(async (req) => {
     if (req.method === 'GET' && conversationId) {
       const { data, error } = await supabase
         .from('sg_messages')
-        .select(`
-          *,
-          sender:sender_id (
-            id,
-            full_name
-          )
-        `)
+        .select('*')
         .eq('conversation_id', conversationId)
         .eq('business_id', ctx.businessId)
         .order('created_at', { ascending: true });
@@ -98,23 +151,8 @@ Deno.serve(async (req) => {
         return ok({ error: error.message }, 500);
       }
 
-      // Enrich customer messages with customer name
-      const enrichedMessages = await Promise.all((data || []).map(async (msg: any) => {
-        if (msg.sender_type === 'customer' && msg.sender_id) {
-          // Fetch customer name
-          const { data: customer } = await supabase
-            .from('customers')
-            .select('name')
-            .eq('id', msg.sender_id)
-            .single();
-
-          return {
-            ...msg,
-            customer_name: customer?.name || 'Customer',
-          };
-        }
-        return msg;
-      }));
+      // Enrich with sender info (handles both users and customers)
+      const enrichedMessages = await enrichMessagesWithSender(supabase, data || []);
 
       console.log('[messages-crud] Fetched', enrichedMessages.length, 'messages');
       return ok({ messages: enrichedMessages });
@@ -142,13 +180,7 @@ Deno.serve(async (req) => {
           mentions: parsedMentions,
           attachments: attachments || [],
         })
-        .select(`
-          *,
-          sender:sender_id (
-            id,
-            full_name
-          )
-        `)
+        .select('*')
         .single();
 
       if (error) {
@@ -156,8 +188,11 @@ Deno.serve(async (req) => {
         return ok({ error: error.message }, 500);
       }
 
+      // Enrich with sender info
+      const [enrichedMessage] = await enrichMessagesWithSender(supabase, [data]);
+
       console.log('[messages-crud] Sent message:', data.id);
-      return ok({ message: data });
+      return ok({ message: enrichedMessage });
     }
 
     // PATCH: Edit message
