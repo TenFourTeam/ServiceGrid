@@ -4,93 +4,105 @@ import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 export interface CustomerJob {
   id: string;
-  title: string;
+  title: string | null;
   status: string;
-  starts_at?: string;
-  address?: string;
+  starts_at: string | null;
 }
 
 export interface CustomerQuote {
   id: string;
   number: string;
-  total: number;
   status: string;
-  created_at: string;
+  total: number;
 }
 
 export interface CustomerInvoice {
   id: string;
   number: string;
-  total: number;
   status: string;
-  due_at?: string;
+  total: number;
 }
 
 export function useCustomerEntities(customerId: string | null) {
   const authApi = useAuthApi();
   const { businessId } = useBusinessContext();
 
-  const jobs = useQuery({
-    queryKey: ['customer-entities-jobs', customerId],
+  // Fetch jobs - if customerId is null, fetch all jobs for the business
+  const { data: jobs = [], isLoading: jobsLoading } = useQuery({
+    queryKey: ['customer-entities-jobs', customerId, businessId],
     queryFn: async () => {
-      if (!customerId) return [];
-      const { data, error } = await authApi.invoke(`jobs-crud?customerId=${customerId}`, {
+      const queryParams: Record<string, string> = { limit: '20' };
+      if (customerId) {
+        queryParams.customerId = customerId;
+      }
+      const { data, error } = await authApi.invoke('jobs-crud', { 
         method: 'GET',
+        queryParams,
       });
-      if (error) throw error;
-      return (data.jobs || []).map((j: any) => ({
+      if (error || !data) return [];
+      const jobsData = data.jobs || data || [];
+      return jobsData.map((j: any) => ({
         id: j.id,
-        title: j.title || 'Untitled Job',
+        title: j.title,
         status: j.status,
         starts_at: j.starts_at,
-        address: j.address,
       })) as CustomerJob[];
     },
-    enabled: !!customerId && !!businessId,
+    enabled: !!businessId,
   });
 
-  const quotes = useQuery({
-    queryKey: ['customer-entities-quotes', customerId],
+  // Fetch quotes - if customerId is null, fetch all quotes for the business
+  const { data: quotes = [], isLoading: quotesLoading } = useQuery({
+    queryKey: ['customer-entities-quotes', customerId, businessId],
     queryFn: async () => {
-      if (!customerId) return [];
-      const { data, error } = await authApi.invoke(`quotes-crud?customerId=${customerId}`, {
+      const queryParams: Record<string, string> = { limit: '20' };
+      if (customerId) {
+        queryParams.customerId = customerId;
+      }
+      const { data, error } = await authApi.invoke('quotes-crud', { 
         method: 'GET',
+        queryParams,
       });
-      if (error) throw error;
-      return (data.quotes || []).map((q: any) => ({
+      if (error || !data) return [];
+      const quotesData = data.quotes || data || [];
+      return quotesData.map((q: any) => ({
         id: q.id,
         number: q.number,
-        total: q.total,
         status: q.status,
-        created_at: q.created_at,
+        total: q.total,
       })) as CustomerQuote[];
     },
-    enabled: !!customerId && !!businessId,
+    enabled: !!businessId,
   });
 
-  const invoices = useQuery({
-    queryKey: ['customer-entities-invoices', customerId],
+  // Fetch invoices - if customerId is null, fetch all invoices for the business
+  const { data: invoices = [], isLoading: invoicesLoading } = useQuery({
+    queryKey: ['customer-entities-invoices', customerId, businessId],
     queryFn: async () => {
-      if (!customerId) return [];
-      const { data, error } = await authApi.invoke(`invoices-crud?customerId=${customerId}`, {
+      const queryParams: Record<string, string> = { limit: '20' };
+      if (customerId) {
+        queryParams.customerId = customerId;
+      }
+      const { data, error } = await authApi.invoke('invoices-crud', { 
         method: 'GET',
+        queryParams,
       });
-      if (error) throw error;
-      return (data.invoices || []).map((i: any) => ({
+      if (error || !data) return [];
+      const invoicesData = data.invoices || data || [];
+      return invoicesData.map((i: any) => ({
         id: i.id,
         number: i.number,
-        total: i.total,
         status: i.status,
-        due_at: i.due_at,
+        total: i.total,
       })) as CustomerInvoice[];
     },
-    enabled: !!customerId && !!businessId,
+    enabled: !!businessId,
   });
 
   return {
-    jobs: jobs.data || [],
-    quotes: quotes.data || [],
-    invoices: invoices.data || [],
-    isLoading: jobs.isLoading || quotes.isLoading || invoices.isLoading,
+    jobs,
+    quotes,
+    invoices,
+    isLoading: jobsLoading || quotesLoading || invoicesLoading,
   };
 }
