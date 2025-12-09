@@ -5,6 +5,9 @@ import { Send, Loader2, Paperclip, X, FileText, Play } from 'lucide-react';
 import { useCustomerMediaUpload } from '@/hooks/useCustomerMediaUpload';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+
+const MAX_ATTACHMENTS = 10;
 
 interface Attachment {
   id: string;
@@ -57,7 +60,20 @@ export function CustomerMessageComposer({
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    for (const file of Array.from(files)) {
+    const filesToAdd = Array.from(files);
+    const remainingSlots = MAX_ATTACHMENTS - attachments.length;
+    
+    if (remainingSlots <= 0) {
+      toast.error(`Maximum ${MAX_ATTACHMENTS} attachments per message`);
+      return;
+    }
+    
+    if (filesToAdd.length > remainingSlots) {
+      toast.error(`Can only add ${remainingSlots} more attachment${remainingSlots === 1 ? '' : 's'}`);
+      filesToAdd.splice(remainingSlots);
+    }
+
+    for (const file of filesToAdd) {
       const tempId = `temp-${Date.now()}-${Math.random()}`;
       const isImage = file.type.startsWith('image/');
       const isVideo = file.type.startsWith('video/');
@@ -98,6 +114,7 @@ export function CustomerMessageComposer({
         );
       } catch (error) {
         console.error('Upload failed:', error);
+        toast.error(`Failed to upload ${file.name}. Please try again.`);
         // Remove failed attachment
         setAttachments(prev => prev.filter(a => a.id !== tempId));
       }

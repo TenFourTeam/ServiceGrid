@@ -9,6 +9,8 @@ import { useConversationMediaUpload } from '@/hooks/useConversationMediaUpload';
 import { createOptimisticMediaItem, MediaItem } from '@/hooks/useJobMedia';
 import { Progress } from '@/components/ui/progress';
 
+const MAX_ATTACHMENTS = 10;
+
 interface MessageComposerProps {
   conversationId: string;
   onSend: (content: string, attachments?: string[]) => void;
@@ -117,8 +119,19 @@ export function MessageComposer({ conversationId, onSend }: MessageComposerProps
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+    let files = Array.from(e.target.files || []);
     if (files.length === 0) return;
+
+    // Check attachment limit
+    const remainingSlots = MAX_ATTACHMENTS - attachments.length;
+    if (remainingSlots <= 0) {
+      toast.error(`Maximum ${MAX_ATTACHMENTS} attachments per message`);
+      return;
+    }
+    if (files.length > remainingSlots) {
+      toast.error(`Can only add ${remainingSlots} more attachment${remainingSlots === 1 ? '' : 's'}`);
+      files = files.slice(0, remainingSlots);
+    }
 
     // Validate file types
     const validTypes = [
