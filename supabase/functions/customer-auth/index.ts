@@ -714,7 +714,7 @@ async function handlePasswordReset(req: Request, supabase: any) {
     .eq('id', account.id);
 
   // Send reset email
-  const resetUrl = `https://servicegrid.lovable.app/customer-reset-password/${resetToken}`;
+  const resetUrl = `https://servicegrid.app/customer-reset-password/${resetToken}`;
   const customerName = account.customers?.name || 'Customer';
   const businessName = account.customers?.businesses?.name || 'ServiceGrid';
 
@@ -727,7 +727,7 @@ async function handlePasswordReset(req: Request, supabase: any) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: 'ServiceGrid <noreply@servicegrid.io>',
+          from: 'ServiceGrid <noreply@servicegrid.app>',
           to: [email],
           subject: `Reset your password - ${businessName}`,
           html: `
