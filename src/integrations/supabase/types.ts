@@ -3852,7 +3852,7 @@ export type Database = {
         Row: {
           attachments: Json | null
           business_id: string
-          content: string
+          content: string | null
           conversation_id: string
           created_at: string | null
           edited: boolean | null
@@ -3866,7 +3866,7 @@ export type Database = {
         Insert: {
           attachments?: Json | null
           business_id: string
-          content: string
+          content?: string | null
           conversation_id: string
           created_at?: string | null
           edited?: boolean | null
@@ -3880,7 +3880,7 @@ export type Database = {
         Update: {
           attachments?: Json | null
           business_id?: string
-          content?: string
+          content?: string | null
           conversation_id?: string
           created_at?: string | null
           edited?: boolean | null

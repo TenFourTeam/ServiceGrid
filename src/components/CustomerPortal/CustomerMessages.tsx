@@ -29,8 +29,12 @@ export function CustomerMessages() {
     }
   }, [messagesData?.messages]);
 
-  const handleSendMessage = (content: string) => {
-    sendMessage.mutate({ content, conversationId: selectedConversation || undefined });
+  const handleSendMessage = (content: string, attachments?: string[]) => {
+    sendMessage.mutate({ 
+      content, 
+      conversationId: selectedConversation || undefined,
+      attachments 
+    });
   };
 
   // If no conversation exists, show the composer to start one
@@ -87,6 +91,7 @@ export function CustomerMessages() {
                 </div>
               </ScrollArea>
               <CustomerMessageComposer
+                conversationId={selectedConversation}
                 onSend={handleSendMessage}
                 isSending={sendMessage.isPending}
                 placeholder="Type a message to your contractor..."

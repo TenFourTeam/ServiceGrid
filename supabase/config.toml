@@ -4,6 +4,9 @@ project_id = "ijudkzqfriazabiosnvb"
 [functions.customer-messages-crud]
 verify_jwt = false
 
+[functions.customer-upload-media]
+verify_jwt = false
+
 # AI Assistant functions
 [functions.ai-chat]
 verify_jwt = false

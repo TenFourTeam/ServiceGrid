@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { FileText, Play } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import type { CustomerMessage } from '@/hooks/useCustomerMessages';
 
 interface Attachment {
@@ -32,10 +32,13 @@ export function CustomerMessageBubble({ message }: CustomerMessageBubbleProps) {
   const hasContent = message.content && message.content.trim().length > 0;
 
   const renderAttachment = (attachment: Attachment, index: number) => {
-    const isImage = attachment.type?.startsWith('image/');
-    const isVideo = attachment.type?.startsWith('video/');
+    // Use simplified type from edge function: 'image', 'video', 'file'
+    const isImage = attachment.type === 'image';
+    const isVideo = attachment.type === 'video';
 
     if (isImage) {
+      // Use thumbnail for display if available, full URL for lightbox
+      const displayUrl = attachment.thumbnail_url || attachment.url;
       return (
         <div 
           key={index} 
@@ -43,7 +46,7 @@ export function CustomerMessageBubble({ message }: CustomerMessageBubbleProps) {
           onClick={() => setExpandedImage(attachment.url)}
         >
           <img
-            src={attachment.url}
+            src={displayUrl}
             alt={attachment.name || 'Attachment'}
             className="max-w-[200px] max-h-[200px] object-cover rounded-lg hover:opacity-90 transition-opacity"
           />
@@ -52,6 +55,28 @@ export function CustomerMessageBubble({ message }: CustomerMessageBubbleProps) {
     }
 
     if (isVideo) {
+      // Show thumbnail for video if available, otherwise show video player
+      if (attachment.thumbnail_url) {
+        return (
+          <div 
+            key={index} 
+            className="relative cursor-pointer overflow-hidden rounded-lg"
+            onClick={() => window.open(attachment.url, '_blank')}
+          >
+            <img
+              src={attachment.thumbnail_url}
+              alt={attachment.name || 'Video thumbnail'}
+              className="max-w-[200px] max-h-[200px] object-cover rounded-lg"
+            />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-lg">
+              <div className="h-10 w-10 rounded-full bg-white/90 flex items-center justify-center">
+                <div className="w-0 h-0 border-t-[6px] border-t-transparent border-l-[10px] border-l-primary border-b-[6px] border-b-transparent ml-1" />
+              </div>
+            </div>
+          </div>
+        );
+      }
+      
       return (
         <div key={index} className="relative overflow-hidden rounded-lg">
           <video
@@ -59,11 +84,6 @@ export function CustomerMessageBubble({ message }: CustomerMessageBubbleProps) {
             controls
             className="max-w-[250px] max-h-[200px] rounded-lg"
           />
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="bg-black/50 rounded-full p-2">
-              <Play className="h-6 w-6 text-white" />
-            </div>
-          </div>
         </div>
       );
     }
