@@ -59,7 +59,7 @@ serve(async (req) => {
     // Check if there's already an active invite
     const { data: existingInvite } = await supabase
       .from('customer_portal_invites')
-      .select('id, expires_at, accepted_at')
+      .select('id, expires_at, accepted_at, invite_token')
       .eq('customer_id', customer_id)
       .eq('business_id', business_id)
       .is('accepted_at', null)
