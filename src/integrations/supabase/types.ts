@@ -577,6 +577,148 @@ export type Database = {
           },
         ]
       }
+      customer_accounts: {
+        Row: {
+          auth_method: string | null
+          clerk_user_id: string | null
+          created_at: string | null
+          customer_id: string
+          email: string
+          id: string
+          last_login_at: string | null
+          magic_token: string | null
+          magic_token_expires_at: string | null
+          password_hash: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          auth_method?: string | null
+          clerk_user_id?: string | null
+          created_at?: string | null
+          customer_id: string
+          email: string
+          id?: string
+          last_login_at?: string | null
+          magic_token?: string | null
+          magic_token_expires_at?: string | null
+          password_hash?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          auth_method?: string | null
+          clerk_user_id?: string | null
+          created_at?: string | null
+          customer_id?: string
+          email?: string
+          id?: string
+          last_login_at?: string | null
+          magic_token?: string | null
+          magic_token_expires_at?: string | null
+          password_hash?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_accounts_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: true
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_portal_invites: {
+        Row: {
+          accepted_at: string | null
+          business_id: string
+          created_at: string | null
+          customer_id: string
+          email: string
+          expires_at: string
+          id: string
+          invite_token: string
+          sent_at: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          business_id: string
+          created_at?: string | null
+          customer_id: string
+          email: string
+          expires_at?: string
+          id?: string
+          invite_token?: string
+          sent_at?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          business_id?: string
+          created_at?: string | null
+          customer_id?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invite_token?: string
+          sent_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_portal_invites_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_portal_invites_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_sessions: {
+        Row: {
+          auth_method: string
+          created_at: string | null
+          customer_account_id: string
+          expires_at: string
+          id: string
+          ip_address: string | null
+          session_token: string
+          user_agent: string | null
+        }
+        Insert: {
+          auth_method: string
+          created_at?: string | null
+          customer_account_id: string
+          expires_at?: string
+          id?: string
+          ip_address?: string | null
+          session_token?: string
+          user_agent?: string | null
+        }
+        Update: {
+          auth_method?: string
+          created_at?: string | null
+          customer_account_id?: string
+          expires_at?: string
+          id?: string
+          ip_address?: string | null
+          session_token?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_sessions_customer_account_id_fkey"
+            columns: ["customer_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           address: string | null
