@@ -50,6 +50,9 @@ export function MediaViewer({ media, initialIndex, isOpen, onClose, onGenerateVi
   const updateMediaTags = useUpdateMediaTags();
   const updateMediaAnnotations = useUpdateMediaAnnotations();
 
+  // Debug logging for media viewer issues
+  console.log('[MediaViewer] isOpen:', isOpen, 'media.length:', media.length, 'currentIndex:', currentIndex, 'currentMedia:', currentMedia);
+
   useEffect(() => {
     setCurrentIndex(initialIndex);
   }, [initialIndex]);
