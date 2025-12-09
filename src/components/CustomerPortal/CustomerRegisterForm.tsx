@@ -9,15 +9,15 @@ import { useNavigate, useLocation } from 'react-router-dom';
 
 interface CustomerRegisterFormProps {
   inviteToken?: string;
-  prefillEmail?: string;
+  initialEmail?: string;
 }
 
-export function CustomerRegisterForm({ inviteToken, prefillEmail }: CustomerRegisterFormProps) {
+export function CustomerRegisterForm({ inviteToken, initialEmail }: CustomerRegisterFormProps) {
   const { register } = useCustomerAuth();
   const navigate = useNavigate();
   const location = useLocation();
   
-  const [email, setEmail] = useState(prefillEmail || '');
+  const [email, setEmail] = useState(initialEmail || '');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -91,7 +91,7 @@ export function CustomerRegisterForm({ inviteToken, prefillEmail }: CustomerRegi
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="pl-10"
-            disabled={isLoading || !!prefillEmail}
+            disabled={isLoading || !!initialEmail}
             required
           />
         </div>

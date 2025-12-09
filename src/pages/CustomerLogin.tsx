@@ -5,13 +5,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { MagicLinkForm } from '@/components/CustomerPortal/MagicLinkForm';
 import { CustomerLoginForm } from '@/components/CustomerPortal/CustomerLoginForm';
 import { CustomerRegisterForm } from '@/components/CustomerPortal/CustomerRegisterForm';
 import { PasswordResetForm } from '@/components/CustomerPortal/PasswordResetForm';
 import { useCustomerAuth } from '@/hooks/useCustomerAuth';
 import { CustomerAuthProvider } from '@/components/CustomerPortal/CustomerAuthProvider';
-import { Chrome, Mail, Lock, ArrowLeft, Loader2 } from 'lucide-react';
+import { Chrome, Mail, Lock, ArrowLeft, Loader2, PartyPopper } from 'lucide-react';
+
+interface InviteState {
+  inviteToken?: string;
+  email?: string;
+  customerName?: string;
+  businessName?: string;
+}
 
 function CustomerLoginContent() {
   const navigate = useNavigate();
@@ -21,7 +29,18 @@ function CustomerLoginContent() {
   const [activeTab, setActiveTab] = useState<'magic' | 'password' | 'register'>('magic');
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   
+  // Get invite data from location state
+  const inviteState = (location.state as InviteState) || {};
+  const { inviteToken, email: inviteEmail, customerName, businessName } = inviteState;
+
   const from = (location.state as any)?.from?.pathname || '/portal';
+
+  // If coming from invite, default to register tab
+  useEffect(() => {
+    if (inviteToken && inviteEmail) {
+      setActiveTab('register');
+    }
+  }, [inviteToken, inviteEmail]);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -59,6 +78,21 @@ function CustomerLoginContent() {
           </CardHeader>
 
           <CardContent className="space-y-6">
+            {/* Invite banner */}
+            {inviteToken && businessName && (
+              <Alert className="bg-primary/5 border-primary/20">
+                <PartyPopper className="h-4 w-4 text-primary" />
+                <AlertDescription>
+                  <span className="font-medium">{businessName}</span> has invited you to their customer portal!
+                  {customerName && (
+                    <span className="block text-sm text-muted-foreground mt-1">
+                      Welcome, {customerName}
+                    </span>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
+
             {showPasswordReset ? (
               <PasswordResetForm onBack={() => setShowPasswordReset(false)} />
             ) : (
@@ -106,7 +140,7 @@ function CustomerLoginContent() {
                   </TabsList>
 
                   <TabsContent value="magic" className="mt-4">
-                    <MagicLinkForm />
+                    <MagicLinkForm initialEmail={inviteEmail} />
                   </TabsContent>
 
                   <TabsContent value="password" className="mt-4">
@@ -116,7 +150,10 @@ function CustomerLoginContent() {
                   </TabsContent>
 
                   <TabsContent value="register" className="mt-4">
-                    <CustomerRegisterForm />
+                    <CustomerRegisterForm 
+                      initialEmail={inviteEmail}
+                      inviteToken={inviteToken}
+                    />
                   </TabsContent>
                 </Tabs>
 
