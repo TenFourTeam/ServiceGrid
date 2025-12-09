@@ -240,17 +240,20 @@ Deno.serve(async (req) => {
         const conversationsWithPreview = await Promise.all(conversations.map(async (conv: any) => {
           const { data: lastMessage } = await supabase
             .from('sg_messages')
-            .select('content, created_at, sender_type')
+            .select('content, created_at, sender_type, attachments')
             .eq('conversation_id', conv.id)
             .order('created_at', { ascending: false })
             .limit(1)
             .single();
 
+          const hasAttachments = lastMessage?.attachments && Array.isArray(lastMessage.attachments) && lastMessage.attachments.length > 0;
+
           return {
             ...conv,
-            last_message: lastMessage?.content || null,
+            last_message: lastMessage?.content || (hasAttachments ? null : null),
             last_message_at: lastMessage?.created_at || conv.created_at,
             last_message_from_customer: lastMessage?.sender_type === 'customer',
+            has_attachments: hasAttachments,
           };
         }));
 
@@ -347,6 +350,21 @@ Deno.serve(async (req) => {
       if (msgError) {
         console.error('[customer-messages-crud] Error creating message:', msgError);
         throw msgError;
+      }
+
+      // Update sg_media records with conversation_id if attachments were uploaded before conversation existed
+      if (hasAttachments && targetConversationId) {
+        const { error: mediaUpdateError } = await supabase
+          .from('sg_media')
+          .update({ conversation_id: targetConversationId })
+          .in('id', attachments)
+          .is('conversation_id', null);
+
+        if (mediaUpdateError) {
+          console.warn('[customer-messages-crud] Failed to update media conversation_id:', mediaUpdateError.message);
+        } else {
+          console.log(`[customer-messages-crud] Updated ${attachments.length} media records with conversation_id`);
+        }
       }
 
       // Update conversation updated_at
