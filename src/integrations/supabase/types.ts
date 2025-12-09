@@ -3422,6 +3422,7 @@ export type Database = {
           business_id: string
           created_at: string | null
           created_by: string
+          customer_id: string | null
           id: string
           is_archived: boolean | null
           last_message_at: string | null
@@ -3433,6 +3434,7 @@ export type Database = {
           business_id: string
           created_at?: string | null
           created_by: string
+          customer_id?: string | null
           id?: string
           is_archived?: boolean | null
           last_message_at?: string | null
@@ -3444,6 +3446,7 @@ export type Database = {
           business_id?: string
           created_at?: string | null
           created_by?: string
+          customer_id?: string | null
           id?: string
           is_archived?: boolean | null
           last_message_at?: string | null
@@ -3472,6 +3475,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "user_productivity_report"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "sg_conversations_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
           },
         ]
       }

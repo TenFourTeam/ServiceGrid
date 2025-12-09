@@ -1,5 +1,9 @@
 project_id = "ijudkzqfriazabiosnvb"
 
+# Customer portal messaging
+[functions.customer-messages-crud]
+verify_jwt = false
+
 # AI Assistant functions
 [functions.ai-chat]
 verify_jwt = false
