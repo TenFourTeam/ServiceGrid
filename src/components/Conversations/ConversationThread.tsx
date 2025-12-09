@@ -20,10 +20,13 @@ export function ConversationThread({ conversationId, onBack, title, isCustomerCh
 
   // Auto-scroll to bottom
   useEffect(() => {
+    // Double requestAnimationFrame ensures DOM is fully painted before scrolling
     requestAnimationFrame(() => {
-      if (scrollRef.current) {
-        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-      }
+      requestAnimationFrame(() => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+      });
     });
   }, [messages]);
 

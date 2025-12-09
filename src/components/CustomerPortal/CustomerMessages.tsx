@@ -24,10 +24,13 @@ export function CustomerMessages() {
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
+    // Double requestAnimationFrame ensures DOM is fully painted before scrolling
     requestAnimationFrame(() => {
-      if (scrollRef.current) {
-        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-      }
+      requestAnimationFrame(() => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+      });
     });
   }, [messagesData?.messages]);
 
