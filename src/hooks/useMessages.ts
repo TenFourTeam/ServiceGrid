@@ -52,13 +52,13 @@ export function useMessages(conversationId: string | null) {
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
           schema: 'public',
           table: 'sg_messages',
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
-          console.log('[useMessages] New message:', payload);
+          console.log('[useMessages] Message event:', payload.eventType, payload);
           queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
           queryClient.invalidateQueries({ queryKey: ['conversations', businessId] });
         }

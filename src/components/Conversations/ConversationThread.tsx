@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef, useMemo, useState } from 'react';
 import { useMessages } from '@/hooks/useMessages';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,11 @@ import { MessageComposer } from './MessageComposer';
 import { MessageBubble } from './MessageBubble';
 import { TimeSeparator } from './TimeSeparator';
 import { groupMessagesByDate, shouldGroupWithPrevious } from '@/utils/messageGrouping';
+import JobShowModal from '@/components/Jobs/JobShowModal';
+import { QuoteDetailsModal } from '@/components/Quotes/QuoteDetailsModal';
+import InvoiceModal from '@/components/Invoices/InvoiceModal';
+import { useJobsData } from '@/hooks/useJobsData';
+import { useInvoicesData } from '@/hooks/useInvoicesData';
 
 interface ConversationThreadProps {
   conversationId: string;
@@ -21,6 +26,32 @@ export function ConversationThread({ conversationId, onBack, title, isCustomerCh
   const { messages, isLoading, sendMessage } = useMessages(conversationId);
   const viewportRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  
+  // Fetch entities for modal display
+  const { data: jobs = [] } = useJobsData();
+  const { data: invoices = [] } = useInvoicesData();
+  
+  // Entity modal state
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(null);
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
+
+  const selectedJob = useMemo(() => jobs.find(j => j.id === selectedJobId), [jobs, selectedJobId]);
+  const selectedInvoice = useMemo(() => invoices.find(i => i.id === selectedInvoiceId), [invoices, selectedInvoiceId]);
+
+  const handleEntityClick = (type: 'job' | 'quote' | 'invoice', id: string) => {
+    switch (type) {
+      case 'job':
+        setSelectedJobId(id);
+        break;
+      case 'quote':
+        setSelectedQuoteId(id);
+        break;
+      case 'invoice':
+        setSelectedInvoiceId(id);
+        break;
+    }
+  };
 
   const groupedMessages = useMemo(() => {
     return groupMessagesByDate(messages);
@@ -73,7 +104,11 @@ export function ConversationThread({ conversationId, onBack, title, isCustomerCh
                     
                     return (
                       <div key={message.id} className={isGrouped ? 'mt-1' : 'mt-3'}>
-                        <MessageBubble message={message} isGrouped={isGrouped} />
+                        <MessageBubble 
+                          message={message} 
+                          isGrouped={isGrouped} 
+                          onEntityClick={handleEntityClick}
+                        />
                       </div>
                     );
                   })}
@@ -91,6 +126,31 @@ export function ConversationThread({ conversationId, onBack, title, isCustomerCh
           />
         </div>
       </CardContent>
+
+      {/* Entity Modals */}
+      {selectedJob && (
+        <JobShowModal
+          job={selectedJob}
+          open={!!selectedJob}
+          onOpenChange={(open) => !open && setSelectedJobId(null)}
+        />
+      )}
+
+      {selectedQuoteId && (
+        <QuoteDetailsModal
+          quoteId={selectedQuoteId}
+          open={!!selectedQuoteId}
+          onOpenChange={(open) => !open && setSelectedQuoteId(null)}
+        />
+      )}
+
+      {selectedInvoice && (
+        <InvoiceModal
+          invoice={selectedInvoice}
+          open={!!selectedInvoice}
+          onOpenChange={(open) => !open && setSelectedInvoiceId(null)}
+        />
+      )}
     </Card>
   );
 }

@@ -26,6 +26,7 @@ interface MessageBubbleProps {
     attachments?: any[];
   };
   isGrouped?: boolean;
+  onEntityClick?: (type: 'job' | 'quote' | 'invoice', id: string) => void;
 }
 
 // Parse entity references like /job[Title](id)
@@ -45,7 +46,7 @@ function removeReferencesFromContent(content: string): string {
   return content.replace(REFERENCE_PATTERN, '').trim();
 }
 
-export function MessageBubble({ message, isGrouped = false }: MessageBubbleProps) {
+export function MessageBubble({ message, isGrouped = false, onEntityClick }: MessageBubbleProps) {
   const { userId } = useBusinessContext();
   const isCustomerMessage = message.sender_type === 'customer';
   const isOwnMessage = !isCustomerMessage && message.sender_id === userId;
@@ -123,6 +124,7 @@ export function MessageBubble({ message, isGrouped = false }: MessageBubbleProps
                     type={ref.type}
                     title={ref.title}
                     compact
+                    onClick={() => onEntityClick?.(ref.type, ref.id)}
                   />
                 ))}
               </div>

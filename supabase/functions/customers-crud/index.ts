@@ -44,24 +44,46 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     if (req.method === 'GET') {
+      const url = new URL(req.url);
+      const includePortalStatus = url.searchParams.get('includePortalStatus') === 'true';
+      
       // Check if user can access customer contact information
       const { data: userRole } = await supabase
         .rpc('user_business_role', { p_business_id: ctx.businessId, p_user_id: ctx.userId });
       
       const canAccessContactInfo = userRole === 'owner';
       
-      const { data, error, count } = await supabase
-        .from('customers')
-        .select('*', { count: 'exact' })
-        .eq('business_id', ctx.businessId)
-        .order('created_at', { ascending: false });
+      let data, error, count;
+      
+      if (includePortalStatus) {
+        // Join with customer_accounts to get portal status
+        const result = await supabase
+          .from('customers')
+          .select('*, customer_accounts!left(id)', { count: 'exact' })
+          .eq('business_id', ctx.businessId)
+          .order('created_at', { ascending: false });
+        
+        data = result.data;
+        error = result.error;
+        count = result.count;
+      } else {
+        const result = await supabase
+          .from('customers')
+          .select('*', { count: 'exact' })
+          .eq('business_id', ctx.businessId)
+          .order('created_at', { ascending: false });
+        
+        data = result.data;
+        error = result.error;
+        count = result.count;
+      }
 
       if (error) {
         console.error('[customers-crud] GET error:', error);
         throw new Error(`Failed to fetch customers: ${error.message}`);
       }
 
-      // Filter out contact information for workers
+      // Filter out contact information for workers and add portal status
       const customers = data?.map(customer => ({
         id: customer.id,
         businessId: customer.business_id,
@@ -73,9 +95,12 @@ Deno.serve(async (req) => {
         notes: customer.notes,
         createdAt: customer.created_at,
         updatedAt: customer.updated_at,
+        ...(includePortalStatus && { 
+          has_portal_access: customer.customer_accounts && customer.customer_accounts.length > 0 
+        }),
       })) || [];
 
-      console.log('[customers-crud] Fetched', customers.length, 'customers, contact info access:', canAccessContactInfo);
+      console.log('[customers-crud] Fetched', customers.length, 'customers, portal status:', includePortalStatus);
       return json({ customers, count: count || 0 });
     }
 
