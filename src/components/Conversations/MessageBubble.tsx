@@ -24,9 +24,10 @@ interface MessageBubbleProps {
     };
     attachments?: any[];
   };
+  isGrouped?: boolean;
 }
 
-export function MessageBubble({ message }: MessageBubbleProps) {
+export function MessageBubble({ message, isGrouped = false }: MessageBubbleProps) {
   const { userId } = useBusinessContext();
   const isCustomerMessage = message.sender_type === 'customer';
   const isOwnMessage = !isCustomerMessage && message.sender_id === userId;
@@ -49,23 +50,25 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   return (
     <>
       <div className={`flex gap-3 ${isOwnMessage ? 'flex-row-reverse' : ''}`}>
-        <Avatar className="h-8 w-8 flex-shrink-0">
+        <Avatar className={`h-8 w-8 flex-shrink-0 ${isGrouped ? 'invisible' : ''}`}>
           <AvatarFallback className="text-xs">
             {senderName.slice(0, 2).toUpperCase()}
           </AvatarFallback>
         </Avatar>
 
         <div className={`flex flex-col gap-1 max-w-[70%] ${isOwnMessage ? 'items-end' : 'items-start'}`}>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="font-medium">{senderName}</span>
-            {isCustomerMessage && (
-              <Badge variant="secondary" className="text-xs bg-primary/10 text-primary">
-                Customer
-              </Badge>
-            )}
-            <span>{formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}</span>
-            {message.edited && <Badge variant="outline" className="text-xs">Edited</Badge>}
-          </div>
+          {!isGrouped && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="font-medium">{senderName}</span>
+              {isCustomerMessage && (
+                <Badge variant="secondary" className="text-xs bg-primary/10 text-primary">
+                  Customer
+                </Badge>
+              )}
+              <span>{formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}</span>
+              {message.edited && <Badge variant="outline" className="text-xs">Edited</Badge>}
+            </div>
+          )}
 
           <Card className={`p-3 ${isOwnMessage ? 'bg-primary text-primary-foreground' : ''}`}>
             <div className="text-sm whitespace-pre-wrap break-words">

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { MessageSquare, Loader2, ArrowLeft, Paperclip } from 'lucide-react';
@@ -11,6 +11,8 @@ import {
 } from '@/hooks/useCustomerMessages';
 import { CustomerMessageBubble } from './CustomerMessageBubble';
 import { CustomerMessageComposer } from './CustomerMessageComposer';
+import { TimeSeparator } from '@/components/Conversations/TimeSeparator';
+import { groupMessagesByDate, shouldGroupWithPrevious } from '@/utils/messageGrouping';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -22,6 +24,14 @@ export function CustomerMessages() {
   const { data: conversations, isLoading: conversationsLoading } = useCustomerConversations();
   const { data: messagesData, isLoading: messagesLoading } = useCustomerMessages(selectedConversation);
   const sendMessage = useSendCustomerMessage();
+
+  const groupedMessages = useMemo(() => {
+    const messages = messagesData?.messages || [];
+    return groupMessagesByDate(messages.map(m => ({
+      ...m,
+      sender_id: m.is_own_message ? 'self' : 'other'
+    })));
+  }, [messagesData?.messages]);
 
   // Auto-scroll to bottom when messages load or change
   useEffect(() => {
@@ -91,15 +101,32 @@ export function CustomerMessages() {
           ) : (
             <>
               <ScrollArea className="flex-1 p-4" viewportRef={viewportRef}>
-                <div className="space-y-4">
+                <div className="space-y-1">
                   {messagesData?.messages?.length === 0 ? (
                     <div className="text-center text-muted-foreground py-8">
                       <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-50" />
                       <p>No messages yet. Start the conversation!</p>
                     </div>
                   ) : (
-                    messagesData?.messages?.map((message) => (
-                      <CustomerMessageBubble key={message.id} message={message} conversationId={selectedConversation} />
+                    Array.from(groupedMessages.entries()).map(([dateLabel, dateMessages]) => (
+                      <div key={dateLabel}>
+                        <TimeSeparator label={dateLabel} />
+                        {dateMessages.map((message, idx) => {
+                          const prevMessage = idx > 0 ? dateMessages[idx - 1] : null;
+                          const isGrouped = shouldGroupWithPrevious(prevMessage, message);
+                          const originalMessage = messagesData?.messages?.find(m => m.id === message.id);
+                          
+                          return originalMessage ? (
+                            <div key={message.id} className={isGrouped ? 'mt-1' : 'mt-3'}>
+                              <CustomerMessageBubble 
+                                message={originalMessage} 
+                                conversationId={selectedConversation} 
+                                isGrouped={isGrouped}
+                              />
+                            </div>
+                          ) : null;
+                        })}
+                      </div>
                     ))
                   )}
                   <div ref={bottomRef} />

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { useMessages } from '@/hooks/useMessages';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { ArrowLeft } from 'lucide-react';
 import { MessageComposer } from './MessageComposer';
 import { MessageBubble } from './MessageBubble';
+import { TimeSeparator } from './TimeSeparator';
+import { groupMessagesByDate, shouldGroupWithPrevious } from '@/utils/messageGrouping';
 
 interface ConversationThreadProps {
   conversationId: string;
@@ -18,6 +20,10 @@ export function ConversationThread({ conversationId, onBack, title, isCustomerCh
   const { messages, isLoading, sendMessage } = useMessages(conversationId);
   const viewportRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  const groupedMessages = useMemo(() => {
+    return groupMessagesByDate(messages);
+  }, [messages]);
 
   // Auto-scroll to bottom when messages load or change
   useEffect(() => {
@@ -56,9 +62,21 @@ export function ConversationThread({ conversationId, onBack, title, isCustomerCh
               <p>No messages yet. Start the conversation!</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {messages.map((message) => (
-                <MessageBubble key={message.id} message={message} />
+            <div className="space-y-1">
+              {Array.from(groupedMessages.entries()).map(([dateLabel, dateMessages]) => (
+                <div key={dateLabel}>
+                  <TimeSeparator label={dateLabel} />
+                  {dateMessages.map((message, idx) => {
+                    const prevMessage = idx > 0 ? dateMessages[idx - 1] : null;
+                    const isGrouped = shouldGroupWithPrevious(prevMessage, message);
+                    
+                    return (
+                      <div key={message.id} className={isGrouped ? 'mt-1' : 'mt-3'}>
+                        <MessageBubble message={message} isGrouped={isGrouped} />
+                      </div>
+                    );
+                  })}
+                </div>
               ))}
               <div ref={bottomRef} />
             </div>
