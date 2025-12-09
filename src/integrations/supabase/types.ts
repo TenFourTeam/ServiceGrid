@@ -3860,6 +3860,7 @@ export type Database = {
           mentions: Json | null
           metadata: Json | null
           sender_id: string
+          sender_type: string | null
           updated_at: string | null
         }
         Insert: {
@@ -3873,6 +3874,7 @@ export type Database = {
           mentions?: Json | null
           metadata?: Json | null
           sender_id: string
+          sender_type?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -3886,6 +3888,7 @@ export type Database = {
           mentions?: Json | null
           metadata?: Json | null
           sender_id?: string
+          sender_type?: string | null
           updated_at?: string | null
         }
         Relationships: [
