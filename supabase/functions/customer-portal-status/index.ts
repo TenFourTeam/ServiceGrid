@@ -1,20 +1,16 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { requireCtx } from "../_shared/auth.ts";
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.54.0";
+import { corsHeaders, json, requireCtx } from '../_lib/auth.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Verify authentication
@@ -24,10 +20,7 @@ serve(async (req) => {
     const customerId = url.searchParams.get('customerId');
 
     if (!customerId) {
-      return new Response(
-        JSON.stringify({ error: 'customerId is required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return json({ error: 'customerId is required' }, { status: 400 });
     }
 
     // Check if customer belongs to this business
@@ -39,10 +32,7 @@ serve(async (req) => {
       .single();
 
     if (customerError || !customer) {
-      return new Response(
-        JSON.stringify({ error: 'Customer not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return json({ error: 'Customer not found' }, { status: 404 });
     }
 
     // Check for customer account (portal access)
@@ -73,21 +63,15 @@ serve(async (req) => {
       status = 'pending';
     }
 
-    return new Response(
-      JSON.stringify({
-        status,
-        hasAccount,
-        hasPendingInvite,
-        inviteSentAt: invite?.sent_at,
-        lastLoginAt: account?.last_login_at,
-      }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return json({
+      status,
+      hasAccount,
+      hasPendingInvite,
+      inviteSentAt: invite?.sent_at,
+      lastLoginAt: account?.last_login_at,
+    });
   } catch (error) {
     console.error('Error in customer-portal-status:', error);
-    return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
 });
