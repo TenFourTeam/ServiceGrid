@@ -162,8 +162,12 @@ Deno.serve(async (req) => {
     if (req.method === 'POST') {
       const { conversationId, content, attachments } = await req.json();
 
-      if (!conversationId || !content) {
-        return ok({ error: 'Missing conversationId or content' }, 400);
+      // Require conversationId and either content or attachments
+      const hasContent = content && content.trim().length > 0;
+      const hasAttachments = attachments && attachments.length > 0;
+      
+      if (!conversationId || (!hasContent && !hasAttachments)) {
+        return ok({ error: 'Missing conversationId or content/attachments' }, 400);
       }
 
       // Parse mentions from content
