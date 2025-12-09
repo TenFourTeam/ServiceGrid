@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageSquare, Loader2, ArrowLeft } from 'lucide-react';
+import { MessageSquare, Loader2, ArrowLeft, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { 
   useCustomerConversations, 
@@ -138,9 +138,10 @@ export function CustomerMessages() {
                         </span>
                       )}
                     </div>
-                    {conv.last_message && (
-                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                        {conv.last_message}
+                    {(conv.last_message || conv.has_attachments) && (
+                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2 flex items-center gap-1">
+                        {conv.has_attachments && !conv.last_message && <Paperclip className="h-3 w-3" />}
+                        {conv.last_message || (conv.has_attachments ? 'Attachment' : '')}
                       </p>
                     )}
                   </div>

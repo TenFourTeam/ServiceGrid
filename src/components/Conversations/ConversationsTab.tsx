@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { MessageSquare, Plus, Search, User } from 'lucide-react';
+import { MessageSquare, Plus, Search, User, Paperclip } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ConversationThread } from './ConversationThread';
@@ -129,10 +129,11 @@ export function ConversationsTab() {
                         </Badge>
                       )}
                     </div>
-                    {conversation.latest_message && (
-                      <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-                        <span className="font-medium">{conversation.latest_sender_name}:</span>{' '}
-                        {conversation.latest_message}
+                    {(conversation.latest_message || (conversation as any).has_attachments) && (
+                      <p className="text-sm text-muted-foreground line-clamp-2 mb-2 flex items-center gap-1">
+                        {conversation.latest_sender_name && <span className="font-medium">{conversation.latest_sender_name}:</span>}
+                        {(conversation as any).has_attachments && !conversation.latest_message && <Paperclip className="h-3 w-3" />}
+                        {conversation.latest_message || ((conversation as any).has_attachments ? 'Attachment' : '')}
                       </p>
                     )}
                     <div className="flex items-center justify-between text-xs text-muted-foreground">

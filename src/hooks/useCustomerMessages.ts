@@ -22,6 +22,7 @@ export interface CustomerConversation {
   last_message: string | null;
   last_message_at: string;
   last_message_from_customer: boolean;
+  has_attachments?: boolean;
 }
 
 const EDGE_FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/customer-messages-crud`;

@@ -69,7 +69,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
           <Card className={`p-3 ${isOwnMessage ? 'bg-primary text-primary-foreground' : ''}`}>
             <div className="text-sm whitespace-pre-wrap break-words">
-              {message.content.split(/(@\[[^\]]+\]\([^)]+\))/).map((part, idx) => {
+              {message.content ? message.content.split(/(@\[[^\]]+\]\([^)]+\))/).map((part, idx) => {
                 const mentionMatch = part.match(/@\[([^\]]+)\]\([^)]+\)/);
                 if (mentionMatch) {
                   return (
@@ -83,7 +83,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                   );
                 }
                 return <span key={idx}>{part}</span>;
-              })}
+              }) : null}
             </div>
 
             {attachmentIds.length > 0 && (
