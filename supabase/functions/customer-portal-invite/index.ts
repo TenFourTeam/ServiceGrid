@@ -103,7 +103,7 @@ serve(async (req) => {
 
     // Send invite email - use invite token link
     const inviteToken = invite.invite_token || invite.id;
-    const portalUrl = `https://servicegrid.lovable.app/customer-invite/${inviteToken}`;
+    const portalUrl = `https://servicegrid.app/customer-invite/${inviteToken}`;
     const businessName = (customer.businesses as any)?.name || 'Your Service Provider';
 
     if (resendApiKey) {
