@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 
 export function CustomerMessages() {
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   
   const { data: conversations, isLoading: conversationsLoading } = useCustomerConversations();
@@ -29,10 +30,15 @@ export function CustomerMessages() {
     // Only scroll when we have messages and loading is complete
     if (messagesLoading || !messages || messages.length === 0) return;
     
-    // Use scrollIntoView on anchor element - works reliably with Radix ScrollArea
+    // Use timeout to ensure content is fully rendered
     const timeoutId = setTimeout(() => {
-      bottomRef.current?.scrollIntoView({ behavior: 'auto' });
-    }, 50);
+      // Primary: direct viewport scroll
+      if (viewportRef.current) {
+        viewportRef.current.scrollTop = viewportRef.current.scrollHeight;
+      }
+      // Fallback: scrollIntoView on anchor
+      bottomRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' });
+    }, 100);
     
     return () => clearTimeout(timeoutId);
   }, [messagesData?.messages, messagesLoading]);
@@ -84,7 +90,7 @@ export function CustomerMessages() {
             </div>
           ) : (
             <>
-              <ScrollArea className="flex-1 p-4">
+              <ScrollArea className="flex-1 p-4" viewportRef={viewportRef}>
                 <div className="space-y-4">
                   {messagesData?.messages?.length === 0 ? (
                     <div className="text-center text-muted-foreground py-8">
