@@ -107,8 +107,10 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                         <button
                           key={item.id}
                           onClick={() => {
-                            setViewerIndex(idx);
-                            setViewerOpen(true);
+                            if (mediaItems.length > 0) {
+                              setViewerIndex(idx);
+                              setViewerOpen(true);
+                            }
                           }}
                           className="relative group rounded-lg overflow-hidden border hover:ring-2 hover:ring-primary transition-all"
                         >
@@ -143,12 +145,14 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         </div>
       </div>
 
-      <MediaViewer
-        media={mediaItems}
-        initialIndex={viewerIndex}
-        isOpen={viewerOpen}
-        onClose={() => setViewerOpen(false)}
-      />
+      {viewerOpen && mediaItems.length > 0 && (
+        <MediaViewer
+          media={mediaItems}
+          initialIndex={viewerIndex}
+          isOpen={viewerOpen}
+          onClose={() => setViewerOpen(false)}
+        />
+      )}
     </>
   );
 }
