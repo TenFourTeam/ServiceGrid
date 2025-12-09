@@ -195,7 +195,7 @@ Deno.serve(async (req) => {
         public_url: publicUrl,
         thumbnail_url: thumbnailUrl,
         metadata: { uploaded_by_customer: customer_id },
-        upload_status: file.type === 'image/svg+xml' ? 'completed' : 'processing'
+        upload_status: 'completed'
       })
       .select()
       .single();
