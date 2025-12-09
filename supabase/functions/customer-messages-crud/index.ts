@@ -388,6 +388,152 @@ Deno.serve(async (req) => {
       );
     }
 
+    // PATCH: Edit customer message (15-minute window)
+    if (req.method === 'PATCH') {
+      const messageId = url.searchParams.get('messageId');
+      if (!messageId) {
+        return new Response(
+          JSON.stringify({ error: 'Message ID required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const body = await req.json();
+      const { content } = body;
+
+      if (!content || !content.trim()) {
+        return new Response(
+          JSON.stringify({ error: 'Message content required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log(`[customer-messages-crud] Editing message: ${messageId}`);
+
+      // Verify message exists and belongs to this customer
+      const { data: existingMessage, error: fetchError } = await supabase
+        .from('sg_messages')
+        .select('id, created_at, sender_id, sender_type')
+        .eq('id', messageId)
+        .single();
+
+      if (fetchError || !existingMessage) {
+        return new Response(
+          JSON.stringify({ error: 'Message not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Must be customer's own message
+      if (existingMessage.sender_id !== customer_id || existingMessage.sender_type !== 'customer') {
+        return new Response(
+          JSON.stringify({ error: 'You can only edit your own messages' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Check 15-minute window
+      const minutesSinceCreation = (Date.now() - new Date(existingMessage.created_at).getTime()) / 60000;
+      if (minutesSinceCreation > 15) {
+        return new Response(
+          JSON.stringify({ error: 'Messages can only be edited within 15 minutes of sending' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Update message with edited flag
+      const { data: updatedMessage, error: updateError } = await supabase
+        .from('sg_messages')
+        .update({ 
+          content: content.trim(), 
+          edited: true, 
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', messageId)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error('[customer-messages-crud] Error updating message:', updateError);
+        throw updateError;
+      }
+
+      console.log(`[customer-messages-crud] Message edited: ${messageId}`);
+
+      return new Response(
+        JSON.stringify({ 
+          message: { 
+            ...updatedMessage, 
+            sender_name: customer_name, 
+            is_own_message: true 
+          } 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // DELETE: Delete customer message (15-minute window)
+    if (req.method === 'DELETE') {
+      const messageId = url.searchParams.get('messageId');
+      if (!messageId) {
+        return new Response(
+          JSON.stringify({ error: 'Message ID required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log(`[customer-messages-crud] Deleting message: ${messageId}`);
+
+      // Verify message exists and belongs to this customer
+      const { data: existingMessage, error: fetchError } = await supabase
+        .from('sg_messages')
+        .select('id, created_at, sender_id, sender_type')
+        .eq('id', messageId)
+        .single();
+
+      if (fetchError || !existingMessage) {
+        return new Response(
+          JSON.stringify({ error: 'Message not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Must be customer's own message
+      if (existingMessage.sender_id !== customer_id || existingMessage.sender_type !== 'customer') {
+        return new Response(
+          JSON.stringify({ error: 'You can only delete your own messages' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Check 15-minute window
+      const minutesSinceCreation = (Date.now() - new Date(existingMessage.created_at).getTime()) / 60000;
+      if (minutesSinceCreation > 15) {
+        return new Response(
+          JSON.stringify({ error: 'Messages can only be deleted within 15 minutes of sending' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Delete the message
+      const { error: deleteError } = await supabase
+        .from('sg_messages')
+        .delete()
+        .eq('id', messageId);
+
+      if (deleteError) {
+        console.error('[customer-messages-crud] Error deleting message:', deleteError);
+        throw deleteError;
+      }
+
+      console.log(`[customer-messages-crud] Message deleted: ${messageId}`);
+
+      return new Response(
+        JSON.stringify({ success: true }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     return new Response(
       JSON.stringify({ error: 'Method not allowed' }),
       { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

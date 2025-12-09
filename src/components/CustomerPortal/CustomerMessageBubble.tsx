@@ -2,19 +2,50 @@ import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { FileText } from 'lucide-react';
+import { FileText, MoreVertical, Pencil, Trash2, X, Check } from 'lucide-react';
 import type { CustomerMessage, CustomerMessageAttachment } from '@/hooks/useCustomerMessages';
+import { useEditCustomerMessage, useDeleteCustomerMessage } from '@/hooks/useCustomerMessages';
 import { MediaViewer } from '@/components/Jobs/MediaViewer';
 import type { MediaItem } from '@/hooks/useJobMedia';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
 
 interface CustomerMessageBubbleProps {
   message: CustomerMessage;
+  conversationId: string;
 }
 
-export function CustomerMessageBubble({ message }: CustomerMessageBubbleProps) {
+export function CustomerMessageBubble({ message, conversationId }: CustomerMessageBubbleProps) {
   const isOwnMessage = message.is_own_message;
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(message.content || '');
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+  const editMutation = useEditCustomerMessage();
+  const deleteMutation = useDeleteCustomerMessage();
+
+  // Check if within 15-minute edit/delete window
+  const minutesSinceCreation = (Date.now() - new Date(message.created_at).getTime()) / 60000;
+  const canEditOrDelete = isOwnMessage && minutesSinceCreation <= 15;
   
   const initials = message.sender_name
     ?.split(' ')
@@ -43,13 +74,52 @@ export function CustomerMessageBubble({ message }: CustomerMessageBubbleProps) {
     }));
 
   const handleMediaClick = (attachmentIndex: number) => {
-    // Find the index in mediaItems (which excludes non-media files)
     const mediaOnlyIndex = attachments
       .slice(0, attachmentIndex + 1)
       .filter(att => att.type === 'image' || att.type === 'video')
       .length - 1;
     setViewerIndex(Math.max(0, mediaOnlyIndex));
     setViewerOpen(true);
+  };
+
+  const handleEditSave = () => {
+    if (!editContent.trim()) {
+      toast.error('Message cannot be empty');
+      return;
+    }
+
+    editMutation.mutate(
+      { messageId: message.id, content: editContent.trim(), conversationId },
+      {
+        onSuccess: () => {
+          setIsEditing(false);
+          toast.success('Message updated');
+        },
+        onError: (error) => {
+          toast.error(error.message);
+        },
+      }
+    );
+  };
+
+  const handleEditCancel = () => {
+    setEditContent(message.content || '');
+    setIsEditing(false);
+  };
+
+  const handleDelete = () => {
+    deleteMutation.mutate(
+      { messageId: message.id, conversationId },
+      {
+        onSuccess: () => {
+          setShowDeleteDialog(false);
+          toast.success('Message deleted');
+        },
+        onError: (error) => {
+          toast.error(error.message);
+        },
+      }
+    );
   };
 
   const renderAttachment = (attachment: CustomerMessageAttachment, index: number) => {
@@ -115,7 +185,7 @@ export function CustomerMessageBubble({ message }: CustomerMessageBubbleProps) {
     <>
       <div
         className={cn(
-          'flex gap-3 max-w-[85%]',
+          'flex gap-3 max-w-[85%] group',
           isOwnMessage ? 'ml-auto flex-row-reverse' : 'mr-auto'
         )}
       >
@@ -140,30 +210,103 @@ export function CustomerMessageBubble({ message }: CustomerMessageBubbleProps) {
             <span className="text-xs text-muted-foreground/60">
               {format(new Date(message.created_at), 'MMM d, h:mm a')}
             </span>
+            {message.edited && (
+              <span className="text-xs text-muted-foreground/50 italic">(edited)</span>
+            )}
           </div>
 
-          {hasContent && (
-            <div
-              className={cn(
-                'rounded-2xl px-4 py-2 text-sm',
-                isOwnMessage
-                  ? 'bg-primary text-primary-foreground rounded-tr-sm'
-                  : 'bg-muted text-foreground rounded-tl-sm',
-                hasAttachments && 'mb-2'
+          <div className="flex items-start gap-1">
+            {/* Message content */}
+            <div className={cn('flex flex-col gap-2', isOwnMessage ? 'items-end' : 'items-start')}>
+              {isEditing ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    className="min-w-[200px]"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleEditSave();
+                      } else if (e.key === 'Escape') {
+                        handleEditCancel();
+                      }
+                    }}
+                  />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8"
+                    onClick={handleEditSave}
+                    disabled={editMutation.isPending}
+                  >
+                    <Check className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8"
+                    onClick={handleEditCancel}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                hasContent && (
+                  <div
+                    className={cn(
+                      'rounded-2xl px-4 py-2 text-sm',
+                      isOwnMessage
+                        ? 'bg-primary text-primary-foreground rounded-tr-sm'
+                        : 'bg-muted text-foreground rounded-tl-sm'
+                    )}
+                  >
+                    <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                  </div>
+                )
               )}
-            >
-              <p className="whitespace-pre-wrap break-words">{message.content}</p>
-            </div>
-          )}
 
-          {hasAttachments && (
-            <div className={cn(
-              'flex flex-wrap gap-2',
-              isOwnMessage ? 'justify-end' : 'justify-start'
-            )}>
-              {attachments.map((attachment, index) => renderAttachment(attachment, index))}
+              {hasAttachments && !isEditing && (
+                <div className={cn(
+                  'flex flex-wrap gap-2',
+                  isOwnMessage ? 'justify-end' : 'justify-start'
+                )}>
+                  {attachments.map((attachment, index) => renderAttachment(attachment, index))}
+                </div>
+              )}
             </div>
-          )}
+
+            {/* Edit/Delete dropdown - only show for own messages within 15 min */}
+            {canEditOrDelete && !isEditing && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align={isOwnMessage ? 'end' : 'start'}>
+                  {hasContent && (
+                    <DropdownMenuItem onClick={() => setIsEditing(true)}>
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Edit
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem 
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
         </div>
       </div>
 
@@ -176,6 +319,28 @@ export function CustomerMessageBubble({ message }: CustomerMessageBubbleProps) {
           onClose={() => setViewerOpen(false)}
         />
       )}
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete message?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. The message will be permanently deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
+              disabled={deleteMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
