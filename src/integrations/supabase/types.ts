@@ -3906,20 +3906,6 @@ export type Database = {
             referencedRelation: "sg_conversations"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "sg_messages_sender_id_fkey"
-            columns: ["sender_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sg_messages_sender_id_fkey"
-            columns: ["sender_id"]
-            isOneToOne: false
-            referencedRelation: "user_productivity_report"
-            referencedColumns: ["user_id"]
-          },
         ]
       }
       sg_note_collaborators: {
