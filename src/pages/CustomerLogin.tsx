@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { SignInButton, useAuth } from '@clerk/clerk-react';
+import { useAuth, useSignIn } from '@clerk/clerk-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -13,6 +13,7 @@ import { PasswordResetForm } from '@/components/CustomerPortal/PasswordResetForm
 import { useCustomerAuth } from '@/hooks/useCustomerAuth';
 import { CustomerAuthProvider } from '@/components/CustomerPortal/CustomerAuthProvider';
 import { Chrome, Mail, Lock, ArrowLeft, Loader2, PartyPopper } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface InviteState {
   inviteToken?: string;
@@ -25,9 +26,11 @@ function CustomerLoginContent() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isSignedIn } = useAuth();
+  const { signIn, isLoaded: isSignInLoaded } = useSignIn();
   const { isAuthenticated, isLoading } = useCustomerAuth();
   const [activeTab, setActiveTab] = useState<'magic' | 'password' | 'register'>('magic');
   const [showPasswordReset, setShowPasswordReset] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   
   // Get invite data from location state
   const inviteState = (location.state as InviteState) || {};
@@ -97,17 +100,35 @@ function CustomerLoginContent() {
               <PasswordResetForm onBack={() => setShowPasswordReset(false)} />
             ) : (
               <>
-                {/* Clerk Sign In - Primary option */}
+                {/* Google Sign In - Primary option */}
                 <div className="space-y-3">
-                  <SignInButton 
-                    mode="modal" 
-                    forceRedirectUrl="/portal"
+                  <Button 
+                    variant="outline" 
+                    className="w-full h-11"
+                    disabled={isGoogleLoading || !isSignInLoaded}
+                    onClick={async () => {
+                      if (!signIn) return;
+                      setIsGoogleLoading(true);
+                      try {
+                        await signIn.authenticateWithRedirect({
+                          strategy: 'oauth_google',
+                          redirectUrl: '/sso-callback',
+                          redirectUrlComplete: '/portal',
+                        });
+                      } catch (error: any) {
+                        console.error('Google sign-in error:', error);
+                        toast.error('Failed to start Google sign-in');
+                        setIsGoogleLoading(false);
+                      }
+                    }}
                   >
-                    <Button variant="outline" className="w-full h-11">
+                    {isGoogleLoading ? (
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    ) : (
                       <Chrome className="mr-2 h-5 w-5" />
-                      Continue with Google
-                    </Button>
-                  </SignInButton>
+                    )}
+                    Continue with Google
+                  </Button>
                   <p className="text-xs text-center text-muted-foreground">
                     Recommended for repeat customers
                   </p>

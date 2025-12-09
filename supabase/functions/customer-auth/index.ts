@@ -200,6 +200,13 @@ async function handleVerifyMagic(req: Request, supabase: any) {
     })
     .eq('id', account.id);
 
+  // Mark any pending invites as accepted
+  await supabase
+    .from('customer_portal_invites')
+    .update({ accepted_at: new Date().toISOString() })
+    .eq('customer_id', account.customer_id)
+    .is('accepted_at', null);
+
   // Create session
   const sessionToken = crypto.randomUUID() + '-' + crypto.randomUUID();
   const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
