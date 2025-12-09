@@ -8,11 +8,12 @@ import { toast } from 'sonner';
 
 interface MagicLinkFormProps {
   onSuccess?: () => void;
+  initialEmail?: string;
 }
 
-export function MagicLinkForm({ onSuccess }: MagicLinkFormProps) {
+export function MagicLinkForm({ onSuccess, initialEmail }: MagicLinkFormProps) {
   const { sendMagicLink } = useCustomerAuth();
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(initialEmail || '');
   const [isLoading, setIsLoading] = useState(false);
   const [sent, setSent] = useState(false);
 

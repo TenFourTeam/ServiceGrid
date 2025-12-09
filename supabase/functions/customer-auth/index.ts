@@ -121,7 +121,7 @@ async function handleMagicLink(req: Request, supabase: any) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: 'ServiceGrid <noreply@servicegrid.io>',
+          from: 'ServiceGrid <noreply@servicegrid.app>',
           to: [email],
           subject: `Access your project portal - ${customer.businesses?.name || 'ServiceGrid'}`,
           html: `

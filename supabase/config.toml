@@ -496,3 +496,6 @@ verify_jwt = false
 [functions.customer-portal-invite]
 verify_jwt = false
 
+[functions.customer-portal-invite-validate]
+verify_jwt = false
+
