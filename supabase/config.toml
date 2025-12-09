@@ -263,8 +263,6 @@ verify_jwt = false
 [functions.audit-logs-crud]
 verify_jwt = false
 
-[functions.invite-manage]
-verify_jwt = false
 
 [functions.upload-request-photo]
 verify_jwt = false
