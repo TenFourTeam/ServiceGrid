@@ -16,6 +16,7 @@ interface ConversationThreadProps {
 
 export function ConversationThread({ conversationId, onBack, title, isCustomerChat }: ConversationThreadProps) {
   const { messages, isLoading, sendMessage } = useMessages(conversationId);
+  const viewportRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when messages load or change
@@ -23,10 +24,15 @@ export function ConversationThread({ conversationId, onBack, title, isCustomerCh
     // Only scroll when we have messages and loading is complete
     if (isLoading || messages.length === 0) return;
     
-    // Use scrollIntoView on anchor element - works reliably with Radix ScrollArea
+    // Use timeout to ensure content is fully rendered
     const timeoutId = setTimeout(() => {
-      bottomRef.current?.scrollIntoView({ behavior: 'auto' });
-    }, 50);
+      // Primary: direct viewport scroll
+      if (viewportRef.current) {
+        viewportRef.current.scrollTop = viewportRef.current.scrollHeight;
+      }
+      // Fallback: scrollIntoView on anchor
+      bottomRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' });
+    }, 100);
     
     return () => clearTimeout(timeoutId);
   }, [messages, isLoading]);
@@ -42,7 +48,7 @@ export function ConversationThread({ conversationId, onBack, title, isCustomerCh
         </div>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col p-0 min-h-0">
-        <ScrollArea className="flex-1 p-4">
+        <ScrollArea className="flex-1 p-4" viewportRef={viewportRef}>
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground">Loading messages...</div>
           ) : messages.length === 0 ? (
