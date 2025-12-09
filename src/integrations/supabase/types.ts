@@ -5103,11 +5103,14 @@ export type Database = {
           business_id: string
           created_at: string
           created_by: string
+          customer_id: string
+          customer_name: string
           id: string
           is_archived: boolean
           last_message_at: string
           latest_message: string
           latest_sender_name: string
+          latest_sender_type: string
           metadata: Json
           title: string
           unread_count: number

@@ -8,8 +8,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { MessageSquare, Plus, Search } from 'lucide-react';
+import { MessageSquare, Plus, Search, User } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { ConversationThread } from './ConversationThread';
 
 export function ConversationsTab() {
@@ -88,33 +89,54 @@ export function ConversationsTab() {
         ) : (
           <ScrollArea className="h-[500px]">
             <div className="space-y-2">
-              {filteredConversations.map((conversation) => (
-                <div
-                  key={conversation.id}
-                  onClick={() => setSelectedConversationId(conversation.id)}
-                  className="p-4 rounded-lg border cursor-pointer hover:bg-accent transition-colors"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-medium">{conversation.title}</h3>
-                    {conversation.unread_count && conversation.unread_count > 0 && (
-                      <Badge variant="default" className="ml-2">
-                        {conversation.unread_count}
-                      </Badge>
+              {filteredConversations.map((conversation) => {
+                const isCustomerChat = !!conversation.customer_id;
+                return (
+                  <div
+                    key={conversation.id}
+                    onClick={() => setSelectedConversationId(conversation.id)}
+                    className={cn(
+                      "p-4 rounded-lg border cursor-pointer hover:bg-accent transition-colors",
+                      isCustomerChat && "border-primary/20 bg-primary/5"
                     )}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        {isCustomerChat && (
+                          <Badge variant="outline" className="text-xs gap-1 shrink-0">
+                            <User className="h-3 w-3" />
+                            Customer
+                          </Badge>
+                        )}
+                        <h3 className="font-medium">
+                          {isCustomerChat ? conversation.customer_name : conversation.title}
+                        </h3>
+                      </div>
+                      {conversation.unread_count && conversation.unread_count > 0 && (
+                        <Badge variant="default" className="ml-2">
+                          {conversation.unread_count}
+                        </Badge>
+                      )}
+                      {isCustomerChat && conversation.latest_sender_type === 'customer' && (
+                        <Badge variant="destructive" className="ml-2 text-xs">
+                          New
+                        </Badge>
+                      )}
+                    </div>
+                    {conversation.latest_message && (
+                      <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                        <span className="font-medium">{conversation.latest_sender_name}:</span>{' '}
+                        {conversation.latest_message}
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>
+                        {formatDistanceToNow(new Date(conversation.last_message_at), { addSuffix: true })}
+                      </span>
+                    </div>
                   </div>
-                  {conversation.latest_message && (
-                    <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-                      <span className="font-medium">{conversation.latest_sender_name}:</span>{' '}
-                      {conversation.latest_message}
-                    </p>
-                  )}
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>
-                      {formatDistanceToNow(new Date(conversation.last_message_at), { addSuffix: true })}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </ScrollArea>
         )}

@@ -14,7 +14,10 @@ export interface Conversation {
   is_archived: boolean;
   latest_message?: string;
   latest_sender_name?: string;
+  latest_sender_type?: 'user' | 'customer';
   unread_count?: number;
+  customer_id?: string;
+  customer_name?: string;
 }
 
 export function useConversations() {
