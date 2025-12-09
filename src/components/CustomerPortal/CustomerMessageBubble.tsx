@@ -3,17 +3,10 @@ import { format } from 'date-fns';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { FileText } from 'lucide-react';
-import type { CustomerMessage } from '@/hooks/useCustomerMessages';
-
-interface Attachment {
-  url: string;
-  type: string;
-  name?: string;
-  thumbnail_url?: string;
-}
+import type { CustomerMessage, CustomerMessageAttachment } from '@/hooks/useCustomerMessages';
 
 interface CustomerMessageBubbleProps {
-  message: CustomerMessage & { attachments?: Attachment[] };
+  message: CustomerMessage;
 }
 
 export function CustomerMessageBubble({ message }: CustomerMessageBubbleProps) {
@@ -31,7 +24,7 @@ export function CustomerMessageBubble({ message }: CustomerMessageBubbleProps) {
   const hasAttachments = attachments.length > 0;
   const hasContent = message.content && message.content.trim().length > 0;
 
-  const renderAttachment = (attachment: Attachment, index: number) => {
+  const renderAttachment = (attachment: CustomerMessageAttachment, index: number) => {
     // Use simplified type from edge function: 'image', 'video', 'file'
     const isImage = attachment.type === 'image';
     const isVideo = attachment.type === 'video';
