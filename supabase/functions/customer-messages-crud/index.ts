@@ -146,17 +146,59 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Enrich messages with sender info and format attachments
+        // Collect all attachment IDs from messages to batch fetch media URLs
+        const allAttachmentIds: string[] = [];
+        messages.forEach((msg: any) => {
+          const msgAttachments = msg.attachments || [];
+          msgAttachments.forEach((att: any) => {
+            // Handle both string IDs and object attachments
+            if (typeof att === 'string') {
+              allAttachmentIds.push(att);
+            } else if (att?.id) {
+              allAttachmentIds.push(att.id);
+            }
+          });
+        });
+
+        // Batch fetch media records to get actual URLs
+        let mediaMap: Record<string, any> = {};
+        if (allAttachmentIds.length > 0) {
+          const { data: mediaRecords, error: mediaError } = await supabase
+            .from('sg_media')
+            .select('id, public_url, mime_type, original_filename, thumbnail_url')
+            .in('id', allAttachmentIds);
+
+          if (!mediaError && mediaRecords) {
+            mediaMap = mediaRecords.reduce((acc: any, m: any) => {
+              acc[m.id] = {
+                url: m.public_url,
+                type: m.mime_type?.startsWith('video/') ? 'video' : 
+                      m.mime_type?.startsWith('image/') ? 'image' : 'file',
+                name: m.original_filename,
+                thumbnail_url: m.thumbnail_url,
+              };
+              return acc;
+            }, {});
+          }
+        }
+
+        // Enrich messages with sender info and resolved attachments
         const enrichedMessages = messages.map((msg: any) => {
-          // Parse attachments from JSONB field
-          const attachments = msg.attachments || [];
+          // Resolve attachment IDs to full attachment objects
+          const rawAttachments = msg.attachments || [];
+          const resolvedAttachments = rawAttachments
+            .map((att: any) => {
+              const id = typeof att === 'string' ? att : att?.id;
+              return id ? mediaMap[id] : null;
+            })
+            .filter(Boolean);
           
           if (msg.sender_type === 'customer') {
             return {
               ...msg,
               sender_name: customer_name,
               is_own_message: true,
-              attachments,
+              attachments: resolvedAttachments,
             };
           } else {
             const profile = userProfiles[msg.sender_id];
@@ -164,7 +206,7 @@ Deno.serve(async (req) => {
               ...msg,
               sender_name: profile?.full_name || profile?.email || 'Business',
               is_own_message: false,
-              attachments,
+              attachments: resolvedAttachments,
             };
           }
         });
