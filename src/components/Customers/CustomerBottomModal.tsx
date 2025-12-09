@@ -10,11 +10,12 @@ import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useAuth } from '@clerk/clerk-react';
 import { useAuthApi } from "@/hooks/useAuthApi";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useCustomerPortalInvite } from "@/hooks/useCustomerPortalInvite";
 import type { Customer } from "@/types";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Send, Loader2 } from 'lucide-react';
 
 // Email validation regex - requires a valid email format
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -64,6 +65,7 @@ export function CustomerBottomModal({
   const { businessId, userId } = useBusinessContext();
   const authApi = useAuthApi();
   const isMobile = useIsMobile();
+  const { sendInvite, isLoading: isInviteLoading } = useCustomerPortalInvite();
   
   const [formData, setFormData] = useState<CustomerFormData>({
     name: "",
@@ -139,6 +141,11 @@ export function CustomerBottomModal({
 
   const handleDelete = () => {
     onDelete?.(customer);
+  };
+
+  const handleSendPortalInvite = () => {
+    if (!customer?.id || !businessId) return;
+    sendInvite({ customerId: customer.id, businessId });
   };
 
   const handleSave = async () => {
@@ -440,6 +447,19 @@ export function CustomerBottomModal({
             isMobile ? (
               <div className="flex flex-col gap-2">
                 <Button
+                  variant="outline"
+                  onClick={handleSendPortalInvite}
+                  disabled={isInviteLoading}
+                  className="w-full"
+                >
+                  {isInviteLoading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="mr-2 h-4 w-4" />
+                  )}
+                  Invite to Portal
+                </Button>
+                <Button
                   variant="default"
                   onClick={handleEdit}
                   className="w-full"
@@ -455,7 +475,19 @@ export function CustomerBottomModal({
                 </Button>
               </div>
             ) : (
-              <div className="flex justify-end">
+              <div className="flex justify-between">
+                <Button
+                  variant="outline"
+                  onClick={handleSendPortalInvite}
+                  disabled={isInviteLoading}
+                >
+                  {isInviteLoading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="mr-2 h-4 w-4" />
+                  )}
+                  Invite to Portal
+                </Button>
                 <div className="flex gap-2">
                   <Button
                     variant="default"

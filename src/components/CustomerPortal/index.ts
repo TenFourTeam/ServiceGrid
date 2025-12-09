@@ -9,3 +9,5 @@ export { CustomerMessages } from './CustomerMessages';
 export { MagicLinkForm } from './MagicLinkForm';
 export { CustomerLoginForm } from './CustomerLoginForm';
 export { CustomerRegisterForm } from './CustomerRegisterForm';
+export { PasswordResetForm } from './PasswordResetForm';
+export { PasswordResetConfirm } from './PasswordResetConfirm';

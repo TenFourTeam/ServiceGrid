@@ -38,6 +38,10 @@ serve(async (req) => {
         return await handleClerkLink(req, supabase);
       case 'clerk-verify':
         return await handleClerkVerify(req, supabase);
+      case 'password-reset':
+        return await handlePasswordReset(req, supabase);
+      case 'password-reset-confirm':
+        return await handlePasswordResetConfirm(req, supabase);
       default:
         return new Response(
           JSON.stringify({ error: 'Unknown endpoint' }),
@@ -665,6 +669,156 @@ async function handleClerkVerify(req: Request, supabase: any) {
         business: customer.businesses,
       },
     }),
+    { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
+// Request password reset
+async function handlePasswordReset(req: Request, supabase: any) {
+  const { email } = await req.json();
+
+  if (!email) {
+    return new Response(
+      JSON.stringify({ error: 'Email is required' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Find customer account by email
+  const { data: account, error: accountError } = await supabase
+    .from('customer_accounts')
+    .select('*, customers(name, business_id, businesses(name))')
+    .eq('email', email.toLowerCase())
+    .single();
+
+  // Always return success to prevent email enumeration
+  if (accountError || !account) {
+    console.log('Password reset requested for unknown email:', email);
+    return new Response(
+      JSON.stringify({ success: true, message: 'If an account exists, a reset link has been sent.' }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Generate reset token
+  const resetToken = crypto.randomUUID() + '-' + crypto.randomUUID();
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+  // Store reset token using magic_token fields
+  await supabase
+    .from('customer_accounts')
+    .update({
+      magic_token: `reset:${resetToken}`,
+      magic_token_expires_at: expiresAt.toISOString(),
+    })
+    .eq('id', account.id);
+
+  // Send reset email
+  const resetUrl = `https://servicegrid.lovable.app/customer-reset-password/${resetToken}`;
+  const customerName = account.customers?.name || 'Customer';
+  const businessName = account.customers?.businesses?.name || 'ServiceGrid';
+
+  if (resendApiKey) {
+    try {
+      const emailResponse = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: 'ServiceGrid <noreply@servicegrid.io>',
+          to: [email],
+          subject: `Reset your password - ${businessName}`,
+          html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2>Hi ${customerName},</h2>
+              <p>We received a request to reset your password for your customer portal account.</p>
+              <a href="${resetUrl}" style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+                Reset Password
+              </a>
+              <p style="color: #666; font-size: 14px;">This link expires in 1 hour.</p>
+              <p style="color: #666; font-size: 14px;">If you didn't request this, you can safely ignore this email.</p>
+              <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
+              <p style="color: #999; font-size: 12px;">${businessName}</p>
+            </div>
+          `,
+        }),
+      });
+
+      if (!emailResponse.ok) {
+        console.error('Failed to send password reset email:', await emailResponse.text());
+      }
+    } catch (emailError) {
+      console.error('Email send error:', emailError);
+    }
+  } else {
+    console.log('RESEND_API_KEY not configured, reset URL:', resetUrl);
+  }
+
+  return new Response(
+    JSON.stringify({ success: true, message: 'If an account exists, a reset link has been sent.' }),
+    { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
+// Confirm password reset with new password
+async function handlePasswordResetConfirm(req: Request, supabase: any) {
+  const { token, password } = await req.json();
+
+  if (!token || !password) {
+    return new Response(
+      JSON.stringify({ error: 'Token and password are required' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  if (password.length < 8) {
+    return new Response(
+      JSON.stringify({ error: 'Password must be at least 8 characters' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Find account by reset token
+  const { data: account, error: accountError } = await supabase
+    .from('customer_accounts')
+    .select('id, email, magic_token_expires_at')
+    .eq('magic_token', `reset:${token}`)
+    .single();
+
+  if (accountError || !account) {
+    return new Response(
+      JSON.stringify({ error: 'Invalid or expired reset link' }),
+      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Check if token expired
+  if (new Date(account.magic_token_expires_at) < new Date()) {
+    return new Response(
+      JSON.stringify({ error: 'Reset link has expired' }),
+      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Hash new password
+  const passwordHash = await bcrypt.hash(password);
+
+  // Update password and clear reset token
+  await supabase
+    .from('customer_accounts')
+    .update({
+      password_hash: passwordHash,
+      magic_token: null,
+      magic_token_expires_at: null,
+      auth_method: 'password',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', account.id);
+
+  return new Response(
+    JSON.stringify({ success: true, message: 'Password reset successfully' }),
     { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   );
 }
