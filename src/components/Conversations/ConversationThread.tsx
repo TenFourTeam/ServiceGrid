@@ -23,7 +23,7 @@ interface ConversationThreadProps {
 }
 
 export function ConversationThread({ conversationId, onBack, title, isCustomerChat, customerId }: ConversationThreadProps) {
-  const { messages, isLoading, sendMessage } = useMessages(conversationId);
+  const { messages, isLoading, sendMessage, editMessage, deleteMessage } = useMessages(conversationId);
   const viewportRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   
@@ -51,6 +51,14 @@ export function ConversationThread({ conversationId, onBack, title, isCustomerCh
         setSelectedInvoiceId(id);
         break;
     }
+  };
+
+  const handleEditMessage = (messageId: string, content: string) => {
+    editMessage({ messageId, content });
+  };
+
+  const handleDeleteMessage = (messageId: string) => {
+    deleteMessage(messageId);
   };
 
   const groupedMessages = useMemo(() => {
@@ -108,6 +116,8 @@ export function ConversationThread({ conversationId, onBack, title, isCustomerCh
                           message={message} 
                           isGrouped={isGrouped} 
                           onEntityClick={handleEntityClick}
+                          onEdit={handleEditMessage}
+                          onDelete={handleDeleteMessage}
                         />
                       </div>
                     );
