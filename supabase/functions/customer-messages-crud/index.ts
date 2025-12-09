@@ -227,12 +227,13 @@ Deno.serve(async (req) => {
         if (existingConv) {
           targetConversationId = existingConv.id;
         } else {
-          // Create new conversation
+          // Create new conversation - use customer_id as created_by for customer-initiated conversations
           const { data: newConv, error: convError } = await supabase
             .from('sg_conversations')
             .insert({
               business_id,
               customer_id,
+              created_by: customer_id, // Customer initiates
               title: `Chat with ${customer_name}`,
             })
             .select('id')
@@ -253,6 +254,7 @@ Deno.serve(async (req) => {
         .from('sg_messages')
         .insert({
           conversation_id: targetConversationId,
+          business_id, // Required field
           content: content.trim(),
           sender_id: customer_id,
           sender_type: 'customer',
