@@ -114,7 +114,7 @@ serve(async (req) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            from: 'ServiceGrid <noreply@servicegrid.io>',
+            from: 'ServiceGrid <noreply@servicegrid.app>',
             to: [customer.email],
             subject: `You're invited to view your projects - ${businessName}`,
             html: `
