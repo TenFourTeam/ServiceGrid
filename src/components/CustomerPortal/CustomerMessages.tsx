@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 
 export function CustomerMessages() {
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
   
   const { data: conversations, isLoading: conversationsLoading } = useCustomerConversations();
   const { data: messagesData, isLoading: messagesLoading } = useCustomerMessages(selectedConversation);
@@ -29,11 +29,9 @@ export function CustomerMessages() {
     // Only scroll when we have messages and loading is complete
     if (messagesLoading || !messages || messages.length === 0) return;
     
-    // Use setTimeout to ensure content is fully rendered
+    // Use scrollIntoView on anchor element - works reliably with Radix ScrollArea
     const timeoutId = setTimeout(() => {
-      if (scrollRef.current) {
-        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-      }
+      bottomRef.current?.scrollIntoView({ behavior: 'auto' });
     }, 50);
     
     return () => clearTimeout(timeoutId);
@@ -86,7 +84,7 @@ export function CustomerMessages() {
             </div>
           ) : (
             <>
-              <ScrollArea className="flex-1 p-4" viewportRef={scrollRef}>
+              <ScrollArea className="flex-1 p-4">
                 <div className="space-y-4">
                   {messagesData?.messages?.length === 0 ? (
                     <div className="text-center text-muted-foreground py-8">
@@ -98,6 +96,7 @@ export function CustomerMessages() {
                       <CustomerMessageBubble key={message.id} message={message} conversationId={selectedConversation} />
                     ))
                   )}
+                  <div ref={bottomRef} />
                 </div>
               </ScrollArea>
               <CustomerMessageComposer
