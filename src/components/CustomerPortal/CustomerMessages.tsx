@@ -24,9 +24,11 @@ export function CustomerMessages() {
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    requestAnimationFrame(() => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }
+    });
   }, [messagesData?.messages]);
 
   const handleSendMessage = (content: string, attachments?: string[]) => {
