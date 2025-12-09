@@ -18,17 +18,20 @@ export function ConversationThread({ conversationId, onBack, title, isCustomerCh
   const { messages, isLoading, sendMessage } = useMessages(conversationId);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom
+  // Auto-scroll to bottom when messages load or change
   useEffect(() => {
-    // Double requestAnimationFrame ensures DOM is fully painted before scrolling
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        if (scrollRef.current) {
-          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-        }
-      });
-    });
-  }, [messages]);
+    // Only scroll when we have messages and loading is complete
+    if (isLoading || messages.length === 0) return;
+    
+    // Use setTimeout to ensure content is fully rendered
+    const timeoutId = setTimeout(() => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }
+    }, 50);
+    
+    return () => clearTimeout(timeoutId);
+  }, [messages, isLoading]);
 
   return (
     <Card className="flex flex-col h-[calc(100vh-200px)]">

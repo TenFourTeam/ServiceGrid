@@ -22,17 +22,22 @@ export function CustomerMessages() {
   const { data: messagesData, isLoading: messagesLoading } = useCustomerMessages(selectedConversation);
   const sendMessage = useSendCustomerMessage();
 
-  // Auto-scroll to bottom when messages change
+  // Auto-scroll to bottom when messages load or change
   useEffect(() => {
-    // Double requestAnimationFrame ensures DOM is fully painted before scrolling
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        if (scrollRef.current) {
-          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-        }
-      });
-    });
-  }, [messagesData?.messages]);
+    const messages = messagesData?.messages;
+    
+    // Only scroll when we have messages and loading is complete
+    if (messagesLoading || !messages || messages.length === 0) return;
+    
+    // Use setTimeout to ensure content is fully rendered
+    const timeoutId = setTimeout(() => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }
+    }, 50);
+    
+    return () => clearTimeout(timeoutId);
+  }, [messagesData?.messages, messagesLoading]);
 
   const handleSendMessage = (content: string, attachments?: string[]) => {
     sendMessage.mutate({ 
