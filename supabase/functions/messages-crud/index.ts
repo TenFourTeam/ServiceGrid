@@ -120,6 +120,7 @@ Deno.serve(async (req) => {
           sender_id: ctx.userId,
           business_id: ctx.businessId,
           content,
+          sender_type: 'user', // Business team member
           mentions: parsedMentions,
           attachments: attachments || [],
         })
