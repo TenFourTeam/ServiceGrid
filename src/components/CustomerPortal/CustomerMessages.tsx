@@ -87,7 +87,7 @@ export function CustomerMessages() {
                     </div>
                   ) : (
                     messagesData?.messages?.map((message) => (
-                      <CustomerMessageBubble key={message.id} message={message} />
+                      <CustomerMessageBubble key={message.id} message={message} conversationId={selectedConversation} />
                     ))
                   )}
                 </div>

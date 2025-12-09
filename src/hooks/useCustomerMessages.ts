@@ -19,6 +19,7 @@ export interface CustomerMessage {
   sender_type: 'customer' | 'user';
   sender_name: string;
   is_own_message: boolean;
+  edited?: boolean;
   metadata?: Record<string, any>;
   attachments?: CustomerMessageAttachment[];
 }
@@ -101,13 +102,13 @@ export function useCustomerMessages(conversationId: string | null) {
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*', // Listen to INSERT, UPDATE, DELETE
           schema: 'public',
           table: 'sg_messages',
           filter: `conversation_id=eq.${conversationId}`,
         },
         () => {
-          // Invalidate queries when new message arrives
+          // Invalidate queries when messages change
           queryClient.invalidateQueries({ queryKey: ['customer-messages', conversationId] });
           queryClient.invalidateQueries({ queryKey: ['customer-conversations'] });
         }
@@ -161,6 +162,80 @@ export function useSendCustomerMessage() {
     onSuccess: (data) => {
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ['customer-messages', data.conversation_id] });
+      queryClient.invalidateQueries({ queryKey: ['customer-conversations'] });
+    },
+  });
+}
+
+export function useEditCustomerMessage() {
+  const { sessionToken } = useCustomerAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ 
+      messageId, 
+      content,
+      conversationId,
+    }: { 
+      messageId: string; 
+      content: string;
+      conversationId: string;
+    }) => {
+      if (!sessionToken) throw new Error('Not authenticated');
+
+      const response = await fetch(`${EDGE_FUNCTION_URL}?messageId=${messageId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-session-token': sessionToken,
+        },
+        body: JSON.stringify({ content }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to edit message');
+      }
+
+      return { ...(await response.json()), conversationId };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['customer-messages', data.conversationId] });
+    },
+  });
+}
+
+export function useDeleteCustomerMessage() {
+  const { sessionToken } = useCustomerAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ 
+      messageId,
+      conversationId,
+    }: { 
+      messageId: string;
+      conversationId: string;
+    }) => {
+      if (!sessionToken) throw new Error('Not authenticated');
+
+      const response = await fetch(`${EDGE_FUNCTION_URL}?messageId=${messageId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-session-token': sessionToken,
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete message');
+      }
+
+      return { conversationId };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['customer-messages', data.conversationId] });
       queryClient.invalidateQueries({ queryKey: ['customer-conversations'] });
     },
   });
