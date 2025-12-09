@@ -484,3 +484,7 @@ verify_jwt = false
 [functions.generate-sop-infographic]
 verify_jwt = false
 
+# Customer Portal Authentication
+[functions.customer-auth]
+verify_jwt = false
+
