@@ -5,7 +5,8 @@ import type {
   CustomerAuthState, 
   CustomerAccount, 
   CustomerWithBusiness,
-  CustomerAuthResponse 
+  CustomerAuthResponse,
+  CustomerBusiness 
 } from '@/types/customerAuth';
 
 const CUSTOMER_SESSION_KEY = 'customer_session_token';
@@ -36,18 +37,23 @@ export function useCustomerAuth() {
   return context;
 }
 
+const initialState: CustomerAuthState = {
+  customer: null,
+  customerDetails: null,
+  authMethod: null,
+  isLoading: true,
+  isAuthenticated: false,
+  sessionToken: null,
+  availableBusinesses: [],
+  activeBusinessId: null,
+  activeCustomerId: null,
+};
+
 export function useCustomerAuthProvider() {
   const { isSignedIn, userId } = useAuth();
   const { user } = useUser();
   
-  const [state, setState] = useState<CustomerAuthState>({
-    customer: null,
-    customerDetails: null,
-    authMethod: null,
-    isLoading: true,
-    isAuthenticated: false,
-    sessionToken: null,
-  });
+  const [state, setState] = useState<CustomerAuthState>(initialState);
 
   // Check session on mount
   useEffect(() => {
@@ -79,6 +85,9 @@ export function useCustomerAuthProvider() {
               isLoading: false,
               isAuthenticated: true,
               sessionToken: null,
+              availableBusinesses: response.data.available_businesses || [],
+              activeBusinessId: response.data.customer?.business_id || null,
+              activeCustomerId: response.data.customer?.id || null,
             });
             return;
           }
@@ -100,6 +109,9 @@ export function useCustomerAuthProvider() {
             isLoading: false,
             isAuthenticated: true,
             sessionToken,
+            availableBusinesses: response.data.available_businesses || [],
+            activeBusinessId: response.data.active_business_id || response.data.customer?.business_id || null,
+            activeCustomerId: response.data.active_customer_id || response.data.customer?.id || null,
           });
           return;
         } else {
@@ -110,22 +122,14 @@ export function useCustomerAuthProvider() {
 
       // Not authenticated
       setState({
-        customer: null,
-        customerDetails: null,
-        authMethod: null,
+        ...initialState,
         isLoading: false,
-        isAuthenticated: false,
-        sessionToken: null,
       });
     } catch (error) {
       console.error('Auth check error:', error);
       setState({
-        customer: null,
-        customerDetails: null,
-        authMethod: null,
+        ...initialState,
         isLoading: false,
-        isAuthenticated: false,
-        sessionToken: null,
       });
     }
   }, [isSignedIn, userId, user]);
@@ -175,6 +179,9 @@ export function useCustomerAuthProvider() {
         isLoading: false,
         isAuthenticated: true,
         sessionToken: response.data.session_token,
+        availableBusinesses: response.data.available_businesses || [],
+        activeBusinessId: response.data.customer?.business_id || null,
+        activeCustomerId: response.data.customer?.id || null,
       });
 
       return response.data;
@@ -205,6 +212,9 @@ export function useCustomerAuthProvider() {
         isLoading: false,
         isAuthenticated: true,
         sessionToken: response.data.session_token,
+        availableBusinesses: response.data.available_businesses || [],
+        activeBusinessId: response.data.customer?.business_id || null,
+        activeCustomerId: response.data.customer?.id || null,
       });
 
       return response.data;
@@ -235,6 +245,9 @@ export function useCustomerAuthProvider() {
         isLoading: false,
         isAuthenticated: true,
         sessionToken: response.data.session_token,
+        availableBusinesses: response.data.available_businesses || [],
+        activeBusinessId: response.data.customer?.business_id || null,
+        activeCustomerId: response.data.customer?.id || null,
       });
 
       return response.data;
@@ -259,12 +272,8 @@ export function useCustomerAuthProvider() {
     localStorage.removeItem(CUSTOMER_SESSION_KEY);
     
     setState({
-      customer: null,
-      customerDetails: null,
-      authMethod: null,
+      ...initialState,
       isLoading: false,
-      isAuthenticated: false,
-      sessionToken: null,
     });
   }, []);
 

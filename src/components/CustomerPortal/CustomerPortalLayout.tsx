@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { useCustomerAuth } from '@/hooks/useCustomerAuth';
 import { useCustomerJobData } from '@/hooks/useCustomerJobData';
+import { useCustomerBusinessContext } from '@/hooks/useCustomerBusinessContext';
+import { CustomerBusinessSwitcher } from './CustomerBusinessSwitcher';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 
@@ -29,6 +31,7 @@ export function CustomerPortalLayout() {
   const navigate = useNavigate();
   const { customerDetails, logout } = useCustomerAuth();
   const { data: jobData } = useCustomerJobData();
+  const { businesses, activeBusinessId, switchBusiness, isSwitching } = useCustomerBusinessContext();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
@@ -53,23 +56,34 @@ export function CustomerPortalLayout() {
       <header className="border-b bg-card/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            {/* Logo & Business Name */}
+            {/* Logo & Business Switcher */}
             <div className="flex items-center gap-3">
-              {business?.logo_url ? (
-                <img 
-                  src={business.logo_url} 
-                  alt={business.name}
-                  className="h-8 w-8 rounded-md object-contain"
+              {businesses.length > 1 ? (
+                <CustomerBusinessSwitcher
+                  businesses={businesses}
+                  activeBusinessId={activeBusinessId}
+                  onSwitch={switchBusiness}
+                  isLoading={isSwitching}
                 />
               ) : (
-                <Building2 className="h-8 w-8 text-primary" />
+                <>
+                  {business?.logo_url ? (
+                    <img 
+                      src={business.logo_url} 
+                      alt={business.name}
+                      className="h-8 w-8 rounded-md object-contain"
+                    />
+                  ) : (
+                    <Building2 className="h-8 w-8 text-primary" />
+                  )}
+                  <div className="hidden sm:block">
+                    <h1 className="font-semibold text-sm">
+                      {business?.name || 'Customer Portal'}
+                    </h1>
+                    <p className="text-xs text-muted-foreground">Customer Portal</p>
+                  </div>
+                </>
               )}
-              <div className="hidden sm:block">
-                <h1 className="font-semibold text-sm">
-                  {business?.name || 'Customer Portal'}
-                </h1>
-                <p className="text-xs text-muted-foreground">Customer Portal</p>
-              </div>
             </div>
 
             {/* Desktop Navigation */}

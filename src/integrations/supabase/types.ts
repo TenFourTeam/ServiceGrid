@@ -677,6 +677,55 @@ export type Database = {
           },
         ]
       }
+      customer_account_links: {
+        Row: {
+          business_id: string
+          created_at: string | null
+          customer_account_id: string
+          customer_id: string
+          id: string
+          is_primary: boolean | null
+        }
+        Insert: {
+          business_id: string
+          created_at?: string | null
+          customer_account_id: string
+          customer_id: string
+          id?: string
+          is_primary?: boolean | null
+        }
+        Update: {
+          business_id?: string
+          created_at?: string | null
+          customer_account_id?: string
+          customer_id?: string
+          id?: string
+          is_primary?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_account_links_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_account_links_customer_account_id_fkey"
+            columns: ["customer_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_account_links_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_accounts: {
         Row: {
           auth_method: string | null
@@ -780,6 +829,8 @@ export type Database = {
       }
       customer_sessions: {
         Row: {
+          active_business_id: string | null
+          active_customer_id: string | null
           auth_method: string
           created_at: string | null
           customer_account_id: string
@@ -790,6 +841,8 @@ export type Database = {
           user_agent: string | null
         }
         Insert: {
+          active_business_id?: string | null
+          active_customer_id?: string | null
           auth_method: string
           created_at?: string | null
           customer_account_id: string
@@ -800,6 +853,8 @@ export type Database = {
           user_agent?: string | null
         }
         Update: {
+          active_business_id?: string | null
+          active_customer_id?: string | null
           auth_method?: string
           created_at?: string | null
           customer_account_id?: string
@@ -810,6 +865,20 @@ export type Database = {
           user_agent?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "customer_sessions_active_business_id_fkey"
+            columns: ["active_business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_sessions_active_customer_id_fkey"
+            columns: ["active_customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "customer_sessions_customer_account_id_fkey"
             columns: ["customer_account_id"]

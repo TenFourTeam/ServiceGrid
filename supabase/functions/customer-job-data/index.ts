@@ -9,12 +9,73 @@ const corsHeaders = {
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
+// Helper to get available businesses for a customer account
+async function getAvailableBusinesses(supabase: any, customerAccountId: string) {
+  const { data: links } = await supabase
+    .from('customer_account_links')
+    .select(`
+      customer_id,
+      business_id,
+      is_primary,
+      customers (id, name),
+      businesses (id, name, logo_url, light_logo_url)
+    `)
+    .eq('customer_account_id', customerAccountId);
+
+  return (links || []).map((link: any) => ({
+    id: link.business_id,
+    name: link.businesses?.name || 'Unknown',
+    logo_url: link.businesses?.logo_url,
+    light_logo_url: link.businesses?.light_logo_url,
+    customer_id: link.customer_id,
+    customer_name: link.customers?.name,
+    is_primary: link.is_primary,
+  }));
+}
+
+// Helper to ensure customer account links exist
+async function ensureAccountLinks(supabase: any, customerAccountId: string, email: string) {
+  // Find all customers with matching email across all businesses
+  const { data: customers } = await supabase
+    .from('customers')
+    .select('id, business_id')
+    .eq('email', email.toLowerCase());
+
+  if (!customers || customers.length === 0) return;
+
+  // Get existing links
+  const { data: existingLinks } = await supabase
+    .from('customer_account_links')
+    .select('customer_id')
+    .eq('customer_account_id', customerAccountId);
+
+  const existingCustomerIds = new Set((existingLinks || []).map((l: any) => l.customer_id));
+
+  // Create links for any missing customers
+  const newLinks = customers
+    .filter((c: any) => !existingCustomerIds.has(c.id))
+    .map((c: any) => ({
+      customer_account_id: customerAccountId,
+      customer_id: c.id,
+      business_id: c.business_id,
+      is_primary: false,
+    }));
+
+  if (newLinks.length > 0) {
+    await supabase
+      .from('customer_account_links')
+      .insert(newLinks);
+    console.log(`Created ${newLinks.length} new account links for ${email}`);
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
+  const url = new URL(req.url);
 
   try {
     // Authenticate customer via session token
@@ -30,7 +91,16 @@ serve(async (req) => {
     // Validate session
     const { data: session, error: sessionError } = await supabase
       .from('customer_sessions')
-      .select('*, customer_accounts(*, customers(id, name, email, phone, address, business_id))')
+      .select(`
+        id,
+        active_customer_id,
+        active_business_id,
+        customer_accounts (
+          id,
+          email,
+          customers (id, name, email, phone, address, business_id)
+        )
+      `)
       .eq('session_token', sessionToken)
       .gt('expires_at', new Date().toISOString())
       .single();
@@ -42,8 +112,65 @@ serve(async (req) => {
       );
     }
 
-    const customerId = session.customer_accounts.customers.id;
-    const businessId = session.customer_accounts.customers.business_id;
+    const customerAccount = session.customer_accounts;
+    const defaultCustomer = customerAccount.customers;
+    
+    // Use active_customer_id if set, otherwise fallback to default
+    const activeCustomerId = session.active_customer_id || defaultCustomer.id;
+    const activeBusinessId = session.active_business_id || defaultCustomer.business_id;
+
+    // Ensure all account links exist
+    await ensureAccountLinks(supabase, customerAccount.id, customerAccount.email);
+
+    // Get the active customer's details (may be different from default)
+    let customerId = activeCustomerId;
+    let businessId = activeBusinessId;
+    
+    // If active customer differs, fetch their details
+    let customer = defaultCustomer;
+    if (activeCustomerId && activeCustomerId !== defaultCustomer.id) {
+      const { data: activeCustomer } = await supabase
+        .from('customers')
+        .select('id, name, email, phone, address, business_id')
+        .eq('id', activeCustomerId)
+        .single();
+      
+      if (activeCustomer) {
+        customer = activeCustomer;
+        businessId = activeCustomer.business_id;
+      }
+    }
+
+    customerId = customer.id;
+    businessId = customer.business_id;
+
+    // Get business query param for filtering (optional override)
+    const queryBusinessId = url.searchParams.get('businessId');
+    if (queryBusinessId) {
+      // Verify customer has access to this business
+      const { data: link } = await supabase
+        .from('customer_account_links')
+        .select('customer_id')
+        .eq('customer_account_id', customerAccount.id)
+        .eq('business_id', queryBusinessId)
+        .single();
+
+      if (link) {
+        customerId = link.customer_id;
+        businessId = queryBusinessId;
+        
+        // Fetch customer details for this business
+        const { data: businessCustomer } = await supabase
+          .from('customers')
+          .select('id, name, email, phone, address, business_id')
+          .eq('id', link.customer_id)
+          .single();
+        
+        if (businessCustomer) {
+          customer = businessCustomer;
+        }
+      }
+    }
 
     // Fetch all customer data in parallel
     const [
@@ -53,6 +180,7 @@ serve(async (req) => {
       invoicesResult,
       teamResult,
       paymentsResult,
+      availableBusinesses,
     ] = await Promise.all([
       // Business info
       supabase
@@ -119,6 +247,9 @@ serve(async (req) => {
         .eq('invoices.customer_id', customerId)
         .order('received_at', { ascending: false })
         .limit(50),
+
+      // Available businesses for this account
+      getAvailableBusinesses(supabase, customerAccount.id),
     ]);
 
     // Calculate financial summary
@@ -163,7 +294,12 @@ serve(async (req) => {
 
     const response = {
       business: businessResult.data,
-      customer: session.customer_accounts.customers,
+      customer: customer,
+      
+      // Multi-business context
+      availableBusinesses,
+      activeBusinessId: businessId,
+      activeCustomerId: customerId,
       
       // Jobs
       jobs: jobsResult.data || [],

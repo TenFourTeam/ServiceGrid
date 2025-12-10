@@ -529,3 +529,7 @@ verify_jwt = false
 
 [functions.customer-service-request]
 verify_jwt = false
+
+# Customer Portal Business Switching
+[functions.customer-switch-business]
+verify_jwt = false
