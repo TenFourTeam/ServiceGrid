@@ -738,6 +738,7 @@ export type Database = {
           magic_token: string | null
           magic_token_expires_at: string | null
           password_hash: string | null
+          stripe_customer_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -751,6 +752,7 @@ export type Database = {
           magic_token?: string | null
           magic_token_expires_at?: string | null
           password_hash?: string | null
+          stripe_customer_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -764,6 +766,7 @@ export type Database = {
           magic_token?: string | null
           magic_token_expires_at?: string | null
           password_hash?: string | null
+          stripe_customer_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
