@@ -142,6 +142,106 @@ export type Database = {
           },
         ]
       }
+      appointment_change_requests: {
+        Row: {
+          alternative_dates: Json | null
+          business_id: string
+          business_response: string | null
+          created_at: string
+          customer_id: string
+          customer_notes: string | null
+          id: string
+          job_id: string
+          preferred_date: string | null
+          preferred_times: string[] | null
+          reason: string | null
+          request_type: string
+          responded_at: string | null
+          responded_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          alternative_dates?: Json | null
+          business_id: string
+          business_response?: string | null
+          created_at?: string
+          customer_id: string
+          customer_notes?: string | null
+          id?: string
+          job_id: string
+          preferred_date?: string | null
+          preferred_times?: string[] | null
+          reason?: string | null
+          request_type: string
+          responded_at?: string | null
+          responded_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          alternative_dates?: Json | null
+          business_id?: string
+          business_response?: string | null
+          created_at?: string
+          customer_id?: string
+          customer_notes?: string | null
+          id?: string
+          job_id?: string
+          preferred_date?: string | null
+          preferred_times?: string[] | null
+          reason?: string | null
+          request_type?: string
+          responded_at?: string | null
+          responded_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_change_requests_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_change_requests_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_change_requests_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_change_requests_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "time_by_job_report"
+            referencedColumns: ["job_id"]
+          },
+          {
+            foreignKeyName: "appointment_change_requests_responded_by_fkey"
+            columns: ["responded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_change_requests_responded_by_fkey"
+            columns: ["responded_by"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
