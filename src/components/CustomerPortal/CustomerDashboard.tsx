@@ -11,6 +11,7 @@ import {
   UnpaidInvoicesWidget
 } from '@/components/CustomerPortal/widgets';
 import { InvoicePaymentModal } from '@/components/CustomerPortal/InvoicePaymentModal';
+import { SavedPaymentMethods } from '@/components/CustomerPortal/SavedPaymentMethods';
 import { CustomerInvoice } from '@/types/customerPortal';
 import { buildEdgeFunctionUrl } from '@/utils/env';
 import { toast } from 'sonner';
@@ -136,6 +137,9 @@ export function CustomerDashboard() {
               upcomingJobs={jobData.upcomingJobs}
             />
           )}
+          
+          {/* Saved Payment Methods */}
+          <SavedPaymentMethods />
           
           {jobData?.business && (
             <ContactsWidget 
