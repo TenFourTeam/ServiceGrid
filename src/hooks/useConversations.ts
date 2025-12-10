@@ -158,6 +158,43 @@ export function useConversations() {
     },
   });
 
+  const unarchiveConversation = useMutation({
+    mutationFn: async ({ conversationId, optimisticContext }: { 
+      conversationId: string;
+      optimisticContext?: OptimisticEventContext;
+    }) => {
+      // Add optimistic event immediately
+      if (optimisticContext) {
+        const optimisticEvent = createOptimisticEvent(
+          'unarchived',
+          optimisticContext.currentUser
+        );
+        queryClient.setQueryData<ConversationActivityEvent[]>(
+          ['conversation-activity', conversationId],
+          (old = []) => [optimisticEvent, ...old]
+        );
+      }
+
+      const { error } = await authApi.invoke(`conversations-crud?conversationId=${conversationId}`, {
+        method: 'PATCH',
+        body: { is_archived: false },
+      });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['conversations', businessId] });
+      toast.success('Conversation restored');
+    },
+    onError: (error, variables) => {
+      console.error('Error restoring conversation:', error);
+      queryClient.invalidateQueries({ 
+        queryKey: ['conversation-activity', variables.conversationId] 
+      });
+      toast.error('Failed to restore conversation');
+    },
+  });
+
   const reassignConversation = useMutation({
     mutationFn: async ({ conversationId, workerId, optimisticContext }: { 
       conversationId: string; 
@@ -194,7 +231,6 @@ export function useConversations() {
     },
     onError: (error, variables) => {
       console.error('Error reassigning conversation:', error);
-      // Rollback optimistic event on error
       queryClient.invalidateQueries({ 
         queryKey: ['conversation-activity', variables.conversationId] 
       });
@@ -208,6 +244,7 @@ export function useConversations() {
     createConversation: createConversation.mutate,
     createCustomerConversation: createCustomerConversation.mutate,
     archiveConversation: archiveConversation.mutate,
+    unarchiveConversation: unarchiveConversation.mutate,
     reassignConversation: reassignConversation.mutate,
   };
 }
