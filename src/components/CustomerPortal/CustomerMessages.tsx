@@ -226,7 +226,7 @@ export function CustomerMessages() {
               key={conv.id}
               className={cn(
                 'cursor-pointer transition-colors hover:bg-muted/50',
-                !conv.last_message_from_customer && 'border-primary/20 bg-primary/5'
+                conv.has_unread_reply && 'border-primary/20 bg-primary/5'
               )}
               onClick={() => setSelectedConversation(conv.id)}
             >
@@ -238,7 +238,7 @@ export function CustomerMessages() {
                       <span className="font-medium truncate">
                         {conv.assigned_worker_name || conv.title || 'Conversation'}
                       </span>
-                      {!conv.last_message_from_customer && conv.last_message && (
+                      {conv.has_unread_reply && (
                         <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full">
                           New reply
                         </span>

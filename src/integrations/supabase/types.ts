@@ -3666,6 +3666,7 @@ export type Database = {
           created_at: string | null
           created_by: string
           customer_id: string | null
+          customer_last_read_at: string | null
           id: string
           is_archived: boolean | null
           job_id: string | null
@@ -3680,6 +3681,7 @@ export type Database = {
           created_at?: string | null
           created_by: string
           customer_id?: string | null
+          customer_last_read_at?: string | null
           id?: string
           is_archived?: boolean | null
           job_id?: string | null
@@ -3694,6 +3696,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string
           customer_id?: string | null
+          customer_last_read_at?: string | null
           id?: string
           is_archived?: boolean | null
           job_id?: string | null

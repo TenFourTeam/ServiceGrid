@@ -32,6 +32,7 @@ export interface CustomerConversation {
   last_message: string | null;
   last_message_at: string;
   last_message_from_customer: boolean;
+  has_unread_reply: boolean;
   has_attachments?: boolean;
   // Scoped conversation fields
   job_id?: string;
