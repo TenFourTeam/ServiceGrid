@@ -17,6 +17,8 @@ export interface CustomerSession {
   session_token: string;
   expires_at: string;
   auth_method: 'magic_link' | 'password';
+  active_customer_id?: string;
+  active_business_id?: string;
   created_at: string;
 }
 
@@ -30,6 +32,16 @@ export interface CustomerPortalInvite {
   sent_at: string | null;
   accepted_at: string | null;
   created_at: string;
+}
+
+export interface CustomerBusiness {
+  id: string;
+  name: string;
+  logo_url: string | null;
+  light_logo_url?: string | null;
+  customer_id: string;
+  customer_name?: string;
+  is_primary?: boolean;
 }
 
 export interface CustomerWithBusiness {
@@ -53,6 +65,10 @@ export interface CustomerAuthState {
   isLoading: boolean;
   isAuthenticated: boolean;
   sessionToken: string | null;
+  // Multi-business support
+  availableBusinesses: CustomerBusiness[];
+  activeBusinessId: string | null;
+  activeCustomerId: string | null;
 }
 
 export interface MagicLinkRequest {
@@ -80,5 +96,6 @@ export interface CustomerAuthResponse {
   session_token?: string;
   customer_account?: CustomerAccount;
   customer?: CustomerWithBusiness;
+  available_businesses?: CustomerBusiness[];
   error?: string;
 }

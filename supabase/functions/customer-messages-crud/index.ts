@@ -9,6 +9,7 @@ interface CustomerSession {
   customer_id: string;
   business_id: string;
   customer_name: string;
+  customer_account_id: string;
 }
 
 async function validateSessionToken(supabase: any, sessionToken: string): Promise<CustomerSession | null> {
@@ -19,6 +20,8 @@ async function validateSessionToken(supabase: any, sessionToken: string): Promis
     .select(`
       id,
       customer_account_id,
+      active_customer_id,
+      active_business_id,
       expires_at,
       customer_accounts!inner (
         id,
@@ -40,12 +43,33 @@ async function validateSessionToken(supabase: any, sessionToken: string): Promis
   }
 
   const customerAccount = session.customer_accounts;
-  const customer = customerAccount.customers;
+  const defaultCustomer = customerAccount.customers;
+
+  // Use active values if set, otherwise use defaults
+  let customerId = session.active_customer_id || defaultCustomer.id;
+  let businessId = session.active_business_id || defaultCustomer.business_id;
+  let customerName = defaultCustomer.name;
+
+  // If active customer differs, fetch their name
+  if (session.active_customer_id && session.active_customer_id !== defaultCustomer.id) {
+    const { data: activeCustomer } = await supabase
+      .from('customers')
+      .select('id, name, business_id')
+      .eq('id', session.active_customer_id)
+      .single();
+
+    if (activeCustomer) {
+      customerId = activeCustomer.id;
+      businessId = activeCustomer.business_id;
+      customerName = activeCustomer.name;
+    }
+  }
 
   return {
-    customer_id: customer.id,
-    business_id: customer.business_id,
-    customer_name: customer.name,
+    customer_id: customerId,
+    business_id: businessId,
+    customer_name: customerName,
+    customer_account_id: customerAccount.id,
   };
 }
 
@@ -82,6 +106,26 @@ Deno.serve(async (req) => {
 
     const url = new URL(req.url);
     const conversationId = url.searchParams.get('conversationId');
+    
+    // Allow optional business_id override from query params
+    const queryBusinessId = url.searchParams.get('businessId');
+    let effectiveBusinessId = business_id;
+    let effectiveCustomerId = customer_id;
+    
+    if (queryBusinessId && queryBusinessId !== business_id) {
+      // Verify customer has access to this business
+      const { data: link } = await supabase
+        .from('customer_account_links')
+        .select('customer_id')
+        .eq('customer_account_id', customerSession.customer_account_id)
+        .eq('business_id', queryBusinessId)
+        .single();
+      
+      if (link) {
+        effectiveBusinessId = queryBusinessId;
+        effectiveCustomerId = link.customer_id;
+      }
+    }
 
     if (req.method === 'GET') {
       if (conversationId) {
@@ -93,8 +137,8 @@ Deno.serve(async (req) => {
           .from('sg_conversations')
           .select('id, title, customer_id, business_id')
           .eq('id', conversationId)
-          .eq('customer_id', customer_id)
-          .eq('business_id', business_id)
+          .eq('customer_id', effectiveCustomerId)
+          .eq('business_id', effectiveBusinessId)
           .single();
 
         if (convError || !conversation) {
@@ -216,7 +260,7 @@ Deno.serve(async (req) => {
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       } else {
-        // List all conversations for this customer
+        // List all conversations for this customer in the active business
         console.log('[customer-messages-crud] Listing customer conversations');
         
         const { data: conversations, error } = await supabase
@@ -227,8 +271,8 @@ Deno.serve(async (req) => {
             created_at,
             updated_at
           `)
-          .eq('customer_id', customer_id)
-          .eq('business_id', business_id)
+          .eq('customer_id', effectiveCustomerId)
+          .eq('business_id', effectiveBusinessId)
           .order('updated_at', { ascending: false });
 
         if (error) {
@@ -285,12 +329,12 @@ Deno.serve(async (req) => {
       let targetConversationId = conversationId;
       
       if (!targetConversationId) {
-        // Check for existing conversation
+        // Check for existing conversation in this business
         const { data: existingConv } = await supabase
           .from('sg_conversations')
           .select('id')
-          .eq('customer_id', customer_id)
-          .eq('business_id', business_id)
+          .eq('customer_id', effectiveCustomerId)
+          .eq('business_id', effectiveBusinessId)
           .order('updated_at', { ascending: false })
           .limit(1)
           .single();
@@ -302,7 +346,7 @@ Deno.serve(async (req) => {
           const { data: business, error: bizError } = await supabase
             .from('businesses')
             .select('owner_id')
-            .eq('id', business_id)
+            .eq('id', effectiveBusinessId)
             .single();
 
           if (bizError || !business) {
@@ -314,8 +358,8 @@ Deno.serve(async (req) => {
           const { data: newConv, error: convError } = await supabase
             .from('sg_conversations')
             .insert({
-              business_id,
-              customer_id,
+              business_id: effectiveBusinessId,
+              customer_id: effectiveCustomerId,
               created_by: business.owner_id, // Use business owner for FK constraint
               title: `Chat with ${customer_name}`,
             })
@@ -337,9 +381,9 @@ Deno.serve(async (req) => {
         .from('sg_messages')
         .insert({
           conversation_id: targetConversationId,
-          business_id, // Required field
+          business_id: effectiveBusinessId,
           content: hasContent ? content.trim() : null,
-          sender_id: customer_id,
+          sender_id: effectiveCustomerId,
           sender_type: 'customer',
           metadata: { customer_name },
           attachments: hasAttachments ? attachments : [],
@@ -425,7 +469,7 @@ Deno.serve(async (req) => {
       }
 
       // Must be customer's own message
-      if (existingMessage.sender_id !== customer_id || existingMessage.sender_type !== 'customer') {
+      if (existingMessage.sender_id !== effectiveCustomerId || existingMessage.sender_type !== 'customer') {
         return new Response(
           JSON.stringify({ error: 'You can only edit your own messages' }),
           { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -499,7 +543,7 @@ Deno.serve(async (req) => {
       }
 
       // Must be customer's own message
-      if (existingMessage.sender_id !== customer_id || existingMessage.sender_type !== 'customer') {
+      if (existingMessage.sender_id !== effectiveCustomerId || existingMessage.sender_type !== 'customer') {
         return new Response(
           JSON.stringify({ error: 'You can only delete your own messages' }),
           { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -538,7 +582,6 @@ Deno.serve(async (req) => {
       JSON.stringify({ error: 'Method not allowed' }),
       { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-
   } catch (error) {
     console.error('[customer-messages-crud] Error:', error);
     return new Response(
