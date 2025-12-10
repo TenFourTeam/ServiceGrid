@@ -4,10 +4,11 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, User, Briefcase, UserCheck } from 'lucide-react';
+import { ArrowLeft, User, Briefcase } from 'lucide-react';
 import { MessageComposer } from './MessageComposer';
 import { MessageBubble } from './MessageBubble';
 import { TimeSeparator } from './TimeSeparator';
+import { ReassignWorkerDropdown } from './ReassignWorkerDropdown';
 import { groupMessagesByDate, shouldGroupWithPrevious } from '@/utils/messageGrouping';
 import JobShowModal from '@/components/Jobs/JobShowModal';
 import { QuoteDetailsModal } from '@/components/Quotes/QuoteDetailsModal';
@@ -26,9 +27,10 @@ interface ConversationThreadProps {
   jobTitle?: string;
   assignedWorkerId?: string;
   assignedWorkerName?: string;
+  onReassign?: (workerId: string | null) => void;
 }
 
-export function ConversationThread({ conversationId, onBack, title, isCustomerChat, customerId, customerName, jobId, jobTitle, assignedWorkerId, assignedWorkerName }: ConversationThreadProps) {
+export function ConversationThread({ conversationId, onBack, title, isCustomerChat, customerId, customerName, jobId, jobTitle, assignedWorkerId, assignedWorkerName, onReassign }: ConversationThreadProps) {
   const { messages, isLoading, sendMessage, editMessage, deleteMessage } = useMessages(conversationId);
   const viewportRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -118,12 +120,18 @@ export function ConversationThread({ conversationId, onBack, title, isCustomerCh
                     {jobTitle}
                   </Badge>
                 )}
-                {assignedWorkerName && (
+                {isCustomerChat && onReassign ? (
+                  <ReassignWorkerDropdown
+                    conversationId={conversationId}
+                    currentWorkerId={assignedWorkerId}
+                    currentWorkerName={assignedWorkerName}
+                    onReassign={onReassign}
+                  />
+                ) : assignedWorkerName ? (
                   <Badge variant="outline" className="text-xs gap-1 shrink-0 border-primary/30 text-primary">
-                    <UserCheck className="h-3 w-3" />
                     Direct: {assignedWorkerName}
                   </Badge>
-                )}
+                ) : null}
               </div>
               {isCustomerChat && customerName && title && customerName !== title && (
                 <p className="text-xs text-muted-foreground truncate">{title}</p>

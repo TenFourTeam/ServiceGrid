@@ -118,11 +118,35 @@ export function useConversations() {
     },
   });
 
+  const reassignConversation = useMutation({
+    mutationFn: async ({ conversationId, workerId }: { 
+      conversationId: string; 
+      workerId: string | null;
+    }) => {
+      const { data, error } = await authApi.invoke(`conversations-crud?conversationId=${conversationId}`, {
+        method: 'PATCH',
+        body: { assigned_worker_id: workerId },
+      });
+
+      if (error) throw error;
+      return data.conversation;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['conversations', businessId] });
+      toast.success('Conversation reassigned');
+    },
+    onError: (error) => {
+      console.error('Error reassigning conversation:', error);
+      toast.error('Failed to reassign conversation');
+    },
+  });
+
   return {
     conversations: conversations.data || [],
     isLoading: conversations.isLoading,
     createConversation: createConversation.mutate,
     createCustomerConversation: createCustomerConversation.mutate,
     archiveConversation: archiveConversation.mutate,
+    reassignConversation: reassignConversation.mutate,
   };
 }

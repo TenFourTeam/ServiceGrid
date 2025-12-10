@@ -17,7 +17,7 @@ import { NewConversationDialog } from './NewConversationDialog';
 type ConversationFilter = 'all' | 'my-direct' | 'customer' | 'team';
 
 export function ConversationsTab() {
-  const { conversations, isLoading, createConversation, createCustomerConversation } = useConversations();
+  const { conversations, isLoading, createConversation, createCustomerConversation, reassignConversation } = useConversations();
   const { unreadCount } = useUnreadMentions();
   const { data: profileData } = useProfile();
   const [selectedConversation, setSelectedConversation] = useState<{ 
@@ -102,6 +102,10 @@ export function ConversationsTab() {
         jobTitle={selectedConversation.jobTitle}
         assignedWorkerId={selectedConversation.assignedWorkerId}
         assignedWorkerName={selectedConversation.assignedWorkerName}
+        onReassign={(workerId) => reassignConversation({ 
+          conversationId: selectedConversation.id, 
+          workerId 
+        })}
       />
     );
   }
