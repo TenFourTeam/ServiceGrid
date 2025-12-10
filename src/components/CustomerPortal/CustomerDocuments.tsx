@@ -146,7 +146,7 @@ function QuoteCard({ quote, onView }: QuoteCardProps) {
     }
   };
 
-  const handleDownloadPdf = async () => {
+  const handlePrintPdf = async () => {
     setDownloading(true);
     try {
       const sessionToken = localStorage.getItem('customer_session_token');
@@ -162,19 +162,17 @@ function QuoteCard({ quote, onView }: QuoteCardProps) {
         }
       );
 
-      if (!response.ok) throw new Error('Failed to generate PDF');
+      if (!response.ok) throw new Error('Failed to generate document');
 
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Quote-${quote.number}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      a.remove();
+      const html = await response.text();
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(html);
+        printWindow.document.close();
+        printWindow.onload = () => printWindow.print();
+      }
     } catch (error) {
-      toast.error('Failed to download PDF');
+      toast.error('Failed to generate document');
     } finally {
       setDownloading(false);
     }
@@ -211,9 +209,9 @@ function QuoteCard({ quote, onView }: QuoteCardProps) {
             <Button 
               variant="outline" 
               size="icon"
-              onClick={handleDownloadPdf}
+              onClick={handlePrintPdf}
               disabled={downloading}
-              title="Download PDF"
+              title="Print / Save as PDF"
             >
               {downloading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -252,7 +250,7 @@ function InvoiceCard({ invoice }: { invoice: CustomerInvoice }) {
     }
   };
 
-  const handleDownloadPdf = async () => {
+  const handlePrintPdf = async () => {
     setDownloading(true);
     try {
       const sessionToken = localStorage.getItem('customer_session_token');
@@ -268,19 +266,17 @@ function InvoiceCard({ invoice }: { invoice: CustomerInvoice }) {
         }
       );
 
-      if (!response.ok) throw new Error('Failed to generate PDF');
+      if (!response.ok) throw new Error('Failed to generate document');
 
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Invoice-${invoice.number}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      a.remove();
+      const html = await response.text();
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(html);
+        printWindow.document.close();
+        printWindow.onload = () => printWindow.print();
+      }
     } catch (error) {
-      toast.error('Failed to download PDF');
+      toast.error('Failed to generate document');
     } finally {
       setDownloading(false);
     }
@@ -320,9 +316,9 @@ function InvoiceCard({ invoice }: { invoice: CustomerInvoice }) {
             <Button 
               variant="outline" 
               size="icon"
-              onClick={handleDownloadPdf}
+              onClick={handlePrintPdf}
               disabled={downloading}
-              title="Download PDF"
+              title="Print / Save as PDF"
             >
               {downloading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
