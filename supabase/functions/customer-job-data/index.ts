@@ -52,6 +52,7 @@ serve(async (req) => {
       quotesResult,
       invoicesResult,
       teamResult,
+      paymentsResult,
     ] = await Promise.all([
       // Business info
       supabase
@@ -107,6 +108,17 @@ serve(async (req) => {
             .eq('customer_id', customerId)
           ).data?.map(j => j.id) || []
         ),
+
+      // Customer's payments with invoice info
+      supabase
+        .from('payments')
+        .select(`
+          id, invoice_id, amount, method, last4, received_at, status,
+          invoices!inner(number, customer_id)
+        `)
+        .eq('invoices.customer_id', customerId)
+        .order('received_at', { ascending: false })
+        .limit(50),
     ]);
 
     // Calculate financial summary
@@ -137,6 +149,18 @@ serve(async (req) => {
       }
     });
 
+    // Format payments with invoice number
+    const payments = (paymentsResult.data || []).map(p => ({
+      id: p.id,
+      invoice_id: p.invoice_id,
+      invoice_number: p.invoices?.number || 'Unknown',
+      amount: p.amount,
+      method: p.method,
+      last4: p.last4,
+      received_at: p.received_at,
+      status: p.status,
+    }));
+
     const response = {
       business: businessResult.data,
       customer: session.customer_accounts.customers,
@@ -148,6 +172,7 @@ serve(async (req) => {
       // Documents
       quotes: quotesResult.data || [],
       invoices: invoices,
+      payments,
       
       // Financial summary
       financialSummary: {

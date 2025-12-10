@@ -1,41 +1,26 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, Receipt, ExternalLink, Loader2 } from 'lucide-react';
+import { FileText, Receipt, Loader2, Eye, Download, CreditCard } from 'lucide-react';
 import { format } from 'date-fns';
 import { useCustomerJobData } from '@/hooks/useCustomerJobData';
+import { CustomerQuoteDetail } from './CustomerQuoteDetail';
+import { CustomerPaymentHistory } from './CustomerPaymentHistory';
 import type { CustomerQuote, CustomerInvoice } from '@/types/customerPortal';
+import { buildEdgeFunctionUrl } from '@/utils/env';
+import { toast } from 'sonner';
 
 export function CustomerDocuments() {
   const { data: jobData, isLoading, error } = useCustomerJobData();
+  const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(null);
 
   const formatCurrency = (cents: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
     }).format(cents / 100);
-  };
-
-  const getQuoteStatusColor = (status: string) => {
-    switch (status) {
-      case 'Approved': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
-      case 'Sent': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
-      case 'Draft': return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400';
-      case 'Declined': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getInvoiceStatusColor = (status: string) => {
-    switch (status) {
-      case 'Paid': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
-      case 'Sent': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
-      case 'Overdue': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
-      case 'Draft': return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400';
-      default: return 'bg-gray-100 text-gray-800';
-    }
   };
 
   if (isLoading) {
@@ -56,18 +41,19 @@ export function CustomerDocuments() {
 
   const quotes = jobData?.quotes || [];
   const invoices = jobData?.invoices || [];
+  const payments = jobData?.payments || [];
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold">Documents</h2>
         <p className="text-muted-foreground">
-          View your quotes, invoices, and contracts
+          View your quotes, invoices, and payment history
         </p>
       </div>
 
       <Tabs defaultValue="quotes">
-        <TabsList>
+        <TabsList className="overflow-x-auto">
           <TabsTrigger value="quotes" className="gap-2">
             <FileText className="h-4 w-4" />
             Quotes ({quotes.length})
@@ -75,6 +61,10 @@ export function CustomerDocuments() {
           <TabsTrigger value="invoices" className="gap-2">
             <Receipt className="h-4 w-4" />
             Invoices ({invoices.length})
+          </TabsTrigger>
+          <TabsTrigger value="payments" className="gap-2">
+            <CreditCard className="h-4 w-4" />
+            Payments ({payments.length})
           </TabsTrigger>
         </TabsList>
 
@@ -89,7 +79,11 @@ export function CustomerDocuments() {
           ) : (
             <div className="space-y-3">
               {quotes.map((quote) => (
-                <QuoteCard key={quote.id} quote={quote} />
+                <QuoteCard 
+                  key={quote.id} 
+                  quote={quote} 
+                  onView={() => setSelectedQuoteId(quote.id)}
+                />
               ))}
             </div>
           )}
@@ -111,12 +105,29 @@ export function CustomerDocuments() {
             </div>
           )}
         </TabsContent>
+
+        <TabsContent value="payments" className="mt-4">
+          <CustomerPaymentHistory payments={payments} />
+        </TabsContent>
       </Tabs>
+
+      <CustomerQuoteDetail 
+        quoteId={selectedQuoteId}
+        open={!!selectedQuoteId}
+        onOpenChange={(open) => !open && setSelectedQuoteId(null)}
+      />
     </div>
   );
 }
 
-function QuoteCard({ quote }: { quote: CustomerQuote }) {
+interface QuoteCardProps {
+  quote: CustomerQuote;
+  onView: () => void;
+}
+
+function QuoteCard({ quote, onView }: QuoteCardProps) {
+  const [downloading, setDownloading] = useState(false);
+
   const formatCurrency = (cents: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -130,11 +141,46 @@ function QuoteCard({ quote }: { quote: CustomerQuote }) {
       case 'Sent': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
       case 'Draft': return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400';
       case 'Declined': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+      case 'Edits Requested': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const quoteUrl = `/quote-present/${quote.public_token}`;
+  const handleDownloadPdf = async () => {
+    setDownloading(true);
+    try {
+      const sessionToken = localStorage.getItem('customer_session_token');
+      const response = await fetch(
+        buildEdgeFunctionUrl('generate-document-pdf', { 
+          type: 'quote', 
+          id: quote.id 
+        }),
+        {
+          headers: {
+            'x-session-token': sessionToken || '',
+          },
+        }
+      );
+
+      if (!response.ok) throw new Error('Failed to generate PDF');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Quote-${quote.number}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    } catch (error) {
+      toast.error('Failed to download PDF');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const canTakeAction = quote.status === 'Sent';
 
   return (
     <Card>
@@ -152,7 +198,7 @@ function QuoteCard({ quote }: { quote: CustomerQuote }) {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <div>
             <p className="text-2xl font-bold">{formatCurrency(quote.total)}</p>
             {quote.deposit_required && quote.deposit_percent && (
@@ -161,12 +207,25 @@ function QuoteCard({ quote }: { quote: CustomerQuote }) {
               </p>
             )}
           </div>
-          <Button asChild>
-            <a href={quoteUrl} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="mr-2 h-4 w-4" />
-              View Quote
-            </a>
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="icon"
+              onClick={handleDownloadPdf}
+              disabled={downloading}
+              title="Download PDF"
+            >
+              {downloading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+            </Button>
+            <Button onClick={onView}>
+              <Eye className="mr-2 h-4 w-4" />
+              {canTakeAction ? 'Review & Accept' : 'View Quote'}
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -174,6 +233,8 @@ function QuoteCard({ quote }: { quote: CustomerQuote }) {
 }
 
 function InvoiceCard({ invoice }: { invoice: CustomerInvoice }) {
+  const [downloading, setDownloading] = useState(false);
+
   const formatCurrency = (cents: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -188,6 +249,40 @@ function InvoiceCard({ invoice }: { invoice: CustomerInvoice }) {
       case 'Overdue': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
       case 'Draft': return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400';
       default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    setDownloading(true);
+    try {
+      const sessionToken = localStorage.getItem('customer_session_token');
+      const response = await fetch(
+        buildEdgeFunctionUrl('generate-document-pdf', { 
+          type: 'invoice', 
+          id: invoice.id 
+        }),
+        {
+          headers: {
+            'x-session-token': sessionToken || '',
+          },
+        }
+      );
+
+      if (!response.ok) throw new Error('Failed to generate PDF');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Invoice-${invoice.number}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    } catch (error) {
+      toast.error('Failed to download PDF');
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -212,7 +307,7 @@ function InvoiceCard({ invoice }: { invoice: CustomerInvoice }) {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <div>
             <p className="text-2xl font-bold">{formatCurrency(invoice.total)}</p>
             {invoice.paid_at && (
@@ -221,15 +316,30 @@ function InvoiceCard({ invoice }: { invoice: CustomerInvoice }) {
               </p>
             )}
           </div>
-          <Button 
-            asChild 
-            variant={invoice.status === 'Paid' ? 'outline' : 'default'}
-          >
-            <a href={invoiceUrl} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="mr-2 h-4 w-4" />
-              {invoice.status === 'Paid' ? 'View Invoice' : 'Pay Now'}
-            </a>
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="icon"
+              onClick={handleDownloadPdf}
+              disabled={downloading}
+              title="Download PDF"
+            >
+              {downloading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+            </Button>
+            <Button 
+              asChild 
+              variant={invoice.status === 'Paid' ? 'outline' : 'default'}
+            >
+              <a href={invoiceUrl} target="_blank" rel="noopener noreferrer">
+                <Eye className="mr-2 h-4 w-4" />
+                {invoice.status === 'Paid' ? 'View Invoice' : 'Pay Now'}
+              </a>
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

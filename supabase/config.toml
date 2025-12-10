@@ -508,3 +508,11 @@ verify_jwt = false
 [functions.customer-portal-status]
 verify_jwt = false
 
+# Customer Quote Actions
+[functions.customer-quote-actions]
+verify_jwt = false
+
+# Document PDF Generation
+[functions.generate-document-pdf]
+verify_jwt = false
+
