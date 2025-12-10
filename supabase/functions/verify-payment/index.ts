@@ -96,9 +96,138 @@ serve(async (req) => {
       const toEmail: string | null = cust?.email || fallbackEmail;
 
       if (resendApiKey && toEmail) {
-        // Email functionality temporarily disabled for team management focus
-        console.log('Email functionality disabled - receipt not sent');
-        receiptSent = false;
+        const formattedAmount = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'usd',
+        }).format((inv.total || 0) / 100);
+
+        const paidDate = inv.paid_at
+          ? new Date(inv.paid_at).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })
+          : new Date().toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            });
+
+        const customerName = cust?.name || 'Valued Customer';
+        const businessName = biz?.name || 'Our Business';
+
+        const emailHtml = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f5;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; padding: 40px 20px;">
+              <tr>
+                <td align="center">
+                  <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <!-- Header -->
+                    <tr>
+                      <td style="background-color: #10b981; padding: 32px; text-align: center;">
+                        <div style="width: 48px; height: 48px; background-color: rgba(255,255,255,0.2); border-radius: 50%; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
+                          <span style="font-size: 24px;">✓</span>
+                        </div>
+                        <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">Payment Received</h1>
+                      </td>
+                    </tr>
+                    <!-- Content -->
+                    <tr>
+                      <td style="padding: 32px;">
+                        <p style="color: #374151; font-size: 16px; margin: 0 0 24px;">Hi ${customerName},</p>
+                        <p style="color: #374151; font-size: 16px; margin: 0 0 24px;">Thank you for your payment. This email confirms that we have received your payment.</p>
+                        
+                        <!-- Payment Details Box -->
+                        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
+                          <tr>
+                            <td>
+                              <table width="100%" cellpadding="0" cellspacing="0">
+                                <tr>
+                                  <td style="padding: 8px 0;">
+                                    <span style="color: #6b7280; font-size: 14px;">Invoice Number</span>
+                                  </td>
+                                  <td style="padding: 8px 0; text-align: right;">
+                                    <span style="color: #111827; font-size: 14px; font-weight: 600;">${inv.number}</span>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td style="padding: 8px 0;">
+                                    <span style="color: #6b7280; font-size: 14px;">Amount Paid</span>
+                                  </td>
+                                  <td style="padding: 8px 0; text-align: right;">
+                                    <span style="color: #10b981; font-size: 14px; font-weight: 600;">${formattedAmount}</span>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td style="padding: 8px 0;">
+                                    <span style="color: #6b7280; font-size: 14px;">Payment Date</span>
+                                  </td>
+                                  <td style="padding: 8px 0; text-align: right;">
+                                    <span style="color: #111827; font-size: 14px; font-weight: 600;">${paidDate}</span>
+                                  </td>
+                                </tr>
+                                ${last4 ? `
+                                <tr>
+                                  <td style="padding: 8px 0;">
+                                    <span style="color: #6b7280; font-size: 14px;">Payment Method</span>
+                                  </td>
+                                  <td style="padding: 8px 0; text-align: right;">
+                                    <span style="color: #111827; font-size: 14px; font-weight: 600;">•••• ${last4}</span>
+                                  </td>
+                                </tr>
+                                ` : ''}
+                              </table>
+                            </td>
+                          </tr>
+                        </table>
+                        
+                        <p style="color: #6b7280; font-size: 14px; margin: 0;">If you have any questions about this payment, please contact us.</p>
+                      </td>
+                    </tr>
+                    <!-- Footer -->
+                    <tr>
+                      <td style="padding: 24px 32px; background-color: #f9fafb; border-top: 1px solid #e5e7eb;">
+                        <p style="color: #6b7280; font-size: 14px; margin: 0; text-align: center;">${businessName}</p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </body>
+          </html>
+        `;
+
+        const replyTo = biz?.reply_to_email || undefined;
+
+        const res = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${resendApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: resendFrom,
+            to: [toEmail],
+            reply_to: replyTo,
+            subject: `Payment Receipt - Invoice ${inv.number}`,
+            html: emailHtml,
+          }),
+        });
+
+        if (res.ok) {
+          receiptSent = true;
+          console.log('Receipt email sent successfully to', toEmail);
+        } else {
+          const errorText = await res.text();
+          console.error('Failed to send receipt email:', errorText);
+        }
       }
     } catch (emailErr) {
       console.error('receipt email error', emailErr);
