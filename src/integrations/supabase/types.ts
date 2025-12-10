@@ -3623,42 +3623,62 @@ export type Database = {
       }
       sg_conversations: {
         Row: {
+          assigned_worker_id: string | null
           business_id: string
           created_at: string | null
           created_by: string
           customer_id: string | null
           id: string
           is_archived: boolean | null
+          job_id: string | null
           last_message_at: string | null
           metadata: Json | null
           title: string | null
           updated_at: string | null
         }
         Insert: {
+          assigned_worker_id?: string | null
           business_id: string
           created_at?: string | null
           created_by: string
           customer_id?: string | null
           id?: string
           is_archived?: boolean | null
+          job_id?: string | null
           last_message_at?: string | null
           metadata?: Json | null
           title?: string | null
           updated_at?: string | null
         }
         Update: {
+          assigned_worker_id?: string | null
           business_id?: string
           created_at?: string | null
           created_by?: string
           customer_id?: string | null
           id?: string
           is_archived?: boolean | null
+          job_id?: string | null
           last_message_at?: string | null
           metadata?: Json | null
           title?: string | null
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "sg_conversations_assigned_worker_id_fkey"
+            columns: ["assigned_worker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_conversations_assigned_worker_id_fkey"
+            columns: ["assigned_worker_id"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
+          },
           {
             foreignKeyName: "sg_conversations_business_id_fkey"
             columns: ["business_id"]
@@ -3686,6 +3706,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_conversations_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sg_conversations_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "time_by_job_report"
+            referencedColumns: ["job_id"]
           },
         ]
       }

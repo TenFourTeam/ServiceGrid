@@ -1,7 +1,9 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Users, Phone, Mail, Building2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Users, Phone, Mail, Building2, MessageSquare, Loader2 } from 'lucide-react';
+import { useStartCustomerConversation } from '@/hooks/useStartCustomerConversation';
 import type { TeamMember, CustomerBusiness } from '@/types/customerPortal';
 
 interface ContactsWidgetProps {
@@ -10,6 +12,8 @@ interface ContactsWidgetProps {
 }
 
 export function ContactsWidget({ business, teamMembers }: ContactsWidgetProps) {
+  const startConversation = useStartCustomerConversation();
+
   const getInitials = (name: string | null) => {
     if (!name) return '?';
     return name
@@ -18,6 +22,17 @@ export function ContactsWidget({ business, teamMembers }: ContactsWidgetProps) {
       .join('')
       .toUpperCase()
       .slice(0, 2);
+  };
+
+  const handleMessageBusiness = () => {
+    startConversation.mutate({});
+  };
+
+  const handleMessageMember = (member: TeamMember) => {
+    startConversation.mutate({
+      workerId: member.id,
+      workerName: member.full_name || member.email,
+    });
   };
 
   return (
@@ -59,24 +74,54 @@ export function ContactsWidget({ business, teamMembers }: ContactsWidgetProps) {
               )}
             </div>
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleMessageBusiness}
+            disabled={startConversation.isPending}
+            className="shrink-0"
+            title="Message business"
+          >
+            {startConversation.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <MessageSquare className="h-4 w-4" />
+            )}
+          </Button>
         </div>
 
         {/* Team members */}
         {teamMembers.length > 0 && (
           <div className="space-y-2">
             <p className="text-sm font-medium">Assigned Team Members</p>
-            <div className="flex flex-wrap gap-2">
+            <div className="space-y-2">
               {teamMembers.map((member) => (
                 <div 
                   key={member.id}
-                  className="flex items-center gap-2 px-3 py-2 rounded-full bg-muted/50"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50"
                 >
                   <Avatar className="h-6 w-6">
                     <AvatarFallback className="text-xs">
                       {getInitials(member.full_name)}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="text-sm">{member.full_name || member.email}</span>
+                  <span className="text-sm flex-1">{member.full_name || member.email}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleMessageMember(member)}
+                    disabled={startConversation.isPending}
+                    className="h-7 px-2"
+                  >
+                    {startConversation.isPending ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <>
+                        <MessageSquare className="h-3 w-3 mr-1" />
+                        Message
+                      </>
+                    )}
+                  </Button>
                 </div>
               ))}
             </div>
