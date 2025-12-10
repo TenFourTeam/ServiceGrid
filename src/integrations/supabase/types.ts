@@ -5209,6 +5209,10 @@ export type Database = {
         Returns: string
       }
       longtransactionsenabled: { Args: never; Returns: boolean }
+      mark_conversation_read: {
+        Args: { p_conversation_id: string; p_user_id: string }
+        Returns: undefined
+      }
       next_est_number: { Args: { p_business_id: string }; Returns: string }
       next_inv_number:
         | { Args: { p_business_id: string }; Returns: string }
