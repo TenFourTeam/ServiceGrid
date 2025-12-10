@@ -1,7 +1,7 @@
 import React, { Suspense, lazy } from "react";
 import { Routes, Route } from "react-router-dom";
 import { BrowserRouter } from "react-router-dom";
-import { ClerkProvider, ClerkLoaded, ClerkLoading } from "@clerk/clerk-react";
+import { ClerkProvider, ClerkLoaded, ClerkLoading, AuthenticateWithRedirectCallback } from "@clerk/clerk-react";
 import { AppProviders } from "@/providers/AppProviders";
 
 import { AuthBoundary, RequireAuth, PublicOnly, QueryClientClerkIntegration } from "@/auth";
@@ -161,6 +161,9 @@ function App({ clerkKey }: AppProps) {
                 <Route path="/invite/referral" element={<ReferralLanding />} />
                 <Route path="/request/:businessId" element={<PublicRequestFormPage />} />
                 <Route path="/auth/google-drive/callback" element={<GoogleDriveCallback />} />
+                
+                {/* SSO Callback route for OAuth flows (Google, etc.) */}
+                <Route path="/sso-callback" element={<AuthenticateWithRedirectCallback />} />
                 
                 {/* Customer Portal routes */}
                 <Route path="/customer-login" element={<CustomerLogin />} />
