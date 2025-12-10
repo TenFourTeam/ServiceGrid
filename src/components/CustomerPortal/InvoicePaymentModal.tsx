@@ -103,6 +103,11 @@ export function InvoicePaymentModal({
     }).format(cents / 100);
   };
 
+  const handleViewInvoice = () => {
+    // Close the payment modal - user can view invoice from documents tab
+    handleClose();
+  };
+
   const renderContent = () => {
     // Success state
     if (modalState === 'success') {
@@ -111,6 +116,7 @@ export function InvoicePaymentModal({
           invoiceNumber={invoice.number}
           amount={invoice.total}
           onClose={handleClose}
+          onViewInvoice={handleViewInvoice}
         />
       );
     }

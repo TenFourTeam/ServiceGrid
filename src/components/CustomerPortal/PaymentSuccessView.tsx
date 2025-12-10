@@ -1,13 +1,14 @@
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface PaymentSuccessViewProps {
   invoiceNumber: string;
   amount: number;
   onClose: () => void;
+  onViewInvoice?: () => void;
 }
 
-export function PaymentSuccessView({ invoiceNumber, amount, onClose }: PaymentSuccessViewProps) {
+export function PaymentSuccessView({ invoiceNumber, amount, onClose, onViewInvoice }: PaymentSuccessViewProps) {
   const formatCurrency = (cents: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -42,13 +43,17 @@ export function PaymentSuccessView({ invoiceNumber, amount, onClose }: PaymentSu
         </div>
       </div>
 
-      <p className="text-sm text-muted-foreground">
-        A receipt has been sent to your email.
-      </p>
-
-      <Button onClick={onClose} className="w-full max-w-xs">
-        Done
-      </Button>
+      <div className="flex flex-col gap-2 w-full max-w-xs">
+        {onViewInvoice && (
+          <Button onClick={onViewInvoice} variant="outline" className="w-full gap-2">
+            <FileText className="h-4 w-4" />
+            View Invoice
+          </Button>
+        )}
+        <Button onClick={onClose} className="w-full">
+          Done
+        </Button>
+      </div>
     </div>
   );
 }
