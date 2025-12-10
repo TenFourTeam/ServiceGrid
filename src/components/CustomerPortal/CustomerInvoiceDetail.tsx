@@ -19,10 +19,11 @@ interface CustomerInvoiceDetailProps {
   invoiceId: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onPaymentComplete?: () => void;
 }
 
-export function CustomerInvoiceDetail({ invoiceId, open, onOpenChange }: CustomerInvoiceDetailProps) {
-  const { data, isLoading, error } = useCustomerInvoiceDetail(invoiceId);
+export function CustomerInvoiceDetail({ invoiceId, open, onOpenChange, onPaymentComplete }: CustomerInvoiceDetailProps) {
+  const { data, isLoading, error, refetch } = useCustomerInvoiceDetail(invoiceId);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   const getStatusColor = (status: string, dueAt: string | null) => {
@@ -335,8 +336,13 @@ export function CustomerInvoiceDetail({ invoiceId, open, onOpenChange }: Custome
       {invoiceForPayment && (
         <InvoicePaymentModal
           invoice={invoiceForPayment}
+          business={data?.business}
           open={showPaymentModal}
           onOpenChange={setShowPaymentModal}
+          onPaymentComplete={() => {
+            refetch();
+            onPaymentComplete?.();
+          }}
         />
       )}
     </>
