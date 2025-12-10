@@ -523,3 +523,9 @@ verify_jwt = false
 [functions.generate-document-pdf]
 verify_jwt = false
 
+# Customer Self-Service Appointment Management
+[functions.customer-appointment-requests]
+verify_jwt = false
+
+[functions.customer-service-request]
+verify_jwt = false
