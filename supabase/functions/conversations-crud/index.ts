@@ -103,6 +103,30 @@ Deno.serve(async (req) => {
         return ok({ error: error.message }, 500);
       }
 
+      // Fetch worker name for audit trail if assigned
+      let workerName: string | null = null;
+      if (workerId) {
+        const { data: workerProfile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', workerId)
+          .single();
+        workerName = workerProfile?.full_name || null;
+      }
+
+      // Log creation event
+      await supabase.from('sg_conversation_events').insert({
+        conversation_id: data.id,
+        event_type: 'created',
+        user_id: ctx.userId,
+        metadata: {
+          initial_worker_id: workerId || null,
+          initial_worker_name: workerName,
+        },
+      });
+      
+      console.log('[conversations-crud] Logged creation event');
+
       // If metadata has references, create initial message with the reference
       if (metadata?.references?.length > 0) {
         const ref = metadata.references[0];
@@ -124,9 +148,17 @@ Deno.serve(async (req) => {
       return ok({ conversation: data });
     }
 
-    // PATCH: Update conversation (archive, rename)
+    // PATCH: Update conversation (archive, rename, reassign)
     if (req.method === 'PATCH' && conversationId) {
       const updates = await req.json();
+
+      // Fetch current state before update (for audit trail)
+      const { data: current } = await supabase
+        .from('sg_conversations')
+        .select('assigned_worker_id, is_archived')
+        .eq('id', conversationId)
+        .eq('business_id', ctx.businessId)
+        .single();
 
       const { data, error } = await supabase
         .from('sg_conversations')
@@ -142,6 +174,46 @@ Deno.serve(async (req) => {
       if (error) {
         console.error('[conversations-crud] Error updating conversation:', error);
         return ok({ error: error.message }, 500);
+      }
+
+      // Log reassignment event if worker changed
+      if ('assigned_worker_id' in updates && 
+          updates.assigned_worker_id !== current?.assigned_worker_id) {
+        
+        // Fetch worker names for audit trail
+        const [fromWorkerResult, toWorkerResult] = await Promise.all([
+          current?.assigned_worker_id 
+            ? supabase.from('profiles').select('full_name').eq('id', current.assigned_worker_id).single()
+            : Promise.resolve({ data: null }),
+          updates.assigned_worker_id
+            ? supabase.from('profiles').select('full_name').eq('id', updates.assigned_worker_id).single()
+            : Promise.resolve({ data: null }),
+        ]);
+
+        await supabase.from('sg_conversation_events').insert({
+          conversation_id: conversationId,
+          event_type: 'reassigned',
+          user_id: ctx.userId,
+          metadata: {
+            from_worker_id: current?.assigned_worker_id || null,
+            from_worker_name: fromWorkerResult.data?.full_name || null,
+            to_worker_id: updates.assigned_worker_id || null,
+            to_worker_name: toWorkerResult.data?.full_name || null,
+          },
+        });
+        
+        console.log('[conversations-crud] Logged reassignment event');
+      }
+
+      // Log archive/unarchive events
+      if ('is_archived' in updates && updates.is_archived !== current?.is_archived) {
+        await supabase.from('sg_conversation_events').insert({
+          conversation_id: conversationId,
+          event_type: updates.is_archived ? 'archived' : 'unarchived',
+          user_id: ctx.userId,
+        });
+        
+        console.log('[conversations-crud] Logged archive event:', updates.is_archived ? 'archived' : 'unarchived');
       }
 
       console.log('[conversations-crud] Updated conversation:', data.id);

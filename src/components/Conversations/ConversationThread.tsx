@@ -4,11 +4,13 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, User, Briefcase } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ArrowLeft, User, Briefcase, History } from 'lucide-react';
 import { MessageComposer } from './MessageComposer';
 import { MessageBubble } from './MessageBubble';
 import { TimeSeparator } from './TimeSeparator';
 import { ReassignWorkerDropdown } from './ReassignWorkerDropdown';
+import { ConversationActivityFeed } from './ConversationActivityFeed';
 import { groupMessagesByDate, shouldGroupWithPrevious } from '@/utils/messageGrouping';
 import JobShowModal from '@/components/Jobs/JobShowModal';
 import { QuoteDetailsModal } from '@/components/Quotes/QuoteDetailsModal';
@@ -138,6 +140,23 @@ export function ConversationThread({ conversationId, onBack, title, isCustomerCh
               )}
             </div>
           </div>
+          
+          {/* Activity Popover */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" title="View activity">
+                <History className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-0" align="end">
+              <div className="p-3 border-b">
+                <h4 className="font-medium text-sm">Activity</h4>
+              </div>
+              <ScrollArea className="h-[300px]">
+                <ConversationActivityFeed conversationId={conversationId} />
+              </ScrollArea>
+            </PopoverContent>
+          </Popover>
         </div>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col p-0 min-h-0">

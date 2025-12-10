@@ -3589,6 +3589,41 @@ export type Database = {
           },
         ]
       }
+      sg_conversation_events: {
+        Row: {
+          conversation_id: string
+          created_at: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sg_conversation_events_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "sg_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sg_conversation_reads: {
         Row: {
           conversation_id: string
