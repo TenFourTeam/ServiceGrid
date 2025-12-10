@@ -15,7 +15,7 @@ import { NewConversationDialog } from './NewConversationDialog';
 export function ConversationsTab() {
   const { conversations, isLoading, createConversation, createCustomerConversation } = useConversations();
   const { unreadCount } = useUnreadMentions();
-  const [selectedConversation, setSelectedConversation] = useState<{ id: string; title: string; isCustomer: boolean; customerId?: string } | null>(null);
+  const [selectedConversation, setSelectedConversation] = useState<{ id: string; title: string; isCustomer: boolean; customerId?: string; customerName?: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
@@ -43,6 +43,7 @@ export function ConversationsTab() {
         title={selectedConversation.title}
         isCustomerChat={selectedConversation.isCustomer}
         customerId={selectedConversation.customerId}
+        customerName={selectedConversation.customerName}
       />
     );
   }
@@ -100,6 +101,7 @@ export function ConversationsTab() {
                       title: isCustomerChat ? conversation.customer_name || 'Customer' : conversation.title,
                       isCustomer: isCustomerChat,
                       customerId: conversation.customer_id,
+                      customerName: isCustomerChat ? conversation.customer_name : undefined,
                     })}
                     className={cn(
                       "p-4 rounded-lg border cursor-pointer hover:bg-accent transition-colors",

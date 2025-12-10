@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageSquare, Loader2, ArrowLeft, Paperclip } from 'lucide-react';
+import { MessageSquare, Loader2, ArrowLeft, Paperclip, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { 
   useCustomerConversations, 
@@ -15,6 +15,10 @@ import { TimeSeparator } from '@/components/Conversations/TimeSeparator';
 import { groupMessagesByDate, shouldGroupWithPrevious } from '@/utils/messageGrouping';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useCustomerJobData } from '@/hooks/useCustomerJobData';
+import { useCustomerAuth } from '@/hooks/useCustomerAuth';
+import { CustomerMessagingHeader } from './CustomerMessagingHeader';
+import { useCustomerBusinessContext } from '@/hooks/useCustomerBusinessContext';
 
 export function CustomerMessages() {
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
@@ -24,6 +28,20 @@ export function CustomerMessages() {
   const { data: conversations, isLoading: conversationsLoading } = useCustomerConversations();
   const { data: messagesData, isLoading: messagesLoading } = useCustomerMessages(selectedConversation);
   const sendMessage = useSendCustomerMessage();
+  const { data: jobData } = useCustomerJobData();
+  const { customerDetails } = useCustomerAuth();
+  const { businesses, activeBusinessId } = useCustomerBusinessContext();
+
+  // Get the active business info
+  const activeBusiness = useMemo(() => {
+    if (activeBusinessId && businesses.length > 0) {
+      return businesses.find(b => b.id === activeBusinessId);
+    }
+    return null;
+  }, [businesses, activeBusinessId]);
+
+  const businessName = activeBusiness?.name || jobData?.business?.name || customerDetails?.business?.name;
+  const businessLogo = activeBusiness?.logo_url || jobData?.business?.logo_url || customerDetails?.business?.logo_url;
 
   const groupedMessages = useMemo(() => {
     const messages = messagesData?.messages || [];
@@ -85,11 +103,26 @@ export function CustomerMessages() {
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div>
-            <h2 className="text-xl font-bold">Messages</h2>
-            <p className="text-sm text-muted-foreground">
-              Chat with your contractor
-            </p>
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            {businessLogo ? (
+              <img 
+                src={businessLogo} 
+                alt={businessName || 'Business'} 
+                className="h-10 w-10 rounded-lg object-contain bg-background border hidden sm:block"
+              />
+            ) : (
+              <div className="h-10 w-10 rounded-lg bg-primary/10 items-center justify-center border border-primary/20 hidden sm:flex">
+                <Building2 className="h-5 w-5 text-primary" />
+              </div>
+            )}
+            <div className="min-w-0">
+              <h2 className="text-lg font-bold truncate">
+                {businessName || 'Messages'}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Direct conversation
+              </p>
+            </div>
           </div>
         </div>
 
@@ -148,12 +181,13 @@ export function CustomerMessages() {
   // Conversation list or new conversation view
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Messages</h2>
-        <p className="text-muted-foreground">
-          Communicate with your contractor
-        </p>
-      </div>
+      {/* Business context header */}
+      <CustomerMessagingHeader 
+        businessName={businessName}
+        businessLogoUrl={businessLogo}
+        customerName={customerDetails?.name}
+        showBadge={businesses.length > 1}
+      />
 
       {hasConversations ? (
         <div className="space-y-3">
@@ -205,14 +239,14 @@ export function CustomerMessages() {
           </CardHeader>
           <CardContent className="pb-0">
             <p className="text-sm text-muted-foreground mb-4">
-              Have a question or need to discuss something with your contractor? 
+              Have a question or need to discuss something with {businessName || 'your contractor'}? 
               Send them a message below.
             </p>
           </CardContent>
           <CustomerMessageComposer
             onSend={handleSendMessage}
             isSending={sendMessage.isPending}
-            placeholder="Type your message to start a conversation..."
+            placeholder={`Send a message to ${businessName || 'your contractor'}...`}
           />
         </Card>
       )}
