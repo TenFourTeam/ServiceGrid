@@ -69,6 +69,7 @@ export interface QuoteListItem {
   customerName?: string;
   customerEmail?: string;
   sentAt?: ISODate;
+  hasSignature?: boolean;
 }
 
 // Full quote data for detailed operations

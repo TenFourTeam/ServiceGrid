@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Receipt, Users, Repeat } from 'lucide-react';
+import { Receipt, Users, Repeat, PenLine } from 'lucide-react';
 import { QuoteActions } from '@/components/Quotes/QuoteActions';
 import { QuoteDetailsModal } from '@/components/Quotes/QuoteDetailsModal';
 import QuoteErrorBoundary from '@/components/ErrorBoundaries/QuoteErrorBoundary';
@@ -196,10 +196,15 @@ export default function QuotesPage() {
         )}
         
         {/* Status badge in top-right corner */}
-        <div className="absolute top-2 right-2 flex gap-1">
+        <div className="absolute top-2 right-2 flex gap-1 items-center">
           <Badge className={statusColors[quote.status]}>
             {t(`quotes.status.${quote.status.toLowerCase().replace(/\s+/g, '')}`)}
           </Badge>
+          {quote.status === 'Approved' && quote.hasSignature && (
+            <span className="inline-flex items-center gap-0.5 text-xs text-green-600 bg-green-50 px-1.5 py-0.5 rounded">
+              <PenLine className="h-3 w-3" />
+            </span>
+          )}
           {isRecurring && (
             <Badge variant="outline" className="text-xs">
               Recurring
@@ -392,6 +397,19 @@ export default function QuotesPage() {
                                 <Badge className={statusColors[quote.status]}>
                                   {t(`quotes.status.${quote.status.toLowerCase().replace(/\s+/g, '')}`)}
                                 </Badge>
+                                {quote.status === 'Approved' && quote.hasSignature && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span className="inline-flex items-center gap-1 text-xs text-green-600">
+                                        <PenLine className="h-3 w-3" />
+                                        Signed
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Customer e-signature on file</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                )}
                                 {isRecurring && (
                                   <Badge variant="outline" className="text-xs">
                                     Recurring
