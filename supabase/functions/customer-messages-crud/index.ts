@@ -247,6 +247,12 @@ Deno.serve(async (req) => {
           );
         }
 
+        // Mark conversation as read by updating customer_last_read_at
+        await supabase
+          .from('sg_conversations')
+          .update({ customer_last_read_at: new Date().toISOString() })
+          .eq('id', conversationId);
+
         // Enrich conversation with job and worker names
         let enrichedConversation = { ...conversation, job_title: null, assigned_worker_name: null };
 
@@ -391,7 +397,8 @@ Deno.serve(async (req) => {
             created_at,
             updated_at,
             job_id,
-            assigned_worker_id
+            assigned_worker_id,
+            customer_last_read_at
           `)
           .eq('customer_id', effectiveCustomerId)
           .eq('business_id', effectiveBusinessId)
@@ -436,7 +443,7 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Get last message for each conversation
+        // Get last message for each conversation and calculate unread status
         const conversationsWithPreview = await Promise.all(conversations.map(async (conv: any) => {
           const { data: lastMessage } = await supabase
             .from('sg_messages')
@@ -447,12 +454,22 @@ Deno.serve(async (req) => {
             .single();
 
           const hasAttachments = lastMessage?.attachments && Array.isArray(lastMessage.attachments) && lastMessage.attachments.length > 0;
+          
+          // Calculate if there's an unread reply from business
+          // Unread if: last message is from business AND 
+          // (customer_last_read_at is null OR last message is after customer_last_read_at)
+          const lastMessageFromBusiness = lastMessage && lastMessage.sender_type !== 'customer';
+          const hasUnreadReply = lastMessageFromBusiness && (
+            !conv.customer_last_read_at ||
+            new Date(lastMessage.created_at) > new Date(conv.customer_last_read_at)
+          );
 
           return {
             ...conv,
             last_message: lastMessage?.content || (hasAttachments ? null : null),
             last_message_at: lastMessage?.created_at || conv.created_at,
             last_message_from_customer: lastMessage?.sender_type === 'customer',
+            has_unread_reply: hasUnreadReply,
             has_attachments: hasAttachments,
             job_title: conv.job_id ? jobsMap[conv.job_id] : null,
             assigned_worker_name: conv.assigned_worker_id ? workersMap[conv.assigned_worker_id] : null,
