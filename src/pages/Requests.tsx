@@ -29,6 +29,7 @@ import { RequestShowModal } from "@/components/Requests/RequestShowModal";
 import { RequestShareModal } from "@/components/Requests/RequestShareModal";
 import { RequestActions } from "@/components/Requests/RequestActions";
 import { AIScheduleSuggestions } from "@/components/Calendar/AIScheduleSuggestions";
+import { AppointmentChangeRequestsCard } from "@/components/Requests/AppointmentChangeRequestsCard";
 import { useBusinessMembersData } from "@/hooks/useBusinessMembers";
 import { useJobsData } from "@/hooks/useJobsData";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
@@ -248,6 +249,9 @@ export default function Requests() {
               </Select>
             </div>
           </div>
+
+          {/* Customer Appointment Change Requests */}
+          <AppointmentChangeRequestsCard />
 
           {/* AI Scheduling Suggestions */}
           {unscheduledJobs.length > 0 && businessId && (

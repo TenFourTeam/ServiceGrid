@@ -536,3 +536,7 @@ verify_jwt = false
 # Customer Portal Business Switching
 [functions.customer-switch-business]
 verify_jwt = false
+
+# Appointment Change Requests (Business Management)
+[functions.appointment-requests-manage]
+verify_jwt = false
