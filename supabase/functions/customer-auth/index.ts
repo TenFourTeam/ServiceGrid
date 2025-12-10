@@ -68,17 +68,29 @@ async function handleMagicLink(req: Request, supabase: any) {
     );
   }
 
-  // Find customer by email
-  const { data: customer, error: customerError } = await supabase
+  // Find customer by email (handle multiple customers with same email across businesses)
+  const { data: customers, error: customerError } = await supabase
     .from('customers')
-    .select('id, name, email, business_id, businesses(id, name)')
+    .select('id, name, email, business_id, updated_at, businesses(id, name)')
     .eq('email', email.toLowerCase())
-    .single();
+    .order('updated_at', { ascending: false })
+    .limit(10);
 
-  if (customerError || !customer) {
-    console.log('Customer not found for email:', email);
+  if (customerError) {
+    console.error('Error querying customers:', customerError);
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        emailSent: false,
+        error: 'Failed to process request' 
+      }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  if (!customers || customers.length === 0) {
+    console.log('No customer found for email:', email);
     // Return success but indicate no customer found (for security, don't reveal if email exists)
-    // But include emailSent: false so frontend can show appropriate message
     return new Response(
       JSON.stringify({ 
         success: true, 
@@ -89,6 +101,10 @@ async function handleMagicLink(req: Request, supabase: any) {
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
+
+  // Use the most recently updated customer record
+  const customer = customers[0];
+  console.log(`Found ${customers.length} customer(s) for email ${email}, using customer ${customer.id} from business ${customer.business_id}`);
 
   // Generate magic token
   const magicToken = crypto.randomUUID() + '-' + crypto.randomUUID();
@@ -301,19 +317,32 @@ async function handleRegister(req: Request, supabase: any) {
     );
   }
 
-  // Find customer by email
-  const { data: customer, error: customerError } = await supabase
+  // Find customer by email (handle multiple customers with same email across businesses)
+  const { data: customers, error: customerError } = await supabase
     .from('customers')
-    .select('id, name, email, business_id, businesses(id, name, logo_url)')
+    .select('id, name, email, business_id, updated_at, businesses(id, name, logo_url)')
     .eq('email', email.toLowerCase())
-    .single();
+    .order('updated_at', { ascending: false })
+    .limit(10);
 
-  if (customerError || !customer) {
+  if (customerError) {
+    console.error('Error querying customers:', customerError);
+    return new Response(
+      JSON.stringify({ error: 'Failed to process request' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  if (!customers || customers.length === 0) {
     return new Response(
       JSON.stringify({ error: 'No customer account found with this email' }),
       { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
+
+  // Use the most recently updated customer record
+  const customer = customers[0];
+  console.log(`Register: Found ${customers.length} customer(s) for email ${email}, using customer ${customer.id}`);
 
   // Check if account already has password
   const { data: existingAccount } = await supabase
@@ -574,19 +603,32 @@ async function handleClerkLink(req: Request, supabase: any) {
     );
   }
 
-  // Find customer by email
-  const { data: customer, error: customerError } = await supabase
+  // Find customer by email (handle multiple customers with same email across businesses)
+  const { data: customers, error: customerError } = await supabase
     .from('customers')
-    .select('id, name, email, business_id, businesses(id, name, logo_url)')
+    .select('id, name, email, business_id, updated_at, businesses(id, name, logo_url)')
     .eq('email', email.toLowerCase())
-    .single();
+    .order('updated_at', { ascending: false })
+    .limit(10);
 
-  if (customerError || !customer) {
+  if (customerError) {
+    console.error('Error querying customers for Clerk link:', customerError);
+    return new Response(
+      JSON.stringify({ error: 'Failed to process request', linked: false }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  if (!customers || customers.length === 0) {
     return new Response(
       JSON.stringify({ error: 'No customer found with this email', linked: false }),
       { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
+
+  // Use the most recently updated customer record
+  const customer = customers[0];
+  console.log(`Clerk link: Found ${customers.length} customer(s) for email ${email}, using customer ${customer.id}`);
 
   // Upsert customer account with Clerk ID
   const { data: account, error: accountError } = await supabase
