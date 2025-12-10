@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Plus, Search, User, Paperclip } from 'lucide-react';
+import { MessageSquare, Plus, Search, User, Paperclip, Briefcase, UserCheck } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ConversationThread } from './ConversationThread';
@@ -15,7 +15,17 @@ import { NewConversationDialog } from './NewConversationDialog';
 export function ConversationsTab() {
   const { conversations, isLoading, createConversation, createCustomerConversation } = useConversations();
   const { unreadCount } = useUnreadMentions();
-  const [selectedConversation, setSelectedConversation] = useState<{ id: string; title: string; isCustomer: boolean; customerId?: string; customerName?: string } | null>(null);
+  const [selectedConversation, setSelectedConversation] = useState<{ 
+    id: string; 
+    title: string; 
+    isCustomer: boolean; 
+    customerId?: string; 
+    customerName?: string;
+    jobId?: string;
+    jobTitle?: string;
+    assignedWorkerId?: string;
+    assignedWorkerName?: string;
+  } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
@@ -44,6 +54,10 @@ export function ConversationsTab() {
         isCustomerChat={selectedConversation.isCustomer}
         customerId={selectedConversation.customerId}
         customerName={selectedConversation.customerName}
+        jobId={selectedConversation.jobId}
+        jobTitle={selectedConversation.jobTitle}
+        assignedWorkerId={selectedConversation.assignedWorkerId}
+        assignedWorkerName={selectedConversation.assignedWorkerName}
       />
     );
   }
@@ -102,6 +116,10 @@ export function ConversationsTab() {
                       isCustomer: isCustomerChat,
                       customerId: conversation.customer_id,
                       customerName: isCustomerChat ? conversation.customer_name : undefined,
+                      jobId: conversation.job_id,
+                      jobTitle: conversation.job_title,
+                      assignedWorkerId: conversation.assigned_worker_id,
+                      assignedWorkerName: conversation.assigned_worker_name,
                     })}
                     className={cn(
                       "p-4 rounded-lg border cursor-pointer hover:bg-accent transition-colors",
@@ -109,11 +127,23 @@ export function ConversationsTab() {
                     )}
                   >
                     <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         {isCustomerChat && (
                           <Badge variant="outline" className="text-xs gap-1 shrink-0">
                             <User className="h-3 w-3" />
                             Customer
+                          </Badge>
+                        )}
+                        {conversation.job_title && (
+                          <Badge variant="secondary" className="text-xs gap-1 shrink-0">
+                            <Briefcase className="h-3 w-3" />
+                            {conversation.job_title}
+                          </Badge>
+                        )}
+                        {conversation.assigned_worker_name && (
+                          <Badge variant="outline" className="text-xs gap-1 shrink-0 border-primary/30 text-primary">
+                            <UserCheck className="h-3 w-3" />
+                            {conversation.assigned_worker_name}
                           </Badge>
                         )}
                         <h3 className="font-medium">

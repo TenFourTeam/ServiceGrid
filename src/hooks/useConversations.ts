@@ -18,6 +18,10 @@ export interface Conversation {
   unread_count?: number;
   customer_id?: string;
   customer_name?: string;
+  job_id?: string;
+  job_title?: string;
+  assigned_worker_id?: string;
+  assigned_worker_name?: string;
 }
 
 export function useConversations() {

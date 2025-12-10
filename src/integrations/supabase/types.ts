@@ -5324,6 +5324,8 @@ export type Database = {
       get_conversations_with_preview: {
         Args: { p_business_id: string }
         Returns: {
+          assigned_worker_id: string
+          assigned_worker_name: string
           business_id: string
           created_at: string
           created_by: string
@@ -5331,6 +5333,8 @@ export type Database = {
           customer_name: string
           id: string
           is_archived: boolean
+          job_id: string
+          job_title: string
           last_message_at: string
           latest_message: string
           latest_sender_name: string
