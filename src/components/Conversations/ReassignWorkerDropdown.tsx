@@ -14,7 +14,10 @@ interface ReassignWorkerDropdownProps {
   conversationId: string;
   currentWorkerId?: string;
   currentWorkerName?: string;
-  onReassign: (workerId: string | null) => void;
+  onReassign: (workerId: string | null, context: {
+    fromWorkerName?: string | null;
+    toWorkerName?: string | null;
+  }) => void;
   isLoading?: boolean;
 }
 
@@ -29,7 +32,15 @@ export function ReassignWorkerDropdown({
 
   const handleValueChange = (value: string) => {
     const workerId = value === 'unassigned' ? null : value;
-    onReassign(workerId);
+    const selectedMember = members.find(m => m.user_id === workerId);
+    const toWorkerName = selectedMember 
+      ? ((selectedMember as any).full_name || (selectedMember as any).email)
+      : null;
+    
+    onReassign(workerId, {
+      fromWorkerName: currentWorkerName,
+      toWorkerName,
+    });
     setIsOpen(false);
   };
 
