@@ -91,7 +91,7 @@ serve(async (req) => {
         return json({ url: session.url });
       }
 
-      // Embedded checkout for in-portal payments
+      // Embedded checkout for in-portal payments (with saved payment methods)
       if (action === "create_embedded_checkout") {
         const { invoice_id, token } = await req.json();
         if (!invoice_id || !token) {
@@ -102,7 +102,7 @@ serve(async (req) => {
           .from("invoices")
           .select(`
             id, number, total, status, business_id, customer_id, public_token,
-            customers (email, name),
+            customers (id, email, name),
             businesses (stripe_account_id, application_fee_bps)
           `)
           .eq("id", invoice_id)
@@ -118,6 +118,46 @@ serve(async (req) => {
 
         if (invoice.status === "Paid") {
           return json({ error: "Invoice already paid" }, { status: 400 });
+        }
+
+        // Look up or create Stripe customer for saved payment methods
+        let stripeCustomerId: string | null = null;
+        
+        // Get customer account to check for existing Stripe customer
+        const { data: customerAccount } = await supabase
+          .from("customer_accounts")
+          .select("id, stripe_customer_id")
+          .eq("customer_id", invoice.customer_id)
+          .maybeSingle();
+
+        if (customerAccount?.stripe_customer_id) {
+          // Use existing Stripe customer
+          stripeCustomerId = customerAccount.stripe_customer_id;
+          console.log(`[payments-crud] Using existing Stripe customer: ${stripeCustomerId}`);
+        } else if (customerAccount && invoice.customers?.email) {
+          // Create new Stripe customer
+          try {
+            const stripeCustomer = await stripe.customers.create({
+              email: invoice.customers.email,
+              name: invoice.customers.name || undefined,
+              metadata: {
+                customer_account_id: customerAccount.id,
+                customer_id: invoice.customer_id,
+              },
+            });
+            stripeCustomerId = stripeCustomer.id;
+            
+            // Save Stripe customer ID to database
+            await supabase
+              .from("customer_accounts")
+              .update({ stripe_customer_id: stripeCustomerId })
+              .eq("id", customerAccount.id);
+            
+            console.log(`[payments-crud] Created new Stripe customer: ${stripeCustomerId}`);
+          } catch (stripeErr) {
+            console.error("[payments-crud] Failed to create Stripe customer:", stripeErr);
+            // Continue without saved payment methods
+          }
         }
 
         const checkoutOrigin = origin || "http://localhost:8080";
@@ -139,7 +179,15 @@ serve(async (req) => {
           },
         };
 
-        if (invoice.customers?.email) {
+        // If we have a Stripe customer, enable saved payment methods
+        if (stripeCustomerId) {
+          embeddedConfig.customer = stripeCustomerId;
+          embeddedConfig.payment_method_collection = "always";
+          embeddedConfig.saved_payment_method_options = {
+            payment_method_save: "enabled",
+          };
+        } else if (invoice.customers?.email) {
+          // Fallback to customer_email if no Stripe customer
           embeddedConfig.customer_email = invoice.customers.email;
         }
 
