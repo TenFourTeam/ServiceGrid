@@ -57,6 +57,51 @@ serve(async (req) => {
   }
 });
 
+// Helper: Get available businesses for a customer account
+async function getAvailableBusinesses(supabase: any, accountId: string) {
+  const { data: links, error } = await supabase
+    .from('customer_account_links')
+    .select(`
+      customer_id,
+      business_id,
+      is_primary,
+      customers (id, name, email),
+      businesses (id, name, logo_url, light_logo_url)
+    `)
+    .eq('customer_account_id', accountId)
+    .order('is_primary', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching customer account links:', error);
+    return [];
+  }
+
+  return (links || []).map(link => ({
+    id: link.business_id,
+    name: link.businesses?.name || 'Unknown Business',
+    logo_url: link.businesses?.logo_url,
+    light_logo_url: link.businesses?.light_logo_url,
+    customer_id: link.customer_id,
+    customer_name: link.customers?.name,
+    is_primary: link.is_primary,
+  }));
+}
+
+// Helper: Determine default active business/customer for a session
+function getDefaultActiveContext(availableBusinesses: any[], fallbackCustomerId: string, fallbackBusinessId: string) {
+  if (availableBusinesses.length > 0) {
+    const primary = availableBusinesses.find(b => b.is_primary) || availableBusinesses[0];
+    return {
+      activeCustomerId: primary.customer_id,
+      activeBusinessId: primary.id,
+    };
+  }
+  return {
+    activeCustomerId: fallbackCustomerId,
+    activeBusinessId: fallbackBusinessId,
+  };
+}
+
 // Generate magic link and send email
 async function handleMagicLink(req: Request, supabase: any) {
   const { email, redirect_url } = await req.json();
@@ -253,7 +298,18 @@ async function handleVerifyMagic(req: Request, supabase: any) {
     .eq('customer_id', account.customer_id)
     .is('accepted_at', null);
 
-  // Create session
+  // Get available businesses for this account
+  const availableBusinesses = await getAvailableBusinesses(supabase, account.id);
+  const customer = account.customers;
+  
+  // Determine default active context
+  const { activeCustomerId, activeBusinessId } = getDefaultActiveContext(
+    availableBusinesses,
+    customer.id,
+    customer.business_id
+  );
+
+  // Create session with active business context
   const sessionToken = crypto.randomUUID() + '-' + crypto.randomUUID();
   const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
 
@@ -264,6 +320,8 @@ async function handleVerifyMagic(req: Request, supabase: any) {
       session_token: sessionToken,
       expires_at: expiresAt.toISOString(),
       auth_method: 'magic_link',
+      active_customer_id: activeCustomerId,
+      active_business_id: activeBusinessId,
     })
     .select()
     .single();
@@ -273,7 +331,7 @@ async function handleVerifyMagic(req: Request, supabase: any) {
     throw new Error('Failed to create session');
   }
 
-  const customer = account.customers;
+  console.log(`[handleVerifyMagic] Session created with active_business_id: ${activeBusinessId}, active_customer_id: ${activeCustomerId}`);
   
   return new Response(
     JSON.stringify({
@@ -294,6 +352,9 @@ async function handleVerifyMagic(req: Request, supabase: any) {
         business_id: customer.business_id,
         business: customer.businesses,
       },
+      available_businesses: availableBusinesses,
+      active_business_id: activeBusinessId,
+      active_customer_id: activeCustomerId,
     }),
     { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   );
@@ -382,7 +443,17 @@ async function handleRegister(req: Request, supabase: any) {
     throw new Error('Failed to create account');
   }
 
-  // Create session
+  // Get available businesses for this account
+  const availableBusinesses = await getAvailableBusinesses(supabase, account.id);
+  
+  // Determine default active context
+  const { activeCustomerId, activeBusinessId } = getDefaultActiveContext(
+    availableBusinesses,
+    customer.id,
+    customer.business_id
+  );
+
+  // Create session with active business context
   const sessionToken = crypto.randomUUID() + '-' + crypto.randomUUID();
   const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
@@ -393,6 +464,8 @@ async function handleRegister(req: Request, supabase: any) {
       session_token: sessionToken,
       expires_at: expiresAt.toISOString(),
       auth_method: 'password',
+      active_customer_id: activeCustomerId,
+      active_business_id: activeBusinessId,
     });
 
   // Mark invite as accepted if provided
@@ -403,6 +476,8 @@ async function handleRegister(req: Request, supabase: any) {
       .eq('invite_token', invite_token)
       .eq('customer_id', customer.id);
   }
+
+  console.log(`[handleRegister] Session created with active_business_id: ${activeBusinessId}, active_customer_id: ${activeCustomerId}`);
 
   return new Response(
     JSON.stringify({
@@ -423,6 +498,9 @@ async function handleRegister(req: Request, supabase: any) {
         business_id: customer.business_id,
         business: customer.businesses,
       },
+      available_businesses: availableBusinesses,
+      active_business_id: activeBusinessId,
+      active_customer_id: activeCustomerId,
     }),
     { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   );
@@ -478,7 +556,18 @@ async function handleLogin(req: Request, supabase: any) {
     .eq('customer_id', account.customer_id)
     .is('accepted_at', null);
 
-  // Create session
+  // Get available businesses for this account
+  const availableBusinesses = await getAvailableBusinesses(supabase, account.id);
+  const customer = account.customers;
+  
+  // Determine default active context
+  const { activeCustomerId, activeBusinessId } = getDefaultActiveContext(
+    availableBusinesses,
+    customer.id,
+    customer.business_id
+  );
+
+  // Create session with active business context
   const sessionToken = crypto.randomUUID() + '-' + crypto.randomUUID();
   const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
@@ -489,9 +578,11 @@ async function handleLogin(req: Request, supabase: any) {
       session_token: sessionToken,
       expires_at: expiresAt.toISOString(),
       auth_method: 'password',
+      active_customer_id: activeCustomerId,
+      active_business_id: activeBusinessId,
     });
 
-  const customer = account.customers;
+  console.log(`[handleLogin] Session created with active_business_id: ${activeBusinessId}, active_customer_id: ${activeCustomerId}`);
 
   return new Response(
     JSON.stringify({
@@ -512,6 +603,9 @@ async function handleLogin(req: Request, supabase: any) {
         business_id: customer.business_id,
         business: customer.businesses,
       },
+      available_businesses: availableBusinesses,
+      active_business_id: activeBusinessId,
+      active_customer_id: activeCustomerId,
     }),
     { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   );
@@ -568,6 +662,28 @@ async function handleSession(req: Request, supabase: any) {
   const account = session.customer_accounts;
   const customer = account.customers;
 
+  // Get available businesses for this account
+  const availableBusinesses = await getAvailableBusinesses(supabase, account.id);
+
+  // Use session's active context or fall back to defaults
+  let activeBusinessId = session.active_business_id;
+  let activeCustomerId = session.active_customer_id;
+  
+  if (!activeBusinessId || !activeCustomerId) {
+    const defaults = getDefaultActiveContext(availableBusinesses, customer.id, customer.business_id);
+    activeBusinessId = defaults.activeBusinessId;
+    activeCustomerId = defaults.activeCustomerId;
+    
+    // Update session with defaults if they were missing
+    await supabase
+      .from('customer_sessions')
+      .update({
+        active_business_id: activeBusinessId,
+        active_customer_id: activeCustomerId,
+      })
+      .eq('id', session.id);
+  }
+
   return new Response(
     JSON.stringify({
       authenticated: true,
@@ -587,6 +703,9 @@ async function handleSession(req: Request, supabase: any) {
         business_id: customer.business_id,
         business: customer.businesses,
       },
+      available_businesses: availableBusinesses,
+      active_business_id: activeBusinessId,
+      active_customer_id: activeCustomerId,
     }),
     { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   );
@@ -651,6 +770,9 @@ async function handleClerkLink(req: Request, supabase: any) {
     throw new Error('Failed to link account');
   }
 
+  // Get available businesses for this account
+  const availableBusinesses = await getAvailableBusinesses(supabase, account.id);
+
   return new Response(
     JSON.stringify({
       success: true,
@@ -671,6 +793,7 @@ async function handleClerkLink(req: Request, supabase: any) {
         business_id: customer.business_id,
         business: customer.businesses,
       },
+      available_businesses: availableBusinesses,
     }),
     { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   );
@@ -734,6 +857,9 @@ async function handleClerkVerify(req: Request, supabase: any) {
     .eq('id', account.id);
 
   const customer = account.customers;
+  
+  // Get available businesses for this account
+  const availableBusinesses = await getAvailableBusinesses(supabase, account.id);
 
   return new Response(
     JSON.stringify({
@@ -754,6 +880,7 @@ async function handleClerkVerify(req: Request, supabase: any) {
         business_id: customer.business_id,
         business: customer.businesses,
       },
+      available_businesses: availableBusinesses,
     }),
     { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   );
