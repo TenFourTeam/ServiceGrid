@@ -71,8 +71,22 @@ export function ConversationsTab() {
     createConversation(title);
   };
 
-  const handleCreateCustomerConversation = (customerId: string, customerName: string, initialReference?: { type: 'job' | 'quote' | 'invoice'; id: string; title: string }) => {
-    createCustomerConversation({ customerId, customerName, initialReference });
+  const handleCreateCustomerConversation = (
+    customerId: string, 
+    customerName: string, 
+    options?: { 
+      initialReference?: { type: 'job' | 'quote' | 'invoice'; id: string; title: string }; 
+      jobId?: string; 
+      workerId?: string; 
+    }
+  ) => {
+    createCustomerConversation({ 
+      customerId, 
+      customerName, 
+      initialReference: options?.initialReference,
+      jobId: options?.jobId,
+      workerId: options?.workerId,
+    });
   };
 
   if (selectedConversation) {

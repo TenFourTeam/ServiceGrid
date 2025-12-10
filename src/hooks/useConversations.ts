@@ -64,10 +64,12 @@ export function useConversations() {
   });
 
   const createCustomerConversation = useMutation({
-    mutationFn: async ({ customerId, customerName, initialReference }: { 
+    mutationFn: async ({ customerId, customerName, initialReference, jobId, workerId }: { 
       customerId: string; 
       customerName: string; 
-      initialReference?: { type: 'job' | 'quote' | 'invoice'; id: string; title: string } 
+      initialReference?: { type: 'job' | 'quote' | 'invoice'; id: string; title: string };
+      jobId?: string;
+      workerId?: string;
     }) => {
       const metadata = initialReference ? { references: [initialReference] } : undefined;
       
@@ -77,6 +79,8 @@ export function useConversations() {
           customerId,
           title: customerName,
           metadata,
+          jobId,
+          workerId,
         },
       });
 

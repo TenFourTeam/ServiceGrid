@@ -6,9 +6,11 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Users, User, ArrowLeft, Search, Check, Briefcase, FileText, Receipt } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Users, User, ArrowLeft, Search, Check, Briefcase, FileText, Receipt, UserCheck } from 'lucide-react';
 import { usePortalCustomers, PortalCustomer } from '@/hooks/usePortalCustomers';
-import { useCustomerEntities, CustomerJob, CustomerQuote, CustomerInvoice } from '@/hooks/useCustomerEntities';
+import { useCustomerEntities, CustomerJob } from '@/hooks/useCustomerEntities';
+import { useBusinessMembersData, BusinessMember } from '@/hooks/useBusinessMembers';
 import { cn } from '@/lib/utils';
 
 type ConversationType = 'team' | 'customer';
@@ -24,7 +26,15 @@ interface NewConversationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreateTeamConversation: (title: string) => void;
-  onCreateCustomerConversation: (customerId: string, customerName: string, initialReference?: EntityReference) => void;
+  onCreateCustomerConversation: (
+    customerId: string, 
+    customerName: string, 
+    options?: { 
+      initialReference?: EntityReference; 
+      jobId?: string; 
+      workerId?: string; 
+    }
+  ) => void;
 }
 
 export function NewConversationDialog({
@@ -39,9 +49,12 @@ export function NewConversationDialog({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<PortalCustomer | null>(null);
   const [selectedReference, setSelectedReference] = useState<EntityReference | null>(null);
+  const [selectedJob, setSelectedJob] = useState<CustomerJob | null>(null);
+  const [selectedWorker, setSelectedWorker] = useState<BusinessMember | null>(null);
   
   const { data: portalCustomers = [], isLoading: customersLoading } = usePortalCustomers();
   const { jobs, quotes, invoices, isLoading: entitiesLoading } = useCustomerEntities(selectedCustomer?.id || null);
+  const { data: teamMembers = [] } = useBusinessMembersData();
 
   const filteredCustomers = portalCustomers.filter(c =>
     c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -55,6 +68,8 @@ export function NewConversationDialog({
     setSearchQuery('');
     setSelectedCustomer(null);
     setSelectedReference(null);
+    setSelectedJob(null);
+    setSelectedWorker(null);
   };
 
   const handleClose = (open: boolean) => {
@@ -71,6 +86,8 @@ export function NewConversationDialog({
     if (selectedCustomer) {
       setSelectedCustomer(null);
       setSelectedReference(null);
+      setSelectedJob(null);
+      setSelectedWorker(null);
     } else {
       setStep('type');
       setConversationType(null);
@@ -89,7 +106,11 @@ export function NewConversationDialog({
         handleClose(false);
       }
     } else if (conversationType === 'customer' && selectedCustomer) {
-      onCreateCustomerConversation(selectedCustomer.id, selectedCustomer.name, selectedReference || undefined);
+      onCreateCustomerConversation(selectedCustomer.id, selectedCustomer.name, {
+        initialReference: selectedReference || undefined,
+        jobId: selectedJob?.id,
+        workerId: selectedWorker?.user_id,
+      });
       handleClose(false);
     }
   };
@@ -225,94 +246,152 @@ export function NewConversationDialog({
           </div>
         )}
 
-        {/* Step 3: Entity Reference Selection (Optional) */}
+        {/* Step 3: Job/Worker Selection & Entity Reference (Optional) */}
         {step === 'details' && conversationType === 'customer' && selectedCustomer && (
-          <div className="py-4">
-            <p className="text-sm text-muted-foreground mb-3">
-              Link this conversation to a work order, quote, or invoice (optional)
-            </p>
-            <ScrollArea className="h-[280px]">
-              {entitiesLoading ? (
-                <div className="text-center py-8 text-muted-foreground">Loading...</div>
-              ) : (
-                <div className="space-y-4">
-                  {/* Jobs Section */}
-                  {jobs.length > 0 && (
-                    <div>
-                      <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-2">
-                        <Briefcase className="h-3.5 w-3.5" />
-                        Work Orders
-                      </div>
-                      <div className="space-y-1">
-                        {jobs.slice(0, 5).map((job) => (
-                          <EntityItem
-                            key={job.id}
-                            type="job"
-                            id={job.id}
-                            title={job.title}
-                            subtitle={job.status}
-                            selected={selectedReference?.id === job.id}
-                            onSelect={(ref) => setSelectedReference(ref?.id === selectedReference?.id ? null : ref)}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
+          <div className="py-4 space-y-4">
+            {/* Job and Worker Selection */}
+            <div className="grid gap-3">
+              <div className="grid gap-2">
+                <Label className="flex items-center gap-2 text-sm">
+                  <Briefcase className="h-4 w-4" />
+                  Link to Work Order (optional)
+                </Label>
+                <Select 
+                  value={selectedJob?.id || ''} 
+                  onValueChange={(value) => {
+                    const job = jobs.find(j => j.id === value);
+                    setSelectedJob(job || null);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a work order..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None</SelectItem>
+                    {jobs.map((job) => (
+                      <SelectItem key={job.id} value={job.id}>
+                        {job.title} • {job.status}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-                  {/* Quotes Section */}
-                  {quotes.length > 0 && (
-                    <div>
-                      <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-2">
-                        <FileText className="h-3.5 w-3.5" />
-                        Quotes
-                      </div>
-                      <div className="space-y-1">
-                        {quotes.slice(0, 5).map((quote) => (
-                          <EntityItem
-                            key={quote.id}
-                            type="quote"
-                            id={quote.id}
-                            title={quote.number}
-                            subtitle={`$${quote.total.toLocaleString()} • ${quote.status}`}
-                            selected={selectedReference?.id === quote.id}
-                            onSelect={(ref) => setSelectedReference(ref?.id === selectedReference?.id ? null : ref)}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
+              <div className="grid gap-2">
+                <Label className="flex items-center gap-2 text-sm">
+                  <UserCheck className="h-4 w-4" />
+                  Assign to Team Member (optional)
+                </Label>
+                <Select 
+                  value={selectedWorker?.user_id || ''} 
+                  onValueChange={(value) => {
+                    const member = teamMembers.find(m => m.user_id === value);
+                    setSelectedWorker(member || null);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a team member..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None</SelectItem>
+                    {teamMembers.map((member) => (
+                      <SelectItem key={member.user_id} value={member.user_id}>
+                        {member.full_name || member.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
-                  {/* Invoices Section */}
-                  {invoices.length > 0 && (
-                    <div>
-                      <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-2">
-                        <Receipt className="h-3.5 w-3.5" />
-                        Invoices
+            {/* Entity References */}
+            <div>
+              <Label className="text-sm text-muted-foreground mb-2 block">
+                Reference a document (optional)
+              </Label>
+              <ScrollArea className="h-[180px] border rounded-lg p-2">
+                {entitiesLoading ? (
+                  <div className="text-center py-8 text-muted-foreground text-sm">Loading...</div>
+                ) : (
+                  <div className="space-y-3">
+                    {/* Jobs Section */}
+                    {jobs.length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-1.5">
+                          <Briefcase className="h-3 w-3" />
+                          Work Orders
+                        </div>
+                        <div className="space-y-1">
+                          {jobs.slice(0, 3).map((job) => (
+                            <EntityItem
+                              key={job.id}
+                              type="job"
+                              id={job.id}
+                              title={job.title}
+                              subtitle={job.status}
+                              selected={selectedReference?.id === job.id}
+                              onSelect={(ref) => setSelectedReference(ref?.id === selectedReference?.id ? null : ref)}
+                            />
+                          ))}
+                        </div>
                       </div>
-                      <div className="space-y-1">
-                        {invoices.slice(0, 5).map((invoice) => (
-                          <EntityItem
-                            key={invoice.id}
-                            type="invoice"
-                            id={invoice.id}
-                            title={invoice.number}
-                            subtitle={`$${invoice.total.toLocaleString()} • ${invoice.status}`}
-                            selected={selectedReference?.id === invoice.id}
-                            onSelect={(ref) => setSelectedReference(ref?.id === selectedReference?.id ? null : ref)}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                    )}
 
-                  {jobs.length === 0 && quotes.length === 0 && invoices.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <p className="text-sm">No items to reference for this customer</p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </ScrollArea>
+                    {/* Quotes Section */}
+                    {quotes.length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-1.5">
+                          <FileText className="h-3 w-3" />
+                          Quotes
+                        </div>
+                        <div className="space-y-1">
+                          {quotes.slice(0, 3).map((quote) => (
+                            <EntityItem
+                              key={quote.id}
+                              type="quote"
+                              id={quote.id}
+                              title={quote.number}
+                              subtitle={`$${quote.total.toLocaleString()} • ${quote.status}`}
+                              selected={selectedReference?.id === quote.id}
+                              onSelect={(ref) => setSelectedReference(ref?.id === selectedReference?.id ? null : ref)}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Invoices Section */}
+                    {invoices.length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-1.5">
+                          <Receipt className="h-3 w-3" />
+                          Invoices
+                        </div>
+                        <div className="space-y-1">
+                          {invoices.slice(0, 3).map((invoice) => (
+                            <EntityItem
+                              key={invoice.id}
+                              type="invoice"
+                              id={invoice.id}
+                              title={invoice.number}
+                              subtitle={`$${invoice.total.toLocaleString()} • ${invoice.status}`}
+                              selected={selectedReference?.id === invoice.id}
+                              onSelect={(ref) => setSelectedReference(ref?.id === selectedReference?.id ? null : ref)}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {jobs.length === 0 && quotes.length === 0 && invoices.length === 0 && (
+                      <div className="text-center py-4 text-muted-foreground">
+                        <p className="text-sm">No items to reference</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </ScrollArea>
+            </div>
           </div>
         )}
 
