@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useCustomerAuth } from '@/hooks/useCustomerAuth';
@@ -7,8 +7,11 @@ import {
   FinancialSummaryWidget, 
   ActionItemsWidget, 
   ProgressWidget, 
-  ContactsWidget 
+  ContactsWidget,
+  UnpaidInvoicesWidget
 } from '@/components/CustomerPortal/widgets';
+import { InvoicePaymentModal } from '@/components/CustomerPortal/InvoicePaymentModal';
+import { CustomerInvoice } from '@/types/customerPortal';
 import { buildEdgeFunctionUrl } from '@/utils/env';
 import { toast } from 'sonner';
 
@@ -17,6 +20,9 @@ export function CustomerDashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { customerDetails } = useCustomerAuth();
   const { data: jobData, isLoading, error, refetch } = useCustomerJobData();
+  
+  // Payment modal state
+  const [payingInvoice, setPayingInvoice] = useState<CustomerInvoice | null>(null);
 
   // Handle payment completion callback
   useEffect(() => {
@@ -57,6 +63,10 @@ export function CustomerDashboard() {
     }
   }, [searchParams, setSearchParams, refetch]);
 
+  // Get unpaid invoices for the widget
+  const unpaidInvoices = jobData?.invoices?.filter(inv => inv.status !== 'Paid') || [];
+  const firstUnpaidInvoice = unpaidInvoices[0] || null;
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -96,7 +106,15 @@ export function CustomerDashboard() {
           {jobData?.financialSummary && (
             <FinancialSummaryWidget 
               summary={jobData.financialSummary}
-              onPayNow={() => navigate('/portal/documents')}
+              onPayNow={firstUnpaidInvoice ? () => setPayingInvoice(firstUnpaidInvoice) : undefined}
+            />
+          )}
+          
+          {jobData?.invoices && (
+            <UnpaidInvoicesWidget
+              invoices={jobData.invoices}
+              onPayInvoice={setPayingInvoice}
+              onViewAll={() => navigate('/portal/documents')}
             />
           )}
           
@@ -127,6 +145,20 @@ export function CustomerDashboard() {
           )}
         </div>
       </div>
+
+      {/* Payment Modal */}
+      {payingInvoice && (
+        <InvoicePaymentModal
+          invoice={payingInvoice}
+          open={!!payingInvoice}
+          onOpenChange={(open) => {
+            if (!open) {
+              setPayingInvoice(null);
+              refetch(); // Refresh data when modal closes
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
