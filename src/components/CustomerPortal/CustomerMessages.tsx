@@ -30,18 +30,17 @@ export function CustomerMessages() {
   const sendMessage = useSendCustomerMessage();
   const { data: jobData } = useCustomerJobData();
   const { customerDetails } = useCustomerAuth();
-  const { businesses, activeBusinessId } = useCustomerBusinessContext();
-
-  // Get the active business info
-  const activeBusiness = useMemo(() => {
-    if (activeBusinessId && businesses.length > 0) {
-      return businesses.find(b => b.id === activeBusinessId);
-    }
-    return null;
-  }, [businesses, activeBusinessId]);
+  const { 
+    businesses, 
+    activeBusinessId, 
+    activeBusiness,
+    switchBusiness,
+    isSwitching 
+  } = useCustomerBusinessContext();
 
   const businessName = activeBusiness?.name || jobData?.business?.name || customerDetails?.business?.name;
   const businessLogo = activeBusiness?.logo_url || jobData?.business?.logo_url || customerDetails?.business?.logo_url;
+  const isMultiBusiness = businesses.length > 1;
 
   const groupedMessages = useMemo(() => {
     const messages = messagesData?.messages || [];
@@ -185,8 +184,11 @@ export function CustomerMessages() {
       <CustomerMessagingHeader 
         businessName={businessName}
         businessLogoUrl={businessLogo}
-        customerName={customerDetails?.name}
-        showBadge={businesses.length > 1}
+        isMultiBusiness={isMultiBusiness}
+        businesses={businesses}
+        activeBusinessId={activeBusinessId}
+        onSwitchBusiness={switchBusiness}
+        isSwitching={isSwitching}
       />
 
       {hasConversations ? (
