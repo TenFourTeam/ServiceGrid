@@ -77,9 +77,15 @@ async function handleMagicLink(req: Request, supabase: any) {
 
   if (customerError || !customer) {
     console.log('Customer not found for email:', email);
-    // Don't reveal if customer exists or not
+    // Return success but indicate no customer found (for security, don't reveal if email exists)
+    // But include emailSent: false so frontend can show appropriate message
     return new Response(
-      JSON.stringify({ success: true, message: 'If an account exists, a magic link has been sent.' }),
+      JSON.stringify({ 
+        success: true, 
+        emailSent: false,
+        message: 'If an account exists, a magic link has been sent.',
+        hint: 'no_customer'
+      }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
@@ -105,12 +111,22 @@ async function handleMagicLink(req: Request, supabase: any) {
 
   if (accountError) {
     console.error('Error creating customer account:', accountError);
-    throw new Error('Failed to create magic link');
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        emailSent: false,
+        error: 'Failed to create magic link. Please try again.' 
+      }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 
   // Send magic link email
   const baseUrl = redirect_url || 'https://servicegrid.app';
   const magicLinkUrl = `${baseUrl}/customer-magic/${magicToken}`;
+
+  let emailSent = false;
+  let emailError: string | null = null;
 
   if (resendApiKey) {
     try {
@@ -140,18 +156,32 @@ async function handleMagicLink(req: Request, supabase: any) {
         }),
       });
 
-      if (!emailResponse.ok) {
-        console.error('Failed to send magic link email:', await emailResponse.text());
+      if (emailResponse.ok) {
+        emailSent = true;
+        console.log('Magic link email sent successfully to:', email);
+      } else {
+        const errorText = await emailResponse.text();
+        console.error('Failed to send magic link email:', errorText);
+        emailError = 'Email service temporarily unavailable';
       }
-    } catch (emailError) {
-      console.error('Email send error:', emailError);
+    } catch (err) {
+      console.error('Email send error:', err);
+      emailError = 'Failed to send email';
     }
   } else {
     console.log('RESEND_API_KEY not configured, magic link URL:', magicLinkUrl);
+    emailError = 'Email service not configured';
   }
 
   return new Response(
-    JSON.stringify({ success: true, message: 'Magic link sent to your email.' }),
+    JSON.stringify({ 
+      success: true, 
+      emailSent,
+      message: emailSent 
+        ? 'Magic link sent to your email.' 
+        : 'There was an issue sending the email. Please try again.',
+      warning: !emailSent ? emailError : undefined,
+    }),
     { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   );
 }
@@ -411,6 +441,13 @@ async function handleLogin(req: Request, supabase: any) {
       auth_method: 'password',
     })
     .eq('id', account.id);
+
+  // Mark any pending invites as accepted
+  await supabase
+    .from('customer_portal_invites')
+    .update({ accepted_at: new Date().toISOString() })
+    .eq('customer_id', account.customer_id)
+    .is('accepted_at', null);
 
   // Create session
   const sessionToken = crypto.randomUUID() + '-' + crypto.randomUUID();

@@ -10,8 +10,15 @@ import type {
 
 const CUSTOMER_SESSION_KEY = 'customer_session_token';
 
+interface SendMagicLinkResult {
+  success: boolean;
+  error?: string;
+  emailSent?: boolean;
+  warning?: string;
+}
+
 interface CustomerAuthContextValue extends CustomerAuthState {
-  sendMagicLink: (email: string) => Promise<{ success: boolean; error?: string }>;
+  sendMagicLink: (email: string) => Promise<SendMagicLinkResult>;
   verifyMagicLink: (token: string) => Promise<CustomerAuthResponse>;
   login: (email: string, password: string) => Promise<CustomerAuthResponse>;
   register: (email: string, password: string, inviteToken?: string) => Promise<CustomerAuthResponse>;
@@ -123,7 +130,7 @@ export function useCustomerAuthProvider() {
     }
   }, [isSignedIn, userId, user]);
 
-  const sendMagicLink = useCallback(async (email: string) => {
+  const sendMagicLink = useCallback(async (email: string): Promise<SendMagicLinkResult> => {
     try {
       const redirectUrl = `${window.location.origin}`;
       const response = await supabase.functions.invoke('customer-auth/magic-link', {
@@ -134,7 +141,13 @@ export function useCustomerAuthProvider() {
         return { success: false, error: response.error.message };
       }
 
-      return { success: true };
+      // Return the enhanced response including emailSent status
+      return { 
+        success: response.data?.success ?? true,
+        emailSent: response.data?.emailSent,
+        warning: response.data?.warning,
+        error: response.data?.error,
+      };
     } catch (error: any) {
       return { success: false, error: error.message || 'Failed to send magic link' };
     }
