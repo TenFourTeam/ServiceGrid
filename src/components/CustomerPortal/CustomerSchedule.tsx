@@ -3,10 +3,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, Clock, MapPin, User, Loader2, CalendarClock, XCircle, AlertCircle } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Calendar, Clock, MapPin, User, Loader2, CalendarClock, XCircle, AlertCircle, MessageSquare, ChevronDown } from 'lucide-react';
 import { format, isToday, isTomorrow, isPast, isFuture } from 'date-fns';
 import { useCustomerJobData } from '@/hooks/useCustomerJobData';
 import { useCustomerAppointmentRequests } from '@/hooks/useCustomerAppointmentRequests';
+import { useStartCustomerConversation } from '@/hooks/useStartCustomerConversation';
 import { RescheduleRequestDialog } from './RescheduleRequestDialog';
 import { CancelRequestDialog } from './CancelRequestDialog';
 import { CustomerRequestsSection } from './CustomerRequestsSection';
@@ -122,6 +129,7 @@ interface JobCardProps {
 function JobCard({ job, isPast, pendingRequest }: JobCardProps) {
   const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const startConversation = useStartCustomerConversation();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -146,8 +154,28 @@ function JobCard({ job, isPast, pendingRequest }: JobCardProps) {
     return format(new Date(dateStr), 'h:mm a');
   };
 
-  const assignedMembers = job.job_assignments?.map(a => a.profiles?.full_name).filter(Boolean) || [];
+  const assignedMembers = job.job_assignments?.map(a => ({
+    id: a.user_id,
+    name: a.profiles?.full_name || 'Team Member'
+  })).filter(m => m.id) || [];
+
   const canModify = !isPast && job.status !== 'Completed' && job.status !== 'Canceled';
+
+  const handleMessageTeam = () => {
+    startConversation.mutate({
+      jobId: job.id,
+      jobTitle: job.title || 'Appointment',
+    });
+  };
+
+  const handleMessageMember = (memberId: string, memberName: string) => {
+    startConversation.mutate({
+      jobId: job.id,
+      jobTitle: job.title || 'Appointment',
+      workerId: memberId,
+      workerName: memberName,
+    });
+  };
 
   return (
     <>
@@ -192,7 +220,7 @@ function JobCard({ job, isPast, pendingRequest }: JobCardProps) {
           {assignedMembers.length > 0 && (
             <div className="flex items-center gap-2 text-sm">
               <User className="h-4 w-4 text-muted-foreground" />
-              <span>{assignedMembers.join(', ')}</span>
+              <span>{assignedMembers.map(m => m.name).join(', ')}</span>
             </div>
           )}
           
@@ -209,7 +237,7 @@ function JobCard({ job, isPast, pendingRequest }: JobCardProps) {
                 variant="outline"
                 size="sm"
                 onClick={() => setRescheduleDialogOpen(true)}
-                className="flex-1 min-w-[120px]"
+                className="flex-1 min-w-[100px]"
               >
                 <CalendarClock className="h-4 w-4 mr-1" />
                 Reschedule
@@ -218,11 +246,78 @@ function JobCard({ job, isPast, pendingRequest }: JobCardProps) {
                 variant="outline"
                 size="sm"
                 onClick={() => setCancelDialogOpen(true)}
-                className="flex-1 min-w-[120px] text-destructive hover:text-destructive"
+                className="flex-1 min-w-[100px] text-destructive hover:text-destructive"
               >
                 <XCircle className="h-4 w-4 mr-1" />
                 Cancel
               </Button>
+              
+              {/* Message button - single member or dropdown for multiple */}
+              {assignedMembers.length === 1 ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleMessageMember(assignedMembers[0].id, assignedMembers[0].name)}
+                  disabled={startConversation.isPending}
+                  className="flex-1 min-w-[100px]"
+                >
+                  {startConversation.isPending ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <MessageSquare className="h-4 w-4 mr-1" />
+                  )}
+                  Message {assignedMembers[0].name.split(' ')[0]}
+                </Button>
+              ) : assignedMembers.length > 1 ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={startConversation.isPending}
+                      className="flex-1 min-w-[100px]"
+                    >
+                      {startConversation.isPending ? (
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      ) : (
+                        <MessageSquare className="h-4 w-4 mr-1" />
+                      )}
+                      Message
+                      <ChevronDown className="h-3 w-3 ml-1" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={handleMessageTeam}>
+                      <User className="h-4 w-4 mr-2" />
+                      Entire Team
+                    </DropdownMenuItem>
+                    {assignedMembers.map((member) => (
+                      <DropdownMenuItem 
+                        key={member.id}
+                        onClick={() => handleMessageMember(member.id, member.name)}
+                      >
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        {member.name}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleMessageTeam}
+                  disabled={startConversation.isPending}
+                  className="flex-1 min-w-[100px]"
+                >
+                  {startConversation.isPending ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <MessageSquare className="h-4 w-4 mr-1" />
+                  )}
+                  Message
+                </Button>
+              )}
             </div>
           )}
         </CardContent>

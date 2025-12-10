@@ -33,6 +33,11 @@ export interface CustomerConversation {
   last_message_at: string;
   last_message_from_customer: boolean;
   has_attachments?: boolean;
+  // Scoped conversation fields
+  job_id?: string;
+  job_title?: string;
+  assigned_worker_id?: string;
+  assigned_worker_name?: string;
 }
 
 const EDGE_FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/customer-messages-crud`;

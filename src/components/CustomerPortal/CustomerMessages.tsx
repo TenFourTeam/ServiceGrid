@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageSquare, Loader2, ArrowLeft, Paperclip, Building2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { MessageSquare, Loader2, ArrowLeft, Paperclip, Building2, Briefcase, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { 
   useCustomerConversations, 
@@ -21,7 +23,10 @@ import { CustomerMessagingHeader } from './CustomerMessagingHeader';
 import { useCustomerBusinessContext } from '@/hooks/useCustomerBusinessContext';
 
 export function CustomerMessages() {
-  const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
+  const location = useLocation();
+  const [selectedConversation, setSelectedConversation] = useState<string | null>(
+    (location.state as any)?.conversationId || null
+  );
   const viewportRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   
@@ -41,6 +46,15 @@ export function CustomerMessages() {
   const businessName = activeBusiness?.name || jobData?.business?.name || customerDetails?.business?.name;
   const businessLogo = activeBusiness?.logo_url || jobData?.business?.logo_url || customerDetails?.business?.logo_url;
   const isMultiBusiness = businesses.length > 1;
+
+  // Get current conversation details
+  const currentConversation = useMemo(() => {
+    if (!selectedConversation || !conversations) return null;
+    return conversations.find(c => c.id === selectedConversation) || null;
+  }, [selectedConversation, conversations]);
+
+  // Use messagesData conversation for enriched info (job_title, assigned_worker_name)
+  const enrichedConversation = messagesData?.conversation;
 
   const groupedMessages = useMemo(() => {
     const messages = messagesData?.messages || [];
@@ -114,13 +128,27 @@ export function CustomerMessages() {
                 <Building2 className="h-5 w-5 text-primary" />
               </div>
             )}
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <h2 className="text-lg font-bold truncate">
-                {businessName || 'Messages'}
+                {enrichedConversation?.assigned_worker_name || businessName || 'Messages'}
               </h2>
-              <p className="text-sm text-muted-foreground">
-                Direct conversation
-              </p>
+              <div className="flex items-center gap-2 flex-wrap">
+                {enrichedConversation?.job_title && (
+                  <Badge variant="outline" className="text-xs">
+                    <Briefcase className="h-3 w-3 mr-1" />
+                    {enrichedConversation.job_title}
+                  </Badge>
+                )}
+                {enrichedConversation?.assigned_worker_name && (
+                  <Badge variant="secondary" className="text-xs">
+                    <User className="h-3 w-3 mr-1" />
+                    Direct Message
+                  </Badge>
+                )}
+                {!enrichedConversation?.job_id && !enrichedConversation?.assigned_worker_id && (
+                  <span className="text-sm text-muted-foreground">General conversation</span>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -205,10 +233,10 @@ export function CustomerMessages() {
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <MessageSquare className="h-4 w-4 text-muted-foreground shrink-0" />
                       <span className="font-medium truncate">
-                        {conv.title || 'Conversation'}
+                        {conv.assigned_worker_name || conv.title || 'Conversation'}
                       </span>
                       {!conv.last_message_from_customer && conv.last_message && (
                         <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full">
@@ -216,6 +244,23 @@ export function CustomerMessages() {
                         </span>
                       )}
                     </div>
+                    {/* Context badges */}
+                    {(conv.job_title || conv.assigned_worker_name) && (
+                      <div className="flex items-center gap-2 mt-1">
+                        {conv.job_title && (
+                          <Badge variant="outline" className="text-xs">
+                            <Briefcase className="h-3 w-3 mr-1" />
+                            {conv.job_title}
+                          </Badge>
+                        )}
+                        {conv.assigned_worker_name && (
+                          <Badge variant="secondary" className="text-xs">
+                            <User className="h-3 w-3 mr-1" />
+                            Direct
+                          </Badge>
+                        )}
+                      </div>
+                    )}
                     {(conv.last_message || conv.has_attachments) && (
                       <p className="text-sm text-muted-foreground mt-1 line-clamp-2 flex items-center gap-1">
                         {conv.has_attachments && !conv.last_message && <Paperclip className="h-3 w-3" />}

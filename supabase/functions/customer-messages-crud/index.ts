@@ -106,6 +106,7 @@ Deno.serve(async (req) => {
 
     const url = new URL(req.url);
     const conversationId = url.searchParams.get('conversationId');
+    const action = url.searchParams.get('action');
     
     // Allow optional business_id override from query params
     const queryBusinessId = url.searchParams.get('businessId');
@@ -139,15 +140,101 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Handle startConversation action
+    if (req.method === 'POST' && action === 'startConversation') {
+      const body = await req.json();
+      const { jobId, workerId, workerName, jobTitle } = body;
+
+      console.log(`[customer-messages-crud] Starting conversation: jobId=${jobId}, workerId=${workerId}`);
+
+      // Check for existing conversation with matching scope
+      let existingQuery = supabase
+        .from('sg_conversations')
+        .select('id')
+        .eq('customer_id', effectiveCustomerId)
+        .eq('business_id', effectiveBusinessId)
+        .eq('is_archived', false);
+
+      if (jobId) {
+        existingQuery = existingQuery.eq('job_id', jobId);
+      } else {
+        existingQuery = existingQuery.is('job_id', null);
+      }
+
+      if (workerId) {
+        existingQuery = existingQuery.eq('assigned_worker_id', workerId);
+      } else {
+        existingQuery = existingQuery.is('assigned_worker_id', null);
+      }
+
+      const { data: existingConv } = await existingQuery.limit(1).single();
+
+      if (existingConv) {
+        console.log(`[customer-messages-crud] Found existing conversation: ${existingConv.id}`);
+        return new Response(
+          JSON.stringify({ conversation_id: existingConv.id, existed: true }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Build conversation title
+      let title = `Chat with ${customer_name}`;
+      if (workerName && jobTitle) {
+        title = `${jobTitle} - ${workerName}`;
+      } else if (workerName) {
+        title = `Direct message with ${workerName}`;
+      } else if (jobTitle) {
+        title = `About: ${jobTitle}`;
+      }
+
+      // Get business owner_id for created_by (FK requires profiles.id)
+      const { data: business, error: bizError } = await supabase
+        .from('businesses')
+        .select('owner_id')
+        .eq('id', effectiveBusinessId)
+        .single();
+
+      if (bizError || !business) {
+        console.error('[customer-messages-crud] Error fetching business owner:', bizError);
+        throw new Error('Could not find business owner');
+      }
+
+      // Create new conversation with scope
+      const { data: newConv, error: convError } = await supabase
+        .from('sg_conversations')
+        .insert({
+          business_id: effectiveBusinessId,
+          customer_id: effectiveCustomerId,
+          created_by: business.owner_id,
+          title,
+          job_id: jobId || null,
+          assigned_worker_id: workerId || null,
+        })
+        .select('id')
+        .single();
+
+      if (convError) {
+        console.error('[customer-messages-crud] Error creating conversation:', convError);
+        throw convError;
+      }
+
+      console.log(`[customer-messages-crud] Created new conversation: ${newConv.id}`);
+
+      return new Response(
+        JSON.stringify({ conversation_id: newConv.id, existed: false }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     if (req.method === 'GET') {
       if (conversationId) {
         // Get messages for a specific conversation
         console.log(`[customer-messages-crud] Fetching messages for conversation: ${conversationId}`);
         
-        // First verify the conversation belongs to this customer
+        // First verify the conversation belongs to this customer - include new fields
         const { data: conversation, error: convError } = await supabase
           .from('sg_conversations')
-          .select('id, title, customer_id, business_id')
+          .select('id, title, customer_id, business_id, job_id, assigned_worker_id')
           .eq('id', conversationId)
           .eq('customer_id', effectiveCustomerId)
           .eq('business_id', effectiveBusinessId)
@@ -158,6 +245,27 @@ Deno.serve(async (req) => {
             JSON.stringify({ error: 'Conversation not found' }),
             { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
+        }
+
+        // Enrich conversation with job and worker names
+        let enrichedConversation = { ...conversation, job_title: null, assigned_worker_name: null };
+
+        if (conversation.job_id) {
+          const { data: job } = await supabase
+            .from('jobs')
+            .select('title')
+            .eq('id', conversation.job_id)
+            .single();
+          if (job) enrichedConversation.job_title = job.title;
+        }
+
+        if (conversation.assigned_worker_id) {
+          const { data: worker } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', conversation.assigned_worker_id)
+            .single();
+          if (worker) enrichedConversation.assigned_worker_name = worker.full_name;
         }
 
         // Get messages with attachments
@@ -268,7 +376,7 @@ Deno.serve(async (req) => {
         });
 
         return new Response(
-          JSON.stringify({ messages: enrichedMessages, conversation }),
+          JSON.stringify({ messages: enrichedMessages, conversation: enrichedConversation }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       } else {
@@ -281,7 +389,9 @@ Deno.serve(async (req) => {
             id,
             title,
             created_at,
-            updated_at
+            updated_at,
+            job_id,
+            assigned_worker_id
           `)
           .eq('customer_id', effectiveCustomerId)
           .eq('business_id', effectiveBusinessId)
@@ -290,6 +400,40 @@ Deno.serve(async (req) => {
         if (error) {
           console.error('[customer-messages-crud] Error fetching conversations:', error);
           throw error;
+        }
+
+        // Collect job and worker IDs for batch lookup
+        const jobIds = [...new Set(conversations.filter(c => c.job_id).map(c => c.job_id))];
+        const workerIds = [...new Set(conversations.filter(c => c.assigned_worker_id).map(c => c.assigned_worker_id))];
+
+        // Batch fetch jobs
+        let jobsMap: Record<string, string> = {};
+        if (jobIds.length > 0) {
+          const { data: jobs } = await supabase
+            .from('jobs')
+            .select('id, title')
+            .in('id', jobIds);
+          if (jobs) {
+            jobsMap = jobs.reduce((acc: any, j: any) => {
+              acc[j.id] = j.title;
+              return acc;
+            }, {});
+          }
+        }
+
+        // Batch fetch workers
+        let workersMap: Record<string, string> = {};
+        if (workerIds.length > 0) {
+          const { data: workers } = await supabase
+            .from('profiles')
+            .select('id, full_name')
+            .in('id', workerIds);
+          if (workers) {
+            workersMap = workers.reduce((acc: any, w: any) => {
+              acc[w.id] = w.full_name;
+              return acc;
+            }, {});
+          }
         }
 
         // Get last message for each conversation
@@ -310,6 +454,8 @@ Deno.serve(async (req) => {
             last_message_at: lastMessage?.created_at || conv.created_at,
             last_message_from_customer: lastMessage?.sender_type === 'customer',
             has_attachments: hasAttachments,
+            job_title: conv.job_id ? jobsMap[conv.job_id] : null,
+            assigned_worker_name: conv.assigned_worker_id ? workersMap[conv.assigned_worker_id] : null,
           };
         }));
 
