@@ -18,7 +18,7 @@ import { NewConversationDialog } from './NewConversationDialog';
 type ConversationFilter = 'all' | 'my-direct' | 'customer' | 'team';
 
 export function ConversationsTab() {
-  const { conversations, isLoading, createConversation, createCustomerConversation, reassignConversation } = useConversations();
+  const { conversations, isLoading, createConversation, createCustomerConversation, reassignConversation, archiveConversation, unarchiveConversation } = useConversations();
   const { unreadCount } = useUnreadMentions();
   const { data: profileData } = useProfile();
   const { user: clerkUser } = useUser();
@@ -32,6 +32,7 @@ export function ConversationsTab() {
     jobTitle?: string;
     assignedWorkerId?: string;
     assignedWorkerName?: string;
+    isArchived: boolean;
   } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<ConversationFilter>('all');
@@ -92,6 +93,12 @@ export function ConversationsTab() {
   };
 
   if (selectedConversation) {
+    const currentUser = profileData?.profile ? {
+      id: profileData.profile.id,
+      name: profileData.profile.fullName,
+      email: clerkUser?.primaryEmailAddress?.emailAddress || '',
+    } : undefined;
+
     return (
       <ConversationThread
         conversationId={selectedConversation.id}
@@ -105,12 +112,6 @@ export function ConversationsTab() {
         assignedWorkerId={selectedConversation.assignedWorkerId}
         assignedWorkerName={selectedConversation.assignedWorkerName}
         onReassign={(workerId, context) => {
-          const currentUser = profileData?.profile ? {
-            id: profileData.profile.id,
-            name: profileData.profile.fullName,
-            email: clerkUser?.primaryEmailAddress?.emailAddress || '',
-          } : undefined;
-          
           reassignConversation({ 
             conversationId: selectedConversation.id, 
             workerId,
@@ -120,6 +121,21 @@ export function ConversationsTab() {
               toWorkerName: context?.toWorkerName,
             } : undefined,
           });
+        }}
+        isArchived={selectedConversation.isArchived}
+        onArchive={() => {
+          archiveConversation({ 
+            conversationId: selectedConversation.id,
+            optimisticContext: currentUser ? { currentUser } : undefined,
+          });
+          setSelectedConversation(null);
+        }}
+        onUnarchive={() => {
+          unarchiveConversation({ 
+            conversationId: selectedConversation.id,
+            optimisticContext: currentUser ? { currentUser } : undefined,
+          });
+          setSelectedConversation(prev => prev ? { ...prev, isArchived: false } : null);
         }}
       />
     );
@@ -217,6 +233,7 @@ export function ConversationsTab() {
                       jobTitle: conversation.job_title,
                       assignedWorkerId: conversation.assigned_worker_id,
                       assignedWorkerName: conversation.assigned_worker_name,
+                      isArchived: conversation.is_archived || false,
                     })}
                     className={cn(
                       "p-4 rounded-lg border cursor-pointer hover:bg-accent transition-colors",
