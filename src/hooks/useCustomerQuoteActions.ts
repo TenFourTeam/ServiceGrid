@@ -29,6 +29,8 @@ export interface CustomerQuoteDetail {
   created_at: string;
   sent_at: string | null;
   approved_at: string | null;
+  approved_by: string | null;
+  signature_data_url: string | null;
   public_token: string;
   customer_notes: string | null;
   quote_line_items: QuoteLineItem[];

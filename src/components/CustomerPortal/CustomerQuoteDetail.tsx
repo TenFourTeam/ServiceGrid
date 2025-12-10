@@ -6,6 +6,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { ESignatureCanvas } from '@/components/Quotes/ESignatureCanvas';
 import { 
   useCustomerQuoteDetail, 
@@ -17,7 +27,7 @@ import { formatMoney } from '@/utils/format';
 import { format } from 'date-fns';
 import { 
   Loader2, CheckCircle2, XCircle, Edit3, MapPin, Calendar, 
-  FileText, Download 
+  FileText, PenLine
 } from 'lucide-react';
 
 interface CustomerQuoteDetailProps {
@@ -34,6 +44,7 @@ export function CustomerQuoteDetail({ quoteId, open, onOpenChange }: CustomerQuo
 
   const [mode, setMode] = useState<'view' | 'sign' | 'changes'>('view');
   const [changeNotes, setChangeNotes] = useState('');
+  const [showDeclineDialog, setShowDeclineDialog] = useState(false);
 
   const handleAccept = async (signatureDataUrl: string) => {
     if (!quoteId) return;
@@ -44,8 +55,8 @@ export function CustomerQuoteDetail({ quoteId, open, onOpenChange }: CustomerQuo
 
   const handleDecline = async () => {
     if (!quoteId) return;
-    if (!confirm('Are you sure you want to decline this quote?')) return;
     await declineQuote.mutateAsync(quoteId);
+    setShowDeclineDialog(false);
     onOpenChange(false);
   };
 
@@ -71,252 +82,308 @@ export function CustomerQuoteDetail({ quoteId, open, onOpenChange }: CustomerQuo
   const canTakeAction = data?.quote?.status === 'Sent';
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <span>Quote Details</span>
-            {data?.quote && (
-              <Badge className={getStatusColor(data.quote.status)}>
-                {data.quote.status}
-              </Badge>
-            )}
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Quote Details</span>
+              {data?.quote && (
+                <Badge className={getStatusColor(data.quote.status)}>
+                  {data.quote.status}
+                </Badge>
+              )}
+            </DialogTitle>
+          </DialogHeader>
 
-        {isLoading && (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        )}
-
-        {error && (
-          <div className="text-center py-8">
-            <p className="text-destructive">Failed to load quote details</p>
-          </div>
-        )}
-
-        {data?.quote && (
-          <div className="space-y-6">
-            {/* Header Info */}
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  {data.business.logo_url && (
-                    <img 
-                      src={data.business.logo_url} 
-                      alt={data.business.name} 
-                      className="h-8 object-contain" 
-                    />
-                  )}
-                  <span className="text-lg font-semibold">{data.business.name}</span>
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Quote #{data.quote.number}
-                </p>
-              </div>
-              <div className="text-right">
-                <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                  <Calendar className="h-4 w-4" />
-                  <span>
-                    {format(new Date(data.quote.created_at), 'MMM d, yyyy')}
-                  </span>
-                </div>
-              </div>
+          {isLoading && (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
+          )}
 
-            {/* Address */}
-            {data.quote.address && (
-              <div className="flex items-start gap-2 text-muted-foreground">
-                <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <span className="text-sm">{data.quote.address}</span>
+          {error && (
+            <div className="text-center py-8">
+              <p className="text-destructive">Failed to load quote details</p>
+            </div>
+          )}
+
+          {data?.quote && (
+            <div className="space-y-6">
+              {/* Header Info */}
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    {data.business.logo_url && (
+                      <img 
+                        src={data.business.logo_url} 
+                        alt={data.business.name} 
+                        className="h-8 object-contain" 
+                      />
+                    )}
+                    <span className="text-lg font-semibold">{data.business.name}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Quote #{data.quote.number}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                    <Calendar className="h-4 w-4" />
+                    <span>
+                      {format(new Date(data.quote.created_at), 'MMM d, yyyy')}
+                    </span>
+                  </div>
+                </div>
               </div>
-            )}
 
-            {/* Terms / Work Description */}
-            {data.quote.terms && (
+              {/* Address */}
+              {data.quote.address && (
+                <div className="flex items-start gap-2 text-muted-foreground">
+                  <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                  <span className="text-sm">{data.quote.address}</span>
+                </div>
+              )}
+
+              {/* Terms / Work Description */}
+              {data.quote.terms && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Work Description
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                      {data.quote.terms}
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Line Items */}
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Work Description
-                  </CardTitle>
+                  <CardTitle className="text-base">Services & Materials</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                    {data.quote.terms}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Line Items */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Services & Materials</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {data.quote.quote_line_items
-                  .sort((a, b) => a.position - b.position)
-                  .map((item, index) => (
-                    <div key={item.id}>
-                      {index > 0 && <Separator className="my-3" />}
-                      <div className="flex justify-between items-start gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium">{item.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {item.qty} {item.unit || 'unit'}{item.qty > 1 ? 's' : ''} × {formatMoney(item.unit_price)}
+                <CardContent className="space-y-3">
+                  {data.quote.quote_line_items
+                    .sort((a, b) => a.position - b.position)
+                    .map((item, index) => (
+                      <div key={item.id}>
+                        {index > 0 && <Separator className="my-3" />}
+                        <div className="flex justify-between items-start gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium">{item.name}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {item.qty} {item.unit || 'unit'}{item.qty > 1 ? 's' : ''} × {formatMoney(item.unit_price)}
+                            </div>
+                          </div>
+                          <div className="font-semibold whitespace-nowrap">
+                            {formatMoney(item.line_total)}
                           </div>
                         </div>
-                        <div className="font-semibold whitespace-nowrap">
-                          {formatMoney(item.line_total)}
-                        </div>
+                      </div>
+                    ))}
+
+                  <Separator className="my-4" />
+
+                  {/* Totals */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Subtotal</span>
+                      <span>{formatMoney(data.quote.subtotal)}</span>
+                    </div>
+
+                    {data.quote.discount > 0 && (
+                      <div className="flex justify-between text-sm text-green-600">
+                        <span>Discount</span>
+                        <span>-{formatMoney(data.quote.discount)}</span>
+                      </div>
+                    )}
+
+                    {data.quote.tax_rate > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          Tax ({(data.quote.tax_rate * 100).toFixed(1)}%)
+                        </span>
+                        <span>
+                          {formatMoney(Math.round((data.quote.subtotal - data.quote.discount) * data.quote.tax_rate))}
+                        </span>
+                      </div>
+                    )}
+
+                    <Separator />
+
+                    <div className="flex justify-between text-xl font-bold">
+                      <span>Total</span>
+                      <span className="text-primary">{formatMoney(data.quote.total)}</span>
+                    </div>
+
+                    {data.quote.deposit_required && data.quote.deposit_percent && (
+                      <Alert>
+                        <AlertDescription>
+                          Deposit required: {formatMoney(Math.round(data.quote.total * (data.quote.deposit_percent / 100)))} ({data.quote.deposit_percent}%)
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Saved Signature for Approved Quotes */}
+              {data.quote.status === 'Approved' && data.quote.signature_data_url && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <PenLine className="h-4 w-4" />
+                      Acceptance Signature
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-end justify-between gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">Signed by</p>
+                        <p className="font-medium">{data.quote.approved_by || data.customerName}</p>
+                        {data.quote.approved_at && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {format(new Date(data.quote.approved_at), 'MMM d, yyyy \'at\' h:mm a')}
+                          </p>
+                        )}
+                      </div>
+                      <div className="border-b border-border pb-1">
+                        <img 
+                          src={data.quote.signature_data_url} 
+                          alt="Customer signature" 
+                          className="max-h-16 max-w-[200px]"
+                        />
                       </div>
                     </div>
-                  ))}
+                  </CardContent>
+                </Card>
+              )}
 
-                <Separator className="my-4" />
+              {/* Signature Section */}
+              {mode === 'sign' && canTakeAction && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Sign to Accept</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      By signing below, you agree to the terms and pricing outlined in this quote.
+                    </p>
+                    <ESignatureCanvas
+                      onSignatureComplete={handleAccept}
+                      onClear={() => setMode('view')}
+                    />
+                  </CardContent>
+                </Card>
+              )}
 
-                {/* Totals */}
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <span>{formatMoney(data.quote.subtotal)}</span>
-                  </div>
-
-                  {data.quote.discount > 0 && (
-                    <div className="flex justify-between text-sm text-green-600">
-                      <span>Discount</span>
-                      <span>-{formatMoney(data.quote.discount)}</span>
+              {/* Request Changes Section */}
+              {mode === 'changes' && canTakeAction && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Request Changes</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      Describe the changes you'd like to request:
+                    </p>
+                    <Textarea
+                      placeholder="Please describe what changes you need..."
+                      value={changeNotes}
+                      onChange={(e) => setChangeNotes(e.target.value)}
+                      rows={4}
+                    />
+                    <div className="flex gap-2 justify-end">
+                      <Button variant="outline" onClick={() => setMode('view')}>
+                        Cancel
+                      </Button>
+                      <Button 
+                        onClick={handleRequestChanges}
+                        disabled={!changeNotes.trim() || requestChanges.isPending}
+                      >
+                        {requestChanges.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                        Submit Request
+                      </Button>
                     </div>
-                  )}
+                  </CardContent>
+                </Card>
+              )}
 
-                  {data.quote.tax_rate > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        Tax ({(data.quote.tax_rate * 100).toFixed(1)}%)
-                      </span>
-                      <span>
-                        {formatMoney(Math.round((data.quote.subtotal - data.quote.discount) * data.quote.tax_rate))}
-                      </span>
-                    </div>
-                  )}
-
-                  <Separator />
-
-                  <div className="flex justify-between text-xl font-bold">
-                    <span>Total</span>
-                    <span className="text-primary">{formatMoney(data.quote.total)}</span>
-                  </div>
-
-                  {data.quote.deposit_required && data.quote.deposit_percent && (
-                    <Alert>
-                      <AlertDescription>
-                        Deposit required: {formatMoney(Math.round(data.quote.total * (data.quote.deposit_percent / 100)))} ({data.quote.deposit_percent}%)
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Signature Section */}
-            {mode === 'sign' && canTakeAction && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Sign to Accept</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    By signing below, you agree to the terms and pricing outlined in this quote.
-                  </p>
-                  <ESignatureCanvas
-                    onSignatureComplete={handleAccept}
-                    onClear={() => setMode('view')}
-                  />
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Request Changes Section */}
-            {mode === 'changes' && canTakeAction && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Request Changes</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    Describe the changes you'd like to request:
-                  </p>
-                  <Textarea
-                    placeholder="Please describe what changes you need..."
-                    value={changeNotes}
-                    onChange={(e) => setChangeNotes(e.target.value)}
-                    rows={4}
-                  />
-                  <div className="flex gap-2 justify-end">
-                    <Button variant="outline" onClick={() => setMode('view')}>
-                      Cancel
-                    </Button>
-                    <Button 
-                      onClick={handleRequestChanges}
-                      disabled={!changeNotes.trim() || requestChanges.isPending}
+              {/* Action Buttons */}
+              {mode === 'view' && canTakeAction && (
+                <div className="space-y-3">
+                  <Button
+                    className="w-full h-12"
+                    size="lg"
+                    onClick={() => setMode('sign')}
+                  >
+                    <CheckCircle2 className="h-5 w-5 mr-2" />
+                    Accept Quote
+                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      className="flex-1"
+                      variant="outline"
+                      onClick={() => setMode('changes')}
                     >
-                      {requestChanges.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                      Submit Request
+                      <Edit3 className="h-4 w-4 mr-2" />
+                      Request Changes
+                    </Button>
+                    <Button
+                      className="flex-1"
+                      variant="outline"
+                      onClick={() => setShowDeclineDialog(true)}
+                      disabled={declineQuote.isPending}
+                    >
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Decline
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Action Buttons */}
-            {mode === 'view' && canTakeAction && (
-              <div className="space-y-3">
-                <Button
-                  className="w-full h-12"
-                  size="lg"
-                  onClick={() => setMode('sign')}
-                >
-                  <CheckCircle2 className="h-5 w-5 mr-2" />
-                  Accept Quote
-                </Button>
-                <div className="flex gap-2">
-                  <Button
-                    className="flex-1"
-                    variant="outline"
-                    onClick={() => setMode('changes')}
-                  >
-                    <Edit3 className="h-4 w-4 mr-2" />
-                    Request Changes
-                  </Button>
-                  <Button
-                    className="flex-1"
-                    variant="outline"
-                    onClick={handleDecline}
-                    disabled={declineQuote.isPending}
-                  >
-                    <XCircle className="h-4 w-4 mr-2" />
-                    Decline
-                  </Button>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Already actioned message */}
-            {!canTakeAction && (
-              <Alert>
-                <AlertDescription>
-                  {data.quote.status === 'Approved' && 'This quote has been accepted.'}
-                  {data.quote.status === 'Declined' && 'This quote has been declined.'}
-                  {data.quote.status === 'Edits Requested' && 'Changes have been requested. The business will review your request.'}
-                  {data.quote.status === 'Draft' && 'This quote is still being prepared.'}
-                </AlertDescription>
-              </Alert>
-            )}
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
+              {/* Already actioned message */}
+              {!canTakeAction && (
+                <Alert>
+                  <AlertDescription>
+                    {data.quote.status === 'Approved' && 'This quote has been accepted.'}
+                    {data.quote.status === 'Declined' && 'This quote has been declined.'}
+                    {data.quote.status === 'Edits Requested' && 'Changes have been requested. The business will review your request.'}
+                    {data.quote.status === 'Draft' && 'This quote is still being prepared.'}
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Decline Confirmation Dialog */}
+      <AlertDialog open={showDeclineDialog} onOpenChange={setShowDeclineDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Decline Quote</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to decline this quote? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDecline}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {declineQuote.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Decline Quote
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

@@ -64,6 +64,9 @@ serve(async (req) => {
     let documentData: any;
     let lineItems: any[] = [];
     let documentNumber: string;
+    let signatureDataUrl: string | null = null;
+    let approvedBy: string | null = null;
+    let approvedAt: string | null = null;
 
     if (type === 'quote') {
       const { data: quote, error } = await supabase
@@ -71,6 +74,7 @@ serve(async (req) => {
         .select(`
           id, number, status, total, subtotal, tax_rate, discount,
           address, terms, deposit_required, deposit_percent, created_at,
+          signature_data_url, approved_by, approved_at,
           quote_line_items(name, qty, unit, unit_price, line_total, position)
         `)
         .eq('id', id)
@@ -87,6 +91,9 @@ serve(async (req) => {
       documentData = quote;
       lineItems = quote.quote_line_items.sort((a: any, b: any) => a.position - b.position);
       documentNumber = quote.number;
+      signatureDataUrl = quote.signature_data_url;
+      approvedBy = quote.approved_by;
+      approvedAt = quote.approved_at;
     } else if (type === 'invoice') {
       const { data: invoice, error } = await supabase
         .from('invoices')
@@ -122,6 +129,24 @@ serve(async (req) => {
       year: 'numeric', month: 'long', day: 'numeric' 
     });
 
+    // Signature section for approved quotes
+    const signatureSection = (type === 'quote' && documentData.status === 'Approved' && signatureDataUrl) ? `
+      <div class="signature-section">
+        <div class="section-title">Acceptance</div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 40px;">
+          <div style="flex: 1;">
+            <div style="font-size: 12px; color: #666; margin-bottom: 4px;">Signed by</div>
+            <div style="font-weight: 600;">${approvedBy || customerName}</div>
+            ${approvedAt ? `<div style="font-size: 12px; color: #666; margin-top: 2px;">${formatDate(approvedAt)}</div>` : ''}
+          </div>
+          <div style="flex: 1; text-align: right;">
+            <div style="font-size: 12px; color: #666; margin-bottom: 4px;">Signature</div>
+            <img src="${signatureDataUrl}" alt="Customer signature" style="max-height: 60px; max-width: 200px; border-bottom: 1px solid #333;" />
+          </div>
+        </div>
+      </div>
+    ` : '';
+
     // Generate simple HTML PDF
     const html = `
 <!DOCTYPE html>
@@ -144,9 +169,11 @@ serve(async (req) => {
     .total-row { display: flex; justify-content: space-between; padding: 8px 0; }
     .total-row.grand { font-size: 20px; font-weight: bold; border-top: 2px solid #333; margin-top: 10px; padding-top: 15px; }
     .badge { display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+    .badge-approved { background: #dcfce7; color: #166534; }
     .badge-paid { background: #dcfce7; color: #166534; }
     .badge-sent { background: #dbeafe; color: #1e40af; }
     .terms { background: #f9f9f9; padding: 15px; border-radius: 8px; margin-top: 20px; font-size: 14px; }
+    .signature-section { margin-top: 30px; padding: 20px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; }
   </style>
 </head>
 <body>
@@ -161,6 +188,7 @@ serve(async (req) => {
       <div class="meta">#${documentNumber}</div>
       <div class="meta">${formatDate(documentData.created_at)}</div>
       ${type === 'invoice' && documentData.due_at ? `<div class="meta">Due: ${formatDate(documentData.due_at)}</div>` : ''}
+      ${documentData.status === 'Approved' ? '<div class="badge badge-approved" style="margin-top: 8px;">APPROVED</div>' : ''}
     </div>
   </div>
 
@@ -229,6 +257,8 @@ serve(async (req) => {
       <p style="margin: 10px 0 0;">${documentData.terms}</p>
     </div>
   ` : ''}
+
+  ${signatureSection}
 </body>
 </html>
     `;
