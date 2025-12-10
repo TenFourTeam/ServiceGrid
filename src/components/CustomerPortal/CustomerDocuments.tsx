@@ -10,12 +10,12 @@ import { CustomerQuoteDetail } from './CustomerQuoteDetail';
 import { CustomerPaymentHistory } from './CustomerPaymentHistory';
 import { InvoicePaymentModal } from './InvoicePaymentModal';
 import { CustomerInvoiceDetail } from './CustomerInvoiceDetail';
-import type { CustomerQuote, CustomerInvoice } from '@/types/customerPortal';
+import type { CustomerQuote, CustomerInvoice, CustomerBusiness } from '@/types/customerPortal';
 import { buildEdgeFunctionUrl } from '@/utils/env';
 import { toast } from 'sonner';
 
 export function CustomerDocuments() {
-  const { data: jobData, isLoading, error } = useCustomerJobData();
+  const { data: jobData, isLoading, error, refetch } = useCustomerJobData();
   const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(null);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
 
@@ -106,7 +106,9 @@ export function CustomerDocuments() {
                 <InvoiceCard 
                   key={invoice.id} 
                   invoice={invoice}
+                  business={jobData?.business}
                   onViewDetails={() => setSelectedInvoiceId(invoice.id)}
+                  onPaymentComplete={() => refetch()}
                 />
               ))}
             </div>
@@ -128,6 +130,7 @@ export function CustomerDocuments() {
         invoiceId={selectedInvoiceId}
         open={!!selectedInvoiceId}
         onOpenChange={(open) => !open && setSelectedInvoiceId(null)}
+        onPaymentComplete={() => refetch()}
       />
     </div>
   );
@@ -253,10 +256,12 @@ function QuoteCard({ quote, onView }: QuoteCardProps) {
 
 interface InvoiceCardProps {
   invoice: CustomerInvoice;
+  business?: CustomerBusiness;
   onViewDetails: () => void;
+  onPaymentComplete?: () => void;
 }
 
-function InvoiceCard({ invoice, onViewDetails }: InvoiceCardProps) {
+function InvoiceCard({ invoice, business, onViewDetails, onPaymentComplete }: InvoiceCardProps) {
   const [downloading, setDownloading] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
 
@@ -371,8 +376,10 @@ function InvoiceCard({ invoice, onViewDetails }: InvoiceCardProps) {
 
       <InvoicePaymentModal
         invoice={invoice}
+        business={business}
         open={showPayment}
         onOpenChange={setShowPayment}
+        onPaymentComplete={onPaymentComplete}
       />
     </>
   );
