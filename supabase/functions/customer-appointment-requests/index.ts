@@ -87,8 +87,23 @@ serve(async (req) => {
 
     // POST - Create a new request
     if (req.method === 'POST') {
-      const body = await req.json();
+      let body;
+      try {
+        body = await req.json();
+      } catch {
+        return new Response(
+          JSON.stringify({ error: 'Invalid or missing request body' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
       const { type } = body;
+
+      if (!type) {
+        return new Response(
+          JSON.stringify({ error: 'Request type is required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
 
       if (type === 'reschedule') {
         const { jobId, preferredDate, alternativeDates, preferredTimes, reason, customerNotes } = body as RescheduleRequest & { type: string };
