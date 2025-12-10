@@ -34,6 +34,7 @@ Deno.serve(async (req) => {
             customer_id, address, tax_rate, discount, subtotal,
             terms, payment_terms, frequency, deposit_required, deposit_percent,
             notes_internal, customer_notes, files, sent_at, created_at,
+            signature_data_url, approved_by, approved_at,
             customers!inner(name, email)
           `)
           .eq('id', quoteId)
@@ -99,6 +100,9 @@ Deno.serve(async (req) => {
           createdAt: data.created_at,
           updatedAt: data.updated_at,
           publicToken: data.public_token,
+          signatureDataUrl: data.signature_data_url,
+          approvedBy: data.approved_by,
+          approvedAt: data.approved_at,
         };
 
         console.log('[quotes-crud] Fetched quote:', data.id);

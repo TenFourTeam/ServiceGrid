@@ -103,6 +103,7 @@ export interface Quote {
   approvedAt?: ISODate;
   approvedBy?: string; // typed name
   customerNotes?: string; // Customer feedback when requesting edits
+  signatureDataUrl?: string; // Customer e-signature on approval
   createdAt: ISODate;
   updatedAt: ISODate;
   publicToken: string;

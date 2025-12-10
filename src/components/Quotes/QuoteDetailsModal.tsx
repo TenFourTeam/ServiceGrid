@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Drawer, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { PenLine } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { formatMoney, formatDate } from '@/utils/format';
@@ -434,6 +435,32 @@ export function QuoteDetailsModal({ open, onOpenChange, quoteId, onSendQuote, mo
                   </div>
                 )}
               </div>
+
+              {/* Customer Signature Section */}
+              {quote.status === 'Approved' && quote.signatureDataUrl && (
+                <div className="mt-6 space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <PenLine className="h-4 w-4" />
+                    Customer Signature
+                  </Label>
+                  <div className="p-3 bg-muted rounded-md flex items-end justify-between gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">Signed by</p>
+                      <p className="font-medium">{quote.approvedBy || 'Customer'}</p>
+                      {quote.approvedAt && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {formatDate(quote.approvedAt)}
+                        </p>
+                      )}
+                    </div>
+                    <img 
+                      src={quote.signatureDataUrl} 
+                      alt="Customer signature" 
+                      className="max-h-16 max-w-[200px] border-b border-border"
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Customer Feedback Section */}
               {quote.customerNotes && (
