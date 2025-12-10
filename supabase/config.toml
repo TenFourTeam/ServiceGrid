@@ -301,6 +301,9 @@ verify_jwt = false
 [functions.payments-crud]
 verify_jwt = false
 
+[functions.stripe-config]
+verify_jwt = false
+
 [functions.stripe-connect-crud]
 verify_jwt = false
 
