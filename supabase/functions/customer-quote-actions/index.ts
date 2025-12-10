@@ -28,20 +28,32 @@ async function sendBusinessNotification(
       return;
     }
 
-    // Get business owner email
+    // Get business info
     const { data: business } = await supabase
       .from('businesses')
-      .select('name, owner_id, profiles!businesses_owner_id_fkey(email)')
+      .select('name, owner_id')
       .eq('id', businessId)
       .single();
 
-    if (!business?.profiles?.email) {
+    if (!business?.owner_id) {
+      console.log('Business owner not found');
+      return;
+    }
+
+    // Get owner email separately (no FK join required)
+    const { data: ownerProfile } = await supabase
+      .from('profiles')
+      .select('email')
+      .eq('id', business.owner_id)
+      .single();
+
+    if (!ownerProfile?.email) {
       console.log('Business owner email not found');
       return;
     }
 
     const resend = new Resend(resendApiKey);
-    const ownerEmail = business.profiles.email;
+    const ownerEmail = ownerProfile.email;
     const businessName = business.name || 'Your Business';
 
     const actionMessages = {
