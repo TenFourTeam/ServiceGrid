@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import { useCustomerJobData } from '@/hooks/useCustomerJobData';
 import { CustomerQuoteDetail } from './CustomerQuoteDetail';
 import { CustomerPaymentHistory } from './CustomerPaymentHistory';
+import { InvoicePaymentModal } from './InvoicePaymentModal';
 import type { CustomerQuote, CustomerInvoice } from '@/types/customerPortal';
 import { buildEdgeFunctionUrl } from '@/utils/env';
 import { toast } from 'sonner';
@@ -240,6 +241,7 @@ function QuoteCard({ quote, onView }: QuoteCardProps) {
 
 function InvoiceCard({ invoice }: { invoice: CustomerInvoice }) {
   const [downloading, setDownloading] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
 
   const formatCurrency = (cents: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -290,62 +292,72 @@ function InvoiceCard({ invoice }: { invoice: CustomerInvoice }) {
     }
   };
 
-  const invoiceUrl = `/invoice-pay?token=${invoice.public_token}`;
+  const canPay = invoice.status !== 'Paid' && invoice.status !== 'Draft';
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between">
-          <div>
-            <CardTitle className="text-base">Invoice #{invoice.number}</CardTitle>
-            <CardDescription>
-              {invoice.due_at 
-                ? `Due ${format(new Date(invoice.due_at), 'MMM d, yyyy')}`
-                : `Created ${format(new Date(invoice.created_at), 'MMM d, yyyy')}`
-              }
-            </CardDescription>
+    <>
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex items-start justify-between">
+            <div>
+              <CardTitle className="text-base">Invoice #{invoice.number}</CardTitle>
+              <CardDescription>
+                {invoice.due_at 
+                  ? `Due ${format(new Date(invoice.due_at), 'MMM d, yyyy')}`
+                  : `Created ${format(new Date(invoice.created_at), 'MMM d, yyyy')}`
+                }
+              </CardDescription>
+            </div>
+            <Badge className={getStatusColor(invoice.status)}>
+              {invoice.status}
+            </Badge>
           </div>
-          <Badge className={getStatusColor(invoice.status)}>
-            {invoice.status}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-center justify-between gap-2">
-          <div>
-            <p className="text-2xl font-bold">{formatCurrency(invoice.total)}</p>
-            {invoice.paid_at && (
-              <p className="text-xs text-green-600">
-                Paid on {format(new Date(invoice.paid_at), 'MMM d, yyyy')}
-              </p>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              size="icon"
-              onClick={handlePrintPdf}
-              disabled={downloading}
-              title="Print / Save as PDF"
-            >
-              {downloading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="h-4 w-4" />
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <p className="text-2xl font-bold">{formatCurrency(invoice.total)}</p>
+              {invoice.paid_at && (
+                <p className="text-xs text-green-600">
+                  Paid on {format(new Date(invoice.paid_at), 'MMM d, yyyy')}
+                </p>
               )}
-            </Button>
-            <Button 
-              asChild 
-              variant={invoice.status === 'Paid' ? 'outline' : 'default'}
-            >
-              <a href={invoiceUrl} target="_blank" rel="noopener noreferrer">
-                <Eye className="mr-2 h-4 w-4" />
-                {invoice.status === 'Paid' ? 'View Invoice' : 'Pay Now'}
-              </a>
-            </Button>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="icon"
+                onClick={handlePrintPdf}
+                disabled={downloading}
+                title="Print / Save as PDF"
+              >
+                {downloading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+              </Button>
+              {canPay ? (
+                <Button onClick={() => setShowPayment(true)}>
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Pay Now
+                </Button>
+              ) : (
+                <Button variant="outline" onClick={handlePrintPdf}>
+                  <Eye className="mr-2 h-4 w-4" />
+                  View Invoice
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      <InvoicePaymentModal
+        invoice={invoice}
+        open={showPayment}
+        onOpenChange={setShowPayment}
+      />
+    </>
   );
 }

@@ -18,7 +18,7 @@ serve(async (req) => {
     const action = url.searchParams.get("action");
 
     // Public endpoints for invoice payments
-    if (action === "create_public_checkout" || action === "verify_payment") {
+    if (action === "create_public_checkout" || action === "verify_payment" || action === "create_embedded_checkout") {
       const origin = req.headers.get("origin") || "";
       if (!ALLOWED_ORIGINS.includes(origin)) {
         return json({ error: "Origin not allowed" }, { status: 403 });
@@ -89,6 +89,72 @@ serve(async (req) => {
 
         const session = await stripe.checkout.sessions.create(sessionConfig);
         return json({ url: session.url });
+      }
+
+      // Embedded checkout for in-portal payments
+      if (action === "create_embedded_checkout") {
+        const { invoice_id, token } = await req.json();
+        if (!invoice_id || !token) {
+          return json({ error: "Missing invoice_id or token" }, { status: 400 });
+        }
+
+        const { data: invoice, error: invErr } = await supabase
+          .from("invoices")
+          .select(`
+            id, number, total, status, business_id, customer_id, public_token,
+            customers (email, name),
+            businesses (stripe_account_id, application_fee_bps)
+          `)
+          .eq("id", invoice_id)
+          .maybeSingle();
+
+        if (invErr || !invoice) {
+          return json({ error: "Invoice not found" }, { status: 404 });
+        }
+
+        if (invoice.public_token !== token) {
+          return json({ error: "Invalid token" }, { status: 403 });
+        }
+
+        if (invoice.status === "Paid") {
+          return json({ error: "Invoice already paid" }, { status: 400 });
+        }
+
+        const checkoutOrigin = origin || "http://localhost:8080";
+        const embeddedConfig: any = {
+          ui_mode: "embedded",
+          mode: "payment",
+          return_url: `${checkoutOrigin}/portal?payment_status=complete&session_id={CHECKOUT_SESSION_ID}`,
+          line_items: [{
+            price_data: {
+              currency: "usd",
+              product_data: { name: `Invoice ${invoice.number || invoice.id}` },
+              unit_amount: invoice.total,
+            },
+            quantity: 1,
+          }],
+          metadata: {
+            invoice_id: invoice.id,
+            owner_id: invoice.customer_id,
+          },
+        };
+
+        if (invoice.customers?.email) {
+          embeddedConfig.customer_email = invoice.customers.email;
+        }
+
+        if (invoice.businesses?.stripe_account_id) {
+          const applicationFee = Math.floor((invoice.total * (invoice.businesses.application_fee_bps || 0)) / 10000);
+          embeddedConfig.payment_intent_data = {
+            application_fee_amount: applicationFee,
+            transfer_data: {
+              destination: invoice.businesses.stripe_account_id,
+            },
+          };
+        }
+
+        const embeddedSession = await stripe.checkout.sessions.create(embeddedConfig);
+        return json({ clientSecret: embeddedSession.client_secret });
       }
 
       if (action === "verify_payment") {

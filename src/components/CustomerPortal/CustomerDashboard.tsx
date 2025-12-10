@@ -1,5 +1,5 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useCustomerAuth } from '@/hooks/useCustomerAuth';
 import { useCustomerJobData } from '@/hooks/useCustomerJobData';
@@ -9,11 +9,53 @@ import {
   ProgressWidget, 
   ContactsWidget 
 } from '@/components/CustomerPortal/widgets';
+import { buildEdgeFunctionUrl } from '@/utils/env';
+import { toast } from 'sonner';
 
 export function CustomerDashboard() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { customerDetails } = useCustomerAuth();
-  const { data: jobData, isLoading, error } = useCustomerJobData();
+  const { data: jobData, isLoading, error, refetch } = useCustomerJobData();
+
+  // Handle payment completion callback
+  useEffect(() => {
+    const paymentStatus = searchParams.get('payment_status');
+    const sessionId = searchParams.get('session_id');
+
+    if (paymentStatus === 'complete' && sessionId) {
+      // Verify and record the payment
+      const verifyPayment = async () => {
+        try {
+          const response = await fetch(
+            buildEdgeFunctionUrl('payments-crud', { action: 'verify_payment' }),
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ session_id: sessionId }),
+            }
+          );
+
+          if (response.ok) {
+            const result = await response.json();
+            if (result.status === 'paid') {
+              toast.success('Payment confirmed! Thank you.');
+              refetch(); // Refresh data to show updated invoice status
+            }
+          }
+        } catch (error) {
+          console.error('Payment verification error:', error);
+        }
+      };
+
+      verifyPayment();
+      
+      // Clean URL params
+      searchParams.delete('payment_status');
+      searchParams.delete('session_id');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams, refetch]);
 
   if (isLoading) {
     return (
