@@ -77,7 +77,7 @@ serve(async (req) => {
         .from('quotes')
         .select(`
           id, number, status, total, created_at, sent_at, approved_at,
-          public_token, deposit_required, deposit_percent
+          public_token, deposit_required, deposit_percent, signature_data_url
         `)
         .eq('customer_id', customerId)
         .order('created_at', { ascending: false })

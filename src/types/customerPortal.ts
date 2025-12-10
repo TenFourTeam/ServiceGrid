@@ -59,6 +59,7 @@ export interface CustomerQuote {
   public_token: string;
   deposit_required: boolean;
   deposit_percent: number | null;
+  signature_data_url: string | null;
 }
 
 export interface CustomerInvoice {

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, Receipt, Loader2, Eye, Download, CreditCard } from 'lucide-react';
+import { FileText, Receipt, Loader2, Eye, Download, CreditCard, PenLine } from 'lucide-react';
 import { format } from 'date-fns';
 import { useCustomerJobData } from '@/hooks/useCustomerJobData';
 import { CustomerQuoteDetail } from './CustomerQuoteDetail';
@@ -190,9 +190,17 @@ function QuoteCard({ quote, onView }: QuoteCardProps) {
               Created {format(new Date(quote.created_at), 'MMM d, yyyy')}
             </CardDescription>
           </div>
-          <Badge className={getStatusColor(quote.status)}>
-            {quote.status}
-          </Badge>
+          <div className="flex items-center gap-1.5">
+            <Badge className={getStatusColor(quote.status)}>
+              {quote.status}
+            </Badge>
+            {quote.status === 'Approved' && quote.signature_data_url && (
+              <span className="inline-flex items-center gap-0.5 text-xs text-green-600 bg-green-50 dark:bg-green-900/30 px-1.5 py-0.5 rounded">
+                <PenLine className="h-3 w-3" />
+                Signed
+              </span>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent>
