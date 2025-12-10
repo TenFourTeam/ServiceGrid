@@ -150,12 +150,15 @@ export function CustomerDashboard() {
       {payingInvoice && (
         <InvoicePaymentModal
           invoice={payingInvoice}
+          business={jobData?.business}
           open={!!payingInvoice}
           onOpenChange={(open) => {
             if (!open) {
               setPayingInvoice(null);
-              refetch(); // Refresh data when modal closes
             }
+          }}
+          onPaymentComplete={() => {
+            refetch(); // Refresh data when payment completes
           }}
         />
       )}
