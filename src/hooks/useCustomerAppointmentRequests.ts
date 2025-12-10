@@ -54,6 +54,7 @@ export function useCustomerAppointmentRequests() {
       if (!sessionToken) throw new Error('Not authenticated');
 
       const { data, error } = await supabase.functions.invoke('customer-appointment-requests', {
+        method: 'GET',
         headers: { 'x-session-token': sessionToken },
       });
 
