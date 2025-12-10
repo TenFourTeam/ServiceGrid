@@ -79,11 +79,39 @@ serve(async (req) => {
         is_primary: link.is_primary,
       }));
 
+      let activeBusinessId = currentSession?.active_business_id;
+      let activeCustomerId = currentSession?.active_customer_id;
+
+      // Auto-initialize context if NULL and businesses are available
+      if ((!activeBusinessId || !activeCustomerId) && businesses.length > 0) {
+        // Prioritize invited (non-primary) businesses over customer's own business
+        const invited = businesses.find(b => !b.is_primary);
+        const selected = invited || businesses.find(b => b.is_primary) || businesses[0];
+        
+        activeBusinessId = selected.id;
+        activeCustomerId = selected.customer_id;
+
+        console.log(`[customer-switch-business] Auto-initializing context: business=${activeBusinessId}, customer=${activeCustomerId}`);
+
+        // Update session with the selected context
+        const { error: updateError } = await supabase
+          .from('customer_sessions')
+          .update({
+            active_business_id: activeBusinessId,
+            active_customer_id: activeCustomerId,
+          })
+          .eq('id', session.id);
+
+        if (updateError) {
+          console.error('[customer-switch-business] Failed to auto-initialize context:', updateError);
+        }
+      }
+
       return new Response(
         JSON.stringify({
           businesses,
-          active_business_id: currentSession?.active_business_id,
-          active_customer_id: currentSession?.active_customer_id,
+          active_business_id: activeBusinessId,
+          active_customer_id: activeCustomerId,
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );

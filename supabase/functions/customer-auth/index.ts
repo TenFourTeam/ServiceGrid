@@ -88,12 +88,19 @@ async function getAvailableBusinesses(supabase: any, accountId: string) {
 }
 
 // Helper: Determine default active business/customer for a session
+// Priority: Prefer invited (non-primary) businesses over customer's own business
 function getDefaultActiveContext(availableBusinesses: any[], fallbackCustomerId: string, fallbackBusinessId: string) {
   if (availableBusinesses.length > 0) {
-    const primary = availableBusinesses.find(b => b.is_primary) || availableBusinesses[0];
+    // First, try to find an invited (non-primary) business - this is likely the contractor they're working with
+    const invited = availableBusinesses.find(b => !b.is_primary);
+    // Fall back to primary (their own business) or first available
+    const selected = invited || availableBusinesses.find(b => b.is_primary) || availableBusinesses[0];
+    
+    console.log(`[getDefaultActiveContext] Available: ${availableBusinesses.length}, selected: ${selected.name} (${selected.id}), is_primary: ${selected.is_primary}`);
+    
     return {
-      activeCustomerId: primary.customer_id,
-      activeBusinessId: primary.id,
+      activeCustomerId: selected.customer_id,
+      activeBusinessId: selected.id,
     };
   }
   return {
@@ -668,20 +675,28 @@ async function handleSession(req: Request, supabase: any) {
   // Use session's active context or fall back to defaults
   let activeBusinessId = session.active_business_id;
   let activeCustomerId = session.active_customer_id;
+  let contextBackfilled = false;
   
   if (!activeBusinessId || !activeCustomerId) {
     const defaults = getDefaultActiveContext(availableBusinesses, customer.id, customer.business_id);
     activeBusinessId = defaults.activeBusinessId;
     activeCustomerId = defaults.activeCustomerId;
+    contextBackfilled = true;
+    
+    console.log(`[handleSession] Backfilling NULL context for session ${session.id}: business=${activeBusinessId}, customer=${activeCustomerId}`);
     
     // Update session with defaults if they were missing
-    await supabase
+    const { error: updateError } = await supabase
       .from('customer_sessions')
       .update({
         active_business_id: activeBusinessId,
         active_customer_id: activeCustomerId,
       })
       .eq('id', session.id);
+    
+    if (updateError) {
+      console.error('[handleSession] Failed to backfill session context:', updateError);
+    }
   }
 
   return new Response(
