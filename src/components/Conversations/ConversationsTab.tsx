@@ -9,7 +9,9 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MessageSquare, Plus, Search, User, Paperclip, Briefcase, UserCheck, Users, Filter } from 'lucide-react';
+import { MessageSquare, Plus, Search, User, Paperclip, Briefcase, UserCheck, Users, Filter, Archive } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ConversationThread } from './ConversationThread';
@@ -37,6 +39,7 @@ export function ConversationsTab() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<ConversationFilter>('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
 
   const currentUserId = profileData?.profile?.id;
 
@@ -52,8 +55,11 @@ export function ConversationsTab() {
     );
   });
 
-  // Apply filter type
+  // Apply filter type AND archived filter
   const filteredConversations = searchFiltered.filter(c => {
+    // Hide archived unless showArchived is enabled
+    if (!showArchived && c.is_archived) return false;
+    
     switch (filterType) {
       case 'my-direct':
         return c.assigned_worker_id === currentUserId;
@@ -202,6 +208,17 @@ export function ConversationsTab() {
               </SelectItem>
             </SelectContent>
           </Select>
+          <div className="flex items-center gap-2">
+            <Switch
+              id="show-archived"
+              checked={showArchived}
+              onCheckedChange={setShowArchived}
+            />
+            <Label htmlFor="show-archived" className="text-sm text-muted-foreground flex items-center gap-1 cursor-pointer whitespace-nowrap">
+              <Archive className="h-3.5 w-3.5" />
+              Show Archived
+            </Label>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -237,7 +254,8 @@ export function ConversationsTab() {
                     })}
                     className={cn(
                       "p-4 rounded-lg border cursor-pointer hover:bg-accent transition-colors",
-                      isCustomerChat && "border-primary/20 bg-primary/5"
+                      isCustomerChat && "border-primary/20 bg-primary/5",
+                      conversation.is_archived && "opacity-60"
                     )}
                   >
                     <div className="flex items-start justify-between mb-2">
@@ -258,6 +276,12 @@ export function ConversationsTab() {
                           <Badge variant="outline" className="text-xs gap-1 shrink-0 border-primary/30 text-primary">
                             <UserCheck className="h-3 w-3" />
                             {conversation.assigned_worker_name}
+                          </Badge>
+                        )}
+                        {conversation.is_archived && (
+                          <Badge variant="secondary" className="text-xs gap-1 shrink-0 bg-muted text-muted-foreground">
+                            <Archive className="h-3 w-3" />
+                            Archived
                           </Badge>
                         )}
                         <h3 className="font-medium">
