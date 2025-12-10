@@ -17,6 +17,81 @@ serve(async (req) => {
     const url = new URL(req.url);
     const action = url.searchParams.get("action");
 
+    // Customer payment methods management (public endpoint with session auth)
+    if (action === "list_payment_methods" || action === "delete_payment_method") {
+      const origin = req.headers.get("origin") || "";
+      if (!ALLOWED_ORIGINS.includes(origin)) {
+        return json({ error: "Origin not allowed" }, { status: 403 });
+      }
+
+      const { userId: _ignored, supaAdmin: supabase } = await requireCtx(req);
+
+      // Get customer session from header
+      const sessionToken = req.headers.get("x-customer-session");
+      if (!sessionToken) {
+        return json({ error: "Missing session token" }, { status: 401 });
+      }
+
+      // Validate session and get customer account
+      const { data: session, error: sessionError } = await supabase
+        .from("customer_sessions")
+        .select(`
+          id, expires_at, customer_account_id,
+          customer_accounts!inner(id, stripe_customer_id, email)
+        `)
+        .eq("session_token", sessionToken)
+        .gt("expires_at", new Date().toISOString())
+        .maybeSingle();
+
+      if (sessionError || !session) {
+        return json({ error: "Invalid or expired session" }, { status: 401 });
+      }
+
+      const stripeCustomerId = session.customer_accounts?.stripe_customer_id;
+      if (!stripeCustomerId) {
+        // No Stripe customer = no saved payment methods
+        return json({ paymentMethods: [] });
+      }
+
+      if (action === "list_payment_methods") {
+        // List all payment methods for this customer
+        const paymentMethods = await stripe.paymentMethods.list({
+          customer: stripeCustomerId,
+          type: "card",
+        });
+
+        const formattedMethods = paymentMethods.data.map((pm) => ({
+          id: pm.id,
+          brand: pm.card?.brand || "unknown",
+          last4: pm.card?.last4 || "****",
+          expMonth: pm.card?.exp_month,
+          expYear: pm.card?.exp_year,
+          isDefault: false, // Could check customer's default_payment_method
+        }));
+
+        return json({ paymentMethods: formattedMethods });
+      }
+
+      if (action === "delete_payment_method") {
+        const { payment_method_id } = await req.json();
+        if (!payment_method_id) {
+          return json({ error: "Missing payment_method_id" }, { status: 400 });
+        }
+
+        // Verify the payment method belongs to this customer
+        const pm = await stripe.paymentMethods.retrieve(payment_method_id);
+        if (pm.customer !== stripeCustomerId) {
+          return json({ error: "Payment method not found" }, { status: 404 });
+        }
+
+        // Detach the payment method
+        await stripe.paymentMethods.detach(payment_method_id);
+
+        console.log(`[payments-crud] Deleted payment method ${payment_method_id} for customer ${stripeCustomerId}`);
+        return json({ success: true });
+      }
+    }
+
     // Public endpoints for invoice payments
     if (action === "create_public_checkout" || action === "verify_payment" || action === "create_embedded_checkout") {
       const origin = req.headers.get("origin") || "";
