@@ -1,20 +1,25 @@
 import { useState } from 'react';
 import { useConversations } from '@/hooks/useConversations';
 import { useUnreadMentions } from '@/hooks/useUnreadMentions';
+import { useProfile } from '@/queries/useProfile';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Plus, Search, User, Paperclip, Briefcase, UserCheck } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { MessageSquare, Plus, Search, User, Paperclip, Briefcase, UserCheck, Users, Filter } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ConversationThread } from './ConversationThread';
 import { NewConversationDialog } from './NewConversationDialog';
 
+type ConversationFilter = 'all' | 'my-direct' | 'customer' | 'team';
+
 export function ConversationsTab() {
   const { conversations, isLoading, createConversation, createCustomerConversation } = useConversations();
   const { unreadCount } = useUnreadMentions();
+  const { data: profileData } = useProfile();
   const [selectedConversation, setSelectedConversation] = useState<{ 
     id: string; 
     title: string; 
@@ -27,11 +32,36 @@ export function ConversationsTab() {
     assignedWorkerName?: string;
   } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState<ConversationFilter>('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
-  const filteredConversations = conversations.filter(c =>
-    (c.title || c.customer_name || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const currentUserId = profileData?.profile?.id;
+
+  // Enhanced search: include job_title and assigned_worker_name
+  const searchFiltered = conversations.filter(c => {
+    const query = searchQuery.toLowerCase();
+    if (!query) return true;
+    return (
+      (c.title || '').toLowerCase().includes(query) ||
+      (c.customer_name || '').toLowerCase().includes(query) ||
+      (c.job_title || '').toLowerCase().includes(query) ||
+      (c.assigned_worker_name || '').toLowerCase().includes(query)
+    );
+  });
+
+  // Apply filter type
+  const filteredConversations = searchFiltered.filter(c => {
+    switch (filterType) {
+      case 'my-direct':
+        return c.assigned_worker_id === currentUserId;
+      case 'customer':
+        return !!c.customer_id;
+      case 'team':
+        return !c.customer_id;
+      default:
+        return true;
+    }
+  });
 
   const handleNewConversation = () => {
     setIsCreateDialogOpen(true);
@@ -81,14 +111,48 @@ export function ConversationsTab() {
             New
           </Button>
         </div>
-        <div className="relative mt-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search conversations..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
+        <div className="flex flex-col sm:flex-row gap-2 mt-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search conversations, jobs, workers..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select value={filterType} onValueChange={(v) => setFilterType(v as ConversationFilter)}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Filter" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  All Conversations
+                </div>
+              </SelectItem>
+              <SelectItem value="my-direct">
+                <div className="flex items-center gap-2">
+                  <UserCheck className="h-4 w-4" />
+                  My Direct Messages
+                </div>
+              </SelectItem>
+              <SelectItem value="customer">
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Customer Chats
+                </div>
+              </SelectItem>
+              <SelectItem value="team">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Team Chats
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </CardHeader>
       <CardContent>
