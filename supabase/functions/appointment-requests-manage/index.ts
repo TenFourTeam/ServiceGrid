@@ -1,93 +1,37 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.54.0';
+import { corsHeaders, json, requireCtx } from '../_lib/auth.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-interface RequireCtxResult {
-  userId: string;
-  businessId: string;
-}
-
-async function requireCtx(req: Request, supabase: any): Promise<RequireCtxResult> {
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader) throw new Error('Missing Authorization header');
-
-  const token = authHeader.replace('Bearer ', '');
+Deno.serve(async (req) => {
+  console.log('[appointment-requests-manage] ===== Function Entry =====');
+  console.log(`[appointment-requests-manage] ${req.method} request to ${req.url}`);
   
-  // Verify with Clerk
-  const clerkSecretKey = Deno.env.get('CLERK_SECRET_KEY');
-  if (!clerkSecretKey) throw new Error('CLERK_SECRET_KEY not configured');
-
-  const verifyRes = await fetch('https://api.clerk.com/v1/tokens/verify', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${clerkSecretKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ token }),
-  });
-
-  if (!verifyRes.ok) throw new Error('Invalid token');
-  const tokenData = await verifyRes.json();
-  const clerkUserId = tokenData.sub;
-
-  // Get profile
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('id, default_business_id')
-    .eq('clerk_user_id', clerkUserId)
-    .single();
-
-  if (profileError || !profile) throw new Error('Profile not found');
-
-  // Get businessId from query or default
-  const url = new URL(req.url);
-  const businessId = url.searchParams.get('businessId') || profile.default_business_id;
-
-  if (!businessId) throw new Error('No business context');
-
-  // Verify membership
-  const { data: owner } = await supabase
-    .from('businesses')
-    .select('id')
-    .eq('id', businessId)
-    .eq('owner_id', profile.id)
-    .single();
-
-  if (!owner) {
-    const { data: permission } = await supabase
-      .from('business_permissions')
-      .select('id')
-      .eq('business_id', businessId)
-      .eq('user_id', profile.id)
-      .single();
-
-    if (!permission) throw new Error('Not authorized for this business');
-  }
-
-  return { userId: profile.id, businessId };
-}
-
-serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
   try {
-    const { userId, businessId } = await requireCtx(req, supabase);
-    const url = new URL(req.url);
+    const ctx = await requireCtx(req);
+    
+    if (!ctx.userId || !ctx.businessId) {
+      console.error('[appointment-requests-manage] Authentication context incomplete');
+      return json({ error: 'Authentication required' }, { status: 401 });
+    }
+    
+    console.log('[appointment-requests-manage] Auth validated:', {
+      userId: ctx.userId,
+      businessId: ctx.businessId
+    });
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // GET - List appointment change requests for the business
     if (req.method === 'GET') {
-      const status = url.searchParams.get('status'); // pending, approved, denied, or null for all
+      const url = new URL(req.url);
+      const status = url.searchParams.get('status');
 
       let query = supabase
         .from('appointment_change_requests')
@@ -96,7 +40,7 @@ serve(async (req) => {
           jobs(id, title, starts_at, ends_at, address, status),
           customers(id, name, email, phone)
         `)
-        .eq('business_id', businessId)
+        .eq('business_id', ctx.businessId)
         .order('created_at', { ascending: false });
 
       if (status) {
@@ -106,36 +50,31 @@ serve(async (req) => {
       const { data: requests, error } = await query;
 
       if (error) {
-        console.error('Error fetching requests:', error);
-        return new Response(
-          JSON.stringify({ error: 'Failed to fetch requests' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        console.error('[appointment-requests-manage] GET error:', error);
+        return json({ error: 'Failed to fetch requests' }, { status: 500 });
       }
 
-      return new Response(
-        JSON.stringify({ requests }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      console.log('[appointment-requests-manage] Fetched', requests?.length || 0, 'requests');
+      return json({ requests: requests || [] });
     }
 
     // PATCH - Approve or deny a request
     if (req.method === 'PATCH') {
-      const body = await req.json();
+      let body;
+      try {
+        body = await req.json();
+      } catch (e) {
+        return json({ error: 'Invalid JSON' }, { status: 400 });
+      }
+      
       const { requestId, action, response } = body;
 
       if (!requestId || !action) {
-        return new Response(
-          JSON.stringify({ error: 'requestId and action are required' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return json({ error: 'requestId and action are required' }, { status: 400 });
       }
 
       if (!['approve', 'deny'].includes(action)) {
-        return new Response(
-          JSON.stringify({ error: 'action must be "approve" or "deny"' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return json({ error: 'action must be "approve" or "deny"' }, { status: 400 });
       }
 
       // Fetch the request
@@ -143,21 +82,16 @@ serve(async (req) => {
         .from('appointment_change_requests')
         .select('*, jobs(id, title, starts_at)')
         .eq('id', requestId)
-        .eq('business_id', businessId)
+        .eq('business_id', ctx.businessId)
         .single();
 
       if (fetchError || !request) {
-        return new Response(
-          JSON.stringify({ error: 'Request not found' }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        console.error('[appointment-requests-manage] Request not found:', fetchError);
+        return json({ error: 'Request not found' }, { status: 404 });
       }
 
       if (request.status !== 'pending') {
-        return new Response(
-          JSON.stringify({ error: 'Request has already been processed' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return json({ error: 'Request has already been processed' }, { status: 400 });
       }
 
       const newStatus = action === 'approve' ? 'approved' : 'denied';
@@ -169,34 +103,28 @@ serve(async (req) => {
           status: newStatus,
           business_response: response || null,
           responded_at: new Date().toISOString(),
-          responded_by: userId,
+          responded_by: ctx.userId,
         })
         .eq('id', requestId);
 
       if (updateError) {
-        console.error('Error updating request:', updateError);
-        return new Response(
-          JSON.stringify({ error: 'Failed to update request' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        console.error('[appointment-requests-manage] Update error:', updateError);
+        return json({ error: 'Failed to update request' }, { status: 500 });
       }
 
       // If approved, update the job accordingly
       if (action === 'approve') {
         if (request.request_type === 'reschedule' && request.preferred_date) {
-          // Parse preferred date and time
           let newStartsAt = request.preferred_date;
           
           // If preferred_times is set, try to use the first time
           if (request.preferred_times && request.preferred_times.length > 0) {
             const timeStr = request.preferred_times[0];
-            // Parse time strings like "Morning (8am - 12pm)" -> 08:00
-            let hour = 9; // default to 9am
+            let hour = 9;
             if (timeStr.includes('Morning')) hour = 9;
             else if (timeStr.includes('Afternoon')) hour = 13;
             else if (timeStr.includes('Evening')) hour = 17;
             
-            // Combine date with time
             const dateOnly = newStartsAt.split('T')[0];
             newStartsAt = `${dateOnly}T${hour.toString().padStart(2, '0')}:00:00`;
           }
@@ -207,8 +135,7 @@ serve(async (req) => {
             .eq('id', request.job_id);
 
           if (jobUpdateError) {
-            console.error('Error updating job:', jobUpdateError);
-            // Don't fail the whole request, just log
+            console.error('[appointment-requests-manage] Job update error:', jobUpdateError);
           }
         } else if (request.request_type === 'cancel') {
           const { error: jobUpdateError } = await supabase
@@ -217,29 +144,19 @@ serve(async (req) => {
             .eq('id', request.job_id);
 
           if (jobUpdateError) {
-            console.error('Error canceling job:', jobUpdateError);
+            console.error('[appointment-requests-manage] Job cancel error:', jobUpdateError);
           }
         }
       }
 
-      console.log(`Request ${requestId} ${newStatus} by user ${userId}`);
-
-      return new Response(
-        JSON.stringify({ success: true, status: newStatus }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      console.log(`[appointment-requests-manage] Request ${requestId} ${newStatus}`);
+      return json({ success: true, status: newStatus });
     }
 
-    return new Response(
-      JSON.stringify({ error: 'Method not allowed' }),
-      { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return json({ error: 'Method not allowed' }, { status: 405 });
 
   } catch (error) {
-    console.error('Appointment requests manage error:', error);
-    return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    console.error('[appointment-requests-manage] Error:', error);
+    return json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
 });
