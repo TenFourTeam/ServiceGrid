@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ArrowLeft, User, Briefcase, History } from 'lucide-react';
+import { ArrowLeft, User, Briefcase, History, MoreVertical, Archive, ArchiveRestore } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MessageComposer } from './MessageComposer';
 import { MessageBubble } from './MessageBubble';
 import { TimeSeparator } from './TimeSeparator';
@@ -30,9 +31,12 @@ interface ConversationThreadProps {
   assignedWorkerId?: string;
   assignedWorkerName?: string;
   onReassign?: (workerId: string | null, context: { fromWorkerName?: string | null; toWorkerName?: string | null }) => void;
+  isArchived?: boolean;
+  onArchive?: () => void;
+  onUnarchive?: () => void;
 }
 
-export function ConversationThread({ conversationId, onBack, title, isCustomerChat, customerId, customerName, jobId, jobTitle, assignedWorkerId, assignedWorkerName, onReassign }: ConversationThreadProps) {
+export function ConversationThread({ conversationId, onBack, title, isCustomerChat, customerId, customerName, jobId, jobTitle, assignedWorkerId, assignedWorkerName, onReassign, isArchived, onArchive, onUnarchive }: ConversationThreadProps) {
   const { messages, isLoading, sendMessage, editMessage, deleteMessage } = useMessages(conversationId);
   const viewportRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -157,6 +161,28 @@ export function ConversationThread({ conversationId, onBack, title, isCustomerCh
               </ScrollArea>
             </PopoverContent>
           </Popover>
+
+          {/* More Actions Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" title="More actions">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {isArchived ? (
+                <DropdownMenuItem onClick={onUnarchive}>
+                  <ArchiveRestore className="h-4 w-4 mr-2" />
+                  Restore Conversation
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem onClick={onArchive}>
+                  <Archive className="h-4 w-4 mr-2" />
+                  Archive Conversation
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col p-0 min-h-0">
