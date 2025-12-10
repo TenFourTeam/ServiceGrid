@@ -2349,6 +2349,7 @@ export type Database = {
           payment_terms: Database["public"]["Enums"]["payment_terms"] | null
           public_token: string
           sent_at: string | null
+          signature_data_url: string | null
           status: Database["public"]["Enums"]["quote_status"]
           stripe_subscription_id: string | null
           subtotal: number
@@ -2382,6 +2383,7 @@ export type Database = {
           payment_terms?: Database["public"]["Enums"]["payment_terms"] | null
           public_token?: string
           sent_at?: string | null
+          signature_data_url?: string | null
           status?: Database["public"]["Enums"]["quote_status"]
           stripe_subscription_id?: string | null
           subtotal?: number
@@ -2415,6 +2417,7 @@ export type Database = {
           payment_terms?: Database["public"]["Enums"]["payment_terms"] | null
           public_token?: string
           sent_at?: string | null
+          signature_data_url?: string | null
           status?: Database["public"]["Enums"]["quote_status"]
           stripe_subscription_id?: string | null
           subtotal?: number

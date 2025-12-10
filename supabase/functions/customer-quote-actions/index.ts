@@ -144,6 +144,7 @@ serve(async (req) => {
               status: 'Approved',
               approved_at: new Date().toISOString(),
               approved_by: customerName,
+              signature_data_url: signature,
             })
             .eq('id', quoteId);
 
