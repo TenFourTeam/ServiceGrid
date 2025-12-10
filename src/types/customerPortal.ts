@@ -7,6 +7,7 @@ export interface CustomerJobData {
   upcomingJobs: CustomerJob[];
   quotes: CustomerQuote[];
   invoices: CustomerInvoice[];
+  payments: CustomerPayment[];
   financialSummary: FinancialSummary;
   actionItems: ActionItems;
   teamMembers: TeamMember[];
@@ -71,6 +72,17 @@ export interface CustomerInvoice {
   public_token: string;
   deposit_required: boolean;
   deposit_percent: number | null;
+}
+
+export interface CustomerPayment {
+  id: string;
+  invoice_id: string;
+  invoice_number: string;
+  amount: number;
+  method: string;
+  last4: string | null;
+  received_at: string;
+  status: string;
 }
 
 export interface FinancialSummary {
