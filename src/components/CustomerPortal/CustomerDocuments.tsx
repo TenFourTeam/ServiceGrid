@@ -9,6 +9,7 @@ import { useCustomerJobData } from '@/hooks/useCustomerJobData';
 import { CustomerQuoteDetail } from './CustomerQuoteDetail';
 import { CustomerPaymentHistory } from './CustomerPaymentHistory';
 import { InvoicePaymentModal } from './InvoicePaymentModal';
+import { CustomerInvoiceDetail } from './CustomerInvoiceDetail';
 import type { CustomerQuote, CustomerInvoice } from '@/types/customerPortal';
 import { buildEdgeFunctionUrl } from '@/utils/env';
 import { toast } from 'sonner';
@@ -16,6 +17,7 @@ import { toast } from 'sonner';
 export function CustomerDocuments() {
   const { data: jobData, isLoading, error } = useCustomerJobData();
   const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(null);
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
 
   const formatCurrency = (cents: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -101,7 +103,11 @@ export function CustomerDocuments() {
           ) : (
             <div className="space-y-3">
               {invoices.map((invoice) => (
-                <InvoiceCard key={invoice.id} invoice={invoice} />
+                <InvoiceCard 
+                  key={invoice.id} 
+                  invoice={invoice}
+                  onViewDetails={() => setSelectedInvoiceId(invoice.id)}
+                />
               ))}
             </div>
           )}
@@ -116,6 +122,12 @@ export function CustomerDocuments() {
         quoteId={selectedQuoteId}
         open={!!selectedQuoteId}
         onOpenChange={(open) => !open && setSelectedQuoteId(null)}
+      />
+
+      <CustomerInvoiceDetail
+        invoiceId={selectedInvoiceId}
+        open={!!selectedInvoiceId}
+        onOpenChange={(open) => !open && setSelectedInvoiceId(null)}
       />
     </div>
   );
@@ -239,7 +251,12 @@ function QuoteCard({ quote, onView }: QuoteCardProps) {
   );
 }
 
-function InvoiceCard({ invoice }: { invoice: CustomerInvoice }) {
+interface InvoiceCardProps {
+  invoice: CustomerInvoice;
+  onViewDetails: () => void;
+}
+
+function InvoiceCard({ invoice, onViewDetails }: InvoiceCardProps) {
   const [downloading, setDownloading] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
 
@@ -337,15 +354,14 @@ function InvoiceCard({ invoice }: { invoice: CustomerInvoice }) {
                   <Download className="h-4 w-4" />
                 )}
               </Button>
-              {canPay ? (
+              <Button variant="outline" onClick={onViewDetails}>
+                <Eye className="mr-2 h-4 w-4" />
+                View
+              </Button>
+              {canPay && (
                 <Button onClick={() => setShowPayment(true)}>
                   <CreditCard className="mr-2 h-4 w-4" />
                   Pay Now
-                </Button>
-              ) : (
-                <Button variant="outline" onClick={handlePrintPdf}>
-                  <Eye className="mr-2 h-4 w-4" />
-                  View Invoice
                 </Button>
               )}
             </div>

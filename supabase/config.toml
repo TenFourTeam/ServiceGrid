@@ -515,6 +515,10 @@ verify_jwt = false
 [functions.customer-quote-actions]
 verify_jwt = false
 
+# Customer Invoice Detail
+[functions.customer-invoice-detail]
+verify_jwt = false
+
 # Document PDF Generation
 [functions.generate-document-pdf]
 verify_jwt = false
