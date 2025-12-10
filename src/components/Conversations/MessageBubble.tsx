@@ -126,8 +126,8 @@ export function MessageBubble({ message, isGrouped = false, onEntityClick, onEdi
   return (
     <>
       <div className={`flex gap-3 group ${isOwnMessage ? 'flex-row-reverse' : ''}`}>
-        <Avatar className={`h-8 w-8 flex-shrink-0 ${isGrouped ? 'invisible' : ''}`}>
-          <AvatarFallback className="text-xs">
+        <Avatar className={`h-8 w-8 flex-shrink-0 ${isGrouped ? 'invisible' : ''} ${isCustomerMessage ? 'ring-2 ring-primary/30' : ''}`}>
+          <AvatarFallback className={`text-xs ${isCustomerMessage ? 'bg-primary/10 text-primary' : ''}`}>
             {senderName.slice(0, 2).toUpperCase()}
           </AvatarFallback>
         </Avatar>
@@ -147,7 +147,7 @@ export function MessageBubble({ message, isGrouped = false, onEntityClick, onEdi
           )}
 
           <div className="flex items-start gap-1">
-            <Card className={`p-3 ${isOwnMessage ? 'bg-primary text-primary-foreground' : ''}`}>
+            <Card className={`p-3 ${isOwnMessage ? 'bg-primary text-primary-foreground' : isCustomerMessage ? 'bg-primary/5 border-primary/20' : ''}`}>
               {isEditing ? (
                 <div className="flex flex-col gap-2">
                   <Input

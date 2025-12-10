@@ -3,7 +3,8 @@ import { useMessages } from '@/hooks/useMessages';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { ArrowLeft, User } from 'lucide-react';
 import { MessageComposer } from './MessageComposer';
 import { MessageBubble } from './MessageBubble';
 import { TimeSeparator } from './TimeSeparator';
@@ -20,9 +21,10 @@ interface ConversationThreadProps {
   title?: string;
   isCustomerChat?: boolean;
   customerId?: string;
+  customerName?: string;
 }
 
-export function ConversationThread({ conversationId, onBack, title, isCustomerChat, customerId }: ConversationThreadProps) {
+export function ConversationThread({ conversationId, onBack, title, isCustomerChat, customerId, customerName }: ConversationThreadProps) {
   const { messages, isLoading, sendMessage, editMessage, deleteMessage } = useMessages(conversationId);
   const viewportRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -85,12 +87,33 @@ export function ConversationThread({ conversationId, onBack, title, isCustomerCh
 
   return (
     <Card className="flex flex-col h-[calc(100vh-200px)]">
-      <CardHeader className="border-b flex-shrink-0">
-        <div className="flex items-center gap-2">
+      <CardHeader className="border-b flex-shrink-0 py-3">
+        <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={onBack}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <CardTitle>{isCustomerChat ? `Customer: ${title}` : title || 'Team Chat'}</CardTitle>
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            {isCustomerChat && (
+              <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <User className="h-4 w-4 text-primary" />
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <CardTitle className="text-base truncate">
+                  {customerName || title || (isCustomerChat ? 'Customer Chat' : 'Team Chat')}
+                </CardTitle>
+                {isCustomerChat && (
+                  <Badge variant="secondary" className="text-xs bg-primary/10 text-primary shrink-0">
+                    Customer
+                  </Badge>
+                )}
+              </div>
+              {isCustomerChat && customerName && title && customerName !== title && (
+                <p className="text-xs text-muted-foreground truncate">{title}</p>
+              )}
+            </div>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col p-0 min-h-0">
