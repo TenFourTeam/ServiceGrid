@@ -180,8 +180,8 @@ export function useCustomerAuthProvider() {
         isAuthenticated: true,
         sessionToken: response.data.session_token,
         availableBusinesses: response.data.available_businesses || [],
-        activeBusinessId: response.data.customer?.business_id || null,
-        activeCustomerId: response.data.customer?.id || null,
+        activeBusinessId: response.data.active_business_id || response.data.customer?.business_id || null,
+        activeCustomerId: response.data.active_customer_id || response.data.customer?.id || null,
       });
 
       return response.data;
@@ -213,8 +213,8 @@ export function useCustomerAuthProvider() {
         isAuthenticated: true,
         sessionToken: response.data.session_token,
         availableBusinesses: response.data.available_businesses || [],
-        activeBusinessId: response.data.customer?.business_id || null,
-        activeCustomerId: response.data.customer?.id || null,
+        activeBusinessId: response.data.active_business_id || response.data.customer?.business_id || null,
+        activeCustomerId: response.data.active_customer_id || response.data.customer?.id || null,
       });
 
       return response.data;
@@ -246,8 +246,8 @@ export function useCustomerAuthProvider() {
         isAuthenticated: true,
         sessionToken: response.data.session_token,
         availableBusinesses: response.data.available_businesses || [],
-        activeBusinessId: response.data.customer?.business_id || null,
-        activeCustomerId: response.data.customer?.id || null,
+        activeBusinessId: response.data.active_business_id || response.data.customer?.business_id || null,
+        activeCustomerId: response.data.active_customer_id || response.data.customer?.id || null,
       });
 
       return response.data;

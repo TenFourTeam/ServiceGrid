@@ -127,6 +127,18 @@ Deno.serve(async (req) => {
       }
     }
 
+    // CRITICAL: Validate that we have a valid business context before proceeding
+    if (!effectiveBusinessId) {
+      console.error('[customer-messages-crud] No active business context');
+      return new Response(
+        JSON.stringify({ 
+          error: 'No active business context. Please select a contractor before sending messages.',
+          code: 'NO_BUSINESS_CONTEXT'
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     if (req.method === 'GET') {
       if (conversationId) {
         // Get messages for a specific conversation
