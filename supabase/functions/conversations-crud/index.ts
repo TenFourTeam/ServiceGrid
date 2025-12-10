@@ -53,20 +53,33 @@ Deno.serve(async (req) => {
 
     // POST: Create new conversation
     if (req.method === 'POST') {
-      const { title, customerId, metadata } = await req.json();
+      const { title, customerId, metadata, jobId, workerId } = await req.json();
 
-      // Check for existing conversation with this customer (prevent duplicates)
+      // Check for existing conversation with this customer + job + worker scope (prevent duplicates)
       if (customerId) {
-        const { data: existing } = await supabase
+        let query = supabase
           .from('sg_conversations')
           .select('*')
           .eq('business_id', ctx.businessId)
           .eq('customer_id', customerId)
-          .eq('is_archived', false)
-          .maybeSingle();
+          .eq('is_archived', false);
+        
+        // Match scope: job_id and assigned_worker_id
+        if (jobId) {
+          query = query.eq('job_id', jobId);
+        } else {
+          query = query.is('job_id', null);
+        }
+        if (workerId) {
+          query = query.eq('assigned_worker_id', workerId);
+        } else {
+          query = query.is('assigned_worker_id', null);
+        }
+
+        const { data: existing } = await query.maybeSingle();
 
         if (existing) {
-          console.log('[conversations-crud] Found existing conversation for customer:', customerId);
+          console.log('[conversations-crud] Found existing conversation for customer:', customerId, 'job:', jobId, 'worker:', workerId);
           return ok({ conversation: existing, existed: true });
         }
       }
@@ -79,6 +92,8 @@ Deno.serve(async (req) => {
           title: title || 'Team Chat',
           customer_id: customerId || null,
           metadata: metadata || null,
+          job_id: jobId || null,
+          assigned_worker_id: workerId || null,
         })
         .select()
         .single();

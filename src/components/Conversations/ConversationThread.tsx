@@ -4,7 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, User } from 'lucide-react';
+import { ArrowLeft, User, Briefcase, UserCheck } from 'lucide-react';
 import { MessageComposer } from './MessageComposer';
 import { MessageBubble } from './MessageBubble';
 import { TimeSeparator } from './TimeSeparator';
@@ -22,9 +22,13 @@ interface ConversationThreadProps {
   isCustomerChat?: boolean;
   customerId?: string;
   customerName?: string;
+  jobId?: string;
+  jobTitle?: string;
+  assignedWorkerId?: string;
+  assignedWorkerName?: string;
 }
 
-export function ConversationThread({ conversationId, onBack, title, isCustomerChat, customerId, customerName }: ConversationThreadProps) {
+export function ConversationThread({ conversationId, onBack, title, isCustomerChat, customerId, customerName, jobId, jobTitle, assignedWorkerId, assignedWorkerName }: ConversationThreadProps) {
   const { messages, isLoading, sendMessage, editMessage, deleteMessage } = useMessages(conversationId);
   const viewportRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -106,6 +110,18 @@ export function ConversationThread({ conversationId, onBack, title, isCustomerCh
                 {isCustomerChat && (
                   <Badge variant="secondary" className="text-xs bg-primary/10 text-primary shrink-0">
                     Customer
+                  </Badge>
+                )}
+                {jobTitle && (
+                  <Badge variant="secondary" className="text-xs gap-1 shrink-0">
+                    <Briefcase className="h-3 w-3" />
+                    {jobTitle}
+                  </Badge>
+                )}
+                {assignedWorkerName && (
+                  <Badge variant="outline" className="text-xs gap-1 shrink-0 border-primary/30 text-primary">
+                    <UserCheck className="h-3 w-3" />
+                    Direct: {assignedWorkerName}
                   </Badge>
                 )}
               </div>
