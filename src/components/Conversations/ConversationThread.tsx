@@ -29,7 +29,7 @@ interface ConversationThreadProps {
   jobTitle?: string;
   assignedWorkerId?: string;
   assignedWorkerName?: string;
-  onReassign?: (workerId: string | null) => void;
+  onReassign?: (workerId: string | null, context: { fromWorkerName?: string | null; toWorkerName?: string | null }) => void;
 }
 
 export function ConversationThread({ conversationId, onBack, title, isCustomerChat, customerId, customerName, jobId, jobTitle, assignedWorkerId, assignedWorkerName, onReassign }: ConversationThreadProps) {

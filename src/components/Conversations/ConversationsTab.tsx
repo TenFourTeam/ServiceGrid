@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useConversations } from '@/hooks/useConversations';
 import { useUnreadMentions } from '@/hooks/useUnreadMentions';
 import { useProfile } from '@/queries/useProfile';
+import { useUser } from '@clerk/clerk-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +21,7 @@ export function ConversationsTab() {
   const { conversations, isLoading, createConversation, createCustomerConversation, reassignConversation } = useConversations();
   const { unreadCount } = useUnreadMentions();
   const { data: profileData } = useProfile();
+  const { user: clerkUser } = useUser();
   const [selectedConversation, setSelectedConversation] = useState<{ 
     id: string; 
     title: string; 
@@ -102,10 +104,23 @@ export function ConversationsTab() {
         jobTitle={selectedConversation.jobTitle}
         assignedWorkerId={selectedConversation.assignedWorkerId}
         assignedWorkerName={selectedConversation.assignedWorkerName}
-        onReassign={(workerId) => reassignConversation({ 
-          conversationId: selectedConversation.id, 
-          workerId 
-        })}
+        onReassign={(workerId, context) => {
+          const currentUser = profileData?.profile ? {
+            id: profileData.profile.id,
+            name: profileData.profile.fullName,
+            email: clerkUser?.primaryEmailAddress?.emailAddress || '',
+          } : undefined;
+          
+          reassignConversation({ 
+            conversationId: selectedConversation.id, 
+            workerId,
+            optimisticContext: currentUser ? {
+              currentUser,
+              fromWorkerName: context?.fromWorkerName,
+              toWorkerName: context?.toWorkerName,
+            } : undefined,
+          });
+        }}
       />
     );
   }

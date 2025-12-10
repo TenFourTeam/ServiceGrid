@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthApi } from '@/hooks/useAuthApi';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { toast } from 'sonner';
+import type { ConversationActivityEvent } from '@/hooks/useConversationActivity';
 
 export interface Conversation {
   id: string;
@@ -22,6 +23,26 @@ export interface Conversation {
   job_title?: string;
   assigned_worker_id?: string;
   assigned_worker_name?: string;
+}
+
+interface OptimisticEventContext {
+  currentUser: { id: string; name: string | null; email: string };
+  fromWorkerName?: string | null;
+  toWorkerName?: string | null;
+}
+
+function createOptimisticEvent(
+  eventType: ConversationActivityEvent['event_type'],
+  currentUser: { id: string; name: string | null; email: string },
+  metadata?: ConversationActivityEvent['metadata']
+): ConversationActivityEvent {
+  return {
+    id: `optimistic-${Date.now()}`,
+    event_type: eventType,
+    created_at: new Date().toISOString(),
+    metadata,
+    user: currentUser,
+  };
 }
 
 export function useConversations() {
@@ -100,7 +121,22 @@ export function useConversations() {
   });
 
   const archiveConversation = useMutation({
-    mutationFn: async (conversationId: string) => {
+    mutationFn: async ({ conversationId, optimisticContext }: { 
+      conversationId: string;
+      optimisticContext?: OptimisticEventContext;
+    }) => {
+      // Add optimistic event immediately
+      if (optimisticContext) {
+        const optimisticEvent = createOptimisticEvent(
+          'archived',
+          optimisticContext.currentUser
+        );
+        queryClient.setQueryData<ConversationActivityEvent[]>(
+          ['conversation-activity', conversationId],
+          (old = []) => [optimisticEvent, ...old]
+        );
+      }
+
       const { error } = await authApi.invoke(`conversations-crud?conversationId=${conversationId}`, {
         method: 'PATCH',
         body: { is_archived: true },
@@ -112,17 +148,38 @@ export function useConversations() {
       queryClient.invalidateQueries({ queryKey: ['conversations', businessId] });
       toast.success('Conversation archived');
     },
-    onError: (error) => {
+    onError: (error, variables) => {
       console.error('Error archiving conversation:', error);
+      // Rollback optimistic event on error
+      queryClient.invalidateQueries({ 
+        queryKey: ['conversation-activity', variables.conversationId] 
+      });
       toast.error('Failed to archive conversation');
     },
   });
 
   const reassignConversation = useMutation({
-    mutationFn: async ({ conversationId, workerId }: { 
+    mutationFn: async ({ conversationId, workerId, optimisticContext }: { 
       conversationId: string; 
       workerId: string | null;
+      optimisticContext?: OptimisticEventContext;
     }) => {
+      // Add optimistic event immediately
+      if (optimisticContext) {
+        const optimisticEvent = createOptimisticEvent(
+          'reassigned',
+          optimisticContext.currentUser,
+          {
+            from_worker_name: optimisticContext.fromWorkerName,
+            to_worker_name: optimisticContext.toWorkerName,
+          }
+        );
+        queryClient.setQueryData<ConversationActivityEvent[]>(
+          ['conversation-activity', conversationId],
+          (old = []) => [optimisticEvent, ...old]
+        );
+      }
+
       const { data, error } = await authApi.invoke(`conversations-crud?conversationId=${conversationId}`, {
         method: 'PATCH',
         body: { assigned_worker_id: workerId },
@@ -135,8 +192,12 @@ export function useConversations() {
       queryClient.invalidateQueries({ queryKey: ['conversations', businessId] });
       toast.success('Conversation reassigned');
     },
-    onError: (error) => {
+    onError: (error, variables) => {
       console.error('Error reassigning conversation:', error);
+      // Rollback optimistic event on error
+      queryClient.invalidateQueries({ 
+        queryKey: ['conversation-activity', variables.conversationId] 
+      });
       toast.error('Failed to reassign conversation');
     },
   });
