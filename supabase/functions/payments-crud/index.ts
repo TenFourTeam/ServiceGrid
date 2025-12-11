@@ -2,7 +2,16 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
 
-const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || "").split(",");
+const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || "")
+  .split(",")
+  .map(o => o.trim())
+  .filter(Boolean);
+
+const isOriginAllowed = (origin: string): boolean => {
+  // If no origins configured, allow all (for development/when not set)
+  if (ALLOWED_ORIGINS.length === 0) return true;
+  return ALLOWED_ORIGINS.includes(origin);
+};
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -20,8 +29,10 @@ serve(async (req) => {
     // Customer payment methods management (public endpoint with session auth)
     if (action === "list_payment_methods" || action === "delete_payment_method") {
       const origin = req.headers.get("origin") || "";
-      if (!ALLOWED_ORIGINS.includes(origin)) {
+      if (!isOriginAllowed(origin)) {
+        console.log(`[payments-crud] Origin not allowed: ${origin}`);
         return json({ error: "Origin not allowed" }, { status: 403 });
+      }
       }
 
       const { userId: _ignored, supaAdmin: supabase } = await requireCtx(req);
@@ -95,8 +106,10 @@ serve(async (req) => {
     // Public endpoints for invoice payments
     if (action === "create_public_checkout" || action === "verify_payment" || action === "create_embedded_checkout") {
       const origin = req.headers.get("origin") || "";
-      if (!ALLOWED_ORIGINS.includes(origin)) {
+      if (!isOriginAllowed(origin)) {
+        console.log(`[payments-crud] Origin not allowed: ${origin}`);
         return json({ error: "Origin not allowed" }, { status: 403 });
+      }
       }
 
       const { userId: _ignored, supaAdmin: supabase } = await requireCtx(req);
