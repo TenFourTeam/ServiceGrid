@@ -18,6 +18,11 @@ interface SendMagicLinkResult {
   warning?: string;
 }
 
+interface SetPasswordResult {
+  success: boolean;
+  error?: string;
+}
+
 interface CustomerAuthContextValue extends CustomerAuthState {
   sendMagicLink: (email: string) => Promise<SendMagicLinkResult>;
   verifyMagicLink: (token: string) => Promise<CustomerAuthResponse>;
@@ -25,6 +30,8 @@ interface CustomerAuthContextValue extends CustomerAuthState {
   register: (email: string, password: string, inviteToken?: string) => Promise<CustomerAuthResponse>;
   logout: () => Promise<void>;
   refreshSession: () => Promise<void>;
+  setPassword: (password: string) => Promise<SetPasswordResult>;
+  hasPassword: boolean;
 }
 
 const CustomerAuthContext = createContext<CustomerAuthContextValue | null>(null);
@@ -37,7 +44,11 @@ export function useCustomerAuth() {
   return context;
 }
 
-const initialState: CustomerAuthState = {
+interface ExtendedCustomerAuthState extends CustomerAuthState {
+  hasPassword: boolean;
+}
+
+const initialState: ExtendedCustomerAuthState = {
   customer: null,
   customerDetails: null,
   authMethod: null,
@@ -47,13 +58,14 @@ const initialState: CustomerAuthState = {
   availableBusinesses: [],
   activeBusinessId: null,
   activeCustomerId: null,
+  hasPassword: false,
 };
 
 export function useCustomerAuthProvider() {
   const { isSignedIn, userId } = useAuth();
   const { user } = useUser();
   
-  const [state, setState] = useState<CustomerAuthState>(initialState);
+  const [state, setState] = useState<ExtendedCustomerAuthState>(initialState);
 
   // Check session on mount
   useEffect(() => {
@@ -88,6 +100,7 @@ export function useCustomerAuthProvider() {
               availableBusinesses: response.data.available_businesses || [],
               activeBusinessId: response.data.customer?.business_id || null,
               activeCustomerId: response.data.customer?.id || null,
+              hasPassword: response.data.customer_account?.has_password || false,
             });
             return;
           }
@@ -112,6 +125,7 @@ export function useCustomerAuthProvider() {
             availableBusinesses: response.data.available_businesses || [],
             activeBusinessId: response.data.active_business_id || response.data.customer?.business_id || null,
             activeCustomerId: response.data.active_customer_id || response.data.customer?.id || null,
+            hasPassword: response.data.customer_account.has_password || false,
           });
           return;
         } else {
@@ -182,6 +196,7 @@ export function useCustomerAuthProvider() {
         availableBusinesses: response.data.available_businesses || [],
         activeBusinessId: response.data.active_business_id || response.data.customer?.business_id || null,
         activeCustomerId: response.data.active_customer_id || response.data.customer?.id || null,
+        hasPassword: false, // Magic link login means no password set yet
       });
 
       return response.data;
@@ -215,6 +230,7 @@ export function useCustomerAuthProvider() {
         availableBusinesses: response.data.available_businesses || [],
         activeBusinessId: response.data.active_business_id || response.data.customer?.business_id || null,
         activeCustomerId: response.data.active_customer_id || response.data.customer?.id || null,
+        hasPassword: true, // Password login means they have a password
       });
 
       return response.data;
@@ -248,6 +264,7 @@ export function useCustomerAuthProvider() {
         availableBusinesses: response.data.available_businesses || [],
         activeBusinessId: response.data.active_business_id || response.data.customer?.business_id || null,
         activeCustomerId: response.data.active_customer_id || response.data.customer?.id || null,
+        hasPassword: true, // Registration with password
       });
 
       return response.data;
@@ -281,6 +298,36 @@ export function useCustomerAuthProvider() {
     await checkAuth();
   }, [checkAuth]);
 
+  const setPassword = useCallback(async (password: string): Promise<SetPasswordResult> => {
+    const sessionToken = localStorage.getItem(CUSTOMER_SESSION_KEY);
+    
+    if (!sessionToken) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    try {
+      const response = await supabase.functions.invoke('customer-auth/set-password', {
+        headers: { 'x-session-token': sessionToken },
+        body: { password },
+      });
+
+      if (response.error || !response.data?.success) {
+        return { success: false, error: response.error?.message || response.data?.error || 'Failed to set password' };
+      }
+
+      // Update local state
+      setState(prev => ({
+        ...prev,
+        hasPassword: true,
+        authMethod: 'password',
+      }));
+
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message || 'Failed to set password' };
+    }
+  }, []);
+
   return {
     ...state,
     sendMagicLink,
@@ -289,6 +336,8 @@ export function useCustomerAuthProvider() {
     register,
     logout,
     refreshSession,
+    setPassword,
+    hasPassword: state.hasPassword,
   };
 }
 

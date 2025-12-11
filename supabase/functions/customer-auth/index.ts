@@ -42,6 +42,8 @@ serve(async (req) => {
         return await handlePasswordReset(req, supabase);
       case 'password-reset-confirm':
         return await handlePasswordResetConfirm(req, supabase);
+      case 'set-password':
+        return await handleSetPassword(req, supabase);
       default:
         return new Response(
           JSON.stringify({ error: 'Unknown endpoint' }),
@@ -618,6 +620,86 @@ async function handleLogin(req: Request, supabase: any) {
   );
 }
 
+// Set password for existing account (for magic-link users)
+async function handleSetPassword(req: Request, supabase: any) {
+  const sessionToken = req.headers.get('x-session-token');
+
+  if (!sessionToken) {
+    return new Response(
+      JSON.stringify({ error: 'Authentication required' }),
+      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Validate session
+  const { data: session, error: sessionError } = await supabase
+    .from('customer_sessions')
+    .select('*, customer_accounts(*)')
+    .eq('session_token', sessionToken)
+    .gt('expires_at', new Date().toISOString())
+    .single();
+
+  if (sessionError || !session) {
+    return new Response(
+      JSON.stringify({ error: 'Invalid or expired session' }),
+      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  const account = session.customer_accounts;
+
+  // Check if password is already set
+  if (account.password_hash) {
+    return new Response(
+      JSON.stringify({ error: 'Password is already set. Use password reset to change it.' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  const { password } = await req.json();
+
+  if (!password) {
+    return new Response(
+      JSON.stringify({ error: 'Password is required' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  if (password.length < 8) {
+    return new Response(
+      JSON.stringify({ error: 'Password must be at least 8 characters' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Hash and store password
+  const passwordHash = await bcrypt.hash(password);
+
+  const { error: updateError } = await supabase
+    .from('customer_accounts')
+    .update({
+      password_hash: passwordHash,
+      auth_method: 'password',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', account.id);
+
+  if (updateError) {
+    console.error('Error setting password:', updateError);
+    return new Response(
+      JSON.stringify({ error: 'Failed to set password' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  console.log(`[handleSetPassword] Password set for account ${account.id}`);
+
+  return new Response(
+    JSON.stringify({ success: true, message: 'Password set successfully' }),
+    { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
 // Logout - invalidate session
 async function handleLogout(req: Request, supabase: any) {
   const sessionToken = req.headers.get('x-session-token');
@@ -708,6 +790,7 @@ async function handleSession(req: Request, supabase: any) {
         customer_id: account.customer_id,
         email: account.email,
         auth_method: session.auth_method,
+        has_password: !!account.password_hash,
       },
       customer: {
         id: customer.id,

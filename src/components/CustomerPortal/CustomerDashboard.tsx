@@ -12,6 +12,7 @@ import {
 } from '@/components/CustomerPortal/widgets';
 import { InvoicePaymentModal } from '@/components/CustomerPortal/InvoicePaymentModal';
 import { SavedPaymentMethods } from '@/components/CustomerPortal/SavedPaymentMethods';
+import { AccountSecurityCard } from '@/components/CustomerPortal/AccountSecurityCard';
 import { CustomerInvoice } from '@/types/customerPortal';
 import { buildEdgeFunctionUrl } from '@/utils/env';
 import { toast } from 'sonner';
@@ -140,6 +141,9 @@ export function CustomerDashboard() {
           
           {/* Saved Payment Methods */}
           <SavedPaymentMethods />
+          
+          {/* Account Security */}
+          <AccountSecurityCard />
           
           {jobData?.business && (
             <ContactsWidget 
