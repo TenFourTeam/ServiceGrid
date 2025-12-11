@@ -51,6 +51,7 @@ export function InvoicePaymentModal({
 
   const fetchClientSecret = useCallback(async () => {
     try {
+      console.log('[InvoicePaymentModal] Fetching client secret for invoice:', invoice.id);
       setModalState('loading');
       setError(null);
       
@@ -66,15 +67,25 @@ export function InvoicePaymentModal({
         }
       );
 
+      console.log('[InvoicePaymentModal] Response status:', response.status);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('[InvoicePaymentModal] Error response:', errorData);
         throw new Error(errorData.error || 'Failed to create checkout session');
       }
 
       const { clientSecret } = await response.json();
+      console.log('[InvoicePaymentModal] Got client secret:', !!clientSecret);
+      
+      if (!clientSecret) {
+        throw new Error('No client secret returned from server');
+      }
+      
       setModalState('checkout');
       return clientSecret;
     } catch (err) {
+      console.error('[InvoicePaymentModal] Fetch error:', err);
       const message = err instanceof Error ? err.message : 'Something went wrong';
       setError(message);
       setModalState('error');
