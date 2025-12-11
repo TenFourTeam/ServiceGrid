@@ -109,7 +109,6 @@ serve(async (req) => {
         console.log(`[payments-crud] Origin not allowed: ${origin}`);
         return json({ error: "Origin not allowed" }, { status: 403 });
       }
-      }
 
       const { userId: _ignored, supaAdmin: supabase } = await requireCtx(req);
 
