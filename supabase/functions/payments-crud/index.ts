@@ -129,6 +129,41 @@ serve(async (req) => {
           return json({ error: "Invoice already paid" }, { status: 400 });
         }
 
+        // Look up or create Stripe customer for saved payment methods
+        let stripeCustomerId: string | null = null;
+        
+        const { data: customerAccount } = await supabase
+          .from("customer_accounts")
+          .select("id, stripe_customer_id")
+          .eq("customer_id", invoice.customer_id)
+          .maybeSingle();
+
+        if (customerAccount?.stripe_customer_id) {
+          stripeCustomerId = customerAccount.stripe_customer_id;
+          console.log(`[payments-crud] Public checkout using existing Stripe customer: ${stripeCustomerId}`);
+        } else if (customerAccount && invoice.customers?.email) {
+          try {
+            const stripeCustomer = await stripe.customers.create({
+              email: invoice.customers.email,
+              name: invoice.customers.name || undefined,
+              metadata: {
+                customer_account_id: customerAccount.id,
+                customer_id: invoice.customer_id,
+              },
+            });
+            stripeCustomerId = stripeCustomer.id;
+            
+            await supabase
+              .from("customer_accounts")
+              .update({ stripe_customer_id: stripeCustomerId })
+              .eq("id", customerAccount.id);
+            
+            console.log(`[payments-crud] Public checkout created new Stripe customer: ${stripeCustomerId}`);
+          } catch (stripeErr) {
+            console.error("[payments-crud] Public checkout failed to create Stripe customer:", stripeErr);
+          }
+        }
+
         const checkoutOrigin = origin || "http://localhost:8080";
         const sessionConfig: any = {
           mode: "payment",
@@ -148,7 +183,11 @@ serve(async (req) => {
           },
         };
 
-        if (invoice.customers?.email) {
+        // Enable saved payment methods if we have a Stripe customer
+        if (stripeCustomerId) {
+          sessionConfig.customer = stripeCustomerId;
+          sessionConfig.payment_method_collection = "always";
+        } else if (invoice.customers?.email) {
           sessionConfig.customer_email = invoice.customers.email;
         }
 
