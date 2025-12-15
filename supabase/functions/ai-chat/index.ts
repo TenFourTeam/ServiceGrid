@@ -3295,6 +3295,82 @@ Deno.serve(async (req) => {
       // and is linked via mediaId in the message metadata
     }
 
+    // ============================================================
+    // MEMORY & CONTEXT PERSISTENCE
+    // ============================================================
+    
+    // Initialize memory context
+    const memoryCtx: MemoryContext = {
+      supabase: supaAdmin,
+      userId,
+      businessId,
+      conversationId: convId,
+    };
+
+    // Load user's memory (entities, preferences, summary)
+    let memory: ConversationMemory;
+    try {
+      memory = await loadMemory(memoryCtx);
+      console.info('[ai-chat] Memory loaded:', {
+        recentEntities: memory.recentEntities.length,
+        preferences: memory.preferences.length,
+        hasSummary: !!memory.conversationSummary
+      });
+    } catch (memErr) {
+      console.error('[ai-chat] Memory load error (non-fatal):', memErr);
+      memory = { recentEntities: [], preferences: [], conversationSummary: null, entityContext: [] };
+    }
+
+    // Extract entities from user message
+    let entityContextStr = '';
+    let preferenceContextStr = '';
+    try {
+      const entityResult = await extractEntitiesFromMessage(message, memoryCtx);
+      entityContextStr = buildEntityContextString(entityResult, memory.recentEntities);
+      
+      // Remember any new entities mentioned
+      for (const entity of entityResult.extracted) {
+        if (entity.id) {
+          await rememberEntity(memoryCtx, {
+            entityType: entity.type as any,
+            entityId: entity.id,
+            entityName: entity.name,
+            contextSnippet: message.slice(0, 100)
+          });
+        }
+      }
+      
+      console.info('[ai-chat] Entities extracted:', entityResult.extracted.length);
+    } catch (entErr) {
+      console.error('[ai-chat] Entity extraction error (non-fatal):', entErr);
+    }
+
+    // Learn preferences from message
+    try {
+      await learnFromMessage(memoryCtx, message);
+    } catch (prefErr) {
+      console.error('[ai-chat] Preference learning error (non-fatal):', prefErr);
+    }
+
+    // Get applicable preferences for context
+    try {
+      const preferences = await getApplicablePreferences(memoryCtx, {
+        action: includeContext?.entityType
+      });
+      preferenceContextStr = buildPreferenceContextString(preferences);
+      console.info('[ai-chat] Applicable preferences:', preferences.length);
+    } catch (prefErr) {
+      console.error('[ai-chat] Preference retrieval error (non-fatal):', prefErr);
+    }
+
+    // Build conversation summary context
+    let summaryContextStr = '';
+    try {
+      summaryContextStr = await buildSummaryContext(memoryCtx);
+    } catch (sumErr) {
+      console.error('[ai-chat] Summary context error (non-fatal):', sumErr);
+    }
+
     // Save user message
     await supaAdmin
       .from('ai_chat_messages')
@@ -3375,6 +3451,13 @@ Deno.serve(async (req) => {
       console.info('[ai-chat] Confirmation needed:', orchestratorResult.confirmationRequest.action);
     }
 
+    // Build memory context section for system prompt
+    const memorySection = [
+      summaryContextStr,
+      entityContextStr,
+      preferenceContextStr
+    ].filter(Boolean).join('\n\n');
+
     // Build the system prompt - use orchestrator's dynamic prompt if available
     const baseSystemPrompt = orchestratorResult.systemPrompt || `You are a proactive AI scheduling assistant for a service business management system.
 You can both QUERY information and TAKE ACTIONS to help manage the business efficiently.${visionNote}
@@ -3382,7 +3465,9 @@ You can both QUERY information and TAKE ACTIONS to help manage the business effi
 Current Context:
 - Business ID: ${businessId}
 - Current Page: ${includeContext?.currentPage || 'unknown'}
-- Date: ${new Date().toISOString().split('T')[0]}`;
+- Date: ${new Date().toISOString().split('T')[0]}
+
+${memorySection ? `MEMORY CONTEXT:\n${memorySection}` : ''}`;
 
     // Add the full tool documentation to the prompt
     const systemPrompt = baseSystemPrompt + `${visionNote}
@@ -3859,6 +3944,13 @@ RESPONSE STYLE:
 
                           const result = await tool.execute(args, context);
                           
+                          // Learn preferences from tool execution
+                          try {
+                            await learnFromToolExecution(memoryCtx, tool.name, args, result);
+                          } catch (learnErr) {
+                            console.error('[ai-chat] Tool learning error (non-fatal):', learnErr);
+                          }
+                          
                           controller.enqueue(
                             encoder.encode(`data: ${JSON.stringify({ 
                               type: 'tool_result', 
@@ -3899,6 +3991,58 @@ RESPONSE STYLE:
               role: 'assistant',
               content: fullResponse
             });
+
+          // Check if conversation needs summarization
+          try {
+            const { data: convData } = await supaAdmin
+              .from('ai_chat_conversations')
+              .select('message_count, last_summarized_at')
+              .eq('id', convId)
+              .single();
+
+            const needsSummary = await shouldSummarize(
+              memoryCtx,
+              convData?.message_count || 0,
+              convData?.last_summarized_at
+            );
+
+            if (needsSummary) {
+              console.info('[ai-chat] Triggering conversation summarization');
+              const { toSummarize } = await getMessagesForSummarization(supaAdmin, convId);
+              
+              if (toSummarize.length > 0) {
+                const summaryPrompt = buildSummarizationPrompt(toSummarize);
+                
+                // Generate summary using AI
+                const summaryResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${lovableApiKey}`,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    model: 'google/gemini-2.5-flash',
+                    messages: [
+                      { role: 'system', content: 'You are a conversation summarizer. Output valid JSON only.' },
+                      { role: 'user', content: summaryPrompt }
+                    ]
+                  }),
+                });
+
+                if (summaryResponse.ok) {
+                  const summaryData = await summaryResponse.json();
+                  const summaryText = summaryData.choices?.[0]?.message?.content;
+                  if (summaryText) {
+                    const parsed = parseSummaryResponse(summaryText);
+                    await storeSummary(memoryCtx, parsed);
+                    console.info('[ai-chat] Conversation summarized successfully');
+                  }
+                }
+              }
+            }
+          } catch (sumErr) {
+            console.error('[ai-chat] Summarization error (non-fatal):', sumErr);
+          }
 
           // Log vision query activity if media was used
           if (mediaIds && mediaIds.length > 0) {
