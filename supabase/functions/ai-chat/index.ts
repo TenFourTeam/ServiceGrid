@@ -1024,6 +1024,1650 @@ const tools: Record<string, Tool> = {
         applied_constraints: refinementConstraints
       };
     }
+  },
+
+  // ============================================
+  // QUOTE DOMAIN TOOLS
+  // ============================================
+
+  create_quote: {
+    name: 'create_quote',
+    description: 'Create a new quote for a customer with line items',
+    parameters: {
+      type: 'object',
+      properties: {
+        customerId: { type: 'string', description: 'Customer ID' },
+        lineItems: { 
+          type: 'array', 
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              qty: { type: 'number' },
+              unit_price: { type: 'number' }
+            }
+          },
+          description: 'Array of line items with name, qty, unit_price'
+        },
+        validDays: { type: 'number', description: 'Days until quote expires (default: 30)' },
+        notes: { type: 'string', description: 'Internal notes' },
+        terms: { type: 'string', description: 'Terms and conditions' }
+      },
+      required: ['customerId', 'lineItems']
+    },
+    execute: async (args: any, context: any) => {
+      // Get next quote number
+      const { data: business } = await context.supabase
+        .from('businesses')
+        .select('est_prefix, est_seq')
+        .eq('id', context.businessId)
+        .single();
+
+      const quoteNumber = `${business?.est_prefix || 'EST'}${String(business?.est_seq || 1).padStart(4, '0')}`;
+
+      // Calculate totals
+      const subtotal = args.lineItems.reduce((sum: number, item: any) => 
+        sum + (item.qty * item.unit_price), 0
+      );
+
+      const validUntil = new Date(Date.now() + (args.validDays || 30) * 24 * 60 * 60 * 1000).toISOString();
+
+      // Create quote
+      const { data: quote, error } = await context.supabase
+        .from('quotes')
+        .insert({
+          business_id: context.businessId,
+          owner_id: context.userId,
+          customer_id: args.customerId,
+          number: quoteNumber,
+          subtotal,
+          total: subtotal,
+          status: 'Draft',
+          valid_until: validUntil,
+          notes: args.notes,
+          terms: args.terms
+        })
+        .select('*, customers(name)')
+        .single();
+
+      if (error) throw error;
+
+      // Create line items
+      if (args.lineItems?.length > 0) {
+        const lineItemsData = args.lineItems.map((item: any, idx: number) => ({
+          quote_id: quote.id,
+          owner_id: context.userId,
+          name: item.name,
+          qty: item.qty || 1,
+          unit_price: item.unit_price,
+          line_total: (item.qty || 1) * item.unit_price,
+          position: idx
+        }));
+
+        await context.supabase.from('quote_line_items').insert(lineItemsData);
+      }
+
+      // Update sequence
+      await context.supabase
+        .from('businesses')
+        .update({ est_seq: (business?.est_seq || 0) + 1 })
+        .eq('id', context.businessId);
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'create',
+        description: `Created quote ${quoteNumber} for ${quote.customers?.name}`,
+        metadata: { tool: 'create_quote', quote_id: quote.id, total: subtotal }
+      });
+
+      return { 
+        success: true, 
+        quote_id: quote.id, 
+        quote_number: quoteNumber,
+        customer_name: quote.customers?.name,
+        total: subtotal 
+      };
+    }
+  },
+
+  get_pending_quotes: {
+    name: 'get_pending_quotes',
+    description: 'Get all quotes awaiting customer response',
+    parameters: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', description: 'Filter by status: Draft, Sent, Approved, Declined' }
+      }
+    },
+    execute: async (args: any, context: any) => {
+      let query = context.supabase
+        .from('quotes')
+        .select('id, number, status, total, valid_until, created_at, customers(name, email)')
+        .eq('business_id', context.businessId)
+        .order('created_at', { ascending: false });
+
+      if (args.status) {
+        query = query.eq('status', args.status);
+      } else {
+        query = query.in('status', ['Draft', 'Sent']);
+      }
+
+      const { data, error } = await query.limit(25);
+      if (error) throw error;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'query',
+        description: `Retrieved ${data?.length || 0} pending quotes`,
+        metadata: { tool: 'get_pending_quotes' }
+      });
+
+      return { 
+        quotes: data || [], 
+        count: data?.length || 0,
+        total_value: data?.reduce((sum: number, q: any) => sum + (q.total || 0), 0) || 0
+      };
+    }
+  },
+
+  send_quote: {
+    name: 'send_quote',
+    description: 'Send a quote to the customer via email',
+    parameters: {
+      type: 'object',
+      properties: {
+        quoteId: { type: 'string', description: 'Quote ID to send' }
+      },
+      required: ['quoteId']
+    },
+    execute: async (args: any, context: any) => {
+      const { data: quote, error: fetchError } = await context.supabase
+        .from('quotes')
+        .select('*, customers(name, email)')
+        .eq('id', args.quoteId)
+        .eq('business_id', context.businessId)
+        .single();
+
+      if (fetchError || !quote) throw new Error('Quote not found');
+
+      // Update status to Sent
+      const { error } = await context.supabase
+        .from('quotes')
+        .update({ status: 'Sent', sent_at: new Date().toISOString() })
+        .eq('id', args.quoteId);
+
+      if (error) throw error;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'send',
+        description: `Sent quote ${quote.number} to ${quote.customers?.email}`,
+        metadata: { tool: 'send_quote', quote_id: args.quoteId }
+      });
+
+      return { 
+        success: true, 
+        quote_number: quote.number,
+        sent_to: quote.customers?.email 
+      };
+    }
+  },
+
+  convert_quote_to_job: {
+    name: 'convert_quote_to_job',
+    description: 'Convert an approved quote into a job/work order',
+    parameters: {
+      type: 'object',
+      properties: {
+        quoteId: { type: 'string', description: 'Quote ID to convert' },
+        scheduleTime: { type: 'string', description: 'Optional schedule time ISO format' }
+      },
+      required: ['quoteId']
+    },
+    execute: async (args: any, context: any) => {
+      const { data: quote } = await context.supabase
+        .from('quotes')
+        .select('*, customers(name, address), quote_line_items(*)')
+        .eq('id', args.quoteId)
+        .single();
+
+      if (!quote) throw new Error('Quote not found');
+
+      const jobData: any = {
+        business_id: context.businessId,
+        owner_id: context.userId,
+        customer_id: quote.customer_id,
+        quote_id: quote.id,
+        title: `Work from Quote ${quote.number}`,
+        notes: quote.notes,
+        address: quote.customers?.address,
+        total: quote.total,
+        status: args.scheduleTime ? 'Scheduled' : 'Unscheduled'
+      };
+
+      if (args.scheduleTime) {
+        jobData.starts_at = args.scheduleTime;
+        jobData.ends_at = new Date(new Date(args.scheduleTime).getTime() + 2 * 60 * 60 * 1000).toISOString();
+      }
+
+      const { data: job, error } = await context.supabase
+        .from('jobs')
+        .insert(jobData)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'convert',
+        description: `Converted quote ${quote.number} to job`,
+        metadata: { tool: 'convert_quote_to_job', quote_id: args.quoteId, job_id: job.id }
+      });
+
+      return { 
+        success: true, 
+        job_id: job.id,
+        quote_number: quote.number,
+        customer_name: quote.customers?.name
+      };
+    }
+  },
+
+  // ============================================
+  // INVOICE DOMAIN TOOLS
+  // ============================================
+
+  create_invoice: {
+    name: 'create_invoice',
+    description: 'Create a new invoice for a customer, optionally from a quote',
+    parameters: {
+      type: 'object',
+      properties: {
+        customerId: { type: 'string', description: 'Customer ID' },
+        quoteId: { type: 'string', description: 'Optional quote ID to create invoice from' },
+        jobId: { type: 'string', description: 'Optional job ID to link' },
+        lineItems: { 
+          type: 'array', 
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              qty: { type: 'number' },
+              unit_price: { type: 'number' }
+            }
+          },
+          description: 'Line items (not needed if creating from quote)'
+        },
+        dueDays: { type: 'number', description: 'Days until due (default: 30)' }
+      },
+      required: ['customerId']
+    },
+    execute: async (args: any, context: any) => {
+      // Get next invoice number
+      const { data: business } = await context.supabase
+        .from('businesses')
+        .select('inv_prefix, inv_seq, tax_rate_default')
+        .eq('id', context.businessId)
+        .single();
+
+      const invoiceNumber = `${business?.inv_prefix || 'INV'}${String(business?.inv_seq || 1).padStart(4, '0')}`;
+
+      let lineItems = args.lineItems || [];
+      
+      // If creating from quote, copy line items
+      if (args.quoteId) {
+        const { data: quote } = await context.supabase
+          .from('quotes')
+          .select('*, quote_line_items(*)')
+          .eq('id', args.quoteId)
+          .single();
+        
+        if (quote?.quote_line_items) {
+          lineItems = quote.quote_line_items.map((li: any) => ({
+            name: li.name,
+            qty: li.qty,
+            unit_price: li.unit_price
+          }));
+        }
+      }
+
+      const subtotal = lineItems.reduce((sum: number, item: any) => 
+        sum + (item.qty * item.unit_price), 0
+      );
+      const taxRate = business?.tax_rate_default || 0;
+      const total = subtotal * (1 + taxRate / 100);
+      const dueAt = new Date(Date.now() + (args.dueDays || 30) * 24 * 60 * 60 * 1000).toISOString();
+
+      const { data: invoice, error } = await context.supabase
+        .from('invoices')
+        .insert({
+          business_id: context.businessId,
+          owner_id: context.userId,
+          customer_id: args.customerId,
+          quote_id: args.quoteId,
+          job_id: args.jobId,
+          number: invoiceNumber,
+          subtotal,
+          tax_rate: taxRate,
+          total,
+          due_at: dueAt,
+          status: 'Draft'
+        })
+        .select('*, customers(name)')
+        .single();
+
+      if (error) throw error;
+
+      // Create line items
+      if (lineItems.length > 0) {
+        const lineItemsData = lineItems.map((item: any, idx: number) => ({
+          invoice_id: invoice.id,
+          owner_id: context.userId,
+          name: item.name,
+          qty: item.qty || 1,
+          unit_price: item.unit_price,
+          line_total: (item.qty || 1) * item.unit_price,
+          position: idx
+        }));
+
+        await context.supabase.from('invoice_line_items').insert(lineItemsData);
+      }
+
+      // Update sequence
+      await context.supabase
+        .from('businesses')
+        .update({ inv_seq: (business?.inv_seq || 0) + 1 })
+        .eq('id', context.businessId);
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'create',
+        description: `Created invoice ${invoiceNumber}`,
+        metadata: { tool: 'create_invoice', invoice_id: invoice.id, total }
+      });
+
+      return { 
+        success: true, 
+        invoice_id: invoice.id, 
+        invoice_number: invoiceNumber,
+        customer_name: invoice.customers?.name,
+        total 
+      };
+    }
+  },
+
+  get_unpaid_invoices: {
+    name: 'get_unpaid_invoices',
+    description: 'Get all unpaid invoices',
+    parameters: {
+      type: 'object',
+      properties: {
+        includeOverdue: { type: 'boolean', description: 'Include overdue status' }
+      }
+    },
+    execute: async (args: any, context: any) => {
+      const { data, error } = await context.supabase
+        .from('invoices')
+        .select('id, number, status, total, due_at, created_at, customers(name, email)')
+        .eq('business_id', context.businessId)
+        .in('status', ['Draft', 'Sent'])
+        .order('due_at', { ascending: true });
+
+      if (error) throw error;
+
+      const now = new Date();
+      const enriched = data?.map((inv: any) => ({
+        ...inv,
+        is_overdue: inv.due_at && new Date(inv.due_at) < now,
+        days_overdue: inv.due_at ? Math.max(0, Math.floor((now.getTime() - new Date(inv.due_at).getTime()) / 86400000)) : 0
+      })) || [];
+
+      const overdueCount = enriched.filter((i: any) => i.is_overdue).length;
+      const totalOutstanding = enriched.reduce((sum: number, i: any) => sum + (i.total || 0), 0);
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'query',
+        description: `Retrieved ${data?.length || 0} unpaid invoices`,
+        metadata: { tool: 'get_unpaid_invoices', overdue: overdueCount }
+      });
+
+      return { 
+        invoices: enriched, 
+        count: enriched.length,
+        overdue_count: overdueCount,
+        total_outstanding: totalOutstanding
+      };
+    }
+  },
+
+  send_invoice: {
+    name: 'send_invoice',
+    description: 'Send an invoice to the customer via email',
+    parameters: {
+      type: 'object',
+      properties: {
+        invoiceId: { type: 'string', description: 'Invoice ID to send' }
+      },
+      required: ['invoiceId']
+    },
+    execute: async (args: any, context: any) => {
+      const { data: invoice } = await context.supabase
+        .from('invoices')
+        .select('*, customers(name, email)')
+        .eq('id', args.invoiceId)
+        .eq('business_id', context.businessId)
+        .single();
+
+      if (!invoice) throw new Error('Invoice not found');
+
+      const { error } = await context.supabase
+        .from('invoices')
+        .update({ status: 'Sent' })
+        .eq('id', args.invoiceId);
+
+      if (error) throw error;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'send',
+        description: `Sent invoice ${invoice.number} to ${invoice.customers?.email}`,
+        metadata: { tool: 'send_invoice', invoice_id: args.invoiceId }
+      });
+
+      return { 
+        success: true, 
+        invoice_number: invoice.number,
+        sent_to: invoice.customers?.email 
+      };
+    }
+  },
+
+  send_invoice_reminder: {
+    name: 'send_invoice_reminder',
+    description: 'Send a payment reminder for an overdue invoice',
+    parameters: {
+      type: 'object',
+      properties: {
+        invoiceId: { type: 'string', description: 'Invoice ID' }
+      },
+      required: ['invoiceId']
+    },
+    execute: async (args: any, context: any) => {
+      const { data: invoice } = await context.supabase
+        .from('invoices')
+        .select('*, customers(name, email)')
+        .eq('id', args.invoiceId)
+        .single();
+
+      if (!invoice) throw new Error('Invoice not found');
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'reminder',
+        description: `Sent payment reminder for invoice ${invoice.number}`,
+        metadata: { tool: 'send_invoice_reminder', invoice_id: args.invoiceId }
+      });
+
+      return { 
+        success: true, 
+        invoice_number: invoice.number,
+        customer: invoice.customers?.name,
+        amount_due: invoice.total
+      };
+    }
+  },
+
+  // ============================================
+  // CUSTOMER DOMAIN TOOLS
+  // ============================================
+
+  create_customer: {
+    name: 'create_customer',
+    description: 'Create a new customer record',
+    parameters: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Customer full name' },
+        email: { type: 'string', description: 'Email address' },
+        phone: { type: 'string', description: 'Phone number' },
+        address: { type: 'string', description: 'Full address' },
+        notes: { type: 'string', description: 'Internal notes' }
+      },
+      required: ['name', 'email']
+    },
+    execute: async (args: any, context: any) => {
+      const { data: customer, error } = await context.supabase
+        .from('customers')
+        .insert({
+          business_id: context.businessId,
+          owner_id: context.userId,
+          name: args.name,
+          email: args.email,
+          phone: args.phone,
+          address: args.address,
+          notes: args.notes
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'create',
+        description: `Created customer: ${args.name}`,
+        metadata: { tool: 'create_customer', customer_id: customer.id }
+      });
+
+      return { success: true, customer_id: customer.id, name: args.name };
+    }
+  },
+
+  search_customers: {
+    name: 'search_customers',
+    description: 'Search for customers by name, email, or phone',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Search query' },
+        limit: { type: 'number', description: 'Max results (default: 10)' }
+      },
+      required: ['query']
+    },
+    execute: async (args: any, context: any) => {
+      const searchQuery = `%${args.query}%`;
+      
+      const { data, error } = await context.supabase
+        .from('customers')
+        .select('id, name, email, phone, address')
+        .eq('business_id', context.businessId)
+        .or(`name.ilike.${searchQuery},email.ilike.${searchQuery},phone.ilike.${searchQuery}`)
+        .limit(args.limit || 10);
+
+      if (error) throw error;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'search',
+        description: `Searched customers: "${args.query}" - ${data?.length || 0} results`,
+        metadata: { tool: 'search_customers', query: args.query }
+      });
+
+      return { customers: data || [], count: data?.length || 0 };
+    }
+  },
+
+  get_customer_history: {
+    name: 'get_customer_history',
+    description: 'Get complete customer history including jobs, quotes, invoices, and payments',
+    parameters: {
+      type: 'object',
+      properties: {
+        customerId: { type: 'string', description: 'Customer ID' }
+      },
+      required: ['customerId']
+    },
+    execute: async (args: any, context: any) => {
+      const { data: customer, error } = await context.supabase
+        .from('customers')
+        .select(`
+          *,
+          jobs(id, title, status, starts_at, total, created_at),
+          quotes(id, number, status, total, created_at),
+          invoices(id, number, status, total, paid_at, created_at)
+        `)
+        .eq('id', args.customerId)
+        .eq('business_id', context.businessId)
+        .single();
+
+      if (error) throw error;
+
+      const totalSpent = customer.invoices
+        ?.filter((i: any) => i.status === 'Paid')
+        .reduce((sum: number, i: any) => sum + (i.total || 0), 0) || 0;
+
+      const outstandingBalance = customer.invoices
+        ?.filter((i: any) => i.status !== 'Paid')
+        .reduce((sum: number, i: any) => sum + (i.total || 0), 0) || 0;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'query',
+        description: `Retrieved history for ${customer.name}`,
+        metadata: { tool: 'get_customer_history', customer_id: args.customerId }
+      });
+
+      return {
+        customer: {
+          id: customer.id,
+          name: customer.name,
+          email: customer.email,
+          phone: customer.phone,
+          address: customer.address
+        },
+        stats: {
+          total_jobs: customer.jobs?.length || 0,
+          total_quotes: customer.quotes?.length || 0,
+          total_invoices: customer.invoices?.length || 0,
+          total_spent: totalSpent,
+          outstanding_balance: outstandingBalance
+        },
+        recent_jobs: customer.jobs?.slice(0, 5) || [],
+        recent_invoices: customer.invoices?.slice(0, 5) || []
+      };
+    }
+  },
+
+  invite_to_portal: {
+    name: 'invite_to_portal',
+    description: 'Send a customer portal invitation to a customer',
+    parameters: {
+      type: 'object',
+      properties: {
+        customerId: { type: 'string', description: 'Customer ID to invite' }
+      },
+      required: ['customerId']
+    },
+    execute: async (args: any, context: any) => {
+      const { data: customer } = await context.supabase
+        .from('customers')
+        .select('name, email')
+        .eq('id', args.customerId)
+        .single();
+
+      if (!customer) throw new Error('Customer not found');
+
+      // Check for existing invite
+      const { data: existingInvite } = await context.supabase
+        .from('customer_portal_invites')
+        .select('id')
+        .eq('customer_id', args.customerId)
+        .is('accepted_at', null)
+        .single();
+
+      if (existingInvite) {
+        return { 
+          success: false, 
+          message: 'Customer already has a pending invite',
+          customer_name: customer.name
+        };
+      }
+
+      // Create invite
+      const { error } = await context.supabase
+        .from('customer_portal_invites')
+        .insert({
+          business_id: context.businessId,
+          customer_id: args.customerId,
+          email: customer.email,
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        });
+
+      if (error) throw error;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'invite',
+        description: `Sent portal invite to ${customer.name}`,
+        metadata: { tool: 'invite_to_portal', customer_id: args.customerId }
+      });
+
+      return { 
+        success: true, 
+        customer_name: customer.name,
+        invited_email: customer.email 
+      };
+    }
+  },
+
+  // ============================================
+  // PAYMENT DOMAIN TOOLS
+  // ============================================
+
+  record_payment: {
+    name: 'record_payment',
+    description: 'Record a manual payment (cash, check, etc.) for an invoice',
+    parameters: {
+      type: 'object',
+      properties: {
+        invoiceId: { type: 'string', description: 'Invoice ID' },
+        amount: { type: 'number', description: 'Payment amount' },
+        method: { type: 'string', description: 'Payment method: cash, check, bank_transfer, other' },
+        reference: { type: 'string', description: 'Reference number (check number, etc.)' }
+      },
+      required: ['invoiceId', 'amount', 'method']
+    },
+    execute: async (args: any, context: any) => {
+      const { data: invoice } = await context.supabase
+        .from('invoices')
+        .select('number, total, customers(name)')
+        .eq('id', args.invoiceId)
+        .single();
+
+      if (!invoice) throw new Error('Invoice not found');
+
+      const { error } = await context.supabase
+        .from('payments')
+        .insert({
+          invoice_id: args.invoiceId,
+          owner_id: context.userId,
+          amount: args.amount,
+          method: args.method,
+          last4: args.reference,
+          status: 'succeeded',
+          received_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
+      // Check if fully paid
+      if (args.amount >= invoice.total) {
+        await context.supabase
+          .from('invoices')
+          .update({ status: 'Paid', paid_at: new Date().toISOString() })
+          .eq('id', args.invoiceId);
+      }
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'payment',
+        description: `Recorded ${args.method} payment of $${args.amount} for invoice ${invoice.number}`,
+        metadata: { tool: 'record_payment', invoice_id: args.invoiceId, amount: args.amount }
+      });
+
+      return { 
+        success: true, 
+        invoice_number: invoice.number,
+        amount: args.amount,
+        method: args.method,
+        fully_paid: args.amount >= invoice.total
+      };
+    }
+  },
+
+  get_payment_history: {
+    name: 'get_payment_history',
+    description: 'Get payment history for a customer or invoice',
+    parameters: {
+      type: 'object',
+      properties: {
+        customerId: { type: 'string', description: 'Filter by customer' },
+        invoiceId: { type: 'string', description: 'Filter by invoice' },
+        limit: { type: 'number', description: 'Max results (default: 20)' }
+      }
+    },
+    execute: async (args: any, context: any) => {
+      let query = context.supabase
+        .from('payments')
+        .select('*, invoices(number, customer_id, customers(name))')
+        .order('received_at', { ascending: false })
+        .limit(args.limit || 20);
+
+      if (args.invoiceId) {
+        query = query.eq('invoice_id', args.invoiceId);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      let filtered = data || [];
+      if (args.customerId) {
+        filtered = filtered.filter((p: any) => p.invoices?.customer_id === args.customerId);
+      }
+
+      const totalReceived = filtered.reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'query',
+        description: `Retrieved ${filtered.length} payment records`,
+        metadata: { tool: 'get_payment_history' }
+      });
+
+      return { 
+        payments: filtered, 
+        count: filtered.length,
+        total_received: totalReceived
+      };
+    }
+  },
+
+  // ============================================
+  // RECURRING BILLING TOOLS
+  // ============================================
+
+  get_recurring_schedules: {
+    name: 'get_recurring_schedules',
+    description: 'Get all recurring billing schedules',
+    parameters: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', description: 'Filter by status: active, paused, canceled' }
+      }
+    },
+    execute: async (args: any, context: any) => {
+      let query = context.supabase
+        .from('recurring_schedules')
+        .select('*, quotes(number, total, customers(name))')
+        .eq('business_id', context.businessId)
+        .order('next_billing_date', { ascending: true });
+
+      if (args.status) {
+        query = query.eq('status', args.status);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'query',
+        description: `Retrieved ${data?.length || 0} recurring schedules`,
+        metadata: { tool: 'get_recurring_schedules' }
+      });
+
+      return { schedules: data || [], count: data?.length || 0 };
+    }
+  },
+
+  pause_subscription: {
+    name: 'pause_subscription',
+    description: 'Pause a recurring billing schedule',
+    parameters: {
+      type: 'object',
+      properties: {
+        scheduleId: { type: 'string', description: 'Recurring schedule ID' },
+        reason: { type: 'string', description: 'Reason for pausing' }
+      },
+      required: ['scheduleId']
+    },
+    execute: async (args: any, context: any) => {
+      const { data: schedule } = await context.supabase
+        .from('recurring_schedules')
+        .select('*, quotes(number, customers(name))')
+        .eq('id', args.scheduleId)
+        .single();
+
+      if (!schedule) throw new Error('Schedule not found');
+
+      const { error } = await context.supabase
+        .from('recurring_schedules')
+        .update({ status: 'paused' })
+        .eq('id', args.scheduleId);
+
+      if (error) throw error;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'update',
+        description: `Paused recurring schedule for ${schedule.quotes?.customers?.name}`,
+        metadata: { tool: 'pause_subscription', schedule_id: args.scheduleId, reason: args.reason }
+      });
+
+      return { 
+        success: true, 
+        customer_name: schedule.quotes?.customers?.name,
+        quote_number: schedule.quotes?.number
+      };
+    }
+  },
+
+  resume_subscription: {
+    name: 'resume_subscription',
+    description: 'Resume a paused recurring billing schedule',
+    parameters: {
+      type: 'object',
+      properties: {
+        scheduleId: { type: 'string', description: 'Recurring schedule ID' }
+      },
+      required: ['scheduleId']
+    },
+    execute: async (args: any, context: any) => {
+      const { data: schedule } = await context.supabase
+        .from('recurring_schedules')
+        .select('*, quotes(number, customers(name))')
+        .eq('id', args.scheduleId)
+        .single();
+
+      if (!schedule) throw new Error('Schedule not found');
+
+      const { error } = await context.supabase
+        .from('recurring_schedules')
+        .update({ status: 'active' })
+        .eq('id', args.scheduleId);
+
+      if (error) throw error;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'update',
+        description: `Resumed recurring schedule for ${schedule.quotes?.customers?.name}`,
+        metadata: { tool: 'resume_subscription', schedule_id: args.scheduleId }
+      });
+
+      return { 
+        success: true, 
+        customer_name: schedule.quotes?.customers?.name,
+        next_billing_date: schedule.next_billing_date
+      };
+    }
+  },
+
+  // ============================================
+  // TEAM & TIME TRACKING TOOLS
+  // ============================================
+
+  get_team_members: {
+    name: 'get_team_members',
+    description: 'Get all team members with their roles and status',
+    parameters: {
+      type: 'object',
+      properties: {}
+    },
+    execute: async (args: any, context: any) => {
+      const { data, error } = await context.supabase
+        .from('business_permissions')
+        .select('user_id, granted_at, profiles(id, full_name, email)')
+        .eq('business_id', context.businessId);
+
+      if (error) throw error;
+
+      // Get owner info
+      const { data: business } = await context.supabase
+        .from('businesses')
+        .select('owner_id')
+        .eq('id', context.businessId)
+        .single();
+
+      const members = data?.map((m: any) => ({
+        id: m.user_id,
+        name: m.profiles?.full_name || m.profiles?.email,
+        email: m.profiles?.email,
+        is_owner: m.user_id === business?.owner_id,
+        joined_at: m.granted_at
+      })) || [];
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'query',
+        description: `Retrieved ${members.length} team members`,
+        metadata: { tool: 'get_team_members' }
+      });
+
+      return { members, count: members.length };
+    }
+  },
+
+  get_team_utilization: {
+    name: 'get_team_utilization',
+    description: 'Get team workload utilization for a date range',
+    parameters: {
+      type: 'object',
+      properties: {
+        startDate: { type: 'string', description: 'Start date YYYY-MM-DD' },
+        endDate: { type: 'string', description: 'End date YYYY-MM-DD' }
+      },
+      required: ['startDate', 'endDate']
+    },
+    execute: async (args: any, context: any) => {
+      // Get team members
+      const { data: members } = await context.supabase
+        .from('business_permissions')
+        .select('user_id, profiles(full_name)')
+        .eq('business_id', context.businessId);
+
+      // Get job assignments in range
+      const { data: assignments } = await context.supabase
+        .from('job_assignments')
+        .select('user_id, jobs(starts_at, ends_at, estimated_duration_minutes, status)')
+        .in('user_id', members?.map((m: any) => m.user_id) || [])
+        .gte('jobs.starts_at', `${args.startDate}T00:00:00Z`)
+        .lte('jobs.starts_at', `${args.endDate}T23:59:59Z`);
+
+      // Calculate utilization per member
+      const days = Math.ceil((new Date(args.endDate).getTime() - new Date(args.startDate).getTime()) / 86400000) + 1;
+      const availableHoursPerMember = days * 8;
+
+      const utilization = members?.map((m: any) => {
+        const memberAssignments = assignments?.filter((a: any) => a.user_id === m.user_id) || [];
+        const scheduledHours = memberAssignments.reduce((sum: number, a: any) => 
+          sum + (a.jobs?.estimated_duration_minutes || 60) / 60, 0
+        );
+        
+        return {
+          member_id: m.user_id,
+          member_name: m.profiles?.full_name,
+          job_count: memberAssignments.length,
+          scheduled_hours: Math.round(scheduledHours * 10) / 10,
+          available_hours: availableHoursPerMember,
+          utilization_percent: Math.round((scheduledHours / availableHoursPerMember) * 100)
+        };
+      }) || [];
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'query',
+        description: `Calculated team utilization for ${args.startDate} to ${args.endDate}`,
+        metadata: { tool: 'get_team_utilization' }
+      });
+
+      return { 
+        date_range: { start: args.startDate, end: args.endDate },
+        utilization,
+        average_utilization: Math.round(utilization.reduce((sum, u) => sum + u.utilization_percent, 0) / utilization.length)
+      };
+    }
+  },
+
+  get_active_clockins: {
+    name: 'get_active_clockins',
+    description: 'Get team members currently clocked in',
+    parameters: {
+      type: 'object',
+      properties: {}
+    },
+    execute: async (args: any, context: any) => {
+      const { data, error } = await context.supabase
+        .from('timesheet_entries')
+        .select('*, profiles(full_name), jobs(title, customers(name))')
+        .eq('business_id', context.businessId)
+        .is('clock_out', null);
+
+      if (error) throw error;
+
+      const active = data?.map((entry: any) => ({
+        entry_id: entry.id,
+        member_name: entry.profiles?.full_name,
+        clocked_in_at: entry.clock_in,
+        job_title: entry.jobs?.title,
+        customer_name: entry.jobs?.customers?.name,
+        hours_elapsed: Math.round((Date.now() - new Date(entry.clock_in).getTime()) / 3600000 * 10) / 10
+      })) || [];
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'query',
+        description: `Retrieved ${active.length} active clock-ins`,
+        metadata: { tool: 'get_active_clockins' }
+      });
+
+      return { active_clockins: active, count: active.length };
+    }
+  },
+
+  get_timesheet_summary: {
+    name: 'get_timesheet_summary',
+    description: 'Get timesheet summary for a date range',
+    parameters: {
+      type: 'object',
+      properties: {
+        startDate: { type: 'string', description: 'Start date YYYY-MM-DD' },
+        endDate: { type: 'string', description: 'End date YYYY-MM-DD' },
+        userId: { type: 'string', description: 'Optional specific user' }
+      },
+      required: ['startDate', 'endDate']
+    },
+    execute: async (args: any, context: any) => {
+      let query = context.supabase
+        .from('timesheet_entries')
+        .select('*, profiles(full_name), jobs(title)')
+        .eq('business_id', context.businessId)
+        .gte('clock_in', `${args.startDate}T00:00:00Z`)
+        .lte('clock_in', `${args.endDate}T23:59:59Z`)
+        .not('clock_out', 'is', null);
+
+      if (args.userId) {
+        query = query.eq('user_id', args.userId);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      // Calculate totals by user
+      const byUser: Record<string, { name: string, hours: number, entries: number }> = {};
+      
+      for (const entry of data || []) {
+        const userId = entry.user_id;
+        const hours = (new Date(entry.clock_out).getTime() - new Date(entry.clock_in).getTime()) / 3600000;
+        
+        if (!byUser[userId]) {
+          byUser[userId] = { 
+            name: entry.profiles?.full_name || 'Unknown', 
+            hours: 0, 
+            entries: 0 
+          };
+        }
+        byUser[userId].hours += hours;
+        byUser[userId].entries += 1;
+      }
+
+      const summary = Object.entries(byUser).map(([id, data]) => ({
+        user_id: id,
+        name: data.name,
+        total_hours: Math.round(data.hours * 10) / 10,
+        entry_count: data.entries
+      }));
+
+      const totalHours = summary.reduce((sum, s) => sum + s.total_hours, 0);
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'query',
+        description: `Retrieved timesheet summary: ${Math.round(totalHours)} total hours`,
+        metadata: { tool: 'get_timesheet_summary' }
+      });
+
+      return { 
+        date_range: { start: args.startDate, end: args.endDate },
+        by_user: summary,
+        total_hours: Math.round(totalHours * 10) / 10,
+        total_entries: data?.length || 0
+      };
+    }
+  },
+
+  // ============================================
+  // CHECKLIST DOMAIN TOOLS
+  // ============================================
+
+  get_checklist_templates: {
+    name: 'get_checklist_templates',
+    description: 'Get all available checklist templates',
+    parameters: {
+      type: 'object',
+      properties: {
+        includeSystem: { type: 'boolean', description: 'Include system templates' }
+      }
+    },
+    execute: async (args: any, context: any) => {
+      let query = context.supabase
+        .from('sg_checklist_templates')
+        .select('*, sg_checklist_template_items(count)')
+        .or(`business_id.eq.${context.businessId},is_system_template.eq.true`)
+        .eq('is_archived', false);
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'query',
+        description: `Retrieved ${data?.length || 0} checklist templates`,
+        metadata: { tool: 'get_checklist_templates' }
+      });
+
+      return { templates: data || [], count: data?.length || 0 };
+    }
+  },
+
+  assign_checklist_to_job: {
+    name: 'assign_checklist_to_job',
+    description: 'Assign a checklist template to a job',
+    parameters: {
+      type: 'object',
+      properties: {
+        jobId: { type: 'string', description: 'Job ID' },
+        templateId: { type: 'string', description: 'Checklist template ID' }
+      },
+      required: ['jobId', 'templateId']
+    },
+    execute: async (args: any, context: any) => {
+      // Get template with items
+      const { data: template } = await context.supabase
+        .from('sg_checklist_templates')
+        .select('*, sg_checklist_template_items(*)')
+        .eq('id', args.templateId)
+        .single();
+
+      if (!template) throw new Error('Template not found');
+
+      // Get job info
+      const { data: job } = await context.supabase
+        .from('jobs')
+        .select('title, customers(name)')
+        .eq('id', args.jobId)
+        .single();
+
+      // Create checklist instance
+      const { data: checklist, error } = await context.supabase
+        .from('sg_checklists')
+        .insert({
+          business_id: context.businessId,
+          job_id: args.jobId,
+          template_id: args.templateId,
+          name: template.name,
+          created_by: context.userId
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Create checklist items from template
+      if (template.sg_checklist_template_items?.length > 0) {
+        const items = template.sg_checklist_template_items.map((ti: any) => ({
+          checklist_id: checklist.id,
+          name: ti.name,
+          description: ti.description,
+          position: ti.position,
+          is_required: ti.is_required
+        }));
+
+        await context.supabase.from('sg_checklist_items').insert(items);
+      }
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'assign',
+        description: `Assigned checklist "${template.name}" to job`,
+        metadata: { tool: 'assign_checklist_to_job', job_id: args.jobId, template_id: args.templateId }
+      });
+
+      return { 
+        success: true, 
+        checklist_id: checklist.id,
+        template_name: template.name,
+        job_title: job?.title,
+        item_count: template.sg_checklist_template_items?.length || 0
+      };
+    }
+  },
+
+  get_job_checklist_progress: {
+    name: 'get_job_checklist_progress',
+    description: 'Get checklist completion progress for a job',
+    parameters: {
+      type: 'object',
+      properties: {
+        jobId: { type: 'string', description: 'Job ID' }
+      },
+      required: ['jobId']
+    },
+    execute: async (args: any, context: any) => {
+      const { data: checklists, error } = await context.supabase
+        .from('sg_checklists')
+        .select('*, sg_checklist_items(*)')
+        .eq('job_id', args.jobId);
+
+      if (error) throw error;
+
+      const progress = checklists?.map((cl: any) => {
+        const items = cl.sg_checklist_items || [];
+        const completed = items.filter((i: any) => i.is_completed).length;
+        
+        return {
+          checklist_id: cl.id,
+          name: cl.name,
+          total_items: items.length,
+          completed_items: completed,
+          completion_percent: items.length > 0 ? Math.round((completed / items.length) * 100) : 0
+        };
+      }) || [];
+
+      const overallCompletion = progress.length > 0
+        ? Math.round(progress.reduce((sum, p) => sum + p.completion_percent, 0) / progress.length)
+        : 0;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'query',
+        description: `Retrieved checklist progress for job: ${overallCompletion}% complete`,
+        metadata: { tool: 'get_job_checklist_progress', job_id: args.jobId }
+      });
+
+      return { 
+        checklists: progress, 
+        overall_completion: overallCompletion
+      };
+    }
+  },
+
+  // ============================================
+  // JOB ENHANCEMENT TOOLS
+  // ============================================
+
+  add_job_note: {
+    name: 'add_job_note',
+    description: 'Add a note to a job',
+    parameters: {
+      type: 'object',
+      properties: {
+        jobId: { type: 'string', description: 'Job ID' },
+        note: { type: 'string', description: 'Note content to add' }
+      },
+      required: ['jobId', 'note']
+    },
+    execute: async (args: any, context: any) => {
+      const { data: job } = await context.supabase
+        .from('jobs')
+        .select('notes, title')
+        .eq('id', args.jobId)
+        .single();
+
+      if (!job) throw new Error('Job not found');
+
+      const timestamp = new Date().toLocaleString();
+      const newNote = `[${timestamp}] ${args.note}`;
+      const updatedNotes = job.notes ? `${job.notes}\n\n${newNote}` : newNote;
+
+      const { error } = await context.supabase
+        .from('jobs')
+        .update({ notes: updatedNotes })
+        .eq('id', args.jobId);
+
+      if (error) throw error;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'note',
+        description: `Added note to job: ${job.title}`,
+        metadata: { tool: 'add_job_note', job_id: args.jobId }
+      });
+
+      return { success: true, job_title: job.title };
+    }
+  },
+
+  assign_job_to_member: {
+    name: 'assign_job_to_member',
+    description: 'Assign a team member to a job',
+    parameters: {
+      type: 'object',
+      properties: {
+        jobId: { type: 'string', description: 'Job ID' },
+        userId: { type: 'string', description: 'Team member user ID' }
+      },
+      required: ['jobId', 'userId']
+    },
+    execute: async (args: any, context: any) => {
+      // Verify job belongs to business
+      const { data: job } = await context.supabase
+        .from('jobs')
+        .select('title')
+        .eq('id', args.jobId)
+        .eq('business_id', context.businessId)
+        .single();
+
+      if (!job) throw new Error('Job not found');
+
+      // Get member name
+      const { data: member } = await context.supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', args.userId)
+        .single();
+
+      // Check for existing assignment
+      const { data: existing } = await context.supabase
+        .from('job_assignments')
+        .select('id')
+        .eq('job_id', args.jobId)
+        .eq('user_id', args.userId)
+        .single();
+
+      if (existing) {
+        return { 
+          success: false, 
+          message: 'Member is already assigned to this job' 
+        };
+      }
+
+      const { error } = await context.supabase
+        .from('job_assignments')
+        .insert({
+          job_id: args.jobId,
+          user_id: args.userId,
+          assigned_by: context.userId
+        });
+
+      if (error) throw error;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'assign',
+        description: `Assigned ${member?.full_name} to ${job.title}`,
+        metadata: { tool: 'assign_job_to_member', job_id: args.jobId, assigned_user_id: args.userId }
+      });
+
+      return { 
+        success: true, 
+        job_title: job.title,
+        assigned_to: member?.full_name
+      };
+    }
+  },
+
+  get_job_timeline: {
+    name: 'get_job_timeline',
+    description: 'Get complete activity timeline for a job',
+    parameters: {
+      type: 'object',
+      properties: {
+        jobId: { type: 'string', description: 'Job ID' }
+      },
+      required: ['jobId']
+    },
+    execute: async (args: any, context: any) => {
+      const { data: job, error } = await context.supabase
+        .from('jobs')
+        .select(`
+          *,
+          customers(name),
+          job_assignments(created_at, profiles(full_name)),
+          invoices(id, number, status, created_at),
+          sg_checklists(id, name, sg_checklist_items(is_completed, completed_at))
+        `)
+        .eq('id', args.jobId)
+        .single();
+
+      if (error) throw error;
+
+      // Build timeline events
+      const events: any[] = [];
+
+      // Job created
+      events.push({
+        type: 'created',
+        timestamp: job.created_at,
+        description: `Job created for ${job.customers?.name}`
+      });
+
+      // Status changes (simplified - just current status)
+      if (job.starts_at) {
+        events.push({
+          type: 'scheduled',
+          timestamp: job.starts_at,
+          description: `Scheduled for ${new Date(job.starts_at).toLocaleDateString()}`
+        });
+      }
+
+      // Assignments
+      for (const assignment of job.job_assignments || []) {
+        events.push({
+          type: 'assigned',
+          timestamp: assignment.created_at,
+          description: `${assignment.profiles?.full_name} assigned`
+        });
+      }
+
+      // Invoices
+      for (const invoice of job.invoices || []) {
+        events.push({
+          type: 'invoice',
+          timestamp: invoice.created_at,
+          description: `Invoice ${invoice.number} created (${invoice.status})`
+        });
+      }
+
+      // Sort by timestamp
+      events.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'query',
+        description: `Retrieved timeline for job: ${job.title}`,
+        metadata: { tool: 'get_job_timeline', job_id: args.jobId }
+      });
+
+      return { 
+        job: {
+          id: job.id,
+          title: job.title,
+          status: job.status,
+          customer: job.customers?.name
+        },
+        timeline: events,
+        event_count: events.length
+      };
+    }
+  },
+
+  get_requests_pending: {
+    name: 'get_requests_pending',
+    description: 'Get pending service requests that need attention',
+    parameters: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', description: 'Filter by status: New, In Review, Scheduled' }
+      }
+    },
+    execute: async (args: any, context: any) => {
+      let query = context.supabase
+        .from('requests')
+        .select('*, customers(name, email, phone)')
+        .eq('business_id', context.businessId)
+        .order('created_at', { ascending: false });
+
+      if (args.status) {
+        query = query.eq('status', args.status);
+      } else {
+        query = query.in('status', ['New', 'In Review']);
+      }
+
+      const { data, error } = await query.limit(25);
+      if (error) throw error;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'query',
+        description: `Retrieved ${data?.length || 0} pending requests`,
+        metadata: { tool: 'get_requests_pending' }
+      });
+
+      return { requests: data || [], count: data?.length || 0 };
+    }
+  },
+
+  get_business_metrics: {
+    name: 'get_business_metrics',
+    description: 'Get key business metrics and KPIs',
+    parameters: {
+      type: 'object',
+      properties: {
+        period: { type: 'string', description: 'Period: today, week, month, year' }
+      }
+    },
+    execute: async (args: any, context: any) => {
+      const period = args.period || 'month';
+      let startDate: Date;
+      
+      switch (period) {
+        case 'today':
+          startDate = new Date();
+          startDate.setHours(0, 0, 0, 0);
+          break;
+        case 'week':
+          startDate = new Date();
+          startDate.setDate(startDate.getDate() - 7);
+          break;
+        case 'year':
+          startDate = new Date();
+          startDate.setFullYear(startDate.getFullYear() - 1);
+          break;
+        default: // month
+          startDate = new Date();
+          startDate.setMonth(startDate.getMonth() - 1);
+      }
+
+      const [jobsRes, quotesRes, invoicesRes, paymentsRes] = await Promise.all([
+        context.supabase
+          .from('jobs')
+          .select('id, status, total', { count: 'exact' })
+          .eq('business_id', context.businessId)
+          .gte('created_at', startDate.toISOString()),
+        context.supabase
+          .from('quotes')
+          .select('id, status, total', { count: 'exact' })
+          .eq('business_id', context.businessId)
+          .gte('created_at', startDate.toISOString()),
+        context.supabase
+          .from('invoices')
+          .select('id, status, total', { count: 'exact' })
+          .eq('business_id', context.businessId)
+          .gte('created_at', startDate.toISOString()),
+        context.supabase
+          .from('payments')
+          .select('amount')
+          .gte('received_at', startDate.toISOString())
+      ]);
+
+      const completedJobs = jobsRes.data?.filter((j: any) => j.status === 'Completed').length || 0;
+      const approvedQuotes = quotesRes.data?.filter((q: any) => q.status === 'Approved').length || 0;
+      const paidInvoices = invoicesRes.data?.filter((i: any) => i.status === 'Paid').length || 0;
+      const totalRevenue = paymentsRes.data?.reduce((sum: number, p: any) => sum + (p.amount || 0), 0) || 0;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'query',
+        description: `Retrieved business metrics for ${period}`,
+        metadata: { tool: 'get_business_metrics', period }
+      });
+
+      return {
+        period,
+        metrics: {
+          jobs_created: jobsRes.count || 0,
+          jobs_completed: completedJobs,
+          quotes_sent: quotesRes.count || 0,
+          quotes_approved: approvedQuotes,
+          quote_conversion_rate: quotesRes.count ? Math.round((approvedQuotes / quotesRes.count) * 100) : 0,
+          invoices_created: invoicesRes.count || 0,
+          invoices_paid: paidInvoices,
+          total_revenue: totalRevenue
+        }
+      };
+    }
   }
 };
 
@@ -1249,20 +2893,27 @@ Current Context:
     // Add the full tool documentation to the prompt
     const systemPrompt = baseSystemPrompt + `${visionNote}
 
-Available Tools:
-1. get_unscheduled_jobs - Find jobs that need scheduling
-2. check_team_availability - Check who's free at specific times
-3. get_schedule_summary - Overview of jobs in date range
-4. auto_schedule_job - Schedule single job with basic optimization
-5. batch_schedule_jobs - ⭐ SMART BATCH SCHEDULER - Schedule multiple jobs at once with full AI optimization
-6. refine_schedule - ⭐ INTELLIGENT REFINEMENT - Adjust schedule based on user feedback
-7. create_job_from_request - Convert service request to job
-8. optimize_route_for_date - Optimize job order for efficiency
-9. get_scheduling_conflicts - Find overlapping bookings
-10. get_customer_details - Get customer history and info
-11. update_job_status - Change job status
-12. get_capacity_forecast - Predict workload and availability
-13. reschedule_job - Move job to different time
+Available Tools (50+ tools across all domains):
+
+SCHEDULING: get_unscheduled_jobs, check_team_availability, get_schedule_summary, auto_schedule_job, batch_schedule_jobs, refine_schedule, optimize_route_for_date, get_scheduling_conflicts, reschedule_job, get_capacity_forecast
+
+QUOTES: create_quote, get_pending_quotes, send_quote, convert_quote_to_job
+
+INVOICES: create_invoice, get_unpaid_invoices, send_invoice, send_invoice_reminder
+
+CUSTOMERS: create_customer, search_customers, get_customer_details, get_customer_history, invite_to_portal
+
+PAYMENTS: record_payment, get_payment_history
+
+RECURRING: get_recurring_schedules, pause_subscription, resume_subscription
+
+TEAM: get_team_members, get_team_utilization, get_active_clockins, get_timesheet_summary
+
+CHECKLISTS: get_checklist_templates, assign_checklist_to_job, get_job_checklist_progress
+
+JOBS: update_job_status, create_job_from_request, add_job_note, assign_job_to_member, get_job_timeline
+
+OTHER: get_requests_pending, get_business_metrics
 
 SCHEDULING WORKFLOW (IMPORTANT):
 When user asks to schedule jobs, follow this flow:
