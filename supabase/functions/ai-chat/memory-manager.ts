@@ -59,10 +59,13 @@ export async function rememberEntity(
     messageId?: string;
   }
 ): Promise<void> {
-  if (!ctx.conversationId) return;
+  if (!ctx.conversationId) {
+    console.warn('[MemoryManager] Cannot remember entity - no conversationId');
+    return;
+  }
 
   try {
-    await ctx.supabase
+    const { data, error } = await ctx.supabase
       .from('ai_memory_entity_refs')
       .insert({
         conversation_id: ctx.conversationId,
@@ -74,9 +77,17 @@ export async function rememberEntity(
         context_snippet: entity.contextSnippet || null,
         message_id: entity.messageId || null,
         mentioned_at: new Date().toISOString(),
-      });
+      })
+      .select('id')
+      .single();
+
+    if (error) {
+      console.error('[MemoryManager] Failed to remember entity:', error.message, error.code);
+    } else {
+      console.info('[MemoryManager] Remembered entity:', entity.entityType, entity.entityId, '-> id:', data?.id);
+    }
   } catch (error) {
-    console.error('[MemoryManager] Failed to remember entity:', error);
+    console.error('[MemoryManager] Failed to remember entity (exception):', error);
   }
 }
 
@@ -261,14 +272,19 @@ export async function learnPreference(
 ): Promise<void> {
   try {
     // Check if preference already exists
-    const { data: existing } = await ctx.supabase
+    const { data: existing, error: fetchError } = await ctx.supabase
       .from('ai_memory_preferences')
       .select('*')
       .eq('user_id', ctx.userId)
       .eq('business_id', ctx.businessId)
       .eq('preference_type', preference.type)
       .eq('preference_key', preference.key)
-      .single();
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error('[MemoryManager] Failed to fetch existing preference:', fetchError.message);
+      return;
+    }
 
     if (existing) {
       // Update existing preference
@@ -277,7 +293,7 @@ export async function learnPreference(
         parseFloat(existing.confidence) + (preference.confidenceBoost || 0.1)
       );
       
-      await ctx.supabase
+      const { error: updateError } = await ctx.supabase
         .from('ai_memory_preferences')
         .update({
           preference_value: preference.value,
@@ -288,13 +304,19 @@ export async function learnPreference(
           updated_at: new Date().toISOString(),
         })
         .eq('id', existing.id);
+
+      if (updateError) {
+        console.error('[MemoryManager] Failed to update preference:', updateError.message);
+      } else {
+        console.info('[MemoryManager] Updated preference:', preference.type, preference.key);
+      }
     } else {
       // Create new preference
       const initialConfidence = preference.learnedFrom === 'explicit' ? 0.8 
         : preference.learnedFrom === 'confirmed' ? 0.9 
         : 0.5;
 
-      await ctx.supabase
+      const { data, error: insertError } = await ctx.supabase
         .from('ai_memory_preferences')
         .insert({
           user_id: ctx.userId,
@@ -306,10 +328,18 @@ export async function learnPreference(
           learned_from: preference.learnedFrom,
           occurrence_count: 1,
           last_used_at: new Date().toISOString(),
-        });
+        })
+        .select('id')
+        .single();
+
+      if (insertError) {
+        console.error('[MemoryManager] Failed to insert preference:', insertError.message, insertError.code);
+      } else {
+        console.info('[MemoryManager] Learned new preference:', preference.type, preference.key, '-> id:', data?.id);
+      }
     }
   } catch (error) {
-    console.error('[MemoryManager] Failed to learn preference:', error);
+    console.error('[MemoryManager] Failed to learn preference (exception):', error);
   }
 }
 

@@ -10,9 +10,13 @@ import {
   sendStepProgress,
   sendPlanCancelled,
   storePendingPlan,
+  storePendingPlanAsync,
   getPendingPlan,
+  getPendingPlanAsync,
   getMostRecentPendingPlan,
+  getMostRecentPendingPlanAsync,
   removePendingPlan,
+  removePendingPlanAsync,
   detectPlanApproval,
   type ExecutionPlan,
   type ExecutionContext,
@@ -3328,19 +3332,12 @@ Deno.serve(async (req) => {
       const entityResult = await extractEntitiesFromMessage(message, memoryCtx);
       entityContextStr = buildEntityContextString(entityResult, memory.recentEntities);
       
-      // Remember any new entities mentioned
-      for (const entity of entityResult.extracted) {
-        if (entity.id) {
-          await rememberEntity(memoryCtx, {
-            entityType: entity.type as any,
-            entityId: entity.id,
-            entityName: entity.name,
-            contextSnippet: message.slice(0, 100)
-          });
-        }
-      }
+      // Note: extractEntitiesFromMessage already calls rememberEntity internally
+      // for resolved entities, so we don't need to call it again here
       
-      console.info('[ai-chat] Entities extracted:', entityResult.extracted.length);
+      console.info('[ai-chat] Entities extracted:', entityResult.entities.length, 
+        'resolved:', entityResult.resolvedEntities.size,
+        'unresolved pronouns:', entityResult.hasUnresolvedPronouns);
     } catch (entErr) {
       console.error('[ai-chat] Entity extraction error (non-fatal):', entErr);
     }
@@ -3639,15 +3636,24 @@ RESPONSE STYLE:
           
           if (planApproval.isApproval) {
             // User approved a plan - execute it
-            const pendingPlanData = planApproval.planId 
+            // Try async DB lookup first, fall back to cache
+            let pendingPlanData = planApproval.planId 
               ? getPendingPlan(planApproval.planId)
               : getMostRecentPendingPlan(userId);
+            
+            // If not in cache, try database
+            if (!pendingPlanData) {
+              pendingPlanData = planApproval.planId 
+                ? await getPendingPlanAsync(planApproval.planId, memoryCtx)
+                : await getMostRecentPendingPlanAsync(memoryCtx);
+            }
             
             if (pendingPlanData) {
               const { plan, pattern, entities } = pendingPlanData;
               
-              // Remove from pending
+              // Remove from pending (both cache and DB)
               removePendingPlan(plan.id);
+              await removePendingPlanAsync(plan.id, memoryCtx);
               
               console.info('[ai-chat] Executing approved plan:', plan.id, plan.name);
               
@@ -3724,14 +3730,21 @@ RESPONSE STYLE:
           }
           
           if (planApproval.isRejection) {
-            // User rejected a plan
-            const pendingPlanData = planApproval.planId 
+            // User rejected a plan - try cache first, then DB
+            let pendingPlanData = planApproval.planId 
               ? getPendingPlan(planApproval.planId)
               : getMostRecentPendingPlan(userId);
+            
+            if (!pendingPlanData) {
+              pendingPlanData = planApproval.planId 
+                ? await getPendingPlanAsync(planApproval.planId, memoryCtx)
+                : await getMostRecentPendingPlanAsync(memoryCtx);
+            }
             
             if (pendingPlanData) {
               const { plan } = pendingPlanData;
               removePendingPlan(plan.id);
+              await removePendingPlanAsync(plan.id, memoryCtx);
               
               console.info('[ai-chat] Plan rejected:', plan.id);
               
@@ -3764,8 +3777,9 @@ RESPONSE STYLE:
             // Build the execution plan
             const plan = buildExecutionPlan(multiStepPattern, orchestratorResult.intent?.entities || {});
             
-            // Store for later approval
+            // Store for later approval (both cache for quick access and DB for persistence)
             storePendingPlan(plan, multiStepPattern, orchestratorResult.intent?.entities || {}, userId);
+            await storePendingPlanAsync(plan, multiStepPattern, orchestratorResult.intent?.entities || {}, memoryCtx);
             
             // Send plan preview to frontend
             sendPlanPreview(controller, plan);
