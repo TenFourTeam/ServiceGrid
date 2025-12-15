@@ -4,9 +4,10 @@ import { Bot, User, Loader2, CheckCircle2, Calendar, Users, MapPin, Clock, FileT
 import { cn } from '@/lib/utils';
 import { ActionButton } from './ActionButton';
 import { SchedulePreviewCard } from './SchedulePreviewCard';
+import { ClarificationCard } from './ClarificationCard';
+import { ConfirmationCard } from './ConfirmationCard';
 import { useCalendarNavigation } from '@/hooks/useCalendarNavigation';
 import { useConversationMedia } from '@/hooks/useConversationMedia';
-
 interface ChatMessageProps {
   message: Message;
   isStreaming?: boolean;
@@ -123,7 +124,31 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
               </div>
             )}
 
-            {parsedContent.map((part, idx) => {
+            {/* Clarification Card */}
+            {message.messageType === 'clarification' && message.clarification && onActionExecute && (
+              <ClarificationCard
+                question={message.clarification.question}
+                options={message.clarification.options}
+                allowFreeform={message.clarification.allowFreeform}
+                onSelectOption={(value) => onActionExecute(value)}
+              />
+            )}
+
+            {/* Confirmation Card */}
+            {message.messageType === 'confirmation' && message.confirmation && onActionExecute && (
+              <ConfirmationCard
+                action={message.confirmation.action}
+                description={message.confirmation.description}
+                riskLevel={message.confirmation.riskLevel}
+                confirmLabel={message.confirmation.confirmLabel}
+                cancelLabel={message.confirmation.cancelLabel}
+                onConfirm={() => onActionExecute('Yes, proceed with this action')}
+                onCancel={() => onActionExecute('No, cancel this action')}
+              />
+            )}
+
+            {/* Standard message content */}
+            {message.messageType !== 'clarification' && message.messageType !== 'confirmation' && parsedContent.map((part, idx) => {
               if (part.type === 'text') {
                 return (
                   <div key={idx} className="text-sm whitespace-pre-wrap break-words">

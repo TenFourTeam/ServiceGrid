@@ -2874,11 +2874,48 @@ Deno.serve(async (req) => {
     const orchestratorResult = await orchestrate(message, sessionContext, supaAdmin);
     console.info('[ai-chat] Orchestrator result:', orchestratorResult.type, orchestratorResult.intent?.intentId);
 
-    // Handle clarification requests
+    // Helper to generate clarification options from intent
+    const generateClarificationOptions = (intent: any): Array<{label: string, value: string}> => {
+      if (!intent) return [];
+      
+      // Domain-specific option generators
+      const optionsByDomain: Record<string, Array<{label: string, value: string}>> = {
+        scheduling: [
+          { label: 'Schedule pending jobs', value: 'Schedule all my pending jobs' },
+          { label: 'View my schedule', value: 'Show me my schedule for this week' },
+          { label: 'Check availability', value: 'Check team availability for tomorrow' },
+        ],
+        invoicing: [
+          { label: 'Create invoice', value: 'Create a new invoice' },
+          { label: 'View unpaid', value: 'Show me unpaid invoices' },
+          { label: 'Send reminders', value: 'Send payment reminders' },
+        ],
+        quotes: [
+          { label: 'Create quote', value: 'Create a new quote' },
+          { label: 'View pending', value: 'Show me pending quotes' },
+          { label: 'Follow up', value: 'Help me follow up on quotes' },
+        ],
+        customers: [
+          { label: 'Add customer', value: 'Add a new customer' },
+          { label: 'Search customers', value: 'Search for a customer' },
+          { label: 'View history', value: 'Show customer history' },
+        ],
+      };
+      
+      return optionsByDomain[intent.domain] || [
+        { label: 'Tell me more', value: 'Can you explain what you need help with?' },
+        { label: 'Show options', value: 'What can you help me with?' },
+      ];
+    };
+
+    // Handle clarification requests - send structured SSE event
     if (orchestratorResult.type === 'clarification' && orchestratorResult.clarificationQuestion) {
-      // For now, we'll let the AI handle clarification naturally
-      // In the future, we could return a structured clarification response
       console.info('[ai-chat] Clarification needed:', orchestratorResult.clarificationQuestion);
+    }
+
+    // Handle confirmation requests - send structured SSE event  
+    if (orchestratorResult.type === 'confirmation' && orchestratorResult.confirmationRequest) {
+      console.info('[ai-chat] Confirmation needed:', orchestratorResult.confirmationRequest.action);
     }
 
     // Build the system prompt - use orchestrator's dynamic prompt if available
@@ -3016,6 +3053,39 @@ RESPONSE STYLE:
                 content: greetingText 
               })}\n\n`)
             );
+          }
+
+          // Send clarification event if needed - this is a structured UI component
+          if (orchestratorResult.type === 'clarification' && orchestratorResult.clarificationQuestion) {
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({
+                type: 'clarification',
+                question: orchestratorResult.clarificationQuestion,
+                options: generateClarificationOptions(orchestratorResult.intent),
+                intent: orchestratorResult.intent?.intentId,
+                allowFreeform: true,
+              })}\n\n`)
+            );
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`));
+            controller.close();
+            return;
+          }
+
+          // Send confirmation event if needed - this is a structured UI component
+          if (orchestratorResult.type === 'confirmation' && orchestratorResult.confirmationRequest) {
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({
+                type: 'confirmation',
+                action: orchestratorResult.confirmationRequest.action,
+                description: orchestratorResult.confirmationRequest.description,
+                riskLevel: orchestratorResult.confirmationRequest.riskLevel,
+                confirmLabel: 'Yes, proceed',
+                cancelLabel: 'Cancel',
+              })}\n\n`)
+            );
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`));
+            controller.close();
+            return;
           }
 
           const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
