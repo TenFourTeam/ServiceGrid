@@ -60,7 +60,9 @@ interface IntentPattern {
 }
 
 const INTENT_PATTERNS: IntentPattern[] = [
-  // Scheduling Domain
+  // ============================================
+  // SCHEDULING DOMAIN
+  // ============================================
   {
     intentId: 'scheduling.batch_schedule',
     domain: 'scheduling',
@@ -104,7 +106,7 @@ const INTENT_PATTERNS: IntentPattern[] = [
     keywords: ['available', 'free', 'availability', 'who can'],
     requiredContext: ['team_members', 'team_availability'],
     optionalContext: ['time_off_requests', 'todays_jobs'],
-    tools: ['check_team_availability'],
+    tools: ['check_team_availability', 'get_team_utilization'],
     riskLevel: 'low',
     requiresConfirmation: false,
   },
@@ -154,7 +156,9 @@ const INTENT_PATTERNS: IntentPattern[] = [
     requiresConfirmation: false,
   },
 
-  // Job Management Domain
+  // ============================================
+  // JOB MANAGEMENT DOMAIN
+  // ============================================
   {
     intentId: 'job.view_unscheduled',
     domain: 'job_management',
@@ -202,8 +206,69 @@ const INTENT_PATTERNS: IntentPattern[] = [
     riskLevel: 'medium',
     requiresConfirmation: false,
   },
+  {
+    intentId: 'job.add_note',
+    domain: 'job_management',
+    patterns: [
+      /add\s+(a\s+)?note\s+to\s+(the\s+)?job/i,
+      /note\s+on\s+(the\s+)?job/i,
+      /job\s+note/i,
+    ],
+    keywords: ['note', 'add note', 'job note'],
+    requiredContext: ['job_data'],
+    optionalContext: [],
+    tools: ['add_job_note'],
+    riskLevel: 'low',
+    requiresConfirmation: false,
+  },
+  {
+    intentId: 'job.assign_member',
+    domain: 'job_management',
+    patterns: [
+      /assign\s+(a\s+)?(team\s+)?member\s+to/i,
+      /assign\s+\w+\s+to\s+(the\s+)?job/i,
+      /who\s+should\s+do\s+(this|the)\s+job/i,
+    ],
+    keywords: ['assign', 'team member', 'worker'],
+    requiredContext: ['job_data', 'team_members'],
+    optionalContext: ['team_availability'],
+    tools: ['assign_job_to_member', 'get_team_members'],
+    riskLevel: 'medium',
+    requiresConfirmation: false,
+  },
+  {
+    intentId: 'job.view_timeline',
+    domain: 'job_management',
+    patterns: [
+      /job\s+(timeline|history|activity)/i,
+      /what\s+happened\s+(on|with)\s+(this|the)\s+job/i,
+    ],
+    keywords: ['timeline', 'history', 'activity', 'events'],
+    requiredContext: ['job_data'],
+    optionalContext: [],
+    tools: ['get_job_timeline'],
+    riskLevel: 'low',
+    requiresConfirmation: false,
+  },
+  {
+    intentId: 'job.view_checklist',
+    domain: 'job_management',
+    patterns: [
+      /checklist\s+(progress|status)/i,
+      /job\s+checklist/i,
+      /what('s| is)\s+been\s+completed/i,
+    ],
+    keywords: ['checklist', 'progress', 'tasks', 'completed'],
+    requiredContext: ['job_data'],
+    optionalContext: [],
+    tools: ['get_job_checklist_progress'],
+    riskLevel: 'low',
+    requiresConfirmation: false,
+  },
 
-  // Customer Domain
+  // ============================================
+  // CUSTOMER DOMAIN
+  // ============================================
   {
     intentId: 'customer.view_details',
     domain: 'customer_acquisition',
@@ -215,27 +280,59 @@ const INTENT_PATTERNS: IntentPattern[] = [
     keywords: ['customer', 'details', 'info', 'history'],
     requiredContext: ['customer_data'],
     optionalContext: [],
-    tools: ['get_customer_details'],
+    tools: ['get_customer_details', 'get_customer_history'],
     riskLevel: 'low',
     requiresConfirmation: false,
   },
   {
-    intentId: 'customer.list',
+    intentId: 'customer.search',
     domain: 'customer_acquisition',
     patterns: [
-      /list\s+(all\s+)?customers?/i,
-      /show\s+(me\s+)?customers?/i,
-      /customer\s+list/i,
+      /search\s+(for\s+)?customers?/i,
+      /find\s+(a\s+)?customer/i,
+      /look\s+up\s+(a\s+)?customer/i,
     ],
-    keywords: ['customers', 'list', 'all customers'],
-    requiredContext: ['customer_list'],
+    keywords: ['search', 'find', 'look up', 'customer'],
+    requiredContext: [],
     optionalContext: [],
-    tools: [],
+    tools: ['search_customers'],
     riskLevel: 'low',
     requiresConfirmation: false,
   },
+  {
+    intentId: 'customer.create',
+    domain: 'customer_acquisition',
+    patterns: [
+      /create\s+(a\s+)?(new\s+)?customer/i,
+      /add\s+(a\s+)?(new\s+)?customer/i,
+      /new\s+customer/i,
+    ],
+    keywords: ['create', 'add', 'new', 'customer'],
+    requiredContext: [],
+    optionalContext: [],
+    tools: ['create_customer'],
+    riskLevel: 'medium',
+    requiresConfirmation: false,
+  },
+  {
+    intentId: 'customer.invite_portal',
+    domain: 'customer_acquisition',
+    patterns: [
+      /invite\s+(the\s+)?customer\s+to\s+(the\s+)?portal/i,
+      /send\s+(a\s+)?portal\s+invite/i,
+      /give\s+(the\s+)?customer\s+portal\s+access/i,
+    ],
+    keywords: ['invite', 'portal', 'access'],
+    requiredContext: ['customer_data'],
+    optionalContext: [],
+    tools: ['invite_to_portal'],
+    riskLevel: 'medium',
+    requiresConfirmation: true,
+  },
 
-  // Quote Domain
+  // ============================================
+  // QUOTE DOMAIN
+  // ============================================
   {
     intentId: 'quote.list_pending',
     domain: 'quote_lifecycle',
@@ -243,16 +340,64 @@ const INTENT_PATTERNS: IntentPattern[] = [
       /pending\s+quotes?/i,
       /quotes?\s+(waiting|awaiting)/i,
       /open\s+quotes?/i,
+      /quotes?\s+status/i,
     ],
-    keywords: ['pending quotes', 'open quotes', 'waiting'],
+    keywords: ['pending quotes', 'open quotes', 'waiting', 'quote status'],
     requiredContext: ['pending_quotes'],
     optionalContext: [],
-    tools: [],
+    tools: ['get_pending_quotes'],
     riskLevel: 'low',
     requiresConfirmation: false,
   },
+  {
+    intentId: 'quote.create',
+    domain: 'quote_lifecycle',
+    patterns: [
+      /create\s+(a\s+)?(new\s+)?quote/i,
+      /generate\s+(a\s+)?quote/i,
+      /make\s+(a\s+)?quote\s+for/i,
+    ],
+    keywords: ['create', 'new', 'quote', 'estimate'],
+    requiredContext: ['customer_data'],
+    optionalContext: [],
+    tools: ['create_quote'],
+    riskLevel: 'medium',
+    requiresConfirmation: false,
+  },
+  {
+    intentId: 'quote.send',
+    domain: 'quote_lifecycle',
+    patterns: [
+      /send\s+(the\s+)?quote/i,
+      /email\s+(the\s+)?quote/i,
+      /deliver\s+(the\s+)?quote/i,
+    ],
+    keywords: ['send', 'email', 'quote'],
+    requiredContext: [],
+    optionalContext: [],
+    tools: ['send_quote'],
+    riskLevel: 'medium',
+    requiresConfirmation: true,
+  },
+  {
+    intentId: 'quote.convert_to_job',
+    domain: 'quote_lifecycle',
+    patterns: [
+      /convert\s+(the\s+)?quote\s+to\s+(a\s+)?job/i,
+      /turn\s+(the\s+)?quote\s+into\s+(a\s+)?job/i,
+      /create\s+job\s+from\s+(the\s+)?quote/i,
+    ],
+    keywords: ['convert', 'quote', 'job', 'work order'],
+    requiredContext: [],
+    optionalContext: ['team_members'],
+    tools: ['convert_quote_to_job'],
+    riskLevel: 'medium',
+    requiresConfirmation: true,
+  },
 
-  // Invoice Domain
+  // ============================================
+  // INVOICE DOMAIN
+  // ============================================
   {
     intentId: 'invoice.list_unpaid',
     domain: 'invoicing',
@@ -264,7 +409,7 @@ const INTENT_PATTERNS: IntentPattern[] = [
     keywords: ['unpaid', 'outstanding', 'overdue', 'owed'],
     requiredContext: ['unpaid_invoices'],
     optionalContext: ['overdue_invoices'],
-    tools: [],
+    tools: ['get_unpaid_invoices'],
     riskLevel: 'low',
     requiresConfirmation: false,
   },
@@ -279,12 +424,261 @@ const INTENT_PATTERNS: IntentPattern[] = [
     keywords: ['overdue', 'late', 'past due'],
     requiredContext: ['overdue_invoices'],
     optionalContext: [],
-    tools: [],
+    tools: ['get_unpaid_invoices'],
+    riskLevel: 'low',
+    requiresConfirmation: false,
+  },
+  {
+    intentId: 'invoice.create',
+    domain: 'invoicing',
+    patterns: [
+      /create\s+(a\s+)?(new\s+)?invoice/i,
+      /generate\s+(an?\s+)?invoice/i,
+      /bill\s+(the\s+)?customer/i,
+    ],
+    keywords: ['create', 'new', 'invoice', 'bill'],
+    requiredContext: ['customer_data'],
+    optionalContext: [],
+    tools: ['create_invoice'],
+    riskLevel: 'medium',
+    requiresConfirmation: false,
+  },
+  {
+    intentId: 'invoice.send',
+    domain: 'invoicing',
+    patterns: [
+      /send\s+(the\s+)?invoice/i,
+      /email\s+(the\s+)?invoice/i,
+    ],
+    keywords: ['send', 'email', 'invoice'],
+    requiredContext: [],
+    optionalContext: [],
+    tools: ['send_invoice'],
+    riskLevel: 'medium',
+    requiresConfirmation: true,
+  },
+  {
+    intentId: 'invoice.send_reminder',
+    domain: 'invoicing',
+    patterns: [
+      /send\s+(a\s+)?payment\s+reminder/i,
+      /remind\s+(the\s+)?customer\s+to\s+pay/i,
+      /follow\s+up\s+on\s+(the\s+)?invoice/i,
+    ],
+    keywords: ['reminder', 'remind', 'follow up', 'payment'],
+    requiredContext: [],
+    optionalContext: ['overdue_invoices'],
+    tools: ['send_invoice_reminder'],
+    riskLevel: 'medium',
+    requiresConfirmation: true,
+  },
+
+  // ============================================
+  // PAYMENT DOMAIN
+  // ============================================
+  {
+    intentId: 'payment.record',
+    domain: 'payment_processing',
+    patterns: [
+      /record\s+(a\s+)?payment/i,
+      /mark\s+(as\s+)?paid/i,
+      /received\s+payment/i,
+      /log\s+(a\s+)?payment/i,
+    ],
+    keywords: ['record', 'payment', 'paid', 'received', 'cash', 'check'],
+    requiredContext: [],
+    optionalContext: ['unpaid_invoices'],
+    tools: ['record_payment'],
+    riskLevel: 'medium',
+    requiresConfirmation: true,
+  },
+  {
+    intentId: 'payment.history',
+    domain: 'payment_processing',
+    patterns: [
+      /payment\s+history/i,
+      /payments?\s+(received|made)/i,
+      /what\s+payments?\s+(have\s+)?been\s+received/i,
+    ],
+    keywords: ['payment history', 'payments received', 'transactions'],
+    requiredContext: [],
+    optionalContext: ['customer_data'],
+    tools: ['get_payment_history'],
     riskLevel: 'low',
     requiresConfirmation: false,
   },
 
-  // Capacity/Analytics Domain
+  // ============================================
+  // RECURRING BILLING DOMAIN
+  // ============================================
+  {
+    intentId: 'recurring.list',
+    domain: 'recurring_billing',
+    patterns: [
+      /recurring\s+(schedules?|billing)/i,
+      /subscriptions?/i,
+      /recurring\s+customers?/i,
+    ],
+    keywords: ['recurring', 'subscription', 'schedules'],
+    requiredContext: [],
+    optionalContext: [],
+    tools: ['get_recurring_schedules'],
+    riskLevel: 'low',
+    requiresConfirmation: false,
+  },
+  {
+    intentId: 'recurring.pause',
+    domain: 'recurring_billing',
+    patterns: [
+      /pause\s+(the\s+)?subscription/i,
+      /pause\s+(the\s+)?recurring/i,
+      /put\s+subscription\s+on\s+hold/i,
+    ],
+    keywords: ['pause', 'hold', 'subscription'],
+    requiredContext: [],
+    optionalContext: [],
+    tools: ['pause_subscription'],
+    riskLevel: 'medium',
+    requiresConfirmation: true,
+  },
+  {
+    intentId: 'recurring.resume',
+    domain: 'recurring_billing',
+    patterns: [
+      /resume\s+(the\s+)?subscription/i,
+      /reactivate\s+(the\s+)?subscription/i,
+      /start\s+billing\s+again/i,
+    ],
+    keywords: ['resume', 'reactivate', 'restart'],
+    requiredContext: [],
+    optionalContext: [],
+    tools: ['resume_subscription'],
+    riskLevel: 'medium',
+    requiresConfirmation: true,
+  },
+
+  // ============================================
+  // TEAM MANAGEMENT DOMAIN
+  // ============================================
+  {
+    intentId: 'team.list_members',
+    domain: 'team_management',
+    patterns: [
+      /team\s+members?/i,
+      /who('s| is)\s+on\s+(the\s+)?team/i,
+      /list\s+(all\s+)?team/i,
+    ],
+    keywords: ['team', 'members', 'staff', 'employees'],
+    requiredContext: ['team_members'],
+    optionalContext: [],
+    tools: ['get_team_members'],
+    riskLevel: 'low',
+    requiresConfirmation: false,
+  },
+  {
+    intentId: 'team.utilization',
+    domain: 'team_management',
+    patterns: [
+      /team\s+utilization/i,
+      /who('s| is)\s+(the\s+)?busiest/i,
+      /workload\s+(by\s+)?team/i,
+      /how\s+busy\s+is\s+the\s+team/i,
+    ],
+    keywords: ['utilization', 'workload', 'busy', 'capacity'],
+    requiredContext: ['team_members'],
+    optionalContext: [],
+    tools: ['get_team_utilization'],
+    riskLevel: 'low',
+    requiresConfirmation: false,
+  },
+  {
+    intentId: 'team.active_clockins',
+    domain: 'team_management',
+    patterns: [
+      /who('s| is)\s+clocked\s+in/i,
+      /active\s+clock[\s-]?ins?/i,
+      /who('s| is)\s+(currently\s+)?working/i,
+    ],
+    keywords: ['clocked in', 'working', 'active'],
+    requiredContext: [],
+    optionalContext: ['team_members'],
+    tools: ['get_active_clockins'],
+    riskLevel: 'low',
+    requiresConfirmation: false,
+  },
+  {
+    intentId: 'team.timesheet_summary',
+    domain: 'team_management',
+    patterns: [
+      /timesheet\s+(summary|report)/i,
+      /hours\s+worked/i,
+      /time\s+tracking\s+report/i,
+    ],
+    keywords: ['timesheet', 'hours', 'time tracking'],
+    requiredContext: [],
+    optionalContext: ['team_members'],
+    tools: ['get_timesheet_summary'],
+    riskLevel: 'low',
+    requiresConfirmation: false,
+  },
+
+  // ============================================
+  // CHECKLIST DOMAIN
+  // ============================================
+  {
+    intentId: 'checklist.list_templates',
+    domain: 'checklists',
+    patterns: [
+      /checklist\s+templates?/i,
+      /available\s+checklists?/i,
+      /show\s+(me\s+)?checklists?/i,
+    ],
+    keywords: ['checklist', 'templates', 'available'],
+    requiredContext: [],
+    optionalContext: [],
+    tools: ['get_checklist_templates'],
+    riskLevel: 'low',
+    requiresConfirmation: false,
+  },
+  {
+    intentId: 'checklist.assign_to_job',
+    domain: 'checklists',
+    patterns: [
+      /assign\s+(a\s+)?checklist\s+to\s+(the\s+)?job/i,
+      /add\s+(a\s+)?checklist\s+to\s+(the\s+)?job/i,
+      /attach\s+checklist/i,
+    ],
+    keywords: ['assign', 'add', 'checklist', 'job'],
+    requiredContext: ['job_data'],
+    optionalContext: [],
+    tools: ['assign_checklist_to_job', 'get_checklist_templates'],
+    riskLevel: 'medium',
+    requiresConfirmation: false,
+  },
+
+  // ============================================
+  // SERVICE REQUESTS DOMAIN
+  // ============================================
+  {
+    intentId: 'request.list_pending',
+    domain: 'service_request',
+    patterns: [
+      /pending\s+requests?/i,
+      /new\s+requests?/i,
+      /service\s+requests?/i,
+      /incoming\s+requests?/i,
+    ],
+    keywords: ['requests', 'pending', 'new', 'incoming', 'service'],
+    requiredContext: [],
+    optionalContext: [],
+    tools: ['get_requests_pending'],
+    riskLevel: 'low',
+    requiresConfirmation: false,
+  },
+
+  // ============================================
+  // ANALYTICS DOMAIN
+  // ============================================
   {
     intentId: 'analytics.capacity',
     domain: 'analytics',
@@ -301,8 +695,26 @@ const INTENT_PATTERNS: IntentPattern[] = [
     riskLevel: 'low',
     requiresConfirmation: false,
   },
+  {
+    intentId: 'analytics.business_metrics',
+    domain: 'analytics',
+    patterns: [
+      /business\s+(metrics|stats|performance)/i,
+      /how('s| is)\s+(the\s+)?business\s+doing/i,
+      /kpis?/i,
+      /revenue\s+(report|summary)/i,
+    ],
+    keywords: ['metrics', 'stats', 'performance', 'kpi', 'revenue'],
+    requiredContext: [],
+    optionalContext: [],
+    tools: ['get_business_metrics'],
+    riskLevel: 'low',
+    requiresConfirmation: false,
+  },
 
-  // General/Fallback
+  // ============================================
+  // GENERAL/FALLBACK
+  // ============================================
   {
     intentId: 'general.greeting',
     domain: 'general',
