@@ -19,6 +19,33 @@ import {
   type PlannerResult 
 } from './multi-step-planner.ts';
 
+// Memory & Context Persistence
+import { 
+  loadMemory, 
+  rememberEntity, 
+  getRecentEntities,
+  type MemoryContext,
+  type ConversationMemory
+} from './memory-manager.ts';
+import { 
+  extractEntitiesFromMessage, 
+  buildEntityContextString 
+} from './message-entity-extractor.ts';
+import { 
+  learnFromMessage, 
+  learnFromToolExecution,
+  getApplicablePreferences,
+  buildPreferenceContextString 
+} from './preference-learner.ts';
+import {
+  shouldSummarize,
+  buildSummaryContext,
+  getMessagesForSummarization,
+  buildSummarizationPrompt,
+  parseSummaryResponse,
+  storeSummary
+} from './conversation-summarizer.ts';
+
 interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
