@@ -646,6 +646,113 @@ export async function removePendingPlan(
 }
 
 // ============================================================================
+// Conversation State Management (for multi-turn context)
+// ============================================================================
+
+export interface ConversationState {
+  pendingIntent?: string;          // e.g., "customer.create"
+  awaitingInput?: string;          // e.g., "customer_details", "date", "confirmation"
+  lastAssistantAction?: string;    // e.g., "asked_for_details", "asked_for_confirmation"
+  collectedEntities?: Record<string, any>; // Data collected so far in multi-turn
+  updatedAt?: string;
+}
+
+/**
+ * Get conversation state from the conversation record
+ */
+export async function getConversationState(
+  ctx: MemoryContext
+): Promise<ConversationState | null> {
+  if (!ctx.conversationId) return null;
+
+  try {
+    const { data, error } = await ctx.supabase
+      .from('ai_chat_conversations')
+      .select('entity_context')
+      .eq('id', ctx.conversationId)
+      .single();
+
+    if (error || !data) return null;
+
+    // We store conversation state in entity_context.conversationState
+    const entityContext = data.entity_context as any;
+    return entityContext?.conversationState || null;
+  } catch (error) {
+    console.error('[MemoryManager] Failed to get conversation state:', error);
+    return null;
+  }
+}
+
+/**
+ * Set conversation state for multi-turn tracking
+ */
+export async function setConversationState(
+  ctx: MemoryContext,
+  state: ConversationState
+): Promise<void> {
+  if (!ctx.conversationId) return;
+
+  try {
+    // Get current entity_context
+    const { data: current } = await ctx.supabase
+      .from('ai_chat_conversations')
+      .select('entity_context')
+      .eq('id', ctx.conversationId)
+      .single();
+
+    const entityContext = (current?.entity_context as any) || {};
+    entityContext.conversationState = {
+      ...state,
+      updatedAt: new Date().toISOString()
+    };
+
+    await ctx.supabase
+      .from('ai_chat_conversations')
+      .update({
+        entity_context: entityContext,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', ctx.conversationId);
+
+    console.info('[MemoryManager] Conversation state updated:', state.pendingIntent, state.awaitingInput);
+  } catch (error) {
+    console.error('[MemoryManager] Failed to set conversation state:', error);
+  }
+}
+
+/**
+ * Clear conversation state (when intent is completed)
+ */
+export async function clearConversationState(
+  ctx: MemoryContext
+): Promise<void> {
+  if (!ctx.conversationId) return;
+
+  try {
+    const { data: current } = await ctx.supabase
+      .from('ai_chat_conversations')
+      .select('entity_context')
+      .eq('id', ctx.conversationId)
+      .single();
+
+    const entityContext = (current?.entity_context as any) || {};
+    delete entityContext.conversationState;
+
+    await ctx.supabase
+      .from('ai_chat_conversations')
+      .update({
+        entity_context: entityContext,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', ctx.conversationId);
+
+    console.info('[MemoryManager] Conversation state cleared');
+  } catch (error) {
+    console.error('[MemoryManager] Failed to clear conversation state:', error);
+  }
+}
+
+// ============================================================================
 // Full Memory Loading
 // ============================================================================
 
