@@ -46,13 +46,13 @@ export {
 
 // Context Map
 export {
-  PROCESS_CONTEXT_MAP,
-  SHARED_CONTEXT_PATTERNS,
   getDomain,
   getProcessStep,
   getRequiredContext,
   groupContextBySource,
+  type DataSourceType,
   type ContextField,
-  type ContextSourceType,
+  type ContextPriority,
   type ProcessStepContext,
+  type DomainContext,
 } from './context-map';
