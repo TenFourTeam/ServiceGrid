@@ -450,9 +450,9 @@ SERVICE REQUEST:
 {{/if}}
 
 PRICING RULES:
-- Labor Rate: ${{labor_rate_value}}/hr
+- Labor Rate: \${{labor_rate}}/hr
 - Material Markup: {{material_markup}}%
-- Minimum Charge: ${{minimum_charge_value}}
+- Minimum Charge: \${{minimum_charge}}
 - Tax Rate: {{tax_rate}}%`,
       task: `Create a professional quote based on the service description provided.`,
       constraints: `${CONSTRAINT_FRAGMENTS.financial}
@@ -482,12 +482,12 @@ PRICING RULES:
       context: `QUOTE TO SEND:
 - Quote #: {{quote_number}}
 - Customer: {{customer_name}} ({{customer_email}})
-- Total: ${{quote_total_value}}
+- Total: \${{quote_total}}
 - Valid Until: {{valid_until}}
 
 LINE ITEMS:
 {{#each line_items}}
-- {{name}}: {{qty}} x ${{price}} = ${{total}}
+- {{name}}: {{qty}} x \${{unit_price}} = \${{line_total}}
 {{/each}}
 
 QUOTE STATUS: {{quote_status}}`,
@@ -517,11 +517,11 @@ QUOTE STATUS: {{quote_status}}`,
       context: `ORIGINAL QUOTE:
 - Quote #: {{quote_number}}
 - Created: {{created_at}}
-- Current Total: ${{current_total_value}}
+- Current Total: \${{current_total}}
 
 CURRENT LINE ITEMS:
 {{#each line_items}}
-- {{name}}: {{qty}} x ${{price}} = ${{total}}
+- {{name}}: {{qty}} x \${{unit_price}} = \${{line_total}}
 {{/each}}
 
 REQUESTED CHANGES:
@@ -553,7 +553,7 @@ REQUESTED CHANGES:
       context: `QUOTE FOR APPROVAL:
 - Quote #: {{quote_number}}
 - Customer: {{customer_name}}
-- Total: ${{quote_total_value}}
+- Total: \${{quote_total}}
 - Created: {{created_at}}
 - Valid Until: {{valid_until}}
 
@@ -591,7 +591,7 @@ APPROVAL DETAILS:
 - Quote #: {{quote_number}}
 - Customer: {{customer_name}}
 - Address: {{service_address}}
-- Total: ${{quote_total_value}}
+- Total: \${{quote_total}}
 - Approved: {{approval_date}}
 
 SCOPE OF WORK:
@@ -631,7 +631,7 @@ SCHEDULING PREFERENCE:
       context: `QUOTE FOR PDF:
 - Quote #: {{quote_number}}
 - Customer: {{customer_name}}
-- Total: ${{quote_total_value}}
+- Total: \${{quote_total}}
 
 BUSINESS BRANDING:
 - Logo: {{logo_url}}
@@ -890,7 +890,7 @@ COMPLETION CHECK:
 
 NEXT STEPS:
 {{#if requires_invoice}}
-- Invoice needed: Yes (${{job_total}})
+- Invoice needed: Yes (\${{job_total}})
 {{/if}}`,
       task: `Mark this job as completed and trigger any follow-up workflows.`,
       constraints: `- Verify checklist completion
@@ -974,7 +974,7 @@ SOURCE:
 
 LINE ITEMS:
 {{#each line_items}}
-- {{name}}: {{qty}} x ${{unit_price}} = ${{line_total}}
+- {{name}}: {{qty}} x \${{unit_price}} = \${{line_total}}
 {{/each}}
 
 INVOICE SETTINGS:
@@ -1007,7 +1007,7 @@ INVOICE SETTINGS:
       context: `INVOICE TO SEND:
 - Invoice #: {{invoice_number}}
 - Customer: {{customer_name}} ({{customer_email}})
-- Amount: ${{invoice_total}}
+- Amount: \${{invoice_total}}
 - Due: {{due_date}}
 - Status: {{invoice_status}}
 
@@ -1038,7 +1038,7 @@ PAYMENT LINK: {{payment_link}}`,
       context: `INVOICE TO VOID:
 - Invoice #: {{invoice_number}}
 - Customer: {{customer_name}}
-- Amount: ${{invoice_total}}
+- Amount: \${{invoice_total}}
 - Status: {{current_status}}
 - Payments: {{payment_status}}
 
@@ -1068,20 +1068,20 @@ VOID REASON: {{void_reason}}`,
       role: ROLE_FRAGMENTS.finance,
       context: `INVOICE:
 - Invoice #: {{invoice_number}}
-- Current Total: ${{current_total}}
-- Amount Paid: ${{amount_paid}}
-- Balance Due: ${{balance_due}}
+- Current Total: \${{current_total}}
+- Amount Paid: \${{amount_paid}}
+- Balance Due: \${{balance_due}}
 
 CREDIT TO APPLY:
-- Amount: ${{credit_amount}}
+- Amount: \${{credit_amount}}
 - Reason: {{credit_reason}}`,
       task: `Apply the credit to this invoice and recalculate totals.`,
       constraints: `- Credit cannot exceed balance due
 - Log credit with reason
 - Adjust payment status if fully credited`,
       outputFormat: `Credit applied:
-- Credit: -${{credit_amount}}
-- New Balance: $[amount]
+- Credit: -\${{credit_amount}}
+- New Balance: \$[amount]
 - Status: [updated status]`,
     },
     requiredContext: ['invoice_data', 'credit_amount', 'credit_reason'],
@@ -1101,7 +1101,7 @@ CREDIT TO APPLY:
       context: `OVERDUE INVOICE:
 - Invoice #: {{invoice_number}}
 - Customer: {{customer_name}} ({{customer_email}})
-- Amount Due: ${{balance_due}}
+- Amount Due: \${{balance_due}}
 - Due Date: {{due_date}}
 - Days Overdue: {{days_overdue}}
 
@@ -1135,7 +1135,7 @@ PREVIOUS REMINDERS:
       context: `INVOICE FOR PDF:
 - Invoice #: {{invoice_number}}
 - Customer: {{customer_name}}
-- Total: ${{invoice_total}}
+- Total: \${{invoice_total}}
 
 BUSINESS BRANDING:
 - Logo: {{logo_url}}
@@ -1263,7 +1263,7 @@ FILTERS:
 - Name: {{customer_name}}
 - Since: {{customer_since}}
 - Total Jobs: {{total_jobs}}
-- Total Revenue: ${{total_revenue}}
+- Total Revenue: \${{total_revenue}}
 
 RECENT ACTIVITY:
 {{#each recent_activity}}
@@ -1273,7 +1273,7 @@ RECENT ACTIVITY:
 OPEN ITEMS:
 - Pending Quotes: {{pending_quotes}}
 - Scheduled Jobs: {{scheduled_jobs}}
-- Outstanding Invoices: ${{outstanding_amount}}`,
+- Outstanding Invoices: \${{outstanding_amount}}`,
       task: `Present a comprehensive view of this customer's history and current status.`,
       constraints: '',
       outputFormat: `Customer summary with timeline of interactions, current status, and key metrics.`,
@@ -1332,12 +1332,12 @@ const PAYMENT_TEMPLATES: PromptTemplate[] = [
       role: ROLE_FRAGMENTS.finance,
       context: `INVOICE:
 - Invoice #: {{invoice_number}}
-- Total: ${{invoice_total}}
-- Amount Paid: ${{amount_paid}}
-- Balance Due: ${{balance_due}}
+- Total: \${{invoice_total}}
+- Amount Paid: \${{amount_paid}}
+- Balance Due: \${{balance_due}}
 
 PAYMENT DETAILS:
-- Amount: ${{payment_amount}}
+- Amount: \${{payment_amount}}
 - Method: {{payment_method}}
 - Date: {{payment_date}}
 - Reference: {{payment_reference}}`,
@@ -1348,7 +1348,7 @@ PAYMENT DETAILS:
       outputFormat: `Payment recorded:
 - Receipt #: [number]
 - Invoice status: [Partial/Paid]
-- Remaining balance: $[amount]`,
+- Remaining balance: \$[amount]`,
     },
     requiredContext: ['invoice_data', 'payment_details'],
     optionalContext: ['receipt_template'],
@@ -1366,7 +1366,7 @@ PAYMENT DETAILS:
       role: ROLE_FRAGMENTS.finance,
       context: `PAYMENT REQUEST:
 - Invoice #: {{invoice_number}}
-- Amount: ${{payment_amount}}
+- Amount: \${{payment_amount}}
 - Customer: {{customer_name}}
 
 STRIPE STATUS:
@@ -1397,13 +1397,13 @@ STRIPE STATUS:
       role: ROLE_FRAGMENTS.finance,
       context: `ORIGINAL PAYMENT:
 - Payment #: {{payment_id}}
-- Amount: ${{payment_amount}}
+- Amount: \${{payment_amount}}
 - Method: {{payment_method}}
 - Date: {{payment_date}}
 - Invoice: {{invoice_number}}
 
 REFUND REQUEST:
-- Amount: ${{refund_amount}}
+- Amount: \${{refund_amount}}
 - Reason: {{refund_reason}}
 - Full/Partial: {{refund_type}}`,
       task: `Process this refund and update all related records.`,
@@ -1411,7 +1411,7 @@ REFUND REQUEST:
 - Update invoice balance
 - Notify customer`,
       outputFormat: `Refund processed:
-- Amount: ${{refund_amount}}
+- Amount: \${{refund_amount}}
 - Method: [same as original/other]
 - Invoice updated: [yes]
 - Customer notified: [yes]`,
@@ -1434,14 +1434,14 @@ REFUND REQUEST:
 
 PAYMENTS:
 {{#each payments}}
-- {{date}}: ${{amount}} via {{method}} - {{status}}
+- {{date}}: \${{amt}} via {{method}} - {{status}}
   Invoice: {{invoice_number}}
 {{/each}}
 
 SUMMARY:
-- Total Paid: ${{total_paid}}
-- Pending: ${{total_pending}}
-- Refunded: ${{total_refunded}}`,
+- Total Paid: \${{total_paid}}
+- Pending: \${{total_pending}}
+- Refunded: \${{total_refunded}}`,
       task: `Present the payment history in a clear format.`,
       constraints: '',
       outputFormat: `Payment history with totals and trends.`,
@@ -1943,7 +1943,7 @@ const RECURRING_TEMPLATES: PromptTemplate[] = [
     template: {
       role: ROLE_FRAGMENTS.finance,
       context: `CUSTOMER: {{customer_name}}
-QUOTE: {{quote_number}} (${{quote_total}})
+QUOTE: {{quote_number}} (\${{quote_total}})
 
 RECURRING SETTINGS:
 - Frequency: {{frequency}}
@@ -2032,7 +2032,7 @@ PAUSE REQUEST:
 - Customer: {{customer_name}}
 - Active Since: {{start_date}}
 - Invoices Generated: {{invoice_count}}
-- Total Billed: ${{total_billed}}
+- Total Billed: \${{total_billed}}
 
 CANCELLATION:
 - Reason: {{cancel_reason}}
@@ -2195,7 +2195,7 @@ CONVERSATION: {{customer_name}}
       context: `QUOTE APPROVED:
 - Quote #: {{quote_number}}
 - Customer: {{customer_name}}
-- Total: ${{quote_total}}
+- Total: \${{quote_total}}
 - Approved At: {{approval_timestamp}}
 - Signature: {{has_signature}}`,
       task: `Process this customer quote approval.`,
@@ -2224,7 +2224,7 @@ CONVERSATION: {{customer_name}}
       role: ROLE_FRAGMENTS.finance,
       context: `PAYMENT RECEIVED:
 - Invoice #: {{invoice_number}}
-- Amount: ${{payment_amount}}
+- Amount: \${{payment_amount}}
 - Method: {{payment_method}}
 - Customer: {{customer_name}}`,
       task: `Process this customer portal payment.`,
