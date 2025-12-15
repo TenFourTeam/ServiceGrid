@@ -684,48 +684,154 @@ export function sendPlanComplete(
 }
 
 // =============================================================================
-// PENDING PLAN STORAGE (in-memory for now, could be moved to DB)
+// PENDING PLAN STORAGE - Uses ai_pending_plans database table for persistence
 // =============================================================================
 
-const pendingPlans = new Map<string, { plan: ExecutionPlan; pattern: MultiStepPattern; entities: Record<string, any>; userId: string }>();
-const pendingPlansByUser = new Map<string, string>(); // userId -> planId
+import { 
+  storePendingPlan as dbStorePendingPlan,
+  getPendingPlan as dbGetPendingPlan,
+  getMostRecentPendingPlan as dbGetMostRecentPendingPlan,
+  updatePlanStatus as dbUpdatePlanStatus,
+  removePendingPlan as dbRemovePendingPlan,
+  type MemoryContext,
+  type PersistentPlan
+} from './memory-manager.ts';
 
+// In-memory cache for quick access (fallback + performance)
+const pendingPlansCache = new Map<string, { plan: ExecutionPlan; pattern: MultiStepPattern; entities: Record<string, any>; userId: string }>();
+const pendingPlansByUserCache = new Map<string, string>(); // userId -> planId
+
+export async function storePendingPlanAsync(
+  plan: ExecutionPlan,
+  pattern: MultiStepPattern,
+  entities: Record<string, any>,
+  ctx: MemoryContext
+): Promise<void> {
+  try {
+    // Store in database for persistence across restarts
+    await dbStorePendingPlan(ctx, { plan, pattern, entities }, pattern.id);
+    console.info('[multi-step-planner] Plan stored in database:', plan.id);
+  } catch (error) {
+    console.error('[multi-step-planner] Failed to store plan in DB, using in-memory only:', error);
+  }
+  
+  // Also cache in memory for quick access
+  pendingPlansCache.set(plan.id, { plan, pattern, entities, userId: ctx.userId });
+  pendingPlansByUserCache.set(ctx.userId, plan.id);
+}
+
+// Synchronous version for backward compatibility (uses cache only)
 export function storePendingPlan(
   plan: ExecutionPlan,
   pattern: MultiStepPattern,
   entities: Record<string, any>,
   userId: string
 ): void {
-  pendingPlans.set(plan.id, { plan, pattern, entities, userId });
-  pendingPlansByUser.set(userId, plan.id);
+  pendingPlansCache.set(plan.id, { plan, pattern, entities, userId });
+  pendingPlansByUserCache.set(userId, plan.id);
   
-  // Auto-cleanup after 10 minutes
+  // Auto-cleanup from cache after 10 minutes (DB has its own expiry)
   setTimeout(() => {
-    pendingPlans.delete(plan.id);
-    if (pendingPlansByUser.get(userId) === plan.id) {
-      pendingPlansByUser.delete(userId);
+    pendingPlansCache.delete(plan.id);
+    if (pendingPlansByUserCache.get(userId) === plan.id) {
+      pendingPlansByUserCache.delete(userId);
     }
   }, 10 * 60 * 1000);
 }
 
+export async function getPendingPlanAsync(
+  planId: string,
+  ctx: MemoryContext
+): Promise<{ plan: ExecutionPlan; pattern: MultiStepPattern; entities: Record<string, any>; userId: string } | undefined> {
+  // Check cache first
+  const cached = pendingPlansCache.get(planId);
+  if (cached) return cached;
+  
+  // Fall back to database
+  try {
+    const dbPlan = await dbGetPendingPlan(ctx, planId);
+    if (dbPlan) {
+      const planData = dbPlan.planData as { plan: ExecutionPlan; pattern: MultiStepPattern; entities: Record<string, any> };
+      const result = { ...planData, userId: dbPlan.userId };
+      // Cache it
+      pendingPlansCache.set(planId, result);
+      return result;
+    }
+  } catch (error) {
+    console.error('[multi-step-planner] Failed to fetch plan from DB:', error);
+  }
+  
+  return undefined;
+}
+
+// Synchronous version (cache only)
 export function getPendingPlan(planId: string): { plan: ExecutionPlan; pattern: MultiStepPattern; entities: Record<string, any>; userId: string } | undefined {
-  return pendingPlans.get(planId);
+  return pendingPlansCache.get(planId);
 }
 
+export async function getMostRecentPendingPlanAsync(
+  ctx: MemoryContext
+): Promise<{ plan: ExecutionPlan; pattern: MultiStepPattern; entities: Record<string, any>; userId: string } | undefined> {
+  // Check cache first
+  const cachedPlanId = pendingPlansByUserCache.get(ctx.userId);
+  if (cachedPlanId) {
+    const cached = pendingPlansCache.get(cachedPlanId);
+    if (cached) return cached;
+  }
+  
+  // Fall back to database
+  try {
+    const dbPlan = await dbGetMostRecentPendingPlan(ctx);
+    if (dbPlan) {
+      const planData = dbPlan.planData as { plan: ExecutionPlan; pattern: MultiStepPattern; entities: Record<string, any> };
+      const result = { ...planData, userId: dbPlan.userId };
+      // Cache it
+      pendingPlansCache.set(dbPlan.id, result);
+      pendingPlansByUserCache.set(ctx.userId, dbPlan.id);
+      return result;
+    }
+  } catch (error) {
+    console.error('[multi-step-planner] Failed to fetch most recent plan from DB:', error);
+  }
+  
+  return undefined;
+}
+
+// Synchronous version (cache only)
 export function getMostRecentPendingPlan(userId: string): { plan: ExecutionPlan; pattern: MultiStepPattern; entities: Record<string, any>; userId: string } | undefined {
-  const planId = pendingPlansByUser.get(userId);
+  const planId = pendingPlansByUserCache.get(userId);
   if (!planId) return undefined;
-  return pendingPlans.get(planId);
+  return pendingPlansCache.get(planId);
 }
 
-export function removePendingPlan(planId: string): void {
-  const planData = pendingPlans.get(planId);
+export async function removePendingPlanAsync(planId: string, ctx: MemoryContext): Promise<void> {
+  // Remove from cache
+  const planData = pendingPlansCache.get(planId);
   if (planData) {
-    if (pendingPlansByUser.get(planData.userId) === planId) {
-      pendingPlansByUser.delete(planData.userId);
+    if (pendingPlansByUserCache.get(planData.userId) === planId) {
+      pendingPlansByUserCache.delete(planData.userId);
     }
   }
-  pendingPlans.delete(planId);
+  pendingPlansCache.delete(planId);
+  
+  // Remove from database
+  try {
+    await dbRemovePendingPlan(ctx, planId);
+    console.info('[multi-step-planner] Plan removed from database:', planId);
+  } catch (error) {
+    console.error('[multi-step-planner] Failed to remove plan from DB:', error);
+  }
+}
+
+// Synchronous version (cache only)
+export function removePendingPlan(planId: string): void {
+  const planData = pendingPlansCache.get(planId);
+  if (planData) {
+    if (pendingPlansByUserCache.get(planData.userId) === planId) {
+      pendingPlansByUserCache.delete(planData.userId);
+    }
+  }
+  pendingPlansCache.delete(planId);
 }
 
 // =============================================================================
