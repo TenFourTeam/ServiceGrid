@@ -675,7 +675,10 @@ export async function getConversationState(
     if (error || !data) return null;
 
     // We store conversation state in entity_context.conversationState
-    const entityContext = data.entity_context as any;
+    // Handle case where entity_context is an array (default) instead of object
+    const entityContext = (data.entity_context && typeof data.entity_context === 'object' && !Array.isArray(data.entity_context))
+      ? data.entity_context as Record<string, any>
+      : null;
     return entityContext?.conversationState || null;
   } catch (error) {
     console.error('[MemoryManager] Failed to get conversation state:', error);
@@ -700,7 +703,11 @@ export async function setConversationState(
       .eq('id', ctx.conversationId)
       .single();
 
-    const entityContext = (current?.entity_context as any) || {};
+    // Handle case where entity_context is an array (default) instead of object
+    const rawContext = current?.entity_context;
+    const entityContext: Record<string, any> = (rawContext && typeof rawContext === 'object' && !Array.isArray(rawContext))
+      ? rawContext as Record<string, any>
+      : {};
     entityContext.conversationState = {
       ...state,
       updatedAt: new Date().toISOString()
