@@ -851,12 +851,16 @@ function isFollowUpResponse(
     return startsWithAction || requestPattern.test(msgLower);
   });
 
-  // 4. Message looks like data being provided (email, name, date, address patterns)
+  // 4. Message looks like data being provided (email, name, date, address, amounts, etc.)
   const looksLikeData = 
     /\b[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}\b/i.test(message) || // email
     /\d{1,2}\/\d{1,2}\/\d{2,4}/.test(message) || // date
     /\d{3}[-.\s]?\d{3}[-.\s]?\d{4}/.test(message) || // phone
-    /\d+\s+[a-z]+\s+(st|street|ave|avenue|rd|road|blvd|dr|drive|ln|lane)/i.test(message); // address
+    /\d+\s+[a-z]+\s+(st|street|ave|avenue|rd|road|blvd|dr|drive|ln|lane)/i.test(message) || // address
+    /\$\s?\d+/.test(message) || // dollar amount ($150, $ 200)
+    /\d+\s*(hour|hr|minute|min)/i.test(message) || // duration (2 hours, 30 minutes)
+    /net\s*\d+/i.test(message) || // payment terms (net 30)
+    /\d+\s*days?/i.test(message); // due days (30 days)
 
   // 5. Simple affirmative/negative responses
   const isSimpleResponse = /^(yes|no|yeah|yep|nope|ok|okay|sure|correct|that's right|confirmed?)$/i.test(msgLower);
@@ -891,7 +895,7 @@ function extractFollowUpEntities(
   // Extract based on what type of input we're awaiting
   switch (awaitingInput) {
     case 'customer_details':
-    case 'customer_info':
+    case 'customer_info': {
       // Extract email
       const emailMatch = message.match(/\b([a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,})\b/i);
       if (emailMatch) entities.email = emailMatch[1];
@@ -907,19 +911,104 @@ function extractFollowUpEntities(
         .trim();
       if (nameCandidate) entities.name = nameCandidate;
       break;
+    }
+    
+    case 'quote_line_items':
+    case 'invoice_line_items': {
+      // Extract line items from natural language
+      // "AC repair $150, filter replacement $50" → [{description: 'AC repair', amount: 150}, ...]
+      const lineItemPattern = /([^,$]+?)\s*\$\s?(\d+(?:\.\d{2})?)/gi;
+      let match;
+      const items: Array<{description: string, amount: number}> = [];
+      while ((match = lineItemPattern.exec(message)) !== null) {
+        items.push({ description: match[1].trim(), amount: parseFloat(match[2]) });
+      }
+      if (items.length > 0) {
+        entities.lineItems = items;
+      } else {
+        // No dollar amounts found, treat whole message as description
+        entities.description = message.trim();
+      }
+      break;
+    }
+    
+    case 'amount': {
+      const amountMatch = message.match(/\$?\s?(\d+(?:,\d{3})*(?:\.\d{2})?)/);
+      if (amountMatch) entities.amount = parseFloat(amountMatch[1].replace(/,/g, ''));
+      break;
+    }
+    
+    case 'job_address':
+    case 'address': {
+      // Extract full address (everything that looks like an address)
+      const addressPattern = /\d+\s+[a-z0-9\s,]+(?:st|street|ave|avenue|rd|road|blvd|dr|drive|ln|lane|ct|court|way|circle|pl|place)[^,]*(?:,\s*[a-z\s]+)?(?:,\s*[a-z]{2})?\s*\d{5}(?:-\d{4})?/i;
+      const addrMatch = message.match(addressPattern);
+      if (addrMatch) {
+        entities.address = addrMatch[0];
+      } else {
+        // Use whole message as address
+        entities.address = message.trim();
+      }
+      break;
+    }
+    
+    case 'service_type': {
+      entities.serviceType = message.trim();
+      break;
+    }
+    
+    case 'duration': {
+      const durationMatch = message.match(/(\d+(?:\.\d+)?)\s*(hours?|hrs?|minutes?|mins?)/i);
+      if (durationMatch) {
+        const value = parseFloat(durationMatch[1]);
+        const unit = durationMatch[2].toLowerCase();
+        entities.durationMinutes = unit.startsWith('h') ? Math.round(value * 60) : Math.round(value);
+      } else {
+        // Try just a number (assume hours)
+        const numMatch = message.match(/(\d+(?:\.\d+)?)/);
+        if (numMatch) entities.durationMinutes = Math.round(parseFloat(numMatch[1]) * 60);
+      }
+      break;
+    }
+    
+    case 'assignee': {
+      // Store the name - will need to match to team member later
+      entities.assigneeName = message.trim();
+      break;
+    }
+    
+    case 'invoice_terms': {
+      const dueDaysMatch = message.match(/(\d+)\s*days?/i);
+      if (dueDaysMatch) entities.dueDays = parseInt(dueDaysMatch[1]);
+      const netMatch = message.match(/net\s*(\d+)/i);
+      if (netMatch) entities.dueDays = parseInt(netMatch[1]);
+      // Common terms
+      if (/due on receipt|upon receipt/i.test(message)) entities.dueDays = 0;
+      if (/net\s*15/i.test(message)) entities.dueDays = 15;
+      if (/net\s*30/i.test(message)) entities.dueDays = 30;
+      if (/net\s*60/i.test(message)) entities.dueDays = 60;
+      break;
+    }
+    
+    case 'description': {
+      entities.description = message.trim();
+      break;
+    }
       
     case 'date':
-    case 'schedule_date':
+    case 'schedule_date': {
       const dateEntities = extractEntities(message);
       if (dateEntities.date) entities.date = dateEntities.date;
       if (dateEntities.time) entities.time = dateEntities.time;
       break;
+    }
       
-    case 'confirmation':
+    case 'confirmation': {
       const msgLower = message.toLowerCase().trim();
       entities.confirmed = /^(yes|yeah|yep|ok|okay|sure|correct|confirmed?|do it|go ahead)$/i.test(msgLower);
       entities.denied = /^(no|nope|cancel|stop|don't|nevermind)$/i.test(msgLower);
       break;
+    }
       
     default:
       // General extraction
