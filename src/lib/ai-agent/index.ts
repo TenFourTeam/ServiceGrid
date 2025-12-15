@@ -56,3 +56,31 @@ export {
   type ProcessStepContext,
   type DomainContext,
 } from './context-map';
+
+// Prompt Templates
+export {
+  PROMPT_TEMPLATES,
+  getPromptTemplate,
+  getTemplateForIntent,
+  getTemplatesForDomain,
+  getHighRiskTemplates,
+  getRequiredContextKeys,
+  getAllContextKeys,
+  type PromptTemplate,
+  type PromptTemplateRegistry,
+} from './prompt-templates';
+
+// Prompt Builder
+export {
+  buildPromptForIntent,
+  buildPromptFromTemplateId,
+  buildPromptFromTemplate,
+  validateContext,
+  getContextKeysForTemplate,
+  previewPrompt,
+  buildPromptsForWorkflow,
+  mergeContext,
+  type BuiltPrompt,
+  type ContextData,
+  type BuilderOptions,
+} from './prompt-builder';
