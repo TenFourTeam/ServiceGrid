@@ -6,6 +6,7 @@
  */
 
 import { loadContext, LoaderContext, LoadedContext } from './context-loader.ts';
+import { resolveReference, MemoryContext } from './memory-manager.ts';
 
 // =============================================================================
 // TYPES
@@ -898,6 +899,109 @@ Current Context:
     prompt += `- Capacity: ${context.capacity_metrics.utilizationPercent}% utilized (${context.capacity_metrics.capacityStatus})\n`;
   }
 
+  // =========================================
+  // INJECT ACTUAL LOADED CONTEXT DATA
+  // =========================================
+  
+  // Unscheduled jobs list
+  if (context.unscheduled_jobs?.length > 0) {
+    prompt += `\n📋 UNSCHEDULED JOBS (${context.unscheduled_jobs.length}):\n`;
+    prompt += context.unscheduled_jobs.slice(0, 10).map((j: any) => 
+      `  • ${j.title || 'Untitled'} - ${j.customers?.name || 'No customer'} (Priority: ${j.priority || 'Normal'})`
+    ).join('\n');
+    if (context.unscheduled_jobs.length > 10) {
+      prompt += `\n  ... and ${context.unscheduled_jobs.length - 10} more`;
+    }
+    prompt += '\n';
+  }
+
+  // Today's schedule
+  if (context.todays_jobs?.length > 0) {
+    prompt += `\n📅 TODAY'S SCHEDULE (${context.todays_jobs.length} jobs):\n`;
+    prompt += context.todays_jobs.slice(0, 8).map((j: any) => {
+      const time = j.starts_at ? new Date(j.starts_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : 'TBD';
+      return `  • ${time} - ${j.title || 'Untitled'} (${j.status || 'Scheduled'})`;
+    }).join('\n');
+    prompt += '\n';
+  }
+
+  // Team members
+  if (context.team_members?.length > 0) {
+    prompt += `\n👥 TEAM MEMBERS (${context.team_members.length}):\n`;
+    prompt += context.team_members.slice(0, 8).map((m: any) => 
+      `  • ${m.name}`
+    ).join('\n');
+    prompt += '\n';
+  }
+
+  // Active clock-ins
+  if (context.active_clockins?.length > 0) {
+    prompt += `\n⏱️ CURRENTLY CLOCKED IN (${context.active_clockins.length}):\n`;
+    prompt += context.active_clockins.map((c: any) => 
+      `  • ${c.profiles?.full_name || 'Unknown'} - ${c.jobs?.title || 'No job assigned'}`
+    ).join('\n');
+    prompt += '\n';
+  }
+
+  // Pending quotes
+  if (context.pending_quotes?.length > 0) {
+    prompt += `\n📝 PENDING QUOTES (${context.pending_quotes.length}):\n`;
+    prompt += context.pending_quotes.slice(0, 5).map((q: any) => 
+      `  • ${q.number} - ${q.customers?.name || 'Unknown'} ($${q.total?.toFixed(2) || '0.00'})`
+    ).join('\n');
+    prompt += '\n';
+  }
+
+  // Unpaid invoices
+  if (context.unpaid_invoices?.length > 0) {
+    prompt += `\n💰 UNPAID INVOICES (${context.unpaid_invoices.length}):\n`;
+    prompt += context.unpaid_invoices.slice(0, 5).map((inv: any) => 
+      `  • ${inv.number} - ${inv.customers?.name || 'Unknown'} ($${inv.total?.toFixed(2) || '0.00'})`
+    ).join('\n');
+    prompt += '\n';
+  }
+
+  // Overdue invoices
+  if (context.overdue_invoices?.length > 0) {
+    prompt += `\n⚠️ OVERDUE INVOICES (${context.overdue_invoices.length}):\n`;
+    prompt += context.overdue_invoices.slice(0, 5).map((inv: any) => 
+      `  • ${inv.number} - ${inv.customers?.name || 'Unknown'} ($${inv.total?.toFixed(2) || '0.00'}) - Due: ${inv.due_at}`
+    ).join('\n');
+    prompt += '\n';
+  }
+
+  // Service requests pending
+  if (context.service_requests_pending?.length > 0) {
+    prompt += `\n📨 PENDING APPOINTMENT REQUESTS (${context.service_requests_pending.length}):\n`;
+    prompt += context.service_requests_pending.slice(0, 5).map((r: any) => 
+      `  • ${r.request_type} - ${r.customers?.name || 'Unknown'}`
+    ).join('\n');
+    prompt += '\n';
+  }
+
+  // Specific entity data (job, customer, quote, invoice)
+  if (context.job_data) {
+    const job = context.job_data;
+    prompt += `\n🔧 CURRENT JOB:\n`;
+    prompt += `  • Title: ${job.title || 'Untitled'}\n`;
+    prompt += `  • Customer: ${job.customers?.name || 'Unknown'}\n`;
+    prompt += `  • Status: ${job.status}\n`;
+    prompt += `  • Address: ${job.address || job.customers?.address || 'Not set'}\n`;
+    if (job.starts_at) prompt += `  • Scheduled: ${job.starts_at}\n`;
+    prompt += '\n';
+  }
+
+  if (context.customer_data) {
+    const cust = context.customer_data;
+    prompt += `\n👤 CURRENT CUSTOMER:\n`;
+    prompt += `  • Name: ${cust.name}\n`;
+    prompt += `  • Email: ${cust.email || 'Not set'}\n`;
+    prompt += `  • Phone: ${cust.phone || 'Not set'}\n`;
+    prompt += `  • Jobs: ${cust.jobs?.length || 0}\n`;
+    prompt += `  • Invoices: ${cust.invoices?.length || 0}\n`;
+    prompt += '\n';
+  }
+
   // Add domain-specific instructions
   prompt += getDomainInstructions(intent.domain);
 
@@ -1016,7 +1120,8 @@ function getToolsForIntent(intent: ClassifiedIntent): string[] {
 export async function orchestrate(
   message: string,
   sessionContext: SessionContext,
-  supabase: any
+  supabase: any,
+  memoryContext?: MemoryContext
 ): Promise<OrchestratorResult> {
   console.info('[orchestrator] Processing message:', message.substring(0, 100));
 
@@ -1046,6 +1151,27 @@ export async function orchestrate(
     entityId: intent.entities.entityId || sessionContext.entityId,
     entityType: sessionContext.entityType,
   };
+
+  // Step 3a: Resolve entity references from memory if needed
+  // If intent requires entity-specific context but no entityId was extracted, try memory
+  if (memoryContext && !loaderContext.entityId) {
+    const entityTypesNeeded: Array<'job' | 'customer' | 'quote' | 'invoice'> = [];
+    
+    if (requiredKeys.includes('job_data')) entityTypesNeeded.push('job');
+    if (requiredKeys.includes('customer_data')) entityTypesNeeded.push('customer');
+    if (requiredKeys.includes('quote_data')) entityTypesNeeded.push('quote');
+    if (requiredKeys.includes('invoice_data')) entityTypesNeeded.push('invoice');
+    
+    for (const entityType of entityTypesNeeded) {
+      const resolved = await resolveReference(memoryContext, entityType);
+      if (resolved) {
+        console.info(`[orchestrator] Resolved "${entityType}" from memory:`, resolved.entityId, resolved.entityName);
+        loaderContext.entityId = resolved.entityId;
+        loaderContext.entityType = entityType;
+        break; // Use the first resolved entity
+      }
+    }
+  }
 
   const loadedContext = await loadContext([...requiredKeys, ...optionalKeys], loaderContext);
   console.info('[orchestrator] Loaded context keys:', Object.keys(loadedContext));

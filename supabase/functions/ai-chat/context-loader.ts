@@ -121,6 +121,10 @@ const contextLoaders: Record<string, (ctx: LoaderContext) => Promise<any>> = {
 
   // Scheduling Context
   unscheduled_jobs: async (ctx) => {
+    const cacheKey = getCacheKey('unscheduled_jobs', ctx.businessId);
+    const cached = getFromCache(cacheKey);
+    if (cached) return cached;
+
     const { data } = await ctx.supabase
       .from('jobs')
       .select(`
@@ -134,7 +138,9 @@ const contextLoaders: Record<string, (ctx: LoaderContext) => Promise<any>> = {
       .order('created_at', { ascending: false })
       .limit(50);
 
-    return data || [];
+    const result = data || [];
+    setInCache(cacheKey, result, 120); // 2 minute cache
+    return result;
   },
 
   unscheduled_jobs_count: async (ctx) => {
@@ -149,6 +155,10 @@ const contextLoaders: Record<string, (ctx: LoaderContext) => Promise<any>> = {
   },
 
   todays_jobs: async (ctx) => {
+    const cacheKey = getCacheKey('todays_jobs', ctx.businessId);
+    const cached = getFromCache(cacheKey);
+    if (cached) return cached;
+
     const today = new Date().toISOString().split('T')[0];
     const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
 
@@ -163,7 +173,9 @@ const contextLoaders: Record<string, (ctx: LoaderContext) => Promise<any>> = {
       .lt('starts_at', `${tomorrow}T00:00:00Z`)
       .order('starts_at', { ascending: true });
 
-    return data || [];
+    const result = data || [];
+    setInCache(cacheKey, result, 60); // 1 minute cache
+    return result;
   },
 
   todays_jobs_count: async (ctx) => {
@@ -479,6 +491,122 @@ const contextLoaders: Record<string, (ctx: LoaderContext) => Promise<any>> = {
   current_date: () => new Date().toISOString().split('T')[0],
 
   current_datetime: () => new Date().toISOString(),
+
+  // ============================================
+  // NEW LOADERS - Phase 3 additions
+  // ============================================
+
+  // Recent jobs (last 10 touched)
+  recent_jobs: async (ctx) => {
+    const cacheKey = getCacheKey('recent_jobs', ctx.businessId);
+    const cached = getFromCache(cacheKey);
+    if (cached) return cached;
+
+    const { data } = await ctx.supabase
+      .from('jobs')
+      .select(`
+        id, title, status, starts_at, address,
+        customers(id, name)
+      `)
+      .eq('business_id', ctx.businessId)
+      .order('updated_at', { ascending: false })
+      .limit(10);
+
+    const result = data || [];
+    setInCache(cacheKey, result, 60);
+    return result;
+  },
+
+  // Active clock-ins
+  active_clockins: async (ctx) => {
+    const { data } = await ctx.supabase
+      .from('timesheet_entries')
+      .select(`
+        id, user_id, job_id, clock_in,
+        profiles!timesheet_entries_user_id_fkey(full_name),
+        jobs(id, title)
+      `)
+      .eq('business_id', ctx.businessId)
+      .is('clock_out', null);
+
+    return data || [];
+  },
+
+  // Recurring schedules
+  recurring_schedules: async (ctx) => {
+    const cacheKey = getCacheKey('recurring_schedules', ctx.businessId);
+    const cached = getFromCache(cacheKey);
+    if (cached) return cached;
+
+    const { data } = await ctx.supabase
+      .from('recurring_schedules')
+      .select(`
+        id, quote_id, status, frequency, next_billing_date,
+        customers(id, name)
+      `)
+      .eq('business_id', ctx.businessId)
+      .eq('status', 'active')
+      .limit(20);
+
+    const result = data || [];
+    setInCache(cacheKey, result, 300);
+    return result;
+  },
+
+  // Checklist templates
+  checklist_templates: async (ctx) => {
+    const cacheKey = getCacheKey('checklist_templates', ctx.businessId);
+    const cached = getFromCache(cacheKey);
+    if (cached) return cached;
+
+    const { data } = await ctx.supabase
+      .from('sg_checklist_templates')
+      .select('id, name, description')
+      .or(`business_id.eq.${ctx.businessId},is_system_template.eq.true`)
+      .eq('is_archived', false)
+      .limit(20);
+
+    const result = data || [];
+    setInCache(cacheKey, result, 600);
+    return result;
+  },
+
+  // Service requests pending (appointment change requests)
+  service_requests_pending: async (ctx) => {
+    const { data } = await ctx.supabase
+      .from('appointment_change_requests')
+      .select(`
+        id, job_id, request_type, status, preferred_date, created_at,
+        customers(id, name)
+      `)
+      .eq('business_id', ctx.businessId)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    return data || [];
+  },
+
+  // Recent payments
+  recent_payments: async (ctx) => {
+    const cacheKey = getCacheKey('recent_payments', ctx.businessId);
+    const cached = getFromCache(cacheKey);
+    if (cached) return cached;
+
+    const { data } = await ctx.supabase
+      .from('payments')
+      .select(`
+        id, amount, method, received_at, status,
+        invoices(id, number, customers(name))
+      `)
+      .eq('business_id', ctx.businessId)
+      .order('received_at', { ascending: false })
+      .limit(10);
+
+    const result = data || [];
+    setInCache(cacheKey, result, 120);
+    return result;
+  },
 };
 
 // =============================================================================
@@ -492,6 +620,8 @@ export async function loadContext(
   keys: string[],
   ctx: LoaderContext
 ): Promise<LoadedContext> {
+  console.info(`[context-loader] Loading ${keys.length} keys:`, keys);
+  const startTime = Date.now();
   const results: LoadedContext = {};
 
   // Load all keys in parallel
@@ -500,20 +630,35 @@ export async function loadContext(
     if (loader) {
       try {
         const value = await loader(ctx);
-        return { key, value };
+        return { key, value, success: true };
       } catch (error) {
-        console.error(`Error loading context key "${key}":`, error);
-        return { key, value: null };
+        console.error(`[context-loader] Error loading key "${key}":`, error);
+        return { key, value: null, success: false };
       }
     } else {
-      console.warn(`Unknown context key: ${key}`);
-      return { key, value: null };
+      console.warn(`[context-loader] Unknown context key: ${key}`);
+      return { key, value: null, success: false };
     }
   });
 
   const loaded = await Promise.all(loadPromises);
-  for (const { key, value } of loaded) {
+  
+  const successKeys: string[] = [];
+  const failedKeys: string[] = [];
+  
+  for (const { key, value, success } of loaded) {
     results[key] = value;
+    if (success && value !== null) {
+      successKeys.push(key);
+    } else {
+      failedKeys.push(key);
+    }
+  }
+
+  const elapsed = Date.now() - startTime;
+  console.info(`[context-loader] Loaded ${successKeys.length}/${keys.length} in ${elapsed}ms`);
+  if (failedKeys.length > 0) {
+    console.warn(`[context-loader] Failed to load:`, failedKeys);
   }
 
   return results;
