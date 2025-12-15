@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.54.0';
 import { requireCtx, corsHeaders } from '../_lib/auth.ts';
+import { orchestrate, type SessionContext } from './agent-orchestrator.ts';
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -1026,7 +1027,7 @@ const tools: Record<string, Tool> = {
   }
 };
 
-// Helper function to fetch greeting context (not exposed to AI, used on startup)
+// Helper function to fetch greeting context using context loader
 async function fetchGreetingContext(context: any) {
   const [unscheduledJobs, todaysJobs, teamMembers, recentActivity, business] = await Promise.all([
     // Unscheduled jobs count
@@ -1034,7 +1035,8 @@ async function fetchGreetingContext(context: any) {
       .from('jobs')
       .select('id', { count: 'exact', head: true })
       .eq('business_id', context.businessId)
-      .is('starts_at', null),
+      .is('starts_at', null)
+      .neq('status', 'Cancelled'),
     
     // Today's jobs count
     context.supabase
@@ -1216,13 +1218,36 @@ Deno.serve(async (req) => {
       ? '\n\nIMAGE ANALYSIS CAPABILITY:\nYou can analyze images shared by field workers. When images are provided:\n- Identify problems, defects, or issues visible in photos\n- Provide step-by-step guidance for repairs or installations\n- Reference safety considerations\n- Suggest tools or materials needed\n- Give clear, actionable instructions'
       : '';
 
-    const systemPrompt = `You are a proactive AI scheduling assistant for a service business management system.
+    // Use the agent orchestrator for intelligent prompt building
+    const sessionContext: SessionContext = {
+      businessId,
+      userId,
+      currentPage: includeContext?.currentPage,
+      entityId: includeContext?.entityId,
+      entityType: includeContext?.entityType,
+    };
+
+    const orchestratorResult = await orchestrate(message, sessionContext, supaAdmin);
+    console.info('[ai-chat] Orchestrator result:', orchestratorResult.type, orchestratorResult.intent?.intentId);
+
+    // Handle clarification requests
+    if (orchestratorResult.type === 'clarification' && orchestratorResult.clarificationQuestion) {
+      // For now, we'll let the AI handle clarification naturally
+      // In the future, we could return a structured clarification response
+      console.info('[ai-chat] Clarification needed:', orchestratorResult.clarificationQuestion);
+    }
+
+    // Build the system prompt - use orchestrator's dynamic prompt if available
+    const baseSystemPrompt = orchestratorResult.systemPrompt || `You are a proactive AI scheduling assistant for a service business management system.
 You can both QUERY information and TAKE ACTIONS to help manage the business efficiently.${visionNote}
 
 Current Context:
 - Business ID: ${businessId}
 - Current Page: ${includeContext?.currentPage || 'unknown'}
-- Date: ${new Date().toISOString().split('T')[0]}
+- Date: ${new Date().toISOString().split('T')[0]}`;
+
+    // Add the full tool documentation to the prompt
+    const systemPrompt = baseSystemPrompt + `${visionNote}
 
 Available Tools:
 1. get_unscheduled_jobs - Find jobs that need scheduling
@@ -1253,22 +1278,10 @@ When user asks to schedule jobs, follow this flow:
      * Travel time between jobs (groups by location)
      * Business constraints (max hours, operating hours)
      * Priority (urgent jobs scheduled first)
-   - Example: "I can schedule all 5 jobs optimally right now. [BUTTON:batch_schedule:[job_ids]:Schedule All]"
 
 3. AFTER SCHEDULING: Confirm and offer next steps
    - Show what was scheduled (dates/times)
    - Offer calendar view: "View on calendar: [BUTTON:view_calendar_2024-03-15:Open Calendar 📅]"
-   - Suggest follow-ups if relevant
-
-BATCH SCHEDULING INTELLIGENCE:
-The batch_schedule_jobs tool is SMART:
-✅ Respects team availability and time off
-✅ Groups jobs by location to minimize driving
-✅ Honors customer preferred days/time windows
-✅ Balances workload across team members
-✅ Schedules urgent jobs (priority 1-2) first
-✅ Leaves buffers between jobs for travel
-✅ Checks business constraints (max jobs/day, hours)
 
 SCHEDULE PREVIEW FORMATTING:
 After batch scheduling, ALWAYS show results with this special syntax:
@@ -1279,85 +1292,15 @@ When user rejects a schedule or wants adjustments:
 1. Use refine_schedule tool with their feedback
 2. Explain what constraints you applied based on feedback
 3. Show new [SCHEDULE_PREVIEW:...] with refined schedule
-4. Highlight what changed: "I moved 3 jobs earlier and grouped 2 by location"
-
-Example refinement responses:
-User: "Move these earlier in the day"
-→ Use refine_schedule with feedback="move earlier in the day"
-→ "I've rescheduled these for morning time slots (8 AM - 12 PM)..."
-
-User: "Spread them across more days"
-→ Use refine_schedule with feedback="spread across more days"
-→ "I've distributed these across 5 days instead of 2..."
-
-ERROR HANDLING:
-When scheduling fails partially or completely, provide structured feedback:
-
-PARTIAL SUCCESS (some jobs scheduled):
-"✅ **Scheduled {X} of {Y} jobs**
-
-[Show SCHEDULE_PREVIEW for successful ones]
-
-⚠️ **Could not schedule {Z} jobs:**
-
-❌ **{Job Title}** - {Customer Name}
-   Reason: {specific reason}
-   Solution: {actionable fix}
-   
-[BUTTON:retry_next_week:Try Next Week]
-[BUTTON:edit_job:Fix Missing Data]"
-
-INSUFFICIENT CAPACITY:
-"⚠️ **Team At Capacity**
-
-Your team is fully booked for the requested period.
-Options:
-1. Schedule into next available week
-2. Prioritize urgent jobs only
-
-[BUTTON:schedule_next_week:Schedule Next Week]
-[BUTTON:prioritize_urgent:Schedule Urgent Only]"
-
-MISSING DATA:
-"⚠️ **Missing Required Information**
-
-{X} jobs cannot be scheduled without complete data:
-
-❌ **{Job Title}**
-   - Missing: Customer address
-   - Needed for: Route optimization
-   
-[BUTTON:add_addresses:Add Missing Data]"
 
 RESPONSE STYLE:
 1. Be proactive and actionable - don't just inform, offer to act
-2. Use clickable buttons for actions with OPTIONAL variants:
-   Syntax: [BUTTON:message_to_send:Button Label|variant]
+2. Use clickable buttons: [BUTTON:message_to_send:Button Label|variant]
    Variants: primary (default blue), secondary (gray), danger (red)
-   
-   Examples:
-   - [BUTTON:batch_schedule_jobs with job IDs:Schedule All|primary]
-   - [BUTTON:cancel_changes:Cancel|secondary]
-   - [BUTTON:delete_all_jobs:Delete All|danger]
-   - [BUTTON:view_calendar:View Calendar] (no variant = default primary)
-   
 3. Keep responses concise (2-4 sentences ideal)
 4. Use emojis for visual hierarchy (✅ success, ⚠️ warnings, 📅 scheduling, 🚗 travel)
-5. Explain AI reasoning when scheduling: "Grouped these 3 jobs because they're all on Main Street"
-6. Always confirm before cancellations or major changes
-7. If capacity issues, explain constraints clearly
-
-Response Examples:
-✅ Good: "Found 3 unscheduled jobs, all in the same area. I can schedule them back-to-back tomorrow morning to minimize travel. [BUTTON:Schedule these 3 jobs tomorrow:Schedule]"
-✅ Good: "⚠️ 2 urgent jobs found. I'll prioritize these and fit 3 others around team availability. [BUTTON:batch_schedule_jobs with all IDs:Schedule All]"
-❌ Bad: "There are some jobs that need scheduling. Would you like me to look into that?"
-
-INTELLIGENCE NOTES:
-- When jobs have same/nearby addresses → Mention grouping for efficiency
-- When customer has preferred days → Honor those preferences
-- When team is at capacity → Suggest spreading across multiple days
-- When urgent jobs exist → Prioritize those first
-- Always explain YOUR reasoning for scheduling decisions`;
+5. Explain AI reasoning when scheduling
+6. Always confirm before cancellations or major changes`;
 
 
     // Prepare messages for AI - support vision

@@ -84,3 +84,7 @@ export {
   type ContextData,
   type BuilderOptions,
 } from './prompt-builder';
+
+// Re-export for convenience
+export { DOMAINS as AI_DOMAINS } from './intent-taxonomy';
+export { PROMPT_TEMPLATES as AI_PROMPT_TEMPLATES } from './prompt-templates';
