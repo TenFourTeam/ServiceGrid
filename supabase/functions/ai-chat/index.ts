@@ -4029,11 +4029,27 @@ RESPONSE STYLE:
               
               // Detect what kind of input we're awaiting based on response content
               let awaitingInput = 'general';
-              if (/customer.*name|email|phone|details/i.test(fullResponse)) {
+              if (/customer.*name|email|phone|details|which customer/i.test(fullResponse)) {
                 awaitingInput = 'customer_details';
+              } else if (/line item|item description|what (services?|products?)|add.*item/i.test(fullResponse)) {
+                awaitingInput = 'quote_line_items';
+              } else if (/amount|price|cost|how much|total/i.test(fullResponse)) {
+                awaitingInput = 'amount';
+              } else if (/address|location|where.*job|service address|what.*address/i.test(fullResponse)) {
+                awaitingInput = 'job_address';
+              } else if (/service type|type of (job|work|service)|what kind of/i.test(fullResponse)) {
+                awaitingInput = 'service_type';
+              } else if (/duration|how long|time.*take|estimated time/i.test(fullResponse)) {
+                awaitingInput = 'duration';
+              } else if (/who.*assign|assign.*to|team member|technician|which (tech|worker)/i.test(fullResponse)) {
+                awaitingInput = 'assignee';
+              } else if (/due date|payment terms|when.*due|net \d+/i.test(fullResponse)) {
+                awaitingInput = 'invoice_terms';
+              } else if (/description|notes|details about|additional info/i.test(fullResponse)) {
+                awaitingInput = 'description';
               } else if (/date|when|time|schedule/i.test(fullResponse)) {
                 awaitingInput = 'date';
-              } else if (/confirm|are you sure|proceed/i.test(fullResponse)) {
+              } else if (/confirm|are you sure|proceed|go ahead/i.test(fullResponse)) {
                 awaitingInput = 'confirmation';
               }
               
