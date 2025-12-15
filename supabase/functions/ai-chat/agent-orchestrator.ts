@@ -6,7 +6,14 @@
  */
 
 import { loadContext, LoaderContext, LoadedContext } from './context-loader.ts';
-import { resolveReference, MemoryContext } from './memory-manager.ts';
+import { 
+  resolveReference, 
+  MemoryContext, 
+  getConversationState, 
+  setConversationState,
+  clearConversationState,
+  type ConversationState 
+} from './memory-manager.ts';
 
 // =============================================================================
 // TYPES
@@ -28,6 +35,13 @@ export interface ClassifiedIntent {
   entities: Record<string, any>;
   requiresClarification: boolean;
   clarificationReason?: string;
+  isFollowUp?: boolean;  // True if this is a follow-up to a previous AI question
+}
+
+// Message type for conversation history
+interface ConversationMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
 }
 
 export interface OrchestratorResult {
@@ -786,6 +800,137 @@ function extractEntities(message: string): Record<string, any> {
 }
 
 // =============================================================================
+// FOLLOW-UP DETECTION
+// =============================================================================
+
+/**
+ * Detect if a message is a follow-up response to an AI question
+ * rather than a new intent
+ */
+function isFollowUpResponse(
+  message: string,
+  conversationHistory: ConversationMessage[],
+  conversationState: ConversationState | null
+): boolean {
+  // If no pending intent, can't be a follow-up
+  if (!conversationState?.pendingIntent || !conversationState?.awaitingInput) {
+    return false;
+  }
+
+  // Get the last assistant message
+  const lastAssistantMsg = [...conversationHistory]
+    .reverse()
+    .find(m => m.role === 'assistant');
+  
+  if (!lastAssistantMsg) return false;
+
+  const lastContent = lastAssistantMsg.content.toLowerCase();
+  const msgLower = message.toLowerCase().trim();
+  const msgWords = msgLower.split(/\s+/).length;
+
+  // Heuristics for follow-up detection:
+  
+  // 1. Last assistant message was a question
+  const lastWasQuestion = lastContent.includes('?') || 
+    lastContent.includes('what is') ||
+    lastContent.includes('could you provide') ||
+    lastContent.includes('please provide') ||
+    lastContent.includes('what\'s the');
+
+  // 2. User's message is relatively short (< 30 words) - likely an answer, not a new command
+  const isShortResponse = msgWords < 30;
+
+  // 3. User's message doesn't contain strong action verbs suggesting new intent
+  const actionVerbs = ['schedule', 'create', 'show', 'list', 'find', 'search', 'cancel', 
+    'delete', 'send', 'update', 'assign', 'reschedule', 'convert', 'generate'];
+  const hasActionVerb = actionVerbs.some(verb => {
+    // Check if action verb is at the start of the message (imperative)
+    const startsWithAction = msgLower.startsWith(verb);
+    // Or if it's "can you [action]" or "please [action]"
+    const requestPattern = new RegExp(`(can you|could you|please|i want to|i need to)\\s+${verb}`, 'i');
+    return startsWithAction || requestPattern.test(msgLower);
+  });
+
+  // 4. Message looks like data being provided (email, name, date, address patterns)
+  const looksLikeData = 
+    /\b[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}\b/i.test(message) || // email
+    /\d{1,2}\/\d{1,2}\/\d{2,4}/.test(message) || // date
+    /\d{3}[-.\s]?\d{3}[-.\s]?\d{4}/.test(message) || // phone
+    /\d+\s+[a-z]+\s+(st|street|ave|avenue|rd|road|blvd|dr|drive|ln|lane)/i.test(message); // address
+
+  // 5. Simple affirmative/negative responses
+  const isSimpleResponse = /^(yes|no|yeah|yep|nope|ok|okay|sure|correct|that's right|confirmed?)$/i.test(msgLower);
+
+  // Decision logic
+  if (isSimpleResponse) return true;
+  if (lastWasQuestion && isShortResponse && !hasActionVerb) return true;
+  if (lastWasQuestion && looksLikeData) return true;
+  if (conversationState.awaitingInput && isShortResponse && !hasActionVerb) return true;
+
+  console.info('[orchestrator] Follow-up check:', {
+    pendingIntent: conversationState.pendingIntent,
+    lastWasQuestion,
+    isShortResponse,
+    hasActionVerb,
+    looksLikeData,
+    result: false
+  });
+
+  return false;
+}
+
+/**
+ * Extract data entities from a follow-up response based on what we're awaiting
+ */
+function extractFollowUpEntities(
+  message: string,
+  awaitingInput: string
+): Record<string, any> {
+  const entities: Record<string, any> = {};
+  
+  // Extract based on what type of input we're awaiting
+  switch (awaitingInput) {
+    case 'customer_details':
+    case 'customer_info':
+      // Extract email
+      const emailMatch = message.match(/\b([a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,})\b/i);
+      if (emailMatch) entities.email = emailMatch[1];
+      
+      // Extract phone
+      const phoneMatch = message.match(/(\d{3}[-.\s]?\d{3}[-.\s]?\d{4})/);
+      if (phoneMatch) entities.phone = phoneMatch[1];
+      
+      // The rest is likely the name - extract it
+      let nameCandidate = message
+        .replace(/\b[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}\b/gi, '') // remove email
+        .replace(/\d{3}[-.\s]?\d{3}[-.\s]?\d{4}/g, '') // remove phone
+        .trim();
+      if (nameCandidate) entities.name = nameCandidate;
+      break;
+      
+    case 'date':
+    case 'schedule_date':
+      const dateEntities = extractEntities(message);
+      if (dateEntities.date) entities.date = dateEntities.date;
+      if (dateEntities.time) entities.time = dateEntities.time;
+      break;
+      
+    case 'confirmation':
+      const msgLower = message.toLowerCase().trim();
+      entities.confirmed = /^(yes|yeah|yep|ok|okay|sure|correct|confirmed?|do it|go ahead)$/i.test(msgLower);
+      entities.denied = /^(no|nope|cancel|stop|don't|nevermind)$/i.test(msgLower);
+      break;
+      
+    default:
+      // General extraction
+      Object.assign(entities, extractEntities(message));
+  }
+  
+  console.info('[orchestrator] Extracted follow-up entities:', entities);
+  return entities;
+}
+
+// =============================================================================
 // INTENT CLASSIFICATION
 // =============================================================================
 
@@ -1121,16 +1266,79 @@ export async function orchestrate(
   message: string,
   sessionContext: SessionContext,
   supabase: any,
-  memoryContext?: MemoryContext
+  memoryContext?: MemoryContext,
+  conversationHistory?: ConversationMessage[]
 ): Promise<OrchestratorResult> {
   console.info('[orchestrator] Processing message:', message.substring(0, 100));
 
-  // Step 1: OBSERVE - Classify intent
-  const intent = classifyIntent(message, sessionContext);
-  console.info('[orchestrator] Classified intent:', intent.intentId, 'confidence:', intent.confidence);
+  // Step 0: Check for follow-up to previous AI question (CRITICAL for multi-turn)
+  let conversationState: ConversationState | null = null;
+  if (memoryContext) {
+    conversationState = await getConversationState(memoryContext);
+    console.info('[orchestrator] Conversation state:', conversationState);
+  }
+
+  // Detect if this is a follow-up response to an AI question
+  const isFollowUp = conversationHistory && conversationHistory.length > 0 &&
+    isFollowUpResponse(message, conversationHistory, conversationState);
+
+  let intent: ClassifiedIntent;
+
+  if (isFollowUp && conversationState?.pendingIntent) {
+    // This is a follow-up - use the pending intent instead of re-classifying
+    console.info('[orchestrator] Detected FOLLOW-UP response to pending intent:', conversationState.pendingIntent);
+    
+    // Extract entities from the follow-up response
+    const followUpEntities = extractFollowUpEntities(message, conversationState.awaitingInput || 'general');
+    
+    // Merge with previously collected entities
+    const mergedEntities = {
+      ...(conversationState.collectedEntities || {}),
+      ...followUpEntities
+    };
+
+    intent = {
+      intentId: conversationState.pendingIntent,
+      domain: conversationState.pendingIntent.split('.')[0] || 'general',
+      confidence: 1.0, // High confidence since we're continuing a flow
+      entities: mergedEntities,
+      requiresClarification: false,
+      isFollowUp: true
+    };
+
+    // Update conversation state with merged entities
+    if (memoryContext) {
+      await setConversationState(memoryContext, {
+        ...conversationState,
+        collectedEntities: mergedEntities
+      });
+    }
+
+    console.info('[orchestrator] Using pending intent with merged entities:', intent.intentId, mergedEntities);
+  } else {
+    // Standard intent classification
+    intent = classifyIntent(message, sessionContext);
+    console.info('[orchestrator] Classified intent:', intent.intentId, 'confidence:', intent.confidence);
+
+    // Clear any stale conversation state if this is a new intent
+    if (memoryContext && conversationState?.pendingIntent && intent.confidence > 0.5) {
+      console.info('[orchestrator] New intent detected, clearing previous conversation state');
+      await clearConversationState(memoryContext);
+    }
+  }
 
   // Step 2: Check if clarification is needed
   if (intent.requiresClarification) {
+    // Store the pending state so we remember what we're asking about
+    if (memoryContext) {
+      await setConversationState(memoryContext, {
+        pendingIntent: intent.intentId,
+        awaitingInput: 'clarification',
+        lastAssistantAction: 'asked_for_clarification',
+        collectedEntities: intent.entities
+      });
+    }
+
     return {
       type: 'clarification',
       intent,
@@ -1178,6 +1386,16 @@ export async function orchestrate(
 
   // Step 4: Check if confirmation is needed for high-risk actions
   if (pattern?.requiresConfirmation && pattern.riskLevel !== 'low') {
+    // Store pending state for confirmation
+    if (memoryContext) {
+      await setConversationState(memoryContext, {
+        pendingIntent: intent.intentId,
+        awaitingInput: 'confirmation',
+        lastAssistantAction: 'asked_for_confirmation',
+        collectedEntities: intent.entities
+      });
+    }
+
     return {
       type: 'confirmation',
       intent,

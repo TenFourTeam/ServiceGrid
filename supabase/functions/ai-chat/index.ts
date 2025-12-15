@@ -29,6 +29,8 @@ import {
   loadMemory, 
   rememberEntity, 
   getRecentEntities,
+  setConversationState,
+  clearConversationState,
   type MemoryContext,
   type ConversationMemory
 } from './memory-manager.ts';
@@ -3407,8 +3409,10 @@ Deno.serve(async (req) => {
       entityType: includeContext?.entityType,
     };
 
-    const orchestratorResult = await orchestrate(message, sessionContext, supaAdmin);
-    console.info('[ai-chat] Orchestrator result:', orchestratorResult.type, orchestratorResult.intent?.intentId);
+    // Pass conversation history to orchestrator for follow-up detection
+    const orchestratorResult = await orchestrate(message, sessionContext, supaAdmin, memoryCtx, messages);
+    console.info('[ai-chat] Orchestrator result:', orchestratorResult.type, orchestratorResult.intent?.intentId, 
+      orchestratorResult.intent?.isFollowUp ? '(follow-up)' : '');
 
     // Helper to generate clarification options from intent
     const generateClarificationOptions = (intent: any): Array<{label: string, value: string}> => {
@@ -4011,6 +4015,42 @@ RESPONSE STYLE:
               role: 'assistant',
               content: fullResponse
             });
+
+          // Track conversation state for multi-turn (if AI is asking a question)
+          try {
+            const responseEndsWithQuestion = fullResponse.trim().endsWith('?') ||
+              /what\s+(is|are)\s+/i.test(fullResponse) ||
+              /could you (provide|tell|share)/i.test(fullResponse) ||
+              /please (provide|enter|share)/i.test(fullResponse);
+            
+            if (responseEndsWithQuestion && orchestratorResult.intent?.intentId) {
+              // AI asked a question - store pending intent for follow-up
+              console.info('[ai-chat] AI asked question, storing pending intent:', orchestratorResult.intent.intentId);
+              
+              // Detect what kind of input we're awaiting based on response content
+              let awaitingInput = 'general';
+              if (/customer.*name|email|phone|details/i.test(fullResponse)) {
+                awaitingInput = 'customer_details';
+              } else if (/date|when|time|schedule/i.test(fullResponse)) {
+                awaitingInput = 'date';
+              } else if (/confirm|are you sure|proceed/i.test(fullResponse)) {
+                awaitingInput = 'confirmation';
+              }
+              
+              await setConversationState(memoryCtx, {
+                pendingIntent: orchestratorResult.intent.intentId,
+                awaitingInput,
+                lastAssistantAction: 'asked_question',
+                collectedEntities: orchestratorResult.intent.entities || {}
+              });
+            } else if (!responseEndsWithQuestion && orchestratorResult.intent?.isFollowUp) {
+              // Action completed after follow-up - clear the state
+              console.info('[ai-chat] Intent completed, clearing conversation state');
+              await clearConversationState(memoryCtx);
+            }
+          } catch (stateErr) {
+            console.error('[ai-chat] Conversation state tracking error (non-fatal):', stateErr);
+          }
 
           // Check if conversation needs summarization
           try {
