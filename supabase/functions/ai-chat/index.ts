@@ -1,6 +1,18 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.54.0';
 import { requireCtx, corsHeaders } from '../_lib/auth.ts';
 import { orchestrate, type SessionContext } from './agent-orchestrator.ts';
+import { 
+  detectMultiStepTask, 
+  buildExecutionPlan, 
+  executePlan, 
+  sendPlanPreview, 
+  sendPlanComplete,
+  storePendingPlan,
+  getPendingPlan,
+  removePendingPlan,
+  type ExecutionPlan,
+  type PlannerResult 
+} from './multi-step-planner.ts';
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
