@@ -33,8 +33,8 @@ export interface PlanPreviewData {
 
 interface PlanPreviewCardProps {
   plan: PlanPreviewData;
-  onApprove: (planId: string) => void;
-  onReject: (planId: string) => void;
+  onApprove: (message: string) => void;
+  onReject: (message: string) => void;
 }
 
 export function PlanPreviewCard({ plan, onApprove, onReject }: PlanPreviewCardProps) {
@@ -43,11 +43,13 @@ export function PlanPreviewCard({ plan, onApprove, onReject }: PlanPreviewCardPr
 
   const handleApprove = async () => {
     setIsExecuting(true);
-    onApprove(plan.id);
+    // Send explicit plan ID in message for reliable matching
+    onApprove(`plan_approve:${plan.id}`);
   };
 
   const handleReject = () => {
-    onReject(plan.id);
+    // Send explicit plan ID in message for reliable matching
+    onReject(`plan_reject:${plan.id}`);
   };
 
   const estimatedTime = plan.steps.length * 3; // Rough estimate: 3 seconds per step
