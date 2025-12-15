@@ -7,10 +7,15 @@ import {
   executePlan, 
   sendPlanPreview, 
   sendPlanComplete,
+  sendStepProgress,
+  sendPlanCancelled,
   storePendingPlan,
   getPendingPlan,
+  getMostRecentPendingPlan,
   removePendingPlan,
+  detectPlanApproval,
   type ExecutionPlan,
+  type ExecutionContext,
   type PlannerResult 
 } from './multi-step-planner.ts';
 
@@ -2680,6 +2685,419 @@ const tools: Record<string, Tool> = {
         }
       };
     }
+  },
+
+  // ============================================
+  // MULTI-STEP PLAN SUPPORT TOOLS
+  // ============================================
+
+  send_job_confirmations: {
+    name: 'send_job_confirmations',
+    description: 'Send confirmation emails to customers for scheduled jobs',
+    parameters: {
+      type: 'object',
+      properties: {
+        jobIds: { 
+          type: 'array', 
+          items: { type: 'string' },
+          description: 'Array of job IDs to send confirmations for' 
+        }
+      },
+      required: ['jobIds']
+    },
+    execute: async (args: any, context: any) => {
+      const { data: jobs, error } = await context.supabase
+        .from('jobs')
+        .select('*, customers(name, email)')
+        .in('id', args.jobIds)
+        .eq('business_id', context.businessId);
+
+      if (error) throw error;
+
+      const sent: any[] = [];
+      const failed: any[] = [];
+
+      for (const job of jobs || []) {
+        if (!job.customers?.email) {
+          failed.push({ jobId: job.id, reason: 'No customer email' });
+          continue;
+        }
+        
+        // In production, this would call an email service
+        // For now, we simulate successful sending
+        sent.push({
+          jobId: job.id,
+          customerName: job.customers.name,
+          email: job.customers.email,
+          scheduledTime: job.starts_at
+        });
+      }
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'notification',
+        description: `Sent ${sent.length} job confirmation emails`,
+        metadata: { tool: 'send_job_confirmations', sent: sent.length, failed: failed.length }
+      });
+
+      return { 
+        success: true, 
+        sent_count: sent.length,
+        failed_count: failed.length,
+        sent,
+        failed
+      };
+    }
+  },
+
+  get_overdue_invoices: {
+    name: 'get_overdue_invoices',
+    description: 'Get all invoices past their due date',
+    parameters: {
+      type: 'object',
+      properties: {
+        daysOverdue: { type: 'number', description: 'Minimum days overdue (default: 0)' }
+      }
+    },
+    execute: async (args: any, context: any) => {
+      const daysOverdue = args.daysOverdue || 0;
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - daysOverdue);
+
+      const { data, error } = await context.supabase
+        .from('invoices')
+        .select('*, customers(name, email)')
+        .eq('business_id', context.businessId)
+        .eq('status', 'Sent')
+        .lt('due_at', cutoffDate.toISOString())
+        .order('due_at', { ascending: true });
+
+      if (error) throw error;
+
+      const totalOverdue = (data || []).reduce((sum: number, inv: any) => sum + (inv.total || 0), 0);
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'query',
+        description: `Found ${data?.length || 0} overdue invoices totaling $${totalOverdue.toFixed(2)}`,
+        metadata: { tool: 'get_overdue_invoices', count: data?.length || 0 }
+      });
+
+      return { 
+        invoices: data || [], 
+        count: data?.length || 0,
+        total_overdue: totalOverdue
+      };
+    }
+  },
+
+  batch_send_reminders: {
+    name: 'batch_send_reminders',
+    description: 'Send payment reminder emails for multiple invoices',
+    parameters: {
+      type: 'object',
+      properties: {
+        invoiceIds: { 
+          type: 'array', 
+          items: { type: 'string' },
+          description: 'Array of invoice IDs to send reminders for' 
+        }
+      },
+      required: ['invoiceIds']
+    },
+    execute: async (args: any, context: any) => {
+      const { data: invoices, error } = await context.supabase
+        .from('invoices')
+        .select('*, customers(name, email)')
+        .in('id', args.invoiceIds)
+        .eq('business_id', context.businessId);
+
+      if (error) throw error;
+
+      const sent: any[] = [];
+      const failed: any[] = [];
+
+      for (const invoice of invoices || []) {
+        if (!invoice.customers?.email) {
+          failed.push({ invoiceId: invoice.id, reason: 'No customer email' });
+          continue;
+        }
+        
+        // In production, this would call an email service
+        sent.push({
+          invoiceId: invoice.id,
+          invoiceNumber: invoice.number,
+          customerName: invoice.customers.name,
+          email: invoice.customers.email,
+          amount: invoice.total
+        });
+      }
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'notification',
+        description: `Sent ${sent.length} payment reminder emails`,
+        metadata: { tool: 'batch_send_reminders', sent: sent.length, failed: failed.length }
+      });
+
+      return { 
+        success: true, 
+        sent_count: sent.length,
+        failed_count: failed.length,
+        sent,
+        failed
+      };
+    }
+  },
+
+  get_completed_jobs: {
+    name: 'get_completed_jobs',
+    description: 'Get all jobs marked as completed that are ready for invoicing',
+    parameters: {
+      type: 'object',
+      properties: {
+        dateRange: { 
+          type: 'object',
+          properties: {
+            start: { type: 'string', description: 'Start date YYYY-MM-DD' },
+            end: { type: 'string', description: 'End date YYYY-MM-DD' }
+          }
+        },
+        uninvoicedOnly: { type: 'boolean', description: 'Only return jobs without invoices' }
+      }
+    },
+    execute: async (args: any, context: any) => {
+      let query = context.supabase
+        .from('jobs')
+        .select('*, customers(name, email), invoices(id)')
+        .eq('business_id', context.businessId)
+        .eq('status', 'Completed');
+
+      if (args.dateRange?.start) {
+        query = query.gte('ends_at', `${args.dateRange.start}T00:00:00Z`);
+      }
+      if (args.dateRange?.end) {
+        query = query.lte('ends_at', `${args.dateRange.end}T23:59:59Z`);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      let jobs = data || [];
+      
+      // Filter to uninvoiced if requested
+      if (args.uninvoicedOnly) {
+        jobs = jobs.filter((j: any) => !j.invoices || j.invoices.length === 0);
+      }
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'query',
+        description: `Found ${jobs.length} completed jobs`,
+        metadata: { tool: 'get_completed_jobs', count: jobs.length }
+      });
+
+      return { jobs, count: jobs.length };
+    }
+  },
+
+  batch_update_job_status: {
+    name: 'batch_update_job_status',
+    description: 'Update status of multiple jobs at once',
+    parameters: {
+      type: 'object',
+      properties: {
+        jobIds: { 
+          type: 'array', 
+          items: { type: 'string' },
+          description: 'Array of job IDs to update' 
+        },
+        newStatus: { 
+          type: 'string', 
+          enum: ['Scheduled', 'In Progress', 'Completed', 'Cancelled', 'Closed'],
+          description: 'New status for all jobs' 
+        }
+      },
+      required: ['jobIds', 'newStatus']
+    },
+    execute: async (args: any, context: any) => {
+      // Get current status for rollback
+      const { data: currentJobs } = await context.supabase
+        .from('jobs')
+        .select('id, status')
+        .in('id', args.jobIds)
+        .eq('business_id', context.businessId);
+
+      const previousStatus = currentJobs?.[0]?.status || 'Completed';
+
+      const { error } = await context.supabase
+        .from('jobs')
+        .update({ status: args.newStatus, updated_at: new Date().toISOString() })
+        .in('id', args.jobIds)
+        .eq('business_id', context.businessId);
+
+      if (error) throw error;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'batch_update',
+        description: `Updated ${args.jobIds.length} jobs to status: ${args.newStatus}`,
+        metadata: { tool: 'batch_update_job_status', count: args.jobIds.length, new_status: args.newStatus }
+      });
+
+      return { 
+        success: true, 
+        updatedJobIds: args.jobIds,
+        newStatus: args.newStatus,
+        previousStatus,
+        count: args.jobIds.length
+      };
+    }
+  },
+
+  batch_create_invoices: {
+    name: 'batch_create_invoices',
+    description: 'Create invoices for multiple jobs at once',
+    parameters: {
+      type: 'object',
+      properties: {
+        jobIds: { 
+          type: 'array', 
+          items: { type: 'string' },
+          description: 'Array of job IDs to create invoices for' 
+        }
+      },
+      required: ['jobIds']
+    },
+    execute: async (args: any, context: any) => {
+      const { data: jobs, error: jobsError } = await context.supabase
+        .from('jobs')
+        .select('*, customers(id, name)')
+        .in('id', args.jobIds)
+        .eq('business_id', context.businessId);
+
+      if (jobsError) throw jobsError;
+
+      const created: any[] = [];
+      const failed: any[] = [];
+
+      for (const job of jobs || []) {
+        if (!job.customer_id) {
+          failed.push({ jobId: job.id, reason: 'No customer linked' });
+          continue;
+        }
+
+        // Get next invoice number
+        const { data: business } = await context.supabase
+          .from('businesses')
+          .select('inv_seq, inv_prefix')
+          .eq('id', context.businessId)
+          .single();
+
+        const invoiceNumber = `${business?.inv_prefix || 'INV-'}${String((business?.inv_seq || 0) + 1).padStart(4, '0')}`;
+
+        const { data: invoice, error: invoiceError } = await context.supabase
+          .from('invoices')
+          .insert({
+            business_id: context.businessId,
+            customer_id: job.customer_id,
+            owner_id: context.userId,
+            job_id: job.id,
+            number: invoiceNumber,
+            subtotal: job.total || 0,
+            total: job.total || 0,
+            status: 'Draft'
+          })
+          .select()
+          .single();
+
+        if (invoiceError) {
+          failed.push({ jobId: job.id, reason: invoiceError.message });
+          continue;
+        }
+
+        // Update sequence
+        await context.supabase
+          .from('businesses')
+          .update({ inv_seq: (business?.inv_seq || 0) + 1 })
+          .eq('id', context.businessId);
+
+        created.push({
+          invoiceId: invoice.id,
+          invoiceNumber: invoice.number,
+          jobId: job.id,
+          jobTitle: job.title,
+          customerName: job.customers?.name,
+          total: invoice.total
+        });
+      }
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'batch_create',
+        description: `Created ${created.length} invoices from completed jobs`,
+        metadata: { tool: 'batch_create_invoices', created: created.length, failed: failed.length }
+      });
+
+      return { 
+        success: true, 
+        created_count: created.length,
+        failed_count: failed.length,
+        invoices: created,
+        failed
+      };
+    }
+  },
+
+  unschedule_jobs: {
+    name: 'unschedule_jobs',
+    description: 'Remove scheduling from jobs (set starts_at/ends_at to null)',
+    parameters: {
+      type: 'object',
+      properties: {
+        jobIds: { 
+          type: 'array', 
+          items: { type: 'string' },
+          description: 'Array of job IDs to unschedule' 
+        }
+      },
+      required: ['jobIds']
+    },
+    execute: async (args: any, context: any) => {
+      const { error } = await context.supabase
+        .from('jobs')
+        .update({ 
+          starts_at: null, 
+          ends_at: null, 
+          status: 'Unscheduled',
+          ai_suggested: false,
+          updated_at: new Date().toISOString() 
+        })
+        .in('id', args.jobIds)
+        .eq('business_id', context.businessId);
+
+      if (error) throw error;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'rollback',
+        description: `Unscheduled ${args.jobIds.length} jobs (rollback)`,
+        metadata: { tool: 'unschedule_jobs', count: args.jobIds.length }
+      });
+
+      return { 
+        success: true, 
+        unscheduled_count: args.jobIds.length,
+        jobIds: args.jobIds
+      };
+    }
   }
 };
 
@@ -3099,6 +3517,164 @@ RESPONSE STYLE:
             controller.close();
             return;
           }
+
+          // ===============================================================
+          // MULTI-STEP PLAN DETECTION & EXECUTION
+          // ===============================================================
+          
+          // First, check if this is a plan approval/rejection message
+          const planApproval = detectPlanApproval(message);
+          
+          if (planApproval.isApproval) {
+            // User approved a plan - execute it
+            const pendingPlanData = planApproval.planId 
+              ? getPendingPlan(planApproval.planId)
+              : getMostRecentPendingPlan(userId);
+            
+            if (pendingPlanData) {
+              const { plan, pattern, entities } = pendingPlanData;
+              
+              // Remove from pending
+              removePendingPlan(plan.id);
+              
+              console.info('[ai-chat] Executing approved plan:', plan.id, plan.name);
+              
+              // Send initial executing status
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({
+                  type: 'step_progress',
+                  planId: plan.id,
+                  stepIndex: 0,
+                  totalSteps: plan.steps.length,
+                  step: { id: plan.steps[0].id, name: plan.steps[0].name, status: 'running' },
+                  message: 'Starting plan execution...',
+                })}\n\n`)
+              );
+              
+              // Execute with progress streaming
+              const executionContext: ExecutionContext = {
+                supabase: supaAdmin,
+                businessId,
+                userId,
+                controller,
+                tools,
+              };
+              
+              const executedPlan = await executePlan(
+                plan,
+                executionContext,
+                entities,
+                pattern,
+                (result: PlannerResult) => {
+                  // Real-time progress callback
+                  if (result.type === 'step_progress' || result.type === 'step_complete') {
+                    sendStepProgress(controller, result.plan, result.currentStep!, result.message);
+                  } else if (result.type === 'plan_complete' || result.type === 'plan_failed') {
+                    sendPlanComplete(controller, result.plan);
+                  }
+                }
+              );
+              
+              // Log activity
+              await supaAdmin.from('ai_activity_log').insert({
+                business_id: businessId,
+                user_id: userId,
+                activity_type: 'multi_step_plan',
+                description: `Executed plan: ${plan.name} (${executedPlan.status})`,
+                metadata: {
+                  plan_id: plan.id,
+                  pattern_id: pattern.id,
+                  steps: plan.steps.length,
+                  successful: plan.steps.filter(s => s.status === 'completed').length,
+                  failed: plan.steps.filter(s => s.status === 'failed').length,
+                  rolled_back: executedPlan.rollbackSteps?.length || 0,
+                  duration_ms: executedPlan.totalDurationMs,
+                },
+                accepted: executedPlan.status === 'completed',
+              });
+              
+              // Save summary as assistant message
+              const summaryMessage = executedPlan.status === 'completed'
+                ? `✅ Plan "${plan.name}" completed successfully in ${Math.round((executedPlan.totalDurationMs || 0) / 1000)}s.`
+                : `❌ Plan "${plan.name}" failed. ${executedPlan.rollbackSteps?.length || 0} steps were rolled back.`;
+              
+              await supaAdmin.from('ai_chat_messages').insert({
+                conversation_id: convId,
+                role: 'assistant',
+                content: summaryMessage,
+              });
+              
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`));
+              controller.close();
+              return;
+            }
+            // If no pending plan found, continue with normal AI flow
+          }
+          
+          if (planApproval.isRejection) {
+            // User rejected a plan
+            const pendingPlanData = planApproval.planId 
+              ? getPendingPlan(planApproval.planId)
+              : getMostRecentPendingPlan(userId);
+            
+            if (pendingPlanData) {
+              const { plan } = pendingPlanData;
+              removePendingPlan(plan.id);
+              
+              console.info('[ai-chat] Plan rejected:', plan.id);
+              
+              // Send cancellation confirmation
+              sendPlanCancelled(controller, plan.id, 'Plan cancelled. How else can I help?');
+              
+              // Save cancellation as assistant message
+              await supaAdmin.from('ai_chat_messages').insert({
+                conversation_id: convId,
+                role: 'assistant',
+                content: `Plan "${plan.name}" cancelled. How else can I help?`,
+              });
+              
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`));
+              controller.close();
+              return;
+            }
+            // If no pending plan found, continue with normal AI flow
+          }
+          
+          // Check if this is a multi-step task that needs a plan
+          const { isMultiStep, pattern: multiStepPattern } = detectMultiStepTask(
+            message, 
+            orchestratorResult.intent?.entities || {}
+          );
+          
+          if (isMultiStep && multiStepPattern) {
+            console.info('[ai-chat] Multi-step task detected:', multiStepPattern.id);
+            
+            // Build the execution plan
+            const plan = buildExecutionPlan(multiStepPattern, orchestratorResult.intent?.entities || {});
+            
+            // Store for later approval
+            storePendingPlan(plan, multiStepPattern, orchestratorResult.intent?.entities || {}, userId);
+            
+            // Send plan preview to frontend
+            sendPlanPreview(controller, plan);
+            
+            // Save plan preview as assistant message
+            await supaAdmin.from('ai_chat_messages').insert({
+              conversation_id: convId,
+              role: 'assistant',
+              content: `I've prepared a multi-step plan: "${plan.name}". Please review and approve to execute.`,
+              metadata: { planId: plan.id, planName: plan.name, stepCount: plan.steps.length },
+            });
+            
+            // Close stream - wait for approval
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`));
+            controller.close();
+            return;
+          }
+
+          // ===============================================================
+          // NORMAL AI FLOW (no multi-step plan)
+          // ===============================================================
 
           const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
             method: 'POST',

@@ -16,8 +16,8 @@ interface ChatMessageProps {
   isStreaming?: boolean;
   onActionExecute?: (action: string) => Promise<void>;
   onApproveSchedule?: (scheduleData: any) => Promise<void>;
-  onApprovePlan?: (planId: string) => void;
-  onRejectPlan?: (planId: string) => void;
+  onApprovePlan?: (message: string) => void;
+  onRejectPlan?: (message: string) => void;
 }
 
 const toolIconMap: Record<string, any> = {

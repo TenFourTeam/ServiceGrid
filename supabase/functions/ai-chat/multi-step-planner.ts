@@ -687,25 +687,110 @@ export function sendPlanComplete(
 // PENDING PLAN STORAGE (in-memory for now, could be moved to DB)
 // =============================================================================
 
-const pendingPlans = new Map<string, { plan: ExecutionPlan; pattern: MultiStepPattern; entities: Record<string, any> }>();
+const pendingPlans = new Map<string, { plan: ExecutionPlan; pattern: MultiStepPattern; entities: Record<string, any>; userId: string }>();
+const pendingPlansByUser = new Map<string, string>(); // userId -> planId
 
 export function storePendingPlan(
   plan: ExecutionPlan,
   pattern: MultiStepPattern,
-  entities: Record<string, any>
+  entities: Record<string, any>,
+  userId: string
 ): void {
-  pendingPlans.set(plan.id, { plan, pattern, entities });
+  pendingPlans.set(plan.id, { plan, pattern, entities, userId });
+  pendingPlansByUser.set(userId, plan.id);
   
   // Auto-cleanup after 10 minutes
   setTimeout(() => {
     pendingPlans.delete(plan.id);
+    if (pendingPlansByUser.get(userId) === plan.id) {
+      pendingPlansByUser.delete(userId);
+    }
   }, 10 * 60 * 1000);
 }
 
-export function getPendingPlan(planId: string): { plan: ExecutionPlan; pattern: MultiStepPattern; entities: Record<string, any> } | undefined {
+export function getPendingPlan(planId: string): { plan: ExecutionPlan; pattern: MultiStepPattern; entities: Record<string, any>; userId: string } | undefined {
+  return pendingPlans.get(planId);
+}
+
+export function getMostRecentPendingPlan(userId: string): { plan: ExecutionPlan; pattern: MultiStepPattern; entities: Record<string, any>; userId: string } | undefined {
+  const planId = pendingPlansByUser.get(userId);
+  if (!planId) return undefined;
   return pendingPlans.get(planId);
 }
 
 export function removePendingPlan(planId: string): void {
+  const planData = pendingPlans.get(planId);
+  if (planData) {
+    if (pendingPlansByUser.get(planData.userId) === planId) {
+      pendingPlansByUser.delete(planData.userId);
+    }
+  }
   pendingPlans.delete(planId);
+}
+
+// =============================================================================
+// PLAN APPROVAL DETECTION
+// =============================================================================
+
+export interface PlanApprovalResult {
+  isApproval: boolean;
+  isRejection: boolean;
+  planId?: string;
+}
+
+export function detectPlanApproval(message: string): PlanApprovalResult {
+  const trimmedMessage = message.trim();
+  
+  // Check for explicit plan ID patterns first
+  const approvalMatch = trimmedMessage.match(/^plan_approve:([a-f0-9-]+)$/i);
+  if (approvalMatch) {
+    return { isApproval: true, isRejection: false, planId: approvalMatch[1] };
+  }
+  
+  const rejectMatch = trimmedMessage.match(/^plan_reject:([a-f0-9-]+)$/i);
+  if (rejectMatch) {
+    return { isApproval: false, isRejection: true, planId: rejectMatch[1] };
+  }
+  
+  // Check for generic approval patterns
+  const approvalPatterns = [
+    /^(yes|approve|confirm|proceed|execute|do it|go ahead|run it|start|let's do it)$/i,
+  ];
+  
+  for (const pattern of approvalPatterns) {
+    if (pattern.test(trimmedMessage)) {
+      return { isApproval: true, isRejection: false };
+    }
+  }
+  
+  // Check for generic rejection patterns
+  const rejectionPatterns = [
+    /^(no|cancel|stop|reject|nevermind|don't|abort)$/i,
+  ];
+  
+  for (const pattern of rejectionPatterns) {
+    if (pattern.test(trimmedMessage)) {
+      return { isApproval: false, isRejection: true };
+    }
+  }
+  
+  return { isApproval: false, isRejection: false };
+}
+
+// =============================================================================
+// PLAN CANCELLED SSE HELPER
+// =============================================================================
+
+export function sendPlanCancelled(
+  controller: ReadableStreamDefaultController,
+  planId: string,
+  message?: string
+): void {
+  const encoder = new TextEncoder();
+  const event = {
+    type: 'plan_cancelled',
+    planId,
+    message: message || 'Plan cancelled. How else can I help?',
+  };
+  controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
 }

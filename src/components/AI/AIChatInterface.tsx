@@ -244,11 +244,19 @@ export function AIChatInterface({
                   message={msg}
                   onActionExecute={async (action) => {
                     // Execute action by sending it as a message
-                    await sendMessage(action, context);
+                    await sendMessage(action, undefined, context);
                   }}
                   onApproveSchedule={async (scheduleData) => {
                     // Send approval confirmation to AI
-                    await sendMessage('Yes, approve this schedule', context);
+                    await sendMessage('Yes, approve this schedule', undefined, context);
+                  }}
+                  onApprovePlan={(approvalMessage) => {
+                    // Send plan approval message (e.g., "plan_approve:uuid")
+                    sendMessage(approvalMessage, undefined, context);
+                  }}
+                  onRejectPlan={(rejectionMessage) => {
+                    // Send plan rejection message (e.g., "plan_reject:uuid")
+                    sendMessage(rejectionMessage, undefined, context);
                   }}
                 />
               ))}

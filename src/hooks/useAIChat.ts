@@ -462,6 +462,18 @@ export function useAIChat(options?: UseAIChatOptions) {
                 } else if (data.status === 'failed') {
                   toast.error('Plan failed - some steps were rolled back');
                 }
+              } else if (data.type === 'plan_cancelled') {
+                // Handle plan cancellation
+                const cancelledMessage: Message = {
+                  id: crypto.randomUUID(),
+                  role: 'assistant',
+                  content: data.message || 'Plan cancelled. How else can I help?',
+                  timestamp: new Date(),
+                  messageType: 'standard',
+                };
+                setMessages(prev => [...prev, cancelledMessage]);
+                setCurrentStreamingMessage('');
+                setIsStreaming(false);
               } else if (data.type === 'done') {
                 // Finalize message with parsed actions
                 const { cleanContent, actions } = parseMessageActions(fullContent);
