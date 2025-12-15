@@ -59,7 +59,11 @@ export type Database = {
         Row: {
           business_id: string
           created_at: string | null
+          entity_context: Json | null
           id: string
+          last_summarized_at: string | null
+          message_count: number | null
+          summary: string | null
           title: string | null
           updated_at: string | null
           user_id: string
@@ -67,7 +71,11 @@ export type Database = {
         Insert: {
           business_id: string
           created_at?: string | null
+          entity_context?: Json | null
           id?: string
+          last_summarized_at?: string | null
+          message_count?: number | null
+          summary?: string | null
           title?: string | null
           updated_at?: string | null
           user_id: string
@@ -75,7 +83,11 @@ export type Database = {
         Update: {
           business_id?: string
           created_at?: string | null
+          entity_context?: Json | null
           id?: string
+          last_summarized_at?: string | null
+          message_count?: number | null
+          summary?: string | null
           title?: string | null
           updated_at?: string | null
           user_id?: string
@@ -139,6 +151,228 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "ai_chat_conversations"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_memory_entity_refs: {
+        Row: {
+          business_id: string
+          context_snippet: string | null
+          conversation_id: string
+          created_at: string
+          entity_id: string
+          entity_name: string | null
+          entity_type: string
+          id: string
+          mentioned_at: string
+          message_id: string | null
+          user_id: string
+        }
+        Insert: {
+          business_id: string
+          context_snippet?: string | null
+          conversation_id: string
+          created_at?: string
+          entity_id: string
+          entity_name?: string | null
+          entity_type: string
+          id?: string
+          mentioned_at?: string
+          message_id?: string | null
+          user_id: string
+        }
+        Update: {
+          business_id?: string
+          context_snippet?: string | null
+          conversation_id?: string
+          created_at?: string
+          entity_id?: string
+          entity_name?: string | null
+          entity_type?: string
+          id?: string
+          mentioned_at?: string
+          message_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_memory_entity_refs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_memory_entity_refs_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_chat_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_memory_entity_refs_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "ai_chat_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_memory_entity_refs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_memory_entity_refs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      ai_memory_preferences: {
+        Row: {
+          business_id: string
+          confidence: number
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          last_used_at: string | null
+          learned_from: string | null
+          occurrence_count: number
+          preference_key: string
+          preference_type: string
+          preference_value: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_id: string
+          confidence?: number
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          learned_from?: string | null
+          occurrence_count?: number
+          preference_key: string
+          preference_type: string
+          preference_value: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_id?: string
+          confidence?: number
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          learned_from?: string | null
+          occurrence_count?: number
+          preference_key?: string
+          preference_type?: string
+          preference_value?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_memory_preferences_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_memory_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_memory_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      ai_pending_plans: {
+        Row: {
+          business_id: string
+          conversation_id: string | null
+          created_at: string
+          executed_at: string | null
+          expires_at: string
+          id: string
+          pattern_id: string | null
+          plan_data: Json
+          result: Json | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          business_id: string
+          conversation_id?: string | null
+          created_at?: string
+          executed_at?: string | null
+          expires_at?: string
+          id?: string
+          pattern_id?: string | null
+          plan_data: Json
+          result?: Json | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          business_id?: string
+          conversation_id?: string | null
+          created_at?: string
+          executed_at?: string | null
+          expires_at?: string
+          id?: string
+          pattern_id?: string | null
+          plan_data?: Json
+          result?: Json | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_pending_plans_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_pending_plans_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_chat_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_pending_plans_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_pending_plans_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -5180,6 +5414,7 @@ export type Database = {
         Returns: boolean
       }
       can_manage_business: { Args: { p_business_id: string }; Returns: boolean }
+      cleanup_expired_pending_plans: { Args: never; Returns: undefined }
       current_clerk_user_id: { Args: never; Returns: string }
       current_user_profile_id: { Args: never; Returns: string }
       debug_auth_state: { Args: never; Returns: Json }
