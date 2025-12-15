@@ -6,13 +6,18 @@ import { ActionButton } from './ActionButton';
 import { SchedulePreviewCard } from './SchedulePreviewCard';
 import { ClarificationCard } from './ClarificationCard';
 import { ConfirmationCard } from './ConfirmationCard';
+import { PlanPreviewCard } from './PlanPreviewCard';
+import { PlanProgressCard } from './PlanProgressCard';
 import { useCalendarNavigation } from '@/hooks/useCalendarNavigation';
 import { useConversationMedia } from '@/hooks/useConversationMedia';
+
 interface ChatMessageProps {
   message: Message;
   isStreaming?: boolean;
   onActionExecute?: (action: string) => Promise<void>;
   onApproveSchedule?: (scheduleData: any) => Promise<void>;
+  onApprovePlan?: (planId: string) => void;
+  onRejectPlan?: (planId: string) => void;
 }
 
 const toolIconMap: Record<string, any> = {
@@ -56,7 +61,7 @@ function getToolInfo(toolName: string) {
   };
 }
 
-export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSchedule }: ChatMessageProps) {
+export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSchedule, onApprovePlan, onRejectPlan }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const isSystemMessage = message.role === 'system';
   const { navigateToDate } = useCalendarNavigation();
@@ -147,8 +152,26 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
               />
             )}
 
+            {/* Plan Preview Card */}
+            {message.messageType === 'plan_preview' && message.planPreview && onApprovePlan && onRejectPlan && (
+              <PlanPreviewCard
+                plan={message.planPreview}
+                onApprove={onApprovePlan}
+                onReject={onRejectPlan}
+              />
+            )}
+
+            {/* Plan Progress Card */}
+            {message.messageType === 'plan_progress' && message.planProgress && (
+              <PlanProgressCard progress={message.planProgress} />
+            )}
+
             {/* Standard message content */}
-            {message.messageType !== 'clarification' && message.messageType !== 'confirmation' && parsedContent.map((part, idx) => {
+            {message.messageType !== 'clarification' && 
+             message.messageType !== 'confirmation' && 
+             message.messageType !== 'plan_preview' && 
+             message.messageType !== 'plan_progress' && 
+             parsedContent.map((part, idx) => {
               if (part.type === 'text') {
                 return (
                   <div key={idx} className="text-sm whitespace-pre-wrap break-words">

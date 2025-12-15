@@ -19,6 +19,40 @@ export interface ConfirmationData {
   cancelLabel?: string;
 }
 
+export interface PlanStepData {
+  id: string;
+  name: string;
+  description: string;
+  tool: string;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'rolled_back' | 'skipped';
+  result?: any;
+  error?: string;
+}
+
+export interface PlanPreviewData {
+  id: string;
+  name: string;
+  description: string;
+  steps: PlanStepData[];
+  requiresApproval: boolean;
+}
+
+export interface PlanProgressData {
+  planId: string;
+  planName: string;
+  steps: PlanStepData[];
+  currentStepIndex: number;
+  status: 'executing' | 'completed' | 'failed' | 'rolled_back' | 'cancelled';
+  summary?: {
+    totalSteps: number;
+    successfulSteps: number;
+    failedSteps: number;
+    skippedSteps: number;
+    rolledBackSteps: number;
+    durationMs?: number;
+  };
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
@@ -36,9 +70,11 @@ export interface Message {
     variant?: 'primary' | 'secondary' | 'danger';
   }>;
   // Special message types for agent flows
-  messageType?: 'standard' | 'clarification' | 'confirmation';
+  messageType?: 'standard' | 'clarification' | 'confirmation' | 'plan_preview' | 'plan_progress';
   clarification?: ClarificationData;
   confirmation?: ConfirmationData;
+  planPreview?: PlanPreviewData;
+  planProgress?: PlanProgressData;
 }
 
 interface UseAIChatOptions {
@@ -339,6 +375,93 @@ export function useAIChat(options?: UseAIChatOptions) {
                 setMessages(prev => [...prev, confirmationMessage]);
                 setCurrentStreamingMessage('');
                 setIsStreaming(false);
+              } else if (data.type === 'plan_preview') {
+                // Show multi-step plan preview for approval
+                const planPreviewMessage: Message = {
+                  id: crypto.randomUUID(),
+                  role: 'assistant',
+                  content: `I've prepared a multi-step plan: "${data.plan.name}"`,
+                  timestamp: new Date(),
+                  messageType: 'plan_preview',
+                  planPreview: {
+                    id: data.plan.id,
+                    name: data.plan.name,
+                    description: data.plan.description,
+                    steps: data.plan.steps,
+                    requiresApproval: data.plan.requiresApproval,
+                  },
+                };
+                setMessages(prev => [...prev, planPreviewMessage]);
+                setCurrentStreamingMessage('');
+                // Keep streaming true so we can receive plan execution updates
+              } else if (data.type === 'step_progress') {
+                // Update plan progress in existing message
+                setMessages(prev => {
+                  const planMsgIndex = prev.findIndex(m => 
+                    m.messageType === 'plan_preview' && 
+                    m.planPreview?.id === data.planId
+                  );
+                  
+                  if (planMsgIndex !== -1) {
+                    const updated = [...prev];
+                    const existingMsg = updated[planMsgIndex];
+                    
+                    // Convert to progress view
+                    updated[planMsgIndex] = {
+                      ...existingMsg,
+                      messageType: 'plan_progress',
+                      planProgress: {
+                        planId: data.planId,
+                        planName: existingMsg.planPreview?.name || 'Plan',
+                        steps: data.step ? 
+                          existingMsg.planPreview?.steps.map((s, i) => 
+                            i === data.stepIndex ? { ...s, status: data.step.status, error: data.step.error } : s
+                          ) || [] : 
+                          existingMsg.planPreview?.steps || [],
+                        currentStepIndex: data.stepIndex,
+                        status: 'executing',
+                      },
+                    };
+                    return updated;
+                  }
+                  return prev;
+                });
+              } else if (data.type === 'plan_complete') {
+                // Update plan to completed state
+                setMessages(prev => {
+                  const planMsgIndex = prev.findIndex(m => 
+                    (m.messageType === 'plan_progress' || m.messageType === 'plan_preview') && 
+                    (m.planProgress?.planId === data.planId || m.planPreview?.id === data.planId)
+                  );
+                  
+                  if (planMsgIndex !== -1) {
+                    const updated = [...prev];
+                    const existingMsg = updated[planMsgIndex];
+                    
+                    updated[planMsgIndex] = {
+                      ...existingMsg,
+                      messageType: 'plan_progress',
+                      planProgress: {
+                        planId: data.planId,
+                        planName: existingMsg.planProgress?.planName || existingMsg.planPreview?.name || 'Plan',
+                        steps: existingMsg.planProgress?.steps || existingMsg.planPreview?.steps || [],
+                        currentStepIndex: data.summary?.totalSteps - 1 || 0,
+                        status: data.status || 'completed',
+                        summary: data.summary,
+                      },
+                    };
+                    return updated;
+                  }
+                  return prev;
+                });
+                setIsStreaming(false);
+                
+                // Show success toast
+                if (data.status === 'completed') {
+                  toast.success(`Plan completed: ${data.summary?.successfulSteps}/${data.summary?.totalSteps} steps succeeded`);
+                } else if (data.status === 'failed') {
+                  toast.error('Plan failed - some steps were rolled back');
+                }
               } else if (data.type === 'done') {
                 // Finalize message with parsed actions
                 const { cleanContent, actions } = parseMessageActions(fullContent);
