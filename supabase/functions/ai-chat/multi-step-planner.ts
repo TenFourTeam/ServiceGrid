@@ -693,6 +693,7 @@ import {
   getMostRecentPendingPlan as dbGetMostRecentPendingPlan,
   updatePlanStatus as dbUpdatePlanStatus,
   removePendingPlan as dbRemovePendingPlan,
+  cleanupExpiredPlans as dbCleanupExpiredPlans,
   type MemoryContext,
   type PersistentPlan
 } from './memory-manager.ts';
@@ -707,10 +708,16 @@ export async function storePendingPlanAsync(
   entities: Record<string, any>,
   ctx: MemoryContext
 ): Promise<void> {
+  console.info('[multi-step-planner] Storing plan:', {
+    planId: plan.id,
+    patternId: pattern.id,
+    stepCount: plan.steps.length,
+  });
+  
   try {
-    // Store in database for persistence across restarts
-    await dbStorePendingPlan(ctx, { plan, pattern, entities }, pattern.id);
-    console.info('[multi-step-planner] Plan stored in database:', plan.id);
+    // Store in database with explicit plan ID to fix mismatch bug
+    await dbStorePendingPlan(ctx, { plan, pattern, entities }, pattern.id, plan.id);
+    console.info('[multi-step-planner] Plan stored in database with ID:', plan.id);
   } catch (error) {
     console.error('[multi-step-planner] Failed to store plan in DB, using in-memory only:', error);
   }
@@ -832,6 +839,18 @@ export function removePendingPlan(planId: string): void {
     }
   }
   pendingPlansCache.delete(planId);
+}
+
+/**
+ * Run cleanup of expired plans - call at start of request
+ */
+export async function cleanupExpiredPlansAsync(ctx: MemoryContext): Promise<void> {
+  try {
+    await dbCleanupExpiredPlans(ctx);
+  } catch (error) {
+    // Non-critical, just log
+    console.warn('[multi-step-planner] Cleanup failed:', error);
+  }
 }
 
 // =============================================================================
