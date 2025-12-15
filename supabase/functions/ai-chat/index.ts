@@ -17,6 +17,7 @@ import {
   getMostRecentPendingPlanAsync,
   removePendingPlan,
   removePendingPlanAsync,
+  cleanupExpiredPlansAsync,
   detectPlanApproval,
   type ExecutionPlan,
   type ExecutionContext,
@@ -3310,6 +3311,11 @@ Deno.serve(async (req) => {
       businessId,
       conversationId: convId,
     };
+
+    // Cleanup expired plans in background (non-blocking)
+    cleanupExpiredPlansAsync(memoryCtx).catch(err => {
+      console.warn('[ai-chat] Cleanup error (non-fatal):', err);
+    });
 
     // Load user's memory (entities, preferences, summary)
     let memory: ConversationMemory;

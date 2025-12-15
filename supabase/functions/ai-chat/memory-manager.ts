@@ -479,16 +479,28 @@ export interface PersistentPlan {
 
 /**
  * Store a pending plan in database
+ * @param planId - Optional: Use this ID instead of auto-generating (fixes ID mismatch bug)
  */
 export async function storePendingPlan(
   ctx: MemoryContext,
   plan: any,
-  patternId?: string
+  patternId?: string,
+  planId?: string
 ): Promise<string> {
+  const idToUse = planId || plan?.plan?.id || crypto.randomUUID();
+  
+  console.info('[MemoryManager] Storing pending plan:', {
+    planId: idToUse,
+    patternId,
+    userId: ctx.userId,
+    businessId: ctx.businessId,
+  });
+  
   try {
     const { data, error } = await ctx.supabase
       .from('ai_pending_plans')
       .insert({
+        id: idToUse, // Use provided plan ID to fix mismatch bug
         user_id: ctx.userId,
         business_id: ctx.businessId,
         conversation_id: ctx.conversationId || null,
@@ -500,6 +512,8 @@ export async function storePendingPlan(
       .single();
 
     if (error) throw error;
+    
+    console.info('[MemoryManager] Plan stored successfully:', data.id);
     return data.id;
   } catch (error) {
     console.error('[MemoryManager] Failed to store pending plan:', error);
@@ -514,6 +528,8 @@ export async function getPendingPlan(
   ctx: MemoryContext,
   planId: string
 ): Promise<PersistentPlan | null> {
+  console.info('[MemoryManager] Fetching pending plan:', planId);
+  
   try {
     const { data, error } = await ctx.supabase
       .from('ai_pending_plans')
@@ -521,10 +537,15 @@ export async function getPendingPlan(
       .eq('id', planId)
       .eq('user_id', ctx.userId)
       .eq('status', 'pending')
+      .gt('expires_at', new Date().toISOString()) // Only get non-expired plans
       .single();
 
-    if (error || !data) return null;
+    if (error || !data) {
+      console.info('[MemoryManager] Plan not found or expired:', planId, error?.message);
+      return null;
+    }
 
+    console.info('[MemoryManager] Plan retrieved successfully:', planId);
     return {
       id: data.id,
       userId: data.user_id,
@@ -666,5 +687,35 @@ export async function clearStaleMemory(
       .lt('mentioned_at', cutoffDate.toISOString());
   } catch (error) {
     console.error('[MemoryManager] Failed to clear stale memory:', error);
+  }
+}
+
+/**
+ * Cleanup expired pending plans
+ * Should be called periodically (e.g., at start of each request)
+ */
+export async function cleanupExpiredPlans(ctx: MemoryContext): Promise<number> {
+  try {
+    const { data, error } = await ctx.supabase
+      .from('ai_pending_plans')
+      .delete()
+      .eq('business_id', ctx.businessId)
+      .lt('expires_at', new Date().toISOString())
+      .eq('status', 'pending')
+      .select('id');
+
+    if (error) {
+      console.error('[MemoryManager] Failed to cleanup expired plans:', error);
+      return 0;
+    }
+
+    const count = data?.length || 0;
+    if (count > 0) {
+      console.info('[MemoryManager] Cleaned up expired plans:', count);
+    }
+    return count;
+  } catch (error) {
+    console.error('[MemoryManager] Failed to cleanup expired plans:', error);
+    return 0;
   }
 }
