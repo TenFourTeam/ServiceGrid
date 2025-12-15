@@ -4,6 +4,21 @@ import { useAuth } from '@clerk/clerk-react';
 import { toast } from 'sonner';
 import { useConversationMediaUpload } from './useConversationMediaUpload';
 
+export interface ClarificationData {
+  question: string;
+  options?: Array<{ label: string; value: string }>;
+  intent?: string;
+  allowFreeform?: boolean;
+}
+
+export interface ConfirmationData {
+  action: string;
+  description: string;
+  riskLevel: 'low' | 'medium' | 'high';
+  confirmLabel?: string;
+  cancelLabel?: string;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
@@ -20,6 +35,10 @@ export interface Message {
     label: string;
     variant?: 'primary' | 'secondary' | 'danger';
   }>;
+  // Special message types for agent flows
+  messageType?: 'standard' | 'clarification' | 'confirmation';
+  clarification?: ClarificationData;
+  confirmation?: ConfirmationData;
 }
 
 interface UseAIChatOptions {
@@ -283,6 +302,43 @@ export function useAIChat(options?: UseAIChatOptions) {
                   }
                   return prev;
                 });
+              } else if (data.type === 'clarification') {
+                // Show clarification message with options
+                const clarificationMessage: Message = {
+                  id: crypto.randomUUID(),
+                  role: 'assistant',
+                  content: data.question,
+                  timestamp: new Date(),
+                  messageType: 'clarification',
+                  clarification: {
+                    question: data.question,
+                    options: data.options || [],
+                    intent: data.intent,
+                    allowFreeform: data.allowFreeform ?? true,
+                  },
+                };
+                setMessages(prev => [...prev, clarificationMessage]);
+                setCurrentStreamingMessage('');
+                setIsStreaming(false);
+              } else if (data.type === 'confirmation') {
+                // Show confirmation message with approve/reject buttons
+                const confirmationMessage: Message = {
+                  id: crypto.randomUUID(),
+                  role: 'assistant',
+                  content: data.description,
+                  timestamp: new Date(),
+                  messageType: 'confirmation',
+                  confirmation: {
+                    action: data.action,
+                    description: data.description,
+                    riskLevel: data.riskLevel || 'medium',
+                    confirmLabel: data.confirmLabel,
+                    cancelLabel: data.cancelLabel,
+                  },
+                };
+                setMessages(prev => [...prev, confirmationMessage]);
+                setCurrentStreamingMessage('');
+                setIsStreaming(false);
               } else if (data.type === 'done') {
                 // Finalize message with parsed actions
                 const { cleanContent, actions } = parseMessageActions(fullContent);
