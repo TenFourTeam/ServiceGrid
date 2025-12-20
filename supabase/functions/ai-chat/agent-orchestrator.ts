@@ -814,6 +814,190 @@ const INTENT_PATTERNS: IntentPattern[] = [
     riskLevel: 'low',
     requiresConfirmation: false,
   },
+
+  // ============================================
+  // PHASE 3: ADDITIONAL JOB MANAGEMENT
+  // ============================================
+  {
+    intentId: 'job.cancel',
+    domain: 'job_management',
+    patterns: [
+      /cancel\s+(the\s+)?job/i,
+      /delete\s+(the\s+)?job/i,
+      /remove\s+(the\s+)?job/i,
+    ],
+    keywords: ['cancel', 'delete', 'remove', 'job'],
+    requiredContext: ['job_data'],
+    optionalContext: [],
+    tools: ['cancel_job'],
+    riskLevel: 'high',
+    requiresConfirmation: true,
+  },
+
+  // ============================================
+  // PHASE 3: ADDITIONAL CUSTOMER MANAGEMENT
+  // ============================================
+  {
+    intentId: 'customer.update',
+    domain: 'customer_acquisition',
+    patterns: [
+      /update\s+(the\s+)?customer/i,
+      /change\s+(the\s+)?(customer's?|their)\s+(phone|email|address|name)/i,
+      /edit\s+(the\s+)?customer/i,
+      /modify\s+(the\s+)?customer/i,
+    ],
+    keywords: ['update', 'change', 'edit', 'customer', 'phone', 'email', 'address'],
+    requiredContext: ['customer_data'],
+    optionalContext: [],
+    tools: ['update_customer'],
+    riskLevel: 'medium',
+    requiresConfirmation: false,
+  },
+
+  // ============================================
+  // PHASE 3: ADDITIONAL QUOTE MANAGEMENT
+  // ============================================
+  {
+    intentId: 'quote.update',
+    domain: 'quote_lifecycle',
+    patterns: [
+      /update\s+(the\s+)?quote/i,
+      /edit\s+(the\s+)?quote/i,
+      /add\s+(a\s+)?line\s+item/i,
+      /modify\s+(the\s+)?quote/i,
+      /extend\s+(the\s+)?quote/i,
+    ],
+    keywords: ['update', 'edit', 'add', 'line item', 'quote', 'extend'],
+    requiredContext: [],
+    optionalContext: [],
+    tools: ['update_quote'],
+    riskLevel: 'medium',
+    requiresConfirmation: false,
+  },
+  {
+    intentId: 'quote.delete',
+    domain: 'quote_lifecycle',
+    patterns: [
+      /delete\s+(the\s+)?quote/i,
+      /remove\s+(the\s+)?quote/i,
+      /discard\s+(the\s+)?quote/i,
+    ],
+    keywords: ['delete', 'remove', 'discard', 'quote'],
+    requiredContext: [],
+    optionalContext: [],
+    tools: ['delete_quote'],
+    riskLevel: 'high',
+    requiresConfirmation: true,
+  },
+
+  // ============================================
+  // PHASE 3: ADDITIONAL INVOICE MANAGEMENT
+  // ============================================
+  {
+    intentId: 'invoice.void',
+    domain: 'invoicing',
+    patterns: [
+      /void\s+(the\s+)?invoice/i,
+      /cancel\s+(the\s+)?invoice/i,
+      /delete\s+(the\s+)?invoice/i,
+    ],
+    keywords: ['void', 'cancel', 'delete', 'invoice'],
+    requiredContext: [],
+    optionalContext: [],
+    tools: ['void_invoice'],
+    riskLevel: 'high',
+    requiresConfirmation: true,
+  },
+
+  // ============================================
+  // PHASE 3: NAVIGATION INTENTS
+  // ============================================
+  {
+    intentId: 'navigation.entity',
+    domain: 'general',
+    patterns: [
+      /take\s+me\s+to\s+(the\s+)?\w+/i,
+      /go\s+to\s+(the\s+)?\w+/i,
+      /show\s+me\s+(the\s+)?\w+'?s?\s+(page|profile|details)/i,
+      /open\s+(the\s+)?\w+/i,
+      /navigate\s+to\s+(the\s+)?\w+/i,
+    ],
+    keywords: ['take me', 'go to', 'show me', 'open', 'navigate', 'page', 'profile'],
+    requiredContext: [],
+    optionalContext: [],
+    tools: ['navigate_to_entity', 'lookup_entity'],
+    riskLevel: 'low',
+    requiresConfirmation: false,
+  },
+  {
+    intentId: 'navigation.calendar',
+    domain: 'scheduling',
+    patterns: [
+      /show\s+(me\s+)?(the\s+)?calendar/i,
+      /open\s+(the\s+)?calendar/i,
+      /go\s+to\s+(the\s+)?calendar/i,
+      /show\s+(me\s+)?(tomorrow|today|next\s+week)'?s?\s+schedule/i,
+    ],
+    keywords: ['calendar', 'schedule', 'tomorrow', 'today', 'next week'],
+    requiredContext: [],
+    optionalContext: [],
+    tools: ['navigate_to_calendar'],
+    riskLevel: 'low',
+    requiresConfirmation: false,
+  },
+
+  // ============================================
+  // PHASE 3: INTELLIGENCE INTENTS
+  // ============================================
+  {
+    intentId: 'lookup.entity',
+    domain: 'general',
+    patterns: [
+      /find\s+\w+/i,
+      /search\s+for\s+\w+/i,
+      /look\s+up\s+\w+/i,
+      /where\s+is\s+(the\s+)?\w+/i,
+    ],
+    keywords: ['find', 'search', 'look up', 'where is', 'locate'],
+    requiredContext: [],
+    optionalContext: [],
+    tools: ['lookup_entity'],
+    riskLevel: 'low',
+    requiresConfirmation: false,
+  },
+  {
+    intentId: 'intelligence.suggestions',
+    domain: 'general',
+    patterns: [
+      /what\s+should\s+i\s+do/i,
+      /what\s+needs\s+(to\s+be\s+done|attention)/i,
+      /suggest\s+(something|actions)/i,
+      /any\s+recommendations/i,
+      /what's\s+next/i,
+    ],
+    keywords: ['should', 'suggest', 'recommendations', 'what next', 'needs attention'],
+    requiredContext: [],
+    optionalContext: [],
+    tools: ['get_suggested_actions'],
+    riskLevel: 'low',
+    requiresConfirmation: false,
+  },
+  {
+    intentId: 'intelligence.undo',
+    domain: 'general',
+    patterns: [
+      /undo\s+(that|last|the\s+last)/i,
+      /reverse\s+(that|the\s+last)/i,
+      /revert\s+(that|the\s+last)/i,
+      /take\s+(that|it)\s+back/i,
+    ],
+    keywords: ['undo', 'reverse', 'revert', 'take back'],
+    requiredContext: [],
+    optionalContext: [],
+    tools: ['undo_last_action'],
+    riskLevel: 'medium',
+    requiresConfirmation: false,
+  },
 ];
 
 // =============================================================================
