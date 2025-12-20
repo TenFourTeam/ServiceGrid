@@ -4016,53 +4016,91 @@ RESPONSE STYLE:
               content: fullResponse
             });
 
-          // Track conversation state for multi-turn (if AI is asking a question)
+          // Track conversation state for multi-turn (IMPROVED: expanded triggers)
           try {
-            const responseEndsWithQuestion = fullResponse.trim().endsWith('?') ||
-              /what\s+(is|are)\s+/i.test(fullResponse) ||
-              /could you (provide|tell|share)/i.test(fullResponse) ||
-              /please (provide|enter|share)/i.test(fullResponse);
+            // Expanded patterns for detecting when AI is prompting for more info
+            const responsePromptsForInput = 
+              fullResponse.trim().endsWith('?') ||
+              /what\s+(is|are|was|were)\s+/i.test(fullResponse) ||
+              /could you (provide|tell|share|give)/i.test(fullResponse) ||
+              /please (provide|enter|share|give|tell)/i.test(fullResponse) ||
+              /which (customer|job|quote|invoice|team member)/i.test(fullResponse) ||
+              /who (is|should|would)/i.test(fullResponse) ||
+              /i need (the|a|some|more)/i.test(fullResponse) ||
+              /can you (provide|tell|share|give)/i.test(fullResponse) ||
+              /let me know/i.test(fullResponse) ||
+              /what would you like/i.test(fullResponse) ||
+              /do you want/i.test(fullResponse);
             
-            if (responseEndsWithQuestion && orchestratorResult.intent?.intentId) {
-              // AI asked a question - store pending intent for follow-up
-              console.info('[ai-chat] AI asked question, storing pending intent:', orchestratorResult.intent.intentId);
+            // Check if AI is explicitly awaiting input (marked in response)
+            const hasAwaitingMarker = /\[AWAITING:([^\]]+)\]/i.test(fullResponse);
+            const awaitingMarkerMatch = fullResponse.match(/\[AWAITING:([^\]]+)\]/i);
+            
+            if ((responsePromptsForInput || hasAwaitingMarker) && orchestratorResult.intent?.intentId) {
+              // AI is prompting for input - store pending intent for follow-up
+              console.info('[ai-chat] AI prompting for input, storing pending intent:', orchestratorResult.intent.intentId);
               
               // Detect what kind of input we're awaiting based on response content
-              let awaitingInput = 'general';
-              if (/customer.*name|email|phone|details|which customer/i.test(fullResponse)) {
-                awaitingInput = 'customer_details';
-              } else if (/line item|item description|what (services?|products?)|add.*item/i.test(fullResponse)) {
-                awaitingInput = 'quote_line_items';
-              } else if (/amount|price|cost|how much|total/i.test(fullResponse)) {
-                awaitingInput = 'amount';
-              } else if (/address|location|where.*job|service address|what.*address/i.test(fullResponse)) {
-                awaitingInput = 'job_address';
-              } else if (/service type|type of (job|work|service)|what kind of/i.test(fullResponse)) {
-                awaitingInput = 'service_type';
-              } else if (/duration|how long|time.*take|estimated time/i.test(fullResponse)) {
-                awaitingInput = 'duration';
-              } else if (/who.*assign|assign.*to|team member|technician|which (tech|worker)/i.test(fullResponse)) {
-                awaitingInput = 'assignee';
-              } else if (/due date|payment terms|when.*due|net \d+/i.test(fullResponse)) {
-                awaitingInput = 'invoice_terms';
-              } else if (/description|notes|details about|additional info/i.test(fullResponse)) {
-                awaitingInput = 'description';
-              } else if (/date|when|time|schedule/i.test(fullResponse)) {
-                awaitingInput = 'date';
-              } else if (/confirm|are you sure|proceed|go ahead/i.test(fullResponse)) {
-                awaitingInput = 'confirmation';
+              let awaitingInput = awaitingMarkerMatch?.[1] || 'general';
+              
+              if (awaitingInput === 'general') {
+                // Auto-detect from response content
+                if (/customer.*name|email|phone|details|which customer|customer info/i.test(fullResponse)) {
+                  awaitingInput = 'customer_details';
+                } else if (/line item|item description|what (services?|products?)|add.*item|items.*quote/i.test(fullResponse)) {
+                  awaitingInput = 'quote_line_items';
+                } else if (/amount|price|cost|how much|total|charge/i.test(fullResponse)) {
+                  awaitingInput = 'amount';
+                } else if (/address|location|where.*job|service address|what.*address|where.*work/i.test(fullResponse)) {
+                  awaitingInput = 'job_address';
+                } else if (/service type|type of (job|work|service)|what kind of|nature of/i.test(fullResponse)) {
+                  awaitingInput = 'service_type';
+                } else if (/duration|how long|time.*take|estimated time/i.test(fullResponse)) {
+                  awaitingInput = 'duration';
+                } else if (/who.*assign|assign.*to|team member|technician|which (tech|worker)/i.test(fullResponse)) {
+                  awaitingInput = 'assignee';
+                } else if (/due date|payment terms|when.*due|net \d+/i.test(fullResponse)) {
+                  awaitingInput = 'invoice_terms';
+                } else if (/description|notes|details about|additional info|tell me about/i.test(fullResponse)) {
+                  awaitingInput = 'description';
+                } else if (/date|when|time|schedule|what day/i.test(fullResponse)) {
+                  awaitingInput = 'date';
+                } else if (/confirm|are you sure|proceed|go ahead|shall i/i.test(fullResponse)) {
+                  awaitingInput = 'confirmation';
+                } else if (/title|name.*job|job.*name|what.*call/i.test(fullResponse)) {
+                  awaitingInput = 'job_title';
+                }
               }
+              
+              // Merge new entities with existing collected entities (don't lose context!)
+              const existingEntities = orchestratorResult.intent.entities || {};
+              const previousState = await import('./memory-manager.ts').then(m => m.getConversationState(memoryCtx)).catch(() => null);
+              const mergedEntities = {
+                ...(previousState?.collectedEntities || {}),
+                ...existingEntities
+              };
               
               await setConversationState(memoryCtx, {
                 pendingIntent: orchestratorResult.intent.intentId,
                 awaitingInput,
                 lastAssistantAction: 'asked_question',
-                collectedEntities: orchestratorResult.intent.entities || {}
+                collectedEntities: mergedEntities
               });
-            } else if (!responseEndsWithQuestion && orchestratorResult.intent?.isFollowUp) {
-              // Action completed after follow-up - clear the state
-              console.info('[ai-chat] Intent completed, clearing conversation state');
-              await clearConversationState(memoryCtx);
+              
+              console.info('[ai-chat] State saved - awaitingInput:', awaitingInput, 'entities:', Object.keys(mergedEntities));
+            } else if (orchestratorResult.intent?.isFollowUp) {
+              // This was a follow-up - check if action was actually completed
+              // Only clear if we got a definitive completion signal (tool executed successfully)
+              const toolWasExecuted = Object.keys(toolCallsBuffer).length > 0 || fullResponse.includes('✅');
+              
+              if (toolWasExecuted && !responsePromptsForInput) {
+                console.info('[ai-chat] Intent completed after follow-up, clearing conversation state');
+                await clearConversationState(memoryCtx);
+              } else if (!responsePromptsForInput) {
+                // Response doesn't prompt for more but also didn't execute - might need to ask
+                console.info('[ai-chat] Follow-up processed but no tool executed, keeping state for now');
+              }
+              // If still prompting, state was already updated above
             }
           } catch (stateErr) {
             console.error('[ai-chat] Conversation state tracking error (non-fatal):', stateErr);
