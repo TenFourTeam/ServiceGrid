@@ -197,6 +197,28 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
                 );
               }
               
+              // Render inline clarification options as clickable buttons
+              if (part.type === 'clarify' && onActionExecute) {
+                return (
+                  <div key={idx} className="space-y-3">
+                    {part.content.introText && (
+                      <p className="text-sm">{part.content.introText}</p>
+                    )}
+                    <div className="flex flex-wrap gap-2">
+                      {part.content.options.map((option: string, optIdx: number) => (
+                        <button
+                          key={optIdx}
+                          onClick={() => onActionExecute(option.replace(/^[📅👥🗓️🔄➕📋✅🔍📝📊📧💰💳📜⏱️]\s*/g, ''))}
+                          className="px-3 py-1.5 text-xs rounded-full bg-primary/10 hover:bg-primary/20 text-primary transition-colors border border-primary/20"
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+              
               return null;
             })}
           </div>
@@ -271,19 +293,47 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
 }
 
 // Parse message content to extract special syntax
-function parseMessageContent(content: string): Array<{ type: 'text' | 'schedule_preview'; content: any }> {
-  const parts: Array<{ type: 'text' | 'schedule_preview'; content: any }> = [];
+function parseMessageContent(content: string): Array<{ type: 'text' | 'schedule_preview' | 'clarify'; content: any }> {
+  const parts: Array<{ type: 'text' | 'schedule_preview' | 'clarify'; content: any }> = [];
   
+  // Match [CLARIFY]...[/CLARIFY] syntax first
+  const clarifyRegex = /\[CLARIFY\]([\s\S]*?)\[\/CLARIFY\]/gs;
   // Match [SCHEDULE_PREVIEW:...] syntax
   const schedulePreviewRegex = /\[SCHEDULE_PREVIEW:(.*?)\]/gs;
   
   let lastIndex = 0;
   let match;
   
-  while ((match = schedulePreviewRegex.exec(content)) !== null) {
+  // First handle CLARIFY blocks
+  const contentWithoutClarify = content.replace(clarifyRegex, (fullMatch, clarifyContent) => {
+    // Parse clarify content to extract options
+    const lines = clarifyContent.trim().split('\n');
+    const options: string[] = [];
+    let introText = '';
+    
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      if (trimmedLine.startsWith('•') || trimmedLine.startsWith('-')) {
+        options.push(trimmedLine.replace(/^[•\-]\s*/, '').trim());
+      } else if (trimmedLine && !options.length) {
+        introText = trimmedLine;
+      }
+    }
+    
+    parts.push({ 
+      type: 'clarify', 
+      content: { introText, options } 
+    });
+    
+    return ''; // Remove from content
+  });
+  
+  // Then handle SCHEDULE_PREVIEW in remaining content
+  lastIndex = 0;
+  while ((match = schedulePreviewRegex.exec(contentWithoutClarify)) !== null) {
     // Add text before the match
     if (match.index > lastIndex) {
-      const textBefore = content.slice(lastIndex, match.index).trim();
+      const textBefore = contentWithoutClarify.slice(lastIndex, match.index).trim();
       if (textBefore) {
         parts.push({ type: 'text', content: textBefore });
       }
@@ -304,8 +354,8 @@ function parseMessageContent(content: string): Array<{ type: 'text' | 'schedule_
   }
   
   // Add remaining text
-  if (lastIndex < content.length) {
-    const textAfter = content.slice(lastIndex).trim();
+  if (lastIndex < contentWithoutClarify.length) {
+    const textAfter = contentWithoutClarify.slice(lastIndex).trim();
     if (textAfter) {
       parts.push({ type: 'text', content: textAfter });
     }

@@ -512,11 +512,37 @@ export function useAIChat(options?: UseAIChatOptions) {
         console.log('Request aborted');
       } else {
         console.error('Error sending message:', error);
+        
+        // PHASE 2: Improved error messages with recovery options
+        let errorContent = 'Sorry, I encountered an error. ';
+        let actions: Array<{ action: string; label: string; variant?: 'primary' | 'secondary' | 'danger' }> = [];
+        
+        if (error.message?.includes('429') || error.message?.includes('rate limit')) {
+          errorContent = 'I\'m getting too many requests right now. Please wait a moment and try again.';
+          actions = [{ action: 'retry', label: '🔄 Try Again', variant: 'primary' }];
+        } else if (error.message?.includes('402') || error.message?.includes('payment')) {
+          errorContent = 'AI credits have run out. Please add credits to continue using the assistant.';
+          actions = [{ action: 'add_credits', label: '💳 Add Credits', variant: 'primary' }];
+        } else if (error.message?.includes('timeout') || error.message?.includes('network')) {
+          errorContent = 'Connection issue. Please check your internet and try again.';
+          actions = [
+            { action: 'retry', label: '🔄 Retry', variant: 'primary' },
+            { action: 'start_over', label: 'Start Over', variant: 'secondary' }
+          ];
+        } else {
+          errorContent = `Something went wrong: ${error.message}. Would you like to try again?`;
+          actions = [
+            { action: 'retry', label: '🔄 Try Again', variant: 'primary' },
+            { action: 'report_issue', label: '🐛 Report Issue', variant: 'secondary' }
+          ];
+        }
+        
         const errorMessage: Message = {
           id: crypto.randomUUID(),
           role: 'assistant',
-          content: `Sorry, I encountered an error: ${error.message}`,
+          content: errorContent,
           timestamp: new Date(),
+          actions,
         };
         setMessages(prev => [...prev, errorMessage]);
       }

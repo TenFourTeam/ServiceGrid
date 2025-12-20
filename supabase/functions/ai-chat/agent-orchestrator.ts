@@ -1142,12 +1142,14 @@ function classifyIntent(message: string, sessionContext: SessionContext): Classi
   const entities = extractEntities(message);
   const confidence = Math.min(bestMatch?.score || 0, 1);
 
-  // Determine if clarification is needed
+  // Determine if clarification is needed (PHASE 2: Smart clarification)
   const requiresClarification = confidence < 0.4;
   let clarificationReason: string | undefined;
 
   if (requiresClarification) {
-    clarificationReason = 'I\'m not sure what you\'d like me to do. Could you be more specific?';
+    // Build smart clarification with context-aware options
+    const domain = bestMatch?.pattern.domain || 'general';
+    clarificationReason = buildSmartClarification(message, domain, sessionContext);
   }
 
   return {
@@ -1158,6 +1160,79 @@ function classifyIntent(message: string, sessionContext: SessionContext): Classi
     requiresClarification,
     clarificationReason,
   };
+}
+
+// =============================================================================
+// SMART CLARIFICATION BUILDER (PHASE 2)
+// =============================================================================
+
+/**
+ * Builds a smart clarification response with contextual options
+ * instead of a generic "I don't understand" message.
+ */
+function buildSmartClarification(
+  message: string,
+  detectedDomain: string,
+  sessionContext: SessionContext
+): string {
+  // Determine domain from page context if not detected from message
+  const pageDomain = sessionContext.currentPage ? getPageDomain(sessionContext.currentPage) : 'general';
+  const domain = detectedDomain !== 'general' ? detectedDomain : pageDomain;
+  
+  // Build context-aware options based on domain
+  const domainOptions: Record<string, string[]> = {
+    scheduling: [
+      '📅 Schedule pending jobs',
+      '👥 Check team availability',
+      '🗓️ Show this week\'s schedule',
+      '🔄 Reschedule a job'
+    ],
+    job_management: [
+      '➕ Create a new job',
+      '📋 View unscheduled jobs',
+      '✅ Update job status',
+      '🔍 Find a specific job'
+    ],
+    quote_lifecycle: [
+      '📝 Create a new quote',
+      '📊 View pending quotes',
+      '📧 Send a quote',
+      '🔄 Convert quote to job'
+    ],
+    invoicing: [
+      '📝 Create a new invoice',
+      '💰 View unpaid invoices',
+      '📧 Send invoice reminders',
+      '💳 Record a payment'
+    ],
+    customer_acquisition: [
+      '➕ Add a new customer',
+      '🔍 Search for a customer',
+      '📜 View customer history'
+    ],
+    team_management: [
+      '👥 View team members',
+      '📊 Check team utilization',
+      '⏱️ View active clock-ins'
+    ],
+    general: [
+      '📅 Help with scheduling',
+      '📝 Manage quotes or invoices',
+      '👥 Customer management',
+      '📊 View business metrics'
+    ]
+  };
+  
+  const options = domainOptions[domain] || domainOptions.general;
+  
+  // Build the clarification with [CLARIFY] block for UI parsing
+  return `[CLARIFY]
+I'd be happy to help! Based on where you are, here are some things I can do:
+
+${options.map(opt => `• ${opt}`).join('\n')}
+
+Or tell me specifically what you need.
+[/CLARIFY]`;
 }
 
 function getPageDomain(page: string): string {
