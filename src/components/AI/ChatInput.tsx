@@ -1,9 +1,12 @@
-import { useState, useRef, KeyboardEvent, ChangeEvent } from 'react';
+import { useState, useRef, useEffect, KeyboardEvent, ChangeEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Send, StopCircle, Camera, X } from 'lucide-react';
+import { Send, StopCircle, Camera, X, Mic, MicOff } from 'lucide-react';
 import { toast } from 'sonner';
+import { useVoiceInput } from '@/hooks/useVoiceInput';
+import { VoiceInputIndicator } from './VoiceInputIndicator';
+import { cn } from '@/lib/utils';
 
 interface ChatInputProps {
   onSend: (message: string, attachments?: File[]) => void;
@@ -24,6 +27,57 @@ export function ChatInput({
   const [attachments, setAttachments] = useState<File[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const {
+    isListening,
+    transcript,
+    interimTranscript,
+    isSupported: isVoiceSupported,
+    error: voiceError,
+    startListening,
+    stopListening,
+    resetTranscript,
+  } = useVoiceInput();
+
+  // Update message when voice transcript changes
+  useEffect(() => {
+    if (transcript) {
+      setMessage(prev => prev + transcript);
+      resetTranscript();
+    }
+  }, [transcript, resetTranscript]);
+
+  // Show voice errors
+  useEffect(() => {
+    if (voiceError) {
+      toast.error(voiceError);
+    }
+  }, [voiceError]);
+
+  // Keyboard shortcut: Ctrl/Cmd + Shift + V
+  useEffect(() => {
+    const handleKeyDown = (e: globalThis.KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'v') {
+        e.preventDefault();
+        if (isListening) {
+          stopListening();
+        } else {
+          startListening();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isListening, startListening, stopListening]);
+
+  const handleVoiceToggle = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  };
 
   const handleSend = () => {
     if ((!message.trim() && attachments.length === 0) || isStreaming) return;
@@ -120,6 +174,18 @@ export function ChatInput({
         </div>
       )}
 
+      {/* Voice Listening Indicator */}
+      {isListening && (
+        <div className="flex items-center gap-2 mb-2">
+          <VoiceInputIndicator isListening={isListening} />
+          {interimTranscript && (
+            <span className="text-xs text-muted-foreground italic truncate max-w-[200px]">
+              {interimTranscript}
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Input Area */}
       <div className="flex gap-2 items-end">
         <input
@@ -140,7 +206,7 @@ export function ChatInput({
                 size="icon"
                 variant="ghost"
                 className="flex-shrink-0"
-                disabled={isStreaming}
+                disabled={isStreaming || isListening}
               >
                 <Camera className="w-4 h-4" />
               </Button>
@@ -151,13 +217,43 @@ export function ChatInput({
           </Tooltip>
         </TooltipProvider>
 
+        {/* Voice Input Button */}
+        {isVoiceSupported && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={handleVoiceToggle}
+                  size="icon"
+                  variant={isListening ? "destructive" : "ghost"}
+                  className={cn(
+                    "flex-shrink-0 transition-all",
+                    isListening && "animate-pulse"
+                  )}
+                  disabled={isStreaming}
+                  aria-label={isListening ? "Stop voice input" : "Start voice input"}
+                >
+                  {isListening ? (
+                    <MicOff className="w-4 h-4" />
+                  ) : (
+                    <Mic className="w-4 h-4" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{isListening ? "Stop listening" : "Voice input (Ctrl+Shift+V)"}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+
         <Textarea
           ref={textareaRef}
-          value={message}
+          value={isListening ? message + interimTranscript : message}
           onChange={handleInput}
           onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          disabled={isStreaming}
+          placeholder={isListening ? "Listening..." : placeholder}
+          disabled={isStreaming || isListening}
           className="min-h-[44px] max-h-[150px] resize-none"
           rows={1}
         />
@@ -185,7 +281,9 @@ export function ChatInput({
 
       {/* Helper Text */}
       <p className="text-xs text-muted-foreground mt-2">
-        Press Enter to send, Shift+Enter for new line{attachments.length > 0 && ` • ${attachments.length} image${attachments.length > 1 ? 's' : ''} attached`}
+        Press Enter to send, Shift+Enter for new line
+        {attachments.length > 0 && ` • ${attachments.length} image${attachments.length > 1 ? 's' : ''} attached`}
+        {isVoiceSupported && !isListening && " • Ctrl+Shift+V for voice"}
       </p>
     </div>
   );
