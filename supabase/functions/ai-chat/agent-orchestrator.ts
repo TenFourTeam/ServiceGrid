@@ -745,6 +745,75 @@ const INTENT_PATTERNS: IntentPattern[] = [
     riskLevel: 'low',
     requiresConfirmation: false,
   },
+  
+  // ============================================
+  // JOB CREATE/EDIT (Phase 1 addition)
+  // ============================================
+  {
+    intentId: 'job.create',
+    domain: 'job_management',
+    patterns: [
+      /create\s+(a\s+)?(new\s+)?job/i,
+      /add\s+(a\s+)?(new\s+)?job/i,
+      /new\s+job\s+for/i,
+      /book\s+(a\s+)?job/i,
+      /schedule\s+(a\s+)?new\s+job/i,
+    ],
+    keywords: ['create job', 'new job', 'add job', 'book job'],
+    requiredContext: ['customer_data'],
+    optionalContext: ['team_members'],
+    tools: ['create_job', 'search_customers'],
+    riskLevel: 'medium',
+    requiresConfirmation: false,
+  },
+  {
+    intentId: 'job.edit',
+    domain: 'job_management',
+    patterns: [
+      /edit\s+(the\s+)?job/i,
+      /update\s+(the\s+)?job/i,
+      /change\s+(the\s+)?(job|address|time|date|notes)/i,
+      /modify\s+(the\s+)?job/i,
+    ],
+    keywords: ['edit job', 'update job', 'change job', 'modify'],
+    requiredContext: ['job_data'],
+    optionalContext: [],
+    tools: ['update_job'],
+    riskLevel: 'medium',
+    requiresConfirmation: false,
+  },
+  
+  // ============================================
+  // GENERAL CONFIRMATIONS/CANCELLATIONS (Phase 1 addition)
+  // ============================================
+  {
+    intentId: 'general.confirm',
+    domain: 'general',
+    patterns: [
+      /^(yes|yeah|yep|yup|ok|okay|sure|go ahead|do it|proceed|confirm|that's right|correct|absolutely|definitely)$/i,
+      /^(sounds good|perfect|great|let's do it)$/i,
+    ],
+    keywords: ['yes', 'ok', 'go ahead', 'confirm', 'proceed'],
+    requiredContext: [],
+    optionalContext: [],
+    tools: [],
+    riskLevel: 'low',
+    requiresConfirmation: false,
+  },
+  {
+    intentId: 'general.cancel',
+    domain: 'general',
+    patterns: [
+      /^(no|nope|nah|cancel|stop|never\s*mind|forget it|don't)$/i,
+      /^(not now|maybe later|skip)$/i,
+    ],
+    keywords: ['no', 'cancel', 'stop', 'never mind'],
+    requiredContext: [],
+    optionalContext: [],
+    tools: [],
+    riskLevel: 'low',
+    requiresConfirmation: false,
+  },
 ];
 
 // =============================================================================
@@ -805,7 +874,10 @@ function extractEntities(message: string): Record<string, any> {
 
 /**
  * Detect if a message is a follow-up response to an AI question
- * rather than a new intent
+ * rather than a new intent.
+ * 
+ * IMPROVED: Removed word count limit, added more data patterns,
+ * and recognizes natural confirmations.
  */
 function isFollowUpResponse(
   message: string,
@@ -826,57 +898,66 @@ function isFollowUpResponse(
 
   const lastContent = lastAssistantMsg.content.toLowerCase();
   const msgLower = message.toLowerCase().trim();
-  const msgWords = msgLower.split(/\s+/).length;
 
-  // Heuristics for follow-up detection:
-  
-  // 1. Last assistant message was a question
+  // 1. Last assistant message was prompting for input (expanded patterns)
   const lastWasQuestion = lastContent.includes('?') || 
-    lastContent.includes('what is') ||
-    lastContent.includes('could you provide') ||
-    lastContent.includes('please provide') ||
-    lastContent.includes('what\'s the');
+    /what\s+(is|are|was|were)\s+/i.test(lastContent) ||
+    /could you (provide|tell|share|give)/i.test(lastContent) ||
+    /please (provide|enter|share|give|tell)/i.test(lastContent) ||
+    /what\'s the/i.test(lastContent) ||
+    /which (customer|job|quote|invoice|team member)/i.test(lastContent) ||
+    /who (is|should|would)/i.test(lastContent) ||
+    /i need (the|a|some|more)/i.test(lastContent) ||
+    /can you (provide|tell|share|give)/i.test(lastContent);
 
-  // 2. User's message is relatively short (< 30 words) - likely an answer, not a new command
-  const isShortResponse = msgWords < 30;
+  // 2. Natural confirmations/affirmatives (expanded)
+  const isConfirmation = /^(yes|no|yeah|yep|yup|nope|ok|okay|sure|correct|right|confirmed?|that's (right|correct|it)|go ahead|do it|proceed|sounds good|perfect|great|exactly|absolutely|of course|definitely|nah|not really|cancel|stop|never\s*mind)$/i.test(msgLower);
+  if (isConfirmation) {
+    console.info('[orchestrator] Follow-up detected: confirmation response');
+    return true;
+  }
 
-  // 3. User's message doesn't contain strong action verbs suggesting new intent
-  const actionVerbs = ['schedule', 'create', 'show', 'list', 'find', 'search', 'cancel', 
-    'delete', 'send', 'update', 'assign', 'reschedule', 'convert', 'generate'];
-  const hasActionVerb = actionVerbs.some(verb => {
-    // Check if action verb is at the start of the message (imperative)
-    const startsWithAction = msgLower.startsWith(verb);
-    // Or if it's "can you [action]" or "please [action]"
-    const requestPattern = new RegExp(`(can you|could you|please|i want to|i need to)\\s+${verb}`, 'i');
-    return startsWithAction || requestPattern.test(msgLower);
-  });
-
-  // 4. Message looks like data being provided (email, name, date, address, amounts, etc.)
+  // 3. Message looks like data being provided (expanded patterns)
   const looksLikeData = 
     /\b[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}\b/i.test(message) || // email
-    /\d{1,2}\/\d{1,2}\/\d{2,4}/.test(message) || // date
+    /\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/.test(message) || // date (various formats)
     /\d{3}[-.\s]?\d{3}[-.\s]?\d{4}/.test(message) || // phone
-    /\d+\s+[a-z]+\s+(st|street|ave|avenue|rd|road|blvd|dr|drive|ln|lane)/i.test(message) || // address
-    /\$\s?\d+/.test(message) || // dollar amount ($150, $ 200)
-    /\d+\s*(hour|hr|minute|min)/i.test(message) || // duration (2 hours, 30 minutes)
-    /net\s*\d+/i.test(message) || // payment terms (net 30)
-    /\d+\s*days?/i.test(message); // due days (30 days)
+    /\(\d{3}\)\s*\d{3}[-.\s]?\d{4}/.test(message) || // phone (xxx) xxx-xxxx
+    /\d+\s+[a-z]+\s+(st|street|ave|avenue|rd|road|blvd|boulevard|dr|drive|ln|lane|ct|court|way|pl|place)/i.test(message) || // address
+    /\$\s?\d+/i.test(message) || // dollar amount
+    /\d+\s*(hour|hr|minute|min|hours|hrs|minutes|mins)/i.test(message) || // duration
+    /net\s*\d+/i.test(message) || // payment terms
+    /\d+\s*days?/i.test(message) || // due days
+    /^\d+$/.test(msgLower.trim()) || // just a number
+    /^[A-Z][a-z]+(\s+[A-Z][a-z]+)+$/.test(message.trim()); // looks like a name (Title Case)
 
-  // 5. Simple affirmative/negative responses
-  const isSimpleResponse = /^(yes|no|yeah|yep|nope|ok|okay|sure|correct|that's right|confirmed?)$/i.test(msgLower);
+  // 4. User message doesn't start with a command pattern
+  const startsWithCommand = /^(schedule|create|show|list|find|search|cancel|delete|send|update|assign|reschedule|convert|generate|make|add|get|view|check|help|what|how|who|when|where|why|can you|could you|please|i want|i need|i'd like)/i.test(msgLower);
+  
+  // 5. If message contains ONLY data and last was a question, it's definitely a follow-up
+  if (lastWasQuestion && looksLikeData && !startsWithCommand) {
+    console.info('[orchestrator] Follow-up detected: data response to question');
+    return true;
+  }
 
-  // Decision logic
-  if (isSimpleResponse) return true;
-  if (lastWasQuestion && isShortResponse && !hasActionVerb) return true;
-  if (lastWasQuestion && looksLikeData) return true;
-  if (conversationState.awaitingInput && isShortResponse && !hasActionVerb) return true;
+  // 6. If we're awaiting input and message doesn't start with a command, likely a follow-up
+  if (conversationState.awaitingInput && !startsWithCommand) {
+    console.info('[orchestrator] Follow-up detected: awaiting input and no command pattern');
+    return true;
+  }
+  
+  // 7. If last was question and no command, likely a follow-up (regardless of length)
+  if (lastWasQuestion && !startsWithCommand) {
+    console.info('[orchestrator] Follow-up detected: question response without command');
+    return true;
+  }
 
   console.info('[orchestrator] Follow-up check:', {
     pendingIntent: conversationState.pendingIntent,
+    awaitingInput: conversationState.awaitingInput,
     lastWasQuestion,
-    isShortResponse,
-    hasActionVerb,
     looksLikeData,
+    startsWithCommand,
     result: false
   });
 
