@@ -3465,6 +3465,29 @@ Deno.serve(async (req) => {
       preferenceContextStr
     ].filter(Boolean).join('\n\n');
 
+    // Build active task context (PHASE 2: Context indicator injection)
+    let activeTaskContext = '';
+    try {
+      const convState = await import('./memory-manager.ts').then(m => m.getConversationState(memoryCtx));
+      if (convState?.pendingIntent) {
+        const intentLabel = convState.pendingIntent.replace(/\./g, ' ').replace(/_/g, ' ');
+        const awaitingLabel = convState.awaitingInput?.replace(/_/g, ' ') || 'more information';
+        const collectedKeys = Object.keys(convState.collectedEntities || {});
+        
+        activeTaskContext = `
+[ACTIVE_TASK]
+Intent: ${intentLabel}
+Awaiting: ${awaitingLabel}
+${collectedKeys.length > 0 ? `Collected so far: ${collectedKeys.join(', ')}` : 'No data collected yet'}
+[/ACTIVE_TASK]
+
+IMPORTANT: You are in the middle of a multi-turn conversation. The user's message is likely a response to your previous question about "${awaitingLabel}". 
+Do NOT start a new task - continue with the current one. Acknowledge what they provided and either ask for the next piece of info or complete the action.`;
+      }
+    } catch (e) {
+      console.error('[ai-chat] Failed to load active task context:', e);
+    }
+
     // Build the system prompt - use orchestrator's dynamic prompt if available
     const baseSystemPrompt = orchestratorResult.systemPrompt || `You are a proactive AI scheduling assistant for a service business management system.
 You can both QUERY information and TAKE ACTIONS to help manage the business efficiently.${visionNote}
@@ -3473,6 +3496,8 @@ Current Context:
 - Business ID: ${businessId}
 - Current Page: ${includeContext?.currentPage || 'unknown'}
 - Date: ${new Date().toISOString().split('T')[0]}
+
+${activeTaskContext}
 
 ${memorySection ? `MEMORY CONTEXT:\n${memorySection}` : ''}`;
 

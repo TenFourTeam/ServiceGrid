@@ -96,20 +96,30 @@ export function AIChatInterface({
               AI Assistant
             </SheetTitle>
             
-            {messages.length > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  clearMessages();
-                  toast.success('Started new conversation');
-                }}
-                className="gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                New Chat
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {/* Active Task Indicator (PHASE 2) */}
+              {currentToolName && (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-medium animate-pulse">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                  {currentToolName.replace(/_/g, ' ')}
+                </div>
+              )}
+              
+              {messages.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    clearMessages();
+                    toast.success('Started new conversation');
+                  }}
+                  className="gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  New Chat
+                </Button>
+              )}
+            </div>
           </div>
         </SheetHeader>
 
