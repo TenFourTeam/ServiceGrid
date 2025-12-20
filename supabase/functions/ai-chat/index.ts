@@ -3132,6 +3132,884 @@ const tools: Record<string, Tool> = {
         jobIds: args.jobIds
       };
     }
+  },
+
+  // ============================================
+  // PHASE 3: CORE CRUD TOOLS
+  // ============================================
+
+  create_job: {
+    name: 'create_job',
+    description: 'Create a standalone job directly for a customer without requiring a request or quote',
+    parameters: {
+      type: 'object',
+      properties: {
+        customerId: { type: 'string', description: 'Customer ID' },
+        title: { type: 'string', description: 'Job title/description' },
+        notes: { type: 'string', description: 'Additional notes' },
+        address: { type: 'string', description: 'Job location address (optional, defaults to customer address)' },
+        estimatedDuration: { type: 'number', description: 'Estimated duration in minutes (default: 60)' },
+        scheduleTime: { type: 'string', description: 'Optional schedule time in ISO format' }
+      },
+      required: ['customerId', 'title']
+    },
+    execute: async (args: any, context: any) => {
+      // Fetch customer to get default address
+      const { data: customer } = await context.supabase
+        .from('customers')
+        .select('name, address')
+        .eq('id', args.customerId)
+        .eq('business_id', context.businessId)
+        .single();
+
+      if (!customer) throw new Error('Customer not found');
+
+      const jobData: any = {
+        business_id: context.businessId,
+        owner_id: context.userId,
+        customer_id: args.customerId,
+        title: args.title,
+        notes: args.notes,
+        address: args.address || customer.address,
+        estimated_duration_minutes: args.estimatedDuration || 60,
+        status: args.scheduleTime ? 'Scheduled' : 'Unscheduled'
+      };
+
+      if (args.scheduleTime) {
+        jobData.starts_at = args.scheduleTime;
+        const duration = args.estimatedDuration || 60;
+        jobData.ends_at = new Date(new Date(args.scheduleTime).getTime() + duration * 60000).toISOString();
+      }
+
+      const { data: job, error } = await context.supabase
+        .from('jobs')
+        .insert(jobData)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'create',
+        description: `Created job "${args.title}" for ${customer.name}`,
+        metadata: { tool: 'create_job', job_id: job.id, customer_id: args.customerId }
+      });
+
+      return { 
+        success: true, 
+        job_id: job.id, 
+        title: args.title,
+        customer_name: customer.name,
+        status: jobData.status,
+        scheduled_time: args.scheduleTime || null
+      };
+    }
+  },
+
+  update_job: {
+    name: 'update_job',
+    description: 'Update any field of an existing job',
+    parameters: {
+      type: 'object',
+      properties: {
+        jobId: { type: 'string', description: 'Job ID to update' },
+        title: { type: 'string', description: 'New job title' },
+        notes: { type: 'string', description: 'New notes' },
+        address: { type: 'string', description: 'New address' },
+        estimatedDuration: { type: 'number', description: 'New estimated duration in minutes' }
+      },
+      required: ['jobId']
+    },
+    execute: async (args: any, context: any) => {
+      const updates: any = { updated_at: new Date().toISOString() };
+      
+      if (args.title) updates.title = args.title;
+      if (args.notes !== undefined) updates.notes = args.notes;
+      if (args.address) updates.address = args.address;
+      if (args.estimatedDuration) updates.estimated_duration_minutes = args.estimatedDuration;
+
+      const { data: job, error } = await context.supabase
+        .from('jobs')
+        .update(updates)
+        .eq('id', args.jobId)
+        .eq('business_id', context.businessId)
+        .select('*, customers(name)')
+        .single();
+
+      if (error) throw error;
+
+      const changedFields = Object.keys(updates).filter(k => k !== 'updated_at');
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'update',
+        description: `Updated job: ${changedFields.join(', ')}`,
+        metadata: { tool: 'update_job', job_id: args.jobId, changes: changedFields }
+      });
+
+      return { 
+        success: true, 
+        job_id: args.jobId,
+        job_title: job.title,
+        customer_name: job.customers?.name,
+        updated_fields: changedFields
+      };
+    }
+  },
+
+  update_customer: {
+    name: 'update_customer',
+    description: 'Update customer details like name, email, phone, or address',
+    parameters: {
+      type: 'object',
+      properties: {
+        customerId: { type: 'string', description: 'Customer ID to update' },
+        name: { type: 'string', description: 'New name' },
+        email: { type: 'string', description: 'New email' },
+        phone: { type: 'string', description: 'New phone number' },
+        address: { type: 'string', description: 'New address' },
+        notes: { type: 'string', description: 'Internal notes' }
+      },
+      required: ['customerId']
+    },
+    execute: async (args: any, context: any) => {
+      const updates: any = { updated_at: new Date().toISOString() };
+      
+      if (args.name) updates.name = args.name;
+      if (args.email) updates.email = args.email;
+      if (args.phone) updates.phone = args.phone;
+      if (args.address) updates.address = args.address;
+      if (args.notes !== undefined) updates.notes = args.notes;
+
+      const { data: customer, error } = await context.supabase
+        .from('customers')
+        .update(updates)
+        .eq('id', args.customerId)
+        .eq('business_id', context.businessId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const changedFields = Object.keys(updates).filter(k => k !== 'updated_at');
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'update',
+        description: `Updated customer ${customer.name}: ${changedFields.join(', ')}`,
+        metadata: { tool: 'update_customer', customer_id: args.customerId, changes: changedFields }
+      });
+
+      return { 
+        success: true, 
+        customer_id: args.customerId,
+        customer_name: customer.name,
+        updated_fields: changedFields
+      };
+    }
+  },
+
+  update_quote: {
+    name: 'update_quote',
+    description: 'Update quote details like notes, valid until date, or add line items',
+    parameters: {
+      type: 'object',
+      properties: {
+        quoteId: { type: 'string', description: 'Quote ID to update' },
+        notes: { type: 'string', description: 'New internal notes' },
+        validUntil: { type: 'string', description: 'New valid until date (ISO format)' },
+        lineItems: { 
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              qty: { type: 'number' },
+              unit_price: { type: 'number' }
+            }
+          },
+          description: 'Line items to add (appended to existing)'
+        }
+      },
+      required: ['quoteId']
+    },
+    execute: async (args: any, context: any) => {
+      const updates: any = { updated_at: new Date().toISOString() };
+      
+      if (args.notes !== undefined) updates.notes = args.notes;
+      if (args.validUntil) updates.valid_until = args.validUntil;
+
+      const { data: quote, error } = await context.supabase
+        .from('quotes')
+        .update(updates)
+        .eq('id', args.quoteId)
+        .eq('business_id', context.businessId)
+        .select('*, customers(name)')
+        .single();
+
+      if (error) throw error;
+
+      // Add new line items if provided
+      let addedItems = 0;
+      if (args.lineItems && args.lineItems.length > 0) {
+        const lineItemsData = args.lineItems.map((item: any, idx: number) => ({
+          quote_id: args.quoteId,
+          owner_id: context.userId,
+          name: item.name,
+          qty: item.qty || 1,
+          unit_price: item.unit_price,
+          line_total: (item.qty || 1) * item.unit_price,
+          position: 100 + idx // Append after existing
+        }));
+
+        const { error: liError } = await context.supabase
+          .from('quote_line_items')
+          .insert(lineItemsData);
+
+        if (!liError) addedItems = args.lineItems.length;
+
+        // Recalculate totals
+        const { data: allItems } = await context.supabase
+          .from('quote_line_items')
+          .select('line_total')
+          .eq('quote_id', args.quoteId);
+
+        const newSubtotal = allItems?.reduce((sum: number, i: any) => sum + (i.line_total || 0), 0) || 0;
+        const taxRate = quote.tax_rate || 0;
+        const newTotal = newSubtotal * (1 + taxRate / 100);
+
+        await context.supabase
+          .from('quotes')
+          .update({ subtotal: newSubtotal, total: newTotal })
+          .eq('id', args.quoteId);
+      }
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'update',
+        description: `Updated quote ${quote.number}${addedItems > 0 ? `, added ${addedItems} line items` : ''}`,
+        metadata: { tool: 'update_quote', quote_id: args.quoteId, added_items: addedItems }
+      });
+
+      return { 
+        success: true, 
+        quote_id: args.quoteId,
+        quote_number: quote.number,
+        customer_name: quote.customers?.name,
+        line_items_added: addedItems
+      };
+    }
+  },
+
+  cancel_job: {
+    name: 'cancel_job',
+    description: 'Cancel a job with an optional reason',
+    parameters: {
+      type: 'object',
+      properties: {
+        jobId: { type: 'string', description: 'Job ID to cancel' },
+        reason: { type: 'string', description: 'Reason for cancellation' }
+      },
+      required: ['jobId']
+    },
+    execute: async (args: any, context: any) => {
+      const { data: job } = await context.supabase
+        .from('jobs')
+        .select('title, customers(name)')
+        .eq('id', args.jobId)
+        .eq('business_id', context.businessId)
+        .single();
+
+      if (!job) throw new Error('Job not found');
+
+      const noteText = args.reason ? `[CANCELLED] ${args.reason}` : '[CANCELLED]';
+      
+      const { error } = await context.supabase
+        .from('jobs')
+        .update({ 
+          status: 'Cancelled',
+          notes: job.notes ? `${job.notes}\n\n${noteText}` : noteText,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', args.jobId)
+        .eq('business_id', context.businessId);
+
+      if (error) throw error;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'cancel',
+        description: `Cancelled job "${job.title}"${args.reason ? `: ${args.reason}` : ''}`,
+        metadata: { tool: 'cancel_job', job_id: args.jobId, reason: args.reason }
+      });
+
+      return { 
+        success: true, 
+        job_id: args.jobId,
+        job_title: job.title,
+        customer_name: job.customers?.name,
+        reason: args.reason
+      };
+    }
+  },
+
+  void_invoice: {
+    name: 'void_invoice',
+    description: 'Void/cancel an invoice with an optional reason',
+    parameters: {
+      type: 'object',
+      properties: {
+        invoiceId: { type: 'string', description: 'Invoice ID to void' },
+        reason: { type: 'string', description: 'Reason for voiding' }
+      },
+      required: ['invoiceId']
+    },
+    execute: async (args: any, context: any) => {
+      const { data: invoice } = await context.supabase
+        .from('invoices')
+        .select('number, total, customers(name)')
+        .eq('id', args.invoiceId)
+        .eq('business_id', context.businessId)
+        .single();
+
+      if (!invoice) throw new Error('Invoice not found');
+
+      const noteText = args.reason ? `[VOIDED] ${args.reason}` : '[VOIDED]';
+      
+      const { error } = await context.supabase
+        .from('invoices')
+        .update({ 
+          status: 'Voided',
+          notes_internal: invoice.notes_internal ? `${invoice.notes_internal}\n\n${noteText}` : noteText,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', args.invoiceId)
+        .eq('business_id', context.businessId);
+
+      if (error) throw error;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'void',
+        description: `Voided invoice ${invoice.number}${args.reason ? `: ${args.reason}` : ''}`,
+        metadata: { tool: 'void_invoice', invoice_id: args.invoiceId, reason: args.reason }
+      });
+
+      return { 
+        success: true, 
+        invoice_id: args.invoiceId,
+        invoice_number: invoice.number,
+        customer_name: invoice.customers?.name,
+        amount_voided: invoice.total,
+        reason: args.reason
+      };
+    }
+  },
+
+  delete_quote: {
+    name: 'delete_quote',
+    description: 'Delete/archive a quote (soft delete)',
+    parameters: {
+      type: 'object',
+      properties: {
+        quoteId: { type: 'string', description: 'Quote ID to delete' },
+        reason: { type: 'string', description: 'Reason for deletion' }
+      },
+      required: ['quoteId']
+    },
+    execute: async (args: any, context: any) => {
+      const { data: quote } = await context.supabase
+        .from('quotes')
+        .select('number, total, customers(name)')
+        .eq('id', args.quoteId)
+        .eq('business_id', context.businessId)
+        .single();
+
+      if (!quote) throw new Error('Quote not found');
+
+      // Soft delete by changing status
+      const { error } = await context.supabase
+        .from('quotes')
+        .update({ 
+          status: 'Deleted',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', args.quoteId)
+        .eq('business_id', context.businessId);
+
+      if (error) throw error;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'delete',
+        description: `Deleted quote ${quote.number}${args.reason ? `: ${args.reason}` : ''}`,
+        metadata: { tool: 'delete_quote', quote_id: args.quoteId, reason: args.reason }
+      });
+
+      return { 
+        success: true, 
+        quote_id: args.quoteId,
+        quote_number: quote.number,
+        customer_name: quote.customers?.name,
+        reason: args.reason
+      };
+    }
+  },
+
+  // ============================================
+  // PHASE 3: NAVIGATION TOOLS
+  // ============================================
+
+  navigate_to_entity: {
+    name: 'navigate_to_entity',
+    description: 'Navigate user to view a specific entity (customer, job, quote, or invoice)',
+    parameters: {
+      type: 'object',
+      properties: {
+        entityType: { 
+          type: 'string', 
+          enum: ['customer', 'job', 'quote', 'invoice'],
+          description: 'Type of entity to navigate to' 
+        },
+        entityId: { type: 'string', description: 'ID of the entity' }
+      },
+      required: ['entityType', 'entityId']
+    },
+    execute: async (args: any, context: any) => {
+      const routes: Record<string, string> = {
+        customer: `/customers/${args.entityId}`,
+        job: `/work-orders/${args.entityId}`,
+        quote: `/quotes/${args.entityId}`,
+        invoice: `/invoices/${args.entityId}`
+      };
+
+      // Fetch entity name for confirmation
+      let entityName = '';
+      const table = args.entityType === 'customer' ? 'customers' 
+        : args.entityType === 'job' ? 'jobs'
+        : args.entityType === 'quote' ? 'quotes'
+        : 'invoices';
+      
+      const nameField = args.entityType === 'customer' ? 'name'
+        : args.entityType === 'job' ? 'title'
+        : 'number';
+
+      const { data } = await context.supabase
+        .from(table)
+        .select(nameField)
+        .eq('id', args.entityId)
+        .single();
+
+      entityName = data?.[nameField] || args.entityId;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'navigate',
+        description: `Navigated to ${args.entityType}: ${entityName}`,
+        metadata: { tool: 'navigate_to_entity', entity_type: args.entityType, entity_id: args.entityId }
+      });
+
+      return { 
+        success: true,
+        navigation: {
+          type: 'entity',
+          entityType: args.entityType,
+          entityId: args.entityId,
+          entityName,
+          url: routes[args.entityType]
+        }
+      };
+    }
+  },
+
+  navigate_to_calendar: {
+    name: 'navigate_to_calendar',
+    description: 'Navigate user to the calendar view, optionally to a specific date',
+    parameters: {
+      type: 'object',
+      properties: {
+        date: { type: 'string', description: 'Date to navigate to (YYYY-MM-DD format)' },
+        view: { 
+          type: 'string', 
+          enum: ['day', 'week', 'month'],
+          description: 'Calendar view mode' 
+        }
+      }
+    },
+    execute: async (args: any, context: any) => {
+      const params = new URLSearchParams();
+      if (args.date) params.set('date', args.date);
+      if (args.view) params.set('view', args.view);
+
+      const url = params.toString() ? `/calendar?${params.toString()}` : '/calendar';
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'navigate',
+        description: `Navigated to calendar${args.date ? ` for ${args.date}` : ''}`,
+        metadata: { tool: 'navigate_to_calendar', date: args.date, view: args.view }
+      });
+
+      return { 
+        success: true,
+        navigation: {
+          type: 'calendar',
+          date: args.date || new Date().toISOString().split('T')[0],
+          view: args.view || 'week',
+          url
+        }
+      };
+    }
+  },
+
+  // ============================================
+  // PHASE 3: INTELLIGENCE TOOLS
+  // ============================================
+
+  lookup_entity: {
+    name: 'lookup_entity',
+    description: 'Fuzzy search across all entity types (customers, jobs, quotes, invoices) by name, number, or title',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Search query' },
+        entityTypes: { 
+          type: 'array',
+          items: { type: 'string', enum: ['customer', 'job', 'quote', 'invoice'] },
+          description: 'Optional filter to specific entity types'
+        },
+        limit: { type: 'number', description: 'Max results per type (default: 5)' }
+      },
+      required: ['query']
+    },
+    execute: async (args: any, context: any) => {
+      const searchQuery = `%${args.query}%`;
+      const limit = args.limit || 5;
+      const types = args.entityTypes || ['customer', 'job', 'quote', 'invoice'];
+      const results: any[] = [];
+
+      // Search customers
+      if (types.includes('customer')) {
+        const { data: customers } = await context.supabase
+          .from('customers')
+          .select('id, name, email, phone')
+          .eq('business_id', context.businessId)
+          .or(`name.ilike.${searchQuery},email.ilike.${searchQuery},phone.ilike.${searchQuery}`)
+          .limit(limit);
+
+        (customers || []).forEach((c: any) => {
+          results.push({
+            type: 'customer',
+            id: c.id,
+            name: c.name,
+            subtitle: c.email || c.phone,
+            relevance: c.name.toLowerCase().includes(args.query.toLowerCase()) ? 1 : 0.7
+          });
+        });
+      }
+
+      // Search jobs
+      if (types.includes('job')) {
+        const { data: jobs } = await context.supabase
+          .from('jobs')
+          .select('id, title, status, customers(name)')
+          .eq('business_id', context.businessId)
+          .or(`title.ilike.${searchQuery}`)
+          .limit(limit);
+
+        (jobs || []).forEach((j: any) => {
+          results.push({
+            type: 'job',
+            id: j.id,
+            name: j.title || 'Untitled Job',
+            subtitle: `${j.status} - ${j.customers?.name || 'No customer'}`,
+            relevance: (j.title || '').toLowerCase().includes(args.query.toLowerCase()) ? 1 : 0.7
+          });
+        });
+      }
+
+      // Search quotes
+      if (types.includes('quote')) {
+        const { data: quotes } = await context.supabase
+          .from('quotes')
+          .select('id, number, status, total, customers(name)')
+          .eq('business_id', context.businessId)
+          .ilike('number', searchQuery)
+          .limit(limit);
+
+        (quotes || []).forEach((q: any) => {
+          results.push({
+            type: 'quote',
+            id: q.id,
+            name: q.number,
+            subtitle: `$${q.total?.toFixed(2)} - ${q.customers?.name || 'Unknown'}`,
+            relevance: q.number.toLowerCase().includes(args.query.toLowerCase()) ? 1 : 0.7
+          });
+        });
+      }
+
+      // Search invoices
+      if (types.includes('invoice')) {
+        const { data: invoices } = await context.supabase
+          .from('invoices')
+          .select('id, number, status, total, customers(name)')
+          .eq('business_id', context.businessId)
+          .ilike('number', searchQuery)
+          .limit(limit);
+
+        (invoices || []).forEach((inv: any) => {
+          results.push({
+            type: 'invoice',
+            id: inv.id,
+            name: inv.number,
+            subtitle: `$${inv.total?.toFixed(2)} - ${inv.customers?.name || 'Unknown'}`,
+            relevance: inv.number.toLowerCase().includes(args.query.toLowerCase()) ? 1 : 0.7
+          });
+        });
+      }
+
+      // Sort by relevance
+      results.sort((a, b) => b.relevance - a.relevance);
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'search',
+        description: `Searched for "${args.query}" - found ${results.length} results`,
+        metadata: { tool: 'lookup_entity', query: args.query, result_count: results.length }
+      });
+
+      return { 
+        query: args.query,
+        results: results.slice(0, 15),
+        total_count: results.length
+      };
+    }
+  },
+
+  get_suggested_actions: {
+    name: 'get_suggested_actions',
+    description: 'Get context-aware suggested actions based on current business state',
+    parameters: {
+      type: 'object',
+      properties: {
+        currentPage: { type: 'string', description: 'Current page/route for context' }
+      }
+    },
+    execute: async (args: any, context: any) => {
+      const suggestions: any[] = [];
+
+      // Check unscheduled jobs
+      const { count: unscheduledCount } = await context.supabase
+        .from('jobs')
+        .select('id', { count: 'exact', head: true })
+        .eq('business_id', context.businessId)
+        .is('starts_at', null)
+        .neq('status', 'Cancelled');
+
+      if (unscheduledCount && unscheduledCount > 0) {
+        suggestions.push({
+          priority: 'high',
+          action: 'schedule_jobs',
+          title: `Schedule ${unscheduledCount} pending job${unscheduledCount !== 1 ? 's' : ''}`,
+          description: 'Use AI-powered scheduling to optimize your calendar',
+          command: 'Schedule all pending jobs'
+        });
+      }
+
+      // Check pending quotes
+      const { count: pendingQuotes } = await context.supabase
+        .from('quotes')
+        .select('id', { count: 'exact', head: true })
+        .eq('business_id', context.businessId)
+        .eq('status', 'Draft');
+
+      if (pendingQuotes && pendingQuotes > 0) {
+        suggestions.push({
+          priority: 'medium',
+          action: 'send_quotes',
+          title: `${pendingQuotes} quote${pendingQuotes !== 1 ? 's' : ''} ready to send`,
+          description: 'Draft quotes waiting to be sent to customers',
+          command: 'Show pending quotes'
+        });
+      }
+
+      // Check overdue invoices
+      const { count: overdueCount } = await context.supabase
+        .from('invoices')
+        .select('id', { count: 'exact', head: true })
+        .eq('business_id', context.businessId)
+        .eq('status', 'Sent')
+        .lt('due_at', new Date().toISOString());
+
+      if (overdueCount && overdueCount > 0) {
+        suggestions.push({
+          priority: 'high',
+          action: 'collect_payments',
+          title: `${overdueCount} overdue invoice${overdueCount !== 1 ? 's' : ''}`,
+          description: 'Send payment reminders to collect outstanding balances',
+          command: 'Show overdue invoices'
+        });
+      }
+
+      // Check pending requests
+      const { count: pendingRequests } = await context.supabase
+        .from('requests')
+        .select('id', { count: 'exact', head: true })
+        .eq('business_id', context.businessId)
+        .eq('status', 'New');
+
+      if (pendingRequests && pendingRequests > 0) {
+        suggestions.push({
+          priority: 'medium',
+          action: 'review_requests',
+          title: `${pendingRequests} new service request${pendingRequests !== 1 ? 's' : ''}`,
+          description: 'Review and convert to jobs or quotes',
+          command: 'Show pending requests'
+        });
+      }
+
+      // Default suggestion if nothing urgent
+      if (suggestions.length === 0) {
+        suggestions.push({
+          priority: 'low',
+          action: 'view_metrics',
+          title: 'View business performance',
+          description: 'Check your revenue, job completion rates, and team utilization',
+          command: 'Show business metrics'
+        });
+      }
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'query',
+        description: `Generated ${suggestions.length} suggested actions`,
+        metadata: { tool: 'get_suggested_actions', count: suggestions.length }
+      });
+
+      return { suggestions };
+    }
+  },
+
+  undo_last_action: {
+    name: 'undo_last_action',
+    description: 'Attempt to reverse the last action taken by the AI. Only works for reversible operations like status changes and updates.',
+    parameters: {
+      type: 'object',
+      properties: {}
+    },
+    execute: async (args: any, context: any) => {
+      // Find the last reversible action
+      const { data: lastActions } = await context.supabase
+        .from('ai_activity_log')
+        .select('*')
+        .eq('business_id', context.businessId)
+        .eq('user_id', context.userId)
+        .in('activity_type', ['update', 'schedule', 'reschedule', 'cancel', 'batch_schedule'])
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (!lastActions || lastActions.length === 0) {
+        return {
+          success: false,
+          message: 'No reversible actions found in recent history'
+        };
+      }
+
+      const lastAction = lastActions[0];
+      const metadata = lastAction.metadata || {};
+      
+      let undoResult: any = { success: false };
+
+      switch (lastAction.activity_type) {
+        case 'update':
+        case 'batch_update':
+          // For updates, we can't truly undo without stored previous values
+          undoResult = {
+            success: false,
+            message: 'Cannot undo update operations - previous values not stored'
+          };
+          break;
+
+        case 'schedule':
+        case 'batch_schedule':
+        case 'reschedule':
+          // Unschedule the job(s)
+          const jobIds = metadata.job_id ? [metadata.job_id] : (metadata.scheduled || []).map((s: any) => s.jobId);
+          
+          if (jobIds.length > 0) {
+            const { error } = await context.supabase
+              .from('jobs')
+              .update({ 
+                starts_at: null, 
+                ends_at: null, 
+                status: 'Unscheduled',
+                ai_suggested: false 
+              })
+              .in('id', jobIds)
+              .eq('business_id', context.businessId);
+
+            if (!error) {
+              undoResult = {
+                success: true,
+                action: 'unscheduled',
+                affected_jobs: jobIds.length,
+                message: `Unscheduled ${jobIds.length} job${jobIds.length !== 1 ? 's' : ''}`
+              };
+            }
+          }
+          break;
+
+        case 'cancel':
+          // Restore cancelled job to previous status (default: Unscheduled)
+          if (metadata.job_id) {
+            const { error } = await context.supabase
+              .from('jobs')
+              .update({ status: 'Unscheduled' })
+              .eq('id', metadata.job_id)
+              .eq('business_id', context.businessId);
+
+            if (!error) {
+              undoResult = {
+                success: true,
+                action: 'restored',
+                job_id: metadata.job_id,
+                message: 'Restored cancelled job to Unscheduled status'
+              };
+            }
+          }
+          break;
+
+        default:
+          undoResult = {
+            success: false,
+            message: `Cannot undo ${lastAction.activity_type} operations`
+          };
+      }
+
+      if (undoResult.success) {
+        await context.supabase.from('ai_activity_log').insert({
+          business_id: context.businessId,
+          user_id: context.userId,
+          activity_type: 'undo',
+          description: `Undid previous action: ${lastAction.description}`,
+          metadata: { tool: 'undo_last_action', original_action: lastAction.activity_type }
+        });
+      }
+
+      return undoResult;
+    }
   }
 };
 
