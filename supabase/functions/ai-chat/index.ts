@@ -5938,9 +5938,9 @@ RESPONSE STYLE:
             if (pendingPlanData) {
               const { plan, pattern, entities } = pendingPlanData;
               
-              // Remove from pending (both cache and DB)
+              // Update status to 'executing' (keep in DB for recovery)
               removePendingPlan(plan.id);
-              await removePendingPlanAsync(plan.id, memoryCtx);
+              await updatePlanStatus(memoryCtx, plan.id, 'executing');
               
               console.info('[ai-chat] Executing approved plan:', plan.id, plan.name);
               
@@ -6191,6 +6191,118 @@ RESPONSE STYLE:
             controller.close();
             return;
           }
+
+          // ===============================================================
+          // PLAN ENTITY SELECTION HANDLING (for conversational recovery)
+          // ===============================================================
+          const entitySelectMatch = message.match(/^plan_entity_select:([a-f0-9-]+):(\w+):(.+)$/i);
+          if (entitySelectMatch) {
+            const [, planIdToUpdate, entityType, entityValue] = entitySelectMatch;
+            console.info('[ai-chat] Entity selection received:', { planIdToUpdate, entityType, entityValue });
+            
+            // Get the plan from DB
+            let planData = getPendingPlan(planIdToUpdate);
+            if (!planData) {
+              planData = await getPendingPlanAsync(planIdToUpdate, memoryCtx);
+            }
+            
+            if (planData) {
+              const { plan, pattern, entities } = planData;
+              
+              // Update entities with the selected value
+              const updatedEntities = { ...entities, [entityType]: entityValue };
+              
+              // Reset failed step to pending so it can be retried
+              plan.steps = plan.steps.map(s => 
+                s.status === 'failed' ? { ...s, status: 'pending' as const, error: undefined } : s
+              );
+              plan.status = 'executing';
+              
+              // Update plan in DB with new entities
+              await storePendingPlanAsync(plan, pattern, updatedEntities, memoryCtx, planIdToUpdate);
+              
+              console.info('[ai-chat] Resuming plan with selected entity:', entityType, '=', entityValue);
+              
+              // Send resuming status
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({
+                  type: 'step_progress',
+                  planId: plan.id,
+                  planName: plan.name,
+                  stepIndex: plan.currentStepIndex,
+                  totalSteps: plan.steps.length,
+                  steps: plan.steps.map(s => ({
+                    id: s.id,
+                    name: s.name,
+                    tool: s.tool,
+                    status: s.status,
+                    error: s.error,
+                  })),
+                  message: `Selected ${entityType}, resuming...`,
+                })}\n\n`)
+              );
+              
+              // Execute plan
+              const executionContext: ExecutionContext = {
+                supabase: supaAdmin,
+                businessId,
+                userId,
+                controller,
+                tools,
+              };
+              
+              const executedPlan = await executePlan(
+                plan,
+                executionContext,
+                updatedEntities,
+                pattern,
+                (result: PlannerResult) => {
+                  if (result.type === 'step_progress' || result.type === 'step_complete') {
+                    sendStepProgress(controller, result.plan, result.currentStep!, result.message);
+                  } else if (result.type === 'plan_complete') {
+                    const failedStep = result.plan.steps.find(s => s.status === 'failed');
+                    sendPlanComplete(controller, result.plan, failedStep);
+                  }
+                }
+              );
+              
+              // Handle subsequent failures
+              if (executedPlan.status === 'awaiting_recovery' || executedPlan.status === 'failed') {
+                const failedStep = executedPlan.steps.find(s => s.status === 'failed');
+                if (failedStep) {
+                  const usedConversational = await executeConversationalRecovery(
+                    controller,
+                    executedPlan,
+                    failedStep,
+                    executionContext
+                  );
+                  if (!usedConversational) {
+                    sendPlanComplete(controller, executedPlan, failedStep);
+                  }
+                }
+              }
+              
+              // Clean up if completed
+              if (executedPlan.status === 'completed') {
+                removePendingPlan(plan.id);
+                await removePendingPlanAsync(plan.id, memoryCtx);
+              }
+              
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`));
+              controller.close();
+              return;
+            }
+            
+            // Plan not found
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({
+                type: 'token',
+                content: "I couldn't find the plan. Would you like to start over?",
+              })}\n\n`)
+            );
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`));
+            controller.close();
+            return;
 
           // Send clarification event if needed - this is a structured UI component
           if (orchestratorResult.type === 'clarification' && orchestratorResult.clarificationData) {

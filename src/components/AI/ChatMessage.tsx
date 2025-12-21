@@ -25,9 +25,10 @@ interface ChatMessageProps {
   onRejectPlan?: (message: string) => void;
   onRecoveryAction?: (actionId: string, planId: string, navigateTo?: string) => void;
   onResume?: (planId: string) => void;
+  onEntitySelect?: (planId: string, entityType: string, entityValue: string) => void;
 }
 
-export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSchedule, onApprovePlan, onRejectPlan, onRecoveryAction, onResume }: ChatMessageProps) {
+export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSchedule, onApprovePlan, onRejectPlan, onRecoveryAction, onResume, onEntitySelect }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const isSystemMessage = message.role === 'system';
   const { navigateToDate } = useCalendarNavigation();
@@ -151,6 +152,7 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
                 progress={message.planProgress} 
                 onRecoveryAction={onRecoveryAction}
                 onResume={onResume}
+                onEntitySelect={onEntitySelect}
               />
             )}
 

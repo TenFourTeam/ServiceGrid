@@ -499,7 +499,7 @@ export async function storePendingPlan(
   try {
     const { data, error } = await ctx.supabase
       .from('ai_pending_plans')
-      .insert({
+      .upsert({
         id: idToUse, // Use provided plan ID to fix mismatch bug
         user_id: ctx.userId,
         business_id: ctx.businessId,
@@ -507,7 +507,8 @@ export async function storePendingPlan(
         plan_data: plan,
         pattern_id: patternId || null,
         status: 'pending',
-      })
+        expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 min expiry
+      }, { onConflict: 'id' })
       .select('id')
       .single();
 
@@ -536,7 +537,7 @@ export async function getPendingPlan(
       .select('*')
       .eq('id', planId)
       .eq('user_id', ctx.userId)
-      .eq('status', 'pending')
+      .in('status', ['pending', 'executing', 'awaiting_recovery'])
       .gt('expires_at', new Date().toISOString()) // Only get non-expired plans
       .single();
 
@@ -575,7 +576,7 @@ export async function getMostRecentPendingPlan(
       .select('*')
       .eq('user_id', ctx.userId)
       .eq('business_id', ctx.businessId)
-      .eq('status', 'pending')
+      .in('status', ['pending', 'executing', 'awaiting_recovery'])
       .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false })
       .limit(1)

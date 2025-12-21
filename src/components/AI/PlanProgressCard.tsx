@@ -17,7 +17,6 @@ import {
   Code2,
   X,
   PlayCircle,
-  ExternalLink,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect, useState, useRef } from 'react';
@@ -348,8 +347,39 @@ export function PlanProgressCard({ progress, onCancel, onRecoveryAction, onResum
           </div>
         )}
 
-        {/* Recovery Actions - show when plan failed with available actions */}
-        {isAwaitingRecovery && progress.recoveryActions && progress.recoveryActions.length > 0 && (
+        {/* Entity Selection - show when plan needs user to pick an entity */}
+        {progress.entitySelection && (
+          <div className="space-y-3 pt-3 border-t border-border animate-fade-in">
+            <p className="text-sm font-medium text-foreground">
+              {progress.entitySelection.question}
+            </p>
+            <div className="space-y-2">
+              {progress.entitySelection.options.map(option => (
+                <Button
+                  key={option.id}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onEntitySelect?.(
+                    progress.planId, 
+                    progress.entitySelection!.resolvesEntity, 
+                    option.value
+                  )}
+                  className="w-full justify-start gap-2 h-auto py-2 px-3"
+                >
+                  <div className="text-left">
+                    <p className="font-medium">{option.label}</p>
+                    {option.metadata?.customer && (
+                      <p className="text-xs text-muted-foreground">{option.metadata.customer}</p>
+                    )}
+                  </div>
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Recovery Actions - show when plan failed with available actions (but no entity selection) */}
+        {isAwaitingRecovery && !progress.entitySelection && progress.recoveryActions && progress.recoveryActions.length > 0 && (
           <div className="space-y-2 pt-3 border-t border-border animate-fade-in">
             <p className="text-sm text-muted-foreground">
               Fix this and continue:
@@ -363,11 +393,7 @@ export function PlanProgressCard({ progress, onCancel, onRecoveryAction, onResum
                   onClick={() => onRecoveryAction?.(action.id, progress.planId, action.navigateTo)}
                   className="gap-1.5"
                 >
-                  {action.navigateTo ? (
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  ) : (
-                    <PlayCircle className="w-3.5 h-3.5" />
-                  )}
+                  <PlayCircle className="w-3.5 h-3.5" />
                   {action.label}
                 </Button>
               ))}

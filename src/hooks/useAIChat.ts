@@ -42,6 +42,20 @@ export interface RecoveryActionData {
   label: string;
   description: string;
   navigateTo?: string;
+  isConversational?: boolean;
+}
+
+export interface EntitySelectionOption {
+  id: string;
+  label: string;
+  value: string;
+  metadata?: any;
+}
+
+export interface EntitySelectionData {
+  question: string;
+  resolvesEntity: string;
+  options: EntitySelectionOption[];
 }
 
 export interface PlanProgressData {
@@ -54,6 +68,7 @@ export interface PlanProgressData {
   pausedAtStep?: number;
   recoveryActions?: RecoveryActionData[];
   canResume?: boolean;
+  entitySelection?: EntitySelectionData;
   summary?: {
     totalSteps: number;
     successfulSteps: number;
@@ -520,6 +535,8 @@ export function useAIChat(options?: UseAIChatOptions) {
                         // Include recovery actions if available
                         recoveryActions: data.recoveryActions,
                         canResume: data.canResume,
+                        // Include entity selection if available
+                        entitySelection: data.entitySelection,
                       },
                     };
                     return updated;
@@ -534,6 +551,37 @@ export function useAIChat(options?: UseAIChatOptions) {
                 } else if (data.status === 'failed') {
                   toast.error('Plan failed - some steps were rolled back');
                 }
+              } else if (data.type === 'entity_selection') {
+                // Update plan with entity selection options
+                setMessages(prev => {
+                  const planMsgIndex = prev.findIndex(m => 
+                    (m.messageType === 'plan_progress' || m.messageType === 'plan_preview') && 
+                    (m.planProgress?.planId === data.planId || m.planPreview?.id === data.planId)
+                  );
+                  
+                  if (planMsgIndex !== -1) {
+                    const updated = [...prev];
+                    const existingMsg = updated[planMsgIndex];
+                    
+                    updated[planMsgIndex] = {
+                      ...existingMsg,
+                      messageType: 'plan_progress',
+                      planProgress: {
+                        ...existingMsg.planProgress!,
+                        planId: data.planId,
+                        status: 'awaiting_recovery',
+                        entitySelection: {
+                          question: data.question,
+                          resolvesEntity: data.resolvesEntity,
+                          options: data.options,
+                        },
+                      },
+                    };
+                    return updated;
+                  }
+                  return prev;
+                });
+                setIsStreaming(false);
               } else if (data.type === 'plan_cancelled') {
                 // Handle plan cancellation
                 const cancelledMessage: Message = {
@@ -742,17 +790,16 @@ export function useAIChat(options?: UseAIChatOptions) {
     await sendMessage(`plan_resume:${planId}`);
   }, [sendMessage]);
 
-  // Execute a recovery action for a failed step
-  const executeRecoveryAction = useCallback(async (actionId: string, planId: string, navigateTo?: string) => {
-    if (navigateTo) {
-      // For navigation-based recovery, just navigate and let user take action
-      options?.onNavigate?.(navigateTo);
-      toast.info('Complete the action, then click "Resume Plan" to continue');
-    } else {
-      // For tool-based recovery, send a message to execute
-      await sendMessage(`plan_recover:${planId}:${actionId}`);
-    }
-  }, [sendMessage, options]);
+  // Execute a recovery action for a failed step - always stay in chat
+  const executeRecoveryAction = useCallback(async (actionId: string, planId: string, _navigateTo?: string) => {
+    // Always send a recovery message instead of navigating
+    await sendMessage(`plan_recover:${planId}:${actionId}`);
+  }, [sendMessage]);
+  
+  // Select an entity for plan recovery
+  const selectPlanEntity = useCallback(async (planId: string, entityType: string, entityValue: string) => {
+    await sendMessage(`plan_entity_select:${planId}:${entityType}:${entityValue}`);
+  }, [sendMessage]);
 
   return {
     messages,
@@ -769,6 +816,7 @@ export function useAIChat(options?: UseAIChatOptions) {
     retryLastMessage,
     resumePlan,
     executeRecoveryAction,
+    selectPlanEntity,
   };
 }
 

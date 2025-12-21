@@ -47,6 +47,7 @@ export function AIChatInterface({
     retryLastMessage,
     resumePlan,
     executeRecoveryAction,
+    selectPlanEntity,
   } = useAIChat({
     onNewConversation: (id) => {
       console.log('New conversation created:', id);
@@ -311,6 +312,9 @@ export function AIChatInterface({
                   }}
                   onResume={(planId) => {
                     resumePlan(planId);
+                  }}
+                  onEntitySelect={(planId, entityType, entityValue) => {
+                    selectPlanEntity(planId, entityType, entityValue);
                   }}
                 />
               ))}
