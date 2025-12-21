@@ -11,6 +11,7 @@ import { TypingIndicator } from './TypingIndicator';
 import { ToolProgressIndicator } from './ToolProgressIndicator';
 import { ConversationStarters } from './ConversationStarters';
 import { SuggestionChips, getContextualSuggestions } from './SuggestionChips';
+import { QuickActionBar } from './QuickActionBar';
 import { Sparkles, Trash2, MessageSquare, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -245,6 +246,18 @@ export function AIChatInterface({
 
           {/* Main Chat Area */}
           <div className="flex-1 flex flex-col min-w-0">
+            {/* Quick Action Bar */}
+            {messages.length === 0 && !currentStreamingMessage && (
+              <QuickActionBar
+                currentPage={context?.currentPage || window.location.pathname}
+                onActionClick={(action) => {
+                  setShowSuggestions(false);
+                  sendMessage(action.aiPrompt, undefined, context);
+                }}
+                isStreaming={isStreaming}
+              />
+            )}
+
             {/* Messages */}
             <ScrollArea className={cn("flex-1 py-6", isMobile ? "px-2" : "px-4")} ref={scrollRef}>
               {messages.length === 0 && !currentStreamingMessage && (

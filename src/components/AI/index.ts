@@ -12,3 +12,4 @@ export { OverviewGenerator } from './OverviewGenerator';
 export { SummaryGenerator } from './SummaryGenerator';
 export { ArtifactsViewer } from './ArtifactsViewer';
 export { AIFeedbackForm } from './AIFeedbackForm';
+export { QuickActionBar } from './QuickActionBar';
