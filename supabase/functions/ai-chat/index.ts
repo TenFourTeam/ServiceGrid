@@ -6018,8 +6018,14 @@ RESPONSE STYLE:
               const { plan, pattern, entities } = pendingPlanData;
               
               // Update status to 'executing' (keep in DB for recovery)
+              console.info('[ai-chat] Removing plan from cache:', plan.id);
               removePendingPlan(plan.id);
-              await updatePlanStatus(memoryCtx, plan.id, 'executing');
+              
+              // Fire-and-forget status update to prevent hanging
+              console.info('[ai-chat] Starting non-blocking plan status update:', plan.id);
+              updatePlanStatus(memoryCtx, plan.id, 'executing').catch(e => 
+                console.error('[ai-chat] Non-blocking status update failed (continuing):', e)
+              );
               
               console.info('[ai-chat] Executing approved plan:', plan.id, plan.name);
               

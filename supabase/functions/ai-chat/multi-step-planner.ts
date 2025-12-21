@@ -428,10 +428,11 @@ const MULTI_STEP_PATTERNS: MultiStepPattern[] = [
         description: 'Add the new customer to the system',
         tool: 'create_customer',
         argMapping: (ctx) => ({
-          name: ctx.entities?.customerName,
-          email: ctx.entities?.customerEmail,
-          phone: ctx.entities?.customerPhone,
-          address: ctx.entities?.customerAddress,
+          // Support both naming conventions (customerName or name)
+          name: ctx.entities?.customerName || ctx.entities?.name,
+          email: ctx.entities?.customerEmail || ctx.entities?.email,
+          phone: ctx.entities?.customerPhone || ctx.entities?.phone,
+          address: ctx.entities?.customerAddress || ctx.entities?.address,
         }),
       },
       {

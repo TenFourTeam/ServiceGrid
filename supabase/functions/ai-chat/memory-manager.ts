@@ -602,7 +602,7 @@ export async function getMostRecentPendingPlan(
 }
 
 /**
- * Update plan status
+ * Update plan status with timeout to prevent hanging
  */
 export async function updatePlanStatus(
   ctx: MemoryContext,
@@ -610,6 +610,10 @@ export async function updatePlanStatus(
   status: PersistentPlan['status'],
   result?: any
 ): Promise<void> {
+  const TIMEOUT_MS = 5000;
+  
+  console.info('[MemoryManager] Updating plan status:', { planId, status });
+  
   try {
     const updateData: any = { status };
     if (status === 'executing' || status === 'completed' || status === 'failed') {
@@ -619,12 +623,22 @@ export async function updatePlanStatus(
       updateData.result = result;
     }
 
-    await ctx.supabase
+    // Wrap in timeout to prevent indefinite hanging
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`updatePlanStatus timeout after ${TIMEOUT_MS}ms`)), TIMEOUT_MS)
+    );
+
+    const updatePromise = ctx.supabase
       .from('ai_pending_plans')
       .update(updateData)
       .eq('id', planId);
+
+    await Promise.race([updatePromise, timeoutPromise]);
+    
+    console.info('[MemoryManager] Plan status updated successfully:', { planId, status });
   } catch (error) {
-    console.error('[MemoryManager] Failed to update plan status:', error);
+    // Log but don't throw - allow plan execution to continue even if status update fails
+    console.error('[MemoryManager] Failed to update plan status (non-blocking):', error);
   }
 }
 
