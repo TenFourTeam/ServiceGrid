@@ -19,6 +19,7 @@ import {
   removePendingPlanAsync,
   cleanupExpiredPlansAsync,
   detectPlanApproval,
+  resumePlanAfterRecovery,
   type ExecutionPlan,
   type ExecutionContext,
   type PlannerResult 
@@ -5866,7 +5867,9 @@ RESPONSE STYLE:
                   if (result.type === 'step_progress' || result.type === 'step_complete') {
                     sendStepProgress(controller, result.plan, result.currentStep!, result.message);
                   } else if (result.type === 'plan_complete' || result.type === 'plan_failed') {
-                    sendPlanComplete(controller, result.plan);
+                    // Find the first failed step to pass for recovery actions
+                    const failedStep = result.plan.steps.find(s => s.status === 'failed');
+                    sendPlanComplete(controller, result.plan, failedStep);
                   }
                 }
               );
@@ -5943,6 +5946,103 @@ RESPONSE STYLE:
             }
             // If no pending plan found, fall through to normal flow
             console.warn('[ai-chat] Plan rejection received but no pending plan found');
+          }
+
+          // ===============================================================
+          // PLAN RESUME HANDLING (for recovery flow)
+          // ===============================================================
+          const planResumeMatch = message.match(/^plan_resume:([a-f0-9-]+)$/i);
+          if (planResumeMatch) {
+            const planIdToResume = planResumeMatch[1];
+            console.info('[ai-chat] Plan resume requested:', planIdToResume);
+            
+            const resumeData = await resumePlanAfterRecovery(planIdToResume, memoryCtx);
+            
+            if (resumeData) {
+              const { plan, pattern, entities } = resumeData;
+              
+              console.info('[ai-chat] Resuming plan from step:', plan.currentStepIndex);
+              
+              // Send resuming status
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({
+                  type: 'step_progress',
+                  planId: plan.id,
+                  planName: plan.name,
+                  stepIndex: plan.currentStepIndex,
+                  totalSteps: plan.steps.length,
+                  steps: plan.steps.map(s => ({
+                    id: s.id,
+                    name: s.name,
+                    tool: s.tool,
+                    status: s.status,
+                    error: s.error,
+                  })),
+                  message: 'Resuming plan execution...',
+                })}\n\n`)
+              );
+              
+              // Execute with progress streaming (continues from where it left off)
+              const executionContext: ExecutionContext = {
+                supabase: supaAdmin,
+                businessId,
+                userId,
+                controller,
+                tools,
+              };
+              
+              const executedPlan = await executePlan(
+                plan,
+                executionContext,
+                entities,
+                pattern,
+                (result: PlannerResult) => {
+                  if (result.type === 'step_progress' || result.type === 'step_complete') {
+                    sendStepProgress(controller, result.plan, result.currentStep!, result.message);
+                  } else if (result.type === 'plan_complete' || result.type === 'plan_failed') {
+                    const failedStep = result.plan.steps.find(s => s.status === 'failed');
+                    sendPlanComplete(controller, result.plan, failedStep);
+                  }
+                }
+              );
+              
+              // Clean up if completed
+              if (executedPlan.status === 'completed') {
+                removePendingPlan(plan.id);
+                await removePendingPlanAsync(plan.id, memoryCtx);
+              }
+              
+              // Log activity
+              await supaAdmin.from('ai_activity_log').insert({
+                business_id: businessId,
+                user_id: userId,
+                activity_type: 'multi_step_plan_resume',
+                description: `Resumed plan: ${plan.name} (${executedPlan.status})`,
+                metadata: {
+                  plan_id: plan.id,
+                  pattern_id: pattern.id,
+                  resumed_from_step: plan.currentStepIndex,
+                  final_status: executedPlan.status,
+                },
+                accepted: executedPlan.status === 'completed',
+              });
+              
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`));
+              controller.close();
+              return;
+            }
+            
+            // Plan not found - inform user
+            console.warn('[ai-chat] Resume requested but plan not found:', planIdToResume);
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({
+                type: 'token',
+                content: "I couldn't find the plan to resume. It may have expired. Would you like to start over?",
+              })}\n\n`)
+            );
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`));
+            controller.close();
+            return;
           }
 
           // Send clarification event if needed - this is a structured UI component

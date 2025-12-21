@@ -31,12 +31,13 @@ export interface ExecutionPlan {
   name: string;
   description: string;
   steps: PlanStep[];
-  status: 'planning' | 'awaiting_approval' | 'executing' | 'completed' | 'failed' | 'rolled_back' | 'cancelled';
+  status: 'planning' | 'awaiting_approval' | 'executing' | 'completed' | 'failed' | 'rolled_back' | 'cancelled' | 'awaiting_recovery';
   currentStepIndex: number;
   createdAt: string;
   completedAt?: string;
   totalDurationMs?: number;
   rollbackSteps?: PlanStep[];
+  pausedAtStep?: number;
 }
 
 export interface PlannerResult {
@@ -763,6 +764,76 @@ const MULTI_STEP_PATTERNS: MultiStepPattern[] = [
 ];
 
 // =============================================================================
+// RECOVERY ACTIONS - Define what actions can resolve failed steps
+// =============================================================================
+
+export interface RecoveryAction {
+  id: string;
+  label: string;
+  description: string;
+  tool?: string;
+  resumeFromStep: boolean;
+  // For navigation-based recovery actions
+  navigateTo?: string;
+}
+
+// Map of tool names to available recovery actions
+const RECOVERY_ACTIONS: Record<string, RecoveryAction[]> = {
+  'get_unscheduled_jobs': [
+    {
+      id: 'create_job',
+      label: 'Create a job',
+      description: 'Add a new job to schedule',
+      navigateTo: '/jobs/new',
+      resumeFromStep: true,
+    },
+  ],
+  'batch_schedule_jobs': [
+    {
+      id: 'create_jobs',
+      label: 'Create some jobs first',
+      description: 'Add jobs before scheduling',
+      navigateTo: '/jobs/new',
+      resumeFromStep: true,
+    },
+  ],
+  'get_completed_jobs': [
+    {
+      id: 'view_jobs',
+      label: 'View all jobs',
+      description: 'Check job statuses',
+      navigateTo: '/jobs',
+      resumeFromStep: true,
+    },
+  ],
+  'get_overdue_invoices': [
+    {
+      id: 'view_invoices',
+      label: 'View invoices',
+      description: 'Check invoice statuses',
+      navigateTo: '/invoices',
+      resumeFromStep: true,
+    },
+  ],
+  'get_unpaid_invoices': [
+    {
+      id: 'create_invoice',
+      label: 'Create an invoice',
+      description: 'Generate a new invoice',
+      navigateTo: '/invoices/new',
+      resumeFromStep: true,
+    },
+  ],
+  'check_scheduling_conflicts': [],
+  'get_team_utilization': [],
+};
+
+// Get recovery actions for a failed tool
+export function getRecoveryActionsForTool(toolName: string): RecoveryAction[] {
+  return RECOVERY_ACTIONS[toolName] || [];
+}
+
+// =============================================================================
 // ROLLBACK OPERATIONS
 // =============================================================================
 
@@ -1135,7 +1206,8 @@ export function sendStepProgress(
 
 export function sendPlanComplete(
   controller: ReadableStreamDefaultController | undefined,
-  plan: ExecutionPlan
+  plan: ExecutionPlan,
+  failedStep?: PlanStep
 ): void {
   if (!controller) {
     console.warn('[multi-step-planner] sendPlanComplete called without controller');
@@ -1145,12 +1217,27 @@ export function sendPlanComplete(
   const successfulSteps = plan.steps.filter(s => s.status === 'completed').length;
   const failedSteps = plan.steps.filter(s => s.status === 'failed').length;
   
+  // Get recovery actions for the failed step
+  let recoveryActions: { id: string; label: string; description: string; navigateTo?: string }[] | undefined;
+  if (failedStep && plan.status === 'failed') {
+    const actions = getRecoveryActionsForTool(failedStep.tool);
+    if (actions.length > 0) {
+      recoveryActions = actions.map(a => ({
+        id: a.id,
+        label: a.label,
+        description: a.description,
+        navigateTo: a.navigateTo,
+      }));
+    }
+  }
+  
   const event = {
     type: 'plan_complete',
     planId: plan.id,
     planName: plan.name,
     status: plan.status,
     startedAt: plan.createdAt,
+    pausedAtStep: plan.pausedAtStep,
     // Include final state of ALL steps
     steps: plan.steps.map(s => ({
       id: s.id,
@@ -1170,8 +1257,64 @@ export function sendPlanComplete(
     results: plan.steps
       .filter(s => s.status === 'completed')
       .map(s => ({ stepId: s.id, name: s.name, result: s.result })),
+    // Recovery actions for failed plans
+    recoveryActions,
+    canResume: recoveryActions && recoveryActions.length > 0,
   };
   controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+}
+
+// =============================================================================
+// PLAN PAUSE & RESUME FOR RECOVERY
+// =============================================================================
+
+export async function pausePlanForRecovery(
+  plan: ExecutionPlan,
+  failedStepIndex: number,
+  ctx: MemoryContext
+): Promise<void> {
+  console.info('[multi-step-planner] Pausing plan for recovery at step', failedStepIndex);
+  plan.status = 'awaiting_recovery';
+  plan.pausedAtStep = failedStepIndex;
+  
+  try {
+    await dbUpdatePlanStatus(ctx, plan.id, 'awaiting_recovery');
+  } catch (error) {
+    console.error('[multi-step-planner] Failed to update plan status in DB:', error);
+  }
+}
+
+export async function resumePlanAfterRecovery(
+  planId: string,
+  ctx: MemoryContext
+): Promise<{ plan: ExecutionPlan; pattern: MultiStepPattern; entities: Record<string, any> } | null> {
+  const stored = await getPendingPlanAsync(planId, ctx);
+  if (!stored) {
+    console.error('[multi-step-planner] Plan not found for resume:', planId);
+    return null;
+  }
+  
+  const { plan, pattern, entities } = stored;
+  
+  // Reset the failed step to 'pending' for retry
+  if (plan.pausedAtStep !== undefined && plan.steps[plan.pausedAtStep]) {
+    const failedStep = plan.steps[plan.pausedAtStep];
+    failedStep.status = 'pending';
+    failedStep.error = undefined;
+    failedStep.result = undefined;
+    console.info('[multi-step-planner] Reset step for retry:', failedStep.name);
+  }
+  
+  plan.status = 'executing';
+  plan.pausedAtStep = undefined;
+  
+  try {
+    await dbUpdatePlanStatus(ctx, plan.id, 'executing');
+  } catch (error) {
+    console.error('[multi-step-planner] Failed to update plan status in DB:', error);
+  }
+  
+  return { plan, pattern, entities };
 }
 
 // =============================================================================

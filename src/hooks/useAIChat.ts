@@ -37,13 +37,23 @@ export interface PlanPreviewData {
   requiresApproval: boolean;
 }
 
+export interface RecoveryActionData {
+  id: string;
+  label: string;
+  description: string;
+  navigateTo?: string;
+}
+
 export interface PlanProgressData {
   planId: string;
   planName: string;
   steps: PlanStepData[];
   currentStepIndex: number;
-  status: 'executing' | 'completed' | 'failed' | 'rolled_back' | 'cancelled';
+  status: 'executing' | 'completed' | 'failed' | 'rolled_back' | 'cancelled' | 'awaiting_recovery';
   startedAt?: string;
+  pausedAtStep?: number;
+  recoveryActions?: RecoveryActionData[];
+  canResume?: boolean;
   summary?: {
     totalSteps: number;
     successfulSteps: number;
@@ -505,7 +515,11 @@ export function useAIChat(options?: UseAIChatOptions) {
                         currentStepIndex: (data.summary?.totalSteps || finalSteps.length) - 1,
                         status: data.status || 'completed',
                         startedAt: data.startedAt || existingMsg.planProgress?.startedAt,
+                        pausedAtStep: data.pausedAtStep,
                         summary: data.summary,
+                        // Include recovery actions if available
+                        recoveryActions: data.recoveryActions,
+                        canResume: data.canResume,
                       },
                     };
                     return updated;
@@ -723,6 +737,23 @@ export function useAIChat(options?: UseAIChatOptions) {
     }
   }, [businessId, getToken]);
 
+  // Resume a paused plan after recovery action
+  const resumePlan = useCallback(async (planId: string) => {
+    await sendMessage(`plan_resume:${planId}`);
+  }, [sendMessage]);
+
+  // Execute a recovery action for a failed step
+  const executeRecoveryAction = useCallback(async (actionId: string, planId: string, navigateTo?: string) => {
+    if (navigateTo) {
+      // For navigation-based recovery, just navigate and let user take action
+      options?.onNavigate?.(navigateTo);
+      toast.info('Complete the action, then click "Resume Plan" to continue');
+    } else {
+      // For tool-based recovery, send a message to execute
+      await sendMessage(`plan_recover:${planId}:${actionId}`);
+    }
+  }, [sendMessage, options]);
+
   return {
     messages,
     isStreaming,
@@ -736,6 +767,8 @@ export function useAIChat(options?: UseAIChatOptions) {
     clearMessages,
     loadConversation,
     retryLastMessage,
+    resumePlan,
+    executeRecoveryAction,
   };
 }
 

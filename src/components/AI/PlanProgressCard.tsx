@@ -16,6 +16,8 @@ import {
   Timer,
   Code2,
   X,
+  PlayCircle,
+  ExternalLink,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect, useState, useRef } from 'react';
@@ -29,13 +31,23 @@ export interface PlanStepProgress {
   error?: string;
 }
 
+export interface RecoveryActionData {
+  id: string;
+  label: string;
+  description: string;
+  navigateTo?: string;
+}
+
 export interface PlanProgressData {
   planId: string;
   planName: string;
   steps: PlanStepProgress[];
   currentStepIndex: number;
-  status: 'executing' | 'completed' | 'failed' | 'rolled_back' | 'cancelled';
+  status: 'executing' | 'completed' | 'failed' | 'rolled_back' | 'cancelled' | 'awaiting_recovery';
   startedAt?: string;
+  pausedAtStep?: number;
+  recoveryActions?: RecoveryActionData[];
+  canResume?: boolean;
   summary?: {
     totalSteps: number;
     successfulSteps: number;
@@ -49,6 +61,8 @@ export interface PlanProgressData {
 interface PlanProgressCardProps {
   progress: PlanProgressData;
   onCancel?: () => void;
+  onRecoveryAction?: (actionId: string, planId: string, navigateTo?: string) => void;
+  onResume?: (planId: string) => void;
 }
 
 // Elapsed time hook for live timer
@@ -116,6 +130,8 @@ function getStatusBadge(status: PlanProgressData['status']) {
       return <Badge variant="outline" className="bg-success/10 text-success border-success/20">Completed</Badge>;
     case 'failed':
       return <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20">Incomplete</Badge>;
+    case 'awaiting_recovery':
+      return <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20">Needs Action</Badge>;
     case 'rolled_back':
       return <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20">Rolled Back</Badge>;
     case 'cancelled':
@@ -144,16 +160,17 @@ function ConfettiParticle({ delay, color, index }: { delay: number; color: strin
   );
 }
 
-export function PlanProgressCard({ progress, onCancel }: PlanProgressCardProps) {
+export function PlanProgressCard({ progress, onCancel, onRecoveryAction, onResume }: PlanProgressCardProps) {
   const [recentlyCompletedSteps, setRecentlyCompletedSteps] = useState<Set<string>>(new Set());
   const [showCelebration, setShowCelebration] = useState(false);
   const [showToolNames, setShowToolNames] = useState(false);
   
   const completedSteps = progress.steps.filter(s => s.status === 'completed').length;
   const progressPercent = (completedSteps / progress.steps.length) * 100;
-  const isComplete = progress.status === 'completed' || progress.status === 'failed' || progress.status === 'rolled_back' || progress.status === 'cancelled';
+  const isComplete = progress.status === 'completed' || progress.status === 'failed' || progress.status === 'rolled_back' || progress.status === 'cancelled' || progress.status === 'awaiting_recovery';
   const isSuccess = progress.status === 'completed';
   const isExecuting = progress.status === 'executing';
+  const isAwaitingRecovery = progress.status === 'awaiting_recovery' || (progress.status === 'failed' && progress.canResume);
   
   // Live elapsed time during execution
   const elapsedMs = useElapsedTime(isExecuting, progress.startedAt);
@@ -312,6 +329,43 @@ export function PlanProgressCard({ progress, onCancel }: PlanProgressCardProps) 
                 {failedStep.error}
               </p>
             </div>
+          </div>
+        )}
+
+        {/* Recovery Actions - show when plan failed with available actions */}
+        {isAwaitingRecovery && progress.recoveryActions && progress.recoveryActions.length > 0 && (
+          <div className="space-y-2 pt-3 border-t border-border animate-fade-in">
+            <p className="text-sm text-muted-foreground">
+              Fix this and continue:
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {progress.recoveryActions.map(action => (
+                <Button
+                  key={action.id}
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onRecoveryAction?.(action.id, progress.planId, action.navigateTo)}
+                  className="gap-1.5"
+                >
+                  {action.navigateTo ? (
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  ) : (
+                    <PlayCircle className="w-3.5 h-3.5" />
+                  )}
+                  {action.label}
+                </Button>
+              ))}
+            </div>
+            {progress.canResume && (
+              <Button
+                size="sm"
+                onClick={() => onResume?.(progress.planId)}
+                className="gap-1.5 mt-2"
+              >
+                <PlayCircle className="w-4 h-4" />
+                Resume Plan
+              </Button>
+            )}
           </div>
         )}
 
