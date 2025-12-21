@@ -43,6 +43,7 @@ export interface PlanProgressData {
   steps: PlanStepData[];
   currentStepIndex: number;
   status: 'executing' | 'completed' | 'failed' | 'rolled_back' | 'cancelled';
+  startedAt?: string;
   summary?: {
     totalSteps: number;
     successfulSteps: number;
@@ -431,13 +432,28 @@ export function useAIChat(options?: UseAIChatOptions) {
                 // Update plan progress in existing message
                 setMessages(prev => {
                   const planMsgIndex = prev.findIndex(m => 
-                    m.messageType === 'plan_preview' && 
-                    m.planPreview?.id === data.planId
+                    (m.messageType === 'plan_preview' || m.messageType === 'plan_progress') && 
+                    (m.planPreview?.id === data.planId || m.planProgress?.planId === data.planId)
                   );
                   
                   if (planMsgIndex !== -1) {
                     const updated = [...prev];
                     const existingMsg = updated[planMsgIndex];
+                    const existingSteps = existingMsg.planProgress?.steps || existingMsg.planPreview?.steps || [];
+                    
+                    // Use full steps array from backend if available, otherwise fall back to local update
+                    const updatedSteps = data.steps?.map((s: any) => ({
+                      id: s.id,
+                      name: s.name,
+                      description: existingSteps.find(es => es.id === s.id)?.description || '',
+                      tool: s.tool,
+                      status: s.status,
+                      error: s.error,
+                    })) || existingSteps.map((s, i) => 
+                      i === data.stepIndex && data.step 
+                        ? { ...s, status: data.step.status, error: data.step.error } 
+                        : s
+                    );
                     
                     // Convert to progress view
                     updated[planMsgIndex] = {
@@ -445,14 +461,11 @@ export function useAIChat(options?: UseAIChatOptions) {
                       messageType: 'plan_progress',
                       planProgress: {
                         planId: data.planId,
-                        planName: existingMsg.planPreview?.name || 'Plan',
-                        steps: data.step ? 
-                          existingMsg.planPreview?.steps.map((s, i) => 
-                            i === data.stepIndex ? { ...s, status: data.step.status, error: data.step.error } : s
-                          ) || [] : 
-                          existingMsg.planPreview?.steps || [],
+                        planName: data.planName || existingMsg.planProgress?.planName || existingMsg.planPreview?.name || 'Plan',
+                        steps: updatedSteps,
                         currentStepIndex: data.stepIndex,
                         status: 'executing',
+                        startedAt: data.startedAt || existingMsg.planProgress?.startedAt,
                       },
                     };
                     return updated;
@@ -470,16 +483,28 @@ export function useAIChat(options?: UseAIChatOptions) {
                   if (planMsgIndex !== -1) {
                     const updated = [...prev];
                     const existingMsg = updated[planMsgIndex];
+                    const existingSteps = existingMsg.planProgress?.steps || existingMsg.planPreview?.steps || [];
+                    
+                    // Use steps from server for accurate final state
+                    const finalSteps = data.steps?.map((s: any) => ({
+                      id: s.id,
+                      name: s.name,
+                      description: existingSteps.find(es => es.id === s.id)?.description || '',
+                      tool: s.tool,
+                      status: s.status,
+                      error: s.error,
+                    })) || existingSteps;
                     
                     updated[planMsgIndex] = {
                       ...existingMsg,
                       messageType: 'plan_progress',
                       planProgress: {
                         planId: data.planId,
-                        planName: existingMsg.planProgress?.planName || existingMsg.planPreview?.name || 'Plan',
-                        steps: existingMsg.planProgress?.steps || existingMsg.planPreview?.steps || [],
-                        currentStepIndex: data.summary?.totalSteps - 1 || 0,
+                        planName: data.planName || existingMsg.planProgress?.planName || existingMsg.planPreview?.name || 'Plan',
+                        steps: finalSteps,
+                        currentStepIndex: (data.summary?.totalSteps || finalSteps.length) - 1,
                         status: data.status || 'completed',
+                        startedAt: data.startedAt || existingMsg.planProgress?.startedAt,
                         summary: data.summary,
                       },
                     };
