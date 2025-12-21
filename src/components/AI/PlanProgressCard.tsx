@@ -11,9 +11,11 @@ import {
   SkipForward,
   Clock,
   Sparkles,
+  AlertTriangle,
+  Timer,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 export interface PlanStepProgress {
   id: string;
@@ -29,6 +31,7 @@ export interface PlanProgressData {
   steps: PlanStepProgress[];
   currentStepIndex: number;
   status: 'executing' | 'completed' | 'failed' | 'rolled_back' | 'cancelled';
+  startedAt?: string;
   summary?: {
     totalSteps: number;
     successfulSteps: number;
@@ -41,6 +44,39 @@ export interface PlanProgressData {
 
 interface PlanProgressCardProps {
   progress: PlanProgressData;
+}
+
+// Elapsed time hook for live timer
+function useElapsedTime(isRunning: boolean, startTime?: string) {
+  const [elapsed, setElapsed] = useState(0);
+  const startRef = useRef<number>(Date.now());
+  
+  useEffect(() => {
+    if (startTime) {
+      startRef.current = new Date(startTime).getTime();
+    } else {
+      startRef.current = Date.now();
+    }
+    setElapsed(0);
+  }, [startTime]);
+  
+  useEffect(() => {
+    if (!isRunning) return;
+    
+    const interval = setInterval(() => {
+      setElapsed(Date.now() - startRef.current);
+    }, 100);
+    
+    return () => clearInterval(interval);
+  }, [isRunning]);
+  
+  return elapsed;
+}
+
+function formatElapsed(ms: number): string {
+  const seconds = Math.floor(ms / 1000);
+  const tenths = Math.floor((ms % 1000) / 100);
+  return `${seconds}.${tenths}s`;
 }
 
 function getStepIcon(status: PlanStepProgress['status'], isAnimating: boolean) {
@@ -57,7 +93,7 @@ function getStepIcon(status: PlanStepProgress['status'], isAnimating: boolean) {
     case 'running':
       return <Loader2 className="w-4 h-4 text-primary animate-spin" />;
     case 'failed':
-      return <XCircle className="w-4 h-4 text-destructive" />;
+      return <XCircle className="w-4 h-4 text-destructive animate-shake-error" />;
     case 'rolled_back':
       return <RotateCcw className="w-4 h-4 text-amber-500" />;
     case 'skipped':
@@ -107,6 +143,13 @@ export function PlanProgressCard({ progress }: PlanProgressCardProps) {
   const progressPercent = (completedSteps / progress.steps.length) * 100;
   const isComplete = progress.status === 'completed' || progress.status === 'failed' || progress.status === 'rolled_back';
   const isSuccess = progress.status === 'completed';
+  const isExecuting = progress.status === 'executing';
+  
+  // Live elapsed time during execution
+  const elapsedMs = useElapsedTime(isExecuting, progress.startedAt);
+  
+  // Find the first failed step with an error
+  const failedStep = progress.steps.find(s => s.status === 'failed' && s.error);
 
   // Track recently completed steps for animation
   useEffect(() => {
@@ -217,9 +260,32 @@ export function PlanProgressCard({ progress }: PlanProgressCardProps) {
           />
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>{completedSteps} completed</span>
-            <span>{Math.round(progressPercent)}%</span>
+            <div className="flex items-center gap-2">
+              {isExecuting && (
+                <span className="flex items-center gap-1 text-primary">
+                  <Timer className="w-3 h-3 animate-pulse" />
+                  {formatElapsed(elapsedMs)}
+                </span>
+              )}
+              <span>{Math.round(progressPercent)}%</span>
+            </div>
           </div>
         </div>
+
+        {/* Error banner for failed plans */}
+        {progress.status === 'failed' && failedStep && (
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20 animate-fade-in">
+            <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-destructive">
+                Failed at: {failedStep.name}
+              </p>
+              <p className="text-xs text-destructive/80 mt-0.5 break-words">
+                {failedStep.error}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Steps list */}
         <div className="space-y-1">
@@ -298,6 +364,14 @@ export function PlanProgressCard({ progress }: PlanProgressCardProps) {
                 </div>
               )}
             </div>
+            
+            {/* Failure message */}
+            {progress.status === 'failed' && (
+              <p className="text-sm text-destructive mt-2 flex items-center gap-1.5 animate-fade-in">
+                <AlertTriangle className="w-4 h-4" />
+                Plan execution failed. See error above.
+              </p>
+            )}
             
             {/* Success message */}
             {isSuccess && (
