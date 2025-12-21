@@ -52,18 +52,20 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
 
   return (
     <div className={cn(
-      'flex gap-3 mb-4 animate-fade-in', 
+      'flex gap-3 mb-5 animate-fade-in', 
       isUser && 'flex-row-reverse',
       isSystemMessage && 'justify-center'
     )}>
-      {/* Avatar (skip for system messages) */}
+      {/* Avatar */}
       {!isSystemMessage && (
         <div className={cn(
           'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center',
-          isUser ? 'bg-primary/10' : 'bg-primary/10'
+          isUser 
+            ? 'bg-primary text-primary-foreground' 
+            : 'bg-gradient-to-br from-primary/15 to-primary/5 ring-1 ring-primary/10'
         )}>
           {isUser ? (
-            <User className="w-4 h-4 text-primary" />
+            <User className="w-4 h-4" />
           ) : (
             <Bot className="w-4 h-4 text-primary" />
           )}
@@ -77,10 +79,10 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
         isSystemMessage && 'flex justify-center'
       )}>
         <div className={cn(
-          'inline-block max-w-[85%] rounded-2xl px-4 py-2',
+          'inline-block max-w-[85%] rounded-2xl px-4 py-2.5',
           isUser 
-            ? 'bg-primary text-primary-foreground' 
-            : 'bg-muted'
+            ? 'bg-primary text-primary-foreground shadow-sm' 
+            : 'bg-gradient-to-br from-muted to-muted/50 border border-border/30'
         )}>
           <div className="space-y-3">
             {/* Display attached media (photos and videos) for user messages */}
@@ -92,7 +94,7 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
                       key={media.id}
                       src={media.public_url}
                       alt={media.original_filename}
-                      className="w-24 h-24 md:w-32 md:h-32 object-cover rounded-lg border border-border cursor-pointer hover:opacity-80 transition-opacity"
+                      className="w-24 h-24 md:w-32 md:h-32 object-cover rounded-lg border border-primary-foreground/20 cursor-pointer hover:opacity-80 transition-opacity"
                       onClick={() => window.open(media.public_url, '_blank')}
                       loading="lazy"
                     />
@@ -101,7 +103,7 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
                       key={media.id}
                       src={media.public_url}
                       controls
-                      className="w-40 h-24 md:w-48 md:h-32 rounded-lg border border-border"
+                      className="w-40 h-24 md:w-48 md:h-32 rounded-lg border border-primary-foreground/20"
                       preload="metadata"
                     />
                   ) : null
@@ -244,17 +246,17 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
 
           {/* Tool Execution Indicators - Compact inline badges */}
           {message.toolCalls && message.toolCalls.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-1.5">
+            <div className="mt-3 flex flex-wrap gap-1.5">
               {message.toolCalls.map((toolCall, idx) => {
                 const toolInfo = getToolInfo(toolCall.tool);
                 return (
                   <span
                     key={idx}
                     className={cn(
-                      "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium",
+                      "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium transition-all duration-200",
                       toolCall.status === 'error'
-                        ? "bg-destructive/10 text-destructive"
-                        : "bg-primary/10 text-primary"
+                        ? "bg-destructive/10 text-destructive border border-destructive/20"
+                        : "bg-primary/10 text-primary border border-primary/20"
                     )}
                   >
                     {toolCall.status === 'error' ? (
@@ -268,7 +270,7 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
                         actionId={toolCall.tool}
                         actionDescription={getUndoDescription(toolCall.tool, toolCall.result)}
                         onUndo={(msg) => onActionExecute(msg)}
-                        className="ml-1"
+                        className="ml-0.5"
                       />
                     )}
                   </span>
@@ -279,8 +281,8 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
 
           {/* Timestamp */}
           <div className={cn(
-            'text-xs mt-1 opacity-60',
-            isUser ? 'text-right' : 'text-left'
+            'text-[10px] mt-2 font-medium',
+            isUser ? 'text-right text-primary-foreground/60' : 'text-left text-muted-foreground/70'
           )}>
             {message.timestamp.toLocaleTimeString([], { 
               hour: '2-digit', 

@@ -1,5 +1,6 @@
 import { AlertTriangle, ShieldAlert, Info, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -17,23 +18,32 @@ interface ConfirmationCardProps {
 const riskConfig = {
   low: {
     icon: Info,
-    bgColor: 'bg-blue-500/10',
-    borderColor: 'border-blue-500/30',
+    gradient: 'from-blue-500/5 via-blue-500/3 to-transparent',
+    iconBg: 'bg-blue-500/10',
     iconColor: 'text-blue-500',
+    borderColor: 'border-blue-500/20',
+    badgeBg: 'bg-blue-500/10',
+    badgeText: 'text-blue-600 dark:text-blue-400',
     label: 'Low Risk',
   },
   medium: {
     icon: AlertTriangle,
-    bgColor: 'bg-amber-500/10',
-    borderColor: 'border-amber-500/30',
+    gradient: 'from-amber-500/5 via-amber-500/3 to-transparent',
+    iconBg: 'bg-amber-500/10',
     iconColor: 'text-amber-500',
+    borderColor: 'border-amber-500/20',
+    badgeBg: 'bg-amber-500/10',
+    badgeText: 'text-amber-600 dark:text-amber-400',
     label: 'Medium Risk',
   },
   high: {
     icon: ShieldAlert,
-    bgColor: 'bg-destructive/10',
-    borderColor: 'border-destructive/30',
+    gradient: 'from-destructive/5 via-destructive/3 to-transparent',
+    iconBg: 'bg-destructive/10',
     iconColor: 'text-destructive',
+    borderColor: 'border-destructive/20',
+    badgeBg: 'bg-destructive/10',
+    badgeText: 'text-destructive',
     label: 'High Risk',
   },
 };
@@ -49,76 +59,103 @@ export function ConfirmationCard({
   disabled = false,
 }: ConfirmationCardProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittingAction, setSubmittingAction] = useState<'confirm' | 'cancel' | null>(null);
   const config = riskConfig[riskLevel];
   const Icon = config.icon;
 
   const handleConfirm = async () => {
     if (disabled || isSubmitting) return;
     setIsSubmitting(true);
+    setSubmittingAction('confirm');
     await onConfirm();
     setIsSubmitting(false);
+    setSubmittingAction(null);
   };
 
   const handleCancel = async () => {
     if (disabled || isSubmitting) return;
     setIsSubmitting(true);
+    setSubmittingAction('cancel');
     await onCancel();
     setIsSubmitting(false);
+    setSubmittingAction(null);
   };
 
   return (
-    <div className={cn(
-      "rounded-xl border p-4 space-y-3",
-      config.bgColor,
-      config.borderColor
+    <Card className={cn(
+      "overflow-hidden",
+      config.borderColor,
+      `bg-gradient-to-br ${config.gradient}`
     )}>
-      {/* Header with Risk Badge */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-2">
-          <Icon className={cn("w-5 h-5 flex-shrink-0 mt-0.5", config.iconColor)} />
-          <div className="space-y-1">
-            <p className="text-sm font-semibold text-foreground">{action}</p>
-            <p className="text-xs text-muted-foreground">{description}</p>
+      <CardHeader className="pb-3 pt-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <div className={cn("p-2 rounded-lg flex-shrink-0", config.iconBg)}>
+              <Icon className={cn("w-4 h-4", config.iconColor)} />
+            </div>
+            <div className="flex-1 min-w-0 space-y-1">
+              <p className="text-sm font-medium text-foreground leading-relaxed">
+                {action}
+              </p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {description}
+              </p>
+            </div>
           </div>
+          <span className={cn(
+            "text-[10px] font-medium px-2 py-1 rounded-full uppercase tracking-wide flex-shrink-0",
+            config.badgeBg,
+            config.badgeText
+          )}>
+            {config.label}
+          </span>
         </div>
-        <span className={cn(
-          "text-[10px] font-medium px-2 py-0.5 rounded-full uppercase tracking-wide",
-          riskLevel === 'high' && "bg-destructive/20 text-destructive",
-          riskLevel === 'medium' && "bg-amber-500/20 text-amber-600 dark:text-amber-400",
-          riskLevel === 'low' && "bg-blue-500/20 text-blue-600 dark:text-blue-400"
-        )}>
-          {config.label}
-        </span>
-      </div>
+      </CardHeader>
 
-      {/* Action Buttons */}
-      <div className="flex gap-2 justify-end">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleCancel}
-          disabled={disabled || isSubmitting}
-          className="text-xs"
-        >
-          {cancelLabel}
-        </Button>
-        <Button
-          variant={riskLevel === 'high' ? 'destructive' : 'default'}
-          size="sm"
-          onClick={handleConfirm}
-          disabled={disabled || isSubmitting}
-          className="text-xs"
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-              Processing...
-            </>
-          ) : (
-            confirmLabel
-          )}
-        </Button>
-      </div>
-    </div>
+      <CardContent className="pt-0 pb-4">
+        <div className="flex gap-2 justify-end">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleCancel}
+            disabled={disabled || isSubmitting}
+            className={cn(
+              "text-xs h-8 px-3",
+              "hover:bg-background/80",
+              "transition-all duration-200"
+            )}
+          >
+            {isSubmitting && submittingAction === 'cancel' ? (
+              <>
+                <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+                Canceling...
+              </>
+            ) : (
+              cancelLabel
+            )}
+          </Button>
+          <Button
+            variant={riskLevel === 'high' ? 'destructive' : 'default'}
+            size="sm"
+            onClick={handleConfirm}
+            disabled={disabled || isSubmitting}
+            className={cn(
+              "text-xs h-8 px-4",
+              "transition-all duration-200",
+              riskLevel !== 'high' && "shadow-sm hover:shadow-md"
+            )}
+          >
+            {isSubmitting && submittingAction === 'confirm' ? (
+              <>
+                <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              confirmLabel
+            )}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
