@@ -12,6 +12,7 @@ import {
   ArrowRight,
   Clock,
   AlertTriangle,
+  Code2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -37,9 +38,35 @@ interface PlanPreviewCardProps {
   onReject: (message: string) => void;
 }
 
+// Estimated time per step (in seconds) based on tool type
+const TOOL_TIME_ESTIMATES: Record<string, number> = {
+  'get_unscheduled_jobs': 2,
+  'get_completed_jobs': 2,
+  'get_overdue_invoices': 2,
+  'get_schedule_summary': 2,
+  'get_team_utilization': 2,
+  'batch_schedule_jobs': 5,
+  'batch_update_job_status': 3,
+  'batch_create_invoices': 4,
+  'batch_send_reminders': 4,
+  'send_job_confirmations': 4,
+  'create_invoice': 2,
+  'send_invoice': 3,
+  'approve_quote': 2,
+  'convert_quote_to_job': 2,
+  'assign_checklist_to_job': 1,
+  'optimize_route_for_date': 3,
+  'default': 3,
+};
+
+function getStepEstimate(tool: string): number {
+  return TOOL_TIME_ESTIMATES[tool] || TOOL_TIME_ESTIMATES['default'];
+}
+
 export function PlanPreviewCard({ plan, onApprove, onReject }: PlanPreviewCardProps) {
   const [isExecuting, setIsExecuting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
+  const [showToolNames, setShowToolNames] = useState(false);
 
   const handleApprove = async () => {
     setIsExecuting(true);
@@ -52,7 +79,8 @@ export function PlanPreviewCard({ plan, onApprove, onReject }: PlanPreviewCardPr
     onReject(`plan_reject:${plan.id}`);
   };
 
-  const estimatedTime = plan.steps.length * 3; // Rough estimate: 3 seconds per step
+  // Calculate total estimated time from individual step estimates
+  const estimatedTime = plan.steps.reduce((total, step) => total + getStepEstimate(step.tool), 0);
 
   return (
     <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
@@ -76,40 +104,68 @@ export function PlanPreviewCard({ plan, onApprove, onReject }: PlanPreviewCardPr
       <CardContent className="space-y-4">
         {/* Steps Preview */}
         <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" size="sm" className="w-full justify-between px-2 h-8">
-              <span className="text-xs text-muted-foreground">View steps</span>
-              {isExpanded ? (
-                <ChevronUp className="w-3.5 h-3.5" />
-              ) : (
-                <ChevronDown className="w-3.5 h-3.5" />
+          <div className="flex items-center justify-between">
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm" className="flex-1 justify-between px-2 h-8">
+                <span className="text-xs text-muted-foreground">View steps</span>
+                {isExpanded ? (
+                  <ChevronUp className="w-3.5 h-3.5" />
+                ) : (
+                  <ChevronDown className="w-3.5 h-3.5" />
+                )}
+              </Button>
+            </CollapsibleTrigger>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "h-8 px-2 gap-1.5 text-xs",
+                showToolNames && "text-primary"
               )}
+              onClick={() => setShowToolNames(!showToolNames)}
+              title="Toggle technical details"
+            >
+              <Code2 className="w-3.5 h-3.5" />
+              {showToolNames ? 'Hide' : 'Show'} tools
             </Button>
-          </CollapsibleTrigger>
+          </div>
           
           <CollapsibleContent className="pt-2">
             <div className="space-y-1">
-              {plan.steps.map((step, index) => (
-                <div
-                  key={step.id}
-                  className={cn(
-                    "flex items-center gap-2 px-3 py-2 rounded-lg",
-                    "bg-muted/50 border border-transparent",
-                    "transition-colors"
-                  )}
-                >
-                  <div className="flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-medium">
-                    {index + 1}
+              {plan.steps.map((step, index) => {
+                const stepEstimate = getStepEstimate(step.tool);
+                
+                return (
+                  <div
+                    key={step.id}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2 rounded-lg",
+                      "bg-muted/50 border border-transparent",
+                      "transition-colors animate-fade-in"
+                    )}
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                      {index + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium truncate">{step.name}</p>
+                        <span className="text-xs text-muted-foreground shrink-0">~{stepEstimate}s</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">{step.description}</p>
+                      {showToolNames && (
+                        <p className="text-xs text-primary/70 font-mono mt-0.5 truncate">
+                          {step.tool}
+                        </p>
+                      )}
+                    </div>
+                    {index < plan.steps.length - 1 && (
+                      <ArrowRight className="w-3 h-3 text-muted-foreground/50 flex-shrink-0" />
+                    )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{step.name}</p>
-                    <p className="text-xs text-muted-foreground truncate">{step.description}</p>
-                  </div>
-                  {index < plan.steps.length - 1 && (
-                    <ArrowRight className="w-3 h-3 text-muted-foreground/50 flex-shrink-0" />
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CollapsibleContent>
         </Collapsible>

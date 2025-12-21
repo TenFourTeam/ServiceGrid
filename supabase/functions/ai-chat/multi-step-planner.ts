@@ -1108,15 +1108,26 @@ export function sendStepProgress(
   const event = {
     type: 'step_progress',
     planId: plan.id,
+    planName: plan.name,
     stepIndex: plan.currentStepIndex,
     totalSteps: plan.steps.length,
+    startedAt: plan.createdAt, // Include plan start time for elapsed timer
     step: {
       id: step.id,
       name: step.name,
+      tool: step.tool, // Include tool name for visibility toggle
       status: step.status,
       result: step.result,
       error: step.error,
     },
+    // Include ALL steps with their current statuses for full UI state
+    steps: plan.steps.map(s => ({
+      id: s.id,
+      name: s.name,
+      tool: s.tool,
+      status: s.status,
+      error: s.error,
+    })),
     message,
   };
   controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
@@ -1137,7 +1148,17 @@ export function sendPlanComplete(
   const event = {
     type: 'plan_complete',
     planId: plan.id,
+    planName: plan.name,
     status: plan.status,
+    startedAt: plan.createdAt,
+    // Include final state of ALL steps
+    steps: plan.steps.map(s => ({
+      id: s.id,
+      name: s.name,
+      tool: s.tool,
+      status: s.status,
+      error: s.error,
+    })),
     summary: {
       totalSteps: plan.steps.length,
       successfulSteps,
