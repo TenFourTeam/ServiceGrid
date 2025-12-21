@@ -294,11 +294,11 @@ export function PlanProgressCard({ progress, onCancel, onRecoveryAction, onResum
       <CardContent className="space-y-4">
         {/* Progress bar with glow effect during execution */}
         <div className="space-y-1.5">
-          <Progress 
+        <Progress 
             value={progressPercent} 
             className={cn(
               "h-2 transition-all duration-500",
-              progress.status === 'failed' && "[&>div]:bg-amber-500",
+              (progress.status === 'failed' || isAwaitingRecovery) && "[&>div]:bg-amber-500",
               progress.status === 'completed' && "[&>div]:bg-success",
               isExecuting && "animate-glow-pulse"
             )}
@@ -317,8 +317,8 @@ export function PlanProgressCard({ progress, onCancel, onRecoveryAction, onResum
           </div>
         </div>
 
-        {/* Error banner for failed plans */}
-        {progress.status === 'failed' && failedStep && (
+        {/* Error banner for failed plans or awaiting recovery */}
+        {(progress.status === 'failed' || isAwaitingRecovery) && failedStep && (
           <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 border border-border animate-fade-in">
             <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">

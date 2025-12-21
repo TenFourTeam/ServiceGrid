@@ -1349,9 +1349,9 @@ export function sendPlanComplete(
   const successfulSteps = plan.steps.filter(s => s.status === 'completed').length;
   const failedSteps = plan.steps.filter(s => s.status === 'failed').length;
   
-  // Get recovery actions for the failed step
+  // Get recovery actions for the failed step (include awaiting_recovery status)
   let recoveryActions: { id: string; label: string; description: string; navigateTo?: string }[] | undefined;
-  if (failedStep && plan.status === 'failed') {
+  if (failedStep && (plan.status === 'failed' || plan.status === 'awaiting_recovery')) {
     const actions = getRecoveryActionsForTool(failedStep.tool);
     if (actions.length > 0) {
       recoveryActions = actions.map(a => ({
