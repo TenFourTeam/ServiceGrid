@@ -8,6 +8,11 @@
  * - Rollback on failure
  */
 
+// Import MemoryContext type early since it's used in executePlan
+import { 
+  type MemoryContext,
+} from './memory-manager.ts';
+
 // =============================================================================
 // TYPES
 // =============================================================================
@@ -824,8 +829,109 @@ const RECOVERY_ACTIONS: Record<string, RecoveryAction[]> = {
       resumeFromStep: true,
     },
   ],
+  // Quote-related recovery actions
+  'approve_quote': [
+    {
+      id: 'view_quotes',
+      label: 'View quotes',
+      description: 'Find and select a quote to approve',
+      navigateTo: '/quotes',
+      resumeFromStep: true,
+    },
+    {
+      id: 'create_quote',
+      label: 'Create a quote',
+      description: 'Create a new quote first',
+      navigateTo: '/quotes/new',
+      resumeFromStep: true,
+    },
+  ],
+  'get_quote': [
+    {
+      id: 'view_quotes',
+      label: 'View quotes',
+      description: 'Browse existing quotes',
+      navigateTo: '/quotes',
+      resumeFromStep: true,
+    },
+  ],
+  'convert_quote_to_job': [
+    {
+      id: 'view_quotes',
+      label: 'View quotes',
+      description: 'Select a different quote',
+      navigateTo: '/quotes',
+      resumeFromStep: true,
+    },
+    {
+      id: 'approve_quote_first',
+      label: 'Approve the quote first',
+      description: 'Quote must be approved before conversion',
+      navigateTo: '/quotes',
+      resumeFromStep: true,
+    },
+  ],
+  // Job-related recovery actions
+  'create_job_from_quote': [
+    {
+      id: 'view_quotes',
+      label: 'View quotes',
+      description: 'Select a different quote',
+      navigateTo: '/quotes',
+      resumeFromStep: true,
+    },
+  ],
+  'schedule_job': [
+    {
+      id: 'view_calendar',
+      label: 'Open calendar',
+      description: 'Schedule the job manually',
+      navigateTo: '/calendar',
+      resumeFromStep: true,
+    },
+  ],
+  'assign_job_to_member': [
+    {
+      id: 'view_team',
+      label: 'View team',
+      description: 'Check team availability',
+      navigateTo: '/team',
+      resumeFromStep: true,
+    },
+  ],
+  // Invoice-related recovery actions
+  'create_invoice': [
+    {
+      id: 'view_jobs',
+      label: 'View jobs',
+      description: 'Select a job to invoice',
+      navigateTo: '/jobs',
+      resumeFromStep: true,
+    },
+  ],
+  'send_invoice': [
+    {
+      id: 'view_invoices',
+      label: 'View invoices',
+      description: 'Check invoice status',
+      navigateTo: '/invoices',
+      resumeFromStep: true,
+    },
+  ],
+  // Customer-related recovery actions
+  'create_customer': [
+    {
+      id: 'view_customers',
+      label: 'View customers',
+      description: 'Check if customer already exists',
+      navigateTo: '/customers',
+      resumeFromStep: true,
+    },
+  ],
+  // Empty arrays for tools that don't have sensible recovery actions
   'check_scheduling_conflicts': [],
   'get_team_utilization': [],
+  'log_activity': [],
 };
 
 // Get recovery actions for a failed tool
@@ -1032,7 +1138,33 @@ export async function executePlan(
       step.error = error.message || 'Unknown error';
       step.completedAt = new Date().toISOString();
 
-      // Attempt rollback
+      // Check if recovery actions are available for this tool
+      const recoveryActions = getRecoveryActionsForTool(step.tool);
+      
+      if (recoveryActions.length > 0) {
+        // Pause for recovery instead of rolling back
+        console.info(`[multi-step-planner] Recovery actions available for ${step.tool}, pausing for recovery`);
+        
+        // Create memory context for pause operation
+        const memoryContext: MemoryContext = {
+          supabase: context.supabase,
+          businessId: context.businessId,
+          userId: context.userId,
+        };
+        
+        await pausePlanForRecovery(plan, i, memoryContext);
+        
+        onProgress({
+          type: 'plan_failed',
+          plan,
+          currentStep: step,
+          message: `Failed at step "${step.name}": ${step.error}. Recovery options available.`,
+        });
+        
+        return plan;
+      }
+      
+      // No recovery available - proceed with rollback
       plan.status = 'failed';
       await rollbackPlan(plan, i, context, pattern);
 
@@ -1328,7 +1460,6 @@ import {
   updatePlanStatus as dbUpdatePlanStatus,
   removePendingPlan as dbRemovePendingPlan,
   cleanupExpiredPlans as dbCleanupExpiredPlans,
-  type MemoryContext,
   type PersistentPlan
 } from './memory-manager.ts';
 
