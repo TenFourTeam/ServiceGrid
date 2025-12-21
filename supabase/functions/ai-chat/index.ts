@@ -5374,43 +5374,9 @@ Deno.serve(async (req) => {
     console.info('[ai-chat] Orchestrator result:', orchestratorResult.type, orchestratorResult.intent?.intentId, 
       orchestratorResult.intent?.isFollowUp ? '(follow-up)' : '');
 
-    // Helper to generate clarification options from intent
-    const generateClarificationOptions = (intent: any): Array<{label: string, value: string}> => {
-      if (!intent) return [];
-      
-      // Domain-specific option generators
-      const optionsByDomain: Record<string, Array<{label: string, value: string}>> = {
-        scheduling: [
-          { label: 'Schedule pending jobs', value: 'Schedule all my pending jobs' },
-          { label: 'View my schedule', value: 'Show me my schedule for this week' },
-          { label: 'Check availability', value: 'Check team availability for tomorrow' },
-        ],
-        invoicing: [
-          { label: 'Create invoice', value: 'Create a new invoice' },
-          { label: 'View unpaid', value: 'Show me unpaid invoices' },
-          { label: 'Send reminders', value: 'Send payment reminders' },
-        ],
-        quotes: [
-          { label: 'Create quote', value: 'Create a new quote' },
-          { label: 'View pending', value: 'Show me pending quotes' },
-          { label: 'Follow up', value: 'Help me follow up on quotes' },
-        ],
-        customers: [
-          { label: 'Add customer', value: 'Add a new customer' },
-          { label: 'Search customers', value: 'Search for a customer' },
-          { label: 'View history', value: 'Show customer history' },
-        ],
-      };
-      
-      return optionsByDomain[intent.domain] || [
-        { label: 'Tell me more', value: 'Can you explain what you need help with?' },
-        { label: 'Show options', value: 'What can you help me with?' },
-      ];
-    };
-
     // Handle clarification requests - send structured SSE event
-    if (orchestratorResult.type === 'clarification' && orchestratorResult.clarificationQuestion) {
-      console.info('[ai-chat] Clarification needed:', orchestratorResult.clarificationQuestion);
+    if (orchestratorResult.type === 'clarification' && orchestratorResult.clarificationData) {
+      console.info('[ai-chat] Clarification needed:', orchestratorResult.clarificationData.question);
     }
 
     // Handle confirmation requests - send structured SSE event  
@@ -5597,12 +5563,12 @@ RESPONSE STYLE:
           }
 
           // Send clarification event if needed - this is a structured UI component
-          if (orchestratorResult.type === 'clarification' && orchestratorResult.clarificationQuestion) {
+          if (orchestratorResult.type === 'clarification' && orchestratorResult.clarificationData) {
             controller.enqueue(
               encoder.encode(`data: ${JSON.stringify({
                 type: 'clarification',
-                question: orchestratorResult.clarificationQuestion,
-                options: generateClarificationOptions(orchestratorResult.intent),
+                question: orchestratorResult.clarificationData.question,
+                options: orchestratorResult.clarificationData.options,
                 intent: orchestratorResult.intent?.intentId,
                 allowFreeform: true,
               })}\n\n`)

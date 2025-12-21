@@ -34,7 +34,7 @@ export interface ClassifiedIntent {
   confidence: number;
   entities: Record<string, any>;
   requiresClarification: boolean;
-  clarificationReason?: string;
+  clarificationData?: ClarificationData;
   isFollowUp?: boolean;  // True if this is a follow-up to a previous AI question
 }
 
@@ -50,7 +50,7 @@ export interface OrchestratorResult {
   systemPrompt?: string;
   tools?: string[];
   context?: LoadedContext;
-  clarificationQuestion?: string;
+  clarificationData?: ClarificationData;
   confirmationRequest?: {
     action: string;
     description: string;
@@ -1346,12 +1346,12 @@ function classifyIntent(message: string, sessionContext: SessionContext): Classi
 
   // Determine if clarification is needed (PHASE 2: Smart clarification)
   const requiresClarification = confidence < 0.4;
-  let clarificationReason: string | undefined;
+  let clarificationData: ClarificationData | undefined;
 
   if (requiresClarification) {
     // Build smart clarification with context-aware options
     const domain = bestMatch?.pattern.domain || 'general';
-    clarificationReason = buildSmartClarification(message, domain, sessionContext);
+    clarificationData = buildSmartClarification(message, domain, sessionContext);
   }
 
   return {
@@ -1360,7 +1360,7 @@ function classifyIntent(message: string, sessionContext: SessionContext): Classi
     confidence,
     entities,
     requiresClarification,
-    clarificationReason,
+    clarificationData,
   };
 }
 
@@ -1368,16 +1368,21 @@ function classifyIntent(message: string, sessionContext: SessionContext): Classi
 // SMART CLARIFICATION BUILDER (PHASE 2)
 // =============================================================================
 
+export interface ClarificationData {
+  question: string;
+  options: Array<{ label: string; value: string }>;
+  domain: string;
+}
+
 /**
  * Builds a smart clarification response with contextual options
- * instead of a generic "I don't understand" message.
- * Enhanced to detect scheduling-related messages and respond helpfully.
+ * Returns structured data instead of text with [CLARIFY] tags.
  */
 function buildSmartClarification(
   message: string,
   detectedDomain: string,
   sessionContext: SessionContext
-): string {
+): ClarificationData {
   // Determine domain from page context if not detected from message
   const pageDomain = sessionContext.currentPage ? getPageDomain(sessionContext.currentPage) : 'general';
   const domain = detectedDomain !== 'general' ? detectedDomain : pageDomain;
@@ -1385,72 +1390,69 @@ function buildSmartClarification(
   // Special handling for scheduling-related messages
   const schedulingKeywords = /schedule|scheduling|book|calendar|job|appointment/i;
   if (schedulingKeywords.test(message)) {
-    return `[CLARIFY]
-I can help you with scheduling! What would you like to do?
-
-• 📋 Show me jobs that need scheduling
-• 📅 Schedule all pending jobs
-• 👥 Check team availability
-• 🔄 Reschedule an existing job
-
-Just tell me which one, or describe what you need.
-[/CLARIFY]`;
+    return {
+      question: "I can help you with scheduling! What would you like to do?",
+      options: [
+        { label: '📋 Show jobs needing scheduling', value: 'Show me jobs that need scheduling' },
+        { label: '📅 Schedule pending jobs', value: 'Schedule all pending jobs' },
+        { label: '👥 Check team availability', value: 'Check team availability' },
+        { label: '🔄 Reschedule a job', value: 'Reschedule an existing job' }
+      ],
+      domain: 'scheduling'
+    };
   }
   
-  // Build context-aware options based on domain
-  const domainOptions: Record<string, string[]> = {
+  // Domain-specific structured options
+  const domainOptions: Record<string, Array<{ label: string; value: string }>> = {
     scheduling: [
-      '📋 Show me jobs that need scheduling',
-      '📅 Schedule pending jobs',
-      '👥 Check team availability',
-      '🗓️ Show this week\'s schedule'
+      { label: '📋 Jobs needing scheduling', value: 'Show me jobs that need scheduling' },
+      { label: '📅 Schedule pending jobs', value: 'Schedule all pending jobs' },
+      { label: '👥 Team availability', value: 'Check team availability' },
+      { label: '🗓️ This week\'s schedule', value: 'Show this week\'s schedule' }
     ],
     job_management: [
-      '➕ Create a new job',
-      '📋 View unscheduled jobs',
-      '✅ Update job status',
-      '🔍 Find a specific job'
+      { label: '➕ Create new job', value: 'Create a new job' },
+      { label: '📋 Unscheduled jobs', value: 'View unscheduled jobs' },
+      { label: '✅ Update job status', value: 'Update a job status' },
+      { label: '🔍 Find a job', value: 'Find a specific job' }
     ],
     quote_lifecycle: [
-      '📝 Create a new quote',
-      '📊 View pending quotes',
-      '📧 Send a quote',
-      '🔄 Convert quote to job'
+      { label: '📝 Create quote', value: 'Create a new quote' },
+      { label: '📊 Pending quotes', value: 'View pending quotes' },
+      { label: '📧 Send a quote', value: 'Send a quote' },
+      { label: '🔄 Convert to job', value: 'Convert quote to job' }
     ],
     invoicing: [
-      '📝 Create a new invoice',
-      '💰 View unpaid invoices',
-      '📧 Send invoice reminders',
-      '💳 Record a payment'
+      { label: '📝 Create invoice', value: 'Create a new invoice' },
+      { label: '💰 Unpaid invoices', value: 'View unpaid invoices' },
+      { label: '📧 Send reminders', value: 'Send invoice reminders' },
+      { label: '💳 Record payment', value: 'Record a payment' }
     ],
     customer_acquisition: [
-      '➕ Add a new customer',
-      '🔍 Search for a customer',
-      '📜 View customer history'
+      { label: '➕ Add customer', value: 'Add a new customer' },
+      { label: '🔍 Search customers', value: 'Search for a customer' },
+      { label: '📜 Customer history', value: 'View customer history' }
     ],
     team_management: [
-      '👥 View team members',
-      '📊 Check team utilization',
-      '⏱️ View active clock-ins'
+      { label: '👥 Team members', value: 'View team members' },
+      { label: '📊 Team utilization', value: 'Check team utilization' },
+      { label: '⏱️ Active clock-ins', value: 'View active clock-ins' }
     ],
     general: [
-      '📅 Help with scheduling',
-      '📝 Manage quotes or invoices',
-      '👥 Customer management',
-      '📊 View business metrics'
+      { label: '📅 Scheduling help', value: 'Help with scheduling' },
+      { label: '📝 Quotes & invoices', value: 'Manage quotes or invoices' },
+      { label: '👥 Customers', value: 'Customer management' },
+      { label: '📊 Business metrics', value: 'View business metrics' }
     ]
   };
   
   const options = domainOptions[domain] || domainOptions.general;
   
-  // Build the clarification with [CLARIFY] block for UI parsing
-  return `[CLARIFY]
-I can help with that! Here are some options:
-
-${options.map(opt => `• ${opt}`).join('\n')}
-
-Or tell me specifically what you need.
-[/CLARIFY]`;
+  return {
+    question: "I can help with that! What would you like to do?",
+    options,
+    domain
+  };
 }
 
 function getPageDomain(page: string): string {
@@ -1805,7 +1807,11 @@ export async function orchestrate(
     return {
       type: 'clarification',
       intent,
-      clarificationQuestion: intent.clarificationReason || 'Could you please provide more details?',
+      clarificationData: intent.clarificationData || {
+        question: 'Could you please provide more details?',
+        options: [],
+        domain: intent.domain
+      },
     };
   }
 
