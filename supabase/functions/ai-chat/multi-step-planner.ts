@@ -1571,25 +1571,29 @@ export async function storePendingPlanAsync(
   plan: ExecutionPlan,
   pattern: MultiStepPattern,
   entities: Record<string, any>,
-  ctx: MemoryContext
+  ctx: MemoryContext,
+  existingPlanId?: string
 ): Promise<void> {
+  const planIdToUse = existingPlanId || plan.id;
+  
   console.info('[multi-step-planner] Storing plan:', {
-    planId: plan.id,
+    planId: planIdToUse,
     patternId: pattern.id,
     stepCount: plan.steps.length,
+    isUpdate: !!existingPlanId,
   });
   
   try {
-    // Store in database with explicit plan ID to fix mismatch bug
-    await dbStorePendingPlan(ctx, { plan, pattern, entities }, pattern.id, plan.id);
-    console.info('[multi-step-planner] Plan stored in database with ID:', plan.id);
+    // Store in database with explicit plan ID (upsert handles updates)
+    await dbStorePendingPlan(ctx, { plan, pattern, entities }, pattern.id, planIdToUse);
+    console.info('[multi-step-planner] Plan stored in database with ID:', planIdToUse);
   } catch (error) {
     console.error('[multi-step-planner] Failed to store plan in DB, using in-memory only:', error);
   }
   
   // Also cache in memory for quick access
-  pendingPlansCache.set(plan.id, { plan, pattern, entities, userId: ctx.userId });
-  pendingPlansByUserCache.set(ctx.userId, plan.id);
+  pendingPlansCache.set(planIdToUse, { plan, pattern, entities, userId: ctx.userId });
+  pendingPlansByUserCache.set(ctx.userId, planIdToUse);
 }
 
 // Synchronous version for backward compatibility (uses cache only)
