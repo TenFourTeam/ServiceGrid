@@ -1216,6 +1216,11 @@ export function storePendingPlan(
   }, 10 * 60 * 1000);
 }
 
+// Helper to find a pattern by ID from the static array (preserves functions like argMapping)
+function getPatternById(patternId: string): MultiStepPattern | undefined {
+  return MULTI_STEP_PATTERNS.find(p => p.id === patternId);
+}
+
 export async function getPendingPlanAsync(
   planId: string,
   ctx: MemoryContext
@@ -1228,8 +1233,23 @@ export async function getPendingPlanAsync(
   try {
     const dbPlan = await dbGetPendingPlan(ctx, planId);
     if (dbPlan) {
-      const planData = dbPlan.planData as { plan: ExecutionPlan; pattern: MultiStepPattern; entities: Record<string, any> };
-      const result = { ...planData, userId: dbPlan.userId };
+      const planData = dbPlan.planData as { plan: ExecutionPlan; pattern: { id: string }; entities: Record<string, any> };
+      
+      // CRITICAL: Re-attach the full pattern from static array to restore argMapping functions
+      // (JSON serialization loses functions, so pattern.argMapping would be undefined)
+      const fullPattern = getPatternById(planData.pattern.id);
+      if (!fullPattern) {
+        console.error('[multi-step-planner] Pattern not found in static array:', planData.pattern.id);
+        return undefined;
+      }
+      
+      console.info('[multi-step-planner] Retrieved plan from DB and re-attached pattern:', {
+        planId,
+        patternId: fullPattern.id,
+        stepCount: planData.plan.steps.length
+      });
+      
+      const result = { plan: planData.plan, pattern: fullPattern, entities: planData.entities, userId: dbPlan.userId };
       // Cache it
       pendingPlansCache.set(planId, result);
       return result;
@@ -1260,8 +1280,21 @@ export async function getMostRecentPendingPlanAsync(
   try {
     const dbPlan = await dbGetMostRecentPendingPlan(ctx);
     if (dbPlan) {
-      const planData = dbPlan.planData as { plan: ExecutionPlan; pattern: MultiStepPattern; entities: Record<string, any> };
-      const result = { ...planData, userId: dbPlan.userId };
+      const planData = dbPlan.planData as { plan: ExecutionPlan; pattern: { id: string }; entities: Record<string, any> };
+      
+      // CRITICAL: Re-attach the full pattern from static array to restore argMapping functions
+      const fullPattern = getPatternById(planData.pattern.id);
+      if (!fullPattern) {
+        console.error('[multi-step-planner] Pattern not found in static array:', planData.pattern.id);
+        return undefined;
+      }
+      
+      console.info('[multi-step-planner] Retrieved most recent plan from DB and re-attached pattern:', {
+        planId: dbPlan.id,
+        patternId: fullPattern.id
+      });
+      
+      const result = { plan: planData.plan, pattern: fullPattern, entities: planData.entities, userId: dbPlan.userId };
       // Cache it
       pendingPlansCache.set(dbPlan.id, result);
       pendingPlansByUserCache.set(ctx.userId, dbPlan.id);
