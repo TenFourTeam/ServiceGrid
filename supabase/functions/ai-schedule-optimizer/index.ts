@@ -203,30 +203,34 @@ IMPORTANT:
         ],
         tools: [{
           type: "function",
-          name: "suggest_schedules",
-          description: "Return scheduling suggestions for unscheduled jobs",
-          parameters: {
-            type: "object",
-            properties: {
-              suggestions: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    jobId: { type: "string", description: "The job ID being scheduled" },
-                    recommendedStartTime: { type: "string", description: "ISO 8601 datetime for start" },
-                    recommendedEndTime: { type: "string", description: "ISO 8601 datetime for end" },
-                    assignedMemberId: { type: "string", description: "Team member ID to assign" },
-                    priorityScore: { type: "number", description: "Confidence score 0.0-1.0" },
-                    reasoning: { type: "string", description: "Why this time slot is optimal" },
-                    alternatives: { type: "string", description: "Brief mention of backup options" },
-                    travelTimeMinutes: { type: "number", description: "Estimated travel time from previous job" }
-                  },
-                  required: ["jobId", "recommendedStartTime", "recommendedEndTime", "assignedMemberId", "priorityScore", "reasoning"]
+          function: {
+            name: "suggest_schedules",
+            description: "Return scheduling suggestions for unscheduled jobs",
+            parameters: {
+              type: "object",
+              properties: {
+                suggestions: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      jobId: { type: "string", description: "The job ID being scheduled" },
+                      recommendedStartTime: { type: "string", description: "ISO 8601 datetime for start" },
+                      recommendedEndTime: { type: "string", description: "ISO 8601 datetime for end" },
+                      assignedMemberId: { type: "string", description: "Team member ID to assign" },
+                      priorityScore: { type: "number", description: "Confidence score 0.0-1.0" },
+                      reasoning: { type: "string", description: "Why this time slot is optimal" },
+                      alternatives: { type: "string", description: "Brief mention of backup options" },
+                      travelTimeMinutes: { type: "number", description: "Estimated travel time from previous job" }
+                    },
+                    required: ["jobId", "recommendedStartTime", "recommendedEndTime", "assignedMemberId", "priorityScore", "reasoning"],
+                    additionalProperties: false
+                  }
                 }
-              }
-            },
-            required: ["suggestions"]
+              },
+              required: ["suggestions"],
+              additionalProperties: false
+            }
           }
         }],
         tool_choice: { type: "function", function: { name: "suggest_schedules" } }
