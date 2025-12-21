@@ -302,6 +302,464 @@ const MULTI_STEP_PATTERNS: MultiStepPattern[] = [
     ],
     requiresApproval: false,
   },
+
+  // Weekly scheduling preparation
+  {
+    id: 'weekly_scheduling_prep',
+    name: 'Weekly Scheduling Prep',
+    description: 'Get all unscheduled jobs, check team availability, and batch schedule for the week',
+    patterns: [
+      /prep(are)?\s+(for\s+)?(this\s+|next\s+)?week('s)?\s+schedule/i,
+      /schedule\s+(all\s+)?(jobs?\s+)?for\s+(this\s+|the\s+)?week/i,
+      /weekly\s+scheduling\s+(prep|preparation)/i,
+      /set\s+up\s+(this\s+|next\s+)?week('s)?\s+jobs?/i,
+    ],
+    keywords: ['weekly', 'schedule', 'prep', 'preparation', 'week'],
+    steps: [
+      {
+        name: 'Get Unscheduled Jobs',
+        description: 'Find all jobs waiting to be scheduled',
+        tool: 'get_unscheduled_jobs',
+        argMapping: () => ({}),
+      },
+      {
+        name: 'Check Team Availability',
+        description: 'Review team capacity for the week',
+        tool: 'get_team_utilization',
+        argMapping: () => {
+          const today = new Date();
+          const weekEnd = new Date(today);
+          weekEnd.setDate(today.getDate() + 7);
+          return { 
+            startDate: today.toISOString().split('T')[0],
+            endDate: weekEnd.toISOString().split('T')[0],
+          };
+        },
+        dependsOn: ['get_unscheduled_jobs'],
+      },
+      {
+        name: 'Batch Schedule Jobs',
+        description: 'Schedule all jobs optimally for the week',
+        tool: 'batch_schedule_jobs',
+        argMapping: (ctx, results) => ({
+          jobIds: results['get_unscheduled_jobs']?.unscheduled_jobs?.map((j: any) => j.id) || [],
+        }),
+        dependsOn: ['get_team_utilization'],
+      },
+    ],
+    requiresApproval: true,
+  },
+
+  // End of day closeout
+  {
+    id: 'end_of_day_closeout',
+    name: 'End of Day Closeout',
+    description: 'Close completed jobs, generate invoices, and send them to customers',
+    patterns: [
+      /end\s+of\s+(the\s+)?day\s+(closeout|close\s*out|wrap\s*up)/i,
+      /daily\s+(closeout|close\s*out)/i,
+      /close\s+out\s+(the\s+)?day/i,
+      /finish\s+(up\s+)?(the\s+)?day('s)?\s+(work|jobs?)/i,
+    ],
+    keywords: ['end', 'day', 'closeout', 'close', 'wrap'],
+    steps: [
+      {
+        name: 'Get Completed Jobs',
+        description: 'Find all jobs completed today',
+        tool: 'get_completed_jobs',
+        argMapping: () => {
+          const today = new Date().toISOString().split('T')[0];
+          return { dateRange: { start: today, end: today } };
+        },
+      },
+      {
+        name: 'Close Jobs',
+        description: 'Mark completed jobs as closed',
+        tool: 'batch_update_job_status',
+        argMapping: (ctx, results) => ({
+          jobIds: results['get_completed_jobs']?.jobs?.map((j: any) => j.id) || [],
+          newStatus: 'Closed',
+        }),
+        dependsOn: ['get_completed_jobs'],
+      },
+      {
+        name: 'Generate Invoices',
+        description: 'Create invoices for closed jobs',
+        tool: 'batch_create_invoices',
+        argMapping: (ctx, results) => ({
+          jobIds: results['batch_update_job_status']?.updatedJobIds || [],
+        }),
+        dependsOn: ['batch_update_job_status'],
+      },
+      {
+        name: 'Send Invoices',
+        description: 'Email invoices to customers',
+        tool: 'batch_send_invoices',
+        argMapping: (ctx, results) => ({
+          invoiceIds: results['batch_create_invoices']?.invoiceIds || [],
+        }),
+        dependsOn: ['batch_create_invoices'],
+      },
+    ],
+    requiresApproval: true,
+  },
+
+  // Customer onboarding
+  {
+    id: 'customer_onboarding',
+    name: 'Customer Onboarding',
+    description: 'Create a new customer, generate a quote, and send it for approval',
+    patterns: [
+      /onboard\s+(a\s+)?(new\s+)?customer/i,
+      /new\s+customer\s+setup/i,
+      /add\s+(a\s+)?customer\s+and\s+(create|send)\s+(a\s+)?quote/i,
+      /create\s+customer\s+and\s+quote/i,
+    ],
+    keywords: ['onboard', 'customer', 'new', 'setup', 'quote'],
+    steps: [
+      {
+        name: 'Create Customer',
+        description: 'Add the new customer to the system',
+        tool: 'create_customer',
+        argMapping: (ctx) => ({
+          name: ctx.entities?.customerName,
+          email: ctx.entities?.customerEmail,
+          phone: ctx.entities?.customerPhone,
+          address: ctx.entities?.customerAddress,
+        }),
+      },
+      {
+        name: 'Create Quote',
+        description: 'Generate a quote for the customer',
+        tool: 'create_quote',
+        argMapping: (ctx, results) => ({
+          customerId: results['create_customer']?.customer_id,
+          items: ctx.entities?.quoteItems || [],
+          notes: ctx.entities?.notes,
+        }),
+        dependsOn: ['create_customer'],
+      },
+      {
+        name: 'Send Quote',
+        description: 'Email the quote to the customer',
+        tool: 'send_quote',
+        argMapping: (ctx, results) => ({
+          quoteId: results['create_quote']?.quote_id,
+        }),
+        dependsOn: ['create_quote'],
+      },
+    ],
+    requiresApproval: true,
+  },
+
+  // Full quote to job workflow
+  {
+    id: 'quote_to_job_complete',
+    name: 'Quote to Scheduled Job',
+    description: 'Approve quote, create job, assign checklist, assign team, and auto-schedule',
+    patterns: [
+      /quote\s+to\s+(scheduled\s+)?job\s+(full|complete|workflow)/i,
+      /approve\s+and\s+schedule\s+(the\s+)?quote/i,
+      /convert\s+quote\s+to\s+scheduled\s+job/i,
+      /full\s+quote\s+(to\s+)?job\s+conversion/i,
+    ],
+    keywords: ['quote', 'job', 'schedule', 'approve', 'complete', 'full'],
+    steps: [
+      {
+        name: 'Approve Quote',
+        description: 'Mark the quote as approved',
+        tool: 'approve_quote',
+        argMapping: (ctx) => ({
+          quoteId: ctx.entities?.quoteId,
+        }),
+      },
+      {
+        name: 'Create Job',
+        description: 'Convert quote to work order',
+        tool: 'convert_quote_to_job',
+        argMapping: (ctx, results) => ({
+          quoteId: results['approve_quote']?.quote_id || ctx.entities?.quoteId,
+        }),
+        dependsOn: ['approve_quote'],
+      },
+      {
+        name: 'Assign Checklist',
+        description: 'Attach checklist template to job',
+        tool: 'assign_checklist_to_job',
+        argMapping: (ctx, results) => ({
+          jobId: results['convert_quote_to_job']?.job_id,
+          templateId: ctx.entities?.checklistTemplateId || 'default',
+        }),
+        dependsOn: ['convert_quote_to_job'],
+        optional: true,
+      },
+      {
+        name: 'Assign Team',
+        description: 'Assign team member to the job',
+        tool: 'assign_job_to_member',
+        argMapping: (ctx, results) => ({
+          jobId: results['convert_quote_to_job']?.job_id,
+          userId: ctx.entities?.assigneeId,
+        }),
+        dependsOn: ['convert_quote_to_job'],
+        optional: true,
+      },
+      {
+        name: 'Schedule Job',
+        description: 'Auto-schedule the job',
+        tool: 'schedule_job',
+        argMapping: (ctx, results) => ({
+          jobId: results['convert_quote_to_job']?.job_id,
+        }),
+        dependsOn: ['convert_quote_to_job'],
+      },
+    ],
+    requiresApproval: true,
+  },
+
+  // Overdue invoice follow-up
+  {
+    id: 'overdue_follow_up',
+    name: 'Overdue Invoice Follow-up',
+    description: 'Find overdue invoices, send payment reminders, and log follow-up activity',
+    patterns: [
+      /follow\s*up\s+(on\s+)?(all\s+)?overdue\s+invoices?/i,
+      /chase\s+(up\s+)?(all\s+)?overdue\s+(invoices?|payments?)/i,
+      /collect\s+(on\s+)?overdue\s+(invoices?|payments?)/i,
+      /overdue\s+(invoice\s+)?follow\s*up/i,
+    ],
+    keywords: ['overdue', 'follow', 'up', 'chase', 'collect', 'payment'],
+    steps: [
+      {
+        name: 'Get Overdue Invoices',
+        description: 'Find all invoices past due date',
+        tool: 'get_overdue_invoices',
+        argMapping: () => ({}),
+      },
+      {
+        name: 'Send Reminders',
+        description: 'Email payment reminders to customers',
+        tool: 'batch_send_reminders',
+        argMapping: (ctx, results) => ({
+          invoiceIds: results['get_overdue_invoices']?.invoices?.map((i: any) => i.id) || [],
+        }),
+        dependsOn: ['get_overdue_invoices'],
+      },
+      {
+        name: 'Log Activity',
+        description: 'Record follow-up activity in system',
+        tool: 'log_activity',
+        argMapping: (ctx, results) => ({
+          activityType: 'payment_reminder',
+          description: `Sent ${results['batch_send_reminders']?.sentCount || 0} payment reminders`,
+          metadata: {
+            invoiceIds: results['get_overdue_invoices']?.invoices?.map((i: any) => i.id) || [],
+          },
+        }),
+        dependsOn: ['batch_send_reminders'],
+      },
+    ],
+    requiresApproval: true,
+  },
+
+  // Team schedule overview
+  {
+    id: 'team_schedule_overview',
+    name: 'Team Schedule Overview',
+    description: 'Get team utilization, check active clock-ins, and generate a summary',
+    patterns: [
+      /team\s+(schedule\s+)?(overview|summary|status)/i,
+      /what('s|\s+is)\s+(the\s+)?team\s+(doing|working\s+on)/i,
+      /show\s+(me\s+)?(the\s+)?team('s)?\s+(schedule|status)/i,
+      /team\s+utilization\s+(report|summary)/i,
+    ],
+    keywords: ['team', 'schedule', 'overview', 'utilization', 'summary'],
+    steps: [
+      {
+        name: 'Get Team Utilization',
+        description: 'Review team workload and capacity',
+        tool: 'get_team_utilization',
+        argMapping: () => {
+          const today = new Date();
+          const weekEnd = new Date(today);
+          weekEnd.setDate(today.getDate() + 7);
+          return { 
+            startDate: today.toISOString().split('T')[0],
+            endDate: weekEnd.toISOString().split('T')[0],
+          };
+        },
+      },
+      {
+        name: 'Get Active Clock-ins',
+        description: 'Check who is currently clocked in',
+        tool: 'get_active_clockins',
+        argMapping: () => ({}),
+        dependsOn: ['get_team_utilization'],
+      },
+      {
+        name: 'Generate Summary',
+        description: 'Create a team status summary',
+        tool: 'generate_team_summary',
+        argMapping: (ctx, results) => ({
+          utilization: results['get_team_utilization'],
+          activeClockIns: results['get_active_clockins'],
+        }),
+        dependsOn: ['get_active_clockins'],
+      },
+    ],
+    requiresApproval: false,
+  },
+
+  // Capacity planning
+  {
+    id: 'capacity_planning',
+    name: 'Capacity Planning',
+    description: 'Analyze capacity forecast, check for conflicts, and suggest optimizations',
+    patterns: [
+      /capacity\s+(planning|analysis|forecast)/i,
+      /check\s+(our\s+)?capacity\s+for\s+(next\s+)?week/i,
+      /can\s+we\s+take\s+(on\s+)?more\s+(work|jobs?)/i,
+      /workload\s+forecast/i,
+    ],
+    keywords: ['capacity', 'planning', 'forecast', 'workload', 'availability'],
+    steps: [
+      {
+        name: 'Get Capacity Forecast',
+        description: 'Analyze upcoming workload vs availability',
+        tool: 'get_capacity_forecast',
+        argMapping: () => {
+          const today = new Date();
+          const twoWeeksOut = new Date(today);
+          twoWeeksOut.setDate(today.getDate() + 14);
+          return { 
+            startDate: today.toISOString().split('T')[0],
+            endDate: twoWeeksOut.toISOString().split('T')[0],
+          };
+        },
+      },
+      {
+        name: 'Check Conflicts',
+        description: 'Identify scheduling conflicts',
+        tool: 'check_scheduling_conflicts',
+        argMapping: () => {
+          const today = new Date();
+          const twoWeeksOut = new Date(today);
+          twoWeeksOut.setDate(today.getDate() + 14);
+          return { 
+            startDate: today.toISOString().split('T')[0],
+            endDate: twoWeeksOut.toISOString().split('T')[0],
+          };
+        },
+        dependsOn: ['get_capacity_forecast'],
+      },
+      {
+        name: 'Suggest Optimizations',
+        description: 'Generate recommendations for better capacity usage',
+        tool: 'suggest_capacity_optimizations',
+        argMapping: (ctx, results) => ({
+          forecast: results['get_capacity_forecast'],
+          conflicts: results['check_scheduling_conflicts'],
+        }),
+        dependsOn: ['check_scheduling_conflicts'],
+      },
+    ],
+    requiresApproval: false,
+  },
+
+  // Batch reschedule
+  {
+    id: 'batch_reschedule',
+    name: 'Batch Reschedule',
+    description: 'Find scheduling conflicts, reschedule conflicting jobs, and notify affected customers',
+    patterns: [
+      /batch\s+reschedule/i,
+      /fix\s+(all\s+)?scheduling\s+conflicts?/i,
+      /resolve\s+(all\s+)?conflicts?\s+(and\s+)?notify/i,
+      /reschedule\s+(all\s+)?conflicting\s+jobs?/i,
+    ],
+    keywords: ['batch', 'reschedule', 'conflicts', 'fix', 'resolve'],
+    steps: [
+      {
+        name: 'Get Scheduling Conflicts',
+        description: 'Find all jobs with scheduling conflicts',
+        tool: 'check_scheduling_conflicts',
+        argMapping: () => {
+          const today = new Date();
+          const weekEnd = new Date(today);
+          weekEnd.setDate(today.getDate() + 7);
+          return { 
+            startDate: today.toISOString().split('T')[0],
+            endDate: weekEnd.toISOString().split('T')[0],
+          };
+        },
+      },
+      {
+        name: 'Reschedule Jobs',
+        description: 'Automatically reschedule conflicting jobs',
+        tool: 'batch_reschedule_jobs',
+        argMapping: (ctx, results) => ({
+          jobIds: results['check_scheduling_conflicts']?.conflictingJobIds || [],
+        }),
+        dependsOn: ['check_scheduling_conflicts'],
+      },
+      {
+        name: 'Notify Customers',
+        description: 'Send rescheduling notifications to affected customers',
+        tool: 'send_job_confirmations',
+        argMapping: (ctx, results) => ({
+          jobIds: results['batch_reschedule_jobs']?.rescheduledJobIds || [],
+          reason: 'reschedule',
+        }),
+        dependsOn: ['batch_reschedule_jobs'],
+      },
+    ],
+    requiresApproval: true,
+  },
+
+  // Invoice batch send
+  {
+    id: 'invoice_batch_send',
+    name: 'Invoice Batch Send',
+    description: 'Find unpaid invoices and send batch reminders',
+    patterns: [
+      /send\s+(all\s+)?unpaid\s+invoice\s+reminders?/i,
+      /batch\s+send\s+invoice\s+reminders?/i,
+      /remind\s+(all\s+)?unpaid\s+customers?/i,
+      /invoice\s+batch\s+send/i,
+    ],
+    keywords: ['invoice', 'batch', 'send', 'unpaid', 'reminders'],
+    steps: [
+      {
+        name: 'Get Unpaid Invoices',
+        description: 'Find all invoices awaiting payment',
+        tool: 'get_unpaid_invoices',
+        argMapping: () => ({}),
+      },
+      {
+        name: 'Send Reminders',
+        description: 'Email payment reminders',
+        tool: 'batch_send_reminders',
+        argMapping: (ctx, results) => ({
+          invoiceIds: results['get_unpaid_invoices']?.invoices?.map((i: any) => i.id) || [],
+        }),
+        dependsOn: ['get_unpaid_invoices'],
+      },
+      {
+        name: 'Record Activity',
+        description: 'Log reminder activity',
+        tool: 'log_activity',
+        argMapping: (ctx, results) => ({
+          activityType: 'invoice_reminder_batch',
+          description: `Sent ${results['batch_send_reminders']?.sentCount || 0} invoice reminders`,
+          metadata: {
+            invoiceCount: results['get_unpaid_invoices']?.invoices?.length || 0,
+          },
+        }),
+        dependsOn: ['batch_send_reminders'],
+      },
+    ],
+    requiresApproval: true,
+  },
 ];
 
 // =============================================================================
@@ -609,9 +1067,13 @@ async function rollbackPlan(
 // =============================================================================
 
 export function sendPlanPreview(
-  controller: ReadableStreamDefaultController,
+  controller: ReadableStreamDefaultController | undefined,
   plan: ExecutionPlan
 ): void {
+  if (!controller) {
+    console.warn('[multi-step-planner] sendPlanPreview called without controller');
+    return;
+  }
   const encoder = new TextEncoder();
   const event = {
     type: 'plan_preview',
@@ -633,11 +1095,15 @@ export function sendPlanPreview(
 }
 
 export function sendStepProgress(
-  controller: ReadableStreamDefaultController,
+  controller: ReadableStreamDefaultController | undefined,
   plan: ExecutionPlan,
   step: PlanStep,
   message?: string
 ): void {
+  if (!controller) {
+    console.warn('[multi-step-planner] sendStepProgress called without controller');
+    return;
+  }
   const encoder = new TextEncoder();
   const event = {
     type: 'step_progress',
@@ -657,9 +1123,13 @@ export function sendStepProgress(
 }
 
 export function sendPlanComplete(
-  controller: ReadableStreamDefaultController,
+  controller: ReadableStreamDefaultController | undefined,
   plan: ExecutionPlan
 ): void {
+  if (!controller) {
+    console.warn('[multi-step-planner] sendPlanComplete called without controller');
+    return;
+  }
   const encoder = new TextEncoder();
   const successfulSteps = plan.steps.filter(s => s.status === 'completed').length;
   const failedSteps = plan.steps.filter(s => s.status === 'failed').length;
@@ -907,10 +1377,14 @@ export function detectPlanApproval(message: string): PlanApprovalResult {
 // =============================================================================
 
 export function sendPlanCancelled(
-  controller: ReadableStreamDefaultController,
+  controller: ReadableStreamDefaultController | undefined,
   planId: string,
   message?: string
 ): void {
+  if (!controller) {
+    console.warn('[multi-step-planner] sendPlanCancelled called without controller');
+    return;
+  }
   const encoder = new TextEncoder();
   const event = {
     type: 'plan_cancelled',
