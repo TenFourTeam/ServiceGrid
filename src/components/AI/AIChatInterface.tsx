@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAIChat } from '@/hooks/useAIChat';
 import { useAIConversations } from '@/hooks/useAIConversations';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -8,6 +9,7 @@ import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { TypingIndicator } from './TypingIndicator';
 import { ConversationStarters } from './ConversationStarters';
+import { SuggestionChips, getContextualSuggestions } from './SuggestionChips';
 import { Sparkles, Trash2, MessageSquare, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -26,6 +28,9 @@ export function AIChatInterface({
   initialMessage,
   context
 }: AIChatInterfaceProps) {
+  const navigate = useNavigate();
+  const [showSuggestions, setShowSuggestions] = useState(true);
+  
   const {
     messages,
     isStreaming,
@@ -39,6 +44,13 @@ export function AIChatInterface({
   } = useAIChat({
     onNewConversation: (id) => {
       console.log('New conversation created:', id);
+    },
+    onNavigate: (url, entityName) => {
+      toast.info(`Opening ${entityName || 'page'}...`, { icon: '🔗', duration: 2000 });
+      setTimeout(() => {
+        navigate(url);
+        onOpenChange(false); // Close chat after navigation
+      }, 300);
     }
   });
 
@@ -74,6 +86,8 @@ export function AIChatInterface({
     'Who\'s available tomorrow?',
     'Show me this week\'s schedule',
   ] : [];
+  
+  const contextualSuggestions = getContextualSuggestions(context?.currentPage || window.location.pathname);
 
   const conversationsData = Array.isArray(conversations) ? { today: [], yesterday: [], lastWeek: [], older: [] } : conversations;
   
@@ -288,6 +302,17 @@ export function AIChatInterface({
                 />
               )}
             </ScrollArea>
+
+            {/* Proactive Suggestions */}
+            {showSuggestions && messages.length === 0 && !isStreaming && (
+              <SuggestionChips
+                suggestions={contextualSuggestions}
+                onSuggestionClick={(action) => {
+                  setShowSuggestions(false);
+                  sendMessage(action, undefined, context);
+                }}
+              />
+            )}
 
             {/* Input */}
             <ChatInput

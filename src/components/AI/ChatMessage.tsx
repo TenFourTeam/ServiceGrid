@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Message } from '@/hooks/useAIChat';
-import { Bot, User, Loader2, CheckCircle2, Calendar, Users, MapPin, Clock, FileText, TrendingUp, AlertCircle, RefreshCw, Zap, XCircle } from 'lucide-react';
+import { Bot, User, Loader2, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ActionButton } from './ActionButton';
 import { SchedulePreviewCard } from './SchedulePreviewCard';
@@ -8,6 +8,9 @@ import { ClarificationCard } from './ClarificationCard';
 import { ConfirmationCard } from './ConfirmationCard';
 import { PlanPreviewCard } from './PlanPreviewCard';
 import { PlanProgressCard } from './PlanProgressCard';
+import { EntityCard, parseEntityReferences } from './EntityCard';
+import { UndoButton, isReversibleAction, getUndoDescription } from './UndoButton';
+import { getToolInfo } from '@/lib/ai-agent/tool-metadata';
 import { useCalendarNavigation } from '@/hooks/useCalendarNavigation';
 import { useConversationMedia } from '@/hooks/useConversationMedia';
 
@@ -18,47 +21,6 @@ interface ChatMessageProps {
   onApproveSchedule?: (scheduleData: any) => Promise<void>;
   onApprovePlan?: (message: string) => void;
   onRejectPlan?: (message: string) => void;
-}
-
-const toolIconMap: Record<string, any> = {
-  get_unscheduled_jobs: Calendar,
-  check_team_availability: Users,
-  get_schedule_summary: FileText,
-  auto_schedule_job: Calendar,
-  create_job_from_request: FileText,
-  optimize_route_for_date: MapPin,
-  get_scheduling_conflicts: AlertCircle,
-  get_customer_details: Users,
-  update_job_status: CheckCircle2,
-  get_capacity_forecast: TrendingUp,
-  reschedule_job: RefreshCw,
-  batch_schedule_jobs: Zap,
-  preview_schedule_changes: Calendar,
-  refine_schedule: RefreshCw,
-};
-
-const toolLabelMap: Record<string, string> = {
-  get_unscheduled_jobs: 'Finding unscheduled jobs',
-  check_team_availability: 'Checking team availability',
-  get_schedule_summary: 'Getting schedule summary',
-  auto_schedule_job: 'Auto-scheduling job',
-  create_job_from_request: 'Creating job from request',
-  optimize_route_for_date: 'Optimizing route',
-  get_scheduling_conflicts: 'Finding conflicts',
-  get_customer_details: 'Getting customer details',
-  update_job_status: 'Updating job status',
-  get_capacity_forecast: 'Forecasting capacity',
-  reschedule_job: 'Rescheduling job',
-  batch_schedule_jobs: 'Scheduling multiple jobs with AI',
-  preview_schedule_changes: 'Previewing schedule changes',
-  refine_schedule: 'Refining schedule based on feedback',
-};
-
-function getToolInfo(toolName: string) {
-  return {
-    icon: toolIconMap[toolName] || Clock,
-    label: toolLabelMap[toolName] || toolName.replace(/_/g, ' '),
-  };
 }
 
 export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSchedule, onApprovePlan, onRejectPlan }: ChatMessageProps) {
@@ -173,9 +135,22 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
              message.messageType !== 'plan_progress' && 
              parsedContent.map((part, idx) => {
               if (part.type === 'text') {
+                // Parse entity references within text
+                const entityParts = parseEntityReferences(part.content);
                 return (
                   <div key={idx} className="text-sm whitespace-pre-wrap break-words">
-                    {part.content}
+                    {entityParts.map((ep, epIdx) => 
+                      ep.type === 'entity' ? (
+                        <EntityCard
+                          key={epIdx}
+                          entityType={ep.content.entityType}
+                          entityId={ep.content.entityId}
+                          displayName={ep.content.displayName}
+                        />
+                      ) : (
+                        <span key={epIdx}>{ep.content}</span>
+                      )
+                    )}
                     {isStreaming && idx === parsedContent.length - 1 && (
                       <span className="inline-block w-2 h-4 ml-1 bg-current animate-pulse" />
                     )}
@@ -269,6 +244,14 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
                     )}
                     {toolCall.status === 'error' && (
                       <span className="ml-auto text-[10px] opacity-60">✗</span>
+                    )}
+                    {toolCall.status === 'complete' && isReversibleAction(toolCall.tool) && onActionExecute && (
+                      <UndoButton
+                        actionId={toolCall.tool}
+                        actionDescription={getUndoDescription(toolCall.tool, toolCall.result)}
+                        onUndo={(msg) => onActionExecute(msg)}
+                        className="ml-2"
+                      />
                     )}
                   </div>
                 );
