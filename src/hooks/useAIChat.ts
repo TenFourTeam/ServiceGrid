@@ -422,10 +422,36 @@ export function useAIChat(options?: UseAIChatOptions) {
                 setCurrentStreamingMessage('');
                 setIsStreaming(false);
               } else if (data.type === 'done') {
+                // Skip adding empty messages (clarification/confirmation already handled)
+                if (!fullContent.trim()) {
+                  setIsStreaming(false);
+                  setCurrentStreamingMessage('');
+                  setCurrentToolName(null);
+                  return;
+                }
+                
                 // Finalize message with parsed actions
                 const { cleanContent, actions } = parseMessageActions(fullContent);
+                
+                // Skip if the cleaned content is empty
+                if (!cleanContent.trim()) {
+                  setIsStreaming(false);
+                  setCurrentStreamingMessage('');
+                  setCurrentToolName(null);
+                  return;
+                }
+                
                 setMessages(prev => {
+                  // Check if we already have a clarification/confirmation message
                   const lastMsg = prev[prev.length - 1];
+                  if (lastMsg?.role === 'assistant' && 
+                      (lastMsg.messageType === 'clarification' || 
+                       lastMsg.messageType === 'confirmation' ||
+                       lastMsg.messageType === 'plan_preview')) {
+                    // Don't add duplicate - clarification already shown
+                    return prev;
+                  }
+                  
                   if (lastMsg?.id === assistantMessageId) {
                     return [
                       ...prev.slice(0, -1),

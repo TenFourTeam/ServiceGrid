@@ -78,6 +78,24 @@ const INTENT_PATTERNS: IntentPattern[] = [
   // ============================================
   // SCHEDULING DOMAIN
   // ============================================
+  // Single job scheduling - matches "schedule a job", "let's schedule a job", etc.
+  {
+    intentId: 'scheduling.single_job',
+    domain: 'scheduling',
+    patterns: [
+      /(?:let's|let us|can you|please|I want to|I need to|help me)?\s*schedule\s+(a\s+)?job/i,
+      /schedule\s+(?:this|that|one)\s+job/i,
+      /I\s+need\s+to\s+schedule/i,
+      /help\s+(?:me\s+)?schedule/i,
+    ],
+    keywords: ['schedule', 'job', 'schedule job', 'schedule a job'],
+    requiredContext: ['unscheduled_jobs'],
+    optionalContext: ['team_members', 'team_availability'],
+    tools: ['get_unscheduled_jobs', 'auto_schedule_job'],
+    riskLevel: 'low',
+    requiresConfirmation: false,
+  },
+  // Batch scheduling - matches "schedule all jobs", "batch schedule", etc.
   {
     intentId: 'scheduling.batch_schedule',
     domain: 'scheduling',
@@ -1353,6 +1371,7 @@ function classifyIntent(message: string, sessionContext: SessionContext): Classi
 /**
  * Builds a smart clarification response with contextual options
  * instead of a generic "I don't understand" message.
+ * Enhanced to detect scheduling-related messages and respond helpfully.
  */
 function buildSmartClarification(
   message: string,
@@ -1363,13 +1382,28 @@ function buildSmartClarification(
   const pageDomain = sessionContext.currentPage ? getPageDomain(sessionContext.currentPage) : 'general';
   const domain = detectedDomain !== 'general' ? detectedDomain : pageDomain;
   
+  // Special handling for scheduling-related messages
+  const schedulingKeywords = /schedule|scheduling|book|calendar|job|appointment/i;
+  if (schedulingKeywords.test(message)) {
+    return `[CLARIFY]
+I can help you with scheduling! What would you like to do?
+
+• 📋 Show me jobs that need scheduling
+• 📅 Schedule all pending jobs
+• 👥 Check team availability
+• 🔄 Reschedule an existing job
+
+Just tell me which one, or describe what you need.
+[/CLARIFY]`;
+  }
+  
   // Build context-aware options based on domain
   const domainOptions: Record<string, string[]> = {
     scheduling: [
+      '📋 Show me jobs that need scheduling',
       '📅 Schedule pending jobs',
       '👥 Check team availability',
-      '🗓️ Show this week\'s schedule',
-      '🔄 Reschedule a job'
+      '🗓️ Show this week\'s schedule'
     ],
     job_management: [
       '➕ Create a new job',
@@ -1411,7 +1445,7 @@ function buildSmartClarification(
   
   // Build the clarification with [CLARIFY] block for UI parsing
   return `[CLARIFY]
-I'd be happy to help! Based on where you are, here are some things I can do:
+I can help with that! Here are some options:
 
 ${options.map(opt => `• ${opt}`).join('\n')}
 

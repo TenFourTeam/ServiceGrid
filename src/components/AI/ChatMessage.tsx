@@ -37,6 +37,17 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
   if (isSystemMessage && message.toolCalls && message.toolCalls.length > 0) {
     return null;
   }
+  
+  // Hide empty assistant messages (no content and no special message type)
+  if (!isUser && 
+      !message.content?.trim() && 
+      !message.toolCalls?.length &&
+      message.messageType !== 'clarification' &&
+      message.messageType !== 'confirmation' &&
+      message.messageType !== 'plan_preview' &&
+      message.messageType !== 'plan_progress') {
+    return null;
+  }
 
   return (
     <div className={cn(
