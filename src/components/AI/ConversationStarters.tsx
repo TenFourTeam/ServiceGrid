@@ -1,4 +1,4 @@
-import { Calendar, Zap, Search, FileText, Users, TrendingUp, Clock, MapPin } from 'lucide-react';
+import { Calendar, Zap, Search, FileText, Users, TrendingUp, Clock, MapPin, DollarSign, Send, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useIsPhone } from '@/hooks/use-phone';
@@ -141,12 +141,108 @@ const teamStarters: Starter[] = [
   },
 ];
 
+const quotesStarters: Starter[] = [
+  {
+    icon: FileText,
+    title: 'Pending Quotes',
+    subtitle: 'See quotes awaiting response',
+    message: 'Show me all pending quotes awaiting customer response',
+    gradient: 'from-blue-500/10 to-cyan-500/10',
+  },
+  {
+    icon: Clock,
+    title: 'Expiring Soon',
+    subtitle: 'Quotes needing attention',
+    message: 'Which quotes are expiring soon?',
+    gradient: 'from-orange-500/10 to-red-500/10',
+  },
+  {
+    icon: Send,
+    title: 'Follow Up',
+    subtitle: 'Send reminders',
+    message: 'Help me follow up on quotes that haven\'t been responded to',
+    gradient: 'from-purple-500/10 to-pink-500/10',
+  },
+  {
+    icon: TrendingUp,
+    title: 'Quote Analytics',
+    subtitle: 'See conversion rates',
+    message: 'What\'s my quote conversion rate this month?',
+    gradient: 'from-green-500/10 to-emerald-500/10',
+  },
+];
+
+const invoicesStarters: Starter[] = [
+  {
+    icon: DollarSign,
+    title: 'Unpaid Invoices',
+    subtitle: 'See outstanding payments',
+    message: 'Show me all unpaid invoices',
+    gradient: 'from-blue-500/10 to-cyan-500/10',
+  },
+  {
+    icon: Clock,
+    title: 'Overdue',
+    subtitle: 'Find overdue payments',
+    message: 'Which invoices are overdue?',
+    gradient: 'from-red-500/10 to-pink-500/10',
+  },
+  {
+    icon: Send,
+    title: 'Send Reminders',
+    subtitle: 'Follow up on payments',
+    message: 'Help me send payment reminders for overdue invoices',
+    gradient: 'from-orange-500/10 to-amber-500/10',
+  },
+  {
+    icon: TrendingUp,
+    title: 'Revenue Summary',
+    subtitle: 'See payment stats',
+    message: 'What\'s my revenue summary for this month?',
+    gradient: 'from-green-500/10 to-emerald-500/10',
+  },
+];
+
+const customersStarters: Starter[] = [
+  {
+    icon: UserPlus,
+    title: 'Recent Customers',
+    subtitle: 'See new additions',
+    message: 'Show me customers added this week',
+    gradient: 'from-blue-500/10 to-cyan-500/10',
+  },
+  {
+    icon: Clock,
+    title: 'Need Follow-Up',
+    subtitle: 'Customers to contact',
+    message: 'Which customers need a follow-up?',
+    gradient: 'from-orange-500/10 to-red-500/10',
+  },
+  {
+    icon: FileText,
+    title: 'Open Jobs',
+    subtitle: 'Active customer work',
+    message: 'Show customers with open jobs',
+    gradient: 'from-purple-500/10 to-pink-500/10',
+  },
+  {
+    icon: TrendingUp,
+    title: 'Top Customers',
+    subtitle: 'By revenue',
+    message: 'Who are my top customers by revenue?',
+    gradient: 'from-green-500/10 to-emerald-500/10',
+  },
+];
+
 function getStartersForPage(page?: string): Starter[] {
   if (!page) return defaultStarters;
   
   if (page.includes('/calendar')) return calendarStarters;
   if (page.includes('/work-orders') || page.includes('/jobs')) return jobsStarters;
   if (page.includes('/team')) return teamStarters;
+  if (page.includes('/quote')) return quotesStarters;
+  if (page.includes('/invoice')) return invoicesStarters;
+  if (page.includes('/customer')) return customersStarters;
   
   return defaultStarters;
 }
