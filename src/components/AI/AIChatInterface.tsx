@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { TypingIndicator } from './TypingIndicator';
+import { ToolProgressIndicator } from './ToolProgressIndicator';
 import { ConversationStarters } from './ConversationStarters';
 import { SuggestionChips, getContextualSuggestions } from './SuggestionChips';
 import { Sparkles, Trash2, MessageSquare, Plus } from 'lucide-react';
@@ -36,6 +37,7 @@ export function AIChatInterface({
     isStreaming,
     currentStreamingMessage,
     currentToolName,
+    toolProgress,
     conversationId,
     lastFailedMessage,
     sendMessage,
@@ -305,9 +307,16 @@ export function AIChatInterface({
                 />
               ))}
 
-              {/* Show typing indicator when streaming but no content yet */}
+              {/* Show typing/tool indicator when streaming but no content yet */}
               {isStreaming && !currentStreamingMessage && (
-                <TypingIndicator toolName={currentToolName} />
+                currentToolName ? (
+                  <ToolProgressIndicator 
+                    toolName={currentToolName} 
+                    progress={toolProgress || undefined} 
+                  />
+                ) : (
+                  <TypingIndicator />
+                )
               )}
 
               {currentStreamingMessage && (
