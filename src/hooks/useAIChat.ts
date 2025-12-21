@@ -99,13 +99,6 @@ export function useAIChat(options?: UseAIChatOptions) {
   const { getToken } = useAuth();
   const { uploadMedia } = useConversationMediaUpload();
 
-  // Reversible tools for undo functionality
-  const reversibleTools = new Set([
-    'update_job_status', 'update_job', 'update_customer', 'update_quote',
-    'reschedule_job', 'auto_schedule_job', 'batch_schedule_jobs',
-    'assign_team_member', 'clock_in', 'clock_out', 'approve_quote', 'approve_time_off'
-  ]);
-
   const sendMessage = useCallback(async (content: string, attachments?: File[], context?: any) => {
     if (!businessId || (!content.trim() && (!attachments || attachments.length === 0))) return;
 
@@ -256,119 +249,30 @@ export function useAIChat(options?: UseAIChatOptions) {
                 setCurrentStreamingMessage(fullContent);
                 setCurrentToolName(null); // Clear tool name when streaming starts
               } else if (data.type === 'tool_call') {
-                // Create a system message for tool execution
-                const isReversible = reversibleTools.has(data.tool);
-                const toolSystemMessage: Message = {
-                  id: `tool-${data.tool}-${Date.now()}`,
-                  role: 'system',
-                  content: `Executing: ${data.tool}`,
-                  timestamp: new Date(),
-                  toolCalls: [{ tool: data.tool, status: 'executing' as const, reversible: isReversible }]
-                };
-                
+                // Just update the current tool name for the typing indicator
+                // Don't create a separate system message - it clutters the UI
                 setCurrentToolName(data.tool);
-                setMessages(prev => [...prev, toolSystemMessage]);
-                
-                // Show toast for important actions
-                const importantTools = ['batch_schedule_jobs', 'auto_schedule_job', 'optimize_route_for_date'];
-                const toolLabels: Record<string, string> = {
-                  batch_schedule_jobs: 'Scheduling multiple jobs with AI',
-                  auto_schedule_job: 'Auto-scheduling job',
-                  optimize_route_for_date: 'Optimizing route',
-                  check_team_availability: 'Checking team availability',
-                  get_unscheduled_jobs: 'Finding unscheduled jobs',
-                };
-                
-                if (importantTools.includes(data.tool)) {
-                  toast.info(toolLabels[data.tool] || data.tool.replace(/_/g, ' '), {
-                    icon: '🔧',
-                    duration: 2000,
-                  });
-                }
               } else if (data.type === 'tool_result') {
-                const isReversible = reversibleTools.has(data.tool);
-                
-                // Update tool system message to mark complete
-                setMessages(prev => {
-                  const toolMsgIndex = prev.findIndex(m => 
-                    m.role === 'system' && 
-                    m.toolCalls?.some(tc => tc.tool === data.tool && tc.status === 'executing')
-                  );
-                  
-                  if (toolMsgIndex !== -1) {
-                    const updated = [...prev];
-                    updated[toolMsgIndex] = {
-                      ...updated[toolMsgIndex],
-                      toolCalls: [{ 
-                        tool: data.tool, 
-                        status: 'complete' as const, 
-                        result: data.result,
-                        reversible: isReversible
-                      }]
-                    };
-                    return updated;
-                  }
-                  return prev;
-                });
-                
-                // Handle navigation tool results
+                // Handle navigation tool results immediately
                 if (data.tool === 'navigate_to_entity' && data.result?.url) {
                   options?.onNavigate?.(data.result.url, data.result.entityName);
                 } else if (data.tool === 'navigate_to_calendar' && data.result?.url) {
                   options?.onNavigate?.(data.result.url, 'Calendar');
                 }
-                
-                // Show success toast
-                if (data.success !== false) {
-                  toast.success('Action completed', { icon: '✅', duration: 1500 });
-                }
+                // Don't show toast for every tool - let the AI response convey results
               } else if (data.type === 'tool_error') {
-                // Update tool system message to mark error
-                setMessages(prev => {
-                  const toolMsgIndex = prev.findIndex(m => 
-                    m.role === 'system' && 
-                    m.toolCalls?.some(tc => tc.tool === data.tool && tc.status === 'executing')
-                  );
-                  
-                  if (toolMsgIndex !== -1) {
-                    const updated = [...prev];
-                    updated[toolMsgIndex] = {
-                      ...updated[toolMsgIndex],
-                      toolCalls: [{ tool: data.tool, status: 'error' as const, result: data.error }]
-                    };
-                    return updated;
-                  }
-                  return prev;
-                });
-                
+                // Show error toast only for critical failures
                 const toolLabels: Record<string, string> = {
-                  batch_schedule_jobs: 'Scheduling jobs',
+                  batch_schedule_jobs: 'Scheduling',
                   auto_schedule_job: 'Auto-scheduling',
                   optimize_route_for_date: 'Route optimization',
                 };
                 
-                toast.error(`Failed: ${toolLabels[data.tool] || data.tool.replace(/_/g, ' ')}`, {
-                  description: data.error,
-                  icon: '❌',
+                toast.error(`${toolLabels[data.tool] || 'Action'} failed`, {
+                  description: data.error?.substring(0, 100),
                 });
               } else if (data.type === 'tool_progress') {
-                // Update tool system message with progress
-                setMessages(prev => {
-                  const toolMsgIndex = prev.findIndex(m => 
-                    m.role === 'system' && 
-                    m.toolCalls?.some(tc => tc.status === 'executing')
-                  );
-                  
-                  if (toolMsgIndex !== -1) {
-                    const updated = [...prev];
-                    updated[toolMsgIndex] = {
-                      ...updated[toolMsgIndex],
-                      content: data.progress
-                    };
-                    return updated;
-                  }
-                  return prev;
-                });
+                // Tool progress is shown in the typing indicator, no message needed
               } else if (data.type === 'clarification') {
                 // Show clarification message with options
                 const clarificationMessage: Message = {
@@ -411,7 +315,7 @@ export function useAIChat(options?: UseAIChatOptions) {
                 const planPreviewMessage: Message = {
                   id: crypto.randomUUID(),
                   role: 'assistant',
-                  content: `I've prepared a multi-step plan: "${data.plan.name}"`,
+                  content: `I've prepared a multi-step plan: \"${data.plan.name}\"`,
                   timestamp: new Date(),
                   messageType: 'plan_preview',
                   planPreview: {
@@ -487,10 +391,8 @@ export function useAIChat(options?: UseAIChatOptions) {
                 });
                 setIsStreaming(false);
                 
-                // Show success toast
-                if (data.status === 'completed') {
-                  toast.success(`Plan completed: ${data.summary?.successfulSteps}/${data.summary?.totalSteps} steps succeeded`);
-                } else if (data.status === 'failed') {
+                // Only show toast for failures - success is visible in the UI
+                if (data.status === 'failed') {
                   toast.error('Plan failed - some steps were rolled back');
                 }
               } else if (data.type === 'plan_cancelled') {
@@ -544,27 +446,26 @@ export function useAIChat(options?: UseAIChatOptions) {
       } else {
         console.error('Error sending message:', error);
         
-        // PHASE 2: Improved error messages with recovery options
+        // Improved error messages with recovery options
         let errorContent = 'Sorry, I encountered an error. ';
         let actions: Array<{ action: string; label: string; variant?: 'primary' | 'secondary' | 'danger' }> = [];
         
         if (error.message?.includes('429') || error.message?.includes('rate limit')) {
           errorContent = 'I\'m getting too many requests right now. Please wait a moment and try again.';
-          actions = [{ action: 'retry', label: '🔄 Try Again', variant: 'primary' }];
+          actions = [{ action: 'retry', label: 'Try Again', variant: 'primary' }];
         } else if (error.message?.includes('402') || error.message?.includes('payment')) {
           errorContent = 'AI credits have run out. Please add credits to continue using the assistant.';
-          actions = [{ action: 'add_credits', label: '💳 Add Credits', variant: 'primary' }];
+          actions = [{ action: 'add_credits', label: 'Add Credits', variant: 'primary' }];
         } else if (error.message?.includes('timeout') || error.message?.includes('network')) {
           errorContent = 'Connection issue. Please check your internet and try again.';
           actions = [
-            { action: 'retry', label: '🔄 Retry', variant: 'primary' },
+            { action: 'retry', label: 'Retry', variant: 'primary' },
             { action: 'start_over', label: 'Start Over', variant: 'secondary' }
           ];
         } else {
-          errorContent = `Something went wrong: ${error.message}. Would you like to try again?`;
+          errorContent = `Something went wrong. Would you like to try again?`;
           actions = [
-            { action: 'retry', label: '🔄 Try Again', variant: 'primary' },
-            { action: 'report_issue', label: '🐛 Report Issue', variant: 'secondary' }
+            { action: 'retry', label: 'Try Again', variant: 'primary' },
           ];
         }
 
@@ -585,7 +486,7 @@ export function useAIChat(options?: UseAIChatOptions) {
       setCurrentStreamingMessage('');
       abortControllerRef.current = null;
     }
-  }, [businessId, conversationId, getToken, options, uploadMedia, reversibleTools]);
+  }, [businessId, conversationId, getToken, options, uploadMedia]);
 
   const stopStreaming = useCallback(() => {
     abortControllerRef.current?.abort();
@@ -656,7 +557,6 @@ export function useAIChat(options?: UseAIChatOptions) {
       
       setMessages(transformedMessages);
       setConversationId(convId);
-      toast.success('Conversation loaded');
     } catch (error) {
       console.error('Error loading conversation:', error);
       toast.error('Failed to load conversation');
