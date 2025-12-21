@@ -249,7 +249,16 @@ export function useAIChat(options?: UseAIChatOptions) {
                   content: data.content,
                   timestamp: new Date(),
                 };
-                setMessages([greetingMessage]);
+                // Only set greeting if no messages exist, otherwise prepend it
+                setMessages(prev => {
+                  if (prev.length === 0) {
+                    return [greetingMessage];
+                  }
+                  // If user already sent a message, prepend greeting before their message
+                  const hasGreeting = prev.some(m => m.role === 'assistant' && m.content === data.content);
+                  if (hasGreeting) return prev; // Don't duplicate greeting
+                  return [greetingMessage, ...prev];
+                });
                 setIsStreaming(false); // Stop streaming indicator after greeting
               } else if (data.type === 'token') {
                 fullContent += data.content;

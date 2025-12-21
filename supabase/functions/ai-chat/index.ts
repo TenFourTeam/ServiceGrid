@@ -5626,6 +5626,8 @@ RESPONSE STYLE:
           // Buffer for tool calls (they stream in chunks)
           let toolCallsBuffer: Record<number, any> = {};
           let isCollectingToolCalls = false;
+          let toolResultsCollected: Record<string, any> = {};
+          let executedToolCalls: Array<{ id: string; name: string; arguments: string }> = [];
 
           while (true) {
             const { done, value } = await reader.read();
@@ -5706,6 +5708,14 @@ RESPONSE STYLE:
 
                           const result = await tool.execute(args, context);
                           
+                          // Store tool result for follow-up AI call
+                          toolResultsCollected[tool.name] = result;
+                          executedToolCalls.push({
+                            id: `call_${index}`,
+                            name: tool.name,
+                            arguments: toolCall.function.arguments || '{}'
+                          });
+                          
                           // Learn preferences from tool execution
                           try {
                             await learnFromToolExecution(memoryCtx, tool.name, args, result);
@@ -5742,6 +5752,90 @@ RESPONSE STYLE:
                   console.error('Error parsing streaming data:', e);
                 }
               }
+            }
+          }
+
+          // FOLLOW-UP AI CALL: If tools were executed, call AI again to interpret results
+          if (Object.keys(toolResultsCollected).length > 0 && executedToolCalls.length > 0) {
+            console.log('[ai-chat] Tools executed, calling AI for follow-up interpretation');
+            
+            // Build messages with tool results for follow-up
+            const messagesWithToolResults = [
+              ...aiMessages,
+              { 
+                role: 'assistant' as const, 
+                content: fullResponse || null,
+                tool_calls: executedToolCalls.map(tc => ({
+                  id: tc.id,
+                  type: 'function' as const,
+                  function: { name: tc.name, arguments: tc.arguments }
+                }))
+              },
+              ...executedToolCalls.map(tc => ({
+                role: 'tool' as const,
+                tool_call_id: tc.id,
+                content: JSON.stringify(toolResultsCollected[tc.name] || { success: true })
+              }))
+            ];
+            
+            try {
+              const followUpResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${lovableApiKey}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  model: 'google/gemini-2.5-flash',
+                  messages: messagesWithToolResults,
+                  stream: true,
+                  // No tools - just get the response interpretation
+                }),
+              });
+
+              if (followUpResponse.ok && followUpResponse.body) {
+                const followUpReader = followUpResponse.body.getReader();
+                const followUpDecoder = new TextDecoder();
+                let followUpBuffer = '';
+
+                while (true) {
+                  const { done, value } = await followUpReader.read();
+                  if (done) break;
+
+                  followUpBuffer += followUpDecoder.decode(value, { stream: true });
+                  const lines = followUpBuffer.split('\n');
+                  followUpBuffer = lines.pop() || '';
+
+                  for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                      const data = line.slice(6);
+                      if (data === '[DONE]') continue;
+
+                      try {
+                        const parsed = JSON.parse(data);
+                        const delta = parsed.choices?.[0]?.delta;
+
+                        if (delta?.content) {
+                          fullResponse += delta.content;
+                          controller.enqueue(
+                            encoder.encode(`data: ${JSON.stringify({ type: 'token', content: delta.content })}\n\n`)
+                          );
+                        }
+                      } catch (e) {
+                        // Ignore parsing errors in follow-up
+                      }
+                    }
+                  }
+                }
+              }
+            } catch (followUpErr) {
+              console.error('[ai-chat] Follow-up AI call failed (non-fatal):', followUpErr);
+              // If follow-up fails, at least acknowledge the tool ran
+              const fallbackMsg = "I've completed the action. Is there anything else you'd like me to help with?";
+              fullResponse += fallbackMsg;
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ type: 'token', content: fallbackMsg })}\n\n`)
+              );
             }
           }
 
