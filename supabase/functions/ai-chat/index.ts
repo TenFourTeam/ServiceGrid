@@ -4010,6 +4010,872 @@ const tools: Record<string, Tool> = {
 
       return undoResult;
     }
+  },
+
+  // ============================================
+  // PHASE A: TIME TRACKING TOOLS
+  // ============================================
+
+  clock_in: {
+    name: 'clock_in',
+    description: 'Clock in to start tracking time, optionally for a specific job',
+    parameters: {
+      type: 'object',
+      properties: {
+        jobId: { type: 'string', description: 'Optional job ID to clock in for' },
+        notes: { type: 'string', description: 'Optional notes for the time entry' }
+      }
+    },
+    execute: async (args: any, context: any) => {
+      // Check if already clocked in
+      const { data: activeEntry } = await context.supabase
+        .from('timesheet_entries')
+        .select('id')
+        .eq('business_id', context.businessId)
+        .eq('user_id', context.userId)
+        .is('clock_out', null)
+        .single();
+
+      if (activeEntry) {
+        return {
+          success: false,
+          message: 'Already clocked in. Please clock out first.'
+        };
+      }
+
+      const entryData: any = {
+        business_id: context.businessId,
+        user_id: context.userId,
+        clock_in: new Date().toISOString(),
+        notes: args.notes
+      };
+
+      if (args.jobId) {
+        entryData.job_id = args.jobId;
+      }
+
+      const { data: entry, error } = await context.supabase
+        .from('timesheet_entries')
+        .insert(entryData)
+        .select('*, jobs(title, customers(name))')
+        .single();
+
+      if (error) throw error;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'clock_in',
+        description: args.jobId 
+          ? `Clocked in for job: ${entry.jobs?.title || 'Unknown'}`
+          : 'Clocked in (no job)',
+        metadata: { tool: 'clock_in', entry_id: entry.id, job_id: args.jobId }
+      });
+
+      return {
+        success: true,
+        entry_id: entry.id,
+        clocked_in_at: entry.clock_in,
+        job_title: entry.jobs?.title,
+        customer_name: entry.jobs?.customers?.name
+      };
+    }
+  },
+
+  clock_out: {
+    name: 'clock_out',
+    description: 'Clock out to stop tracking time for the current active entry',
+    parameters: {
+      type: 'object',
+      properties: {
+        notes: { type: 'string', description: 'Optional notes to add to the time entry' }
+      }
+    },
+    execute: async (args: any, context: any) => {
+      // Find active entry
+      const { data: activeEntry } = await context.supabase
+        .from('timesheet_entries')
+        .select('*, jobs(title)')
+        .eq('business_id', context.businessId)
+        .eq('user_id', context.userId)
+        .is('clock_out', null)
+        .single();
+
+      if (!activeEntry) {
+        return {
+          success: false,
+          message: 'Not currently clocked in.'
+        };
+      }
+
+      const clockOutTime = new Date().toISOString();
+      const updates: any = { clock_out: clockOutTime };
+      
+      if (args.notes) {
+        updates.notes = activeEntry.notes 
+          ? `${activeEntry.notes}\n${args.notes}` 
+          : args.notes;
+      }
+
+      const { error } = await context.supabase
+        .from('timesheet_entries')
+        .update(updates)
+        .eq('id', activeEntry.id);
+
+      if (error) throw error;
+
+      const hoursWorked = (new Date(clockOutTime).getTime() - new Date(activeEntry.clock_in).getTime()) / 3600000;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'clock_out',
+        description: `Clocked out after ${hoursWorked.toFixed(1)} hours`,
+        metadata: { tool: 'clock_out', entry_id: activeEntry.id, hours: hoursWorked.toFixed(1) }
+      });
+
+      return {
+        success: true,
+        entry_id: activeEntry.id,
+        clocked_in_at: activeEntry.clock_in,
+        clocked_out_at: clockOutTime,
+        hours_worked: Math.round(hoursWorked * 100) / 100,
+        job_title: activeEntry.jobs?.title
+      };
+    }
+  },
+
+  log_time_entry: {
+    name: 'log_time_entry',
+    description: 'Manually log a completed time entry with specific start and end times',
+    parameters: {
+      type: 'object',
+      properties: {
+        startTime: { type: 'string', description: 'Start time in ISO format' },
+        endTime: { type: 'string', description: 'End time in ISO format' },
+        jobId: { type: 'string', description: 'Optional job ID' },
+        notes: { type: 'string', description: 'Notes for the entry' }
+      },
+      required: ['startTime', 'endTime']
+    },
+    execute: async (args: any, context: any) => {
+      const { data: entry, error } = await context.supabase
+        .from('timesheet_entries')
+        .insert({
+          business_id: context.businessId,
+          user_id: context.userId,
+          clock_in: args.startTime,
+          clock_out: args.endTime,
+          job_id: args.jobId,
+          notes: args.notes
+        })
+        .select('*, jobs(title)')
+        .single();
+
+      if (error) throw error;
+
+      const hoursWorked = (new Date(args.endTime).getTime() - new Date(args.startTime).getTime()) / 3600000;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'log_time',
+        description: `Logged ${hoursWorked.toFixed(1)} hours${args.jobId ? ` for ${entry.jobs?.title}` : ''}`,
+        metadata: { tool: 'log_time_entry', entry_id: entry.id, hours: hoursWorked.toFixed(1) }
+      });
+
+      return {
+        success: true,
+        entry_id: entry.id,
+        hours_logged: Math.round(hoursWorked * 100) / 100,
+        job_title: entry.jobs?.title
+      };
+    }
+  },
+
+  // ============================================
+  // PHASE A: TEAM MANAGEMENT TOOLS
+  // ============================================
+
+  invite_team_member: {
+    name: 'invite_team_member',
+    description: 'Send an invitation to add a new team member by email',
+    parameters: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', description: 'Email address to invite' },
+        role: { type: 'string', enum: ['worker', 'owner'], description: 'Role for the new member (default: worker)' }
+      },
+      required: ['email']
+    },
+    execute: async (args: any, context: any) => {
+      // Check if user already exists and is a member
+      const { data: existingMember } = await context.supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', args.email)
+        .single();
+
+      if (existingMember) {
+        // Check if already a member of this business
+        const { data: membership } = await context.supabase
+          .from('business_permissions')
+          .select('id')
+          .eq('business_id', context.businessId)
+          .eq('user_id', existingMember.id)
+          .single();
+
+        if (membership) {
+          return {
+            success: false,
+            message: `${args.email} is already a member of this business.`
+          };
+        }
+      }
+
+      // Check for existing pending invite
+      const { data: existingInvite } = await context.supabase
+        .from('invites')
+        .select('id')
+        .eq('business_id', context.businessId)
+        .eq('invited_user_id', existingMember?.id || 'none')
+        .is('redeemed_at', null)
+        .is('revoked_at', null)
+        .single();
+
+      if (existingInvite) {
+        return {
+          success: false,
+          message: `An invite is already pending for ${args.email}.`
+        };
+      }
+
+      // Create invite via edge function
+      const { data, error } = await context.supabase.functions.invoke('create-invites', {
+        body: {
+          businessId: context.businessId,
+          invitedUserId: existingMember?.id,
+          email: args.email,
+          role: args.role || 'worker'
+        }
+      });
+
+      if (error) throw error;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'invite',
+        description: `Invited ${args.email} as ${args.role || 'worker'}`,
+        metadata: { tool: 'invite_team_member', email: args.email, role: args.role }
+      });
+
+      return {
+        success: true,
+        email: args.email,
+        role: args.role || 'worker',
+        message: `Invitation sent to ${args.email}`
+      };
+    }
+  },
+
+  update_team_availability: {
+    name: 'update_team_availability',
+    description: 'Update availability/working hours for a team member',
+    parameters: {
+      type: 'object',
+      properties: {
+        userId: { type: 'string', description: 'Team member user ID (defaults to current user)' },
+        dayOfWeek: { type: 'number', description: 'Day of week (0=Sunday, 6=Saturday)' },
+        startTime: { type: 'string', description: 'Start time in HH:MM format' },
+        endTime: { type: 'string', description: 'End time in HH:MM format' },
+        isAvailable: { type: 'boolean', description: 'Whether available on this day' }
+      },
+      required: ['dayOfWeek']
+    },
+    execute: async (args: any, context: any) => {
+      const targetUserId = args.userId || context.userId;
+
+      const { error } = await context.supabase
+        .from('team_availability')
+        .upsert({
+          business_id: context.businessId,
+          user_id: targetUserId,
+          day_of_week: args.dayOfWeek,
+          start_time: args.startTime || '09:00',
+          end_time: args.endTime || '17:00',
+          is_available: args.isAvailable !== false
+        }, {
+          onConflict: 'business_id,user_id,day_of_week'
+        });
+
+      if (error) throw error;
+
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'update',
+        description: `Updated availability for ${dayNames[args.dayOfWeek]}`,
+        metadata: { tool: 'update_team_availability', target_user_id: targetUserId }
+      });
+
+      return {
+        success: true,
+        day: dayNames[args.dayOfWeek],
+        start_time: args.startTime || '09:00',
+        end_time: args.endTime || '17:00',
+        is_available: args.isAvailable !== false
+      };
+    }
+  },
+
+  request_time_off: {
+    name: 'request_time_off',
+    description: 'Submit a time off request',
+    parameters: {
+      type: 'object',
+      properties: {
+        startDate: { type: 'string', description: 'Start date (YYYY-MM-DD)' },
+        endDate: { type: 'string', description: 'End date (YYYY-MM-DD)' },
+        reason: { type: 'string', description: 'Reason for time off' },
+        type: { type: 'string', enum: ['vacation', 'sick', 'personal', 'other'], description: 'Type of time off' }
+      },
+      required: ['startDate', 'endDate']
+    },
+    execute: async (args: any, context: any) => {
+      const { data: request, error } = await context.supabase
+        .from('time_off_requests')
+        .insert({
+          business_id: context.businessId,
+          user_id: context.userId,
+          start_date: args.startDate,
+          end_date: args.endDate,
+          reason: args.reason,
+          request_type: args.type || 'vacation',
+          status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'request',
+        description: `Requested time off from ${args.startDate} to ${args.endDate}`,
+        metadata: { tool: 'request_time_off', request_id: request.id }
+      });
+
+      return {
+        success: true,
+        request_id: request.id,
+        start_date: args.startDate,
+        end_date: args.endDate,
+        status: 'pending'
+      };
+    }
+  },
+
+  approve_time_off: {
+    name: 'approve_time_off',
+    description: 'Approve or deny a time off request (owner only)',
+    parameters: {
+      type: 'object',
+      properties: {
+        requestId: { type: 'string', description: 'Time off request ID' },
+        approved: { type: 'boolean', description: 'Whether to approve (true) or deny (false)' },
+        notes: { type: 'string', description: 'Optional response notes' }
+      },
+      required: ['requestId', 'approved']
+    },
+    execute: async (args: any, context: any) => {
+      const { data: request } = await context.supabase
+        .from('time_off_requests')
+        .select('*, profiles(full_name)')
+        .eq('id', args.requestId)
+        .eq('business_id', context.businessId)
+        .single();
+
+      if (!request) throw new Error('Time off request not found');
+
+      const newStatus = args.approved ? 'approved' : 'denied';
+
+      const { error } = await context.supabase
+        .from('time_off_requests')
+        .update({
+          status: newStatus,
+          reviewed_by: context.userId,
+          reviewed_at: new Date().toISOString(),
+          review_notes: args.notes
+        })
+        .eq('id', args.requestId);
+
+      if (error) throw error;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: args.approved ? 'approve' : 'deny',
+        description: `${args.approved ? 'Approved' : 'Denied'} time off for ${request.profiles?.full_name}`,
+        metadata: { tool: 'approve_time_off', request_id: args.requestId }
+      });
+
+      return {
+        success: true,
+        request_id: args.requestId,
+        member_name: request.profiles?.full_name,
+        status: newStatus
+      };
+    }
+  },
+
+  // ============================================
+  // PHASE A: QUOTE APPROVAL TOOLS
+  // ============================================
+
+  approve_quote: {
+    name: 'approve_quote',
+    description: 'Mark a quote as approved by the customer',
+    parameters: {
+      type: 'object',
+      properties: {
+        quoteId: { type: 'string', description: 'Quote ID to approve' }
+      },
+      required: ['quoteId']
+    },
+    execute: async (args: any, context: any) => {
+      const { data: quote } = await context.supabase
+        .from('quotes')
+        .select('number, total, customers(name)')
+        .eq('id', args.quoteId)
+        .eq('business_id', context.businessId)
+        .single();
+
+      if (!quote) throw new Error('Quote not found');
+
+      const { error } = await context.supabase
+        .from('quotes')
+        .update({
+          status: 'Approved',
+          approved_at: new Date().toISOString()
+        })
+        .eq('id', args.quoteId);
+
+      if (error) throw error;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'approve',
+        description: `Approved quote ${quote.number} for ${quote.customers?.name}`,
+        metadata: { tool: 'approve_quote', quote_id: args.quoteId, total: quote.total }
+      });
+
+      return {
+        success: true,
+        quote_id: args.quoteId,
+        quote_number: quote.number,
+        customer_name: quote.customers?.name,
+        total: quote.total
+      };
+    }
+  },
+
+  decline_quote: {
+    name: 'decline_quote',
+    description: 'Mark a quote as declined by the customer',
+    parameters: {
+      type: 'object',
+      properties: {
+        quoteId: { type: 'string', description: 'Quote ID to decline' },
+        reason: { type: 'string', description: 'Reason for declining' }
+      },
+      required: ['quoteId']
+    },
+    execute: async (args: any, context: any) => {
+      const { data: quote } = await context.supabase
+        .from('quotes')
+        .select('number, customers(name)')
+        .eq('id', args.quoteId)
+        .eq('business_id', context.businessId)
+        .single();
+
+      if (!quote) throw new Error('Quote not found');
+
+      const { error } = await context.supabase
+        .from('quotes')
+        .update({
+          status: 'Declined',
+          notes: args.reason ? `[DECLINED] ${args.reason}` : '[DECLINED]'
+        })
+        .eq('id', args.quoteId);
+
+      if (error) throw error;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'decline',
+        description: `Declined quote ${quote.number}${args.reason ? `: ${args.reason}` : ''}`,
+        metadata: { tool: 'decline_quote', quote_id: args.quoteId, reason: args.reason }
+      });
+
+      return {
+        success: true,
+        quote_id: args.quoteId,
+        quote_number: quote.number,
+        customer_name: quote.customers?.name,
+        reason: args.reason
+      };
+    }
+  },
+
+  // ============================================
+  // PHASE A: CHECKLIST TOOLS
+  // ============================================
+
+  create_checklist_template: {
+    name: 'create_checklist_template',
+    description: 'Create a new checklist template with items',
+    parameters: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Template name' },
+        description: { type: 'string', description: 'Template description' },
+        category: { type: 'string', description: 'Category (e.g., Cleaning, Maintenance)' },
+        items: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              title: { type: 'string' },
+              description: { type: 'string' },
+              required_photo_count: { type: 'number' }
+            }
+          },
+          description: 'Array of checklist items'
+        }
+      },
+      required: ['name', 'items']
+    },
+    execute: async (args: any, context: any) => {
+      // Create template
+      const { data: template, error } = await context.supabase
+        .from('sg_checklist_templates')
+        .insert({
+          business_id: context.businessId,
+          name: args.name,
+          description: args.description,
+          category: args.category,
+          created_by: context.userId,
+          is_system_template: false,
+          version: 1
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Create items
+      if (args.items && args.items.length > 0) {
+        const itemsData = args.items.map((item: any, idx: number) => ({
+          template_id: template.id,
+          title: item.title,
+          description: item.description,
+          position: idx,
+          required_photo_count: item.required_photo_count || 0
+        }));
+
+        await context.supabase.from('sg_checklist_template_items').insert(itemsData);
+      }
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'create',
+        description: `Created checklist template: ${args.name}`,
+        metadata: { tool: 'create_checklist_template', template_id: template.id, item_count: args.items?.length || 0 }
+      });
+
+      return {
+        success: true,
+        template_id: template.id,
+        name: args.name,
+        item_count: args.items?.length || 0
+      };
+    }
+  },
+
+  complete_checklist_item: {
+    name: 'complete_checklist_item',
+    description: 'Mark a checklist item as completed',
+    parameters: {
+      type: 'object',
+      properties: {
+        itemId: { type: 'string', description: 'Checklist item ID' },
+        notes: { type: 'string', description: 'Completion notes' }
+      },
+      required: ['itemId']
+    },
+    execute: async (args: any, context: any) => {
+      const { data: item } = await context.supabase
+        .from('sg_checklist_items')
+        .select('*, sg_checklists(job_id, jobs(title))')
+        .eq('id', args.itemId)
+        .single();
+
+      if (!item) throw new Error('Checklist item not found');
+
+      const { error } = await context.supabase
+        .from('sg_checklist_items')
+        .update({
+          is_completed: true,
+          completed_at: new Date().toISOString(),
+          completed_by: context.userId,
+          completion_notes: args.notes
+        })
+        .eq('id', args.itemId);
+
+      if (error) throw error;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'complete',
+        description: `Completed checklist item: ${item.name}`,
+        metadata: { tool: 'complete_checklist_item', item_id: args.itemId }
+      });
+
+      return {
+        success: true,
+        item_id: args.itemId,
+        item_name: item.name,
+        job_title: item.sg_checklists?.jobs?.title
+      };
+    }
+  },
+
+  // ============================================
+  // PHASE A: CUSTOMER PORTAL MESSAGING
+  // ============================================
+
+  get_customer_messages: {
+    name: 'get_customer_messages',
+    description: 'Get messages from the customer portal for a specific customer',
+    parameters: {
+      type: 'object',
+      properties: {
+        customerId: { type: 'string', description: 'Customer ID' },
+        limit: { type: 'number', description: 'Max messages to return (default: 20)' }
+      },
+      required: ['customerId']
+    },
+    execute: async (args: any, context: any) => {
+      const { data: messages, error } = await context.supabase
+        .from('customer_messages')
+        .select('*, customers(name)')
+        .eq('customer_id', args.customerId)
+        .eq('business_id', context.businessId)
+        .order('created_at', { ascending: false })
+        .limit(args.limit || 20);
+
+      if (error) throw error;
+
+      const unreadCount = (messages || []).filter((m: any) => !m.read_at && m.direction === 'inbound').length;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'query',
+        description: `Retrieved ${messages?.length || 0} messages for customer`,
+        metadata: { tool: 'get_customer_messages', customer_id: args.customerId }
+      });
+
+      return {
+        messages: messages || [],
+        count: messages?.length || 0,
+        unread_count: unreadCount
+      };
+    }
+  },
+
+  send_customer_message: {
+    name: 'send_customer_message',
+    description: 'Send a message to a customer through the portal',
+    parameters: {
+      type: 'object',
+      properties: {
+        customerId: { type: 'string', description: 'Customer ID' },
+        message: { type: 'string', description: 'Message content' },
+        jobId: { type: 'string', description: 'Optional related job ID' }
+      },
+      required: ['customerId', 'message']
+    },
+    execute: async (args: any, context: any) => {
+      const { data: customer } = await context.supabase
+        .from('customers')
+        .select('name, email')
+        .eq('id', args.customerId)
+        .single();
+
+      if (!customer) throw new Error('Customer not found');
+
+      const { data: message, error } = await context.supabase
+        .from('customer_messages')
+        .insert({
+          business_id: context.businessId,
+          customer_id: args.customerId,
+          job_id: args.jobId,
+          content: args.message,
+          direction: 'outbound',
+          sent_by: context.userId
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'message',
+        description: `Sent message to ${customer.name}`,
+        metadata: { tool: 'send_customer_message', customer_id: args.customerId, message_id: message.id }
+      });
+
+      return {
+        success: true,
+        message_id: message.id,
+        customer_name: customer.name,
+        preview: args.message.substring(0, 100)
+      };
+    }
+  },
+
+  // ============================================
+  // PHASE A: RECURRING BILLING TOOLS
+  // ============================================
+
+  create_recurring_schedule: {
+    name: 'create_recurring_schedule',
+    description: 'Create a recurring billing schedule from a quote',
+    parameters: {
+      type: 'object',
+      properties: {
+        quoteId: { type: 'string', description: 'Quote ID to base recurring schedule on' },
+        frequency: { type: 'string', enum: ['weekly', 'biweekly', 'monthly', 'quarterly', 'yearly'], description: 'Billing frequency' },
+        startDate: { type: 'string', description: 'First billing date (YYYY-MM-DD)' }
+      },
+      required: ['quoteId', 'frequency', 'startDate']
+    },
+    execute: async (args: any, context: any) => {
+      const { data: quote } = await context.supabase
+        .from('quotes')
+        .select('number, total, customers(name)')
+        .eq('id', args.quoteId)
+        .eq('business_id', context.businessId)
+        .single();
+
+      if (!quote) throw new Error('Quote not found');
+
+      const { data: schedule, error } = await context.supabase
+        .from('recurring_schedules')
+        .insert({
+          business_id: context.businessId,
+          quote_id: args.quoteId,
+          frequency: args.frequency,
+          next_billing_date: args.startDate,
+          status: 'active'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Update quote to mark as recurring
+      await context.supabase
+        .from('quotes')
+        .update({ frequency: args.frequency })
+        .eq('id', args.quoteId);
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'create',
+        description: `Created ${args.frequency} recurring schedule for ${quote.customers?.name}`,
+        metadata: { tool: 'create_recurring_schedule', schedule_id: schedule.id, quote_id: args.quoteId }
+      });
+
+      return {
+        success: true,
+        schedule_id: schedule.id,
+        quote_number: quote.number,
+        customer_name: quote.customers?.name,
+        frequency: args.frequency,
+        next_billing_date: args.startDate
+      };
+    }
+  },
+
+  cancel_subscription: {
+    name: 'cancel_subscription',
+    description: 'Cancel/end a recurring billing schedule',
+    parameters: {
+      type: 'object',
+      properties: {
+        scheduleId: { type: 'string', description: 'Recurring schedule ID' },
+        reason: { type: 'string', description: 'Reason for cancellation' },
+        cancelImmediately: { type: 'boolean', description: 'Cancel immediately vs end of current period' }
+      },
+      required: ['scheduleId']
+    },
+    execute: async (args: any, context: any) => {
+      const { data: schedule } = await context.supabase
+        .from('recurring_schedules')
+        .select('*, quotes(number, customers(name))')
+        .eq('id', args.scheduleId)
+        .eq('business_id', context.businessId)
+        .single();
+
+      if (!schedule) throw new Error('Recurring schedule not found');
+
+      const updates: any = {
+        status: 'canceled',
+        canceled_at: new Date().toISOString(),
+        cancellation_reason: args.reason
+      };
+
+      if (!args.cancelImmediately) {
+        updates.cancel_at_period_end = true;
+        updates.status = 'active'; // Keep active until period ends
+      }
+
+      const { error } = await context.supabase
+        .from('recurring_schedules')
+        .update(updates)
+        .eq('id', args.scheduleId);
+
+      if (error) throw error;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'cancel',
+        description: `Canceled recurring schedule for ${schedule.quotes?.customers?.name}`,
+        metadata: { tool: 'cancel_subscription', schedule_id: args.scheduleId, reason: args.reason }
+      });
+
+      return {
+        success: true,
+        schedule_id: args.scheduleId,
+        customer_name: schedule.quotes?.customers?.name,
+        canceled_immediately: args.cancelImmediately !== false,
+        reason: args.reason
+      };
+    }
   }
 };
 
