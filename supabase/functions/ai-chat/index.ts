@@ -5360,6 +5360,154 @@ Deno.serve(async (req) => {
       ? '\n\nIMAGE ANALYSIS CAPABILITY:\nYou can analyze images shared by field workers. When images are provided:\n- Identify problems, defects, or issues visible in photos\n- Provide step-by-step guidance for repairs or installations\n- Reference safety considerations\n- Suggest tools or materials needed\n- Give clear, actionable instructions'
       : '';
 
+    // ===============================================================
+    // PLAN APPROVAL/REJECTION CHECK - MUST RUN BEFORE ORCHESTRATOR!
+    // ===============================================================
+    // This prevents the orchestrator from misclassifying plan approval
+    // messages and triggering clarifications that close the stream.
+    const planApproval = detectPlanApproval(message);
+    console.info('[ai-chat] Plan approval check:', { 
+      isApproval: planApproval.isApproval, 
+      isRejection: planApproval.isRejection,
+      planId: planApproval.planId,
+      message: message.substring(0, 50)
+    });
+
+    if (planApproval.isApproval) {
+      // User approved a plan - execute it immediately
+      let pendingPlanData = planApproval.planId 
+        ? getPendingPlan(planApproval.planId)
+        : getMostRecentPendingPlan(userId);
+      
+      // If not in cache, try database
+      if (!pendingPlanData) {
+        console.info('[ai-chat] Plan not in cache, checking database...');
+        pendingPlanData = planApproval.planId 
+          ? await getPendingPlanAsync(planApproval.planId, memoryCtx)
+          : await getMostRecentPendingPlanAsync(memoryCtx);
+      }
+      
+      console.info('[ai-chat] Pending plan lookup result:', pendingPlanData ? 'found' : 'not found');
+      
+      if (pendingPlanData) {
+        const { plan, pattern, entities } = pendingPlanData;
+        
+        // Remove from pending (both cache and DB)
+        removePendingPlan(plan.id);
+        await removePendingPlanAsync(plan.id, memoryCtx);
+        
+        console.info('[ai-chat] Executing approved plan:', plan.id, plan.name);
+        
+        // Send initial executing status
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify({
+            type: 'step_progress',
+            planId: plan.id,
+            stepIndex: 0,
+            totalSteps: plan.steps.length,
+            step: { id: plan.steps[0].id, name: plan.steps[0].name, status: 'running' },
+            message: 'Starting plan execution...',
+          })}\n\n`)
+        );
+        
+        // Execute with progress streaming
+        const executionContext: ExecutionContext = {
+          supabase: supaAdmin,
+          businessId,
+          userId,
+          controller,
+          tools,
+        };
+        
+        const executedPlan = await executePlan(
+          plan,
+          executionContext,
+          entities,
+          pattern,
+          (result: PlannerResult) => {
+            // Real-time progress callback
+            if (result.type === 'step_progress' || result.type === 'step_complete') {
+              sendStepProgress(controller, result.plan, result.currentStep!, result.message);
+            } else if (result.type === 'plan_complete' || result.type === 'plan_failed') {
+              sendPlanComplete(controller, result.plan);
+            }
+          }
+        );
+        
+        // Log activity
+        await supaAdmin.from('ai_activity_log').insert({
+          business_id: businessId,
+          user_id: userId,
+          activity_type: 'multi_step_plan',
+          description: `Executed plan: ${plan.name} (${executedPlan.status})`,
+          metadata: {
+            plan_id: plan.id,
+            pattern_id: pattern.id,
+            steps: plan.steps.length,
+            successful: plan.steps.filter(s => s.status === 'completed').length,
+            failed: plan.steps.filter(s => s.status === 'failed').length,
+            rolled_back: executedPlan.rollbackSteps?.length || 0,
+            duration_ms: executedPlan.totalDurationMs,
+          },
+          accepted: executedPlan.status === 'completed',
+        });
+        
+        // Save summary as assistant message
+        const summaryMessage = executedPlan.status === 'completed'
+          ? `Plan "${plan.name}" completed successfully in ${Math.round((executedPlan.totalDurationMs || 0) / 1000)}s.`
+          : `Plan "${plan.name}" failed. ${executedPlan.rollbackSteps?.length || 0} steps were rolled back.`;
+        
+        await supaAdmin.from('ai_chat_messages').insert({
+          conversation_id: convId,
+          role: 'assistant',
+          content: summaryMessage,
+        });
+        
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`));
+        controller.close();
+        return;
+      }
+      // If no pending plan found, fall through to normal flow
+      console.warn('[ai-chat] Plan approval received but no pending plan found');
+    }
+    
+    if (planApproval.isRejection) {
+      // User rejected a plan - handle immediately
+      let pendingPlanData = planApproval.planId 
+        ? getPendingPlan(planApproval.planId)
+        : getMostRecentPendingPlan(userId);
+      
+      if (!pendingPlanData) {
+        pendingPlanData = planApproval.planId 
+          ? await getPendingPlanAsync(planApproval.planId, memoryCtx)
+          : await getMostRecentPendingPlanAsync(memoryCtx);
+      }
+      
+      if (pendingPlanData) {
+        const { plan } = pendingPlanData;
+        removePendingPlan(plan.id);
+        await removePendingPlanAsync(plan.id, memoryCtx);
+        
+        console.info('[ai-chat] Plan rejected:', plan.id);
+        
+        // Send cancellation confirmation
+        sendPlanCancelled(controller, plan.id, 'Plan cancelled. How else can I help?');
+        
+        // Save cancellation as assistant message
+        await supaAdmin.from('ai_chat_messages').insert({
+          conversation_id: convId,
+          role: 'assistant',
+          content: `Plan "${plan.name}" cancelled. How else can I help?`,
+        });
+        
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`));
+        controller.close();
+        return;
+      }
+      // If no pending plan found, fall through to normal flow
+      console.warn('[ai-chat] Plan rejection received but no pending plan found');
+    }
+
     // Use the agent orchestrator for intelligent prompt building
     const sessionContext: SessionContext = {
       businessId,
@@ -5596,143 +5744,8 @@ RESPONSE STYLE:
           }
 
           // ===============================================================
-          // MULTI-STEP PLAN DETECTION & EXECUTION
+          // MULTI-STEP PLAN DETECTION (approval/rejection handled earlier)
           // ===============================================================
-          
-          // First, check if this is a plan approval/rejection message
-          const planApproval = detectPlanApproval(message);
-          
-          if (planApproval.isApproval) {
-            // User approved a plan - execute it
-            // Try async DB lookup first, fall back to cache
-            let pendingPlanData = planApproval.planId 
-              ? getPendingPlan(planApproval.planId)
-              : getMostRecentPendingPlan(userId);
-            
-            // If not in cache, try database
-            if (!pendingPlanData) {
-              pendingPlanData = planApproval.planId 
-                ? await getPendingPlanAsync(planApproval.planId, memoryCtx)
-                : await getMostRecentPendingPlanAsync(memoryCtx);
-            }
-            
-            if (pendingPlanData) {
-              const { plan, pattern, entities } = pendingPlanData;
-              
-              // Remove from pending (both cache and DB)
-              removePendingPlan(plan.id);
-              await removePendingPlanAsync(plan.id, memoryCtx);
-              
-              console.info('[ai-chat] Executing approved plan:', plan.id, plan.name);
-              
-              // Send initial executing status
-              controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify({
-                  type: 'step_progress',
-                  planId: plan.id,
-                  stepIndex: 0,
-                  totalSteps: plan.steps.length,
-                  step: { id: plan.steps[0].id, name: plan.steps[0].name, status: 'running' },
-                  message: 'Starting plan execution...',
-                })}\n\n`)
-              );
-              
-              // Execute with progress streaming
-              const executionContext: ExecutionContext = {
-                supabase: supaAdmin,
-                businessId,
-                userId,
-                controller,
-                tools,
-              };
-              
-              const executedPlan = await executePlan(
-                plan,
-                executionContext,
-                entities,
-                pattern,
-                (result: PlannerResult) => {
-                  // Real-time progress callback
-                  if (result.type === 'step_progress' || result.type === 'step_complete') {
-                    sendStepProgress(controller, result.plan, result.currentStep!, result.message);
-                  } else if (result.type === 'plan_complete' || result.type === 'plan_failed') {
-                    sendPlanComplete(controller, result.plan);
-                  }
-                }
-              );
-              
-              // Log activity
-              await supaAdmin.from('ai_activity_log').insert({
-                business_id: businessId,
-                user_id: userId,
-                activity_type: 'multi_step_plan',
-                description: `Executed plan: ${plan.name} (${executedPlan.status})`,
-                metadata: {
-                  plan_id: plan.id,
-                  pattern_id: pattern.id,
-                  steps: plan.steps.length,
-                  successful: plan.steps.filter(s => s.status === 'completed').length,
-                  failed: plan.steps.filter(s => s.status === 'failed').length,
-                  rolled_back: executedPlan.rollbackSteps?.length || 0,
-                  duration_ms: executedPlan.totalDurationMs,
-                },
-                accepted: executedPlan.status === 'completed',
-              });
-              
-              // Save summary as assistant message
-              const summaryMessage = executedPlan.status === 'completed'
-                ? `✅ Plan "${plan.name}" completed successfully in ${Math.round((executedPlan.totalDurationMs || 0) / 1000)}s.`
-                : `❌ Plan "${plan.name}" failed. ${executedPlan.rollbackSteps?.length || 0} steps were rolled back.`;
-              
-              await supaAdmin.from('ai_chat_messages').insert({
-                conversation_id: convId,
-                role: 'assistant',
-                content: summaryMessage,
-              });
-              
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`));
-              controller.close();
-              return;
-            }
-            // If no pending plan found, continue with normal AI flow
-          }
-          
-          if (planApproval.isRejection) {
-            // User rejected a plan - try cache first, then DB
-            let pendingPlanData = planApproval.planId 
-              ? getPendingPlan(planApproval.planId)
-              : getMostRecentPendingPlan(userId);
-            
-            if (!pendingPlanData) {
-              pendingPlanData = planApproval.planId 
-                ? await getPendingPlanAsync(planApproval.planId, memoryCtx)
-                : await getMostRecentPendingPlanAsync(memoryCtx);
-            }
-            
-            if (pendingPlanData) {
-              const { plan } = pendingPlanData;
-              removePendingPlan(plan.id);
-              await removePendingPlanAsync(plan.id, memoryCtx);
-              
-              console.info('[ai-chat] Plan rejected:', plan.id);
-              
-              // Send cancellation confirmation
-              sendPlanCancelled(controller, plan.id, 'Plan cancelled. How else can I help?');
-              
-              // Save cancellation as assistant message
-              await supaAdmin.from('ai_chat_messages').insert({
-                conversation_id: convId,
-                role: 'assistant',
-                content: `Plan "${plan.name}" cancelled. How else can I help?`,
-              });
-              
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`));
-              controller.close();
-              return;
-            }
-            // If no pending plan found, continue with normal AI flow
-          }
-          
           // Check if this is a multi-step task that needs a plan
           const { isMultiStep, pattern: multiStepPattern } = detectMultiStepTask(
             message, 
