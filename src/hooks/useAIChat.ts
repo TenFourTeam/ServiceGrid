@@ -63,6 +63,7 @@ export interface Message {
     tool: string;
     status: 'executing' | 'complete' | 'error';
     result?: any;
+    reversible?: boolean;
   }>;
   actions?: Array<{
     action: string;
@@ -77,9 +78,13 @@ export interface Message {
   planProgress?: PlanProgressData;
 }
 
+// Navigation event handler type
+type NavigationHandler = (url: string, entityName?: string) => void;
+
 interface UseAIChatOptions {
   conversationId?: string;
   onNewConversation?: (id: string) => void;
+  onNavigate?: NavigationHandler;
 }
 
 export function useAIChat(options?: UseAIChatOptions) {
@@ -92,6 +97,13 @@ export function useAIChat(options?: UseAIChatOptions) {
   const { businessId } = useBusinessContext();
   const { getToken } = useAuth();
   const { uploadMedia } = useConversationMediaUpload();
+
+  // Reversible tools for undo functionality
+  const reversibleTools = new Set([
+    'update_job_status', 'update_job', 'update_customer', 'update_quote',
+    'reschedule_job', 'auto_schedule_job', 'batch_schedule_jobs',
+    'assign_team_member', 'clock_in', 'clock_out', 'approve_quote', 'approve_time_off'
+  ]);
 
   const sendMessage = useCallback(async (content: string, attachments?: File[], context?: any) => {
     if (!businessId || (!content.trim() && (!attachments || attachments.length === 0))) return;
@@ -241,12 +253,13 @@ export function useAIChat(options?: UseAIChatOptions) {
                 setCurrentToolName(null); // Clear tool name when streaming starts
               } else if (data.type === 'tool_call') {
                 // Create a system message for tool execution
+                const isReversible = reversibleTools.has(data.tool);
                 const toolSystemMessage: Message = {
                   id: `tool-${data.tool}-${Date.now()}`,
                   role: 'system',
                   content: `Executing: ${data.tool}`,
                   timestamp: new Date(),
-                  toolCalls: [{ tool: data.tool, status: 'executing' as const }]
+                  toolCalls: [{ tool: data.tool, status: 'executing' as const, reversible: isReversible }]
                 };
                 
                 setCurrentToolName(data.tool);
@@ -269,6 +282,8 @@ export function useAIChat(options?: UseAIChatOptions) {
                   });
                 }
               } else if (data.type === 'tool_result') {
+                const isReversible = reversibleTools.has(data.tool);
+                
                 // Update tool system message to mark complete
                 setMessages(prev => {
                   const toolMsgIndex = prev.findIndex(m => 
@@ -280,12 +295,24 @@ export function useAIChat(options?: UseAIChatOptions) {
                     const updated = [...prev];
                     updated[toolMsgIndex] = {
                       ...updated[toolMsgIndex],
-                      toolCalls: [{ tool: data.tool, status: 'complete' as const, result: data.result }]
+                      toolCalls: [{ 
+                        tool: data.tool, 
+                        status: 'complete' as const, 
+                        result: data.result,
+                        reversible: isReversible
+                      }]
                     };
                     return updated;
                   }
                   return prev;
                 });
+                
+                // Handle navigation tool results
+                if (data.tool === 'navigate_to_entity' && data.result?.url) {
+                  options?.onNavigate?.(data.result.url, data.result.entityName);
+                } else if (data.tool === 'navigate_to_calendar' && data.result?.url) {
+                  options?.onNavigate?.(data.result.url, 'Calendar');
+                }
                 
                 // Show success toast
                 if (data.success !== false) {
@@ -551,7 +578,7 @@ export function useAIChat(options?: UseAIChatOptions) {
       setCurrentStreamingMessage('');
       abortControllerRef.current = null;
     }
-  }, [businessId, conversationId, getToken, options]);
+  }, [businessId, conversationId, getToken, options, uploadMedia, reversibleTools]);
 
   const stopStreaming = useCallback(() => {
     abortControllerRef.current?.abort();
