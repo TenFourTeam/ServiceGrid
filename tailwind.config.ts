@@ -171,6 +171,17 @@ export default {
 					'0%': { transform: 'scale(0) rotate(0deg)', opacity: '1' },
 					'50%': { transform: 'scale(1.2) rotate(180deg)', opacity: '1' },
 					'100%': { transform: 'scale(0) rotate(360deg)', opacity: '0' }
+				},
+				'confetti-fall': {
+					'0%': { transform: 'translateY(0) rotate(0deg) scale(1)', opacity: '1' },
+					'25%': { transform: 'translateY(40px) rotate(180deg) scale(1.1)', opacity: '0.9' },
+					'50%': { transform: 'translateY(80px) rotate(360deg) scale(0.9)', opacity: '0.7' },
+					'75%': { transform: 'translateY(120px) rotate(540deg) scale(0.8)', opacity: '0.4' },
+					'100%': { transform: 'translateY(160px) rotate(720deg) scale(0.5)', opacity: '0' }
+				},
+				'glow-pulse': {
+					'0%, 100%': { boxShadow: '0 0 5px hsl(var(--primary) / 0.2)' },
+					'50%': { boxShadow: '0 0 15px hsl(var(--primary) / 0.4)' }
 				}
 			},
 			animation: {
@@ -184,7 +195,9 @@ export default {
 				'step-success': 'step-success 0.5s ease-out forwards',
 				'celebrate-pulse': 'celebrate-pulse 1s ease-out',
 				'shake-error': 'shake-error 0.4s ease-out',
-				'confetti-burst': 'confetti-burst 0.6s ease-out forwards'
+				'confetti-burst': 'confetti-burst 0.6s ease-out forwards',
+				'confetti-fall': 'confetti-fall 1.5s ease-out forwards',
+				'glow-pulse': 'glow-pulse 2s ease-in-out infinite'
 			}
 		}
 	},

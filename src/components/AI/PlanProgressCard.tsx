@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { 
   CheckCircle2, 
@@ -13,6 +14,8 @@ import {
   Sparkles,
   AlertTriangle,
   Timer,
+  Code2,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect, useState, useRef } from 'react';
@@ -20,6 +23,7 @@ import { useEffect, useState, useRef } from 'react';
 export interface PlanStepProgress {
   id: string;
   name: string;
+  tool?: string;
   status: 'pending' | 'running' | 'completed' | 'failed' | 'rolled_back' | 'skipped';
   result?: any;
   error?: string;
@@ -44,6 +48,7 @@ export interface PlanProgressData {
 
 interface PlanProgressCardProps {
   progress: PlanProgressData;
+  onCancel?: () => void;
 }
 
 // Elapsed time hook for live timer
@@ -121,27 +126,32 @@ function getStatusBadge(status: PlanProgressData['status']) {
 }
 
 // Confetti particle component for celebration
-function ConfettiParticle({ delay, color }: { delay: number; color: string }) {
+function ConfettiParticle({ delay, color, index }: { delay: number; color: string; index: number }) {
+  const startX = 20 + (index * 15) % 60; // Spread particles horizontally
+  const rotation = index * 45;
+  
   return (
     <div
-      className="absolute w-2 h-2 rounded-full animate-confetti-burst"
+      className="absolute w-2 h-2 rounded-full animate-confetti-fall"
       style={{
         backgroundColor: color,
         animationDelay: `${delay}ms`,
-        left: `${Math.random() * 100}%`,
-        top: `${Math.random() * 50}%`,
+        left: `${startX}%`,
+        top: '-10px',
+        transform: `rotate(${rotation}deg)`,
       }}
     />
   );
 }
 
-export function PlanProgressCard({ progress }: PlanProgressCardProps) {
+export function PlanProgressCard({ progress, onCancel }: PlanProgressCardProps) {
   const [recentlyCompletedSteps, setRecentlyCompletedSteps] = useState<Set<string>>(new Set());
   const [showCelebration, setShowCelebration] = useState(false);
+  const [showToolNames, setShowToolNames] = useState(false);
   
   const completedSteps = progress.steps.filter(s => s.status === 'completed').length;
   const progressPercent = (completedSteps / progress.steps.length) * 100;
-  const isComplete = progress.status === 'completed' || progress.status === 'failed' || progress.status === 'rolled_back';
+  const isComplete = progress.status === 'completed' || progress.status === 'failed' || progress.status === 'rolled_back' || progress.status === 'cancelled';
   const isSuccess = progress.status === 'completed';
   const isExecuting = progress.status === 'executing';
   
@@ -179,7 +189,7 @@ export function PlanProgressCard({ progress }: PlanProgressCardProps) {
     if (isSuccess && !showCelebration) {
       setShowCelebration(true);
       // Reset after animation
-      setTimeout(() => setShowCelebration(false), 2000);
+      setTimeout(() => setShowCelebration(false), 2500);
     }
   }, [isSuccess]);
 
@@ -197,10 +207,13 @@ export function PlanProgressCard({ progress }: PlanProgressCardProps) {
       {showCelebration && (
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           {confettiColors.map((color, i) => (
-            <ConfettiParticle key={i} delay={i * 100} color={color} />
+            <ConfettiParticle key={`a-${i}`} delay={i * 80} color={color} index={i} />
           ))}
           {confettiColors.map((color, i) => (
-            <ConfettiParticle key={i + 5} delay={i * 100 + 50} color={color} />
+            <ConfettiParticle key={`b-${i}`} delay={i * 80 + 200} color={color} index={i + 5} />
+          ))}
+          {confettiColors.map((color, i) => (
+            <ConfettiParticle key={`c-${i}`} delay={i * 80 + 400} color={color} index={i + 10} />
           ))}
         </div>
       )}
@@ -243,19 +256,34 @@ export function PlanProgressCard({ progress }: PlanProgressCardProps) {
               </p>
             </div>
           </div>
-          {getStatusBadge(progress.status)}
+          <div className="flex items-center gap-2">
+            {getStatusBadge(progress.status)}
+            {/* Cancel button during execution */}
+            {isExecuting && onCancel && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onCancel}
+                className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive"
+              >
+                <X className="w-3.5 h-3.5 mr-1" />
+                Cancel
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* Progress bar */}
+        {/* Progress bar with glow effect during execution */}
         <div className="space-y-1.5">
           <Progress 
             value={progressPercent} 
             className={cn(
               "h-2 transition-all duration-500",
               progress.status === 'failed' && "[&>div]:bg-destructive",
-              progress.status === 'completed' && "[&>div]:bg-success"
+              progress.status === 'completed' && "[&>div]:bg-success",
+              isExecuting && "animate-glow-pulse"
             )}
           />
           <div className="flex justify-between text-xs text-muted-foreground">
@@ -287,6 +315,22 @@ export function PlanProgressCard({ progress }: PlanProgressCardProps) {
           </div>
         )}
 
+        {/* Tool visibility toggle */}
+        <div className="flex justify-end">
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "h-6 px-2 gap-1 text-xs",
+              showToolNames && "text-primary"
+            )}
+            onClick={() => setShowToolNames(!showToolNames)}
+          >
+            <Code2 className="w-3 h-3" />
+            {showToolNames ? 'Hide' : 'Show'} tools
+          </Button>
+        </div>
+
         {/* Steps list */}
         <div className="space-y-1">
           {progress.steps.map((step, index) => {
@@ -304,6 +348,7 @@ export function PlanProgressCard({ progress }: PlanProgressCardProps) {
                   step.status === 'rolled_back' && "bg-amber-500/10",
                   step.status === 'pending' && "opacity-50"
                 )}
+                style={{ animationDelay: `${index * 30}ms` }}
               >
                 {getStepIcon(step.status, isRecentlyCompleted)}
                 <div className="flex-1 min-w-0">
@@ -315,6 +360,11 @@ export function PlanProgressCard({ progress }: PlanProgressCardProps) {
                   )}>
                     {step.name}
                   </p>
+                  {showToolNames && step.tool && (
+                    <p className="text-xs text-muted-foreground font-mono truncate">
+                      {step.tool}
+                    </p>
+                  )}
                   {step.error && (
                     <p className="text-xs text-destructive truncate">
                       {step.error}
@@ -370,6 +420,14 @@ export function PlanProgressCard({ progress }: PlanProgressCardProps) {
               <p className="text-sm text-destructive mt-2 flex items-center gap-1.5 animate-fade-in">
                 <AlertTriangle className="w-4 h-4" />
                 Plan execution failed. See error above.
+              </p>
+            )}
+            
+            {/* Cancelled message */}
+            {progress.status === 'cancelled' && (
+              <p className="text-sm text-muted-foreground mt-2 flex items-center gap-1.5 animate-fade-in">
+                <X className="w-4 h-4" />
+                Plan execution was cancelled.
               </p>
             )}
             
