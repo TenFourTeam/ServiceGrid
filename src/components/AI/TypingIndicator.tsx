@@ -1,4 +1,4 @@
-import { Bot } from 'lucide-react';
+import { Bot, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface TypingIndicatorProps {
@@ -74,25 +74,30 @@ export function TypingIndicator({ toolName, className }: TypingIndicatorProps) {
   const statusMessage = toolName ? toolStatusMessages[toolName] : null;
 
   return (
-    <div className={cn('flex gap-3 mb-4 animate-fade-in', className)}>
-      {/* Avatar */}
-      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+    <div className={cn('flex gap-3 mb-5 animate-fade-in', className)}>
+      {/* Avatar with gradient */}
+      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center ring-1 ring-primary/10">
         <Bot className="w-4 h-4 text-primary" />
       </div>
 
-      {/* Typing bubble with animated dots */}
+      {/* Typing bubble with gradient */}
       <div className="flex-1 min-w-0">
-        <div className="inline-flex items-center gap-3 rounded-2xl px-4 py-3 bg-muted">
+        <div className="inline-flex items-center gap-3 rounded-2xl px-4 py-3 bg-gradient-to-br from-muted to-muted/50 border border-border/30">
           {/* Animated typing dots */}
-          <div className="flex gap-1">
-            <span className="w-2 h-2 rounded-full bg-primary/60 animate-bounce [animation-delay:0ms]" />
-            <span className="w-2 h-2 rounded-full bg-primary/60 animate-bounce [animation-delay:150ms]" />
-            <span className="w-2 h-2 rounded-full bg-primary/60 animate-bounce [animation-delay:300ms]" />
+          <div className="flex gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-primary/50 animate-[bounce_1s_ease-in-out_infinite]" />
+            <span className="w-2 h-2 rounded-full bg-primary/50 animate-[bounce_1s_ease-in-out_infinite_150ms]" />
+            <span className="w-2 h-2 rounded-full bg-primary/50 animate-[bounce_1s_ease-in-out_infinite_300ms]" />
           </div>
+          
+          {/* Status message with icon */}
           {statusMessage && (
-            <span className="text-xs text-muted-foreground">
-              {statusMessage}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <Sparkles className="w-3 h-3 text-primary/60" />
+              <span className="text-xs text-muted-foreground font-medium">
+                {statusMessage}...
+              </span>
+            </div>
           )}
         </div>
       </div>
