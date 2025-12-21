@@ -5032,7 +5032,13 @@ const tools: Record<string, Tool> = {
 
 // Helper function to fetch greeting context using context loader
 async function fetchGreetingContext(context: any) {
-  const [unscheduledJobs, todaysJobs, teamMembers, recentActivity, business] = await Promise.all([
+  const currentPage = context.currentPage || 'dashboard';
+  const today = new Date().toISOString().split('T')[0];
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+  const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
+  
+  // Base queries (always fetch)
+  const baseQueries = [
     // Unscheduled jobs count
     context.supabase
       .from('jobs')
@@ -5046,8 +5052,8 @@ async function fetchGreetingContext(context: any) {
       .from('jobs')
       .select('id', { count: 'exact', head: true })
       .eq('business_id', context.businessId)
-      .gte('starts_at', new Date().toISOString().split('T')[0])
-      .lt('starts_at', new Date(Date.now() + 86400000).toISOString().split('T')[0]),
+      .gte('starts_at', today)
+      .lt('starts_at', tomorrow),
     
     // Team members count
     context.supabase
@@ -5055,50 +5061,147 @@ async function fetchGreetingContext(context: any) {
       .select('user_id', { count: 'exact', head: true })
       .eq('business_id', context.businessId),
     
-    // Recent AI activity (last 3)
-    context.supabase
-      .from('ai_activity_log')
-      .select('activity_type, description, created_at')
-      .eq('business_id', context.businessId)
-      .order('created_at', { ascending: false })
-      .limit(3),
-    
     // Business info
     context.supabase
       .from('businesses')
       .select('name')
       .eq('id', context.businessId)
       .single()
+  ];
+  
+  // Page-specific queries
+  const pageQueries: Promise<any>[] = [];
+  
+  if (currentPage.includes('/customer')) {
+    // Recent customers (added this week)
+    pageQueries.push(
+      context.supabase
+        .from('customers')
+        .select('id', { count: 'exact', head: true })
+        .eq('business_id', context.businessId)
+        .gte('created_at', weekAgo)
+    );
+  } else if (currentPage.includes('/quote')) {
+    // Pending quotes
+    pageQueries.push(
+      context.supabase
+        .from('quotes')
+        .select('id', { count: 'exact', head: true })
+        .eq('business_id', context.businessId)
+        .eq('status', 'draft')
+    );
+  } else if (currentPage.includes('/invoice')) {
+    // Unpaid invoices
+    pageQueries.push(
+      context.supabase
+        .from('invoices')
+        .select('id', { count: 'exact', head: true })
+        .eq('business_id', context.businessId)
+        .eq('status', 'sent')
+    );
+    // Overdue invoices
+    pageQueries.push(
+      context.supabase
+        .from('invoices')
+        .select('id', { count: 'exact', head: true })
+        .eq('business_id', context.businessId)
+        .eq('status', 'sent')
+        .lt('due_at', today)
+    );
+  }
+  
+  const [unscheduledJobs, todaysJobs, teamMembers, business, ...pageResults] = await Promise.all([
+    ...baseQueries,
+    ...pageQueries
   ]);
 
   const hour = new Date().getHours();
   const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
-
-  return {
+  
+  // Build result with page-specific data
+  const result: any = {
     businessName: business.data?.name || 'your business',
     unscheduledCount: unscheduledJobs.count || 0,
     todaysJobsCount: todaysJobs.count || 0,
     teamMemberCount: teamMembers.count || 0,
-    recentActivity: recentActivity.data || [],
     timeOfDay,
-    currentPage: context.currentPage || 'dashboard'
+    currentPage
   };
+  
+  // Add page-specific counts
+  if (currentPage.includes('/customer') && pageResults[0]) {
+    result.recentCustomersCount = pageResults[0].count || 0;
+  } else if (currentPage.includes('/quote') && pageResults[0]) {
+    result.pendingQuotesCount = pageResults[0].count || 0;
+  } else if (currentPage.includes('/invoice')) {
+    result.unpaidInvoicesCount = pageResults[0]?.count || 0;
+    result.overdueInvoicesCount = pageResults[1]?.count || 0;
+  }
+
+  return result;
 }
 
 async function generateGreetingMessage(context: any): Promise<string> {
   const ctx = await fetchGreetingContext(context);
+  const page = ctx.currentPage || '';
   
   let greeting = `Good ${ctx.timeOfDay}! 👋 `;
   
-  // Concise status - max 1 sentence
-  if (ctx.unscheduledCount > 0 && ctx.todaysJobsCount > 0) {
-    greeting += `You have ${ctx.unscheduledCount} jobs to schedule and ${ctx.todaysJobsCount} on today's calendar.`;
-  } else if (ctx.unscheduledCount > 0) {
-    greeting += `You have ${ctx.unscheduledCount} job${ctx.unscheduledCount !== 1 ? 's' : ''} waiting to be scheduled.`;
-  } else if (ctx.todaysJobsCount > 0) {
-    greeting += `You have ${ctx.todaysJobsCount} job${ctx.todaysJobsCount !== 1 ? 's' : ''} on today's calendar.`;
+  // Page-specific greetings
+  if (page.includes('/calendar')) {
+    // Calendar page - focus on schedule
+    if (ctx.unscheduledCount > 0 && ctx.todaysJobsCount > 0) {
+      greeting += `${ctx.todaysJobsCount} job${ctx.todaysJobsCount !== 1 ? 's' : ''} today, ${ctx.unscheduledCount} waiting to be scheduled.`;
+    } else if (ctx.todaysJobsCount > 0) {
+      greeting += `You have ${ctx.todaysJobsCount} job${ctx.todaysJobsCount !== 1 ? 's' : ''} on today's calendar.`;
+    } else if (ctx.unscheduledCount > 0) {
+      greeting += `${ctx.unscheduledCount} job${ctx.unscheduledCount !== 1 ? 's' : ''} waiting to be scheduled.`;
+    } else {
+      greeting += `Your calendar is clear today.`;
+    }
+  } else if (page.includes('/customer')) {
+    // Customers page - focus on customer management
+    if (ctx.recentCustomersCount > 0) {
+      greeting += `${ctx.recentCustomersCount} customer${ctx.recentCustomersCount !== 1 ? 's' : ''} added this week.`;
+    } else {
+      greeting += `Ready to help with your customers.`;
+    }
+  } else if (page.includes('/quote')) {
+    // Quotes page - focus on pending quotes
+    if (ctx.pendingQuotesCount > 0) {
+      greeting += `${ctx.pendingQuotesCount} quote${ctx.pendingQuotesCount !== 1 ? 's' : ''} awaiting customer response.`;
+    } else {
+      greeting += `Ready to help you create and manage quotes.`;
+    }
+  } else if (page.includes('/invoice')) {
+    // Invoices page - focus on payment status
+    if (ctx.overdueInvoicesCount > 0) {
+      greeting += `${ctx.overdueInvoicesCount} overdue invoice${ctx.overdueInvoicesCount !== 1 ? 's' : ''} need attention.`;
+    } else if (ctx.unpaidInvoicesCount > 0) {
+      greeting += `${ctx.unpaidInvoicesCount} invoice${ctx.unpaidInvoicesCount !== 1 ? 's' : ''} awaiting payment.`;
+    } else {
+      greeting += `Your invoices are up to date.`;
+    }
+  } else if (page.includes('/team')) {
+    // Team page - focus on team management
+    if (ctx.teamMemberCount > 0) {
+      greeting += `Managing ${ctx.teamMemberCount} team member${ctx.teamMemberCount !== 1 ? 's' : ''}.`;
+    } else {
+      greeting += `Ready to help manage your team.`;
+    }
+  } else if (page.includes('/analytics') || page.includes('/reports')) {
+    // Analytics page
+    greeting += `Let's dive into your business insights.`;
+  } else if (page.includes('/job') || page.includes('/work-order')) {
+    // Jobs/work orders page
+    if (ctx.unscheduledCount > 0) {
+      greeting += `${ctx.unscheduledCount} job${ctx.unscheduledCount !== 1 ? 's' : ''} ready to be scheduled.`;
+    } else {
+      greeting += `Ready to help with your jobs.`;
+    }
   } else {
-    greeting += `Your calendar is clear.`;
+    // Default/dashboard
+    greeting += `How can I help you today?`;
   }
   
   greeting += ` How can I help?`;
