@@ -45,6 +45,8 @@ export function AIChatInterface({
     clearMessages,
     loadConversation,
     retryLastMessage,
+    resumePlan,
+    executeRecoveryAction,
   } = useAIChat({
     onNewConversation: (id) => {
       console.log('New conversation created:', id);
@@ -303,6 +305,12 @@ export function AIChatInterface({
                   onRejectPlan={(rejectionMessage) => {
                     // Send plan rejection message (e.g., "plan_reject:uuid")
                     sendMessage(rejectionMessage, undefined, context);
+                  }}
+                  onRecoveryAction={(actionId, planId, navigateTo) => {
+                    executeRecoveryAction(actionId, planId, navigateTo);
+                  }}
+                  onResume={(planId) => {
+                    resumePlan(planId);
                   }}
                 />
               ))}
