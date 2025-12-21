@@ -780,6 +780,12 @@ export interface RecoveryAction {
   resumeFromStep: boolean;
   // For navigation-based recovery actions
   navigateTo?: string;
+  // For conversational recovery - query tool to fetch options
+  queryTool?: string;
+  // The entity type this resolves (e.g., 'quoteId', 'jobId')
+  resolvesEntity?: string;
+  // Prompt to ask the user when presenting options
+  clarificationPrompt?: string;
 }
 
 // Map of tool names to available recovery actions
@@ -832,6 +838,15 @@ const RECOVERY_ACTIONS: Record<string, RecoveryAction[]> = {
   // Quote-related recovery actions
   'approve_quote': [
     {
+      id: 'select_quote',
+      label: 'Select a quote',
+      description: 'Choose which quote to approve',
+      resumeFromStep: true,
+      queryTool: 'list_pending_quotes',
+      resolvesEntity: 'quoteId',
+      clarificationPrompt: 'Which quote would you like me to approve?',
+    },
+    {
       id: 'view_quotes',
       label: 'View quotes',
       description: 'Find and select a quote to approve',
@@ -856,6 +871,15 @@ const RECOVERY_ACTIONS: Record<string, RecoveryAction[]> = {
     },
   ],
   'convert_quote_to_job': [
+    {
+      id: 'select_quote',
+      label: 'Select a quote',
+      description: 'Choose which quote to convert',
+      resumeFromStep: true,
+      queryTool: 'list_approved_quotes',
+      resolvesEntity: 'quoteId',
+      clarificationPrompt: 'Which approved quote would you like to convert to a job?',
+    },
     {
       id: 'view_quotes',
       label: 'View quotes',
@@ -901,6 +925,15 @@ const RECOVERY_ACTIONS: Record<string, RecoveryAction[]> = {
   ],
   // Invoice-related recovery actions
   'create_invoice': [
+    {
+      id: 'select_job',
+      label: 'Select a job',
+      description: 'Choose which job to invoice',
+      resumeFromStep: true,
+      queryTool: 'list_completed_jobs',
+      resolvesEntity: 'jobId',
+      clarificationPrompt: 'Which completed job would you like me to create an invoice for?',
+    },
     {
       id: 'view_jobs',
       label: 'View jobs',
@@ -1339,7 +1372,12 @@ export function sendStepProgress(
 export function sendPlanComplete(
   controller: ReadableStreamDefaultController | undefined,
   plan: ExecutionPlan,
-  failedStep?: PlanStep
+  failedStep?: PlanStep,
+  entitySelectionOptions?: {
+    question: string;
+    resolvesEntity: string;
+    options: Array<{ id: string; label: string; value: string; metadata?: any }>;
+  }
 ): void {
   if (!controller) {
     console.warn('[multi-step-planner] sendPlanComplete called without controller');
@@ -1350,15 +1388,21 @@ export function sendPlanComplete(
   const failedSteps = plan.steps.filter(s => s.status === 'failed').length;
   
   // Get recovery actions for the failed step (include awaiting_recovery status)
-  let recoveryActions: { id: string; label: string; description: string; navigateTo?: string }[] | undefined;
+  let recoveryActions: { id: string; label: string; description: string; navigateTo?: string; isConversational?: boolean }[] | undefined;
   if (failedStep && (plan.status === 'failed' || plan.status === 'awaiting_recovery')) {
     const actions = getRecoveryActionsForTool(failedStep.tool);
     if (actions.length > 0) {
-      recoveryActions = actions.map(a => ({
+      // Filter out conversational actions if we're showing entity selection
+      const filteredActions = entitySelectionOptions 
+        ? actions.filter(a => !a.queryTool) 
+        : actions;
+      
+      recoveryActions = filteredActions.map(a => ({
         id: a.id,
         label: a.label,
         description: a.description,
         navigateTo: a.navigateTo,
+        isConversational: !!a.queryTool,
       }));
     }
   }
@@ -1392,8 +1436,64 @@ export function sendPlanComplete(
     // Recovery actions for failed plans
     recoveryActions,
     canResume: recoveryActions && recoveryActions.length > 0,
+    // Entity selection for conversational recovery
+    entitySelection: entitySelectionOptions,
   };
   controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+}
+
+// Execute conversational recovery - run query tool and send entity selection options
+export async function executeConversationalRecovery(
+  controller: ReadableStreamDefaultController | undefined,
+  plan: ExecutionPlan,
+  failedStep: PlanStep,
+  context: ExecutionContext
+): Promise<boolean> {
+  const recoveryActions = getRecoveryActionsForTool(failedStep.tool);
+  
+  // Find the first conversational recovery action (with queryTool)
+  const conversationalAction = recoveryActions.find(a => a.queryTool && a.resolvesEntity);
+  
+  if (!conversationalAction || !conversationalAction.queryTool) {
+    return false;
+  }
+  
+  console.info('[multi-step-planner] Executing conversational recovery with tool:', conversationalAction.queryTool);
+  
+  const queryTool = context.tools[conversationalAction.queryTool];
+  if (!queryTool) {
+    console.error('[multi-step-planner] Query tool not found:', conversationalAction.queryTool);
+    return false;
+  }
+  
+  try {
+    const result = await queryTool.execute({}, {
+      supabase: context.supabase,
+      businessId: context.businessId,
+      userId: context.userId,
+    });
+    
+    const options = result.options || [];
+    
+    if (options.length === 0) {
+      console.info('[multi-step-planner] No options found from query tool');
+      return false;
+    }
+    
+    console.info('[multi-step-planner] Found', options.length, 'options for entity selection');
+    
+    // Send plan complete with entity selection options
+    sendPlanComplete(controller, plan, failedStep, {
+      question: conversationalAction.clarificationPrompt || `Which one would you like to use?`,
+      resolvesEntity: conversationalAction.resolvesEntity!,
+      options: options,
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('[multi-step-planner] Failed to execute query tool:', error);
+    return false;
+  }
 }
 
 // =============================================================================

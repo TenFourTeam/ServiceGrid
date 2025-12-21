@@ -20,6 +20,7 @@ import {
   cleanupExpiredPlansAsync,
   detectPlanApproval,
   resumePlanAfterRecovery,
+  executeConversationalRecovery,
   type ExecutionPlan,
   type ExecutionContext,
   type PlannerResult 
@@ -1371,6 +1372,113 @@ const tools: Record<string, Tool> = {
         quotes: data || [], 
         count: data?.length || 0,
         total_value: data?.reduce((sum: number, q: any) => sum + (q.total || 0), 0) || 0
+      };
+    }
+  },
+
+  // ============================================
+  // ENTITY SELECTION TOOLS (for conversational recovery)
+  // ============================================
+
+  list_pending_quotes: {
+    name: 'list_pending_quotes',
+    description: 'List quotes available for approval - used for entity selection during plan recovery',
+    parameters: {
+      type: 'object',
+      properties: {},
+    },
+    execute: async (args: any, context: any) => {
+      const { data, error } = await context.supabase
+        .from('quotes')
+        .select('id, number, total, status, created_at, customers(name)')
+        .eq('business_id', context.businessId)
+        .in('status', ['Draft', 'Sent', 'Pending'])
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+
+      return {
+        options: data?.map((q: any) => ({
+          id: q.id,
+          label: `${q.number} - ${q.customers?.name || 'Unknown'} ($${(q.total || 0).toFixed(2)})`,
+          value: q.id,
+          metadata: {
+            number: q.number,
+            customer: q.customers?.name,
+            total: q.total,
+            status: q.status,
+          },
+        })) || [],
+        count: data?.length || 0,
+      };
+    }
+  },
+
+  list_approved_quotes: {
+    name: 'list_approved_quotes',
+    description: 'List approved quotes available for conversion to jobs - used for entity selection',
+    parameters: {
+      type: 'object',
+      properties: {},
+    },
+    execute: async (args: any, context: any) => {
+      const { data, error } = await context.supabase
+        .from('quotes')
+        .select('id, number, total, status, created_at, customers(name)')
+        .eq('business_id', context.businessId)
+        .eq('status', 'Approved')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+
+      return {
+        options: data?.map((q: any) => ({
+          id: q.id,
+          label: `${q.number} - ${q.customers?.name || 'Unknown'} ($${(q.total || 0).toFixed(2)})`,
+          value: q.id,
+          metadata: {
+            number: q.number,
+            customer: q.customers?.name,
+            total: q.total,
+          },
+        })) || [],
+        count: data?.length || 0,
+      };
+    }
+  },
+
+  list_completed_jobs: {
+    name: 'list_completed_jobs',
+    description: 'List completed jobs available for invoicing - used for entity selection',
+    parameters: {
+      type: 'object',
+      properties: {},
+    },
+    execute: async (args: any, context: any) => {
+      const { data, error } = await context.supabase
+        .from('jobs')
+        .select('id, title, total, status, created_at, customers(name)')
+        .eq('business_id', context.businessId)
+        .eq('status', 'Complete')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+
+      return {
+        options: data?.map((j: any) => ({
+          id: j.id,
+          label: `${j.title || 'Untitled'} - ${j.customers?.name || 'Unknown'}${j.total ? ` ($${j.total.toFixed(2)})` : ''}`,
+          value: j.id,
+          metadata: {
+            title: j.title,
+            customer: j.customers?.name,
+            total: j.total,
+          },
+        })) || [],
+        count: data?.length || 0,
       };
     }
   },
@@ -5866,13 +5974,34 @@ RESPONSE STYLE:
                   // Real-time progress callback
                   if (result.type === 'step_progress' || result.type === 'step_complete') {
                     sendStepProgress(controller, result.plan, result.currentStep!, result.message);
-                  } else if (result.type === 'plan_complete' || result.type === 'plan_failed') {
-                    // Find the first failed step to pass for recovery actions
+                  } else if (result.type === 'plan_complete') {
+                    // Only send complete for successful plans - failures handled after executePlan
                     const failedStep = result.plan.steps.find(s => s.status === 'failed');
                     sendPlanComplete(controller, result.plan, failedStep);
                   }
+                  // Note: plan_failed is now handled after executePlan returns to allow async conversational recovery
                 }
               );
+              
+              // Handle plan failure with conversational recovery
+              if (executedPlan.status === 'awaiting_recovery' || executedPlan.status === 'failed') {
+                const failedStep = executedPlan.steps.find(s => s.status === 'failed');
+                
+                if (failedStep) {
+                  // Try conversational recovery first (async)
+                  const usedConversational = await executeConversationalRecovery(
+                    controller,
+                    executedPlan,
+                    failedStep,
+                    executionContext
+                  );
+                  
+                  // If no conversational recovery available, send standard recovery actions
+                  if (!usedConversational) {
+                    sendPlanComplete(controller, executedPlan, failedStep);
+                  }
+                }
+              }
               
               // Log activity
               await supaAdmin.from('ai_activity_log').insert({
@@ -5895,7 +6024,9 @@ RESPONSE STYLE:
               // Save summary as assistant message
               const summaryMessage = executedPlan.status === 'completed'
                 ? `Plan "${plan.name}" completed successfully in ${Math.round((executedPlan.totalDurationMs || 0) / 1000)}s.`
-                : `Plan "${plan.name}" failed. ${executedPlan.rollbackSteps?.length || 0} steps were rolled back.`;
+                : executedPlan.status === 'awaiting_recovery'
+                  ? `Plan "${plan.name}" needs input to continue.`
+                  : `Plan "${plan.name}" failed. ${executedPlan.rollbackSteps?.length || 0} steps were rolled back.`;
               
               await supaAdmin.from('ai_chat_messages').insert({
                 conversation_id: convId,
@@ -5999,12 +6130,28 @@ RESPONSE STYLE:
                 (result: PlannerResult) => {
                   if (result.type === 'step_progress' || result.type === 'step_complete') {
                     sendStepProgress(controller, result.plan, result.currentStep!, result.message);
-                  } else if (result.type === 'plan_complete' || result.type === 'plan_failed') {
+                  } else if (result.type === 'plan_complete') {
                     const failedStep = result.plan.steps.find(s => s.status === 'failed');
                     sendPlanComplete(controller, result.plan, failedStep);
                   }
                 }
               );
+              
+              // Handle plan failure with conversational recovery
+              if (executedPlan.status === 'awaiting_recovery' || executedPlan.status === 'failed') {
+                const failedStep = executedPlan.steps.find(s => s.status === 'failed');
+                if (failedStep) {
+                  const usedConversational = await executeConversationalRecovery(
+                    controller,
+                    executedPlan,
+                    failedStep,
+                    executionContext
+                  );
+                  if (!usedConversational) {
+                    sendPlanComplete(controller, executedPlan, failedStep);
+                  }
+                }
+              }
               
               // Clean up if completed
               if (executedPlan.status === 'completed') {

@@ -36,6 +36,20 @@ export interface RecoveryActionData {
   label: string;
   description: string;
   navigateTo?: string;
+  isConversational?: boolean;
+}
+
+export interface EntitySelectionOption {
+  id: string;
+  label: string;
+  value: string;
+  metadata?: any;
+}
+
+export interface EntitySelectionData {
+  question: string;
+  resolvesEntity: string;
+  options: EntitySelectionOption[];
 }
 
 export interface PlanProgressData {
@@ -48,6 +62,7 @@ export interface PlanProgressData {
   pausedAtStep?: number;
   recoveryActions?: RecoveryActionData[];
   canResume?: boolean;
+  entitySelection?: EntitySelectionData;
   summary?: {
     totalSteps: number;
     successfulSteps: number;
@@ -63,6 +78,7 @@ interface PlanProgressCardProps {
   onCancel?: () => void;
   onRecoveryAction?: (actionId: string, planId: string, navigateTo?: string) => void;
   onResume?: (planId: string) => void;
+  onEntitySelect?: (planId: string, entityType: string, entityValue: string) => void;
 }
 
 // Elapsed time hook for live timer
@@ -160,7 +176,7 @@ function ConfettiParticle({ delay, color, index }: { delay: number; color: strin
   );
 }
 
-export function PlanProgressCard({ progress, onCancel, onRecoveryAction, onResume }: PlanProgressCardProps) {
+export function PlanProgressCard({ progress, onCancel, onRecoveryAction, onResume, onEntitySelect }: PlanProgressCardProps) {
   const [recentlyCompletedSteps, setRecentlyCompletedSteps] = useState<Set<string>>(new Set());
   const [showCelebration, setShowCelebration] = useState(false);
   const [showToolNames, setShowToolNames] = useState(false);
