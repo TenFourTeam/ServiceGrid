@@ -1418,7 +1418,7 @@ const tools: Record<string, Tool> = {
     execute: async (args: any, context: any) => {
       let query = context.supabase
         .from('quotes')
-        .select('id, number, status, total, valid_until, created_at, customers(name, email)')
+        .select('id, number, status, total, sent_at, created_at, customers(name, email)')
         .eq('business_id', context.businessId)
         .order('created_at', { ascending: false });
 
