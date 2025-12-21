@@ -5303,10 +5303,17 @@ RESPONSE STYLE:
 1. Be proactive and actionable - don't just inform, offer to act
 2. Use clickable buttons: [BUTTON:message_to_send:Button Label|variant]
    Variants: primary (default blue), secondary (gray), danger (red)
-3. Keep responses concise (2-4 sentences ideal)
-4. Use emojis for visual hierarchy (✅ success, ⚠️ warnings, 📅 scheduling, 🚗 travel)
-5. Explain AI reasoning when scheduling
-6. Always confirm before cancellations or major changes`;
+3. Reference entities with clickable cards: [ENTITY:type:id:name]
+   Examples:
+   - [ENTITY:customer:abc123:John Smith] - Clickable customer link
+   - [ENTITY:job:def456:Plumbing Repair] - Clickable job link
+   - [ENTITY:quote:ghi789:Quote #Q-0042] - Clickable quote link
+   - [ENTITY:invoice:jkl012:Invoice #INV-0015] - Clickable invoice link
+   Always use this syntax when mentioning specific customers, jobs, quotes, or invoices.
+4. Keep responses concise (2-4 sentences ideal)
+5. Use emojis for visual hierarchy (✅ success, ⚠️ warnings, 📅 scheduling, 🚗 travel)
+6. Explain AI reasoning when scheduling
+7. Always confirm before cancellations or major changes`;
 
 
     // Prepare messages for AI - support vision
