@@ -122,6 +122,13 @@ export interface Message {
   confirmation?: ConfirmationData;
   planPreview?: PlanPreviewData;
   planProgress?: PlanProgressData;
+  // Entity selection - rendered as a conversational element outside plan card
+  entitySelection?: {
+    planId: string;
+    question: string;
+    resolvesEntity: string;
+    options: EntitySelectionOption[];
+  };
 }
 
 // Navigation event handler type
@@ -552,7 +559,41 @@ export function useAIChat(options?: UseAIChatOptions) {
                   toast.error('Plan failed - some steps were rolled back');
                 }
               } else if (data.type === 'entity_selection') {
-                // Update plan with entity selection options
+                // Entity selection now adds a NEW message rather than updating the plan card
+                // This creates a conversational flow where the AI asks which option to use
+                const entitySelectionMessage: Message = {
+                  id: crypto.randomUUID(),
+                  role: 'assistant',
+                  content: '', // Content is already streamed via 'token' event before this
+                  timestamp: new Date(),
+                  messageType: 'standard',
+                  entitySelection: {
+                    planId: data.planId,
+                    question: data.question,
+                    resolvesEntity: data.resolvesEntity,
+                    options: data.options,
+                  },
+                };
+                
+                // Add the entity selection as a new message (the text was already streamed)
+                // Check if there's a recent streaming message that this should attach to
+                setMessages(prev => {
+                  // Look for the last assistant message (the one with the streamed text)
+                  const lastAssistantIdx = prev.length - 1;
+                  if (lastAssistantIdx >= 0 && prev[lastAssistantIdx].role === 'assistant' && !prev[lastAssistantIdx].entitySelection) {
+                    // Attach entity selection to the last assistant message
+                    const updated = [...prev];
+                    updated[lastAssistantIdx] = {
+                      ...updated[lastAssistantIdx],
+                      entitySelection: entitySelectionMessage.entitySelection,
+                    };
+                    return updated;
+                  }
+                  // Otherwise add as new message
+                  return [...prev, entitySelectionMessage];
+                });
+                
+                // Also update the plan status to awaiting_recovery
                 setMessages(prev => {
                   const planMsgIndex = prev.findIndex(m => 
                     (m.messageType === 'plan_progress' || m.messageType === 'plan_preview') && 
@@ -570,11 +611,6 @@ export function useAIChat(options?: UseAIChatOptions) {
                         ...existingMsg.planProgress!,
                         planId: data.planId,
                         status: 'awaiting_recovery',
-                        entitySelection: {
-                          question: data.question,
-                          resolvesEntity: data.resolvesEntity,
-                          options: data.options,
-                        },
                       },
                     };
                     return updated;

@@ -1443,6 +1443,7 @@ export function sendPlanComplete(
 }
 
 // Execute conversational recovery - run query tool and send entity selection options
+// This sends a conversational text message followed by entity_selection event
 export async function executeConversationalRecovery(
   controller: ReadableStreamDefaultController | undefined,
   plan: ExecutionPlan,
@@ -1482,18 +1483,62 @@ export async function executeConversationalRecovery(
     
     console.info('[multi-step-planner] Found', options.length, 'options for entity selection');
     
-    // Send plan complete with entity selection options
-    sendPlanComplete(controller, plan, failedStep, {
+    // Get a descriptive verb for the action
+    const actionVerb = failedStep.tool === 'send_quote' ? 'send' : 
+                       failedStep.tool === 'approve_quote' ? 'approve' :
+                       failedStep.tool === 'create_invoice' ? 'create an invoice from' : 'use';
+    
+    // Send a conversational text message FIRST (appears as a chat bubble)
+    if (controller) {
+      const encoder = new TextEncoder();
+      const textContent = `I found ${options.length} quote${options.length > 1 ? 's' : ''} you might be referring to. Which one would you like me to ${actionVerb}?`;
+      
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+        type: 'token',
+        content: textContent,
+      })}\n\n`));
+    }
+    
+    // Then send entity_selection as a separate event (renders selection UI below the text)
+    sendEntitySelection(controller, plan.id, {
       question: conversationalAction.clarificationPrompt || `Which one would you like to use?`,
       resolvesEntity: conversationalAction.resolvesEntity!,
       options: options,
     });
+    
+    // Also send plan status update to show "Waiting for selection..."
+    sendPlanComplete(controller, plan, failedStep);
     
     return true;
   } catch (error) {
     console.error('[multi-step-planner] Failed to execute query tool:', error);
     return false;
   }
+}
+
+// Send entity selection event - separate from plan_complete for cleaner UI
+export function sendEntitySelection(
+  controller: ReadableStreamDefaultController | undefined,
+  planId: string,
+  entitySelection: {
+    question: string;
+    resolvesEntity: string;
+    options: Array<{ id: string; label: string; value: string; metadata?: any }>;
+  }
+): void {
+  if (!controller) {
+    console.warn('[multi-step-planner] sendEntitySelection called without controller');
+    return;
+  }
+  const encoder = new TextEncoder();
+  const event = {
+    type: 'entity_selection',
+    planId,
+    question: entitySelection.question,
+    resolvesEntity: entitySelection.resolvesEntity,
+    options: entitySelection.options,
+  };
+  controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
 }
 
 // =============================================================================

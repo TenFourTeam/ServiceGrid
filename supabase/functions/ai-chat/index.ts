@@ -78,6 +78,77 @@ function generateConversationTitle(firstMessage: string): string {
   return title || 'New conversation';
 }
 
+// Helper to parse natural language selection for entity recovery
+// Handles responses like "the first one", "the second", "QUO-004", "John's quote", etc.
+function parseNaturalLanguageSelection(
+  message: string,
+  planData: { plan: any; pattern: any; entities: Record<string, any> }
+): { entityType: string; entityValue: string; displayLabel: string } | null {
+  // We need to look at the last failed step to determine what entity type we're looking for
+  const failedStep = planData.plan.steps?.find((s: any) => s.status === 'failed');
+  if (!failedStep) return null;
+  
+  // Get recovery actions for the tool to find the resolvesEntity
+  const toolToEntityType: Record<string, string> = {
+    'send_quote': 'quoteId',
+    'approve_quote': 'quoteId',
+    'create_invoice': 'quoteId',
+    'convert_quote_to_job': 'quoteId',
+    'send_invoice': 'invoiceId',
+    'update_job': 'jobId',
+    'send_job_confirmation': 'jobId',
+  };
+  
+  const entityType = toolToEntityType[failedStep.tool];
+  if (!entityType) return null;
+  
+  // Check for ordinal patterns
+  const ordinalPatterns = [
+    { regex: /^(the\s+)?(first|1st)\s*(one)?$/i, index: 0 },
+    { regex: /^(the\s+)?(second|2nd)\s*(one)?$/i, index: 1 },
+    { regex: /^(the\s+)?(third|3rd)\s*(one)?$/i, index: 2 },
+    { regex: /^(the\s+)?(fourth|4th)\s*(one)?$/i, index: 3 },
+    { regex: /^(the\s+)?(fifth|5th)\s*(one)?$/i, index: 4 },
+    { regex: /^#?1$/i, index: 0 },
+    { regex: /^#?2$/i, index: 1 },
+    { regex: /^#?3$/i, index: 2 },
+    { regex: /^#?4$/i, index: 3 },
+    { regex: /^#?5$/i, index: 4 },
+  ];
+  
+  // We don't have the options directly here, so we'll need to match by stored context
+  // The options were stored when the plan was paused
+  // For now, we'll just detect the pattern and let the caller handle the actual lookup
+  
+  // Check for quote number patterns like "QUO-004", "EST-001"
+  const quoteNumberMatch = message.match(/\b(quo|est|inv)-?(\d{1,4})\b/i);
+  if (quoteNumberMatch) {
+    const prefix = quoteNumberMatch[1].toUpperCase();
+    const num = quoteNumberMatch[2].padStart(3, '0');
+    const fullNumber = `${prefix}-${num}`;
+    
+    return {
+      entityType,
+      entityValue: fullNumber, // The value will be resolved by querying the DB
+      displayLabel: fullNumber,
+    };
+  }
+  
+  // For ordinals, we'll need the options from the last entity_selection event
+  // Since we don't have that context here, we return a special marker
+  for (const { regex, index } of ordinalPatterns) {
+    if (regex.test(message)) {
+      return {
+        entityType,
+        entityValue: `__ordinal:${index}`,
+        displayLabel: `option ${index + 1}`,
+      };
+    }
+  }
+  
+  return null;
+}
+
 // Helper to enrich tool results with display metadata for the frontend
 function enrichToolResult(toolName: string, result: any, args: any): any {
   const _display: any = { summary: '', actions: [] };
@@ -6303,6 +6374,146 @@ RESPONSE STYLE:
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`));
             controller.close();
             return;
+          }
+
+          // ===============================================================
+          // NATURAL LANGUAGE ENTITY SELECTION (for conversational recovery)
+          // Handle responses like "the first one", "QUO-004", "John's quote", etc.
+          // ===============================================================
+          const awaitingPlan = await getMostRecentPendingPlanAsync(memoryCtx);
+          if (awaitingPlan && awaitingPlan.plan.status === 'awaiting_recovery') {
+            const normalizedMessage = message.toLowerCase().trim();
+            
+            // Parse natural language to find matching entity
+            let matchedEntity = parseNaturalLanguageSelection(normalizedMessage, awaitingPlan);
+            
+            if (matchedEntity) {
+              console.info('[ai-chat] Natural language matched entity:', matchedEntity);
+              
+              const { plan, pattern, entities } = awaitingPlan;
+              let finalEntityValue = matchedEntity.entityValue;
+              let finalDisplayLabel = matchedEntity.displayLabel;
+              
+              // Handle ordinal selections by re-running the query tool
+              if (matchedEntity.entityValue.startsWith('__ordinal:')) {
+                const ordinalIndex = parseInt(matchedEntity.entityValue.split(':')[1], 10);
+                const failedStep = plan.steps?.find((s: any) => s.status === 'failed');
+                
+                // Find the appropriate query tool
+                const queryToolName = failedStep?.tool === 'send_quote' || failedStep?.tool === 'approve_quote' 
+                  ? 'list_pending_quotes' 
+                  : failedStep?.tool === 'convert_quote_to_job' 
+                    ? 'list_approved_quotes'
+                    : null;
+                
+                if (queryToolName && tools[queryToolName]) {
+                  const result = await tools[queryToolName].execute({}, { 
+                    supabase: supaAdmin, 
+                    businessId, 
+                    userId 
+                  });
+                  
+                  if (result.options && result.options[ordinalIndex]) {
+                    finalEntityValue = result.options[ordinalIndex].value;
+                    finalDisplayLabel = result.options[ordinalIndex].metadata?.number || result.options[ordinalIndex].label;
+                  } else {
+                    matchedEntity = null; // Invalid ordinal
+                  }
+                }
+              }
+              
+              if (matchedEntity) {
+                const updatedEntities = { ...entities, [matchedEntity.entityType]: finalEntityValue };
+              
+              // Reset failed step to pending so it can be retried
+              plan.steps = plan.steps.map(s => 
+                s.status === 'failed' ? { ...s, status: 'pending' as const, error: undefined } : s
+              );
+              plan.status = 'executing';
+              
+              // Update plan in DB with new entities
+              await storePendingPlanAsync(plan, pattern, updatedEntities, memoryCtx, plan.id);
+              
+              console.info('[ai-chat] Resuming plan with natural language selection');
+              
+              // Send resuming status
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({
+                  type: 'token',
+                  content: `Got it, using ${matchedEntity.displayLabel}. Resuming...`,
+                })}\n\n`)
+              );
+              
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({
+                  type: 'step_progress',
+                  planId: plan.id,
+                  planName: plan.name,
+                  stepIndex: plan.currentStepIndex,
+                  totalSteps: plan.steps.length,
+                  steps: plan.steps.map(s => ({
+                    id: s.id,
+                    name: s.name,
+                    tool: s.tool,
+                    status: s.status,
+                    error: s.error,
+                  })),
+                  message: 'Resuming plan execution...',
+                })}\n\n`)
+              );
+              
+              // Execute plan
+              const executionContext: ExecutionContext = {
+                supabase: supaAdmin,
+                businessId,
+                userId,
+                controller,
+                tools,
+              };
+              
+              const executedPlan = await executePlan(
+                plan,
+                executionContext,
+                updatedEntities,
+                pattern,
+                (result: PlannerResult) => {
+                  if (result.type === 'step_progress' || result.type === 'step_complete') {
+                    sendStepProgress(controller, result.plan, result.currentStep!, result.message);
+                  } else if (result.type === 'plan_complete') {
+                    const failedStep = result.plan.steps.find(s => s.status === 'failed');
+                    sendPlanComplete(controller, result.plan, failedStep);
+                  }
+                }
+              );
+              
+              // Handle subsequent failures
+              if (executedPlan.status === 'awaiting_recovery' || executedPlan.status === 'failed') {
+                const failedStep = executedPlan.steps.find(s => s.status === 'failed');
+                if (failedStep) {
+                  const usedConversational = await executeConversationalRecovery(
+                    controller,
+                    executedPlan,
+                    failedStep,
+                    executionContext
+                  );
+                  if (!usedConversational) {
+                    sendPlanComplete(controller, executedPlan, failedStep);
+                  }
+                }
+              }
+              
+              // Clean up if completed
+              if (executedPlan.status === 'completed') {
+                removePendingPlan(plan.id);
+                await removePendingPlanAsync(plan.id, memoryCtx);
+              }
+              
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`));
+              controller.close();
+              return;
+              }
+            }
+          }
 
           // Send clarification event if needed - this is a structured UI component
           if (orchestratorResult.type === 'clarification' && orchestratorResult.clarificationData) {
