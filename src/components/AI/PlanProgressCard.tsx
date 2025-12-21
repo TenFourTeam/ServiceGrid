@@ -98,7 +98,7 @@ function getStepIcon(status: PlanStepProgress['status'], isAnimating: boolean) {
     case 'running':
       return <Loader2 className="w-4 h-4 text-primary animate-spin" />;
     case 'failed':
-      return <XCircle className="w-4 h-4 text-destructive animate-shake-error" />;
+      return <XCircle className="w-4 h-4 text-amber-500" />;
     case 'rolled_back':
       return <RotateCcw className="w-4 h-4 text-amber-500" />;
     case 'skipped':
@@ -115,7 +115,7 @@ function getStatusBadge(status: PlanProgressData['status']) {
     case 'completed':
       return <Badge variant="outline" className="bg-success/10 text-success border-success/20">Completed</Badge>;
     case 'failed':
-      return <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">Failed</Badge>;
+      return <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20">Incomplete</Badge>;
     case 'rolled_back':
       return <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20">Rolled Back</Badge>;
     case 'cancelled':
@@ -200,7 +200,7 @@ export function PlanProgressCard({ progress, onCancel }: PlanProgressCardProps) 
       "border-primary/20 transition-all duration-300 relative overflow-hidden",
       progress.status === 'completed' && "border-success/30 bg-gradient-to-br from-success/5 to-transparent",
       progress.status === 'completed' && showCelebration && "animate-celebrate-pulse",
-      progress.status === 'failed' && "border-destructive/30 bg-gradient-to-br from-destructive/5 to-transparent animate-shake-error",
+      progress.status === 'failed' && "border-amber-500/20",
       progress.status === 'rolled_back' && "border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent"
     )}>
       {/* Confetti overlay for success */}
@@ -225,7 +225,7 @@ export function PlanProgressCard({ progress, onCancel }: PlanProgressCardProps) 
               "p-2 rounded-lg transition-all duration-300",
               progress.status === 'executing' && "bg-primary/10",
               progress.status === 'completed' && "bg-success/10",
-              progress.status === 'failed' && "bg-destructive/10",
+              progress.status === 'failed' && "bg-amber-500/10",
               progress.status === 'rolled_back' && "bg-amber-500/10"
             )}>
               {progress.status === 'executing' ? (
@@ -241,7 +241,7 @@ export function PlanProgressCard({ progress, onCancel }: PlanProgressCardProps) 
                   )}
                 </div>
               ) : progress.status === 'failed' ? (
-                <XCircle className="w-4 h-4 text-destructive" />
+                <AlertTriangle className="w-4 h-4 text-amber-500" />
               ) : (
                 <ListChecks className="w-4 h-4 text-muted-foreground" />
               )}
@@ -281,7 +281,7 @@ export function PlanProgressCard({ progress, onCancel }: PlanProgressCardProps) 
             value={progressPercent} 
             className={cn(
               "h-2 transition-all duration-500",
-              progress.status === 'failed' && "[&>div]:bg-destructive",
+              progress.status === 'failed' && "[&>div]:bg-amber-500",
               progress.status === 'completed' && "[&>div]:bg-success",
               isExecuting && "animate-glow-pulse"
             )}
@@ -302,13 +302,13 @@ export function PlanProgressCard({ progress, onCancel }: PlanProgressCardProps) 
 
         {/* Error banner for failed plans */}
         {progress.status === 'failed' && failedStep && (
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20 animate-fade-in">
-            <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 border border-border animate-fade-in">
+            <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-destructive">
-                Failed at: {failedStep.name}
+              <p className="text-sm font-medium text-foreground">
+                {failedStep.name}
               </p>
-              <p className="text-xs text-destructive/80 mt-0.5 break-words">
+              <p className="text-xs text-muted-foreground mt-0.5 break-words">
                 {failedStep.error}
               </p>
             </div>
@@ -344,7 +344,7 @@ export function PlanProgressCard({ progress, onCancel }: PlanProgressCardProps) 
                   step.status === 'running' && "bg-primary/10 border border-primary/20",
                   step.status === 'completed' && "bg-success/5",
                   step.status === 'completed' && isRecentlyCompleted && "animate-step-success",
-                  step.status === 'failed' && "bg-destructive/10 border border-destructive/20",
+                  step.status === 'failed' && "bg-muted/30",
                   step.status === 'rolled_back' && "bg-amber-500/10",
                   step.status === 'pending' && "opacity-50"
                 )}
@@ -356,7 +356,7 @@ export function PlanProgressCard({ progress, onCancel }: PlanProgressCardProps) 
                     "text-sm font-medium truncate transition-colors duration-300",
                     step.status === 'running' && "text-primary",
                     step.status === 'completed' && "text-success",
-                    step.status === 'failed' && "text-destructive"
+                    step.status === 'failed' && "text-amber-600"
                   )}>
                     {step.name}
                   </p>
@@ -366,7 +366,7 @@ export function PlanProgressCard({ progress, onCancel }: PlanProgressCardProps) 
                     </p>
                   )}
                   {step.error && (
-                    <p className="text-xs text-destructive truncate">
+                    <p className="text-xs text-muted-foreground truncate">
                       {step.error}
                     </p>
                   )}
@@ -395,9 +395,9 @@ export function PlanProgressCard({ progress, onCancel }: PlanProgressCardProps) 
                   {progress.summary.successfulSteps} succeeded
                 </span>
                 {progress.summary.failedSteps > 0 && (
-                  <span className="text-destructive flex items-center gap-1">
+                  <span className="text-amber-600 flex items-center gap-1">
                     <XCircle className="w-3 h-3" />
-                    {progress.summary.failedSteps} failed
+                    {progress.summary.failedSteps} incomplete
                   </span>
                 )}
                 {progress.summary.rolledBackSteps > 0 && (
@@ -415,13 +415,7 @@ export function PlanProgressCard({ progress, onCancel }: PlanProgressCardProps) 
               )}
             </div>
             
-            {/* Failure message */}
-            {progress.status === 'failed' && (
-              <p className="text-sm text-destructive mt-2 flex items-center gap-1.5 animate-fade-in">
-                <AlertTriangle className="w-4 h-4" />
-                Plan execution failed. See error above.
-              </p>
-            )}
+            {/* Failure message - removed redundant text, error banner above is sufficient */}
             
             {/* Cancelled message */}
             {progress.status === 'cancelled' && (
