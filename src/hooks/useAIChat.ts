@@ -53,6 +53,24 @@ export interface PlanProgressData {
   };
 }
 
+export interface ToolResultData {
+  tool: string;
+  result: any;
+  success: boolean;
+  displayData?: {
+    summary: string;
+    entityType?: string;
+    entityId?: string;
+    entityName?: string;
+    actions?: Array<{ label: string; action: string }>;
+    items?: Array<{
+      name: string;
+      status: 'success' | 'failed' | 'skipped';
+      message?: string;
+    }>;
+  };
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
@@ -65,6 +83,8 @@ export interface Message {
     result?: any;
     reversible?: boolean;
   }>;
+  // Tool results with rich display data
+  toolResults?: ToolResultData[];
   actions?: Array<{
     action: string;
     label: string;
@@ -224,6 +244,7 @@ export function useAIChat(options?: UseAIChatOptions) {
       let buffer = '';
       let assistantMessageId = crypto.randomUUID();
       let fullContent = '';
+      let pendingToolResults: ToolResultData[] = [];
 
       while (true) {
         const { done, value } = await reader.read();
@@ -271,13 +292,64 @@ export function useAIChat(options?: UseAIChatOptions) {
                 // Clear tool indicator
                 setCurrentToolName(null);
                 
+                // Store tool result for display in the final message
+                const toolResult: ToolResultData = {
+                  tool: data.tool,
+                  result: data.result,
+                  success: data.success !== false,
+                  displayData: data.result?._display
+                };
+                
+                // Add to pending tool results for this message
+                pendingToolResults.push(toolResult);
+                
                 // Handle navigation tool results
                 if (data.tool === 'navigate_to_entity' && data.result?.url) {
                   options?.onNavigate?.(data.result.url, data.result.entityName);
                 } else if (data.tool === 'navigate_to_calendar' && data.result?.url) {
                   options?.onNavigate?.(data.result.url, 'Calendar');
                 }
-                // No toast for tool results - let the AI response be sufficient
+                
+                // Show success toast for important mutations with action buttons
+                const mutationTools: Record<string, { 
+                  message: string; 
+                  action?: { label: string; onClick: () => void };
+                }> = {
+                  auto_schedule_job: {
+                    message: `Scheduled "${data.result?.job_title || data.result?.job?.title || 'job'}"`,
+                    action: data.result?.starts_at ? {
+                      label: 'View Calendar',
+                      onClick: () => options?.onNavigate?.(`/calendar?date=${data.result.starts_at.split('T')[0]}`, 'Calendar')
+                    } : undefined
+                  },
+                  batch_schedule_jobs: {
+                    message: `Scheduled ${data.result?.scheduled?.length || data.result?.success?.length || 0} jobs`
+                  },
+                  create_quote: {
+                    message: `Quote #${data.result?.number || ''} created`
+                  },
+                  create_invoice: {
+                    message: `Invoice #${data.result?.number || ''} created`
+                  },
+                  record_payment: {
+                    message: `Payment of ${data.result?.amount?.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) || ''} recorded`
+                  }
+                };
+                
+                const toolMutation = mutationTools[data.tool];
+                if (toolMutation && data.success !== false) {
+                  if (toolMutation.action) {
+                    toast.success(toolMutation.message, {
+                      action: {
+                        label: toolMutation.action.label,
+                        onClick: toolMutation.action.onClick
+                      },
+                      duration: 5000
+                    });
+                  } else {
+                    toast.success(toolMutation.message, { duration: 3000 });
+                  }
+                }
               } else if (data.type === 'tool_error') {
                 // Clear tool indicator and show error toast (errors are important)
                 setCurrentToolName(null);
@@ -432,7 +504,8 @@ export function useAIChat(options?: UseAIChatOptions) {
                 setIsStreaming(false);
               } else if (data.type === 'done') {
                 // Skip adding empty messages (clarification/confirmation already handled)
-                if (!fullContent.trim()) {
+                // But if we have tool results, still show them even if no text content
+                if (!fullContent.trim() && pendingToolResults.length === 0) {
                   setIsStreaming(false);
                   setCurrentStreamingMessage('');
                   setCurrentToolName(null);
@@ -442,8 +515,8 @@ export function useAIChat(options?: UseAIChatOptions) {
                 // Finalize message with parsed actions
                 const { cleanContent, actions } = parseMessageActions(fullContent);
                 
-                // Skip if the cleaned content is empty
-                if (!cleanContent.trim()) {
+                // Skip if the cleaned content is empty AND no tool results
+                if (!cleanContent.trim() && pendingToolResults.length === 0) {
                   setIsStreaming(false);
                   setCurrentStreamingMessage('');
                   setCurrentToolName(null);
@@ -464,7 +537,12 @@ export function useAIChat(options?: UseAIChatOptions) {
                   if (lastMsg?.id === assistantMessageId) {
                     return [
                       ...prev.slice(0, -1),
-                      { ...lastMsg, content: cleanContent, actions }
+                      { 
+                        ...lastMsg, 
+                        content: cleanContent, 
+                        actions,
+                        toolResults: pendingToolResults.length > 0 ? pendingToolResults : undefined
+                      }
                     ];
                   }
                   return [
@@ -475,6 +553,7 @@ export function useAIChat(options?: UseAIChatOptions) {
                       content: cleanContent,
                       timestamp: new Date(),
                       actions,
+                      toolResults: pendingToolResults.length > 0 ? pendingToolResults : undefined
                     }
                   ];
                 });
