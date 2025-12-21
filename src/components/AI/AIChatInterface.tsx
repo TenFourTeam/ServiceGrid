@@ -37,10 +37,12 @@ export function AIChatInterface({
     currentStreamingMessage,
     currentToolName,
     conversationId,
+    lastFailedMessage,
     sendMessage,
     stopStreaming,
     clearMessages,
     loadConversation,
+    retryLastMessage,
   } = useAIChat({
     onNewConversation: (id) => {
       console.log('New conversation created:', id);
@@ -267,6 +269,24 @@ export function AIChatInterface({
                   key={msg.id} 
                   message={msg}
                   onActionExecute={async (action) => {
+                    // Handle special actions
+                    if (action === 'retry' && lastFailedMessage) {
+                      retryLastMessage();
+                      return;
+                    }
+                    if (action === 'add_credits') {
+                      window.open('https://lovable.dev/settings/usage', '_blank');
+                      return;
+                    }
+                    if (action === 'start_over') {
+                      clearMessages();
+                      toast.success('Started new conversation');
+                      return;
+                    }
+                    if (action === 'report_issue') {
+                      window.open('https://lovable.dev/support', '_blank');
+                      return;
+                    }
                     // Execute action by sending it as a message
                     await sendMessage(action, undefined, context);
                   }}

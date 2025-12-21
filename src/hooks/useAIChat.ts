@@ -93,6 +93,7 @@ export function useAIChat(options?: UseAIChatOptions) {
   const [currentStreamingMessage, setCurrentStreamingMessage] = useState('');
   const [currentToolName, setCurrentToolName] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | undefined>(options?.conversationId);
+  const [lastFailedMessage, setLastFailedMessage] = useState<{ content: string; attachments?: File[]; context?: any } | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const { businessId } = useBusinessContext();
   const { getToken } = useAuth();
@@ -107,6 +108,9 @@ export function useAIChat(options?: UseAIChatOptions) {
 
   const sendMessage = useCallback(async (content: string, attachments?: File[], context?: any) => {
     if (!businessId || (!content.trim() && (!attachments || attachments.length === 0))) return;
+
+    // Clear any previous failed message state on new attempt
+    setLastFailedMessage(null);
 
     // Upload attachments first if any (without linking to conversation)
     let mediaIds: string[] = [];
@@ -563,6 +567,9 @@ export function useAIChat(options?: UseAIChatOptions) {
             { action: 'report_issue', label: '🐛 Report Issue', variant: 'secondary' }
           ];
         }
+
+        // Store the failed message for retry
+        setLastFailedMessage({ content, attachments, context });
         
         const errorMessage: Message = {
           id: crypto.randomUUID(),
@@ -588,7 +595,37 @@ export function useAIChat(options?: UseAIChatOptions) {
     setMessages([]);
     setCurrentStreamingMessage('');
     setConversationId(undefined);
+    setLastFailedMessage(null);
   }, []);
+
+  // Retry the last failed message
+  const retryLastMessage = useCallback(() => {
+    if (!lastFailedMessage) {
+      toast.error('No failed message to retry');
+      return;
+    }
+    
+    // Remove the last error message from the UI
+    setMessages(prev => {
+      const lastMsg = prev[prev.length - 1];
+      if (lastMsg?.actions?.some(a => a.action === 'retry')) {
+        return prev.slice(0, -1);
+      }
+      return prev;
+    });
+    
+    // Also remove the original user message that failed
+    setMessages(prev => {
+      const lastMsg = prev[prev.length - 1];
+      if (lastMsg?.role === 'user' && lastMsg.content === lastFailedMessage.content) {
+        return prev.slice(0, -1);
+      }
+      return prev;
+    });
+    
+    // Resend the message
+    sendMessage(lastFailedMessage.content, lastFailedMessage.attachments, lastFailedMessage.context);
+  }, [lastFailedMessage, sendMessage]);
 
   const loadConversation = useCallback(async (convId: string) => {
     if (!businessId) return;
@@ -632,10 +669,12 @@ export function useAIChat(options?: UseAIChatOptions) {
     currentStreamingMessage,
     currentToolName,
     conversationId,
+    lastFailedMessage,
     sendMessage,
     stopStreaming,
     clearMessages,
     loadConversation,
+    retryLastMessage,
   };
 }
 
