@@ -4937,58 +4937,20 @@ async function fetchGreetingContext(context: any) {
 async function generateGreetingMessage(context: any): Promise<string> {
   const ctx = await fetchGreetingContext(context);
   
-  let greeting = `Good ${ctx.timeOfDay}! `;
+  let greeting = `Good ${ctx.timeOfDay}! 👋 `;
   
-  // Acknowledge previous interactions if they exist
-  if (ctx.recentActivity.length > 0) {
-    const lastActivity = ctx.recentActivity[0];
-    const lastActionTime = new Date(lastActivity.created_at);
-    const hoursSince = Math.floor((Date.now() - lastActionTime.getTime()) / (1000 * 60 * 60));
-    
-    if (hoursSince < 24) {
-      greeting += `Welcome back! `;
-    } else if (hoursSince < 168) { // Less than a week
-      greeting += `Great to see you again! `;
-    }
-  }
-  
-  // Business state summary
-  const statusParts: string[] = [];
-  
-  if (ctx.unscheduledCount > 0) {
-    statusParts.push(`**${ctx.unscheduledCount} job${ctx.unscheduledCount !== 1 ? 's' : ''} waiting to be scheduled**`);
-  }
-  
-  if (ctx.todaysJobsCount > 0) {
-    statusParts.push(`${ctx.todaysJobsCount} job${ctx.todaysJobsCount !== 1 ? 's' : ''} on your calendar today`);
-  } else if (ctx.timeOfDay === 'morning') {
-    statusParts.push(`no jobs scheduled today yet`);
-  }
-  
-  if (statusParts.length > 0) {
-    greeting += `I see you have ${statusParts.join(', and ')}. `;
-  }
-  
-  // Proactive suggestions based on state
-  if (ctx.unscheduledCount > 0) {
-    if (ctx.unscheduledCount >= 5) {
-      greeting += `\n\nThat's quite a backlog! I can schedule all of them at once with smart routing and team balancing. Just say "schedule all pending jobs" and I'll handle it. ✨`;
-    } else {
-      greeting += `\n\nI can help schedule ${ctx.unscheduledCount === 1 ? 'it' : 'them'} efficiently. Want me to find optimal time slots?`;
-    }
+  // Concise status - max 1 sentence
+  if (ctx.unscheduledCount > 0 && ctx.todaysJobsCount > 0) {
+    greeting += `You have ${ctx.unscheduledCount} jobs to schedule and ${ctx.todaysJobsCount} on today's calendar.`;
+  } else if (ctx.unscheduledCount > 0) {
+    greeting += `You have ${ctx.unscheduledCount} job${ctx.unscheduledCount !== 1 ? 's' : ''} waiting to be scheduled.`;
   } else if (ctx.todaysJobsCount > 0) {
-    greeting += `\n\nYour team is ready to go! Need help with route optimization or any last-minute changes?`;
+    greeting += `You have ${ctx.todaysJobsCount} job${ctx.todaysJobsCount !== 1 ? 's' : ''} on today's calendar.`;
   } else {
-    greeting += `\n\nLooking pretty clear! Want to focus on filling your calendar for the rest of the week?`;
+    greeting += `Your calendar is clear.`;
   }
   
-  // Context-specific suggestions
-  const page = ctx.currentPage;
-  if (page.includes('/calendar')) {
-    greeting += `\n\n💡 **Quick tip**: I can optimize your routes to minimize drive time between jobs.`;
-  } else if (page.includes('/team')) {
-    greeting += `\n\n💡 **Quick tip**: I can check team availability and balance workloads across members.`;
-  }
+  greeting += ` How can I help?`;
   
   return greeting;
 }

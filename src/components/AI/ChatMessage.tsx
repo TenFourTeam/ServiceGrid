@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Message } from '@/hooks/useAIChat';
-import { Bot, User, Loader2, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { Bot, User, CheckCircle2, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import ReactMarkdown from 'react-markdown';
 import { ActionButton } from './ActionButton';
 import { SchedulePreviewCard } from './SchedulePreviewCard';
 import { ClarificationCard } from './ClarificationCard';
@@ -32,9 +33,14 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
   // Fetch media using authenticated hook
   const { data: mediaItems } = useConversationMedia(message.mediaIds);
 
+  // Hide system messages that only contain tool calls (empty bubbles)
+  if (isSystemMessage && message.toolCalls && message.toolCalls.length > 0) {
+    return null;
+  }
+
   return (
     <div className={cn(
-      'flex gap-3 mb-4', 
+      'flex gap-3 mb-4 animate-fade-in', 
       isUser && 'flex-row-reverse',
       isSystemMessage && 'justify-center'
     )}>
@@ -137,19 +143,39 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
               if (part.type === 'text') {
                 // Parse entity references within text
                 const entityParts = parseEntityReferences(part.content);
+                const hasEntities = entityParts.some(ep => ep.type === 'entity');
+                
                 return (
-                  <div key={idx} className="text-sm whitespace-pre-wrap break-words">
-                    {entityParts.map((ep, epIdx) => 
-                      ep.type === 'entity' ? (
-                        <EntityCard
-                          key={epIdx}
-                          entityType={ep.content.entityType}
-                          entityId={ep.content.entityId}
-                          displayName={ep.content.displayName}
-                        />
-                      ) : (
-                        <span key={epIdx}>{ep.content}</span>
+                  <div key={idx} className="text-sm break-words">
+                    {hasEntities ? (
+                      // Render with inline entity cards
+                      entityParts.map((ep, epIdx) => 
+                        ep.type === 'entity' ? (
+                          <EntityCard
+                            key={epIdx}
+                            entityType={ep.content.entityType}
+                            entityId={ep.content.entityId}
+                            displayName={ep.content.displayName}
+                          />
+                        ) : (
+                          <span key={epIdx} className="inline prose prose-sm max-w-none dark:prose-invert prose-p:my-1 prose-p:inline prose-headings:my-2 prose-ul:my-1 prose-li:my-0">
+                            <ReactMarkdown
+                              components={{
+                                p: ({ children }) => <span>{children}</span>,
+                              }}
+                            >
+                              {ep.content}
+                            </ReactMarkdown>
+                          </span>
+                        )
                       )
+                    ) : (
+                      // Render full markdown
+                      <div className="prose prose-sm max-w-none dark:prose-invert prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-li:my-0">
+                        <ReactMarkdown>
+                          {part.content}
+                        </ReactMarkdown>
+                      </div>
                     )}
                     {isStreaming && idx === parsedContent.length - 1 && (
                       <span className="inline-block w-2 h-4 ml-1 bg-current animate-pulse" />
@@ -213,47 +239,36 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
             </div>
           )}
 
-          {/* Tool Execution Indicators */}
+          {/* Tool Execution Indicators - Compact inline badges */}
           {message.toolCalls && message.toolCalls.length > 0 && (
-            <div className="mt-3 space-y-2">
+            <div className="mt-2 flex flex-wrap gap-1.5">
               {message.toolCalls.map((toolCall, idx) => {
                 const toolInfo = getToolInfo(toolCall.tool);
                 return (
-                  <div
+                  <span
                     key={idx}
                     className={cn(
-                      "flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-all",
-                      toolCall.status === 'executing'
-                        ? "bg-blue-500/10 text-blue-700 dark:text-blue-300"
-                        : toolCall.status === 'error'
-                        ? "bg-red-500/10 text-red-700 dark:text-red-300"
-                        : "bg-green-500/10 text-green-700 dark:text-green-300"
+                      "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium",
+                      toolCall.status === 'error'
+                        ? "bg-destructive/10 text-destructive"
+                        : "bg-primary/10 text-primary"
                     )}
                   >
-                    {toolCall.status === 'executing' ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin flex-shrink-0" />
-                    ) : toolCall.status === 'error' ? (
-                      <XCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                    {toolCall.status === 'error' ? (
+                      <XCircle className="w-3 h-3" />
                     ) : (
-                      <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+                      <CheckCircle2 className="w-3 h-3" />
                     )}
-                    <toolInfo.icon className="w-3.5 h-3.5 flex-shrink-0" />
-                    <span className="font-medium">{toolInfo.label}</span>
-                    {toolCall.status === 'complete' && (
-                      <span className="ml-auto text-[10px] opacity-60">✓</span>
-                    )}
-                    {toolCall.status === 'error' && (
-                      <span className="ml-auto text-[10px] opacity-60">✗</span>
-                    )}
+                    {toolInfo.label}
                     {toolCall.status === 'complete' && isReversibleAction(toolCall.tool) && onActionExecute && (
                       <UndoButton
                         actionId={toolCall.tool}
                         actionDescription={getUndoDescription(toolCall.tool, toolCall.result)}
                         onUndo={(msg) => onActionExecute(msg)}
-                        className="ml-2"
+                        className="ml-1"
                       />
                     )}
-                  </div>
+                  </span>
                 );
               })}
             </div>
