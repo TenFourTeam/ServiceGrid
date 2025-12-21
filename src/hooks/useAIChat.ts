@@ -760,10 +760,20 @@ export function useAIChat(options?: UseAIChatOptions) {
   }, []);
 
   const clearMessages = useCallback(() => {
+    // Abort any ongoing SSE stream first
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    
+    // Reset all state
     setMessages([]);
     setCurrentStreamingMessage('');
     setConversationId(undefined);
     setLastFailedMessage(null);
+    setIsStreaming(false);
+    setCurrentToolName(null);
+    setToolProgress(null);
   }, []);
 
   // Retry the last failed message
