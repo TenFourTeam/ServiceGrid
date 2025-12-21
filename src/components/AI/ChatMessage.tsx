@@ -11,6 +11,7 @@ import { PlanPreviewCard } from './PlanPreviewCard';
 import { PlanProgressCard } from './PlanProgressCard';
 import { EntityCard, parseEntityReferences } from './EntityCard';
 import { UndoButton, isReversibleAction, getUndoDescription } from './UndoButton';
+import { ToolResultCard } from './ToolResultCard';
 import { getToolInfo } from '@/lib/ai-agent/tool-metadata';
 import { useCalendarNavigation } from '@/hooks/useCalendarNavigation';
 import { useConversationMedia } from '@/hooks/useConversationMedia';
@@ -245,6 +246,19 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
                   label={action.label}
                   variant={action.variant}
                   onExecute={onActionExecute}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Tool Result Cards - Collapsible detailed results */}
+          {message.toolResults && message.toolResults.length > 0 && (
+            <div className="mt-3 space-y-2">
+              {message.toolResults.map((toolResult, idx) => (
+                <ToolResultCard
+                  key={idx}
+                  toolResult={toolResult}
+                  onAction={onActionExecute}
                 />
               ))}
             </div>

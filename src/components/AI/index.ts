@@ -4,6 +4,8 @@ export { AIChatInterface } from './AIChatInterface';
 export { ChatMessage } from './ChatMessage';
 export { ChatInput } from './ChatInput';
 export { TypingIndicator } from './TypingIndicator';
+export { ToolProgressIndicator } from './ToolProgressIndicator';
+export { ToolResultCard } from './ToolResultCard';
 export { ConversationStarters } from './ConversationStarters';
 export { ActionButton } from './ActionButton';
 export { OverviewGenerator } from './OverviewGenerator';
