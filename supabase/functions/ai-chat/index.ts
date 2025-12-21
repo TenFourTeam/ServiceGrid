@@ -33,6 +33,7 @@ import {
   getRecentEntities,
   setConversationState,
   clearConversationState,
+  updatePlanStatus,
   type MemoryContext,
   type ConversationMemory
 } from './memory-manager.ts';
