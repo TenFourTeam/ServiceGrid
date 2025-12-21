@@ -1450,12 +1450,16 @@ export async function executeConversationalRecovery(
   failedStep: PlanStep,
   context: ExecutionContext
 ): Promise<boolean> {
+  console.info('[multi-step-planner] executeConversationalRecovery called for tool:', failedStep.tool);
+  
   const recoveryActions = getRecoveryActionsForTool(failedStep.tool);
+  console.info('[multi-step-planner] Found', recoveryActions.length, 'recovery actions');
   
   // Find the first conversational recovery action (with queryTool)
   const conversationalAction = recoveryActions.find(a => a.queryTool && a.resolvesEntity);
   
   if (!conversationalAction || !conversationalAction.queryTool) {
+    console.info('[multi-step-planner] No conversational recovery action found (no queryTool/resolvesEntity)');
     return false;
   }
   
@@ -1463,7 +1467,8 @@ export async function executeConversationalRecovery(
   
   const queryTool = context.tools[conversationalAction.queryTool];
   if (!queryTool) {
-    console.error('[multi-step-planner] Query tool not found:', conversationalAction.queryTool);
+    console.error('[multi-step-planner] Query tool not found in context.tools:', conversationalAction.queryTool);
+    console.info('[multi-step-planner] Available tools:', Object.keys(context.tools || {}).slice(0, 20));
     return false;
   }
   

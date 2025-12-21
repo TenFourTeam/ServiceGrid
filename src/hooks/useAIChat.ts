@@ -559,39 +559,49 @@ export function useAIChat(options?: UseAIChatOptions) {
                   toast.error('Plan failed - some steps were rolled back');
                 }
               } else if (data.type === 'entity_selection') {
-                // Entity selection now adds a NEW message rather than updating the plan card
-                // This creates a conversational flow where the AI asks which option to use
-                const entitySelectionMessage: Message = {
-                  id: crypto.randomUUID(),
-                  role: 'assistant',
-                  content: '', // Content is already streamed via 'token' event before this
-                  timestamp: new Date(),
-                  messageType: 'standard',
-                  entitySelection: {
-                    planId: data.planId,
-                    question: data.question,
-                    resolvesEntity: data.resolvesEntity,
-                    options: data.options,
-                  },
+                // Entity selection creates a conversational flow - first finalize any streaming content
+                // then attach the entity selection to that message
+                const entitySelectionData = {
+                  planId: data.planId,
+                  question: data.question,
+                  resolvesEntity: data.resolvesEntity,
+                  options: data.options,
                 };
                 
-                // Add the entity selection as a new message (the text was already streamed)
-                // Check if there's a recent streaming message that this should attach to
+                // Get the current streaming content to include in the message
+                const streamedText = fullContent.trim();
+                
                 setMessages(prev => {
-                  // Look for the last assistant message (the one with the streamed text)
-                  const lastAssistantIdx = prev.length - 1;
-                  if (lastAssistantIdx >= 0 && prev[lastAssistantIdx].role === 'assistant' && !prev[lastAssistantIdx].entitySelection) {
-                    // Attach entity selection to the last assistant message
+                  // Check if there's a last assistant message we can attach to
+                  const lastAssistantIdx = prev.findIndex((m, i) => 
+                    i === prev.length - 1 && m.role === 'assistant' && !m.entitySelection
+                  );
+                  
+                  if (lastAssistantIdx !== -1) {
+                    // Attach to existing message
                     const updated = [...prev];
                     updated[lastAssistantIdx] = {
                       ...updated[lastAssistantIdx],
-                      entitySelection: entitySelectionMessage.entitySelection,
+                      content: updated[lastAssistantIdx].content || streamedText,
+                      entitySelection: entitySelectionData,
                     };
                     return updated;
                   }
-                  // Otherwise add as new message
-                  return [...prev, entitySelectionMessage];
+                  
+                  // Create new message with the streamed content and entity selection
+                  return [...prev, {
+                    id: crypto.randomUUID(),
+                    role: 'assistant' as const,
+                    content: streamedText,
+                    timestamp: new Date(),
+                    messageType: 'standard' as const,
+                    entitySelection: entitySelectionData,
+                  }];
                 });
+                
+                // Clear streaming state since we've finalized the message
+                setCurrentStreamingMessage('');
+                fullContent = '';
                 
                 // Also update the plan status to awaiting_recovery
                 setMessages(prev => {

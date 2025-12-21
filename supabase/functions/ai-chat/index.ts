@@ -1459,6 +1459,8 @@ const tools: Record<string, Tool> = {
       properties: {},
     },
     execute: async (args: any, context: any) => {
+      console.info('[list_pending_quotes] Fetching pending quotes for business:', context.businessId);
+      
       const { data, error } = await context.supabase
         .from('quotes')
         .select('id, number, total, status, created_at, customers(name)')
@@ -1467,7 +1469,12 @@ const tools: Record<string, Tool> = {
         .order('created_at', { ascending: false })
         .limit(10);
 
-      if (error) throw error;
+      if (error) {
+        console.error('[list_pending_quotes] Error fetching quotes:', error);
+        throw error;
+      }
+      
+      console.info('[list_pending_quotes] Found', data?.length || 0, 'quotes');
 
       return {
         options: data?.map((q: any) => ({
@@ -1479,6 +1486,7 @@ const tools: Record<string, Tool> = {
             customer: q.customers?.name,
             total: q.total,
             status: q.status,
+            createdAt: q.created_at,
           },
         })) || [],
         count: data?.length || 0,
