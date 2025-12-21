@@ -76,6 +76,147 @@ function generateConversationTitle(firstMessage: string): string {
   return title || 'New conversation';
 }
 
+// Helper to enrich tool results with display metadata for the frontend
+function enrichToolResult(toolName: string, result: any, args: any): any {
+  const _display: any = { summary: '', actions: [] };
+  
+  switch (toolName) {
+    case 'check_team_availability': {
+      const availCount = result.availableMembers?.length || 0;
+      const date = result.date || args.date;
+      _display.summary = availCount > 0 
+        ? `${availCount} team member${availCount > 1 ? 's' : ''} available${date ? ` for ${date}` : ''}`
+        : `No team members available${date ? ` for ${date}` : ''}`;
+      if (availCount > 0) {
+        _display.actions = [{ 
+          label: 'Schedule with Available', 
+          action: `Schedule a job with ${result.availableMembers[0]?.name || 'available team member'}` 
+        }];
+      }
+      break;
+    }
+    
+    case 'auto_schedule_job': {
+      const title = result?.job_title || result?.job?.title || 'Job';
+      const time = result?.scheduled_time || result?.starts_at;
+      _display.summary = `Scheduled "${title}"${time ? ` for ${new Date(time).toLocaleDateString()}` : ''}`;
+      _display.entityType = 'job';
+      if (time) {
+        _display.actions = [{ 
+          label: 'View Calendar', 
+          action: `navigate_to_calendar?date=${time.split('T')[0]}` 
+        }];
+      }
+      break;
+    }
+    
+    case 'batch_schedule_jobs': {
+      const scheduled = result?.scheduledJobs?.length || result?.scheduled_count || 0;
+      const failed = result?.failed_jobs?.length || 0;
+      _display.summary = `${scheduled} job${scheduled !== 1 ? 's' : ''} scheduled${failed > 0 ? `, ${failed} need attention` : ''}`;
+      _display.items = [
+        ...(result.scheduledJobs || []).slice(0, 5).map((j: any) => ({ 
+          name: j.title || j.jobTitle || 'Job', 
+          status: 'success' as const 
+        })),
+        ...(result.failed_jobs || []).slice(0, 3).map((j: any) => ({ 
+          name: j.jobTitle || j.title || 'Job', 
+          status: 'failed' as const, 
+          message: j.reason 
+        }))
+      ];
+      _display.actions = [{ label: 'View Calendar', action: 'navigate_to_calendar' }];
+      break;
+    }
+    
+    case 'get_unscheduled_jobs': {
+      const count = result?.count || result?.unscheduled_jobs?.length || 0;
+      _display.summary = `Found ${count} unscheduled job${count !== 1 ? 's' : ''}`;
+      if (count > 0) {
+        _display.actions = [{ label: 'Schedule All', action: 'Schedule all pending jobs' }];
+      }
+      break;
+    }
+    
+    case 'get_scheduling_conflicts': {
+      const count = result?.total_conflicts || result?.conflicts?.length || 0;
+      _display.summary = count > 0 
+        ? `Found ${count} scheduling conflict${count !== 1 ? 's' : ''}`
+        : 'No scheduling conflicts found';
+      if (count > 0) {
+        _display.actions = [{ label: 'Resolve Conflicts', action: 'Help me resolve these conflicts' }];
+      }
+      break;
+    }
+    
+    case 'create_quote': {
+      const number = result?.number || result?.quote_number;
+      const total = result?.total;
+      _display.summary = `Quote${number ? ` #${number}` : ''} created${total ? ` for $${total.toFixed(2)}` : ''}`;
+      _display.entityType = 'quote';
+      _display.actions = [
+        { label: 'Send Quote', action: `Send quote ${number} to customer` },
+        { label: 'View Quote', action: `navigate_to_entity?type=quote&id=${result.id}` }
+      ];
+      break;
+    }
+    
+    case 'create_invoice': {
+      const number = result?.number || result?.invoice_number;
+      const total = result?.total;
+      _display.summary = `Invoice${number ? ` #${number}` : ''} created${total ? ` for $${total.toFixed(2)}` : ''}`;
+      _display.entityType = 'invoice';
+      _display.actions = [
+        { label: 'Send Invoice', action: `Send invoice ${number} to customer` },
+        { label: 'View Invoice', action: `navigate_to_entity?type=invoice&id=${result.id}` }
+      ];
+      break;
+    }
+    
+    case 'record_payment': {
+      const amount = result?.amount;
+      _display.summary = `Payment of ${amount ? `$${amount.toFixed(2)}` : ''} recorded`;
+      _display.entityType = 'payment';
+      if (result?.invoice_id) {
+        _display.actions = [{ label: 'View Invoice', action: `navigate_to_entity?type=invoice&id=${result.invoice_id}` }];
+      }
+      break;
+    }
+    
+    case 'optimize_route_for_date': {
+      const count = result?.jobs_count || 0;
+      _display.summary = result?.success 
+        ? `Route optimized for ${count} job${count !== 1 ? 's' : ''}`
+        : result?.message || 'Route optimization failed';
+      if (result?.success) {
+        _display.actions = [{ label: 'View Route', action: `navigate_to_calendar?date=${args.date}` }];
+      }
+      break;
+    }
+    
+    case 'get_schedule_summary': {
+      const total = result?.totalJobs || 0;
+      _display.summary = `${total} job${total !== 1 ? 's' : ''} scheduled in date range`;
+      break;
+    }
+    
+    default:
+      // For unknown tools, create a basic summary
+      if (result?.success === true) {
+        _display.summary = 'Action completed successfully';
+      } else if (result?.success === false) {
+        _display.summary = result?.message || 'Action failed';
+      }
+      break;
+  }
+  
+  // Only add _display if we have content
+  if (_display.summary) {
+    return { ...result, _display };
+  }
+  return result;
+}
+
 // Tool registry
 const tools: Record<string, Tool> = {
   get_unscheduled_jobs: {
@@ -664,11 +805,15 @@ const tools: Record<string, Tool> = {
       console.info('[batch_schedule_jobs] Starting batch schedule', { jobCount: args.jobIds.length });
 
       // Send progress updates
-      const sendProgress = (message: string) => {
+      const sendProgress = (message: string, current?: number, total?: number) => {
         if (context.controller) {
           const encoder = new TextEncoder();
+          const progressData: any = { type: 'tool_progress', tool: 'batch_schedule_jobs', progress: message };
+          if (current !== undefined && total !== undefined) {
+            progressData.progress = { current, total };
+          }
           context.controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify({ type: 'tool_progress', progress: message })}\n\n`)
+            encoder.encode(`data: ${JSON.stringify(progressData)}\n\n`)
           );
         }
       };
@@ -775,7 +920,13 @@ const tools: Record<string, Tool> = {
       const results = [];
       const failedJobs = [];
       
-      for (const suggestion of suggestions) {
+      const totalSuggestions = suggestions.length;
+      for (let i = 0; i < suggestions.length; i++) {
+        const suggestion = suggestions[i];
+        
+        // Send progress update for each job being scheduled
+        sendProgress(`Scheduling job ${i + 1} of ${totalSuggestions}...`, i + 1, totalSuggestions);
+        
         try {
           // Update job with suggested time and mark as AI suggested
           const { error: updateError } = await context.supabase
@@ -5723,11 +5874,14 @@ RESPONSE STYLE:
                             console.error('[ai-chat] Tool learning error (non-fatal):', learnErr);
                           }
                           
+                          // Enrich result with display metadata for frontend
+                          const enrichedResult = enrichToolResult(tool.name, result, args);
+                          
                           controller.enqueue(
                             encoder.encode(`data: ${JSON.stringify({ 
                               type: 'tool_result', 
                               tool: tool.name, 
-                              result,
+                              result: enrichedResult,
                               success: true 
                             })}\n\n`)
                           );

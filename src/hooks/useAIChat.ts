@@ -112,6 +112,7 @@ export function useAIChat(options?: UseAIChatOptions) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [currentStreamingMessage, setCurrentStreamingMessage] = useState('');
   const [currentToolName, setCurrentToolName] = useState<string | null>(null);
+  const [toolProgress, setToolProgress] = useState<{ current: number; total: number } | null>(null);
   const [conversationId, setConversationId] = useState<string | undefined>(options?.conversationId);
   const [lastFailedMessage, setLastFailedMessage] = useState<{ content: string; attachments?: File[]; context?: any } | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -289,8 +290,9 @@ export function useAIChat(options?: UseAIChatOptions) {
                 // Just update the tool indicator - don't create system messages
                 setCurrentToolName(data.tool);
               } else if (data.type === 'tool_result') {
-                // Clear tool indicator
+                // Clear tool indicator and progress
                 setCurrentToolName(null);
+                setToolProgress(null);
                 
                 // Store tool result for display in the final message
                 const toolResult: ToolResultData = {
@@ -364,8 +366,11 @@ export function useAIChat(options?: UseAIChatOptions) {
                   description: data.error,
                 });
               } else if (data.type === 'tool_progress') {
-                // Just update the tool name for the typing indicator
+                // Update tool name and progress for batch operations
                 setCurrentToolName(data.tool);
+                if (data.progress) {
+                  setToolProgress({ current: data.progress.current, total: data.progress.total });
+                }
               } else if (data.type === 'clarification') {
                 // Show clarification message with options
                 const clarificationMessage: Message = {
@@ -698,6 +703,7 @@ export function useAIChat(options?: UseAIChatOptions) {
     isStreaming,
     currentStreamingMessage,
     currentToolName,
+    toolProgress,
     conversationId,
     lastFailedMessage,
     sendMessage,

@@ -46,10 +46,23 @@ interface ToolResultCardProps {
 }
 
 export function ToolResultCard({ toolResult, onAction, className }: ToolResultCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
   const { tool, result, success, displayData } = toolResult;
   const toolInfo = getToolInfo(tool);
   const Icon = toolInfo.icon;
+  
+  // Important tools start expanded by default
+  const shouldStartExpanded = [
+    'check_team_availability',
+    'auto_schedule_job',
+    'reschedule_job',
+    'batch_schedule_jobs',
+    'get_scheduling_conflicts',
+    'create_quote',
+    'create_invoice',
+    'get_unscheduled_jobs'
+  ].includes(tool);
+  
+  const [isExpanded, setIsExpanded] = useState(shouldStartExpanded);
 
   // Get card variant based on tool type
   const getCardContent = () => {
@@ -180,8 +193,10 @@ function AvailabilityCard({
   result: any; 
   onAction?: (action: string) => void;
 }) {
-  const available = result?.available || [];
-  const busy = result?.busy || [];
+  // Map backend field names to component expectations
+  const available = result?.availableMembers || result?.available || [];
+  const busyCount = typeof result?.busyMembers === 'number' ? result.busyMembers : (result?.busyMembers || result?.busy || []);
+  const busy = Array.isArray(busyCount) ? busyCount : [];
   const date = result?.date;
 
   return (
