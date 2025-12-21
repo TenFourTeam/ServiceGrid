@@ -80,29 +80,24 @@ const toolStatusMessages: Record<string, string> = {
 };
 
 export function TypingIndicator({ toolName, className }: TypingIndicatorProps) {
-  const statusMessage = toolName ? toolStatusMessages[toolName] : null;
+  const statusMessage = toolName ? toolStatusMessages[toolName] : 'AI is thinking...';
 
   return (
-    <div className={cn('flex gap-3 mb-4 animate-in fade-in duration-200', className)}>
+    <div className={cn('flex gap-3 mb-4', className)}>
       {/* Avatar */}
       <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
         <Bot className="w-4 h-4 text-primary" />
       </div>
 
-      {/* Typing bubble - minimal design */}
+      {/* Typing bubble */}
       <div className="flex-1 min-w-0">
-        <div className="inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 bg-muted">
-          {/* Animated dots */}
-          <div className="flex items-center gap-1">
-            <span className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-            <span className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-            <span className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-          </div>
-          {statusMessage && (
-            <span className="text-xs text-muted-foreground ml-1">
+        <div className="inline-block max-w-[85%] rounded-2xl px-4 py-3 bg-muted">
+          <div className="flex items-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+            <span className="text-sm text-muted-foreground animate-pulse">
               {statusMessage}
             </span>
-          )}
+          </div>
         </div>
       </div>
     </div>

@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { Message } from '@/hooks/useAIChat';
-import { Bot, User, CheckCircle2, XCircle } from 'lucide-react';
+import { Bot, User, Loader2, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import ReactMarkdown from 'react-markdown';
 import { ActionButton } from './ActionButton';
 import { SchedulePreviewCard } from './SchedulePreviewCard';
 import { ClarificationCard } from './ClarificationCard';
@@ -14,6 +13,7 @@ import { UndoButton, isReversibleAction, getUndoDescription } from './UndoButton
 import { getToolInfo } from '@/lib/ai-agent/tool-metadata';
 import { useCalendarNavigation } from '@/hooks/useCalendarNavigation';
 import { useConversationMedia } from '@/hooks/useConversationMedia';
+
 interface ChatMessageProps {
   message: Message;
   isStreaming?: boolean;
@@ -32,19 +32,9 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
   // Fetch media using authenticated hook
   const { data: mediaItems } = useConversationMedia(message.mediaIds);
 
-  // Hide system messages that only contain tool calls (no meaningful text)
-  const isToolOnlySystemMessage = isSystemMessage && 
-    message.toolCalls && 
-    message.toolCalls.length > 0 && 
-    (!message.content || message.content.startsWith('Executing:'));
-  
-  if (isToolOnlySystemMessage) {
-    return null; // Don't render tool-only system messages as bubbles
-  }
-
   return (
     <div className={cn(
-      'flex gap-3 mb-4 animate-in fade-in slide-in-from-bottom-2 duration-300', 
+      'flex gap-3 mb-4', 
       isUser && 'flex-row-reverse',
       isSystemMessage && 'justify-center'
     )}>
@@ -147,38 +137,22 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
               if (part.type === 'text') {
                 // Parse entity references within text
                 const entityParts = parseEntityReferences(part.content);
-                
-                // If there are entity references, render with mixed content
-                if (entityParts.some(ep => ep.type === 'entity')) {
-                  return (
-                    <div key={idx} className="text-sm break-words">
-                      {entityParts.map((ep, epIdx) => 
-                        ep.type === 'entity' ? (
-                          <EntityCard
-                            key={epIdx}
-                            entityType={ep.content.entityType}
-                            entityId={ep.content.entityId}
-                            displayName={ep.content.displayName}
-                          />
-                        ) : (
-                          <span key={epIdx} className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0 [&>p]:inline">
-                            <ReactMarkdown>{ep.content}</ReactMarkdown>
-                          </span>
-                        )
-                      )}
-                      {isStreaming && idx === parsedContent.length - 1 && (
-                        <span className="inline-block w-1.5 h-4 ml-0.5 bg-primary/60 animate-pulse rounded-sm" />
-                      )}
-                    </div>
-                  );
-                }
-                
-                // Pure text content - render with markdown
                 return (
-                  <div key={idx} className="text-sm break-words prose prose-sm dark:prose-invert max-w-none [&>p]:my-1 [&>ul]:my-1 [&>ol]:my-1 [&>p:first-child]:mt-0 [&>p:last-child]:mb-0">
-                    <ReactMarkdown>{part.content}</ReactMarkdown>
+                  <div key={idx} className="text-sm whitespace-pre-wrap break-words">
+                    {entityParts.map((ep, epIdx) => 
+                      ep.type === 'entity' ? (
+                        <EntityCard
+                          key={epIdx}
+                          entityType={ep.content.entityType}
+                          entityId={ep.content.entityId}
+                          displayName={ep.content.displayName}
+                        />
+                      ) : (
+                        <span key={epIdx}>{ep.content}</span>
+                      )
+                    )}
                     {isStreaming && idx === parsedContent.length - 1 && (
-                      <span className="inline-block w-1.5 h-4 ml-0.5 bg-primary/60 animate-pulse rounded-sm" />
+                      <span className="inline-block w-2 h-4 ml-1 bg-current animate-pulse" />
                     )}
                   </div>
                 );
@@ -239,33 +213,44 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
             </div>
           )}
 
-          {/* Tool Execution Indicators - only show inline for completed/error, skip for executing (typing indicator shows that) */}
-          {message.toolCalls && message.toolCalls.length > 0 && message.toolCalls.some(tc => tc.status !== 'executing') && (
-            <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              {message.toolCalls.filter(tc => tc.status !== 'executing').map((toolCall, idx) => {
+          {/* Tool Execution Indicators */}
+          {message.toolCalls && message.toolCalls.length > 0 && (
+            <div className="mt-3 space-y-2">
+              {message.toolCalls.map((toolCall, idx) => {
                 const toolInfo = getToolInfo(toolCall.tool);
                 return (
                   <div
                     key={idx}
                     className={cn(
-                      "inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium",
-                      toolCall.status === 'error'
-                        ? "bg-destructive/10 text-destructive"
-                        : "bg-primary/5 text-muted-foreground"
+                      "flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-all",
+                      toolCall.status === 'executing'
+                        ? "bg-blue-500/10 text-blue-700 dark:text-blue-300"
+                        : toolCall.status === 'error'
+                        ? "bg-red-500/10 text-red-700 dark:text-red-300"
+                        : "bg-green-500/10 text-green-700 dark:text-green-300"
                     )}
                   >
-                    {toolCall.status === 'error' ? (
-                      <XCircle className="w-3 h-3" />
+                    {toolCall.status === 'executing' ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin flex-shrink-0" />
+                    ) : toolCall.status === 'error' ? (
+                      <XCircle className="w-3.5 h-3.5 flex-shrink-0" />
                     ) : (
-                      <CheckCircle2 className="w-3 h-3 text-green-600 dark:text-green-400" />
+                      <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
                     )}
-                    <span>{toolInfo.label}</span>
+                    <toolInfo.icon className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span className="font-medium">{toolInfo.label}</span>
+                    {toolCall.status === 'complete' && (
+                      <span className="ml-auto text-[10px] opacity-60">✓</span>
+                    )}
+                    {toolCall.status === 'error' && (
+                      <span className="ml-auto text-[10px] opacity-60">✗</span>
+                    )}
                     {toolCall.status === 'complete' && isReversibleAction(toolCall.tool) && onActionExecute && (
                       <UndoButton
                         actionId={toolCall.tool}
                         actionDescription={getUndoDescription(toolCall.tool, toolCall.result)}
                         onUndo={(msg) => onActionExecute(msg)}
-                        className="ml-1"
+                        className="ml-2"
                       />
                     )}
                   </div>
