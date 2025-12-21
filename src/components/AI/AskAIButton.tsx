@@ -11,22 +11,6 @@ export function AskAIButton() {
   const location = useLocation();
   const isMobile = useIsMobile();
 
-  const getContextMessage = () => {
-    const path = location.pathname;
-    
-    if (path.startsWith('/calendar')) {
-      return "Show me gaps in this week's schedule";
-    } else if (path.startsWith('/work-orders') || path.startsWith('/jobs')) {
-      return "Schedule all pending jobs";
-    } else if (path.startsWith('/team')) {
-      return "Who's available tomorrow?";
-    } else if (path.startsWith('/analytics')) {
-      return "What insights do you have about my business?";
-    }
-    
-    return "How can I help you today?";
-  };
-
   return (
     <>
       <Button
@@ -45,7 +29,6 @@ export function AskAIButton() {
       <AIChatInterface
         open={open}
         onOpenChange={setOpen}
-        initialMessage={getContextMessage()}
         context={{ currentPage: location.pathname }}
       />
     </>
