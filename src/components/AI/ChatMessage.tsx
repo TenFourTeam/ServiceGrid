@@ -12,6 +12,7 @@ import { PlanProgressCard } from './PlanProgressCard';
 import { EntityCard, parseEntityReferences } from './EntityCard';
 import { UndoButton, isReversibleAction, getUndoDescription } from './UndoButton';
 import { ToolResultCard } from './ToolResultCard';
+import { EntitySelectionMessage } from './EntitySelectionMessage';
 import { getToolInfo } from '@/lib/ai-agent/tool-metadata';
 import { useCalendarNavigation } from '@/hooks/useCalendarNavigation';
 import { useConversationMedia } from '@/hooks/useConversationMedia';
@@ -146,13 +147,25 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
               />
             )}
 
-            {/* Plan Progress Card */}
+            {/* Plan Progress Card - rendered without entity selection (that's shown separately) */}
             {message.messageType === 'plan_progress' && message.planProgress && (
               <PlanProgressCard 
-                progress={message.planProgress} 
+                progress={{
+                  ...message.planProgress,
+                  // Don't show entity selection in the card - it renders separately below
+                  entitySelection: undefined
+                }} 
                 onRecoveryAction={onRecoveryAction}
                 onResume={onResume}
                 onEntitySelect={onEntitySelect}
+              />
+            )}
+            
+            {/* Entity Selection - rendered as a separate conversational element outside the plan card */}
+            {message.entitySelection && onEntitySelect && (
+              <EntitySelectionMessage
+                selection={message.entitySelection}
+                onSelect={onEntitySelect}
               />
             )}
 
