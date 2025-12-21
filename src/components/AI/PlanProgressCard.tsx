@@ -10,8 +10,10 @@ import {
   RotateCcw,
   SkipForward,
   Clock,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useEffect, useState } from 'react';
 
 export interface PlanStepProgress {
   id: string;
@@ -41,14 +43,21 @@ interface PlanProgressCardProps {
   progress: PlanProgressData;
 }
 
-function getStepIcon(status: PlanStepProgress['status']) {
+function getStepIcon(status: PlanStepProgress['status'], isAnimating: boolean) {
   switch (status) {
     case 'completed':
-      return <CheckCircle2 className="w-4 h-4 text-green-500" />;
+      return (
+        <CheckCircle2 
+          className={cn(
+            "w-4 h-4 text-success",
+            isAnimating && "animate-check-pop"
+          )} 
+        />
+      );
     case 'running':
-      return <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />;
+      return <Loader2 className="w-4 h-4 text-primary animate-spin" />;
     case 'failed':
-      return <XCircle className="w-4 h-4 text-red-500" />;
+      return <XCircle className="w-4 h-4 text-destructive" />;
     case 'rolled_back':
       return <RotateCcw className="w-4 h-4 text-amber-500" />;
     case 'skipped':
@@ -61,11 +70,11 @@ function getStepIcon(status: PlanStepProgress['status']) {
 function getStatusBadge(status: PlanProgressData['status']) {
   switch (status) {
     case 'executing':
-      return <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20">Executing</Badge>;
+      return <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">Executing</Badge>;
     case 'completed':
-      return <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">Completed</Badge>;
+      return <Badge variant="outline" className="bg-success/10 text-success border-success/20">Completed</Badge>;
     case 'failed':
-      return <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/20">Failed</Badge>;
+      return <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">Failed</Badge>;
     case 'rolled_back':
       return <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20">Rolled Back</Badge>;
     case 'cancelled':
@@ -75,34 +84,108 @@ function getStatusBadge(status: PlanProgressData['status']) {
   }
 }
 
+// Confetti particle component for celebration
+function ConfettiParticle({ delay, color }: { delay: number; color: string }) {
+  return (
+    <div
+      className="absolute w-2 h-2 rounded-full animate-confetti-burst"
+      style={{
+        backgroundColor: color,
+        animationDelay: `${delay}ms`,
+        left: `${Math.random() * 100}%`,
+        top: `${Math.random() * 50}%`,
+      }}
+    />
+  );
+}
+
 export function PlanProgressCard({ progress }: PlanProgressCardProps) {
+  const [recentlyCompletedSteps, setRecentlyCompletedSteps] = useState<Set<string>>(new Set());
+  const [showCelebration, setShowCelebration] = useState(false);
+  
   const completedSteps = progress.steps.filter(s => s.status === 'completed').length;
   const progressPercent = (completedSteps / progress.steps.length) * 100;
   const isComplete = progress.status === 'completed' || progress.status === 'failed' || progress.status === 'rolled_back';
+  const isSuccess = progress.status === 'completed';
+
+  // Track recently completed steps for animation
+  useEffect(() => {
+    const newCompleted = new Set<string>();
+    progress.steps.forEach(step => {
+      if (step.status === 'completed' && !recentlyCompletedSteps.has(step.id)) {
+        newCompleted.add(step.id);
+      }
+    });
+    
+    if (newCompleted.size > 0) {
+      setRecentlyCompletedSteps(prev => new Set([...prev, ...newCompleted]));
+      
+      // Clear animation state after animation completes
+      setTimeout(() => {
+        setRecentlyCompletedSteps(prev => {
+          const updated = new Set(prev);
+          newCompleted.forEach(id => updated.delete(id));
+          return updated;
+        });
+      }, 500);
+    }
+  }, [progress.steps]);
+
+  // Trigger celebration animation on success
+  useEffect(() => {
+    if (isSuccess && !showCelebration) {
+      setShowCelebration(true);
+      // Reset after animation
+      setTimeout(() => setShowCelebration(false), 2000);
+    }
+  }, [isSuccess]);
+
+  const confettiColors = ['hsl(var(--success))', 'hsl(var(--primary))', '#FFD700', '#FF6B6B', '#4ECDC4'];
 
   return (
     <Card className={cn(
-      "border-primary/20",
-      progress.status === 'completed' && "border-green-500/20 bg-gradient-to-br from-green-500/5 to-transparent",
-      progress.status === 'failed' && "border-red-500/20 bg-gradient-to-br from-red-500/5 to-transparent",
+      "border-primary/20 transition-all duration-300 relative overflow-hidden",
+      progress.status === 'completed' && "border-success/30 bg-gradient-to-br from-success/5 to-transparent",
+      progress.status === 'completed' && showCelebration && "animate-celebrate-pulse",
+      progress.status === 'failed' && "border-destructive/30 bg-gradient-to-br from-destructive/5 to-transparent animate-shake-error",
       progress.status === 'rolled_back' && "border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent"
     )}>
+      {/* Confetti overlay for success */}
+      {showCelebration && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {confettiColors.map((color, i) => (
+            <ConfettiParticle key={i} delay={i * 100} color={color} />
+          ))}
+          {confettiColors.map((color, i) => (
+            <ConfettiParticle key={i + 5} delay={i * 100 + 50} color={color} />
+          ))}
+        </div>
+      )}
+
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2">
             <div className={cn(
-              "p-2 rounded-lg",
-              progress.status === 'executing' && "bg-blue-500/10",
-              progress.status === 'completed' && "bg-green-500/10",
-              progress.status === 'failed' && "bg-red-500/10",
+              "p-2 rounded-lg transition-all duration-300",
+              progress.status === 'executing' && "bg-primary/10",
+              progress.status === 'completed' && "bg-success/10",
+              progress.status === 'failed' && "bg-destructive/10",
               progress.status === 'rolled_back' && "bg-amber-500/10"
             )}>
               {progress.status === 'executing' ? (
-                <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+                <Loader2 className="w-4 h-4 text-primary animate-spin" />
               ) : progress.status === 'completed' ? (
-                <CheckCircle2 className="w-4 h-4 text-green-500" />
+                <div className="relative">
+                  <CheckCircle2 className={cn(
+                    "w-4 h-4 text-success",
+                    showCelebration && "animate-check-pop"
+                  )} />
+                  {showCelebration && (
+                    <Sparkles className="absolute -top-1 -right-1 w-3 h-3 text-amber-400 animate-pulse" />
+                  )}
+                </div>
               ) : progress.status === 'failed' ? (
-                <XCircle className="w-4 h-4 text-red-500" />
+                <XCircle className="w-4 h-4 text-destructive" />
               ) : (
                 <ListChecks className="w-4 h-4 text-muted-foreground" />
               )}
@@ -110,7 +193,10 @@ export function PlanProgressCard({ progress }: PlanProgressCardProps) {
             <div>
               <CardTitle className="text-base font-semibold">{progress.planName}</CardTitle>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Step {Math.min(progress.currentStepIndex + 1, progress.steps.length)} of {progress.steps.length}
+                {isComplete 
+                  ? `${completedSteps} of ${progress.steps.length} steps completed`
+                  : `Step ${Math.min(progress.currentStepIndex + 1, progress.steps.length)} of ${progress.steps.length}`
+                }
               </p>
             </div>
           </div>
@@ -124,9 +210,9 @@ export function PlanProgressCard({ progress }: PlanProgressCardProps) {
           <Progress 
             value={progressPercent} 
             className={cn(
-              "h-2",
-              progress.status === 'failed' && "[&>div]:bg-red-500",
-              progress.status === 'completed' && "[&>div]:bg-green-500"
+              "h-2 transition-all duration-500",
+              progress.status === 'failed' && "[&>div]:bg-destructive",
+              progress.status === 'completed' && "[&>div]:bg-success"
             )}
           />
           <div className="flex justify-between text-xs text-muted-foreground">
@@ -137,56 +223,71 @@ export function PlanProgressCard({ progress }: PlanProgressCardProps) {
 
         {/* Steps list */}
         <div className="space-y-1">
-          {progress.steps.map((step, index) => (
-            <div
-              key={step.id}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
-                step.status === 'running' && "bg-blue-500/10 border border-blue-500/20",
-                step.status === 'completed' && "bg-green-500/5",
-                step.status === 'failed' && "bg-red-500/10 border border-red-500/20",
-                step.status === 'rolled_back' && "bg-amber-500/10",
-                step.status === 'pending' && "opacity-50"
-              )}
-            >
-              {getStepIcon(step.status)}
-              <div className="flex-1 min-w-0">
-                <p className={cn(
-                  "text-sm font-medium truncate",
-                  step.status === 'running' && "text-blue-600 dark:text-blue-400",
-                  step.status === 'failed' && "text-red-600 dark:text-red-400"
-                )}>
-                  {step.name}
-                </p>
-                {step.error && (
-                  <p className="text-xs text-red-600 dark:text-red-400 truncate">
-                    {step.error}
+          {progress.steps.map((step, index) => {
+            const isRecentlyCompleted = recentlyCompletedSteps.has(step.id);
+            
+            return (
+              <div
+                key={step.id}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-300",
+                  step.status === 'running' && "bg-primary/10 border border-primary/20",
+                  step.status === 'completed' && "bg-success/5",
+                  step.status === 'completed' && isRecentlyCompleted && "animate-step-success",
+                  step.status === 'failed' && "bg-destructive/10 border border-destructive/20",
+                  step.status === 'rolled_back' && "bg-amber-500/10",
+                  step.status === 'pending' && "opacity-50"
+                )}
+              >
+                {getStepIcon(step.status, isRecentlyCompleted)}
+                <div className="flex-1 min-w-0">
+                  <p className={cn(
+                    "text-sm font-medium truncate transition-colors duration-300",
+                    step.status === 'running' && "text-primary",
+                    step.status === 'completed' && "text-success",
+                    step.status === 'failed' && "text-destructive"
+                  )}>
+                    {step.name}
                   </p>
+                  {step.error && (
+                    <p className="text-xs text-destructive truncate">
+                      {step.error}
+                    </p>
+                  )}
+                </div>
+                {step.status === 'running' && (
+                  <span className="text-xs text-primary animate-pulse">Running...</span>
+                )}
+                {step.status === 'completed' && isRecentlyCompleted && (
+                  <span className="text-xs text-success animate-fade-in">Done!</span>
                 )}
               </div>
-              {step.status === 'running' && (
-                <span className="text-xs text-blue-500 animate-pulse">Running...</span>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Summary (when complete) */}
         {isComplete && progress.summary && (
-          <div className="pt-2 border-t border-border/50">
+          <div className={cn(
+            "pt-2 border-t border-border/50 transition-all duration-500",
+            isSuccess && "animate-fade-in"
+          )}>
             <div className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-4">
-                <span className="text-green-600">
-                  ✓ {progress.summary.successfulSteps} succeeded
+                <span className="text-success flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3" />
+                  {progress.summary.successfulSteps} succeeded
                 </span>
                 {progress.summary.failedSteps > 0 && (
-                  <span className="text-red-600">
-                    ✗ {progress.summary.failedSteps} failed
+                  <span className="text-destructive flex items-center gap-1">
+                    <XCircle className="w-3 h-3" />
+                    {progress.summary.failedSteps} failed
                   </span>
                 )}
                 {progress.summary.rolledBackSteps > 0 && (
-                  <span className="text-amber-600">
-                    ↺ {progress.summary.rolledBackSteps} rolled back
+                  <span className="text-amber-600 flex items-center gap-1">
+                    <RotateCcw className="w-3 h-3" />
+                    {progress.summary.rolledBackSteps} rolled back
                   </span>
                 )}
               </div>
@@ -197,6 +298,14 @@ export function PlanProgressCard({ progress }: PlanProgressCardProps) {
                 </div>
               )}
             </div>
+            
+            {/* Success message */}
+            {isSuccess && (
+              <p className="text-sm text-success mt-2 flex items-center gap-1.5 animate-fade-in">
+                <Sparkles className="w-4 h-4" />
+                All steps completed successfully!
+              </p>
+            )}
           </div>
         )}
       </CardContent>

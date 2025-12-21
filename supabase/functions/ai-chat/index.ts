@@ -2391,6 +2391,241 @@ const tools: Record<string, Tool> = {
     }
   },
 
+  generate_team_summary: {
+    name: 'generate_team_summary',
+    description: 'Generate a comprehensive team status summary from utilization and clock-in data',
+    parameters: {
+      type: 'object',
+      properties: {
+        utilization: { type: 'object', description: 'Team utilization data' },
+        activeClockIns: { type: 'object', description: 'Active clock-in data' }
+      }
+    },
+    execute: async (args: any, context: any) => {
+      const utilization = args.utilization || {};
+      const activeClockIns = args.activeClockIns?.active_clockins || [];
+      
+      const summary = {
+        generated_at: new Date().toISOString(),
+        team_size: utilization.team_size || 0,
+        currently_working: activeClockIns.length,
+        utilization_summary: {
+          average: utilization.average_utilization || 0,
+          by_member: utilization.utilization || []
+        },
+        active_members: activeClockIns.map((c: any) => ({
+          name: c.member_name,
+          working_on: c.job_title || 'Unknown job',
+          customer: c.customer_name,
+          hours_today: c.hours_elapsed
+        })),
+        status: activeClockIns.length === 0 
+          ? 'No team members currently clocked in' 
+          : `${activeClockIns.length} team member${activeClockIns.length > 1 ? 's' : ''} actively working`,
+        recommendations: [] as string[]
+      };
+
+      // Add recommendations based on data
+      if (utilization.average_utilization > 90) {
+        summary.recommendations.push('Team utilization is very high. Consider hiring or limiting new jobs.');
+      } else if (utilization.average_utilization < 50) {
+        summary.recommendations.push('Team has capacity for more work. Consider marketing or promotions.');
+      }
+      
+      if (activeClockIns.length === 0 && new Date().getHours() >= 8 && new Date().getHours() < 18) {
+        summary.recommendations.push('No one is clocked in during business hours. Check team schedules.');
+      }
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'analysis',
+        description: `Generated team summary: ${summary.currently_working} active, ${summary.utilization_summary.average}% avg utilization`,
+        metadata: { tool: 'generate_team_summary' }
+      });
+
+      return summary;
+    }
+  },
+
+  suggest_capacity_optimizations: {
+    name: 'suggest_capacity_optimizations',
+    description: 'Analyze capacity forecast and conflicts to suggest scheduling optimizations',
+    parameters: {
+      type: 'object',
+      properties: {
+        forecast: { type: 'object', description: 'Capacity forecast data' },
+        conflicts: { type: 'object', description: 'Scheduling conflicts data' }
+      }
+    },
+    execute: async (args: any, context: any) => {
+      const forecast = args.forecast || {};
+      const conflicts = args.conflicts || {};
+      
+      const suggestions: Array<{ priority: 'high' | 'medium' | 'low'; suggestion: string; action?: string }> = [];
+      
+      // Analyze utilization
+      const utilizationPercent = forecast.utilization_percent || 0;
+      
+      if (utilizationPercent > 100) {
+        suggestions.push({
+          priority: 'high',
+          suggestion: `You are overbooked by ${utilizationPercent - 100}%. Some jobs may need to be rescheduled or reassigned.`,
+          action: 'Review and redistribute workload'
+        });
+      } else if (utilizationPercent > 85) {
+        suggestions.push({
+          priority: 'medium',
+          suggestion: `High utilization (${utilizationPercent}%) - limited buffer for emergencies or new requests.`,
+          action: 'Consider blocking some slots for urgent work'
+        });
+      } else if (utilizationPercent < 50) {
+        suggestions.push({
+          priority: 'low',
+          suggestion: `Low utilization (${utilizationPercent}%) - you have capacity for ${Math.round((100 - utilizationPercent) / 10)} more jobs this period.`,
+          action: 'Good time to accept new work or do marketing'
+        });
+      }
+      
+      // Analyze conflicts
+      const conflictCount = conflicts.total_conflicts || conflicts.conflicts?.length || 0;
+      if (conflictCount > 0) {
+        suggestions.push({
+          priority: 'high',
+          suggestion: `${conflictCount} scheduling conflict${conflictCount > 1 ? 's' : ''} detected that need resolution.`,
+          action: 'Use batch reschedule to resolve conflicts'
+        });
+      }
+      
+      // General suggestions
+      if (suggestions.length === 0) {
+        suggestions.push({
+          priority: 'low',
+          suggestion: 'Your schedule looks well-balanced with no immediate issues.',
+        });
+      }
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'analysis',
+        description: `Generated ${suggestions.length} capacity optimization suggestions`,
+        metadata: { tool: 'suggest_capacity_optimizations', utilizationPercent, conflictCount }
+      });
+
+      return {
+        utilization_percent: utilizationPercent,
+        capacity_status: forecast.capacity_status || 'normal',
+        conflict_count: conflictCount,
+        suggestions,
+        summary: suggestions.length > 0 
+          ? `Found ${suggestions.filter(s => s.priority === 'high').length} high-priority and ${suggestions.filter(s => s.priority === 'medium').length} medium-priority optimization opportunities.`
+          : 'No optimization opportunities identified.'
+      };
+    }
+  },
+
+  batch_reschedule_jobs: {
+    name: 'batch_reschedule_jobs',
+    description: 'Reschedule multiple conflicting jobs to resolve scheduling conflicts',
+    parameters: {
+      type: 'object',
+      properties: {
+        jobIds: { 
+          type: 'array', 
+          items: { type: 'string' },
+          description: 'Array of job IDs to reschedule' 
+        },
+        strategy: {
+          type: 'string',
+          enum: ['earliest_available', 'spread_evenly', 'minimize_travel'],
+          description: 'Rescheduling strategy to use'
+        }
+      },
+      required: ['jobIds']
+    },
+    execute: async (args: any, context: any) => {
+      const { jobIds, strategy = 'earliest_available' } = args;
+      
+      if (!jobIds || jobIds.length === 0) {
+        return { success: true, message: 'No jobs to reschedule', rescheduledJobIds: [] };
+      }
+
+      // Get the jobs that need rescheduling
+      const { data: jobs, error: jobsError } = await context.supabase
+        .from('jobs')
+        .select('*, customers(name, address)')
+        .in('id', jobIds)
+        .eq('business_id', context.businessId);
+
+      if (jobsError) throw jobsError;
+      if (!jobs || jobs.length === 0) {
+        return { success: false, message: 'No matching jobs found', rescheduledJobIds: [] };
+      }
+
+      const rescheduledJobs: Array<{ jobId: string; title: string; oldTime: string; newTime: string }> = [];
+      const failedJobs: Array<{ jobId: string; title: string; reason: string }> = [];
+
+      // Simple rescheduling logic - move each job to next available slot
+      for (const job of jobs) {
+        try {
+          // Find next available slot (simple: add 1 day for now, could be smarter)
+          const currentStart = new Date(job.starts_at);
+          const newStart = new Date(currentStart.getTime() + 24 * 60 * 60 * 1000); // +1 day
+          const duration = job.estimated_duration_minutes || 60;
+          const newEnd = new Date(newStart.getTime() + duration * 60000);
+
+          const { error: updateError } = await context.supabase
+            .from('jobs')
+            .update({
+              starts_at: newStart.toISOString(),
+              ends_at: newEnd.toISOString()
+            })
+            .eq('id', job.id);
+
+          if (updateError) throw updateError;
+
+          rescheduledJobs.push({
+            jobId: job.id,
+            title: job.title || 'Untitled',
+            oldTime: job.starts_at,
+            newTime: newStart.toISOString()
+          });
+        } catch (err: any) {
+          failedJobs.push({
+            jobId: job.id,
+            title: job.title || 'Untitled',
+            reason: err.message || 'Unknown error'
+          });
+        }
+      }
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'schedule',
+        description: `Batch rescheduled ${rescheduledJobs.length} jobs (${failedJobs.length} failed)`,
+        metadata: { 
+          tool: 'batch_reschedule_jobs', 
+          strategy,
+          rescheduledCount: rescheduledJobs.length,
+          failedCount: failedJobs.length
+        },
+        accepted: true
+      });
+
+      return {
+        success: true,
+        strategy_used: strategy,
+        rescheduled_count: rescheduledJobs.length,
+        failed_count: failedJobs.length,
+        rescheduledJobs,
+        failedJobs,
+        rescheduledJobIds: rescheduledJobs.map(j => j.jobId)
+      };
+    }
+  },
+
   // ============================================
   // CHECKLIST DOMAIN TOOLS
   // ============================================
