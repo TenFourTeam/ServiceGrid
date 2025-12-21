@@ -1393,10 +1393,10 @@ function buildSmartClarification(
     return {
       question: "I can help you with scheduling! What would you like to do?",
       options: [
-        { label: '📋 Show jobs needing scheduling', value: 'Show me jobs that need scheduling' },
-        { label: '📅 Schedule pending jobs', value: 'Schedule all pending jobs' },
-        { label: '👥 Check team availability', value: 'Check team availability' },
-        { label: '🔄 Reschedule a job', value: 'Reschedule an existing job' }
+        { label: 'Show jobs needing scheduling', value: 'Show me jobs that need scheduling' },
+        { label: 'Schedule pending jobs', value: 'Schedule all pending jobs' },
+        { label: 'Check team availability', value: 'Check team availability' },
+        { label: 'Reschedule a job', value: 'Reschedule an existing job' }
       ],
       domain: 'scheduling'
     };
@@ -1405,44 +1405,44 @@ function buildSmartClarification(
   // Domain-specific structured options
   const domainOptions: Record<string, Array<{ label: string; value: string }>> = {
     scheduling: [
-      { label: '📋 Jobs needing scheduling', value: 'Show me jobs that need scheduling' },
-      { label: '📅 Schedule pending jobs', value: 'Schedule all pending jobs' },
-      { label: '👥 Team availability', value: 'Check team availability' },
-      { label: '🗓️ This week\'s schedule', value: 'Show this week\'s schedule' }
+      { label: 'Jobs needing scheduling', value: 'Show me jobs that need scheduling' },
+      { label: 'Schedule pending jobs', value: 'Schedule all pending jobs' },
+      { label: 'Team availability', value: 'Check team availability' },
+      { label: 'This week\'s schedule', value: 'Show this week\'s schedule' }
     ],
     job_management: [
-      { label: '➕ Create new job', value: 'Create a new job' },
-      { label: '📋 Unscheduled jobs', value: 'View unscheduled jobs' },
-      { label: '✅ Update job status', value: 'Update a job status' },
-      { label: '🔍 Find a job', value: 'Find a specific job' }
+      { label: 'Create new job', value: 'Create a new job' },
+      { label: 'Unscheduled jobs', value: 'View unscheduled jobs' },
+      { label: 'Update job status', value: 'Update a job status' },
+      { label: 'Find a job', value: 'Find a specific job' }
     ],
     quote_lifecycle: [
-      { label: '📝 Create quote', value: 'Create a new quote' },
-      { label: '📊 Pending quotes', value: 'View pending quotes' },
-      { label: '📧 Send a quote', value: 'Send a quote' },
-      { label: '🔄 Convert to job', value: 'Convert quote to job' }
+      { label: 'Create quote', value: 'Create a new quote' },
+      { label: 'Pending quotes', value: 'View pending quotes' },
+      { label: 'Send a quote', value: 'Send a quote' },
+      { label: 'Convert to job', value: 'Convert quote to job' }
     ],
     invoicing: [
-      { label: '📝 Create invoice', value: 'Create a new invoice' },
-      { label: '💰 Unpaid invoices', value: 'View unpaid invoices' },
-      { label: '📧 Send reminders', value: 'Send invoice reminders' },
-      { label: '💳 Record payment', value: 'Record a payment' }
+      { label: 'Create invoice', value: 'Create a new invoice' },
+      { label: 'Unpaid invoices', value: 'View unpaid invoices' },
+      { label: 'Send reminders', value: 'Send invoice reminders' },
+      { label: 'Record payment', value: 'Record a payment' }
     ],
     customer_acquisition: [
-      { label: '➕ Add customer', value: 'Add a new customer' },
-      { label: '🔍 Search customers', value: 'Search for a customer' },
-      { label: '📜 Customer history', value: 'View customer history' }
+      { label: 'Add customer', value: 'Add a new customer' },
+      { label: 'Search customers', value: 'Search for a customer' },
+      { label: 'Customer history', value: 'View customer history' }
     ],
     team_management: [
-      { label: '👥 Team members', value: 'View team members' },
-      { label: '📊 Team utilization', value: 'Check team utilization' },
-      { label: '⏱️ Active clock-ins', value: 'View active clock-ins' }
+      { label: 'Team members', value: 'View team members' },
+      { label: 'Team utilization', value: 'Check team utilization' },
+      { label: 'Active clock-ins', value: 'View active clock-ins' }
     ],
     general: [
-      { label: '📅 Scheduling help', value: 'Help with scheduling' },
-      { label: '📝 Quotes & invoices', value: 'Manage quotes or invoices' },
-      { label: '👥 Customers', value: 'Customer management' },
-      { label: '📊 Business metrics', value: 'View business metrics' }
+      { label: 'Scheduling help', value: 'Help with scheduling' },
+      { label: 'Quotes & invoices', value: 'Manage quotes or invoices' },
+      { label: 'Customers', value: 'Customer management' },
+      { label: 'Business metrics', value: 'View business metrics' }
     ]
   };
   
