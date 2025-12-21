@@ -256,60 +256,11 @@ export function useAIChat(options?: UseAIChatOptions) {
                 setCurrentStreamingMessage(fullContent);
                 setCurrentToolName(null); // Clear tool name when streaming starts
               } else if (data.type === 'tool_call') {
-                // Create a system message for tool execution
-                const isReversible = reversibleTools.has(data.tool);
-                const toolSystemMessage: Message = {
-                  id: `tool-${data.tool}-${Date.now()}`,
-                  role: 'system',
-                  content: `Executing: ${data.tool}`,
-                  timestamp: new Date(),
-                  toolCalls: [{ tool: data.tool, status: 'executing' as const, reversible: isReversible }]
-                };
-                
+                // Just update the tool indicator - don't create system messages
                 setCurrentToolName(data.tool);
-                setMessages(prev => [...prev, toolSystemMessage]);
-                
-                // Show toast for important actions
-                const importantTools = ['batch_schedule_jobs', 'auto_schedule_job', 'optimize_route_for_date'];
-                const toolLabels: Record<string, string> = {
-                  batch_schedule_jobs: 'Scheduling multiple jobs with AI',
-                  auto_schedule_job: 'Auto-scheduling job',
-                  optimize_route_for_date: 'Optimizing route',
-                  check_team_availability: 'Checking team availability',
-                  get_unscheduled_jobs: 'Finding unscheduled jobs',
-                };
-                
-                if (importantTools.includes(data.tool)) {
-                  toast.info(toolLabels[data.tool] || data.tool.replace(/_/g, ' '), {
-                    icon: '🔧',
-                    duration: 2000,
-                  });
-                }
               } else if (data.type === 'tool_result') {
-                const isReversible = reversibleTools.has(data.tool);
-                
-                // Update tool system message to mark complete
-                setMessages(prev => {
-                  const toolMsgIndex = prev.findIndex(m => 
-                    m.role === 'system' && 
-                    m.toolCalls?.some(tc => tc.tool === data.tool && tc.status === 'executing')
-                  );
-                  
-                  if (toolMsgIndex !== -1) {
-                    const updated = [...prev];
-                    updated[toolMsgIndex] = {
-                      ...updated[toolMsgIndex],
-                      toolCalls: [{ 
-                        tool: data.tool, 
-                        status: 'complete' as const, 
-                        result: data.result,
-                        reversible: isReversible
-                      }]
-                    };
-                    return updated;
-                  }
-                  return prev;
-                });
+                // Clear tool indicator
+                setCurrentToolName(null);
                 
                 // Handle navigation tool results
                 if (data.tool === 'navigate_to_entity' && data.result?.url) {
@@ -317,29 +268,10 @@ export function useAIChat(options?: UseAIChatOptions) {
                 } else if (data.tool === 'navigate_to_calendar' && data.result?.url) {
                   options?.onNavigate?.(data.result.url, 'Calendar');
                 }
-                
-                // Show success toast
-                if (data.success !== false) {
-                  toast.success('Action completed', { icon: '✅', duration: 1500 });
-                }
+                // No toast for tool results - let the AI response be sufficient
               } else if (data.type === 'tool_error') {
-                // Update tool system message to mark error
-                setMessages(prev => {
-                  const toolMsgIndex = prev.findIndex(m => 
-                    m.role === 'system' && 
-                    m.toolCalls?.some(tc => tc.tool === data.tool && tc.status === 'executing')
-                  );
-                  
-                  if (toolMsgIndex !== -1) {
-                    const updated = [...prev];
-                    updated[toolMsgIndex] = {
-                      ...updated[toolMsgIndex],
-                      toolCalls: [{ tool: data.tool, status: 'error' as const, result: data.error }]
-                    };
-                    return updated;
-                  }
-                  return prev;
-                });
+                // Clear tool indicator and show error toast (errors are important)
+                setCurrentToolName(null);
                 
                 const toolLabels: Record<string, string> = {
                   batch_schedule_jobs: 'Scheduling jobs',
@@ -349,26 +281,10 @@ export function useAIChat(options?: UseAIChatOptions) {
                 
                 toast.error(`Failed: ${toolLabels[data.tool] || data.tool.replace(/_/g, ' ')}`, {
                   description: data.error,
-                  icon: '❌',
                 });
               } else if (data.type === 'tool_progress') {
-                // Update tool system message with progress
-                setMessages(prev => {
-                  const toolMsgIndex = prev.findIndex(m => 
-                    m.role === 'system' && 
-                    m.toolCalls?.some(tc => tc.status === 'executing')
-                  );
-                  
-                  if (toolMsgIndex !== -1) {
-                    const updated = [...prev];
-                    updated[toolMsgIndex] = {
-                      ...updated[toolMsgIndex],
-                      content: data.progress
-                    };
-                    return updated;
-                  }
-                  return prev;
-                });
+                // Just update the tool name for the typing indicator
+                setCurrentToolName(data.tool);
               } else if (data.type === 'clarification') {
                 // Show clarification message with options
                 const clarificationMessage: Message = {
