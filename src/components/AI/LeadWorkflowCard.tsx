@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { AnimatedProgress, AnimatedNumber } from '@/components/ui/animated-progress';
+import { feedback } from '@/utils/feedback';
 import { 
   UserPlus, 
   Search, 
@@ -76,10 +77,31 @@ export function LeadWorkflowCard({
   isExpanded: initialExpanded = true 
 }: LeadWorkflowCardProps) {
   const [isExpanded, setIsExpanded] = useState(initialExpanded);
+  const prevStepsRef = useRef<LeadWorkflowStep[]>([]);
+  const prevCompleteRef = useRef(false);
   
   const completedSteps = steps.filter(s => s.status === 'completed').length;
   const progressPercent = (completedSteps / steps.length) * 100;
   const isComplete = completedSteps === steps.length;
+  
+  // Trigger haptic feedback on step completion
+  useEffect(() => {
+    const justCompleted = steps.find(s => 
+      s.status === 'completed' && 
+      prevStepsRef.current.find(p => p.id === s.id)?.status !== 'completed'
+    );
+    
+    if (justCompleted) {
+      feedback.stepComplete();
+    }
+    
+    if (isComplete && !prevCompleteRef.current) {
+      feedback.workflowComplete();
+    }
+    
+    prevStepsRef.current = steps;
+    prevCompleteRef.current = isComplete;
+  }, [steps, isComplete]);
   
   const getStatusIcon = (step: LeadWorkflowStep, index: number) => {
     const StepIcon = STEP_ICONS[step.tool || ''] || Circle;
@@ -116,10 +138,10 @@ export function LeadWorkflowCard({
           </Button>
         </div>
         
-        {/* Progress bar */}
+        {/* Progress bar - animated */}
         <div className="flex items-center gap-3 mt-2">
-          <Progress value={progressPercent} className="h-2 flex-1" />
-          <span className="text-xs text-muted-foreground font-medium">
+          <AnimatedProgress value={progressPercent} className="h-2 flex-1" />
+          <span className="text-xs text-muted-foreground font-medium tabular-nums">
             {completedSteps}/{steps.length}
           </span>
         </div>
@@ -154,10 +176,10 @@ export function LeadWorkflowCard({
                     step.status === 'completed' && "opacity-70"
                   )}
                 >
-                  {/* Status icon */}
+                  {/* Status icon with pulse animation on complete */}
                   <div className={cn(
-                    "flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center",
-                    step.status === 'completed' && "bg-primary/20",
+                    "flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200",
+                    step.status === 'completed' && "bg-primary/20 animate-pulse-once",
                     step.status === 'in_progress' && "bg-primary/20",
                     step.status === 'failed' && "bg-destructive/20",
                     step.status === 'pending' && "bg-muted"
@@ -184,11 +206,11 @@ export function LeadWorkflowCard({
                       {step.description}
                     </p>
                     
-                    {/* Result summary */}
+                    {/* Result summary with animated score */}
                     {step.status === 'completed' && step.result && (
-                      <div className="text-xs text-primary mt-1 font-medium">
+                      <div className="text-xs text-primary mt-1 font-medium animate-fade-in-up">
                         {step.tool === 'score_lead' && step.result.score !== undefined && (
-                          <>Lead Score: {step.result.score}/100</>
+                          <>Lead Score: <AnimatedNumber value={step.result.score} suffix="/100" /></>
                         )}
                         {step.tool === 'create_customer' && step.result.customer_id && (
                           <>Customer created successfully</>
