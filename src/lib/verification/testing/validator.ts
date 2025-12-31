@@ -22,7 +22,7 @@ export class TestCoverageValidator extends BaseValidator {
     const checks: HealthCheck[] = [];
 
     // Check: Process test coverage
-    const processCount = ALL_PROCESS_IDS.length;
+    const processCount = EXPECTED_PROCESS_COUNT;
     checks.push(
       this.pass(
         'test-process-coverage',
