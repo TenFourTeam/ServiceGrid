@@ -176,7 +176,7 @@ export const LEAD_GENERATION: EnhancedProcessDefinition = {
   position: 1,
   order: 1,
   depth: 0,
-  currentState: 'DWY',
+  currentState: 'DFY',  // UPGRADED: Full automation via database triggers
   targetState: 'DFY',
   
   sipoc: {
@@ -218,7 +218,7 @@ export const LEAD_GENERATION: EnhancedProcessDefinition = {
       id: 'receive_inquiry',
       name: 'Receive Inquiry/Referral',
       order: 1,
-      currentState: 'DWY',  // UPGRADED: Now has tools for assisted entry
+      currentState: 'DFY',  // UPGRADED: Database trigger auto-scores on customer creation
       targetState: 'DFY',
       sipoc: {
         supplier: 'Prospective Customer',
@@ -233,14 +233,15 @@ export const LEAD_GENERATION: EnhancedProcessDefinition = {
         'Auto-create customer from portal submission',
         'Duplicate detection by email/phone',
         'Auto-acknowledge receipt via email',
-        'Send welcome email on creation'
+        'DB TRIGGER: Auto-score lead on customer creation',
+        'DB TRIGGER: Auto-queue welcome email on customer creation'
       ]
     },
     {
       id: 'qualify_lead',
       name: 'Qualify Lead',
       order: 2,
-      currentState: 'DWY',  // UPGRADED: Now has score_lead and qualify_lead tools
+      currentState: 'DFY',  // UPGRADED: Database trigger auto-scores and auto-qualifies
       targetState: 'DFY',
       sipoc: {
         supplier: 'Previous step (Receive Inquiry)',
@@ -254,8 +255,8 @@ export const LEAD_GENERATION: EnhancedProcessDefinition = {
       automationCapabilities: [
         'Auto-qualify based on service area',
         'Flag VIP returning customers',
-        'Score lead quality based on data completeness',
-        'Mark leads as qualified/disqualified with reason'
+        'DB TRIGGER: Auto-score on INSERT/UPDATE',
+        'DB TRIGGER: Auto-mark qualified when threshold met'
       ]
     },
     {
@@ -283,7 +284,7 @@ export const LEAD_GENERATION: EnhancedProcessDefinition = {
       id: 'assign_lead',
       name: 'Assign Lead to Sales/Estimator',
       order: 4,
-      currentState: 'DWY',  // UPGRADED: Now has auto_assign_lead tool
+      currentState: 'DFY',  // UPGRADED: Database trigger auto-assigns on request creation
       targetState: 'DFY',
       sipoc: {
         supplier: 'System Entry step',
@@ -293,19 +294,19 @@ export const LEAD_GENERATION: EnhancedProcessDefinition = {
         customer: 'Assigned Team Member'
       },
       tools: ['create_quote', 'create_job', 'assign_job_to_member', 'list_team_members', 'check_team_availability', 'auto_assign_lead'],
-      dbEntities: ['quotes', 'jobs', 'job_assignments', 'business_members'],
+      dbEntities: ['quotes', 'jobs', 'job_assignments', 'business_members', 'requests'],
       automationCapabilities: [
-        'Auto-assign based on workload balancing',
+        'DB TRIGGER: Auto-assign on new request creation',
+        'Configurable assignment method (workload/round-robin)',
         'Territory-based routing',
-        'Skill matching for specialized requests',
-        'Automatic workload-based assignment'
+        'Skill matching for specialized requests'
       ]
     },
     {
       id: 'initial_contact',
       name: 'Initial Contact with Lead',
       order: 5,
-      currentState: 'DWY',  // UPGRADED: Now has send_email tool
+      currentState: 'DFY',  // UPGRADED: Database trigger auto-queues welcome email
       targetState: 'DFY',
       sipoc: {
         supplier: 'Assigned Team Member / AI Agent',
@@ -315,12 +316,12 @@ export const LEAD_GENERATION: EnhancedProcessDefinition = {
         customer: 'Customer (receiving contact) + Sales Team (tracking)'
       },
       tools: ['send_quote', 'send_email', 'invite_to_portal', 'update_job'],
-      dbEntities: ['ai_activity_log', 'customers', 'mail_sends'],
+      dbEntities: ['ai_activity_log', 'customers', 'mail_sends', 'email_queue'],
       automationCapabilities: [
-        'Auto-send welcome email',
-        'Send quote immediately after creation',
-        'Schedule follow-up reminders',
-        'Send custom emails with personalization'
+        'DB TRIGGER: Auto-queue welcome email on customer creation',
+        'Configurable email delay before sending',
+        'Edge function processes email queue automatically',
+        'Send quote immediately after creation'
       ]
     }
   ],
