@@ -14,10 +14,10 @@ describe('Site Assessment Process Definition', () => {
       expect(pattern.specialCardType).toBe('assessment_workflow');
     });
 
-    it('should have 6 steps matching the 6 sub-processes', () => {
+    it('should have 7 steps matching the assessment workflow', () => {
       const pattern = MULTI_STEP_PATTERNS['complete_site_assessment'];
       expect(pattern).toBeDefined();
-      expect(pattern.steps.length).toBe(6);
+      expect(pattern.steps.length).toBe(7);
     });
 
     it('should have correct step order and tools', () => {
@@ -25,23 +25,25 @@ describe('Site Assessment Process Definition', () => {
       expect(pattern).toBeDefined();
       
       const expectedSteps = [
-        { order: 0, tool: 'create_request' },
-        { order: 1, tool: 'create_assessment_job' },
-        { order: 2, tool: 'create_checklist' },
-        { order: 3, tool: 'upload_media' },
-        { order: 4, tool: 'tag_media' },
-        { order: 5, tool: 'generate_summary' },
+        { order: 1, tool: 'search_customers' },
+        { order: 2, tool: 'create_customer' },
+        { order: 3, tool: 'create_request' },
+        { order: 4, tool: 'check_team_availability' },
+        { order: 5, tool: 'create_assessment_job' },
+        { order: 6, tool: 'assign_job' },
+        { order: 7, tool: 'send_job_confirmation' },
       ];
 
       pattern.steps.forEach((step, index) => {
+        expect(step.order).toBe(expectedSteps[index].order);
         expect(step.tool).toBe(expectedSteps[index].tool);
       });
     });
 
-    it('should have category set to pre_service', () => {
+    it('should have category set to pre-service', () => {
       const pattern = MULTI_STEP_PATTERNS['complete_site_assessment'];
       expect(pattern).toBeDefined();
-      expect(pattern.category).toBe('pre_service');
+      expect(pattern.category).toBe('pre-service');
     });
 
     it('should have success metrics defined', () => {
