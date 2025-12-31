@@ -1,10 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.54.0';
 import { corsHeaders } from '../_shared/cors.ts';
-
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-);
+import { requireCtx } from '../_lib/auth.ts';
 
 interface CapacityCheck {
   date: string;
@@ -23,30 +19,11 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Missing authorization header');
-    }
+    // Authenticate using session token
+    const { userId, businessId: contextBusinessId, supaAdmin } = await requireCtx(req, { autoCreate: false });
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
-    if (authError || !user) {
-      console.error('[check-scheduling-capacity] Auth error:', authError);
-      throw new Error('Unauthorized');
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('clerk_user_id', user.id)
-      .single();
-
-    if (!profile) {
-      throw new Error('Profile not found');
-    }
-
-    const { businessId, startDate, endDate } = await req.json();
+    const { businessId: requestBusinessId, startDate, endDate } = await req.json();
+    const businessId = requestBusinessId || contextBusinessId;
 
     if (!businessId || !startDate || !endDate) {
       throw new Error('businessId, startDate, and endDate are required');
@@ -55,7 +32,7 @@ Deno.serve(async (req) => {
     console.log(`[check-scheduling-capacity] Checking capacity for ${businessId} from ${startDate} to ${endDate}`);
 
     // Fetch business constraints
-    const { data: constraints } = await supabase
+    const { data: constraints } = await supaAdmin
       .from('business_constraints')
       .select('*')
       .eq('business_id', businessId)
@@ -65,7 +42,7 @@ Deno.serve(async (req) => {
     const maxHoursPerDay = constraints?.find(c => c.constraint_type === 'max_hours_per_day')?.constraint_value?.max;
 
     // Fetch jobs in date range
-    const { data: jobs } = await supabase
+    const { data: jobs } = await supaAdmin
       .from('jobs')
       .select('id, starts_at, ends_at')
       .eq('business_id', businessId)
@@ -74,7 +51,7 @@ Deno.serve(async (req) => {
       .neq('status', 'Completed');
 
     // Fetch team members
-    const { data: members } = await supabase
+    const { data: members } = await supaAdmin
       .from('invites')
       .select('invited_user_id')
       .eq('business_id', businessId)

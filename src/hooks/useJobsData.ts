@@ -11,7 +11,7 @@ interface UseJobsDataOptions {
 }
 
 /**
- * Edge Function jobs hook - unified Clerk authentication
+ * Edge Function jobs hook - unified session authentication
  * @param businessId - Explicit businessId to fetch jobs for (bypasses context)
  * @param opts - Additional options like enabled flag
  */

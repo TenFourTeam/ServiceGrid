@@ -9,7 +9,7 @@ interface UseInvoicesDataOptions {
 }
 
 /**
- * Edge Function invoices hook - unified Clerk authentication
+ * Edge Function invoices hook - unified session authentication
  */
 export function useInvoicesData(opts?: UseInvoicesDataOptions) {
   const { isAuthenticated, businessId } = useBusinessContext();

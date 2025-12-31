@@ -10,12 +10,12 @@ export interface ToastOptions {
 
 /**
  * Authenticated edge function helper with integrated toast support
- * Creates a function that includes Clerk authentication tokens in edge function calls
+ * Creates a function that includes session authentication tokens in edge function calls
  */
 export function createAuthEdgeApi(getToken: (options?: { template?: string }) => Promise<string | null>) {
   return {
     /**
-     * Invoke an edge function with automatic Clerk authentication and optional toast notifications
+     * Invoke an edge function with automatic session authentication and optional toast notifications
      */
     async invoke(
       functionName: string,
@@ -47,7 +47,7 @@ export function createAuthEdgeApi(getToken: (options?: { template?: string }) =>
           toastId = toast.loading(loading);
         }
         // Get token with retry logic for race conditions during boot
-        console.info(`🔧 [AuthEdgeApi] Getting Clerk token with 'supabase' template...`);
+        console.info(`🔧 [AuthEdgeApi] Getting session token...`);
         const startToken = Date.now();
         
         let token: string | null = null;
@@ -68,7 +68,7 @@ export function createAuthEdgeApi(getToken: (options?: { template?: string }) =>
         console.info(`🔧 [AuthEdgeApi] Token fetch took ${endToken - startToken}ms (${token ? 'success' : 'failed'})`);
         
         if (!token) {
-          console.warn('❌ [AuthEdgeApi] No Clerk token available after retries');
+          console.warn('❌ [AuthEdgeApi] No session token available after retries');
           if (toastId) {
             toast.dismiss(toastId);
           }
@@ -79,27 +79,7 @@ export function createAuthEdgeApi(getToken: (options?: { template?: string }) =>
         }
 
         console.info(`🔧 [AuthEdgeApi] Token obtained, length: ${token.length}`);
-        console.info(`🔧 [AuthEdgeApi] Token prefix: ${token.substring(0, 20)}`);
-        console.info(`🔧 [AuthEdgeApi] Token suffix: ${token.substring(token.length - 20)}`);
         
-        // Try to decode token structure for debugging
-        try {
-          const [header, payload] = token.split('.');
-          if (header && payload) {
-            const decodedPayload = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
-            console.info(`🔧 [AuthEdgeApi] Token payload preview:`, {
-              sub: decodedPayload.sub,
-              iss: decodedPayload.iss,
-              exp: decodedPayload.exp,
-              iat: decodedPayload.iat
-            });
-            console.info(`🔧 [AuthEdgeApi] Token expires: ${new Date(decodedPayload.exp * 1000).toISOString()}`);
-            console.info(`🔧 [AuthEdgeApi] Current time: ${new Date().toISOString()}`);
-          }
-        } catch (decodeError) {
-          console.warn('⚠️ [AuthEdgeApi] Could not decode token:', decodeError);
-        }
-
         // Use x-session-token header for session-based auth
         const headers: Record<string, string> = {
           'x-session-token': token,
@@ -201,15 +181,4 @@ function getDefaultSuccessMessage(method: string): string | false {
   // Remove automatic success toasts - let callers handle their own
   // This prevents duplicate toasts when hooks also have onSuccess handlers
   return false;
-}
-
-// Declare global Clerk types for TypeScript
-declare global {
-  interface Window {
-    Clerk?: {
-      session?: {
-        getToken(options?: { refresh?: boolean; skipCache?: boolean }): Promise<string>;
-      };
-    };
-  }
 }

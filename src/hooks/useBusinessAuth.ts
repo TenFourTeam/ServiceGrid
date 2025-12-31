@@ -9,8 +9,8 @@ export function useBusinessAuth() {
 }
 
 /**
- * Clerk-compatible useAuth hook
- * Drop-in replacement for @clerk/clerk-react useAuth
+ * Session-based useAuth hook
+ * Drop-in replacement for common auth patterns
  */
 export function useAuth() {
   const { isAuthenticated, isLoading, user, getSessionToken, logout } = useBusinessAuthContext();
@@ -20,7 +20,7 @@ export function useAuth() {
     isLoaded: !isLoading,
     userId: user?.profileId ?? null,
     
-    // Async wrapper for compatibility with Clerk's API
+    // Async wrapper for compatibility with common auth patterns
     getToken: async (_options?: { template?: string; skipCache?: boolean }): Promise<string | null> => {
       return getSessionToken();
     },
@@ -30,8 +30,8 @@ export function useAuth() {
 }
 
 /**
- * Clerk-compatible useUser hook
- * Drop-in replacement for @clerk/clerk-react useUser
+ * Session-based useUser hook
+ * Drop-in replacement for common auth patterns
  */
 export function useUser() {
   const { user, profile, isLoading } = useBusinessAuthContext();

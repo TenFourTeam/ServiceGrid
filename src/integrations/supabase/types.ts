@@ -753,7 +753,6 @@ export type Database = {
           ai_monthly_credit_limit: number | null
           ai_vision_enabled: boolean | null
           application_fee_bps: number
-          clerk_org_id: string | null
           created_at: string
           description: string | null
           est_prefix: string
@@ -782,7 +781,6 @@ export type Database = {
           ai_monthly_credit_limit?: number | null
           ai_vision_enabled?: boolean | null
           application_fee_bps?: number
-          clerk_org_id?: string | null
           created_at?: string
           description?: string | null
           est_prefix?: string
@@ -811,7 +809,6 @@ export type Database = {
           ai_monthly_credit_limit?: number | null
           ai_vision_enabled?: boolean | null
           application_fee_bps?: number
-          clerk_org_id?: string | null
           created_at?: string
           description?: string | null
           est_prefix?: string
@@ -1091,7 +1088,6 @@ export type Database = {
       customer_accounts: {
         Row: {
           auth_method: string | null
-          clerk_user_id: string | null
           created_at: string | null
           customer_id: string
           email: string
@@ -1105,7 +1101,6 @@ export type Database = {
         }
         Insert: {
           auth_method?: string | null
-          clerk_user_id?: string | null
           created_at?: string | null
           customer_id: string
           email: string
@@ -1119,7 +1114,6 @@ export type Database = {
         }
         Update: {
           auth_method?: string | null
-          clerk_user_id?: string | null
           created_at?: string | null
           customer_id?: string
           email?: string
@@ -2491,7 +2485,6 @@ export type Database = {
       }
       profiles: {
         Row: {
-          clerk_user_id: string | null
           created_at: string
           default_business_id: string | null
           email: string
@@ -2506,7 +2499,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          clerk_user_id?: string | null
           created_at?: string
           default_business_id?: string | null
           email: string
@@ -2521,7 +2513,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          clerk_user_id?: string | null
           created_at?: string
           default_business_id?: string | null
           email?: string
@@ -5664,7 +5655,6 @@ export type Database = {
       can_manage_business: { Args: { p_business_id: string }; Returns: boolean }
       cleanup_expired_business_sessions: { Args: never; Returns: number }
       cleanup_expired_pending_plans: { Args: never; Returns: undefined }
-      current_clerk_user_id: { Args: never; Returns: string }
       current_user_profile_id: { Args: never; Returns: string }
       debug_auth_state: { Args: never; Returns: Json }
       disablelongtransactions: { Args: never; Returns: string }
@@ -5706,7 +5696,6 @@ export type Database = {
           ai_monthly_credit_limit: number | null
           ai_vision_enabled: boolean | null
           application_fee_bps: number
-          clerk_org_id: string | null
           created_at: string
           description: string | null
           est_prefix: string
