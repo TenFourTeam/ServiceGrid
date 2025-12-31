@@ -8,6 +8,8 @@
 import { PROCESS_REGISTRY, type EnhancedProcessDefinition } from './process-registry';
 import { getPattern } from './multi-step-patterns';
 import { getToolContract } from './tool-contracts';
+import { getProcessTests } from './test-registry';
+import { getProcessTriggers } from './trigger-registry';
 
 // Alias for cleaner code
 const PROCESSES = PROCESS_REGISTRY;
@@ -16,8 +18,16 @@ const PROCESSES = PROCESS_REGISTRY;
 // TYPES
 // ============================================================================
 
+export type ValidationCategory = 
+  | 'definition' 
+  | 'contracts' 
+  | 'pattern' 
+  | 'automation' 
+  | 'ui' 
+  | 'testing';
+
 export interface ValidationCheck {
-  category: 'definition' | 'contracts' | 'pattern' | 'automation' | 'ui' | 'testing';
+  category: ValidationCategory;
   name: string;
   passed: boolean;
   required: boolean;
@@ -284,6 +294,74 @@ function checkPostconditions(processId: string): ValidationCheck {
 }
 
 // ============================================================================
+// TESTING LAYER CHECKS
+// ============================================================================
+
+function checkUnitTests(processId: string): ValidationCheck {
+  const tests = getProcessTests(processId);
+  const hasTests = tests.unit.length > 0;
+  
+  return {
+    category: 'testing',
+    name: 'Unit tests exist',
+    passed: hasTests,
+    required: false, // Recommended but not blocking
+    details: hasTests 
+      ? `${tests.unit.length} unit test file(s): ${tests.unit.join(', ')}` 
+      : 'No unit tests found'
+  };
+}
+
+function checkIntegrationTests(processId: string): ValidationCheck {
+  const tests = getProcessTests(processId);
+  const hasTests = tests.integration.length > 0;
+  
+  return {
+    category: 'testing',
+    name: 'Integration tests exist',
+    passed: hasTests,
+    required: false,
+    details: hasTests 
+      ? `${tests.integration.length} integration test file(s)` 
+      : 'No integration tests found'
+  };
+}
+
+function checkE2ETests(processId: string): ValidationCheck {
+  const tests = getProcessTests(processId);
+  const hasTests = tests.e2e.length > 0;
+  
+  return {
+    category: 'testing',
+    name: 'E2E tests exist',
+    passed: hasTests,
+    required: false,
+    details: hasTests 
+      ? `${tests.e2e.length} E2E test file(s): ${tests.e2e.join(', ')}` 
+      : 'No E2E tests found'
+  };
+}
+
+// ============================================================================
+// DATABASE AUTOMATION CHECKS
+// ============================================================================
+
+function checkDatabaseTriggers(processId: string): ValidationCheck {
+  const config = getProcessTriggers(processId);
+  const hasTriggers = config.triggers.length > 0;
+  
+  return {
+    category: 'automation',
+    name: 'Database triggers configured',
+    passed: hasTriggers,
+    required: false, // Not all processes need DB triggers
+    details: hasTriggers 
+      ? `${config.triggers.length} trigger(s): ${config.triggers.join(', ')}` 
+      : 'No database triggers defined'
+  };
+}
+
+// ============================================================================
 // MAIN VALIDATION FUNCTION
 // ============================================================================
 
@@ -310,6 +388,14 @@ export function validateProcessImplementation(processId: string): ProcessValidat
   
   // PHASE 5: UI Layer
   checks.push(checkWorkflowCard(processId));
+  
+  // PHASE 6: Testing Layer
+  checks.push(checkUnitTests(processId));
+  checks.push(checkIntegrationTests(processId));
+  checks.push(checkE2ETests(processId));
+  
+  // PHASE 7: Database Automation Layer
+  checks.push(checkDatabaseTriggers(processId));
   
   // Calculate results
   const passed = checks.filter(c => c.passed);
