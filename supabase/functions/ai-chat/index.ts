@@ -6149,7 +6149,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Authenticate using Clerk JWT
+    // Authenticate using session token
     const { userId, businessId, supaAdmin } = await requireCtx(req);
 
     const { conversationId, message, mediaIds, includeContext } = await req.json();

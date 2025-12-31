@@ -46,7 +46,7 @@ window.addEventListener('unhandledrejection', (event) => {
   }
 });
 
-// Render the app immediately - no need to fetch Clerk key
+// Render the app immediately
 renderApp();
 
 // Handle HMR (Hot Module Replacement) cleanup

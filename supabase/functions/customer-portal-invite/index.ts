@@ -27,7 +27,7 @@ serve(async (req) => {
       );
     }
 
-    // Get the user from Clerk JWT via our profile lookup
+    // Get the user from the JWT token
     const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
     
     // Parse request

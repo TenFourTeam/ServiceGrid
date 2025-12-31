@@ -24,7 +24,7 @@ export function useLifecycleEmailTriggers(enableAutoTriggers: boolean = false) {
   const lastLoginCheck = useRef<string | null>(null);
   const lastEngagementCheck = useRef<string | null>(null);
 
-  // Prepare email data - use user's actual email from Clerk
+  // Prepare email data - use user's actual email from profile
   const { userId } = useBusinessContext();
   const emailData = {
     userFullName: profile?.profile?.fullName,

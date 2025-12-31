@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
     const businessId = url.searchParams.get('businessId');
     const userIdParam = url.searchParams.get('userId');
     
-    // Authenticate using Clerk
+    // Authenticate using session token
     const { userId, businessId: contextBusinessId, supaAdmin } = await requireCtx(req, {
       businessId: businessId || undefined
     });
