@@ -83,9 +83,34 @@ const STEP_ICONS: Record<string, typeof ClipboardList> = {
 };
 
 const STEP_PROMPTS: Record<string, { label: string; prompt: string }[]> = {
+  'search_customers': [
+    { label: 'Search by phone', prompt: "Search for the customer by phone number" },
+    { label: 'Search by email', prompt: "Search for the customer by email" },
+    { label: 'New customer', prompt: "This is a new customer" },
+  ],
+  'create_customer': [
+    { label: 'Add phone', prompt: "Add a phone number for this customer" },
+    { label: 'Add address', prompt: "Add the address details for this customer" },
+  ],
+  'create_request': [
+    { label: 'Service details', prompt: "What type of service does this assessment need?" },
+    { label: 'Add notes', prompt: "Add notes about the assessment request" },
+  ],
+  'check_team_availability': [
+    { label: 'Check another date', prompt: "Check availability for a different date" },
+    { label: 'Assign manually', prompt: "Let me choose who to assign this assessment to" },
+  ],
   'create_assessment_job': [
     { label: 'Add access instructions', prompt: "Add access instructions for this assessment" },
     { label: 'Schedule for specific time', prompt: "Schedule this assessment for a specific time" },
+  ],
+  'assign_job': [
+    { label: 'Reassign', prompt: "Assign this assessment to a different team member" },
+    { label: 'Add backup', prompt: "Add a backup team member for this assessment" },
+  ],
+  'send_job_confirmation': [
+    { label: 'Customize message', prompt: "Customize the confirmation message" },
+    { label: 'Add reminder', prompt: "Set a reminder for this assessment" },
   ],
   'upload_media': [
     { label: 'Add more photos', prompt: "I need to add more photos to this assessment" },
@@ -99,6 +124,33 @@ const STEP_PROMPTS: Record<string, { label: string; prompt: string }[]> = {
     { label: 'Create quote', prompt: "Create a quote from this assessment" },
     { label: 'Export report', prompt: "Export the assessment report as PDF" },
   ],
+};
+
+// Detect missing context for each step and show prompts
+const getMissingContextPrompts = (step: AssessmentWorkflowStep, assessmentData?: AssessmentWorkflowCardProps['assessmentData']): { label: string; prompt: string; urgent: boolean }[] => {
+  const missing: { label: string; prompt: string; urgent: boolean }[] = [];
+  
+  switch (step.tool) {
+    case 'search_customers':
+    case 'create_customer':
+      if (!assessmentData?.customerName) {
+        missing.push({ label: 'Add customer name', prompt: "What is the customer's name?", urgent: true });
+      }
+      break;
+    case 'create_request':
+    case 'create_assessment_job':
+      if (!assessmentData?.address) {
+        missing.push({ label: 'Add address', prompt: "What is the assessment address?", urgent: true });
+      }
+      break;
+    case 'check_team_availability':
+      if (!assessmentData?.scheduledDate) {
+        missing.push({ label: 'Set date', prompt: "What date should I check availability for?", urgent: true });
+      }
+      break;
+  }
+  
+  return missing;
 };
 
 export function AssessmentWorkflowCard({ 
@@ -293,6 +345,27 @@ export function AssessmentWorkflowCard({
                           </p>
                         )}
                       </div>
+                    )}
+                    
+                    {/* Missing context prompts (urgent) */}
+                    {isActive && onPrompt && (
+                      <>
+                        {getMissingContextPrompts(step, assessmentData).map((p) => (
+                          <Button
+                            key={p.label}
+                            variant="destructive"
+                            size="sm"
+                            className="h-6 text-[11px] px-2 mt-2 mr-1 active:scale-95 transition-transform"
+                            onClick={() => {
+                              feedback.tap();
+                              onPrompt(p.prompt);
+                            }}
+                          >
+                            ⚠️ {p.label}
+                            <ArrowRight className="w-3 h-3 ml-1" />
+                          </Button>
+                        ))}
+                      </>
                     )}
                     
                     {/* Contextual prompts with press feedback */}
