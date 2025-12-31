@@ -117,7 +117,7 @@ export interface Message {
     variant?: 'primary' | 'secondary' | 'danger';
   }>;
   // Special message types for agent flows
-  messageType?: 'standard' | 'clarification' | 'confirmation' | 'plan_preview' | 'plan_progress' | 'lead_workflow' | 'assessment_workflow';
+  messageType?: 'standard' | 'clarification' | 'confirmation' | 'plan_preview' | 'plan_progress' | 'lead_workflow' | 'assessment_workflow' | 'communication_workflow';
   clarification?: ClarificationData;
   confirmation?: ConfirmationData;
   planPreview?: PlanPreviewData;
@@ -192,6 +192,42 @@ export interface Message {
       risksIdentified?: number;
       reportGenerated?: boolean;
       estimateCreated?: boolean;
+    };
+  };
+  // Communication workflow card data
+  communicationWorkflow?: {
+    steps: Array<{
+      id: string;
+      name: string;
+      description: string;
+      status: 'pending' | 'in_progress' | 'completed' | 'skipped' | 'failed';
+      tool?: string;
+      result?: any;
+      error?: string;
+      verification?: {
+        phase: string;
+        failedAssertion?: string;
+        recoverySuggestion?: string;
+      };
+      rollbackExecuted?: boolean;
+      rollbackTool?: string;
+    }>;
+    currentStepIndex: number;
+    communicationData?: {
+      customerName?: string;
+      customerEmail?: string;
+      conversationTitle?: string;
+      messagePreview?: string;
+      channel?: 'portal' | 'email' | 'both';
+    };
+    automationSummary?: {
+      conversationCreated?: boolean;
+      conversationId?: string;
+      messageSent?: boolean;
+      messageId?: string;
+      emailQueued?: boolean;
+      emailScheduledFor?: string;
+      statusUpdateSent?: boolean;
     };
   };
   // Entity selection - rendered as a conversational element outside plan card
