@@ -63,11 +63,20 @@ export interface ExecutionPlan {
   pausedAtStep?: number;
 }
 
+export interface NextProcessSuggestion {
+  processId: string;
+  patternId: string;
+  reason: string;
+  contextToPass: Record<string, any>;
+  fromProcess: string;
+}
+
 export interface PlannerResult {
   type: 'plan_preview' | 'step_progress' | 'step_complete' | 'plan_complete' | 'plan_failed' | 'plan_cancelled';
   plan: ExecutionPlan;
   currentStep?: PlanStep;
   message?: string;
+  nextProcessSuggestion?: NextProcessSuggestion;
 }
 
 export interface ExecutionContext {
@@ -97,8 +106,8 @@ interface MultiStepPattern {
     optional?: boolean;
   }>;
   requiresApproval: boolean;
-  // Special card type for custom UI rendering (e.g., 'lead_workflow', 'assessment_workflow')
-  specialCardType?: 'lead_workflow' | 'assessment_workflow';
+  // Special card type for custom UI rendering (e.g., 'lead_workflow', 'assessment_workflow', 'communication_workflow')
+  specialCardType?: 'lead_workflow' | 'assessment_workflow' | 'communication_workflow';
 }
 
 const MULTI_STEP_PATTERNS: MultiStepPattern[] = [
@@ -684,6 +693,67 @@ const MULTI_STEP_PATTERNS: MultiStepPattern[] = [
     requiresApproval: true,
   },
 
+  // Complete customer communication workflow
+  {
+    id: 'complete_customer_communication',
+    name: 'Customer Communication',
+    description: 'Start a conversation with a customer, send messages, and optionally schedule follow-ups',
+    specialCardType: 'communication_workflow',
+    patterns: [
+      /contact\s+(the\s+)?customer/i,
+      /start\s+(a\s+)?conversation\s+(with|for)/i,
+      /message\s+(the\s+)?customer/i,
+      /reach\s+out\s+to/i,
+      /follow\s+up\s+with/i,
+      /send\s+(a\s+)?message\s+to/i,
+      /communicate\s+with/i,
+    ],
+    keywords: ['contact', 'message', 'conversation', 'communicate', 'reach out', 'follow up'],
+    steps: [
+      {
+        name: 'Get Customer Details',
+        description: 'Retrieve customer information',
+        tool: 'get_customer',
+        argMapping: (ctx) => ({
+          customerId: ctx.entities?.customerId || ctx.entities?.customer_id,
+        }),
+      },
+      {
+        name: 'Get or Create Conversation',
+        description: 'Find existing conversation or create new one',
+        tool: 'get_or_create_conversation',
+        argMapping: (ctx, results) => ({
+          customerId: results['get_customer']?.id || ctx.entities?.customerId,
+        }),
+        dependsOn: ['get_customer'],
+      },
+      {
+        name: 'Send Message',
+        description: 'Send initial message to customer',
+        tool: 'send_message',
+        argMapping: (ctx, results) => ({
+          conversationId: results['get_or_create_conversation']?.conversation_id,
+          content: ctx.entities?.messageContent || 'Hello! Thank you for reaching out. How can we help you today?',
+          senderType: 'business',
+        }),
+        dependsOn: ['get_or_create_conversation'],
+      },
+      {
+        name: 'Send Email Notification',
+        description: 'Optionally send email notification',
+        tool: 'send_email',
+        argMapping: (ctx, results) => ({
+          customerId: results['get_customer']?.id,
+          emailType: 'message_notification',
+          subject: ctx.entities?.emailSubject || 'New message from our team',
+        }),
+        dependsOn: ['send_message'],
+        optional: true,
+      },
+    ],
+    requiresApproval: false,
+  },
+
   {
     id: 'quote_to_job_complete',
     name: 'Quote to Scheduled Job',
@@ -1015,6 +1085,27 @@ export interface RecoveryAction {
 
 // Map of tool names to available recovery actions
 const RECOVERY_ACTIONS: Record<string, RecoveryAction[]> = {
+  // Communication-related recovery actions
+  'get_or_create_conversation': [
+    {
+      id: 'select_customer',
+      label: 'Select a customer',
+      description: 'Choose which customer to contact',
+      resumeFromStep: true,
+      queryTool: 'search_customers',
+      resolvesEntity: 'customerId',
+      clarificationPrompt: 'Which customer would you like to contact?',
+    },
+  ],
+  'send_message': [
+    {
+      id: 'view_conversations',
+      label: 'View conversations',
+      description: 'Check existing conversations',
+      navigateTo: '/team?tab=conversations',
+      resumeFromStep: true,
+    },
+  ],
   'get_unscheduled_jobs': [
     {
       id: 'create_job',
@@ -2288,6 +2379,221 @@ export async function fetchAutomationSummary(
 // Export extractCustomerData for use in executePlan
 export { extractCustomerData };
 
+// =============================================================================
+// COMMUNICATION WORKFLOW SSE HELPERS
+// =============================================================================
+
+// Map communication tool names to user-friendly step names
+const COMMUNICATION_WORKFLOW_STEP_MAP: Record<string, { name: string; description: string }> = {
+  'get_customer': { 
+    name: 'Get Customer', 
+    description: 'Retrieve customer information' 
+  },
+  'get_or_create_conversation': { 
+    name: 'Start Conversation', 
+    description: 'Find or create conversation thread' 
+  },
+  'send_message': { 
+    name: 'Send Message', 
+    description: 'Send message to customer' 
+  },
+  'send_email': { 
+    name: 'Send Email', 
+    description: 'Send email notification' 
+  },
+  'queue_email': { 
+    name: 'Queue Follow-up', 
+    description: 'Schedule follow-up email' 
+  },
+};
+
+// Extract communication data from tool results
+function extractCommunicationData(
+  toolName: string, 
+  result: any, 
+  existing: Record<string, any>
+): Record<string, any> {
+  if (toolName === 'get_customer') {
+    return {
+      ...existing,
+      customerName: result?.name || existing.customerName,
+      customerEmail: result?.email || existing.customerEmail,
+      customerId: result?.id || existing.customerId,
+    };
+  }
+  if (toolName === 'get_or_create_conversation') {
+    return {
+      ...existing,
+      conversationId: result?.conversation_id || result?.id || existing.conversationId,
+      conversationTitle: result?.title || existing.conversationTitle,
+    };
+  }
+  if (toolName === 'send_message') {
+    return {
+      ...existing,
+      messagePreview: result?.content?.substring(0, 100) || existing.messagePreview,
+    };
+  }
+  return existing;
+}
+
+// Check if a pattern should use CommunicationWorkflowCard
+export function isCommunicationWorkflowPattern(pattern: MultiStepPattern | undefined): boolean {
+  return pattern?.specialCardType === 'communication_workflow';
+}
+
+// Send communication workflow start event
+export function sendCommunicationWorkflowStart(
+  controller: ReadableStreamDefaultController | undefined,
+  plan: ExecutionPlan,
+  initialEntities: Record<string, any>
+): void {
+  if (!controller) return;
+  
+  const encoder = new TextEncoder();
+  const steps = plan.steps.map(s => {
+    const stepInfo = COMMUNICATION_WORKFLOW_STEP_MAP[s.tool] || { name: s.name, description: s.description };
+    return {
+      id: s.id,
+      name: stepInfo.name,
+      description: stepInfo.description,
+      status: s.status === 'pending' ? 'pending' : s.status,
+      tool: s.tool,
+    };
+  });
+  
+  const event = {
+    type: 'communication_workflow',
+    planId: plan.id,
+    workflow: {
+      steps,
+      currentStepIndex: 0,
+      communicationData: {
+        customerName: initialEntities?.customerName || initialEntities?.name,
+        customerEmail: initialEntities?.customerEmail || initialEntities?.email,
+        channel: initialEntities?.channel || 'portal',
+      },
+    },
+  };
+  controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+}
+
+// Send communication workflow progress event
+export function sendCommunicationWorkflowProgress(
+  controller: ReadableStreamDefaultController | undefined,
+  plan: ExecutionPlan,
+  step: PlanStep,
+  communicationData: Record<string, any>,
+  automationSummary?: {
+    conversationCreated?: boolean;
+    conversationId?: string;
+    messageSent?: boolean;
+    messageId?: string;
+    emailQueued?: boolean;
+    emailScheduledFor?: string;
+  }
+): void {
+  if (!controller) return;
+  
+  const encoder = new TextEncoder();
+  const steps = plan.steps.map(s => {
+    const stepInfo = COMMUNICATION_WORKFLOW_STEP_MAP[s.tool] || { name: s.name, description: s.description };
+    return {
+      id: s.id,
+      name: stepInfo.name,
+      description: stepInfo.description,
+      status: s.status === 'running' ? 'in_progress' : s.status,
+      tool: s.tool,
+      result: s.result,
+      error: s.error,
+      verification: s.verification,
+      rollbackExecuted: s.rollbackExecuted,
+      rollbackTool: s.rollbackTool,
+    };
+  });
+  
+  const event: Record<string, any> = {
+    type: 'communication_workflow_progress',
+    planId: plan.id,
+    stepIndex: plan.currentStepIndex,
+    steps,
+    communicationData,
+  };
+  
+  if (automationSummary) {
+    event.automationSummary = automationSummary;
+  }
+  
+  controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+}
+
+// Fetch communication automation summary
+export async function fetchCommunicationAutomationSummary(
+  supabase: any,
+  businessId: string,
+  conversationId?: string
+): Promise<{
+  conversationCreated?: boolean;
+  conversationId?: string;
+  messageSent?: boolean;
+  messageId?: string;
+  emailQueued?: boolean;
+  emailScheduledFor?: string;
+} | undefined> {
+  try {
+    const thirtySecondsAgo = new Date(Date.now() - 30000).toISOString();
+    
+    const { data: recentActivity } = await supabase
+      .from('ai_activity_log')
+      .select('activity_type, description, metadata')
+      .eq('business_id', businessId)
+      .gte('created_at', thirtySecondsAgo)
+      .order('created_at', { ascending: false })
+      .limit(10);
+    
+    if (!recentActivity || recentActivity.length === 0) {
+      return undefined;
+    }
+    
+    const summary: {
+      conversationCreated?: boolean;
+      conversationId?: string;
+      messageSent?: boolean;
+      messageId?: string;
+      emailQueued?: boolean;
+      emailScheduledFor?: string;
+    } = {};
+    
+    for (const activity of recentActivity) {
+      const actionType = activity.metadata?.action_type;
+      
+      if (actionType === 'conversation_created' && !summary.conversationCreated) {
+        summary.conversationCreated = true;
+        summary.conversationId = activity.metadata?.conversation_id;
+      }
+      if (actionType === 'message_sent' && !summary.messageSent) {
+        summary.messageSent = true;
+        summary.messageId = activity.metadata?.message_id;
+      }
+      if (actionType === 'email_queued' && !summary.emailQueued) {
+        summary.emailQueued = true;
+        summary.emailScheduledFor = activity.metadata?.scheduled_for;
+      }
+    }
+    
+    if (summary.conversationCreated || summary.messageSent || summary.emailQueued) {
+      return summary;
+    }
+    
+    return undefined;
+  } catch (error) {
+    console.error('[multi-step-planner] Failed to fetch communication automation summary:', error);
+    return undefined;
+  }
+}
+
+// Export communication data extractor
+export { extractCommunicationData };
 
 export async function pausePlanForRecovery(
   plan: ExecutionPlan,
