@@ -25,6 +25,7 @@ import {
   sendLeadWorkflowStart,
   sendLeadWorkflowProgress,
   extractCustomerData,
+  fetchAutomationSummary,
   type ExecutionPlan,
   type ExecutionContext,
   type PlannerResult 
