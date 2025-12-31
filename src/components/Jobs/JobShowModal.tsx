@@ -8,7 +8,7 @@ import { formatDateTime, formatMoney } from "@/utils/format";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { useAuthApi } from '@/hooks/useAuthApi';
 import { toast } from "sonner";
-import { Sparkles, CheckSquare, Image, Eye, StickyNote, Brain } from "lucide-react";
+import { Sparkles, CheckSquare, Image, Eye, StickyNote, Brain, ClipboardCheck } from "lucide-react";
 import ReschedulePopover from "@/components/WorkOrders/ReschedulePopover";
 import type { Job, Quote, JobsCacheData, InvoicesCacheData } from "@/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle as ModalTitle } from "@/components/ui/dialog";
@@ -45,6 +45,7 @@ import { useCreateChecklistTemplate } from '@/hooks/useChecklistTemplates';
 import { useGoogleDriveSync } from '@/hooks/useGoogleDriveSync';
 import { useGoogleDriveConnection } from '@/hooks/useGoogleDriveConnection';
 import { Cloud } from 'lucide-react';
+import { AssessmentTab } from './AssessmentTab';
 
 interface JobShowModalProps {
   open: boolean;
@@ -807,6 +808,12 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                 <Brain className="h-4 w-4" />
                 <span className="hidden sm:inline">AI Summary</span>
               </TabsTrigger>
+              {(job as any).is_assessment && (
+                <TabsTrigger value="assessment" className="flex items-center gap-2 flex-shrink-0">
+                  <ClipboardCheck className="h-4 w-4" />
+                  <span className="hidden sm:inline">Assessment</span>
+                </TabsTrigger>
+              )}
             </TabsList>
             
             <TabsContent value="checklist">
@@ -966,6 +973,16 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                 </Button>
               </div>
             </TabsContent>
+            
+            {(job as any).is_assessment && (
+              <TabsContent value="assessment">
+                <AssessmentTab 
+                  jobId={job.id} 
+                  onGenerateReport={() => setShowAISummary(true)}
+                  onCreateQuote={() => setPickerOpen(true)}
+                />
+              </TabsContent>
+            )}
           </Tabs>
           
           <SummaryGenerator

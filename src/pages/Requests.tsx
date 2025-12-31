@@ -34,6 +34,7 @@ import { RequestShareModal } from "@/components/Requests/RequestShareModal";
 import { RequestActions } from "@/components/Requests/RequestActions";
 import { AIScheduleSuggestions } from "@/components/Calendar/AIScheduleSuggestions";
 import { AppointmentChangeRequestsCard } from "@/components/Requests/AppointmentChangeRequestsCard";
+import { AssessmentProgressBadge } from "@/components/Requests/AssessmentProgressBadge";
 import { LeadMetricsCard } from "@/components/Dashboard/LeadMetricsCard";
 import { useBusinessMembersData } from "@/hooks/useBusinessMembers";
 import { useJobsData } from "@/hooks/useJobsData";
@@ -243,6 +244,13 @@ export default function Requests() {
             <div className="flex items-center gap-1 text-xs text-muted-foreground/50 mt-1">
               <UserCircle className="h-3 w-3" />
               <span>{t('requests.unassigned') || 'Unassigned'}</span>
+            </div>
+          )}
+          
+          {/* Assessment Progress */}
+          {(request.status === 'Scheduled' || request.status === 'Assessed') && (
+            <div className="mt-2">
+              <AssessmentProgressBadge requestId={request.id} compact />
             </div>
           )}
         </div>

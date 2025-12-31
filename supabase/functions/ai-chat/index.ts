@@ -6553,7 +6553,7 @@ RESPONSE STYLE:
                 (result: PlannerResult) => {
                   // Real-time progress callback
                   if (result.type === 'step_progress' || result.type === 'step_complete') {
-                    // Use lead workflow progress for lead patterns
+                    // Use specialized workflow progress for dedicated card patterns
                     if (isLeadWorkflowPattern(pattern)) {
                       const customerData = extractCustomerData(
                         result.currentStep?.tool || '',
@@ -6561,6 +6561,8 @@ RESPONSE STYLE:
                         entities
                       );
                       sendLeadWorkflowProgress(controller, result.plan, result.currentStep!, customerData);
+                    } else if (isAssessmentWorkflowPattern(pattern)) {
+                      sendAssessmentWorkflowProgress(controller, result.plan, result.currentStep!, {});
                     } else {
                       sendStepProgress(controller, result.plan, result.currentStep!, result.message);
                     }
@@ -6726,6 +6728,8 @@ RESPONSE STYLE:
                         entities
                       );
                       sendLeadWorkflowProgress(controller, result.plan, result.currentStep!, customerData);
+                    } else if (isAssessmentWorkflowPattern(pattern)) {
+                      sendAssessmentWorkflowProgress(controller, result.plan, result.currentStep!, {});
                     } else {
                       sendStepProgress(controller, result.plan, result.currentStep!, result.message);
                     }
@@ -6864,6 +6868,8 @@ RESPONSE STYLE:
                         updatedEntities
                       );
                       sendLeadWorkflowProgress(controller, result.plan, result.currentStep!, customerData);
+                    } else if (isAssessmentWorkflowPattern(pattern)) {
+                      sendAssessmentWorkflowProgress(controller, result.plan, result.currentStep!, {});
                     } else {
                       sendStepProgress(controller, result.plan, result.currentStep!, result.message);
                     }
@@ -7022,6 +7028,8 @@ RESPONSE STYLE:
                         updatedEntities
                       );
                       sendLeadWorkflowProgress(controller, result.plan, result.currentStep!, customerData);
+                    } else if (isAssessmentWorkflowPattern(pattern)) {
+                      sendAssessmentWorkflowProgress(controller, result.plan, result.currentStep!, {});
                     } else {
                       sendStepProgress(controller, result.plan, result.currentStep!, result.message);
                     }
@@ -7113,10 +7121,13 @@ RESPONSE STYLE:
             storePendingPlan(plan, multiStepPattern, orchestratorResult.intent?.entities || {}, userId);
             await storePendingPlanAsync(plan, multiStepPattern, orchestratorResult.intent?.entities || {}, memoryCtx);
             
-            // Check if this is a lead workflow pattern - use specialized card
+            // Check if this is a specialized workflow pattern - use dedicated card
             if (isLeadWorkflowPattern(multiStepPattern)) {
               console.info('[ai-chat] Using LeadWorkflowCard for pattern:', multiStepPattern.id);
               sendLeadWorkflowStart(controller, plan, orchestratorResult.intent?.entities || {});
+            } else if (isAssessmentWorkflowPattern(multiStepPattern)) {
+              console.info('[ai-chat] Using AssessmentWorkflowCard for pattern:', multiStepPattern.id);
+              sendAssessmentWorkflowStart(controller, plan, orchestratorResult.intent?.entities || {});
             } else {
               // Send generic plan preview to frontend
               sendPlanPreview(controller, plan);
