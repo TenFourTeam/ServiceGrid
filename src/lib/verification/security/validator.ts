@@ -13,6 +13,29 @@ import { HealthCheck, ValidatorOptions } from '../types';
 import { RLS_TABLE_REGISTRY, getTablesWithoutRLS } from '../database/trigger-registry';
 import { EDGE_FUNCTION_REGISTRY, getAllRequiredSecrets } from '../edge-functions/registry';
 
+/**
+ * PostGIS system objects to exclude from security checks
+ * These are installed by the PostGIS extension and cannot be modified
+ * See docs/SECURITY_EXCEPTIONS.md for full documentation
+ */
+const POSTGIS_EXCLUSIONS = [
+  'geography_columns',
+  'geometry_columns',
+  'raster_columns',
+  'raster_overviews',
+  'vector_columns',
+  'vector_layers',
+  'vector_records',
+  'spatial_ref_sys'
+];
+
+/**
+ * Check if a table/view name is a PostGIS system object
+ */
+function isPostgisObject(name: string): boolean {
+  return POSTGIS_EXCLUSIONS.includes(name);
+}
+
 export class SecurityValidator extends BaseValidator {
   constructor(options: ValidatorOptions = {}) {
     super('security', options);
@@ -93,16 +116,32 @@ export class SecurityValidator extends BaseValidator {
         )
       );
     } else {
-      checks.push(
-        this.fail(
-          'sec-rls-all',
-          'RLS Not Universal',
-          'configuration',
-          'critical',
-          `${tablesWithoutRLS.length} tables missing RLS: ${tablesWithoutRLS.join(', ')}`,
-          'Enable RLS on all tables to prevent unauthorized data access'
-        )
-      );
+      // Filter out PostGIS system objects
+      const appTablesWithoutRLS = tablesWithoutRLS.filter(t => !isPostgisObject(t));
+      const postgisTablesWithoutRLS = tablesWithoutRLS.filter(t => isPostgisObject(t));
+      
+      if (appTablesWithoutRLS.length === 0) {
+        // Only PostGIS tables missing RLS - acceptable
+        checks.push(
+          this.pass(
+            'sec-rls-all',
+            'RLS Enabled on App Tables',
+            'configuration',
+            `All application tables have RLS enabled (${postgisTablesWithoutRLS.length} PostGIS system tables excluded)`
+          )
+        );
+      } else {
+        checks.push(
+          this.fail(
+            'sec-rls-all',
+            'RLS Not Universal',
+            'configuration',
+            'critical',
+            `${appTablesWithoutRLS.length} tables missing RLS: ${appTablesWithoutRLS.join(', ')}`,
+            'Enable RLS on all tables to prevent unauthorized data access'
+          )
+        );
+      }
     }
 
     // Check: CORS configuration
