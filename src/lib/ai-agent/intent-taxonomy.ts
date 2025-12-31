@@ -263,6 +263,100 @@ export const INTENT_REGISTRY: IntentDefinition[] = [
     riskLevel: 'medium',
     requiresConfirmation: true,
   },
+  {
+    id: 'capture_lead',
+    domain: 'customer_acquisition',
+    label: 'Capture Lead',
+    description: 'Capture a new lead from any channel',
+    category: 'create',
+    patterns: [
+      'new.*lead',
+      'capture.*lead',
+      'log.*lead',
+      'customer.*inquiry',
+      'add.*lead',
+    ],
+    examples: [
+      'I have a new lead to capture',
+      'New lead from website',
+      'Customer inquiry from phone call',
+      'Capture this lead',
+    ],
+    requiredEntities: ['customer_name'],
+    optionalEntities: ['email', 'phone', 'address', 'lead_source'],
+    toolsUsed: ['search_customers', 'create_customer', 'create_request', 'score_lead'],
+    riskLevel: 'low',
+    requiresConfirmation: false,
+  },
+  {
+    id: 'qualify_lead',
+    domain: 'customer_acquisition',
+    label: 'Qualify Lead',
+    description: 'Manually qualify or disqualify a lead',
+    category: 'action',
+    patterns: [
+      'qualify.*lead',
+      'qualify.*customer',
+      'mark.*qualified',
+      'is.*qualified',
+    ],
+    examples: [
+      'Qualify this lead',
+      'Mark this customer as qualified',
+      'Is this lead qualified?',
+    ],
+    requiredEntities: ['customer_id'],
+    optionalEntities: ['qualification_notes'],
+    toolsUsed: ['qualify_lead', 'update_customer'],
+    riskLevel: 'low',
+    requiresConfirmation: false,
+  },
+  {
+    id: 'score_lead',
+    domain: 'customer_acquisition',
+    label: 'Score Lead',
+    description: 'Calculate or view lead score',
+    category: 'query',
+    patterns: [
+      'score.*lead',
+      'lead.*score',
+      'score.*customer',
+      'what.*score',
+    ],
+    examples: [
+      'Score this lead',
+      'What is their lead score?',
+      'Calculate lead score',
+    ],
+    requiredEntities: ['customer_id'],
+    optionalEntities: [],
+    toolsUsed: ['score_lead', 'get_customer'],
+    riskLevel: 'low',
+    requiresConfirmation: false,
+  },
+  {
+    id: 'assign_lead',
+    domain: 'customer_acquisition',
+    label: 'Assign Lead',
+    description: 'Assign a lead to a team member',
+    category: 'action',
+    patterns: [
+      'assign.*lead',
+      'assign.*customer',
+      'give.*lead',
+      'who.*handle.*lead',
+    ],
+    examples: [
+      'Assign this lead to Mike',
+      'Who should handle this lead?',
+      'Give this lead to Sarah',
+    ],
+    requiredEntities: ['customer_id'],
+    optionalEntities: ['user_id'],
+    toolsUsed: ['auto_assign_lead', 'list_team_members'],
+    riskLevel: 'low',
+    requiresConfirmation: false,
+  },
 
   // -------------------------------------------------------------------------
   // SERVICE REQUEST DOMAIN
@@ -1410,7 +1504,10 @@ export type EntityType =
   | 'resume_date'
   | 'assigned_to'
   | 'preferred_date'
-  | 'availability_schedule';
+  | 'availability_schedule'
+  | 'lead_source'
+  | 'qualification_notes'
+  | 'lead_score';
 
 export interface ExtractedEntity {
   type: EntityType;

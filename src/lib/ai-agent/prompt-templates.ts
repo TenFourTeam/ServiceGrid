@@ -1315,6 +1315,111 @@ BUSINESS PORTAL:
     riskLevel: 'low',
     requiresConfirmation: true,
   },
+  {
+    id: 'customer.capture_lead',
+    domain: 'customer_acquisition',
+    intent: 'capture_lead',
+    name: 'Capture New Lead',
+    description: 'Capture a new lead and begin qualification process',
+    template: {
+      role: ROLE_FRAGMENTS.customerService,
+      context: `NEW LEAD INFORMATION:
+{{#if customer_name}}- Name: {{customer_name}}{{/if}}
+{{#if customer_email}}- Email: {{customer_email}}{{/if}}
+{{#if customer_phone}}- Phone: {{customer_phone}}{{/if}}
+{{#if customer_address}}- Address: {{customer_address}}{{/if}}
+{{#if service_need}}- Service Need: {{service_need}}{{/if}}
+{{#if lead_source}}- Source: {{lead_source}}{{/if}}
+
+LEAD WORKFLOW CHECKLIST:
+☐ Capture contact info (name, email/phone required)
+☐ Check for duplicate customers
+☐ Log service need/inquiry details
+☐ Score lead quality
+☐ Assign to team member
+☐ Send welcome communication`,
+      task: `Guide the user through capturing this new lead. Ask for any missing required information (name, email or phone). Once captured, proceed through the lead workflow.`,
+      constraints: `- Minimum required: Name + (Email OR Phone)
+- Check for duplicates before creating
+- Auto-score after creation
+- Suggest assignment based on workload`,
+      outputFormat: `Lead captured:
+- Customer ID: [id]
+- Lead Score: [score]
+- Assigned to: [name or "Unassigned"]
+- Next step: [recommendation]`,
+    },
+    requiredContext: [],
+    optionalContext: ['customer_name', 'customer_email', 'customer_phone', 'service_need', 'lead_source'],
+    tools: ['search_customers', 'create_customer', 'create_request', 'score_lead', 'auto_assign_lead', 'send_email'],
+    riskLevel: 'low',
+    requiresConfirmation: false,
+    followUpIntents: ['create_quote', 'schedule_assessment'],
+  },
+  {
+    id: 'customer.qualify_lead',
+    domain: 'customer_acquisition',
+    intent: 'qualify_lead',
+    name: 'Qualify Lead',
+    description: 'Manually qualify or disqualify a lead',
+    template: {
+      role: ROLE_FRAGMENTS.customerService,
+      context: `LEAD TO QUALIFY:
+- Name: {{customer_name}}
+- Lead Score: {{lead_score}}/100
+- Qualified: {{is_qualified}}
+- Created: {{created_at}}
+
+QUALIFICATION FACTORS:
+- Has valid email: {{has_email}}
+- Has phone: {{has_phone}}
+- Has address: {{has_address}}
+- Previous jobs: {{job_count}}`,
+      task: `Help the user qualify or disqualify this lead based on their criteria.`,
+      constraints: `- Document qualification reason
+- Update is_qualified field
+- Log qualification notes`,
+      outputFormat: `Lead {{#if qualified}}qualified{{else}}disqualified{{/if}}:
+- Reason: [notes]
+- Next step: [recommendation]`,
+    },
+    requiredContext: ['customer_data'],
+    optionalContext: ['qualification_notes'],
+    tools: ['qualify_lead', 'update_customer'],
+    riskLevel: 'low',
+    requiresConfirmation: false,
+    followUpIntents: ['create_quote', 'assign_lead'],
+  },
+  {
+    id: 'customer.score_lead',
+    domain: 'customer_acquisition',
+    intent: 'score_lead',
+    name: 'Score Lead',
+    description: 'View or recalculate lead score',
+    template: {
+      role: ROLE_FRAGMENTS.customerService,
+      context: `LEAD SCORING:
+- Customer: {{customer_name}}
+- Current Score: {{lead_score}}/100
+- Tier: {{#if hot}}Hot{{else}}{{#if warm}}Warm{{else}}Cold{{/if}}{{/if}}
+
+SCORE FACTORS:
+- Contact completeness: Name, Email, Phone, Address
+- Engagement: Response time, inquiries
+- Fit: Service match, location`,
+      task: `Show the lead score and offer to recalculate or manually adjust.`,
+      constraints: `- Explain what affects the score
+- Offer manual override option`,
+      outputFormat: `Lead Score: [score]/100
+- Tier: [Hot/Warm/Cold]
+- Recommendation: [next action]`,
+    },
+    requiredContext: ['customer_data'],
+    optionalContext: [],
+    tools: ['score_lead', 'get_customer'],
+    riskLevel: 'low',
+    requiresConfirmation: false,
+  },
 ];
 
 // =============================================================================

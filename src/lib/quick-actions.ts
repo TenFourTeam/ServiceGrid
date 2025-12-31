@@ -31,10 +31,10 @@ export interface QuickAction {
 
 export const quickActionsByPage: Record<string, QuickAction[]> = {
   '/requests': [
+    { id: 'capture_lead', icon: UserPlus, label: 'Capture Lead', shortLabel: 'Lead', aiPrompt: 'I have a new lead to capture' },
     { id: 'schedule', icon: Calendar, label: 'Schedule Assessment', shortLabel: 'Schedule', aiPrompt: 'Schedule an assessment for the selected request' },
     { id: 'quote', icon: FileText, label: 'Create Quote', shortLabel: 'Quote', aiPrompt: 'Create a quote from this request' },
     { id: 'convert', icon: ArrowRight, label: 'Convert to Job', shortLabel: 'Convert', aiPrompt: 'Convert this request into a job' },
-    { id: 'onboard', icon: UserPlus, label: 'Onboard Customer', shortLabel: 'Onboard', aiPrompt: 'Start customer onboarding workflow' },
   ],
   '/calendar': [
     { id: 'schedule', icon: CalendarPlus, label: 'Schedule Job', shortLabel: 'Schedule', aiPrompt: 'Schedule pending jobs' },
@@ -61,10 +61,10 @@ export const quickActionsByPage: Record<string, QuickAction[]> = {
     { id: 'reminder', icon: Bell, label: 'Send Reminder', shortLabel: 'Remind', aiPrompt: 'Send a payment reminder for overdue invoices' },
   ],
   '/customers': [
-    { id: 'add', icon: UserPlus, label: 'Add Customer', shortLabel: 'Add', aiPrompt: 'Help me add a new customer' },
+    { id: 'capture_lead', icon: UserPlus, label: 'Capture Lead', shortLabel: 'Lead', aiPrompt: 'I have a new lead to capture' },
+    { id: 'qualify', icon: CheckCircle, label: 'Qualify Lead', shortLabel: 'Qualify', aiPrompt: 'Help me qualify this lead' },
     { id: 'job', icon: Briefcase, label: 'Create Job', shortLabel: 'Job', aiPrompt: 'Create a job for this customer' },
     { id: 'quote', icon: FileText, label: 'Create Quote', shortLabel: 'Quote', aiPrompt: 'Create a quote for this customer' },
-    { id: 'history', icon: History, label: 'View History', shortLabel: 'History', aiPrompt: 'Show this customer\'s job history' },
   ],
   '/team': [
     { id: 'availability', icon: Calendar, label: 'Availability', aiPrompt: 'Show team availability for this week' },
