@@ -10,6 +10,7 @@ import { DatabaseValidator } from './database/validator';
 import { SecurityValidator } from './security/validator';
 import { TestCoverageValidator } from './testing/validator';
 import { AlignmentValidator } from './alignment';
+import { IntentValidator } from './intent/validator';
 import { 
   UniversalHealthReport, 
   SystemHealthReport, 
@@ -20,7 +21,7 @@ import {
   determineStatus
 } from './types';
 
-export type SystemKey = 'edge_function' | 'database' | 'security' | 'testing' | 'alignment';
+export type SystemKey = 'edge_function' | 'database' | 'security' | 'testing' | 'alignment' | 'intent';
 
 export interface HealthCheckOptions extends ValidatorOptions {
   systems?: SystemKey[];
@@ -42,6 +43,8 @@ function createValidator(system: SystemKey, options: ValidatorOptions = {}) {
       return new TestCoverageValidator(options);
     case 'alignment':
       return new AlignmentValidator(options);
+    case 'intent':
+      return new IntentValidator(options);
     default:
       throw new Error(`Unknown system: ${system}`);
   }
@@ -51,7 +54,7 @@ function createValidator(system: SystemKey, options: ValidatorOptions = {}) {
  * Runs health checks across all specified systems
  */
 export async function runHealthCheck(options: HealthCheckOptions = {}): Promise<UniversalHealthReport> {
-  const defaultSystems: SystemKey[] = ['edge_function', 'database', 'security', 'testing', 'alignment'];
+  const defaultSystems: SystemKey[] = ['edge_function', 'database', 'security', 'testing', 'alignment', 'intent'];
   const systemsToCheck = options.systems || defaultSystems;
   
   const systemsMap = new Map<SystemType, SystemHealthReport>();

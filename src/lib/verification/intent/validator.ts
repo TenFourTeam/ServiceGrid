@@ -9,7 +9,7 @@
  */
 
 import { BaseValidator } from '../base-validator';
-import { HealthCheck, ValidatorOptions, VerificationDimension } from '../types';
+import { HealthCheck, ValidatorOptions } from '../types';
 import {
   ALL_PROCESS_PATTERNS,
   getPatternsForProcess,
@@ -18,11 +18,9 @@ import {
   TRANSITION_PATTERNS,
 } from './pattern-registry';
 import {
-  TEST_CORPUS,
   getCorpusStats,
 } from './test-corpus';
 import {
-  analyzeCoverage,
   quickCoverageCheck,
 } from './coverage-analyzer';
 
@@ -45,7 +43,7 @@ export class IntentValidator extends BaseValidator {
     super('intent', options);
   }
 
-  protected async checkImplementation(): Promise<HealthCheck[]> {
+  public async checkImplementation(): Promise<HealthCheck[]> {
     const checks: HealthCheck[] = [];
 
     // Check 1: Lead Generation patterns exist
@@ -55,11 +53,14 @@ export class IntentValidator extends BaseValidator {
         ? this.pass(
             'lead_gen_patterns',
             'Lead Generation Patterns',
+            'implementation',
             `${leadGenPatterns.length} patterns defined`
           )
         : this.fail(
             'lead_gen_patterns',
             'Lead Generation Patterns',
+            'implementation',
+            'medium',
             `Only ${leadGenPatterns.length} patterns (need ${MINIMUM_PATTERNS_PER_PROCESS})`,
             'Add more patterns to cover all lead generation scenarios'
           )
@@ -72,11 +73,14 @@ export class IntentValidator extends BaseValidator {
         ? this.pass(
             'comm_patterns',
             'Communication Patterns',
+            'implementation',
             `${commPatterns.length} patterns defined`
           )
         : this.fail(
             'comm_patterns',
             'Communication Patterns',
+            'implementation',
+            'medium',
             `Only ${commPatterns.length} patterns (need ${MINIMUM_PATTERNS_PER_PROCESS})`,
             'Add more patterns for customer communication scenarios'
           )
@@ -89,11 +93,14 @@ export class IntentValidator extends BaseValidator {
         ? this.pass(
             'assessment_patterns',
             'Site Assessment Patterns',
+            'implementation',
             `${assessmentPatterns.length} patterns defined`
           )
         : this.fail(
             'assessment_patterns',
             'Site Assessment Patterns',
+            'implementation',
+            'medium',
             `Only ${assessmentPatterns.length} patterns (need ${MINIMUM_PATTERNS_PER_PROCESS})`,
             'Add more patterns for site assessment scenarios'
           )
@@ -107,11 +114,14 @@ export class IntentValidator extends BaseValidator {
           ? this.pass(
               `${process.processId}_categories`,
               `${process.name} Categories`,
+              'implementation',
               `${categoryCount} categories defined`
             )
           : this.fail(
               `${process.processId}_categories`,
               `${process.name} Categories`,
+              'implementation',
+              'low',
               `Only ${categoryCount} categories (need ${MINIMUM_CATEGORIES_PER_PROCESS})`,
               'Add more pattern categories for comprehensive coverage'
             )
@@ -124,11 +134,14 @@ export class IntentValidator extends BaseValidator {
         ? this.pass(
             'transition_patterns',
             'Process Transition Patterns',
+            'implementation',
             `${TRANSITION_PATTERNS.length} transition patterns defined`
           )
         : this.fail(
             'transition_patterns',
             'Process Transition Patterns',
+            'implementation',
+            'medium',
             `Only ${TRANSITION_PATTERNS.length} transition patterns`,
             'Add more patterns for process-to-process transitions'
           )
@@ -137,7 +150,7 @@ export class IntentValidator extends BaseValidator {
     return checks;
   }
 
-  protected async checkConfiguration(): Promise<HealthCheck[]> {
+  public async checkConfiguration(): Promise<HealthCheck[]> {
     const checks: HealthCheck[] = [];
 
     // Check 1: Pattern registry is properly structured
@@ -149,11 +162,14 @@ export class IntentValidator extends BaseValidator {
         ? this.pass(
             'total_patterns',
             'Total Pattern Count',
+            'configuration',
             `${totalPatterns} patterns across all processes`
           )
         : this.fail(
             'total_patterns',
             'Total Pattern Count',
+            'configuration',
+            'medium',
             `Only ${totalPatterns} total patterns`,
             'Add more patterns to achieve comprehensive coverage'
           )
@@ -167,11 +183,14 @@ export class IntentValidator extends BaseValidator {
           ? this.pass(
               `${process.processId}_keywords`,
               `${process.name} Keywords`,
+              'configuration',
               'All categories have keywords'
             )
           : this.fail(
               `${process.processId}_keywords`,
               `${process.name} Keywords`,
+              'configuration',
+              'low',
               'Some categories missing keywords',
               'Add keywords to all pattern categories'
             )
@@ -188,11 +207,14 @@ export class IntentValidator extends BaseValidator {
         ? this.pass(
             'valid_transitions',
             'Transition Pattern Targets',
+            'configuration',
             'All transition patterns have valid target processes'
           )
         : this.fail(
             'valid_transitions',
             'Transition Pattern Targets',
+            'configuration',
+            'high',
             `${TRANSITION_PATTERNS.length - validTransitions.length} transitions have invalid targets`,
             'Fix target process IDs in transition patterns'
           )
@@ -201,7 +223,7 @@ export class IntentValidator extends BaseValidator {
     return checks;
   }
 
-  protected async checkVerification(): Promise<HealthCheck[]> {
+  public async checkVerification(): Promise<HealthCheck[]> {
     const checks: HealthCheck[] = [];
 
     // Check 1: Test corpus has sufficient phrases
@@ -211,11 +233,14 @@ export class IntentValidator extends BaseValidator {
         ? this.pass(
             'test_corpus_size',
             'Test Corpus Size',
+            'verification',
             `${corpusStats.total} test phrases defined`
           )
         : this.fail(
             'test_corpus_size',
             'Test Corpus Size',
+            'verification',
+            'medium',
             `Only ${corpusStats.total} test phrases (need ${MINIMUM_TEST_PHRASES})`,
             'Add more test phrases to the corpus'
           )
@@ -230,11 +255,14 @@ export class IntentValidator extends BaseValidator {
           ? this.pass(
               `${proc}_test_coverage`,
               `${proc} Test Phrases`,
+              'verification',
               `${count} test phrases`
             )
           : this.fail(
               `${proc}_test_coverage`,
               `${proc} Test Phrases`,
+              'verification',
+              'low',
               `Only ${count} test phrases`,
               'Add more test phrases for this process'
             )
@@ -248,11 +276,14 @@ export class IntentValidator extends BaseValidator {
         ? this.pass(
             'mutual_exclusivity',
             'Pattern Mutual Exclusivity',
+            'verification',
             'No overlapping patterns detected'
           )
         : this.fail(
             'mutual_exclusivity',
             'Pattern Mutual Exclusivity',
+            'verification',
+            'high',
             `${overlaps.length} phrases match multiple patterns`,
             'Refine patterns to ensure mutual exclusivity'
           )
@@ -261,7 +292,7 @@ export class IntentValidator extends BaseValidator {
     return checks;
   }
 
-  protected async checkValidation(): Promise<HealthCheck[]> {
+  public async checkValidation(): Promise<HealthCheck[]> {
     const checks: HealthCheck[] = [];
 
     // Run coverage analysis
@@ -273,11 +304,14 @@ export class IntentValidator extends BaseValidator {
         ? this.pass(
             'pattern_accuracy',
             'Pattern Matching Accuracy',
+            'validation',
             `${coverageResult.accuracy}% accuracy`
           )
         : this.fail(
             'pattern_accuracy',
             'Pattern Matching Accuracy',
+            'validation',
+            'high',
             `Only ${coverageResult.accuracy}% accuracy (need ${MINIMUM_ACCURACY_THRESHOLD}%)`,
             'Review and fix failing pattern matches'
           )
@@ -289,11 +323,14 @@ export class IntentValidator extends BaseValidator {
         ? this.pass(
             'pattern_coverage',
             'Pattern Coverage',
+            'validation',
             `${coverageResult.coverage}% coverage`
           )
         : this.fail(
             'pattern_coverage',
             'Pattern Coverage',
+            'validation',
+            'medium',
             `Only ${coverageResult.coverage}% coverage (need ${MINIMUM_COVERAGE_THRESHOLD}%)`,
             'Add patterns for unmatched test phrases'
           )
@@ -305,11 +342,14 @@ export class IntentValidator extends BaseValidator {
         ? this.pass(
             'no_critical_issues',
             'No Critical Issues',
+            'validation',
             'No false negatives or exclusivity violations'
           )
         : this.fail(
             'no_critical_issues',
             'Critical Issues Found',
+            'validation',
+            'critical',
             `${coverageResult.criticalIssues} critical issues`,
             'Fix false negatives and pattern overlaps'
           )
