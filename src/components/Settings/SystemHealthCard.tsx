@@ -8,7 +8,8 @@ import {
   TestTube2, 
   CheckCircle2, 
   AlertTriangle, 
-  XCircle 
+  XCircle,
+  GitBranch 
 } from 'lucide-react';
 import type { HealthStatus, SystemType } from '@/lib/verification/types';
 
@@ -25,6 +26,7 @@ const systemConfig: Record<string, { icon: React.ElementType; label: string }> =
   database: { icon: Database, label: 'Database' },
   security: { icon: Shield, label: 'Security' },
   testing: { icon: TestTube2, label: 'Testing' },
+  alignment: { icon: GitBranch, label: 'DIY/DWY/DFY Alignment' },
   process: { icon: Zap, label: 'Processes' },
   component: { icon: Zap, label: 'Components' },
   hook: { icon: Zap, label: 'Hooks' },

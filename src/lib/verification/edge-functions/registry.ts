@@ -187,7 +187,6 @@ export const EDGE_FUNCTION_REGISTRY: EdgeFunctionDefinition[] = [
   { name: 'messages-crud', path: 'supabase/functions/messages-crud/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'admin' },
   { name: 'notes-crud', path: 'supabase/functions/notes-crud/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'admin' },
   { name: 'note-presence', path: 'supabase/functions/note-presence/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'admin' },
-  { name: 'resend-send-email', path: 'supabase/functions/resend-send-email/index.ts', requiresAuth: true, requiredSecrets: ['RESEND_API_KEY'], hasCors: true, category: 'admin' },
   { name: 'send-lifecycle-email', path: 'supabase/functions/send-lifecycle-email/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'admin' },
   { name: 'process-email-queue', path: 'supabase/functions/process-email-queue/index.ts', requiresAuth: false, requiredSecrets: [], hasCors: true, category: 'internal' },
 
