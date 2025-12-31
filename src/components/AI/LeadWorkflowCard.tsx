@@ -18,7 +18,9 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
-  AlertCircle
+  AlertCircle,
+  Zap,
+  RotateCcw
 } from 'lucide-react';
 
 export interface LeadWorkflowStep {
@@ -29,6 +31,22 @@ export interface LeadWorkflowStep {
   tool?: string;
   result?: any;
   error?: string;
+  verification?: {
+    phase: string;
+    failedAssertion?: string;
+    recoverySuggestion?: string;
+  };
+  rollbackExecuted?: boolean;
+  rollbackTool?: string;
+}
+
+export interface AutomationSummary {
+  leadScored?: boolean;
+  leadScore?: number;
+  autoAssigned?: boolean;
+  assignedTo?: string;
+  emailQueued?: boolean;
+  emailDelay?: number;
 }
 
 export interface LeadWorkflowCardProps {
@@ -41,6 +59,7 @@ export interface LeadWorkflowCardProps {
     leadScore?: number;
     leadSource?: string;
   };
+  automationSummary?: AutomationSummary;
   onPrompt?: (prompt: string) => void;
   isExpanded?: boolean;
 }
@@ -73,6 +92,7 @@ export function LeadWorkflowCard({
   steps, 
   currentStepIndex, 
   customerData,
+  automationSummary,
   onPrompt,
   isExpanded: initialExpanded = true 
 }: LeadWorkflowCardProps) {
@@ -229,6 +249,29 @@ export function LeadWorkflowCard({
                       <p className="text-xs text-destructive mt-1">{step.error}</p>
                     )}
                     
+                    {/* Verification failure details */}
+                    {step.status === 'failed' && step.verification && (
+                      <div className="mt-2 p-2 bg-destructive/10 rounded border border-destructive/20 text-xs space-y-1">
+                        <p className="font-medium text-destructive">
+                          Verification failed: {step.verification.phase}
+                        </p>
+                        {step.verification.failedAssertion && (
+                          <p className="text-muted-foreground">{step.verification.failedAssertion}</p>
+                        )}
+                        {step.verification.recoverySuggestion && (
+                          <p className="text-primary flex items-center gap-1">
+                            💡 {step.verification.recoverySuggestion}
+                          </p>
+                        )}
+                        {step.rollbackExecuted && (
+                          <p className="text-amber-600 flex items-center gap-1">
+                            <RotateCcw className="w-3 h-3" />
+                            Rolled back: {step.rollbackTool?.replace(/_/g, ' ')}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    
                     {/* Contextual prompts with press feedback */}
                     {isActive && prompts && onPrompt && (
                       <div className="flex flex-wrap gap-1 mt-2">
@@ -292,6 +335,36 @@ export function LeadWorkflowCard({
                   >
                     Schedule Assessment
                   </Button>
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* Automation Summary - shows what triggers did after workflow completes */}
+          {isComplete && automationSummary && (
+            <div className="mt-3 p-3 rounded-lg bg-muted/50 border border-border/50 space-y-2">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Automation Summary
+              </p>
+              {automationSummary.leadScored && (
+                <div className="flex items-center gap-2 text-xs">
+                  <Zap className="w-3 h-3 text-amber-500" />
+                  <span>Lead auto-scored at {automationSummary.leadScore}/100</span>
+                </div>
+              )}
+              {automationSummary.autoAssigned && (
+                <div className="flex items-center gap-2 text-xs">
+                  <Users className="w-3 h-3 text-green-500" />
+                  <span>Auto-assigned to {automationSummary.assignedTo}</span>
+                </div>
+              )}
+              {automationSummary.emailQueued && (
+                <div className="flex items-center gap-2 text-xs">
+                  <Mail className="w-3 h-3 text-blue-500" />
+                  <span>
+                    Welcome email queued
+                    {automationSummary.emailDelay ? ` (${automationSummary.emailDelay} min)` : ''}
+                  </span>
                 </div>
               )}
             </div>

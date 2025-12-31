@@ -39,6 +39,14 @@ export interface PlanStep {
   error?: string;
   startedAt?: string;
   completedAt?: string;
+  // Verification and rollback info for enhanced feedback
+  verification?: {
+    phase: string;
+    failedAssertion?: string;
+    recoverySuggestion?: string;
+  };
+  rollbackExecuted?: boolean;
+  rollbackTool?: string;
 }
 
 export interface ExecutionPlan {
@@ -1807,7 +1815,15 @@ export function sendLeadWorkflowProgress(
   controller: ReadableStreamDefaultController | undefined,
   plan: ExecutionPlan,
   step: PlanStep,
-  customerData: Record<string, any>
+  customerData: Record<string, any>,
+  automationSummary?: {
+    leadScored?: boolean;
+    leadScore?: number;
+    autoAssigned?: boolean;
+    assignedTo?: string;
+    emailQueued?: boolean;
+    emailDelay?: number;
+  }
 ): void {
   if (!controller) return;
   
@@ -1822,22 +1838,99 @@ export function sendLeadWorkflowProgress(
       tool: s.tool,
       result: s.result,
       error: s.error,
+      // Include verification and rollback info for failed steps
+      verification: s.verification,
+      rollbackExecuted: s.rollbackExecuted,
+      rollbackTool: s.rollbackTool,
     };
   });
   
-  const event = {
+  const event: Record<string, any> = {
     type: 'lead_workflow_progress',
     planId: plan.id,
     stepIndex: plan.currentStepIndex,
     steps,
     customerData,
   };
+  
+  // Include automation summary when workflow completes
+  if (automationSummary) {
+    event.automationSummary = automationSummary;
+  }
+  
   controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
 }
 
 // Check if a pattern should use LeadWorkflowCard
 export function isLeadWorkflowPattern(pattern: MultiStepPattern | undefined): boolean {
   return pattern?.specialCardType === 'lead_workflow';
+}
+
+// Fetch automation summary from recent activity log entries
+export async function fetchAutomationSummary(
+  supabase: any,
+  businessId: string,
+  customerId?: string
+): Promise<{
+  leadScored?: boolean;
+  leadScore?: number;
+  autoAssigned?: boolean;
+  assignedTo?: string;
+  emailQueued?: boolean;
+  emailDelay?: number;
+} | undefined> {
+  try {
+    // Query recent automation activity from past 30 seconds
+    const thirtySecondsAgo = new Date(Date.now() - 30000).toISOString();
+    
+    const { data: recentActivity } = await supabase
+      .from('ai_activity_log')
+      .select('activity_type, description, metadata')
+      .eq('business_id', businessId)
+      .gte('created_at', thirtySecondsAgo)
+      .order('created_at', { ascending: false })
+      .limit(10);
+    
+    if (!recentActivity || recentActivity.length === 0) {
+      return undefined;
+    }
+    
+    const summary: {
+      leadScored?: boolean;
+      leadScore?: number;
+      autoAssigned?: boolean;
+      assignedTo?: string;
+      emailQueued?: boolean;
+      emailDelay?: number;
+    } = {};
+    
+    for (const activity of recentActivity) {
+      const actionType = activity.metadata?.action_type;
+      
+      if (actionType === 'lead_scored' && !summary.leadScored) {
+        summary.leadScored = true;
+        summary.leadScore = activity.metadata?.score;
+      }
+      if (actionType === 'lead_assigned' && !summary.autoAssigned) {
+        summary.autoAssigned = true;
+        summary.assignedTo = activity.metadata?.assigned_to_name;
+      }
+      if (actionType === 'email_queued' && !summary.emailQueued) {
+        summary.emailQueued = true;
+        summary.emailDelay = activity.metadata?.delay_minutes;
+      }
+    }
+    
+    // Only return if we found at least one automation event
+    if (summary.leadScored || summary.autoAssigned || summary.emailQueued) {
+      return summary;
+    }
+    
+    return undefined;
+  } catch (error) {
+    console.error('[multi-step-planner] Failed to fetch automation summary:', error);
+    return undefined;
+  }
 }
 
 // Export extractCustomerData for use in executePlan

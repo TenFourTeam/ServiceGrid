@@ -132,6 +132,13 @@ export interface Message {
       tool?: string;
       result?: any;
       error?: string;
+      verification?: {
+        phase: string;
+        failedAssertion?: string;
+        recoverySuggestion?: string;
+      };
+      rollbackExecuted?: boolean;
+      rollbackTool?: string;
     }>;
     currentStepIndex: number;
     customerData?: {
@@ -140,6 +147,14 @@ export interface Message {
       phone?: string;
       leadScore?: number;
       leadSource?: string;
+    };
+    automationSummary?: {
+      leadScored?: boolean;
+      leadScore?: number;
+      autoAssigned?: boolean;
+      assignedTo?: string;
+      emailQueued?: boolean;
+      emailDelay?: number;
     };
   };
   // Entity selection - rendered as a conversational element outside plan card
@@ -493,7 +508,7 @@ export function useAIChat(options?: UseAIChatOptions) {
                 setCurrentStreamingMessage('');
                 // Keep streaming true for progress updates
               } else if (data.type === 'lead_workflow_progress') {
-                // Update lead workflow progress
+                // Update lead workflow progress with verification and automation summary
                 setMessages(prev => {
                   const workflowMsgIndex = prev.findIndex(m => m.messageType === 'lead_workflow');
                   if (workflowMsgIndex !== -1) {
@@ -509,9 +524,13 @@ export function useAIChat(options?: UseAIChatOptions) {
                           tool: s.tool,
                           result: s.result,
                           error: s.error,
+                          verification: s.verification,
+                          rollbackExecuted: s.rollbackExecuted,
+                          rollbackTool: s.rollbackTool,
                         })),
                         currentStepIndex: data.stepIndex,
                         customerData: data.customerData || updated[workflowMsgIndex].leadWorkflow?.customerData || {},
+                        automationSummary: data.automationSummary || updated[workflowMsgIndex].leadWorkflow?.automationSummary,
                       },
                     };
                     return updated;
