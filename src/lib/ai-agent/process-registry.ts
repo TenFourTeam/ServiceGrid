@@ -573,7 +573,7 @@ export const CUSTOMER_COMMUNICATION: EnhancedProcessDefinition = {
 export const SITE_ASSESSMENT: EnhancedProcessDefinition = {
   id: 'site_assessment',
   name: 'Site Assessment',
-  description: 'Evaluate job requirements through on-site or remote assessment',
+  description: 'Evaluate job requirements through on-site assessment with photo documentation and risk analysis',
   phase: 'pre_service',
   position: 3,
   order: 3,
@@ -583,144 +583,208 @@ export const SITE_ASSESSMENT: EnhancedProcessDefinition = {
   
   sipoc: {
     suppliers: [
-      'Sales Team',
       'Customer',
-      'Scheduling System'
+      'Sales Team',
+      'Scheduling System',
+      'Internal Knowledge Base'
     ],
     inputs: [
-      'Customer Request Details',
-      'Property Address',
-      'Access Instructions',
-      'Previous Service History'
+      'Site Access Details',
+      'Customer Requirements',
+      'Location & Asset Information',
+      'Historical Service Data',
+      'Equipment Specifications'
     ],
     processSteps: [
-      '1. Schedule Assessment Visit',
-      '2. Conduct Site Assessment',
-      '3. Document Findings',
-      '4. Identify Materials and Labor'
+      '1. Log Assessment Request',
+      '2. Schedule Assessment & Assign Team Member',
+      '3. Conduct Site Inspection',
+      '4. Capture Before Photos & Documentation',
+      '5. Analyze & Flag Risks/Opportunities',
+      '6. Generate Assessment Report'
     ],
     outputs: [
-      'Assessment Report',
-      'Photos and Measurements',
-      'Material Requirements',
-      'Labor Estimate'
+      'Completed Site Assessment Report',
+      'Before Photos with Annotations',
+      'Risk & Opportunity Register',
+      'Preliminary Cost Estimate',
+      'Recommended Solutions'
     ],
     customers: [
-      'Estimating Team',
-      'Customer',
-      'Quoting Process'
+      'Sales/Quoting Team',
+      'Project Management',
+      'Customer'
     ]
   },
 
   subSteps: [
     {
-      id: 'schedule_assessment',
-      name: 'Schedule Assessment Visit',
+      id: 'log_assessment_request',
+      name: 'Log Assessment Request',
       order: 1,
       currentState: 'DIY',
       targetState: 'DFY',
       sipoc: {
-        supplier: 'Sales Team / Customer',
-        input: 'Assessment request with customer preferences',
-        process: 'Check estimator availability. Coordinate with customer on timing. Create assessment job with is_assessment flag. Send confirmation to customer.',
-        output: 'Scheduled assessment job',
-        customer: 'Assigned Estimator'
+        supplier: 'Customer / Sales Representative',
+        input: 'Completed site assessment request form or verbal request',
+        process: 'Receive assessment request via email/system/phone. Verify completeness of required fields. Cross-reference customer details with CRM. Log receipt in request tracking system.',
+        output: 'Logged assessment request linked to customer',
+        customer: 'Site Assessment Coordinator'
       },
-      tools: ['create_job', 'schedule_job', 'send_job_confirmation'],
-      dbEntities: ['jobs', 'job_assignments'],
+      tools: ['create_request', 'search_customers', 'get_customer', 'create_customer'],
+      dbEntities: ['requests', 'customers'],
       automationCapabilities: [
-        'Auto-suggest available time slots',
-        'Self-service scheduling via portal',
+        'Auto-create customer if not exists',
+        'Auto-populate from customer portal submission',
+        'DB TRIGGER: Auto-log to ai_activity_log'
+      ]
+    },
+    {
+      id: 'schedule_and_assign',
+      name: 'Schedule Assessment & Assign',
+      order: 2,
+      currentState: 'DIY',
+      targetState: 'DFY',
+      sipoc: {
+        supplier: 'Customer Service Representative / Sales Team',
+        input: 'Approved assessment request with customer availability',
+        process: 'Verify customer availability and preferred dates/times. Access technician calendar and skill sets. Match assessor by location and expertise. Create assessment job with is_assessment=true. Confirm with customer and assignee.',
+        output: 'Scheduled assessment job with assigned team member',
+        customer: 'Assigned Field Assessor'
+      },
+      tools: ['create_assessment_job', 'check_team_availability', 'assign_job', 'send_job_confirmation', 'schedule_job'],
+      dbEntities: ['jobs', 'job_assignments', 'requests'],
+      automationCapabilities: [
+        'Auto-suggest available time slots based on territory',
+        'Auto-assign based on workload and expertise',
+        'DB TRIGGER: Update request status to Scheduled',
         'Automatic confirmation emails'
       ]
     },
     {
-      id: 'conduct_assessment',
-      name: 'Conduct Site Assessment',
-      order: 2,
-      currentState: 'DIY',
-      targetState: 'DWY',
-      sipoc: {
-        supplier: 'Assigned Estimator',
-        input: 'Assessment job details and address',
-        process: 'Travel to site. Meet with customer. Evaluate conditions, take measurements, note existing issues. Discuss scope with customer.',
-        output: 'Raw assessment data',
-        customer: 'Documentation step'
-      },
-      tools: ['update_job', 'get_job'],
-      dbEntities: ['jobs'],
-      automationCapabilities: [
-        'GPS navigation to site',
-        'Digital measurement tools',
-        'AI-assisted condition analysis from photos'
-      ]
-    },
-    {
-      id: 'document_findings',
-      name: 'Document Findings',
+      id: 'conduct_inspection',
+      name: 'Conduct Site Inspection',
       order: 3,
       currentState: 'DIY',
       targetState: 'DWY',
       sipoc: {
-        supplier: 'Estimator on-site',
-        input: 'Observations and measurements',
-        process: 'Take photos of key areas. Record measurements. Note material requirements. Document any special conditions or access issues.',
-        output: 'Complete assessment documentation',
-        customer: 'Quoting process'
+        supplier: 'Assigned Field Assessor',
+        input: 'Assessment job details with address and access instructions',
+        process: 'Travel to site per work order. Perform visual inspection of infrastructure and environmental conditions. Use specialized equipment for data collection. Follow assessment checklist. Secure site upon completion.',
+        output: 'Completed site inspection with checklist data',
+        customer: 'Documentation Step'
       },
-      tools: ['update_job'],
-      dbEntities: ['jobs'],
+      tools: ['get_job', 'update_job', 'create_checklist', 'complete_checklist_item'],
+      dbEntities: ['jobs', 'sg_checklists', 'sg_checklist_items'],
       automationCapabilities: [
-        'Auto-organize photos by location',
-        'Voice-to-text notes',
-        'AI extraction of dimensions from photos'
+        'GPS navigation to site',
+        'Auto-create checklist from job type template',
+        'Real-time checklist sync',
+        'DB TRIGGER: Auto-create assessment checklist on job creation'
       ]
     },
     {
-      id: 'identify_requirements',
-      name: 'Identify Materials and Labor',
+      id: 'capture_before_photos',
+      name: 'Capture Before Photos & Documentation',
       order: 4,
       currentState: 'DIY',
       targetState: 'DWY',
       sipoc: {
-        supplier: 'Estimator',
-        input: 'Assessment documentation',
-        process: 'Calculate material quantities. Estimate labor hours. Check inventory availability. Identify any specialty requirements.',
-        output: 'Material and labor requirements for quoting',
-        customer: 'Quoting/Estimating process'
+        supplier: 'Field Assessor on-site',
+        input: 'Areas identified during inspection requiring documentation',
+        process: 'Identify specific areas based on checklist. Take photos of key areas with annotations. Record precise measurements using measuring tools. Capture supporting photographic evidence for critical findings.',
+        output: 'Documented findings with annotated before photos',
+        customer: 'Analysis Step'
       },
-      tools: ['list_inventory', 'get_inventory', 'list_team_members'],
-      dbEntities: ['inventory_items', 'business_members'],
+      tools: ['upload_media', 'add_annotation', 'tag_media', 'update_job'],
+      dbEntities: ['sg_media', 'jobs'],
       automationCapabilities: [
-        'Auto-calculate quantities from measurements',
-        'Inventory availability check',
-        'Suggest similar past jobs for reference'
+        'Auto-extract EXIF metadata (location, timestamp)',
+        'Auto-tag photos as assessment:before',
+        'Auto-organize by timestamp and location',
+        'AI-suggested annotations based on content'
+      ]
+    },
+    {
+      id: 'analyze_and_flag',
+      name: 'Analyze & Flag Risks/Opportunities',
+      order: 5,
+      currentState: 'DIY',
+      targetState: 'DFY',
+      sipoc: {
+        supplier: 'Assessment Team / AI Vision System',
+        input: 'Consolidated site survey data (photos, measurements, notes)',
+        process: 'Review all collected data. Brainstorm potential risks (access limitations, structural issues, hazards). Identify opportunities (upsells, efficiency upgrades). Categorize and prioritize by likelihood and impact. Tag media with risk/opportunity labels.',
+        output: 'Identified risks & opportunities list with tagged media',
+        customer: 'Report Generation Step'
+      },
+      tools: ['analyze_photo', 'tag_media', 'update_job', 'get_job'],
+      dbEntities: ['sg_media', 'jobs'],
+      automationCapabilities: [
+        'AI photo analysis for hazard detection',
+        'Auto-suggest risk tags based on visual analysis',
+        'Priority scoring algorithm',
+        'DB TRIGGER: Auto-tag photos with AI-detected risks'
+      ]
+    },
+    {
+      id: 'generate_report',
+      name: 'Generate Assessment Report',
+      order: 6,
+      currentState: 'DIY',
+      targetState: 'DFY',
+      sipoc: {
+        supplier: 'Field Assessor / AI System',
+        input: 'Completed survey data, photos, risk register, checklist',
+        process: 'Consolidate technician notes, photos, and measurements. Draft executive summary with key findings. Add detailed sections for each observed area. Include proposed solutions and preliminary cost estimates. Format report with charts, images, and appendices.',
+        output: 'Detailed site assessment report ready for quoting',
+        customer: 'Sales/Account Management Team'
+      },
+      tools: ['generate_summary', 'create_quote', 'update_job'],
+      dbEntities: ['jobs', 'quotes', 'ai_artifacts'],
+      automationCapabilities: [
+        'AI-generated executive summary',
+        'Auto-populate quote from assessment findings',
+        'Auto-attach photos to report',
+        'PDF export with branded template'
       ]
     }
   ],
 
   tools: [
-    'create_job',
+    'create_request',
+    'create_assessment_job',
     'update_job',
     'get_job',
     'schedule_job',
+    'assign_job',
     'send_job_confirmation',
-    'get_inventory',
-    'list_inventory',
-    'list_team_members'
+    'check_team_availability',
+    'create_checklist',
+    'complete_checklist_item',
+    'upload_media',
+    'add_annotation',
+    'tag_media',
+    'analyze_photo',
+    'generate_summary',
+    'create_quote'
   ],
   
   inputContract: {
     customer_id: 'uuid',
     address: 'string',
-    service_type: 'string?'
+    service_type: 'string?',
+    preferred_date: 'timestamp?',
+    access_instructions: 'string?'
   },
   
   outputContract: {
     assessment_job_id: 'uuid',
-    findings: 'string?',
-    estimated_scope: 'string?',
-    photos: 'string[]?'
+    report_summary: 'string?',
+    media_count: 'number',
+    risk_count: 'number',
+    checklist_completion_percent: 'number',
+    preliminary_estimate: 'number?'
   },
   
   entryConditions: [
@@ -729,10 +793,11 @@ export const SITE_ASSESSMENT: EnhancedProcessDefinition = {
   
   exitConditions: [
     { type: 'entity_exists', entity: 'job', field: 'id' },
-    { type: 'status_equals', entity: 'job', field: 'is_assessment', value: true }
+    { type: 'status_equals', entity: 'job', field: 'is_assessment', value: true },
+    { type: 'context_check', field: 'media_count', operator: '>', value: 0 }
   ],
   
-  userCheckpoints: ['assessment_complete'],
+  userCheckpoints: ['inspection_complete', 'report_approved'],
   nextProcesses: ['quoting_estimating'],
   previousProcesses: ['lead_generation', 'customer_communication']
 };

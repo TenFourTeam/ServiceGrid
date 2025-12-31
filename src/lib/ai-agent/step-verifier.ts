@@ -496,6 +496,52 @@ const ROLLBACK_TOOLS: Record<string, RollbackTool> = {
       if (error) throw new Error(`Failed to void invoice: ${error.message}`);
     }
   },
+  // Site Assessment Rollback Tools
+  delete_media: {
+    execute: async (args, businessId) => {
+      const { error } = await supabase
+        .from('sg_media')
+        .delete()
+        .eq('id', args.media_id)
+        .eq('business_id', businessId);
+      if (error) throw new Error(`Failed to delete media: ${error.message}`);
+    }
+  },
+  remove_media_tags: {
+    execute: async (args, businessId) => {
+      // Remove specific tags from media
+      const { data: media, error: fetchError } = await supabase
+        .from('sg_media')
+        .select('tags')
+        .eq('id', args.media_id)
+        .eq('business_id', businessId)
+        .single();
+      
+      if (fetchError) throw new Error(`Failed to fetch media: ${fetchError.message}`);
+      
+      const currentTags = (media?.tags as string[]) || [];
+      const tagsToRemove = args.tags || [];
+      const newTags = currentTags.filter((t: string) => !tagsToRemove.includes(t));
+      
+      const { error } = await supabase
+        .from('sg_media')
+        .update({ tags: newTags })
+        .eq('id', args.media_id)
+        .eq('business_id', businessId);
+      
+      if (error) throw new Error(`Failed to remove media tags: ${error.message}`);
+    }
+  },
+  delete_checklist: {
+    execute: async (args, businessId) => {
+      const { error } = await supabase
+        .from('sg_checklists')
+        .delete()
+        .eq('id', args.checklist_id)
+        .eq('business_id', businessId);
+      if (error) throw new Error(`Failed to delete checklist: ${error.message}`);
+    }
+  },
 };
 
 /**
