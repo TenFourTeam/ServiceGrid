@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useAuth, useUser } from '@clerk/clerk-react';
+import { useAuth, useUser } from '@/hooks/useBusinessAuth';
 import { useBusinessContext } from './useBusinessContext';
 import { useProfile } from '@/queries/useProfile';
 import { useStripeConnect } from './useStripeConnect';

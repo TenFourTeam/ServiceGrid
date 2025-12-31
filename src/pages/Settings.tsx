@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import BusinessLogo from '@/components/BusinessLogo';
 import { useState, useEffect, useCallback } from 'react';
-import { useAuth as useClerkAuth } from '@clerk/clerk-react';
+import { useAuth } from '@/hooks/useBusinessAuth';
 import { useAuthApi } from '@/hooks/useAuthApi';
 import ConnectBanner from '@/components/Stripe/ConnectBanner';
 import { useStripeConnect } from '@/hooks/useStripeConnect';
@@ -47,7 +47,7 @@ import { SystemHealthDashboard } from '@/components/Settings/SystemHealthDashboa
 
 export default function SettingsPage() {
   const { business, role } = useBusinessContext();
-  const { isSignedIn } = useClerkAuth();
+  const { isSignedIn } = useAuth();
   const { t, language, setLanguage } = useLanguage();
   const authApi = useAuthApi();
   const [darkFile, setDarkFile] = useState<File | null>(null);
