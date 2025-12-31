@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { ChevronUp, ChevronDown, Download, CheckCircle, FileText } from 'lucide-react';
+import { ChevronUp, ChevronDown, Download, CheckCircle, FileText, Globe } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import Papa from 'papaparse';
@@ -21,6 +21,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useCustomerOperations } from '@/hooks/useCustomerOperations';
 import CustomerErrorBoundary from '@/components/ErrorBoundaries/CustomerErrorBoundary';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getLeadSourceLabel, getLeadSourceColor } from '@/lib/lead-sources';
 
 export default function CustomersPage() {
   const location = useLocation();
@@ -54,7 +55,7 @@ export default function CustomersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [qualificationFilter, setQualificationFilter] = useState<'all' | 'qualified' | 'unqualified'>('all');
   const [sortConfig, setSortConfig] = useState<{
-    key: 'name' | 'email' | 'phone';
+    key: 'name' | 'email' | 'phone' | 'lead_score' | 'lead_source';
     direction: 'asc' | 'desc';
   } | null>(null);
 
@@ -82,8 +83,14 @@ export default function CustomersPage() {
     // Apply sorting
     if (sortConfig) {
       filtered = [...filtered].sort((a, b) => {
-        const aValue = a[sortConfig.key] || '';
-        const bValue = b[sortConfig.key] || '';
+        if (sortConfig.key === 'lead_score') {
+          const aScore = a.lead_score ?? 0;
+          const bScore = b.lead_score ?? 0;
+          return sortConfig.direction === 'asc' ? aScore - bScore : bScore - aScore;
+        }
+        
+        const aValue = (a[sortConfig.key as keyof typeof a] as string) || '';
+        const bValue = (b[sortConfig.key as keyof typeof b] as string) || '';
         
         if (sortConfig.direction === 'asc') {
           return aValue.localeCompare(bValue);
@@ -150,10 +157,10 @@ export default function CustomersPage() {
     });
   };
 
-  const handleSort = (key: 'name' | 'email' | 'phone') => {
+  const handleSort = (key: 'name' | 'email' | 'phone' | 'lead_score' | 'lead_source') => {
     setSortConfig(current => {
       if (!current || current.key !== key) {
-        return { key, direction: 'asc' };
+        return { key, direction: key === 'lead_score' ? 'desc' : 'asc' };
       } else if (current.direction === 'asc') {
         return { key, direction: 'desc' };
       } else {
@@ -162,7 +169,7 @@ export default function CustomersPage() {
     });
   };
   
-  const getSortIcon = (key: 'name' | 'email' | 'phone') => {
+  const getSortIcon = (key: 'name' | 'email' | 'phone' | 'lead_score' | 'lead_source') => {
     if (!sortConfig || sortConfig.key !== key) {
       return null;
     }
@@ -236,7 +243,7 @@ export default function CustomersPage() {
               {formatDistanceToNow(new Date(customer.created_at), { addSuffix: true })}
             </div>
           )}
-          {/* Lead Score Badge */}
+          {/* Lead Score & Source Badges */}
           <div className="flex items-center gap-2 mt-2 flex-wrap">
             <Badge variant={(customer.lead_score ?? 0) >= 40 ? "default" : "secondary"} className="text-xs">
               Score: {customer.lead_score ?? 0}
@@ -245,6 +252,12 @@ export default function CustomersPage() {
               <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/30">
                 <CheckCircle className="h-3 w-3 mr-1" />
                 Qualified
+              </Badge>
+            )}
+            {customer.lead_source && (
+              <Badge variant="outline" className={`text-xs ${getLeadSourceColor(customer.lead_source)}`}>
+                <Globe className="h-3 w-3 mr-1" />
+                {getLeadSourceLabel(customer.lead_source)}
               </Badge>
             )}
             {requestCountMap.get(customer.id) > 0 && (
@@ -359,7 +372,24 @@ export default function CustomersPage() {
                           </TableHead>
                           <TableHead>{t('customers.table.address')}</TableHead>
                           <TableHead>Requests</TableHead>
-                          <TableHead>Lead Score</TableHead>
+                          <TableHead 
+                            className="cursor-pointer hover:bg-muted/50 select-none"
+                            onClick={() => handleSort('lead_score')}
+                          >
+                            <div className="flex items-center">
+                              Lead Score
+                              {getSortIcon('lead_score')}
+                            </div>
+                          </TableHead>
+                          <TableHead 
+                            className="cursor-pointer hover:bg-muted/50 select-none"
+                            onClick={() => handleSort('lead_source')}
+                          >
+                            <div className="flex items-center">
+                              Source
+                              {getSortIcon('lead_source')}
+                            </div>
+                          </TableHead>
                           <TableHead className="w-12">{t('customers.table.actions')}</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -393,15 +423,25 @@ export default function CustomersPage() {
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
-                                <Badge variant={(c.lead_score ?? 0) >= 40 ? "default" : "secondary"} className="text-xs">
-                                  {c.lead_score ?? 0}
-                                </Badge>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-sm font-medium">{c.lead_score ?? 0}</span>
+                                  <Progress value={c.lead_score ?? 0} className="h-1.5 w-12" />
+                                </div>
                                 {c.is_qualified && (
                                   <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/30">
                                     <CheckCircle className="h-3 w-3" />
                                   </Badge>
                                 )}
                               </div>
+                            </TableCell>
+                            <TableCell>
+                              {c.lead_source ? (
+                                <Badge variant="outline" className={`text-xs ${getLeadSourceColor(c.lead_source)}`}>
+                                  {getLeadSourceLabel(c.lead_source)}
+                                </Badge>
+                              ) : (
+                                <span className="text-muted-foreground text-sm">-</span>
+                              )}
                             </TableCell>
                             <TableCell onClick={(e) => e.stopPropagation()}>
                               <CustomerActions 

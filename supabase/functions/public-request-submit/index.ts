@@ -275,6 +275,7 @@ const handler = async (req: Request): Promise<Response> => {
           email: requestData.customer_email,
           phone: requestData.customer_phone || null,
           address: requestData.customer_address || null,
+          lead_source: 'website_form', // Auto-tag customers from public request form
         })
         .select()
         .single();
