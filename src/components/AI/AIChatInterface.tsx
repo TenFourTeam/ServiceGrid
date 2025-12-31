@@ -286,7 +286,7 @@ export function AIChatInterface({
                 <ChatMessage 
                   key={msg.id} 
                   message={msg}
-                  onActionExecute={async (action) => {
+                  onActionExecute={async (action, actionContext) => {
                     // Handle special actions
                     if (action === 'retry' && lastFailedMessage) {
                       retryLastMessage();
@@ -305,8 +305,9 @@ export function AIChatInterface({
                       window.open('https://lovable.dev/support', '_blank');
                       return;
                     }
-                    // Execute action by sending it as a message
-                    await sendMessage(action, undefined, context);
+                    // Execute action by sending it as a message with merged context
+                    const mergedContext = { ...context, ...actionContext };
+                    await sendMessage(action, undefined, mergedContext);
                   }}
                   onApproveSchedule={async (scheduleData) => {
                     // Send approval confirmation to AI
