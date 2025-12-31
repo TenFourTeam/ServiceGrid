@@ -10,6 +10,8 @@ import { getPattern } from './multi-step-patterns';
 import { getToolContract } from './tool-contracts';
 import { getProcessTests } from './test-registry';
 import { getProcessTriggers } from './trigger-registry';
+import { TEST_REGISTRY, TRIGGER_REGISTRY } from './processes';
+import { ALL_PROCESS_IDS } from './process-ids';
 
 // Alias for cleaner code
 const PROCESSES = PROCESS_REGISTRY;
@@ -361,6 +363,29 @@ function checkDatabaseTriggers(processId: string): ValidationCheck {
   };
 }
 
+function checkCrossRegistryConsistency(processId: string): ValidationCheck {
+  const inProcessRegistry = !!PROCESSES[processId];
+  const inTestRegistry = !!TEST_REGISTRY[processId as keyof typeof TEST_REGISTRY];
+  const inTriggerRegistry = !!TRIGGER_REGISTRY[processId as keyof typeof TRIGGER_REGISTRY];
+  
+  const allPresent = inProcessRegistry && inTestRegistry && inTriggerRegistry;
+  const missing: string[] = [];
+  
+  if (!inProcessRegistry) missing.push('process-registry');
+  if (!inTestRegistry) missing.push('test-registry');
+  if (!inTriggerRegistry) missing.push('trigger-registry');
+  
+  return {
+    category: 'definition',
+    name: 'Cross-registry consistency',
+    passed: allPresent,
+    required: true,
+    details: allPresent 
+      ? 'Present in all registries'
+      : `Missing from: ${missing.join(', ')}`
+  };
+}
+
 // ============================================================================
 // MAIN VALIDATION FUNCTION
 // ============================================================================
@@ -397,6 +422,9 @@ export function validateProcessImplementation(processId: string): ProcessValidat
   // PHASE 7: Database Automation Layer
   checks.push(checkDatabaseTriggers(processId));
   
+  // PHASE 8: Cross-Registry Consistency
+  checks.push(checkCrossRegistryConsistency(processId));
+  
   // Calculate results
   const passed = checks.filter(c => c.passed);
   const required = checks.filter(c => c.required);
@@ -414,8 +442,9 @@ export function validateProcessImplementation(processId: string): ProcessValidat
 }
 
 export function validateAllProcesses(): ValidationSummary {
-  const processIds = Object.keys(PROCESSES);
-  const results = processIds.map(validateProcessImplementation);
+  // Use ALL_PROCESS_IDS to ensure we validate all 15 processes
+  const processIds = ALL_PROCESS_IDS;
+  const results = processIds.map(id => validateProcessImplementation(id));
   
   const completeProcesses = results.filter(r => r.isComplete).length;
   const totalScore = results.reduce((sum, r) => sum + r.score, 0);
