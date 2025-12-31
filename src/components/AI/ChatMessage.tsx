@@ -10,6 +10,7 @@ import { ConfirmationCard } from './ConfirmationCard';
 import { PlanPreviewCard } from './PlanPreviewCard';
 import { PlanProgressCard } from './PlanProgressCard';
 import { LeadWorkflowCard } from './LeadWorkflowCard';
+import { AssessmentWorkflowCard } from './AssessmentWorkflowCard';
 import { EntityCard, parseEntityReferences } from './EntityCard';
 import { UndoButton, isReversibleAction, getUndoDescription } from './UndoButton';
 import { ToolResultCard } from './ToolResultCard';
@@ -52,7 +53,8 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
       message.messageType !== 'confirmation' &&
       message.messageType !== 'plan_preview' &&
       message.messageType !== 'plan_progress' &&
-      message.messageType !== 'lead_workflow') {
+      message.messageType !== 'lead_workflow' &&
+      message.messageType !== 'assessment_workflow') {
     return null;
   }
 
@@ -180,6 +182,17 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
                 onPrompt={onActionExecute}
               />
             )}
+            
+            {/* Assessment Workflow Card */}
+            {message.messageType === 'assessment_workflow' && message.assessmentWorkflow && (
+              <AssessmentWorkflowCard
+                steps={message.assessmentWorkflow.steps}
+                currentStepIndex={message.assessmentWorkflow.currentStepIndex}
+                assessmentData={message.assessmentWorkflow.assessmentData}
+                automationSummary={message.assessmentWorkflow.automationSummary}
+                onPrompt={onActionExecute}
+              />
+            )}
 
             {/* Standard message content */}
             {message.messageType !== 'clarification' && 
@@ -187,6 +200,7 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
              message.messageType !== 'plan_preview' && 
              message.messageType !== 'plan_progress' && 
              message.messageType !== 'lead_workflow' &&
+             message.messageType !== 'assessment_workflow' &&
              parsedContent.map((part, idx) => {
               if (part.type === 'text') {
                 // Parse entity references within text

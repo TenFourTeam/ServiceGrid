@@ -4,6 +4,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { ConsolidatedToaster } from '@/components/ui/toaster';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { LeadAutomationNotificationsProvider } from '@/components/providers/LeadAutomationNotificationsProvider';
+import { AssessmentAutomationNotificationsProvider } from '@/components/providers/AssessmentAutomationNotificationsProvider';
 
 // Simple query client with basic defaults
 const queryClient = new QueryClient({
@@ -38,6 +39,7 @@ export function AppProviders({ children }: AppProvidersProps) {
         <TooltipProvider delayDuration={100}>
           <ConsolidatedToaster />
           <LeadAutomationNotificationsProvider />
+          <AssessmentAutomationNotificationsProvider />
           {children}
         </TooltipProvider>
       </LanguageProvider>

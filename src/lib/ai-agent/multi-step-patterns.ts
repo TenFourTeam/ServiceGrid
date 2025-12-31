@@ -27,6 +27,7 @@ export interface MultiStepPattern {
   postconditions: string[];
   successMetrics: string[];
   estimatedDurationMs: number;
+  specialCardType?: 'lead_workflow' | 'assessment_workflow';
 }
 
 // ============================================================================
@@ -291,6 +292,7 @@ export const COMPLETE_SITE_ASSESSMENT: MultiStepPattern = {
   description: 'End-to-end site assessment workflow from request to report generation',
   category: 'pre-service',
   estimatedDurationMs: 15000,
+  specialCardType: 'assessment_workflow',
   steps: [
     {
       order: 1,
