@@ -26,6 +26,10 @@ import {
   sendLeadWorkflowProgress,
   extractCustomerData,
   fetchAutomationSummary,
+  isAssessmentWorkflowPattern,
+  sendAssessmentWorkflowStart,
+  sendAssessmentWorkflowProgress,
+  fetchAssessmentAutomationSummary,
   type ExecutionPlan,
   type ExecutionContext,
   type PlannerResult 

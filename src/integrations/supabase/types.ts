@@ -517,10 +517,14 @@ export type Database = {
       }
       automation_settings: {
         Row: {
+          assessment_checklist_template_id: string | null
           assignment_method: string
           auto_assign_leads: boolean
+          auto_create_assessment_checklist: boolean | null
+          auto_generate_report: boolean | null
           auto_score_leads: boolean
           auto_send_welcome_email: boolean
+          auto_suggest_risk_tags: boolean | null
           business_id: string
           created_at: string
           id: string
@@ -529,10 +533,14 @@ export type Database = {
           welcome_email_delay_minutes: number
         }
         Insert: {
+          assessment_checklist_template_id?: string | null
           assignment_method?: string
           auto_assign_leads?: boolean
+          auto_create_assessment_checklist?: boolean | null
+          auto_generate_report?: boolean | null
           auto_score_leads?: boolean
           auto_send_welcome_email?: boolean
+          auto_suggest_risk_tags?: boolean | null
           business_id: string
           created_at?: string
           id?: string
@@ -541,10 +549,14 @@ export type Database = {
           welcome_email_delay_minutes?: number
         }
         Update: {
+          assessment_checklist_template_id?: string | null
           assignment_method?: string
           auto_assign_leads?: boolean
+          auto_create_assessment_checklist?: boolean | null
+          auto_generate_report?: boolean | null
           auto_score_leads?: boolean
           auto_send_welcome_email?: boolean
+          auto_suggest_risk_tags?: boolean | null
           business_id?: string
           created_at?: string
           id?: string

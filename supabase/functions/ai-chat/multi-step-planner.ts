@@ -97,8 +97,8 @@ interface MultiStepPattern {
     optional?: boolean;
   }>;
   requiresApproval: boolean;
-  // Special card type for custom UI rendering (e.g., 'lead_workflow')
-  specialCardType?: 'lead_workflow';
+  // Special card type for custom UI rendering (e.g., 'lead_workflow', 'assessment_workflow')
+  specialCardType?: 'lead_workflow' | 'assessment_workflow';
 }
 
 const MULTI_STEP_PATTERNS: MultiStepPattern[] = [
@@ -587,7 +587,103 @@ const MULTI_STEP_PATTERNS: MultiStepPattern[] = [
     requiresApproval: true,
   },
 
-  // Full quote to job workflow
+  // Complete site assessment workflow
+  {
+    id: 'complete_site_assessment',
+    name: 'Complete Site Assessment',
+    description: 'Schedule and conduct a full site assessment with documentation and reporting',
+    specialCardType: 'assessment_workflow', // Use AssessmentWorkflowCard for this pattern
+    patterns: [
+      /site\s+assessment\s+(for|at)/i,
+      /schedule\s+(a\s+)?(site\s+)?assessment/i,
+      /conduct\s+(a\s+)?site\s+(visit|assessment|inspection)/i,
+      /assessment\s+for\s+.+\s+property/i,
+      /property\s+assessment\s+(for|at)/i,
+      /on-?site\s+(evaluation|inspection)/i,
+    ],
+    keywords: ['site assessment', 'property assessment', 'site visit', 'inspection', 'assessment'],
+    steps: [
+      {
+        name: 'Check for Existing Customer',
+        description: 'Search for customer record',
+        tool: 'search_customers',
+        argMapping: (ctx) => ({ 
+          query: ctx.entities?.email || ctx.entities?.phone || ctx.entities?.name 
+        }),
+      },
+      {
+        name: 'Create Customer Record',
+        description: 'Create new customer if not found',
+        tool: 'create_customer',
+        argMapping: (ctx) => ({
+          name: ctx.entities?.customerName || ctx.entities?.name,
+          email: ctx.entities?.customerEmail || ctx.entities?.email,
+          phone: ctx.entities?.customerPhone || ctx.entities?.phone,
+          address: ctx.entities?.customerAddress || ctx.entities?.address,
+        }),
+        dependsOn: ['search_customers'],
+        optional: true,
+      },
+      {
+        name: 'Create Assessment Request',
+        description: 'Log assessment request in system',
+        tool: 'create_request',
+        argMapping: (ctx, results) => ({
+          customerId: results['create_customer']?.customer_id || results['search_customers']?.customers?.[0]?.id,
+          title: ctx.entities?.title || 'Site Assessment',
+          serviceDetails: ctx.entities?.details || 'On-site assessment requested',
+          source: ctx.entities?.source || 'chat',
+        }),
+        dependsOn: ['search_customers'],
+      },
+      {
+        name: 'Check Team Availability',
+        description: 'Find available assessors',
+        tool: 'check_team_availability',
+        argMapping: (ctx) => ({
+          date: ctx.entities?.preferredDate || new Date().toISOString().split('T')[0],
+        }),
+        dependsOn: ['create_request'],
+      },
+      {
+        name: 'Create Assessment Job',
+        description: 'Schedule assessment job',
+        tool: 'create_assessment_job',
+        argMapping: (ctx, results) => ({
+          customerId: results['create_customer']?.customer_id || results['search_customers']?.customers?.[0]?.id,
+          address: ctx.entities?.address || ctx.entities?.customerAddress,
+          title: ctx.entities?.title || 'Site Assessment',
+          starts_at: ctx.entities?.starts_at || ctx.entities?.preferredDate,
+          notes: ctx.entities?.access_instructions || ctx.entities?.notes,
+          request_id: results['create_request']?.request_id,
+        }),
+        dependsOn: ['check_team_availability'],
+      },
+      {
+        name: 'Assign Assessor',
+        description: 'Assign team member to assessment',
+        tool: 'assign_job',
+        argMapping: (ctx, results) => ({
+          jobId: results['create_assessment_job']?.job_id,
+          userId: ctx.entities?.assigned_to || results['check_team_availability']?.availableMembers?.[0]?.id,
+        }),
+        dependsOn: ['create_assessment_job'],
+        optional: true,
+      },
+      {
+        name: 'Send Confirmation',
+        description: 'Send confirmation to customer',
+        tool: 'send_job_confirmation',
+        argMapping: (ctx, results) => ({
+          jobId: results['create_assessment_job']?.job_id,
+        }),
+        dependsOn: ['create_assessment_job'],
+        optional: true,
+      },
+    ],
+    requiresApproval: true,
+  },
+
   {
     id: 'quote_to_job_complete',
     name: 'Quote to Scheduled Job',
@@ -1864,6 +1960,262 @@ export function sendLeadWorkflowProgress(
 // Check if a pattern should use LeadWorkflowCard
 export function isLeadWorkflowPattern(pattern: MultiStepPattern | undefined): boolean {
   return pattern?.specialCardType === 'lead_workflow';
+}
+
+// =============================================================================
+// ASSESSMENT WORKFLOW SSE HELPERS
+// =============================================================================
+
+// Map assessment tool names to user-friendly step names
+const ASSESSMENT_WORKFLOW_STEP_MAP: Record<string, { name: string; description: string }> = {
+  'search_customers': { 
+    name: 'Check Customer', 
+    description: 'Search for existing customer record' 
+  },
+  'create_customer': { 
+    name: 'Create Customer', 
+    description: 'Create new customer record' 
+  },
+  'create_request': { 
+    name: 'Log Request', 
+    description: 'Log assessment request in system' 
+  },
+  'check_team_availability': { 
+    name: 'Check Availability', 
+    description: 'Find available assessors' 
+  },
+  'create_assessment_job': { 
+    name: 'Schedule Assessment', 
+    description: 'Create and schedule assessment job' 
+  },
+  'assign_job': { 
+    name: 'Assign Assessor', 
+    description: 'Assign team member to assessment' 
+  },
+  'send_job_confirmation': { 
+    name: 'Send Confirmation', 
+    description: 'Notify customer of scheduled assessment' 
+  },
+  'upload_media': { 
+    name: 'Upload Photos', 
+    description: 'Upload assessment photos' 
+  },
+  'tag_media': { 
+    name: 'Tag Photos', 
+    description: 'Add tags and annotations' 
+  },
+  'analyze_photo': { 
+    name: 'Analyze Issues', 
+    description: 'AI-assisted risk detection' 
+  },
+  'generate_summary': { 
+    name: 'Generate Report', 
+    description: 'Create assessment report' 
+  },
+};
+
+// Extract assessment data from tool results for the AssessmentWorkflowCard
+function extractAssessmentData(
+  toolName: string, 
+  result: any, 
+  existing: Record<string, any>
+): Record<string, any> {
+  if (toolName === 'create_customer' || toolName === 'search_customers') {
+    const customer = result?.customer || result?.customers?.[0];
+    return {
+      ...existing,
+      customerName: customer?.name || existing.customerName,
+      address: customer?.address || existing.address,
+    };
+  }
+  if (toolName === 'create_assessment_job') {
+    return {
+      ...existing,
+      scheduledDate: result?.starts_at || existing.scheduledDate,
+      jobId: result?.job_id || result?.id || existing.jobId,
+    };
+  }
+  if (toolName === 'assign_job') {
+    return {
+      ...existing,
+      assignedTo: result?.assigned_to_name || existing.assignedTo,
+    };
+  }
+  if (toolName === 'upload_media') {
+    return {
+      ...existing,
+      photoCount: (existing.photoCount || 0) + (result?.count || 1),
+    };
+  }
+  if (toolName === 'tag_media' || toolName === 'analyze_photo') {
+    return {
+      ...existing,
+      riskCount: (existing.riskCount || 0) + (result?.risk_count || result?.risks_found || 0),
+    };
+  }
+  return existing;
+}
+
+// Check if a pattern should use AssessmentWorkflowCard
+export function isAssessmentWorkflowPattern(pattern: MultiStepPattern | undefined): boolean {
+  return pattern?.specialCardType === 'assessment_workflow';
+}
+
+// Send assessment workflow start event
+export function sendAssessmentWorkflowStart(
+  controller: ReadableStreamDefaultController | undefined,
+  plan: ExecutionPlan,
+  initialEntities: Record<string, any>
+): void {
+  if (!controller) return;
+  
+  const encoder = new TextEncoder();
+  const steps = plan.steps.map(s => {
+    const stepInfo = ASSESSMENT_WORKFLOW_STEP_MAP[s.tool] || { name: s.name, description: s.description };
+    return {
+      id: s.id,
+      name: stepInfo.name,
+      description: stepInfo.description,
+      status: s.status === 'pending' ? 'pending' : s.status,
+      tool: s.tool,
+    };
+  });
+  
+  const event = {
+    type: 'assessment_workflow',
+    planId: plan.id,
+    workflow: {
+      steps,
+      currentStepIndex: 0,
+      assessmentData: {
+        customerName: initialEntities?.customerName || initialEntities?.name,
+        address: initialEntities?.address || initialEntities?.customerAddress,
+        scheduledDate: initialEntities?.preferredDate || initialEntities?.starts_at,
+      },
+    },
+  };
+  controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+}
+
+// Send assessment workflow progress event
+export function sendAssessmentWorkflowProgress(
+  controller: ReadableStreamDefaultController | undefined,
+  plan: ExecutionPlan,
+  step: PlanStep,
+  assessmentData: Record<string, any>,
+  automationSummary?: {
+    checklistCreated?: boolean;
+    checklistItemCount?: number;
+    photosUploaded?: number;
+    risksIdentified?: number;
+    reportGenerated?: boolean;
+    estimateCreated?: boolean;
+  }
+): void {
+  if (!controller) return;
+  
+  const encoder = new TextEncoder();
+  const steps = plan.steps.map(s => {
+    const stepInfo = ASSESSMENT_WORKFLOW_STEP_MAP[s.tool] || { name: s.name, description: s.description };
+    return {
+      id: s.id,
+      name: stepInfo.name,
+      description: stepInfo.description,
+      status: s.status === 'running' ? 'in_progress' : s.status,
+      tool: s.tool,
+      result: s.result,
+      error: s.error,
+      verification: s.verification,
+      rollbackExecuted: s.rollbackExecuted,
+      rollbackTool: s.rollbackTool,
+    };
+  });
+  
+  const event: Record<string, any> = {
+    type: 'assessment_workflow_progress',
+    planId: plan.id,
+    stepIndex: plan.currentStepIndex,
+    steps,
+    assessmentData,
+  };
+  
+  // Include automation summary when workflow completes
+  if (automationSummary) {
+    event.automationSummary = automationSummary;
+  }
+  
+  controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+}
+
+// Fetch assessment automation summary from recent activity log entries
+export async function fetchAssessmentAutomationSummary(
+  supabase: any,
+  businessId: string,
+  jobId?: string
+): Promise<{
+  checklistCreated?: boolean;
+  checklistItemCount?: number;
+  photosUploaded?: number;
+  risksIdentified?: number;
+  reportGenerated?: boolean;
+  estimateCreated?: boolean;
+} | undefined> {
+  try {
+    // Query recent automation activity from past 30 seconds
+    const thirtySecondsAgo = new Date(Date.now() - 30000).toISOString();
+    
+    const { data: recentActivity } = await supabase
+      .from('ai_activity_log')
+      .select('activity_type, description, metadata')
+      .eq('business_id', businessId)
+      .gte('created_at', thirtySecondsAgo)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    
+    if (!recentActivity || recentActivity.length === 0) {
+      return undefined;
+    }
+    
+    const summary: {
+      checklistCreated?: boolean;
+      checklistItemCount?: number;
+      photosUploaded?: number;
+      risksIdentified?: number;
+      reportGenerated?: boolean;
+      estimateCreated?: boolean;
+    } = {};
+    
+    for (const activity of recentActivity) {
+      const actionType = activity.metadata?.action_type;
+      
+      if (actionType === 'assessment_checklist_created' && !summary.checklistCreated) {
+        summary.checklistCreated = true;
+        summary.checklistItemCount = activity.metadata?.item_count;
+      }
+      if (actionType === 'assessment_photo_uploaded') {
+        summary.photosUploaded = (summary.photosUploaded || 0) + 1;
+      }
+      if ((actionType === 'assessment_risk_detected' || actionType === 'risk_tag_added') && !summary.risksIdentified) {
+        summary.risksIdentified = (summary.risksIdentified || 0) + 1;
+      }
+      if (actionType === 'assessment_report_generated' && !summary.reportGenerated) {
+        summary.reportGenerated = true;
+      }
+      if (actionType === 'estimate_created' && !summary.estimateCreated) {
+        summary.estimateCreated = true;
+      }
+    }
+    
+    // Only return if we found at least one automation event
+    if (summary.checklistCreated || summary.photosUploaded || summary.risksIdentified || summary.reportGenerated || summary.estimateCreated) {
+      return summary;
+    }
+    
+    return undefined;
+  } catch (error) {
+    console.error('[multi-step-planner] Failed to fetch assessment automation summary:', error);
+    return undefined;
+  }
 }
 
 // Fetch automation summary from recent activity log entries
