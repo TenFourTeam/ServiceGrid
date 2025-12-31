@@ -102,6 +102,10 @@ jwt_expiry = 3600
 enabled = true
 domain = "divine-cow-23.clerk.accounts.dev"
 
+# Business user authentication (new session-based auth)
+[functions.business-auth]
+verify_jwt = false
+
 # Business page serving for link previews
 [functions.serve-business-page]
 verify_jwt = false
