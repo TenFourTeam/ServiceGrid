@@ -6,12 +6,22 @@
  * - Sequential tool execution with state tracking
  * - Progress reporting for long-running tasks
  * - Rollback on failure
+ * - Step verification against tool contracts
  */
 
 // Import MemoryContext type early since it's used in executePlan
 import { 
   type MemoryContext,
 } from './memory-manager.ts';
+
+// Import step verifier
+import {
+  executeWithVerification,
+  logVerificationResult,
+  hasContract,
+  type StepExecutionContext,
+  type VerifiedStepResult,
+} from './step-verifier.ts';
 
 // =============================================================================
 // TYPES
@@ -1142,7 +1152,7 @@ export async function executePlan(
         throw new Error(`Tool not found: ${step.tool}`);
       }
 
-      // Execute
+      // Execute with verification if contract exists
       const toolContext = {
         supabase: context.supabase,
         businessId: context.businessId,
@@ -1150,7 +1160,60 @@ export async function executePlan(
         controller: context.controller,
       };
 
-      const result = await tool.execute(step.args, toolContext);
+      let result: any;
+      let verifiedResult: VerifiedStepResult | null = null;
+
+      if (hasContract(step.tool)) {
+        // Execute with step verification
+        const stepContext: StepExecutionContext = {
+          businessId: context.businessId,
+          userId: context.userId,
+          args: step.args,
+          entities: entities,
+          previousResults: results,
+        };
+
+        verifiedResult = await executeWithVerification(
+          step.tool,
+          () => tool.execute(step.args, toolContext),
+          stepContext,
+          context.supabase
+        );
+
+        // Log verification result
+        await logVerificationResult(context.supabase, {
+          planId: plan.id,
+          stepId: step.id,
+          toolName: step.tool,
+          businessId: context.businessId,
+          userId: context.userId,
+          verificationResult: verifiedResult,
+        });
+
+        // Handle verification failure
+        if (verifiedResult.status === 'failed') {
+          const errorMsg = verifiedResult.error || 'Verification failed';
+          const suggestion = verifiedResult.recoverySuggestion;
+          
+          step.status = 'failed';
+          step.error = suggestion ? `${errorMsg} ${suggestion}` : errorMsg;
+          step.result = {
+            _verification: {
+              phase: verifiedResult.verification.phase,
+              failedAssertions: verifiedResult.verification.failedAssertions,
+              suggestion: suggestion,
+            },
+          };
+          step.completedAt = new Date().toISOString();
+
+          throw new Error(step.error);
+        }
+
+        result = verifiedResult.result;
+      } else {
+        // Execute without verification
+        result = await tool.execute(step.args, toolContext);
+      }
       
       step.result = result;
       step.status = 'completed';
@@ -1159,11 +1222,16 @@ export async function executePlan(
       // Store result for dependent steps
       results[step.tool] = result;
 
+      // Include verification info in progress message if available
+      const verificationNote = verifiedResult?.verification.passed 
+        ? ' (verified)' 
+        : '';
+
       onProgress({
         type: 'step_complete',
         plan,
         currentStep: step,
-        message: `Completed: ${step.name}`,
+        message: `Completed: ${step.name}${verificationNote}`,
       });
 
     } catch (error: any) {
