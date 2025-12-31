@@ -5,7 +5,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupConte
 import { Calendar as CalendarIcon, FileText, Receipt, Users, Wrench, User as UserIcon, Settings as SettingsIcon, LifeBuoy, LogOut, Shield, Clock, UserPlus, ClipboardList, BarChart3, Repeat } from "lucide-react";
 import BusinessLogo from "@/components/BusinessLogo";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useClerk, useUser } from "@clerk/clerk-react";
+import { useUser } from "@/hooks/useBusinessAuth";
 import { usePreloadImage } from "@/hooks/usePreloadImage";
 import { useProfile } from "@/queries/useProfile";
 import { SignOutButton } from "@/components/Auth/SignOutButton";
@@ -71,9 +71,6 @@ export default function AppSidebar({ businessId }: { businessId?: string }) {
 
   const location = useLocation();
   const navigate = useNavigate();
-  const {
-    signOut
-  } = useClerk();
   const {
     state
   } = useSidebar();
