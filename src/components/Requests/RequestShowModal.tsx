@@ -1,9 +1,10 @@
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Mail, Phone, MapPin, Calendar, Clock, FileText, User, Camera, UserCircle } from "lucide-react";
+import { Mail, Phone, MapPin, Calendar, Clock, FileText, User, Camera, UserCircle, ExternalLink, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
 import { RequestListItem } from "@/hooks/useRequestsData";
 import { useCustomersData } from "@/hooks/useCustomersData";
@@ -216,8 +217,17 @@ export function RequestShowModal({
                 {t('requests.show.customerInfo')}
               </div>
               {customer ? (
-                <div className="space-y-2 pl-6">
-                  <div className="font-medium text-base">{customer.name}</div>
+                <div 
+                  className="space-y-2 pl-6 cursor-pointer hover:bg-muted/50 -ml-2 pl-8 py-2 rounded-md transition-colors group"
+                  onClick={() => {
+                    onOpenChange(false);
+                    navigate(`/customers?view=${customer.id}`);
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="font-medium text-base">{customer.name}</div>
+                    <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
                   <div className="space-y-1">
                     {customer.email && (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -238,6 +248,27 @@ export function RequestShowModal({
                       </div>
                     )}
                   </div>
+                  {/* Lead Score */}
+                  {customer.lead_score !== undefined && customer.lead_score > 0 && (
+                    <div className="pt-2 border-t border-muted mt-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">Lead Score</span>
+                          {customer.is_qualified && (
+                            <Badge variant="default" className="text-xs bg-green-600">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Qualified
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="font-bold">{customer.lead_score}</span>
+                          <span className="text-muted-foreground text-sm">/100</span>
+                        </div>
+                      </div>
+                      <Progress value={customer.lead_score} className="h-1.5 mt-1" />
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="pl-6 text-muted-foreground">{t('requests.show.customerInfo')}</div>

@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { ChevronUp, ChevronDown, Download, CheckCircle } from 'lucide-react';
+import { ChevronUp, ChevronDown, Download, CheckCircle, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import Papa from 'papaparse';
@@ -14,6 +14,7 @@ import { CustomerSearchFilter } from '@/components/Customers/CustomerSearchFilte
 import { CustomerActions } from '@/components/Customers/CustomerActions';
 import { useState, useMemo, useEffect } from "react";
 import { useCustomersData } from '@/queries/unified';
+import { useRequestsData } from '@/hooks/useRequestsData';
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SimpleCSVImport } from '@/components/Onboarding/SimpleCSVImport';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -25,6 +26,19 @@ export default function CustomersPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { data: customers, isLoading, error } = useCustomersData();
+  const { data: requestsResponse } = useRequestsData();
+  
+  // Build a map of customer_id -> request count
+  const requestCountMap = useMemo(() => {
+    const map = new Map<string, number>();
+    if (requestsResponse?.data) {
+      requestsResponse.data.forEach(request => {
+        const count = map.get(request.customer_id) || 0;
+        map.set(request.customer_id, count + 1);
+      });
+    }
+    return map;
+  }, [requestsResponse?.data]);
   const { t } = useLanguage();
   
   const [open, setOpen] = useState(false);
@@ -223,7 +237,7 @@ export default function CustomersPage() {
             </div>
           )}
           {/* Lead Score Badge */}
-          <div className="flex items-center gap-2 mt-2">
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
             <Badge variant={(customer.lead_score ?? 0) >= 40 ? "default" : "secondary"} className="text-xs">
               Score: {customer.lead_score ?? 0}
             </Badge>
@@ -231,6 +245,19 @@ export default function CustomersPage() {
               <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/30">
                 <CheckCircle className="h-3 w-3 mr-1" />
                 Qualified
+              </Badge>
+            )}
+            {requestCountMap.get(customer.id) > 0 && (
+              <Badge 
+                variant="outline" 
+                className="text-xs cursor-pointer hover:bg-muted"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/requests?customer=${customer.id}`);
+                }}
+              >
+                <FileText className="h-3 w-3 mr-1" />
+                {requestCountMap.get(customer.id)} request(s)
               </Badge>
             )}
           </div>
@@ -331,6 +358,7 @@ export default function CustomersPage() {
                             </div>
                           </TableHead>
                           <TableHead>{t('customers.table.address')}</TableHead>
+                          <TableHead>Requests</TableHead>
                           <TableHead>Lead Score</TableHead>
                           <TableHead className="w-12">{t('customers.table.actions')}</TableHead>
                         </TableRow>
@@ -346,6 +374,23 @@ export default function CustomersPage() {
                             <TableCell>{c.email ?? ''}</TableCell>
                             <TableCell>{c.phone ?? ''}</TableCell>
                             <TableCell>{c.address ?? ''}</TableCell>
+                            <TableCell>
+                              {requestCountMap.get(c.id) ? (
+                                <Badge 
+                                  variant="outline" 
+                                  className="cursor-pointer hover:bg-muted"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/requests?customer=${c.id}`);
+                                  }}
+                                >
+                                  <FileText className="h-3 w-3 mr-1" />
+                                  {requestCountMap.get(c.id)}
+                                </Badge>
+                              ) : (
+                                <span className="text-muted-foreground text-sm">-</span>
+                              )}
+                            </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
                                 <Badge variant={(c.lead_score ?? 0) >= 40 ? "default" : "secondary"} className="text-xs">

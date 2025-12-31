@@ -1,25 +1,28 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import { invalidationHelpers } from "@/queries/keys";
+import { invalidationHelpers, queryKeys } from "@/queries/keys";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useAuth } from '@clerk/clerk-react';
 import { useAuthApi } from "@/hooks/useAuthApi";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useCustomerPortalInvite } from "@/hooks/useCustomerPortalInvite";
 import { useCustomerPortalStatus } from "@/hooks/useCustomerPortalStatus";
+import { useRequestsData } from "@/hooks/useRequestsData";
 import { Badge } from "@/components/ui/badge";
 import type { Customer } from "@/types";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
-import { ChevronDown, Send, Loader2, CheckCircle, Clock, UserX } from 'lucide-react';
+import { ChevronDown, Send, Loader2, CheckCircle, Clock, UserX, Plus, FileText, ExternalLink } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
+import { RequestBottomModal } from "@/components/Requests/RequestBottomModal";
 
 // Email validation regex - requires a valid email format
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -69,8 +72,18 @@ export function CustomerBottomModal({
   const { businessId, userId } = useBusinessContext();
   const authApi = useAuthApi();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   const { sendInvite, isLoading: isInviteLoading } = useCustomerPortalInvite();
   const { data: portalStatus } = useCustomerPortalStatus(mode === 'view' ? customer?.id : undefined);
+  const { data: requestsResponse } = useRequestsData();
+  
+  const [showNewRequestModal, setShowNewRequestModal] = useState(false);
+  
+  // Filter requests for current customer
+  const customerRequests = useMemo(() => {
+    if (!customer?.id || !requestsResponse?.data) return [];
+    return requestsResponse.data.filter(r => r.customer_id === customer.id);
+  }, [customer?.id, requestsResponse?.data]);
   
   const [formData, setFormData] = useState<CustomerFormData>({
     name: "",
@@ -278,6 +291,7 @@ export function CustomerBottomModal({
   };
 
   return (
+    <>
     <Drawer open={open} onOpenChange={handleOpenChange}>
       <DrawerContent className="max-h-[90vh]">
         <DrawerHeader className="text-left">
@@ -408,6 +422,71 @@ export function CustomerBottomModal({
                     </span>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* Related Requests - View Mode */}
+            {mode === 'view' && customer && (
+              <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <Label className="text-sm font-medium">Related Requests ({customerRequests.length})</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowNewRequestModal(true)}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      New
+                    </Button>
+                    {customerRequests.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          onOpenChange(false);
+                          navigate(`/requests?customer=${customer.id}`);
+                        }}
+                      >
+                        View All <ExternalLink className="h-3 w-3 ml-1" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                {customerRequests.length > 0 ? (
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {customerRequests.slice(0, 3).map(request => (
+                      <div
+                        key={request.id}
+                        className="flex items-center justify-between p-2 bg-background rounded-md cursor-pointer hover:bg-muted transition-colors"
+                        onClick={() => {
+                          onOpenChange(false);
+                          navigate(`/requests?view=${request.id}`);
+                        }}
+                      >
+                        <div className="flex items-center gap-2 truncate">
+                          <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <span className="text-sm truncate">{request.title}</span>
+                        </div>
+                        <Badge variant="secondary" className="text-xs flex-shrink-0 ml-2">
+                          {request.status}
+                        </Badge>
+                      </div>
+                    ))}
+                    {customerRequests.length > 3 && (
+                      <div className="text-xs text-muted-foreground text-center pt-1">
+                        +{customerRequests.length - 3} more request(s)
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-sm text-muted-foreground text-center py-2">
+                    No requests yet
+                  </div>
+                )}
               </div>
             )}
 
@@ -578,5 +657,19 @@ export function CustomerBottomModal({
         </DrawerFooter>
       </DrawerContent>
     </Drawer>
+    
+    {/* New Request Modal */}
+    <RequestBottomModal
+      open={showNewRequestModal}
+      onOpenChange={setShowNewRequestModal}
+      defaultCustomerId={customer?.id}
+      onRequestCreated={() => {
+        setShowNewRequestModal(false);
+        if (businessId) {
+          invalidationHelpers.requests(queryClient, businessId);
+        }
+      }}
+    />
+  </>
   );
 }
