@@ -83,6 +83,30 @@ Deno.serve(async (req) => {
             console.log(`[requests-crud] Request ${request.id} customer:`, customer);
           });
         }
+
+        // Fetch assigned user profiles
+        const assignedUserIds = [...new Set(requests.filter(r => r.assigned_to).map(r => r.assigned_to))];
+        console.log('[requests-crud] Assigned user IDs to fetch:', assignedUserIds);
+        
+        if (assignedUserIds.length > 0) {
+          const { data: profiles, error: profileError } = await supabase
+            .from('profiles')
+            .select('id, email, display_name')
+            .in('id', assignedUserIds);
+            
+          console.log('[requests-crud] Fetched profiles:', profiles);
+            
+          if (profileError) {
+            console.error('[requests-crud] Profile fetch error:', profileError);
+          } else {
+            const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+            requests.forEach(request => {
+              if (request.assigned_to) {
+                request.assigned_user = profileMap.get(request.assigned_to) || null;
+              }
+            });
+          }
+        }
       }
       
       console.log('[requests-crud] Final requests with customers:', requests);

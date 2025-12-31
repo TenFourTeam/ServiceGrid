@@ -2,7 +2,8 @@ import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
-import { Mail, Phone, MapPin, Calendar, Clock, FileText, User, Camera } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Mail, Phone, MapPin, Calendar, Clock, FileText, User, Camera, UserCircle } from "lucide-react";
 import { format } from "date-fns";
 import { RequestListItem } from "@/hooks/useRequestsData";
 import { useCustomersData } from "@/hooks/useCustomersData";
@@ -352,6 +353,28 @@ export function RequestShowModal({
                 </div>
               </div>
             )}
+
+            {/* Assigned To */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <UserCircle className="h-4 w-4" />
+                {t('requests.show.assignedTo') || 'Assigned To'}
+              </div>
+              <div className="pl-6">
+                {request.assigned_user ? (
+                  <div className="flex items-center gap-2">
+                    <Avatar>
+                      <AvatarFallback>{request.assigned_user.email?.[0]?.toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="font-medium">{request.assigned_user.display_name || request.assigned_user.email}</div>
+                    </div>
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground">{t('requests.unassigned') || 'Not assigned'}</span>
+                )}
+              </div>
+            </div>
 
             {/* Request Metadata */}
             <div className="space-y-3">
