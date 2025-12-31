@@ -95,7 +95,7 @@ export const PATTERN: MultiStepPattern = {
   ],
   
   estimatedDurationMs: 5000,
-  specialCardType: undefined
+  specialCardType: 'communication_workflow'
 };
 
 /**

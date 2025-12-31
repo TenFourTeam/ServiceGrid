@@ -27,7 +27,7 @@ export interface MultiStepPattern {
   postconditions: string[];
   successMetrics: string[];
   estimatedDurationMs: number;
-  specialCardType?: 'lead_workflow' | 'assessment_workflow';
+  specialCardType?: 'lead_workflow' | 'assessment_workflow' | 'communication_workflow';
 }
 
 // ============================================================================
