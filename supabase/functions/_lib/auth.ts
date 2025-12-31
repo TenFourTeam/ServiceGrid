@@ -1,4 +1,5 @@
 // Shared authentication and business context resolution for Supabase Edge Functions
+// Supports BOTH Clerk JWT and session token authentication during migration
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.54.0";
 
 // Conditionally import verifyToken based on test mode
@@ -18,20 +19,22 @@ type ClerkUserId = string; // e.g., 'user_abc123'
 type UserUuid = string;    // postgres uuid
 
 export type AuthContext = {
-  clerkUserId: ClerkUserId;
-  userId: UserUuid; // Keep for backwards compatibility
+  clerkUserId?: ClerkUserId; // Optional during migration
+  userId: UserUuid;
   email?: string;
   businessId: string;
   supaAdmin: any;
+  authMethod: 'clerk' | 'session'; // Track which auth method was used
 };
 
 export type AuthContextWithUserClient = {
-  clerkUserId: ClerkUserId;
+  clerkUserId?: ClerkUserId;
   userId: UserUuid;
   email?: string;
   businessId: string;
   supaAdmin: any;
   userClient: any;
+  authMethod: 'clerk' | 'session';
 };
 
 export async function getCurrentUserId(req: Request): Promise<string> {
@@ -40,52 +43,120 @@ export async function getCurrentUserId(req: Request): Promise<string> {
 }
 
 export async function requireCtx(req: Request, options: { autoCreate?: boolean, businessId?: string } = { autoCreate: true }): Promise<AuthContext> {
-  console.info('🔍 [auth] === JWT DEBUGGING START ===');
+  console.info('🔍 [auth] === AUTH DEBUGGING START ===');
   console.info('🔍 [auth] Request URL:', req.url);
   console.info('🔍 [auth] Request method:', req.method);
   
-  // Extract and verify Clerk token
+  // Check for session token first (new auth method)
+  const sessionToken = req.headers.get("x-session-token");
+  
+  if (sessionToken) {
+    console.info('🔍 [auth] Session token detected, using session auth');
+    return await requireCtxFromSession(req, sessionToken, options);
+  }
+  
+  // Fall back to Clerk JWT auth
   const authHeader = req.headers.get("authorization") || req.headers.get("Authorization");
   console.info('🔍 [auth] Auth header present:', !!authHeader);
   console.info('🔍 [auth] Auth header starts with Bearer:', authHeader?.startsWith("Bearer "));
   
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    console.error('❌ [auth] Missing or invalid authorization header, full headers:', Object.fromEntries(req.headers.entries()));
+    console.error('❌ [auth] Missing or invalid authorization header');
     throw new Error("Missing authentication token");
   }
 
+  return await requireCtxFromClerk(req, authHeader, options);
+}
+
+// === SESSION TOKEN AUTHENTICATION ===
+async function requireCtxFromSession(
+  req: Request, 
+  sessionToken: string, 
+  options: { autoCreate?: boolean, businessId?: string }
+): Promise<AuthContext> {
+  const supaAdmin = createSupabaseAdmin();
+  
+  // Validate session token
+  const { data: session, error: sessionError } = await supaAdmin
+    .from('business_sessions')
+    .select('id, profile_id, expires_at')
+    .eq('session_token', sessionToken)
+    .single();
+
+  if (sessionError || !session) {
+    console.error('❌ [auth] Invalid session token');
+    throw new Error("Invalid or expired session");
+  }
+
+  // Check expiry
+  if (new Date(session.expires_at) < new Date()) {
+    console.error('❌ [auth] Session token expired');
+    throw new Error("Session expired. Please refresh or login again.");
+  }
+
+  // Get profile
+  const { data: profile, error: profileError } = await supaAdmin
+    .from('profiles')
+    .select('id, email, default_business_id')
+    .eq('id', session.profile_id)
+    .single();
+
+  if (profileError || !profile) {
+    console.error('❌ [auth] Profile not found for session');
+    throw new Error("Profile not found");
+  }
+
+  // Update session last_used_at
+  await supaAdmin
+    .from('business_sessions')
+    .update({ last_used_at: new Date().toISOString() })
+    .eq('id', session.id);
+
+  // Resolve business ID
+  const businessId = await resolveBusinessId(
+    supaAdmin, 
+    profile.id, 
+    profile.default_business_id,
+    req,
+    options
+  );
+
+  console.info('✅ [auth] Session auth successful for profile:', profile.id);
+
+  return {
+    userId: profile.id,
+    email: profile.email?.toLowerCase() || undefined,
+    businessId,
+    supaAdmin,
+    authMethod: 'session',
+  };
+}
+
+// === CLERK JWT AUTHENTICATION ===
+async function requireCtxFromClerk(
+  req: Request,
+  authHeader: string,
+  options: { autoCreate?: boolean, businessId?: string }
+): Promise<AuthContext> {
   const token = authHeader.replace(/^Bearer\s+/i, "");
   console.info('🔍 [auth] Token extracted, length:', token.length);
-  console.info('🔍 [auth] Token prefix (first 20 chars):', token.substring(0, 20));
-  console.info('🔍 [auth] Token suffix (last 20 chars):', token.substring(token.length - 20));
   
   // Try to decode JWT header to inspect structure (without verification)
   try {
     const [header, payload] = token.split('.');
     if (header && payload) {
-      const decodedHeader = JSON.parse(atob(header));
       const decodedPayload = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
-      console.info('🔍 [auth] JWT Header:', decodedHeader);
       console.info('🔍 [auth] JWT Payload preview:', {
         sub: decodedPayload.sub,
         iss: decodedPayload.iss,
         exp: decodedPayload.exp,
-        iat: decodedPayload.iat,
-        nbf: decodedPayload.nbf
       });
-      console.info('🔍 [auth] Token expiry (UTC):', new Date(decodedPayload.exp * 1000).toISOString());
-      console.info('🔍 [auth] Token issued at (UTC):', new Date(decodedPayload.iat * 1000).toISOString());
-      console.info('🔍 [auth] Current time (UTC):', new Date().toISOString());
     }
   } catch (decodeError) {
-    console.warn('⚠️ [auth] Could not decode token structure:', decodeError);
+    console.warn('⚠️ [auth] Could not decode token structure');
   }
   
   const secretKey = Deno.env.get("CLERK_SECRET_KEY");
-  console.info('🔍 [auth] CLERK_SECRET_KEY present:', !!secretKey);
-  console.info('🔍 [auth] CLERK_SECRET_KEY length:', secretKey?.length || 0);
-  console.info('🔍 [auth] CLERK_SECRET_KEY prefix:', secretKey?.substring(0, 10) || 'N/A');
-  
   if (!secretKey) {
     console.error('❌ [auth] Missing CLERK_SECRET_KEY');
     throw new Error("Server configuration error - missing CLERK_SECRET_KEY");
@@ -98,34 +169,53 @@ export async function requireCtx(req: Request, options: { autoCreate?: boolean, 
     payload = await verifyToken(token, { secretKey });
     const endTime = Date.now();
     console.info('✅ [auth] Token verification successful in', endTime - startTime, 'ms');
-    console.info('🔍 [auth] Verified payload:', {
-      sub: payload.sub,
-      email: payload.email,
-      primary_email: payload.primary_email,
-      session_id: payload.sid,
-      azp: payload.azp
-    });
   } catch (e) {
     const error = e as Error;
-    console.error('❌ [auth] Token verification failed');
-    console.error('❌ [auth] Error type:', error.constructor.name);
-    console.error('❌ [auth] Error message:', error.message);
-    console.error('❌ [auth] Error stack:', error.stack);
-    console.error('❌ [auth] Full error object:', JSON.stringify(error, null, 2));
+    console.error('❌ [auth] Token verification failed:', error.message);
     throw new Error(`Authentication failed: ${error.message || error}`);
   }
 
   const clerkUserId = payload.sub as ClerkUserId;
   const email = (payload.email || payload["primary_email"] || "") as string;
 
-  // Create admin Supabase client
+  const supaAdmin = createSupabaseAdmin();
+  const userUuid = await resolveUserUuid(supaAdmin, clerkUserId, email, options.autoCreate);
+
+  // Get default business ID from profile
+  const { data: profileData } = await supaAdmin
+    .from('profiles')
+    .select('default_business_id')
+    .eq('id', userUuid)
+    .maybeSingle();
+
+  const businessId = await resolveBusinessId(
+    supaAdmin,
+    userUuid,
+    profileData?.default_business_id,
+    req,
+    options
+  );
+
+  return {
+    clerkUserId,
+    userId: userUuid,
+    email: email?.toLowerCase() || undefined,
+    businessId,
+    supaAdmin,
+    authMethod: 'clerk',
+  };
+}
+
+// === SHARED HELPERS ===
+
+function createSupabaseAdmin() {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!supabaseUrl || !serviceKey) {
     throw new Error("Supabase configuration missing");
   }
   
-  const supaAdmin = createClient(supabaseUrl, serviceKey, {
+  return createClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false },
     db: { schema: 'public' },
     global: {
@@ -135,10 +225,15 @@ export async function requireCtx(req: Request, options: { autoCreate?: boolean, 
       }
     }
   });
+}
 
-  const userUuid = await resolveUserUuid(supaAdmin, clerkUserId, email, options.autoCreate);
-
-  // Business resolution with full chain
+async function resolveBusinessId(
+  supaAdmin: any,
+  userUuid: string,
+  defaultBusinessId: string | null,
+  req: Request,
+  options: { autoCreate?: boolean, businessId?: string }
+): Promise<string> {
   const url = new URL(req.url);
   const explicitBizId = 
     options?.businessId ||
@@ -152,18 +247,11 @@ export async function requireCtx(req: Request, options: { autoCreate?: boolean, 
   if (explicitBizId) {
     businessId = explicitBizId;
     console.info(`[auth] Using explicit business ID: ${businessId}`);
-  } else {
-    // 2) User default business
-    const { data: profileDefault } = await supaAdmin
-      .from('profiles')
-      .select('default_business_id')
-      .eq('id', userUuid)
-      .maybeSingle();
-
-    if (profileDefault?.default_business_id) {
-      businessId = profileDefault.default_business_id;
-      console.info(`[auth] Using default business ID: ${businessId}`);
-    }
+  } 
+  // 2) User default business
+  else if (defaultBusinessId) {
+    businessId = defaultBusinessId;
+    console.info(`[auth] Using default business ID: ${businessId}`);
   }
 
   // 3) Ownership lookup
@@ -225,18 +313,11 @@ export async function requireCtx(req: Request, options: { autoCreate?: boolean, 
     throw new Error('Failed to resolve business ID');
   }
 
-  return {
-    clerkUserId,
-    userId: userUuid,
-    email: email?.toLowerCase() || undefined,
-    businessId,
-    supaAdmin
-  };
+  return businessId;
 }
 
 /**
  * Check if the business has AI access and sufficient credits
- * Throws an error if AI is disabled or credit limit exceeded
  */
 export async function requireAIAccess(ctx: AuthContext, supabase: any): Promise<void> {
   const { data: business, error } = await supabase
@@ -273,42 +354,47 @@ export async function incrementAICredits(ctx: AuthContext, supabase: any, credit
 
   if (error) {
     console.error('[incrementAICredits] Error incrementing credits:', error);
-    // Don't throw - this shouldn't block the operation
   }
 }
 
 export async function requireCtxWithUserClient(req: Request, options: { autoCreate?: boolean, businessId?: string } = { autoCreate: true }): Promise<AuthContextWithUserClient> {
-  // Get the standard auth context using service role
   const authCtx = await requireCtx(req, options);
   
-  // Extract the original Clerk JWT token
-  const authHeader = req.headers.get("authorization") || req.headers.get("Authorization");
-  const token = authHeader!.replace(/^Bearer\s+/i, "");
-  
-  // Create user-scoped Supabase client using the Clerk JWT
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
   if (!supabaseUrl || !anonKey) {
     throw new Error("Supabase configuration missing");
   }
-  
-  // Create client that will establish proper auth session with Clerk JWT
-  const userClient = createClient(supabaseUrl, anonKey, {
-    auth: { 
-      persistSession: false,
-      autoRefreshToken: false,
-      storage: undefined // Don't persist in edge functions
-    },
-    db: { schema: 'public' },
-    global: {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'apikey': anonKey
-      }
-    }
-  });
 
-  console.info('✅ [auth] Created user-scoped client with Clerk JWT for RLS');
+  // For session auth, we use service role client (RLS bypassed)
+  // For Clerk auth, we use the JWT token
+  let userClient;
+  
+  if (authCtx.authMethod === 'session') {
+    // Session auth - use service role for now (TODO: implement proper RLS with session)
+    userClient = authCtx.supaAdmin;
+    console.info('✅ [auth] Using admin client for session-based RLS');
+  } else {
+    // Clerk auth - use JWT token
+    const authHeader = req.headers.get("authorization") || req.headers.get("Authorization");
+    const token = authHeader!.replace(/^Bearer\s+/i, "");
+    
+    userClient = createClient(supabaseUrl, anonKey, {
+      auth: { 
+        persistSession: false,
+        autoRefreshToken: false,
+        storage: undefined
+      },
+      db: { schema: 'public' },
+      global: {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'apikey': anonKey
+        }
+      }
+    });
+    console.info('✅ [auth] Created user-scoped client with Clerk JWT for RLS');
+  }
   
   return {
     ...authCtx,
@@ -347,14 +433,10 @@ async function resolveUserUuid(supabase: any, clerkUserId: ClerkUserId, email: s
     // Profile exists but lacks clerk_user_id - update it
     if (!emailProfile.clerk_user_id) {
       console.info(`🔄 [auth] Updating existing profile with Clerk ID: ${clerkUserId}`);
-      const { error: updateError } = await supabase
+      await supabase
         .from("profiles")
         .update({ clerk_user_id: clerkUserId })
         .eq("id", emailProfile.id);
-      
-      if (updateError) {
-        console.error('❌ [auth] Failed to update profile with Clerk ID:', updateError);
-      }
     }
     return emailProfile.id as UserUuid;
   }
@@ -372,7 +454,7 @@ async function resolveUserUuid(supabase: any, clerkUserId: ClerkUserId, email: s
   if (createError) {
     // Handle race condition - check again by clerk_user_id
     if (createError.code === '23505') {
-      console.info('🔄 [auth] Profile constraint violation, re-querying by Clerk ID...');
+      console.info('🔄 [auth] Profile constraint violation, re-querying...');
       const { data: existingProfile } = await supabase
         .from("profiles")
         .select("id")
@@ -382,7 +464,6 @@ async function resolveUserUuid(supabase: any, clerkUserId: ClerkUserId, email: s
       
       if (existingProfile?.id) return existingProfile.id as UserUuid;
       
-      // Also try by email
       const { data: emailExistingProfile } = await supabase
         .from("profiles")
         .select("id")
@@ -404,7 +485,7 @@ async function resolveUserUuid(supabase: any, clerkUserId: ClerkUserId, email: s
 // CORS headers for Edge Functions
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-business-id",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-business-id, x-session-token",
   "Access-Control-Allow-Methods": "*",
 };
 
@@ -412,7 +493,6 @@ export const corsHeaders = {
 export function json(data: unknown, init: ResponseInit = {}) {
   const baseHeaders = { "Content-Type": "application/json", ...corsHeaders };
   
-  // Safely merge incoming headers without overriding Content-Type
   const extraHeaders = init.headers instanceof Headers
     ? Object.fromEntries(init.headers.entries())
     : (init.headers as Record<string, string> | undefined) ?? {};
