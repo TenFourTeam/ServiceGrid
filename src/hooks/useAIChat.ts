@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { useBusinessContext } from './useBusinessContext';
-import { useAuth } from '@clerk/clerk-react';
+import { useBusinessAuth } from '@/hooks/useBusinessAuth';
 import { toast } from 'sonner';
 import { useConversationMediaUpload } from './useConversationMediaUpload';
 
@@ -266,7 +266,7 @@ export function useAIChat(options?: UseAIChatOptions) {
   const [lastFailedMessage, setLastFailedMessage] = useState<{ content: string; attachments?: File[]; context?: any } | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const { businessId } = useBusinessContext();
-  const { getToken } = useAuth();
+  const { getSessionToken } = useBusinessAuth();
   const { uploadMedia } = useConversationMediaUpload();
 
   // Reversible tools for undo functionality
@@ -338,7 +338,7 @@ export function useAIChat(options?: UseAIChatOptions) {
     setCurrentStreamingMessage('');
 
     try {
-      const token = await getToken({ template: 'supabase' });
+      const sessionToken = getSessionToken();
       abortControllerRef.current = new AbortController();
 
       const response = await fetch(
@@ -346,7 +346,7 @@ export function useAIChat(options?: UseAIChatOptions) {
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'x-session-token': sessionToken || '',
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -1057,7 +1057,7 @@ export function useAIChat(options?: UseAIChatOptions) {
       setCurrentStreamingMessage('');
       abortControllerRef.current = null;
     }
-  }, [businessId, conversationId, getToken, options, uploadMedia, reversibleTools]);
+  }, [businessId, conversationId, getSessionToken, options, uploadMedia, reversibleTools]);
 
   const stopStreaming = useCallback(() => {
     abortControllerRef.current?.abort();
@@ -1113,11 +1113,11 @@ export function useAIChat(options?: UseAIChatOptions) {
     if (!businessId) return;
     
     try {
-      const token = await getToken({ template: 'supabase' });
+      const sessionToken = getSessionToken();
       const response = await fetch(
         `https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/ai-chat-messages?conversationId=${convId}`,
         {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { 'x-session-token': sessionToken || '' }
         }
       );
       
@@ -1143,7 +1143,7 @@ export function useAIChat(options?: UseAIChatOptions) {
       console.error('Error loading conversation:', error);
       toast.error('Failed to load conversation');
     }
-  }, [businessId, getToken]);
+  }, [businessId, getSessionToken]);
 
   // Resume a paused plan after recovery action
   const resumePlan = useCallback(async (planId: string) => {

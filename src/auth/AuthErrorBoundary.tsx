@@ -49,7 +49,7 @@ function DefaultErrorFallback({ error, retry }: { error: Error; retry: () => voi
             <Button 
               variant="outline"
               onClick={() => {
-                window.location.href = '/clerk-auth';
+                window.location.href = '/auth';
               }}
               className="w-full"
             >

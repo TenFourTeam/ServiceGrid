@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Textarea } from "@/components/ui/textarea";
 import { formatDateTime, formatMoney } from "@/utils/format";
-import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { useAuthApi } from '@/hooks/useAuthApi';
 import { toast } from "sonner";
 import { Sparkles, CheckSquare, Image, Eye, StickyNote, Brain, ClipboardCheck, Camera } from "lucide-react";

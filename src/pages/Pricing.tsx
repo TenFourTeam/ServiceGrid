@@ -1,13 +1,13 @@
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { TopNav } from "@/landing/components/TopNav";
 import { Footer } from "@/landing/components/Footer";
 import { PricingCard } from "@/components/Pricing/PricingCard";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { useAuth, SignUpButton } from "@clerk/clerk-react";
+import { useAuth } from "@/hooks/useBusinessAuth";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
 
 const BASIC_FEATURES = [
   "Up to 50 jobs per month",
@@ -57,6 +57,15 @@ export default function Pricing() {
     }
   };
 
+  const SignUpLink = ({ tier, className, children }: { tier: 'basic' | 'pro'; className?: string; children: React.ReactNode }) => (
+    <Link 
+      to={`/auth?mode=signup&redirect=/settings?plan=${tier}&billing=${billingPeriod}`}
+      className={className}
+    >
+      {children}
+    </Link>
+  );
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <TopNav />
@@ -98,7 +107,7 @@ export default function Pricing() {
 
           {billingPeriod === 'yearly' && (
             <p className="text-sm text-primary mt-4 font-medium">
-              💰 Save 20% with yearly billing
+              Save 20% with yearly billing
             </p>
           )}
         </div>
@@ -117,14 +126,9 @@ export default function Pricing() {
             onGetStarted={() => handleGetStarted('basic')}
             loading={createCheckout.isPending}
             signUpButton={
-              <SignUpButton
-                mode="modal"
-                forceRedirectUrl={`/settings?plan=basic&billing=${billingPeriod}`}
-              >
-                <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-11 px-8 w-full">
-                  Get Started
-                </button>
-              </SignUpButton>
+              <SignUpLink tier="basic" className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-11 px-8 w-full">
+                Get Started
+              </SignUpLink>
             }
           />
 
@@ -141,14 +145,9 @@ export default function Pricing() {
             onGetStarted={() => handleGetStarted('pro')}
             loading={createCheckout.isPending}
             signUpButton={
-              <SignUpButton
-                mode="modal"
-                forceRedirectUrl={`/settings?plan=pro&billing=${billingPeriod}`}
-              >
-                <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg h-11 px-8 w-full">
-                  Get Started
-                </button>
-              </SignUpButton>
+              <SignUpLink tier="pro" className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg h-11 px-8 w-full">
+                Get Started
+              </SignUpLink>
             }
           />
         </div>
