@@ -19,6 +19,8 @@ import type { ToolContract } from '../tool-contracts';
 import * as leadGeneration from './lead-generation';
 import * as siteAssessment from './site-assessment';
 import * as communication from './communication';
+import * as quoting from './quoting';
+import * as scheduling from './scheduling';
 
 // ============================================================================
 // STUB GENERATOR FOR UNIMPLEMENTED PROCESSES
@@ -53,10 +55,7 @@ function createStubModule(id: ProcessId, name: string, phase: 'pre_service' | 's
   };
 }
 
-// Stub modules for unimplemented processes
-// Communication is now fully implemented - no stub needed
-const quotingStub = createStubModule(PROCESS_IDS.QUOTING, 'Quoting & Estimating', 'pre_service', 4);
-const schedulingStub = createStubModule(PROCESS_IDS.SCHEDULING, 'Scheduling', 'pre_service', 5);
+// Stub modules for remaining unimplemented processes
 const dispatchStub = createStubModule(PROCESS_IDS.DISPATCH, 'Dispatching', 'service_delivery', 6);
 const qaStub = createStubModule(PROCESS_IDS.QUALITY_ASSURANCE, 'Quality Assurance', 'service_delivery', 7);
 const maintenanceStub = createStubModule(PROCESS_IDS.MAINTENANCE, 'Preventive Maintenance', 'service_delivery', 8);
@@ -79,8 +78,8 @@ export const PROCESS_MODULES: Record<ProcessId, Partial<ProcessModule>> = {
   [PROCESS_IDS.LEAD_GENERATION]: leadGeneration,
   [PROCESS_IDS.SITE_ASSESSMENT]: siteAssessment,
   [PROCESS_IDS.COMMUNICATION]: communication,
-  [PROCESS_IDS.QUOTING]: quotingStub,
-  [PROCESS_IDS.SCHEDULING]: schedulingStub,
+  [PROCESS_IDS.QUOTING]: quoting,
+  [PROCESS_IDS.SCHEDULING]: scheduling,
   [PROCESS_IDS.DISPATCH]: dispatchStub,
   [PROCESS_IDS.QUALITY_ASSURANCE]: qaStub,
   [PROCESS_IDS.MAINTENANCE]: maintenanceStub,
@@ -146,3 +145,5 @@ export type { ProcessModule, ProcessDefinition, ProcessTestFiles, ProcessTrigger
 export { PATTERN as COMPLETE_LEAD_GENERATION } from './lead-generation/pattern';
 export { PATTERN as COMPLETE_SITE_ASSESSMENT } from './site-assessment/pattern';
 export { PATTERN as COMPLETE_COMMUNICATION } from './communication/pattern';
+export { PATTERN as COMPLETE_QUOTING } from './quoting/pattern';
+export { PATTERN as COMPLETE_SCHEDULING } from './scheduling/pattern';
