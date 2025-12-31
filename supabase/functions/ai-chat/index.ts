@@ -30,10 +30,26 @@ import {
   sendAssessmentWorkflowStart,
   sendAssessmentWorkflowProgress,
   fetchAssessmentAutomationSummary,
+  isCommunicationWorkflowPattern,
+  sendCommunicationWorkflowStart,
+  sendCommunicationWorkflowProgress,
+  fetchCommunicationAutomationSummary,
+  extractCommunicationData,
   type ExecutionPlan,
   type ExecutionContext,
   type PlannerResult 
 } from './multi-step-planner.ts';
+
+// Process Orchestration
+import {
+  getProcessFromPattern,
+  getSuggestedNextProcess,
+  trackProcessJourney,
+  detectProcessTransition,
+  getProcessLabel,
+  getProcessPrompt,
+  type NextProcessSuggestion
+} from './process-orchestrator.ts';
 
 // Memory & Context Persistence
 import { 
