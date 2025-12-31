@@ -1,0 +1,307 @@
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Loader2, Zap, Mail, Users, Save } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useBusinessContext } from "@/hooks/useBusinessContext";
+
+interface AutomationSettingsData {
+  id: string;
+  business_id: string;
+  auto_score_leads: boolean;
+  lead_score_threshold: number;
+  auto_send_welcome_email: boolean;
+  welcome_email_delay_minutes: number;
+  auto_assign_leads: boolean;
+  assignment_method: string;
+}
+
+export function AutomationSettings() {
+  const { businessId } = useBusinessContext();
+  const [settings, setSettings] = useState<AutomationSettingsData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (businessId) {
+      fetchSettings();
+    }
+  }, [businessId]);
+
+  const fetchSettings = async () => {
+    if (!businessId) return;
+    
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("automation_settings")
+        .select("*")
+        .eq("business_id", businessId)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No settings exist yet, create defaults
+          const { data: newData, error: insertError } = await supabase
+            .from("automation_settings")
+            .insert({ business_id: businessId })
+            .select()
+            .single();
+          
+          if (insertError) throw insertError;
+          setSettings(newData);
+        } else {
+          throw error;
+        }
+      } else {
+        setSettings(data);
+      }
+    } catch (error: any) {
+      console.error("Error fetching automation settings:", error);
+      toast.error("Failed to load automation settings");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!settings || !businessId) return;
+
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from("automation_settings")
+        .update({
+          auto_score_leads: settings.auto_score_leads,
+          lead_score_threshold: settings.lead_score_threshold,
+          auto_send_welcome_email: settings.auto_send_welcome_email,
+          welcome_email_delay_minutes: settings.welcome_email_delay_minutes,
+          auto_assign_leads: settings.auto_assign_leads,
+          assignment_method: settings.assignment_method,
+          updated_at: new Date().toISOString()
+        })
+        .eq("business_id", businessId);
+
+      if (error) throw error;
+      
+      toast.success("Automation settings saved");
+    } catch (error: any) {
+      console.error("Error saving automation settings:", error);
+      toast.error("Failed to save settings");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!settings) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center text-muted-foreground">
+          Unable to load automation settings
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Lead Scoring */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Zap className="h-5 w-5 text-amber-500" />
+            Lead Scoring
+          </CardTitle>
+          <CardDescription>
+            Automatically score and qualify leads based on data completeness
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="auto-score">Auto-score leads</Label>
+              <p className="text-sm text-muted-foreground">
+                Automatically calculate lead scores when customers are created or updated
+              </p>
+            </div>
+            <Switch
+              id="auto-score"
+              checked={settings.auto_score_leads}
+              onCheckedChange={(checked) =>
+                setSettings({ ...settings, auto_score_leads: checked })
+              }
+            />
+          </div>
+          
+          {settings.auto_score_leads && (
+            <div className="space-y-2">
+              <Label htmlFor="score-threshold">Qualification threshold (0-100)</Label>
+              <Input
+                id="score-threshold"
+                type="number"
+                min={0}
+                max={100}
+                value={settings.lead_score_threshold}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    lead_score_threshold: parseInt(e.target.value) || 0
+                  })
+                }
+                className="w-32"
+              />
+              <p className="text-sm text-muted-foreground">
+                Leads scoring above this threshold will be automatically marked as qualified
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Welcome Emails */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Mail className="h-5 w-5 text-blue-500" />
+            Welcome Emails
+          </CardTitle>
+          <CardDescription>
+            Automatically send welcome emails to new customers
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="auto-email">Auto-send welcome emails</Label>
+              <p className="text-sm text-muted-foreground">
+                Send a personalized welcome email when new customers are created
+              </p>
+            </div>
+            <Switch
+              id="auto-email"
+              checked={settings.auto_send_welcome_email}
+              onCheckedChange={(checked) =>
+                setSettings({ ...settings, auto_send_welcome_email: checked })
+              }
+            />
+          </div>
+          
+          {settings.auto_send_welcome_email && (
+            <div className="space-y-2">
+              <Label htmlFor="email-delay">Delay before sending (minutes)</Label>
+              <Input
+                id="email-delay"
+                type="number"
+                min={0}
+                max={1440}
+                value={settings.welcome_email_delay_minutes}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    welcome_email_delay_minutes: parseInt(e.target.value) || 0
+                  })
+                }
+                className="w-32"
+              />
+              <p className="text-sm text-muted-foreground">
+                Wait this many minutes before sending (allows time for data entry)
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Auto-Assignment */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-green-500" />
+            Lead Assignment
+          </CardTitle>
+          <CardDescription>
+            Automatically assign new requests to team members
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="auto-assign">Auto-assign leads</Label>
+              <p className="text-sm text-muted-foreground">
+                Automatically assign new service requests to available team members
+              </p>
+            </div>
+            <Switch
+              id="auto-assign"
+              checked={settings.auto_assign_leads}
+              onCheckedChange={(checked) =>
+                setSettings({ ...settings, auto_assign_leads: checked })
+              }
+            />
+          </div>
+          
+          {settings.auto_assign_leads && (
+            <div className="space-y-2">
+              <Label htmlFor="assignment-method">Assignment method</Label>
+              <Select
+                value={settings.assignment_method}
+                onValueChange={(value) =>
+                  setSettings({ ...settings, assignment_method: value })
+                }
+              >
+                <SelectTrigger className="w-64">
+                  <SelectValue placeholder="Select method" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="workload">
+                    Workload Balancing
+                  </SelectItem>
+                  <SelectItem value="round_robin">
+                    Round Robin
+                  </SelectItem>
+                  <SelectItem value="territory">
+                    Territory-based
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground">
+                {settings.assignment_method === 'workload' && 
+                  "Assigns to the team member with the fewest jobs this week"}
+                {settings.assignment_method === 'round_robin' && 
+                  "Rotates assignments evenly among team members"}
+                {settings.assignment_method === 'territory' && 
+                  "Assigns based on customer location (requires territory setup)"}
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Save Button */}
+      <div className="flex justify-end">
+        <Button onClick={handleSave} disabled={isSaving}>
+          {isSaving ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Save className="mr-2 h-4 w-4" />
+          )}
+          Save Settings
+        </Button>
+      </div>
+    </div>
+  );
+}

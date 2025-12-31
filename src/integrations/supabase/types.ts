@@ -515,6 +515,53 @@ export type Database = {
         }
         Relationships: []
       }
+      automation_settings: {
+        Row: {
+          assignment_method: string
+          auto_assign_leads: boolean
+          auto_score_leads: boolean
+          auto_send_welcome_email: boolean
+          business_id: string
+          created_at: string
+          id: string
+          lead_score_threshold: number
+          updated_at: string
+          welcome_email_delay_minutes: number
+        }
+        Insert: {
+          assignment_method?: string
+          auto_assign_leads?: boolean
+          auto_score_leads?: boolean
+          auto_send_welcome_email?: boolean
+          business_id: string
+          created_at?: string
+          id?: string
+          lead_score_threshold?: number
+          updated_at?: string
+          welcome_email_delay_minutes?: number
+        }
+        Update: {
+          assignment_method?: string
+          auto_assign_leads?: boolean
+          auto_score_leads?: boolean
+          auto_send_welcome_email?: boolean
+          business_id?: string
+          created_at?: string
+          id?: string
+          lead_score_threshold?: number
+          updated_at?: string
+          welcome_email_delay_minutes?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_settings_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_constraints: {
         Row: {
           business_id: string
@@ -1133,12 +1180,17 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          is_qualified: boolean | null
+          lead_score: number | null
+          lead_source: string | null
           name: string
           notes: string | null
           owner_id: string
           phone: string | null
           preferred_days: Json | null
           preferred_time_window: Json | null
+          qualification_notes: string | null
+          qualified_at: string | null
           scheduling_notes: string | null
           updated_at: string
         }
@@ -1149,12 +1201,17 @@ export type Database = {
           created_at?: string
           email: string
           id?: string
+          is_qualified?: boolean | null
+          lead_score?: number | null
+          lead_source?: string | null
           name: string
           notes?: string | null
           owner_id: string
           phone?: string | null
           preferred_days?: Json | null
           preferred_time_window?: Json | null
+          qualification_notes?: string | null
+          qualified_at?: string | null
           scheduling_notes?: string | null
           updated_at?: string
         }
@@ -1165,12 +1222,17 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          is_qualified?: boolean | null
+          lead_score?: number | null
+          lead_source?: string | null
           name?: string
           notes?: string | null
           owner_id?: string
           phone?: string | null
           preferred_days?: Json | null
           preferred_time_window?: Json | null
+          qualification_notes?: string | null
+          qualified_at?: string | null
           scheduling_notes?: string | null
           updated_at?: string
         }
@@ -1180,6 +1242,75 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_queue: {
+        Row: {
+          attempts: number
+          body_template: string | null
+          business_id: string
+          created_at: string
+          customer_id: string | null
+          email_type: string
+          error_message: string | null
+          id: string
+          max_attempts: number
+          processed_at: string | null
+          recipient_email: string
+          recipient_name: string | null
+          scheduled_for: string
+          status: string
+          subject: string | null
+        }
+        Insert: {
+          attempts?: number
+          body_template?: string | null
+          business_id: string
+          created_at?: string
+          customer_id?: string | null
+          email_type: string
+          error_message?: string | null
+          id?: string
+          max_attempts?: number
+          processed_at?: string | null
+          recipient_email: string
+          recipient_name?: string | null
+          scheduled_for?: string
+          status?: string
+          subject?: string | null
+        }
+        Update: {
+          attempts?: number
+          body_template?: string | null
+          business_id?: string
+          created_at?: string
+          customer_id?: string | null
+          email_type?: string
+          error_message?: string | null
+          id?: string
+          max_attempts?: number
+          processed_at?: string | null
+          recipient_email?: string
+          recipient_name?: string | null
+          scheduled_for?: string
+          status?: string
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_queue_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_queue_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
             referencedColumns: ["id"]
           },
         ]
@@ -3083,6 +3214,7 @@ export type Database = {
       requests: {
         Row: {
           alternative_date: string | null
+          assigned_to: string | null
           business_id: string
           created_at: string
           customer_id: string
@@ -3100,6 +3232,7 @@ export type Database = {
         }
         Insert: {
           alternative_date?: string | null
+          assigned_to?: string | null
           business_id: string
           created_at?: string
           customer_id: string
@@ -3117,6 +3250,7 @@ export type Database = {
         }
         Update: {
           alternative_date?: string | null
+          assigned_to?: string | null
           business_id?: string
           created_at?: string
           customer_id?: string
@@ -3132,7 +3266,22 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "requests_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "requests_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       roadmap_features: {
         Row: {

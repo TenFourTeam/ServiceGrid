@@ -540,3 +540,7 @@ verify_jwt = false
 # Appointment Change Requests (Business Management)
 [functions.appointment-requests-manage]
 verify_jwt = false
+
+# Email Queue Processing (DFY Automation)
+[functions.process-email-queue]
+verify_jwt = false
