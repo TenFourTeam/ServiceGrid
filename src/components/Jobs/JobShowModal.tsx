@@ -8,7 +8,7 @@ import { formatDateTime, formatMoney } from "@/utils/format";
 import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { useAuthApi } from '@/hooks/useAuthApi';
 import { toast } from "sonner";
-import { Sparkles, CheckSquare, Image, Eye, StickyNote, Brain, ClipboardCheck } from "lucide-react";
+import { Sparkles, CheckSquare, Image, Eye, StickyNote, Brain, ClipboardCheck, Camera } from "lucide-react";
 import ReschedulePopover from "@/components/WorkOrders/ReschedulePopover";
 import type { Job, Quote, JobsCacheData, InvoicesCacheData } from "@/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle as ModalTitle } from "@/components/ui/dialog";
