@@ -4,13 +4,17 @@
 
 export { DEFINITION } from './definition';
 export { CONTRACTS } from './contracts';
-export { PATTERN } from './pattern';
+export { PATTERN, JOB_STATUS_UPDATE_PATTERN, POST_SERVICE_FOLLOWUP_PATTERN, COMMUNICATION_PATTERNS } from './pattern';
 export { TESTS } from './tests';
 export { TRIGGERS } from './triggers';
 
 export {
   CREATE_CONVERSATION_CONTRACT,
+  GET_OR_CREATE_CONVERSATION_CONTRACT,
+  GET_CONVERSATION_DETAILS_CONTRACT,
   SEND_MESSAGE_CONTRACT,
   SEND_EMAIL_CONTRACT,
+  SEND_STATUS_UPDATE_CONTRACT,
   QUEUE_EMAIL_CONTRACT,
+  QUEUE_FOLLOWUP_EMAIL_CONTRACT,
 } from './contracts';
