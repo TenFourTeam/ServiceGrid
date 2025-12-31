@@ -27,12 +27,14 @@ interface RequestBottomModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onRequestCreated?: (request: any) => void;
+  defaultCustomerId?: string;
 }
 
 export function RequestBottomModal({ 
   open, 
   onOpenChange, 
-  onRequestCreated 
+  onRequestCreated,
+  defaultCustomerId
 }: RequestBottomModalProps) {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
@@ -53,6 +55,14 @@ export function RequestBottomModal({
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showCreateCustomer, setShowCreateCustomer] = useState(false);
+
+  // Set default customer when provided
+  useEffect(() => {
+    if (open && defaultCustomerId && customers.length > 0 && !customer) {
+      const foundCustomer = customers.find(c => c.id === defaultCustomerId);
+      if (foundCustomer) setCustomer(foundCustomer);
+    }
+  }, [open, defaultCustomerId, customers, customer]);
 
   // Reset state when modal closes
   useEffect(() => {
