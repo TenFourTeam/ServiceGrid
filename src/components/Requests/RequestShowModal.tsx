@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Mail, Phone, MapPin, Calendar, Clock, FileText, User, Camera, UserCircle, ExternalLink, CheckCircle } from "lucide-react";
+import { Mail, Phone, MapPin, Calendar, Clock, FileText, User, Camera, UserCircle, ExternalLink, CheckCircle, Globe } from "lucide-react";
 import { format } from "date-fns";
 import { RequestListItem } from "@/hooks/useRequestsData";
 import { useCustomersData } from "@/hooks/useCustomersData";
@@ -19,6 +19,7 @@ import { useRequestOperations } from "@/hooks/useRequestOperations";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AutoScheduleButton } from "./AutoScheduleButton";
+import { getLeadSourceLabel, getLeadSourceColor } from "@/lib/lead-sources";
 interface RequestShowModalProps {
   request: RequestListItem | null;
   open: boolean;
@@ -248,27 +249,40 @@ export function RequestShowModal({
                       </div>
                     )}
                   </div>
-                  {/* Lead Score */}
-                  {customer.lead_score !== undefined && customer.lead_score > 0 && (
-                    <div className="pt-2 border-t border-muted mt-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">Lead Score</span>
-                          {customer.is_qualified && (
-                            <Badge variant="default" className="text-xs bg-green-600">
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              Qualified
-                            </Badge>
-                          )}
+                  {/* Lead Score & Source */}
+                  {(customer.lead_score !== undefined && customer.lead_score > 0) || customer.lead_source ? (
+                    <div className="pt-2 border-t border-muted mt-2 space-y-2">
+                      {customer.lead_score !== undefined && customer.lead_score > 0 && (
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-muted-foreground">Lead Score</span>
+                              {customer.is_qualified && (
+                                <Badge variant="default" className="text-xs bg-green-600">
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Qualified
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="font-bold">{customer.lead_score}</span>
+                              <span className="text-muted-foreground text-sm">/100</span>
+                            </div>
+                          </div>
+                          <Progress value={customer.lead_score} className="h-1.5 mt-1" />
                         </div>
-                        <div className="flex items-center gap-1">
-                          <span className="font-bold">{customer.lead_score}</span>
-                          <span className="text-muted-foreground text-sm">/100</span>
+                      )}
+                      {customer.lead_source && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Lead Source</span>
+                          <Badge variant="outline" className={`text-xs ${getLeadSourceColor(customer.lead_source)}`}>
+                            <Globe className="h-3 w-3 mr-1" />
+                            {getLeadSourceLabel(customer.lead_source)}
+                          </Badge>
                         </div>
-                      </div>
-                      <Progress value={customer.lead_score} className="h-1.5 mt-1" />
+                      )}
                     </div>
-                  )}
+                  ) : null}
                 </div>
               ) : (
                 <div className="pl-6 text-muted-foreground">{t('requests.show.customerInfo')}</div>

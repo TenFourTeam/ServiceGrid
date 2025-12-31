@@ -1,11 +1,13 @@
 import { useState, useMemo } from "react";
-import { Plus, Search, Share, UserCircle } from "lucide-react";
+import { Plus, Search, Share, UserCircle, Filter, Globe, TrendingUp } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { formatDistanceToNow } from "date-fns";
 import AppLayout from "@/components/Layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -25,21 +27,24 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRequestsData, RequestListItem } from "@/hooks/useRequestsData";
+import { useCustomersData } from "@/hooks/useCustomersData";
 import { RequestBottomModal } from "@/components/Requests/RequestBottomModal";
 import { RequestShowModal } from "@/components/Requests/RequestShowModal";
 import { RequestShareModal } from "@/components/Requests/RequestShareModal";
 import { RequestActions } from "@/components/Requests/RequestActions";
 import { AIScheduleSuggestions } from "@/components/Calendar/AIScheduleSuggestions";
 import { AppointmentChangeRequestsCard } from "@/components/Requests/AppointmentChangeRequestsCard";
+import { LeadMetricsCard } from "@/components/Dashboard/LeadMetricsCard";
 import { useBusinessMembersData } from "@/hooks/useBusinessMembers";
 import { useJobsData } from "@/hooks/useJobsData";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { statusOptions } from "@/validation/requests";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { LEAD_SOURCES, getLeadSourceLabel } from "@/lib/lead-sources";
 
 export default function Requests() {
   const { t } = useLanguage();
-  const { businessId } = useBusinessContext();
+  const { businessId, profileId } = useBusinessContext();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("All");
   const [selectedRequest, setSelectedRequest] = useState<RequestListItem | null>(null);
@@ -47,14 +52,39 @@ export default function Requests() {
   const [isShowModalOpen, setIsShowModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   
+  // New filter states
+  const [assignedToMeFilter, setAssignedToMeFilter] = useState(false);
+  const [leadScoreFilter, setLeadScoreFilter] = useState<'all' | 'hot' | 'warm' | 'cold'>('all');
+  const [leadSourceFilter, setLeadSourceFilter] = useState<string>('all');
+  
   // Sorting state
   const [sortKey, setSortKey] = useState<'customer' | 'title' | 'property' | 'contact' | 'status' | 'created'>('created');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
   const { data: requestsResponse, isLoading, error } = useRequestsData();
+  const { data: customers = [] } = useCustomersData();
   const { data: membersData } = useBusinessMembersData();
   const { data: jobsData } = useJobsData(businessId);
   const requests = useMemo(() => requestsResponse?.data || [], [requestsResponse]);
+  
+  // Create maps for customer data
+  const customerScoreMap = useMemo(() => {
+    const map = new Map<string, number>();
+    customers.forEach(c => map.set(c.id, c.lead_score ?? 0));
+    return map;
+  }, [customers]);
+  
+  const customerSourceMap = useMemo(() => {
+    const map = new Map<string, string | null>();
+    customers.forEach(c => map.set(c.id, c.lead_source || null));
+    return map;
+  }, [customers]);
+  
+  // Count requests assigned to current user
+  const assignedToMeCount = useMemo(() => {
+    if (!profileId) return 0;
+    return requests.filter(r => r.assigned_to === profileId).length;
+  }, [requests, profileId]);
 
   // Sorting logic
   function handleSort(key: 'customer' | 'title' | 'property' | 'contact' | 'status' | 'created') {
@@ -83,7 +113,7 @@ export default function Requests() {
     return arr;
   }, [requests, sortKey, sortDir]);
 
-  // Filter requests based on search query and status
+  // Filter requests based on search query, status, and new filters
   const filteredRequests = sortedRequests.filter((request) => {
     const customerName = request.customer?.name || '';
     const matchesSearch = 
@@ -96,7 +126,21 @@ export default function Requests() {
       ? request.status !== "Archived"
       : request.status === selectedStatus;
     
-    return matchesSearch && matchesStatus;
+    // Assigned to me filter
+    const matchesAssignedToMe = !assignedToMeFilter || request.assigned_to === profileId;
+    
+    // Lead score filter
+    const customerScore = customerScoreMap.get(request.customer_id) ?? 0;
+    let matchesLeadScore = true;
+    if (leadScoreFilter === 'hot') matchesLeadScore = customerScore >= 70;
+    else if (leadScoreFilter === 'warm') matchesLeadScore = customerScore >= 40 && customerScore < 70;
+    else if (leadScoreFilter === 'cold') matchesLeadScore = customerScore < 40;
+    
+    // Lead source filter
+    const customerSource = customerSourceMap.get(request.customer_id);
+    const matchesLeadSource = leadSourceFilter === 'all' || customerSource === leadSourceFilter;
+    
+    return matchesSearch && matchesStatus && matchesAssignedToMe && matchesLeadScore && matchesLeadSource;
   });
 
   // Calculate counts for each status (exclude archived from "All" count)
@@ -228,40 +272,113 @@ export default function Requests() {
           </Card>
 
           {/* Filters */}
-          <div className="flex gap-4 items-center">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={t('requests.searchPlaceholder')}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8"
-              />
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap gap-4 items-center">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={t('requests.searchPlaceholder')}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+              <div className="w-48">
+                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="All">{t('requests.status.all')} ({counts.All})</SelectItem>
+                    {statusOptions.map((status) => {
+                      const statusMap: Record<string, string> = {
+                        'New': t('requests.status.new'),
+                        'Scheduled': t('requests.status.scheduled'),
+                        'Assessed': t('requests.status.assessed'),
+                        'Archived': t('requests.status.archived')
+                      };
+                      return (
+                        <SelectItem key={status.value} value={status.value}>
+                          {statusMap[status.value] || status.label} ({counts[status.value]})
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="w-48">
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="All">{t('requests.status.all')} ({counts.All})</SelectItem>
-                  {statusOptions.map((status) => {
-                    const statusMap: Record<string, string> = {
-                      'New': t('requests.status.new'),
-                      'Scheduled': t('requests.status.scheduled'),
-                      'Assessed': t('requests.status.assessed'),
-                      'Archived': t('requests.status.archived')
-                    };
-                    return (
-                      <SelectItem key={status.value} value={status.value}>
-                        {statusMap[status.value] || status.label} ({counts[status.value]})
+            
+            {/* Advanced Filters Row */}
+            <div className="flex flex-wrap gap-4 items-center">
+              {/* Assigned to Me Toggle */}
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="assigned-to-me"
+                  checked={assignedToMeFilter}
+                  onCheckedChange={setAssignedToMeFilter}
+                />
+                <Label htmlFor="assigned-to-me" className="text-sm cursor-pointer">
+                  <UserCircle className="h-4 w-4 inline mr-1" />
+                  Assigned to Me
+                  {assignedToMeCount > 0 && (
+                    <Badge variant="secondary" className="ml-1 text-xs">{assignedToMeCount}</Badge>
+                  )}
+                </Label>
+              </div>
+              
+              {/* Lead Score Filter */}
+              <div className="w-36">
+                <Select value={leadScoreFilter} onValueChange={(v) => setLeadScoreFilter(v as typeof leadScoreFilter)}>
+                  <SelectTrigger className="h-9">
+                    <TrendingUp className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <SelectValue placeholder="Lead Score" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Leads</SelectItem>
+                    <SelectItem value="hot">🔥 Hot (70+)</SelectItem>
+                    <SelectItem value="warm">☀️ Warm (40-69)</SelectItem>
+                    <SelectItem value="cold">❄️ Cold (0-39)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Lead Source Filter */}
+              <div className="w-40">
+                <Select value={leadSourceFilter} onValueChange={setLeadSourceFilter}>
+                  <SelectTrigger className="h-9">
+                    <Globe className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <SelectValue placeholder="Source" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Sources</SelectItem>
+                    {LEAD_SOURCES.map((source) => (
+                      <SelectItem key={source.value} value={source.value}>
+                        {source.label}
                       </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Clear Filters */}
+              {(assignedToMeFilter || leadScoreFilter !== 'all' || leadSourceFilter !== 'all') && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setAssignedToMeFilter(false);
+                    setLeadScoreFilter('all');
+                    setLeadSourceFilter('all');
+                  }}
+                >
+                  Clear Filters
+                </Button>
+              )}
             </div>
           </div>
+
+          {/* Lead Metrics Summary */}
+          <LeadMetricsCard />
 
           {/* Customer Appointment Change Requests */}
           <AppointmentChangeRequestsCard />
