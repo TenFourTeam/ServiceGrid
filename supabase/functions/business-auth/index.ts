@@ -20,31 +20,56 @@ serve(async (req) => {
   }
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
-  const url = new URL(req.url);
-  const path = url.pathname.split('/').pop();
+  
+  // Clone request so we can read body twice if needed
+  const clonedReq = req.clone();
+  
+  // Determine action from body or URL path
+  let action: string | null = null;
+  let bodyData: any = {};
+  
+  try {
+    bodyData = await clonedReq.json();
+    action = bodyData.action || null;
+  } catch {
+    // No JSON body or invalid JSON
+  }
+  
+  // Fall back to URL path if no action in body
+  if (!action) {
+    const url = new URL(req.url);
+    action = url.pathname.split('/').pop() || null;
+  }
 
-  console.log(`[business-auth] ${req.method} /${path}`);
+  console.log(`[business-auth] ${req.method} action=${action}`);
+
+  // Create a new request-like object that returns the already-parsed body
+  const reqWithBody = {
+    ...req,
+    headers: req.headers,
+    json: async () => bodyData,
+  } as Request;
 
   try {
-    switch (path) {
+    switch (action) {
       case 'login':
-        return await handleLogin(req, supabase);
+        return await handleLogin(reqWithBody, supabase);
       case 'register':
-        return await handleRegister(req, supabase);
+        return await handleRegister(reqWithBody, supabase);
       case 'magic-link':
-        return await handleMagicLink(req, supabase);
+        return await handleMagicLink(reqWithBody, supabase);
       case 'verify-magic':
-        return await handleVerifyMagic(req, supabase);
+        return await handleVerifyMagic(reqWithBody, supabase);
       case 'session':
-        return await handleSession(req, supabase);
+        return await handleSession(reqWithBody, supabase);
       case 'logout':
-        return await handleLogout(req, supabase);
+        return await handleLogout(reqWithBody, supabase);
       case 'refresh':
-        return await handleRefresh(req, supabase);
+        return await handleRefresh(reqWithBody, supabase);
       case 'password-reset':
-        return await handlePasswordReset(req, supabase);
+        return await handlePasswordReset(reqWithBody, supabase);
       case 'password-reset-confirm':
-        return await handlePasswordResetConfirm(req, supabase);
+        return await handlePasswordResetConfirm(reqWithBody, supabase);
       default:
         return jsonResponse({ error: 'Unknown endpoint' }, 404);
     }
