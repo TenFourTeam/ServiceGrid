@@ -5,10 +5,11 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Loader2, Zap, Mail, Users, Save } from "lucide-react";
+import { Loader2, Zap, Mail, Users, Save, TestTube, Info } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
+import { AutomationActivityLog } from "./AutomationActivityLog";
 
 interface AutomationSettingsData {
   id: string;
@@ -93,6 +94,45 @@ export function AutomationSettings() {
     } catch (error: any) {
       console.error("Error saving automation settings:", error);
       toast.error("Failed to save settings");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const enableTestMode = async () => {
+    if (!settings) return;
+    
+    const testSettings = {
+      ...settings,
+      auto_score_leads: true,
+      auto_send_welcome_email: true,
+      welcome_email_delay_minutes: 1, // Quick for testing
+      auto_assign_leads: true,
+      assignment_method: 'workload'
+    };
+    setSettings(testSettings);
+    
+    // Save immediately
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from("automation_settings")
+        .update({
+          auto_score_leads: true,
+          lead_score_threshold: settings.lead_score_threshold,
+          auto_send_welcome_email: true,
+          welcome_email_delay_minutes: 1,
+          auto_assign_leads: true,
+          assignment_method: 'workload',
+          updated_at: new Date().toISOString()
+        })
+        .eq("business_id", businessId);
+
+      if (error) throw error;
+      toast.success("Test mode enabled - all automation active with 1-minute email delay");
+    } catch (error: any) {
+      console.error("Error enabling test mode:", error);
+      toast.error("Failed to enable test mode");
     } finally {
       setIsSaving(false);
     }
@@ -291,8 +331,48 @@ export function AutomationSettings() {
         </CardContent>
       </Card>
 
-      {/* Save Button */}
-      <div className="flex justify-end">
+      {/* Testing Instructions */}
+      <Card className="border-blue-200 bg-blue-50/50 dark:border-blue-900 dark:bg-blue-950/30">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
+            <Info className="h-5 w-5" />
+            How to Test Lead Generation
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ol className="text-sm text-blue-800 dark:text-blue-200 space-y-2 list-decimal list-inside">
+            <li>Enable all automation settings above (or use "Enable Test Mode")</li>
+            <li>Go to Requests → click "Share Request Form" to get your public form link</li>
+            <li>Submit a test request with a real email address</li>
+            <li>Watch the Automation Activity section below for scoring, assignment, and email events</li>
+            <li>Check the Customers page for lead score display</li>
+            <li>Check the Requests page for auto-assignment</li>
+          </ol>
+        </CardContent>
+      </Card>
+
+      {/* Automation Activity Log */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Zap className="h-5 w-5 text-amber-500" />
+            Automation Activity
+          </CardTitle>
+          <CardDescription>
+            Recent automated actions (last 24 hours)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AutomationActivityLog />
+        </CardContent>
+      </Card>
+
+      {/* Action Buttons */}
+      <div className="flex justify-between">
+        <Button variant="outline" onClick={enableTestMode} disabled={isSaving}>
+          <TestTube className="mr-2 h-4 w-4" />
+          Enable Test Mode
+        </Button>
         <Button onClick={handleSave} disabled={isSaving}>
           {isSaving ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -108,6 +108,23 @@ serve(async (req) => {
           })
           .eq("id", email.id);
 
+        // Log to activity log for transparency
+        await supabase
+          .from("ai_activity_log")
+          .insert({
+            business_id: email.business_id,
+            user_id: email.business_id, // System action
+            activity_type: "auto_schedule",
+            description: `Sent ${email.email_type} email to "${email.recipient_name || email.recipient_email}"`,
+            accepted: true,
+            metadata: {
+              email_id: email.id,
+              email_type: email.email_type,
+              recipient: email.recipient_email,
+              action_type: "email_sent"
+            }
+          });
+
         processed++;
       } catch (sendError: any) {
         console.error(`[process-email-queue] Failed to send email ${email.id}:`, sendError);

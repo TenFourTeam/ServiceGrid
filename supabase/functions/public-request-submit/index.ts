@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.54.0';
+import { Resend } from "npm:resend@2.0.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -346,10 +347,45 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Request created successfully:', request.id);
 
-    // Note: Email confirmation temporarily disabled
-    console.log('Request submitted successfully (email confirmation disabled)');
+    // Send confirmation email to customer
+    try {
+      const resendApiKey = Deno.env.get("RESEND_API_KEY");
+      const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "noreply@servicegrid.app";
+      
+      if (resendApiKey) {
+        const resend = new Resend(resendApiKey);
+        const customerName = requestData.customer_name?.trim() || 
+                             requestData.customer_email.split('@')[0] || 
+                             'Customer';
+        
+        const { subject, html } = generateRequestConfirmationEmail(
+          business.name,
+          business.logo_url,
+          customerName,
+          requestData.customer_email,
+          requestData.title,
+          requestData.service_details,
+          requestData.preferred_assessment_date,
+          requestData.preferred_times
+        );
+        
+        const emailResult = await resend.emails.send({
+          from: `${business.name} <${fromEmail}>`,
+          to: requestData.customer_email,
+          subject,
+          html
+        });
+        
+        console.log('Request confirmation email sent:', emailResult);
+      } else {
+        console.log('RESEND_API_KEY not configured - skipping confirmation email');
+      }
+    } catch (emailError: any) {
+      console.error('Failed to send confirmation email:', emailError);
+      // Don't fail the request - email is non-critical
+    }
 
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       success: true, 
       request_id: request.id,
       message: 'Request submitted successfully',
