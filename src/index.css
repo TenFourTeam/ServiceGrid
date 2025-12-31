@@ -326,6 +326,79 @@ All colors MUST be HSL.
   .ai-fade-in {
     animation: ai-fade-in 0.4s ease-out;
   }
+
+  /* Instant feedback animations */
+  
+  /* Pulse once - for step completion */
+  @keyframes pulse-once {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+    100% { transform: scale(1); }
+  }
+  
+  .animate-pulse-once {
+    animation: pulse-once 300ms ease-out;
+  }
+  
+  /* Cursor blink for streaming text */
+  @keyframes cursor-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+  
+  .animate-cursor-blink {
+    animation: cursor-blink 0.8s step-end infinite;
+  }
+  
+  /* Fade in up - for new items */
+  @keyframes fade-in-up {
+    0% {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-fade-in-up {
+    animation: fade-in-up 250ms ease-out;
+  }
+  
+  /* Optimistic item - pending state */
+  .optimistic-pending {
+    @apply opacity-80 border-dashed;
+    animation: optimistic-pulse 1.5s ease-in-out infinite;
+  }
+  
+  @keyframes optimistic-pulse {
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 0.6; }
+  }
+  
+  /* Success flash - when optimistic is confirmed */
+  @keyframes success-flash {
+    0% { background-color: hsl(var(--success) / 0.2); }
+    100% { background-color: transparent; }
+  }
+  
+  .animate-success-flash {
+    animation: success-flash 500ms ease-out;
+  }
+  
+  /* Hover lift for cards */
+  .hover-lift {
+    @apply transition-all duration-200 ease-out;
+  }
+  
+  .hover-lift:hover {
+    @apply -translate-y-0.5 shadow-md;
+  }
+  
+  .hover-lift:active {
+    @apply translate-y-0 shadow-sm;
+  }
 }
 
 @layer utilities {
