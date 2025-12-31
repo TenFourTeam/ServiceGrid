@@ -9,6 +9,7 @@ import { ClarificationCard } from './ClarificationCard';
 import { ConfirmationCard } from './ConfirmationCard';
 import { PlanPreviewCard } from './PlanPreviewCard';
 import { PlanProgressCard } from './PlanProgressCard';
+import { LeadWorkflowCard } from './LeadWorkflowCard';
 import { EntityCard, parseEntityReferences } from './EntityCard';
 import { UndoButton, isReversibleAction, getUndoDescription } from './UndoButton';
 import { ToolResultCard } from './ToolResultCard';
@@ -50,7 +51,8 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
       message.messageType !== 'clarification' &&
       message.messageType !== 'confirmation' &&
       message.messageType !== 'plan_preview' &&
-      message.messageType !== 'plan_progress') {
+      message.messageType !== 'plan_progress' &&
+      message.messageType !== 'lead_workflow') {
     return null;
   }
 
@@ -168,12 +170,23 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
                 onSelect={onEntitySelect}
               />
             )}
+            
+            {/* Lead Workflow Card */}
+            {message.messageType === 'lead_workflow' && message.leadWorkflow && (
+              <LeadWorkflowCard
+                steps={message.leadWorkflow.steps}
+                currentStepIndex={message.leadWorkflow.currentStepIndex}
+                customerData={message.leadWorkflow.customerData}
+                onPrompt={onActionExecute}
+              />
+            )}
 
             {/* Standard message content */}
             {message.messageType !== 'clarification' && 
              message.messageType !== 'confirmation' && 
              message.messageType !== 'plan_preview' && 
              message.messageType !== 'plan_progress' && 
+             message.messageType !== 'lead_workflow' &&
              parsedContent.map((part, idx) => {
               if (part.type === 'text') {
                 // Parse entity references within text

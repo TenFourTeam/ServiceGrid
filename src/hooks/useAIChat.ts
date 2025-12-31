@@ -117,11 +117,31 @@ export interface Message {
     variant?: 'primary' | 'secondary' | 'danger';
   }>;
   // Special message types for agent flows
-  messageType?: 'standard' | 'clarification' | 'confirmation' | 'plan_preview' | 'plan_progress';
+  messageType?: 'standard' | 'clarification' | 'confirmation' | 'plan_preview' | 'plan_progress' | 'lead_workflow';
   clarification?: ClarificationData;
   confirmation?: ConfirmationData;
   planPreview?: PlanPreviewData;
   planProgress?: PlanProgressData;
+  // Lead workflow card data
+  leadWorkflow?: {
+    steps: Array<{
+      id: string;
+      name: string;
+      description: string;
+      status: 'pending' | 'in_progress' | 'completed' | 'skipped' | 'failed';
+      tool?: string;
+      result?: any;
+      error?: string;
+    }>;
+    currentStepIndex: number;
+    customerData?: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      leadScore?: number;
+      leadSource?: string;
+    };
+  };
   // Entity selection - rendered as a conversational element outside plan card
   entitySelection?: {
     planId: string;
