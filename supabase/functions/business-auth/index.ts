@@ -180,7 +180,7 @@ async function handleLogin(req: Request, supabase: any) {
   }
 
   // Verify password
-  const validPassword = await bcrypt.compare(password, profile.password_hash);
+  const validPassword = bcrypt.compareSync(password, profile.password_hash);
   if (!validPassword) {
     console.log('[business-auth] Login failed - invalid password:', email);
     return jsonResponse({ error: 'Invalid email or password' }, 401);
@@ -225,7 +225,7 @@ async function handleRegister(req: Request, supabase: any) {
       return jsonResponse({ error: 'Account already exists. Please login instead.' }, 409);
     }
     // Profile exists but no password - update it
-    const passwordHash = await bcrypt.hash(password);
+      const passwordHash = bcrypt.hashSync(password);
     
     await supabase
       .from('profiles')
@@ -249,7 +249,7 @@ async function handleRegister(req: Request, supabase: any) {
   }
 
   // Create new profile
-  const passwordHash = await bcrypt.hash(password);
+    const passwordHash = bcrypt.hashSync(password);
 
   const { data: newProfile, error: createError } = await supabase
     .from('profiles')
