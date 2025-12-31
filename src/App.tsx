@@ -1,13 +1,15 @@
-import React, { Suspense, lazy } from "react";
+import React, { Suspense, lazy, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import { BrowserRouter } from "react-router-dom";
 import { ClerkProvider, ClerkLoaded, ClerkLoading, AuthenticateWithRedirectCallback } from "@clerk/clerk-react";
 import { AppProviders } from "@/providers/AppProviders";
+import { setBootStage } from "@/lib/boot-trace";
+import { StallGuard } from "@/components/StallGuard";
+import BootLoadingScreen from "@/components/BootLoadingScreen";
 
 import { AuthBoundary, RequireAuth, PublicOnly, QueryClientClerkIntegration } from "@/auth";
 import { RequireRole } from "@/components/Auth/RequireRole";
 import ErrorBoundary from './components/ErrorBoundary';
-import LoadingScreen from './components/LoadingScreen';
 
 
 const CalendarPage = lazy(() => import("./pages/Calendar"));
@@ -62,19 +64,38 @@ interface AppProps {
   clerkKey: string;
 }
 
+// Component to signal when Clerk is loaded
+function ClerkLoadedSignal({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    setBootStage('clerk_loaded');
+  }, []);
+  return <>{children}</>;
+}
+
+// Component to signal when app is ready
+function AppReadySignal({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    setBootStage('app_ready');
+  }, []);
+  return <>{children}</>;
+}
+
 // App component 
 function App({ clerkKey }: AppProps) {
   return (
-    <ClerkProvider 
-      publishableKey={clerkKey}
-      telemetry={false}
-    >
-      <BrowserRouter>
-        <ClerkLoaded>
-          <AppProviders>
-            <QueryClientClerkIntegration />
-            <ErrorBoundary>
-            <Suspense fallback={<LoadingScreen />}>
+    <StallGuard>
+      <ClerkProvider 
+        publishableKey={clerkKey}
+        telemetry={false}
+      >
+        <BrowserRouter>
+          <ClerkLoaded>
+            <ClerkLoadedSignal>
+              <AppProviders>
+                <QueryClientClerkIntegration />
+                <ErrorBoundary>
+                <Suspense fallback={<BootLoadingScreen fallbackLabel="Loading page" />}>
+                  <AppReadySignal>
               <Routes>
                 {/* Public routes */}
                 <Route element={<PublicOnly redirectTo="/calendar" />}>
@@ -185,15 +206,18 @@ function App({ clerkKey }: AppProps) {
                 
                 <Route path="*" element={<NotFound />} />
               </Routes>
-                </Suspense>
-              </ErrorBoundary>
-          </AppProviders>
-        </ClerkLoaded>
-        <ClerkLoading>
-          <LoadingScreen full />
-        </ClerkLoading>
-      </BrowserRouter>
-    </ClerkProvider>
+                  </AppReadySignal>
+                  </Suspense>
+                </ErrorBoundary>
+            </AppProviders>
+            </ClerkLoadedSignal>
+          </ClerkLoaded>
+          <ClerkLoading>
+            <BootLoadingScreen full fallbackLabel="Initializing authentication" />
+          </ClerkLoading>
+        </BrowserRouter>
+      </ClerkProvider>
+    </StallGuard>
   );
 }
 

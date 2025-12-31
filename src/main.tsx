@@ -3,17 +3,21 @@ import { createRoot, Root } from 'react-dom/client';
 import App from './App';
 import './index.css';
 import './i18n/config';
+import { setBootStage, getBootState } from '@/lib/boot-trace';
 
-function LoadingScreen() {
+function LoadingScreen({ label }: { label?: string }) {
+  const bootState = getBootState();
+  const displayLabel = label || bootState.stageLabel || 'Loading';
+  
   return (
     <div className="min-h-screen grid place-items-center">
-      <div className="flex items-center gap-3 text-muted-foreground">
+      <div className="flex flex-col items-center gap-3 text-muted-foreground">
         <div
           className="h-5 w-5 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-primary"
           role="status"
           aria-label="Loading"
         />
-        <span className="text-sm">Loading…</span>
+        <span className="text-sm">{displayLabel}…</span>
       </div>
     </div>
   );
@@ -43,18 +47,27 @@ const root = window.__APP_ROOT__;
 async function initializeApp() {
   // If we already have the Clerk key cached, use it immediately
   if (window.__CLERK_KEY__) {
+    setBootStage('clerk_loading');
     root.render(<App clerkKey={window.__CLERK_KEY__} />);
     return;
   }
 
   // Show loading screen
-  root.render(<LoadingScreen />);
+  setBootStage('fetch_key_start');
+  root.render(<LoadingScreen label="Fetching auth config" />);
+
+  // Create abort controller with timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
   try {
-    const res = await fetch('https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/clerk-publishable-key');
+    const res = await fetch('https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/clerk-publishable-key', {
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
     
     if (!res.ok) {
-      let msg = 'Failed to load Clerk key';
+      let msg = `Failed to load auth config (${res.status})`;
       try { 
         const j = await res.json(); 
         if (j?.error) msg = j.error; 
@@ -69,15 +82,26 @@ async function initializeApp() {
       throw new Error('Missing authentication configuration');
     }
 
+    setBootStage('fetch_key_ok');
+    
     // Cache the key globally
     window.__CLERK_KEY__ = clerkKey;
 
     // Render app with Clerk key
+    setBootStage('clerk_loading');
     root.render(<App clerkKey={clerkKey} />);
     
   } catch (error) {
+    clearTimeout(timeoutId);
     const message = error instanceof Error ? error.message : 'Failed to load authentication configuration';
-    root.render(<ErrorScreen message={message} />);
+    
+    if (error instanceof Error && error.name === 'AbortError') {
+      setBootStage('fetch_key_fail', 'Auth config request timed out');
+      root.render(<ErrorScreen message="Request timed out. Please check your connection and try again." />);
+    } else {
+      setBootStage('fetch_key_fail', message);
+      root.render(<ErrorScreen message={message} />);
+    }
   }
 }
 
