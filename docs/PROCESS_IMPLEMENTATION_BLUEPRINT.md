@@ -866,6 +866,68 @@ describe('{Process} E2E Tests', () => {
 
 ---
 
+## PHASE 6: Automated Verification
+
+### 6.1 Run Process Validator
+
+The codebase includes an automated validator that checks blueprint compliance:
+
+```typescript
+import { validateProcessImplementation, validateAllProcesses } from '@/lib/ai-agent/process-validator';
+
+// Validate a single process
+const result = validateProcessImplementation('site_assessment');
+console.log(`${result.processName}: ${result.score}% complete`);
+console.log('Missing:', result.missingItems);
+console.log('Warnings:', result.warnings);
+
+// Validate all processes
+const summary = validateAllProcesses();
+console.log(`${summary.completeProcesses}/${summary.totalProcesses} processes complete`);
+```
+
+### 6.2 Verification Dashboard
+
+View process implementation health in the Settings page:
+
+**Settings > AI Agent > Process Verification**
+
+The dashboard shows:
+- Overall completion percentage for each process
+- Detailed checks by category (definition, contracts, pattern, automation, UI, testing)
+- Missing required items highlighted in red
+- Optional warnings highlighted in amber
+
+### 6.3 Validation Checks
+
+The validator performs these checks:
+
+| Category | Check | Required |
+|----------|-------|----------|
+| Definition | Process definition exists | ✅ |
+| Definition | Sub-steps with SIPOC defined | ✅ |
+| Definition | Preconditions defined | ✅ |
+| Definition | Postconditions defined | ✅ |
+| Contracts | Tool contracts defined (≥50%) | ✅ |
+| Pattern | Multi-step pattern registered | ✅ |
+| Pattern | Special card type defined | ⚠️ |
+| Pattern | Success metrics defined | ✅ |
+| Automation | Rollback tools configured (≥30%) | ✅ |
+| UI | Workflow card component | ⚠️ |
+
+### 6.4 Adding Verification to CI
+
+Add to your CI pipeline to ensure all new processes meet the blueprint standard:
+
+```yaml
+# .github/workflows/validate-processes.yml
+- name: Validate Process Implementations
+  run: |
+    npx vitest run tests/unit/process-validation.test.ts
+```
+
+---
+
 ## Reference Implementation
 
 See the Lead Generation process for a complete working example:
@@ -875,3 +937,9 @@ See the Lead Generation process for a complete working example:
 - **Automation:** `supabase/migrations/*_lead_automation_*.sql`
 - **Workflow Card:** `src/components/AI/LeadWorkflowCard.tsx`
 - **Tests:** `tests/e2e/lead-generation.e2e.test.ts`
+
+See the Site Assessment process for a second reference:
+- **Process Definition:** `src/lib/ai-agent/process-registry.ts` → `SITE_ASSESSMENT`
+- **Multi-Step Pattern:** `src/lib/ai-agent/multi-step-patterns.ts` → `COMPLETE_SITE_ASSESSMENT`
+- **Workflow Card:** `src/components/AI/AssessmentWorkflowCard.tsx`
+- **Tests:** `tests/unit/site-assessment.unit.test.ts`, `tests/integration/site-assessment.integration.test.ts`
