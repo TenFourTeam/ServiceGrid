@@ -4,8 +4,7 @@ export interface CustomerAccount {
   id: string;
   customer_id: string;
   email: string;
-  clerk_user_id: string | null;
-  auth_method: 'clerk' | 'password' | 'magic_link' | null;
+  auth_method: 'password' | 'magic_link' | null;
   last_login_at: string | null;
   created_at: string;
   updated_at: string;
@@ -61,7 +60,7 @@ export interface CustomerWithBusiness {
 export interface CustomerAuthState {
   customer: CustomerAccount | null;
   customerDetails: CustomerWithBusiness | null;
-  authMethod: 'clerk' | 'password' | 'magic_link' | null;
+  authMethod: 'password' | 'magic_link' | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   sessionToken: string | null;

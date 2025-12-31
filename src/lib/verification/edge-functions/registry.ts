@@ -19,7 +19,6 @@ export const EDGE_FUNCTION_REGISTRY: EdgeFunctionDefinition[] = [
   { name: 'get-profile', path: 'supabase/functions/get-profile/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'auth' },
   { name: 'update-profile', path: 'supabase/functions/update-profile/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'auth' },
   { name: 'complete-profile-email', path: 'supabase/functions/complete-profile-email/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'auth' },
-  { name: 'clerk-publishable-key', path: 'supabase/functions/clerk-publishable-key/index.ts', requiresAuth: false, requiredSecrets: ['CLERK_PUBLISHABLE_KEY'], hasCors: true, category: 'auth' },
   { name: 'leave-business', path: 'supabase/functions/leave-business/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'auth' },
   { name: 'create-invites', path: 'supabase/functions/create-invites/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'auth' },
   { name: 'search-invite-users', path: 'supabase/functions/search-invite-users/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'auth' },
