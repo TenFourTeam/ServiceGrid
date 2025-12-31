@@ -2000,6 +2000,165 @@ const tools: Record<string, Tool> = {
     }
   },
 
+  get_customer: {
+    name: 'get_customer',
+    description: 'Get a single customer by ID with full details',
+    parameters: {
+      type: 'object',
+      properties: {
+        customerId: { type: 'string', description: 'Customer ID' }
+      },
+      required: ['customerId']
+    },
+    execute: async (args: any, context: any) => {
+      const { data: customer, error } = await context.supabase
+        .from('customers')
+        .select('*')
+        .eq('id', args.customerId)
+        .eq('business_id', context.businessId)
+        .single();
+
+      if (error) throw error;
+      if (!customer) throw new Error('Customer not found');
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'query',
+        description: `Retrieved customer: ${customer.name}`,
+        metadata: { tool: 'get_customer', customer_id: customer.id }
+      });
+
+      return { customer };
+    }
+  },
+
+  create_request: {
+    name: 'create_request',
+    description: 'Create a new service request from a customer inquiry',
+    parameters: {
+      type: 'object',
+      properties: {
+        customerId: { type: 'string', description: 'Customer ID' },
+        title: { type: 'string', description: 'Request title/subject' },
+        serviceDetails: { type: 'string', description: 'Details of the service needed' },
+        source: { 
+          type: 'string', 
+          description: 'Source of request: portal, phone, email, referral, chat',
+          enum: ['portal', 'phone', 'email', 'referral', 'chat']
+        },
+        priority: {
+          type: 'string',
+          description: 'Request priority: low, normal, high, urgent',
+          enum: ['low', 'normal', 'high', 'urgent']
+        }
+      },
+      required: ['customerId', 'title']
+    },
+    execute: async (args: any, context: any) => {
+      // Verify customer exists
+      const { data: customer } = await context.supabase
+        .from('customers')
+        .select('id, name')
+        .eq('id', args.customerId)
+        .eq('business_id', context.businessId)
+        .single();
+
+      if (!customer) throw new Error('Customer not found');
+
+      const { data: request, error } = await context.supabase
+        .from('requests')
+        .insert({
+          business_id: context.businessId,
+          customer_id: args.customerId,
+          title: args.title,
+          service_details: args.serviceDetails || null,
+          source: args.source || 'chat',
+          priority: args.priority || 'normal',
+          status: 'New'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'create',
+        description: `Created service request "${args.title}" for ${customer.name}`,
+        metadata: { tool: 'create_request', request_id: request.id, customer_id: args.customerId }
+      });
+
+      return { 
+        success: true, 
+        request_id: request.id, 
+        customer_name: customer.name,
+        title: args.title,
+        status: 'New'
+      };
+    }
+  },
+
+  list_team_members: {
+    name: 'list_team_members',
+    description: 'List all team members for the business with their availability status',
+    parameters: {
+      type: 'object',
+      properties: {
+        includeWorkload: { type: 'boolean', description: 'Include current workload info' }
+      }
+    },
+    execute: async (args: any, context: any) => {
+      const { data: members, error } = await context.supabase
+        .from('business_permissions')
+        .select('user_id, granted_at, profiles!business_permissions_user_id_fkey(id, full_name, email)')
+        .eq('business_id', context.businessId);
+
+      if (error) throw error;
+
+      let teamMembers = members?.map(m => ({
+        id: m.user_id,
+        name: m.profiles?.full_name || m.profiles?.email || 'Unknown',
+        email: m.profiles?.email,
+        joined_at: m.granted_at
+      })) || [];
+
+      // Optionally include workload
+      if (args.includeWorkload) {
+        const today = new Date().toISOString().split('T')[0];
+        const weekEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+        const { data: assignments } = await context.supabase
+          .from('job_assignments')
+          .select('user_id, jobs(id, status, starts_at)')
+          .in('user_id', teamMembers.map(m => m.id))
+          .gte('jobs.starts_at', `${today}T00:00:00Z`)
+          .lte('jobs.starts_at', `${weekEnd}T23:59:59Z`);
+
+        const workloadMap: Record<string, number> = {};
+        assignments?.forEach(a => {
+          workloadMap[a.user_id] = (workloadMap[a.user_id] || 0) + 1;
+        });
+
+        teamMembers = teamMembers.map(m => ({
+          ...m,
+          jobs_this_week: workloadMap[m.id] || 0
+        }));
+      }
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'query',
+        description: `Listed ${teamMembers.length} team members`,
+        metadata: { tool: 'list_team_members', count: teamMembers.length }
+      });
+
+      return { team_members: teamMembers, count: teamMembers.length };
+    }
+  },
+
   get_customer_history: {
     name: 'get_customer_history',
     description: 'Get complete customer history including jobs, quotes, invoices, and payments',

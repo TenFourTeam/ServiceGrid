@@ -290,7 +290,7 @@ export const LEAD_GENERATION: EnhancedProcessDefinition = {
         output: 'Quote or job assigned to team member with notification sent',
         customer: 'Assigned Team Member'
       },
-      tools: ['create_quote', 'create_job', 'assign_job', 'list_team_members', 'get_team_availability'],
+      tools: ['create_quote', 'create_job', 'assign_job_to_member', 'list_team_members', 'check_team_availability'],
       dbEntities: ['quotes', 'jobs', 'job_assignments', 'business_members'],
       automationCapabilities: [
         'Auto-assign based on workload balancing',
@@ -329,9 +329,9 @@ export const LEAD_GENERATION: EnhancedProcessDefinition = {
     'create_request',
     'create_quote',
     'create_job',
-    'assign_job',
+    'assign_job_to_member',
     'list_team_members',
-    'get_team_availability',
+    'check_team_availability',
     'send_quote',
     'send_email'
   ],

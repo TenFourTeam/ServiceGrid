@@ -275,13 +275,203 @@ const TOOL_CONTRACTS: Record<string, ToolContract> = {
     invariants: [],
     dbAssertions: [],
   },
+
+  // ==========================================================================
+  // LEAD GENERATION TOOL CONTRACTS
+  // ==========================================================================
+
+  create_customer: {
+    toolName: 'create_customer',
+    processId: 'lead_generation',
+    subStep: 'Receive Inquiry',
+    preconditions: [
+      { type: 'field_not_equals', entity: 'args', field: 'email', value: null, description: 'Email is required' },
+      { type: 'field_not_equals', entity: 'args', field: 'name', value: null, description: 'Name is required' },
+    ],
+    postconditions: [
+      { type: 'entity_exists', entity: 'customer', entityId: 'result.customer_id', description: 'Customer should be created' },
+    ],
+    invariants: [],
+    dbAssertions: [
+      {
+        query: 'SELECT COUNT(*) as count FROM customers WHERE id = $1',
+        params: { '$1': 'result.customer_id' },
+        expect: { rowCount: 1 },
+        description: 'Customer exists in database',
+      },
+    ],
+    rollbackTool: 'delete_customer',
+    rollbackArgs: (result) => ({ customerId: result.customer_id }),
+  },
+
+  search_customers: {
+    toolName: 'search_customers',
+    processId: 'lead_generation',
+    subStep: 'Receive Inquiry',
+    preconditions: [],
+    postconditions: [],
+    invariants: [],
+    dbAssertions: [],
+  },
+
+  get_customer: {
+    toolName: 'get_customer',
+    processId: 'lead_generation',
+    subStep: 'Qualify Lead',
+    preconditions: [
+      { type: 'field_not_equals', entity: 'args', field: 'customerId', value: null, description: 'Customer ID is required' },
+    ],
+    postconditions: [
+      { type: 'entity_exists', entity: 'customer', entityId: 'result.customer.id', description: 'Customer should be returned' },
+    ],
+    invariants: [],
+    dbAssertions: [],
+  },
+
+  update_customer: {
+    toolName: 'update_customer',
+    processId: 'lead_generation',
+    subStep: 'Qualify Lead',
+    preconditions: [
+      { type: 'entity_exists', entity: 'customer', entityId: 'customerId', description: 'Customer must exist' },
+    ],
+    postconditions: [],
+    invariants: [],
+    dbAssertions: [],
+  },
+
+  create_request: {
+    toolName: 'create_request',
+    processId: 'lead_generation',
+    subStep: 'Enter into System',
+    preconditions: [
+      { type: 'entity_exists', entity: 'customer', entityId: 'customerId', description: 'Customer must exist' },
+      { type: 'field_not_equals', entity: 'args', field: 'title', value: null, description: 'Request title is required' },
+    ],
+    postconditions: [
+      { type: 'entity_exists', entity: 'request', entityId: 'result.request_id', description: 'Request should be created' },
+    ],
+    invariants: [],
+    dbAssertions: [
+      {
+        query: 'SELECT COUNT(*) as count FROM requests WHERE id = $1',
+        params: { '$1': 'result.request_id' },
+        expect: { rowCount: 1 },
+        description: 'Request exists in database',
+      },
+    ],
+    rollbackTool: 'delete_request',
+    rollbackArgs: (result) => ({ requestId: result.request_id }),
+  },
+
+  list_team_members: {
+    toolName: 'list_team_members',
+    processId: 'lead_generation',
+    subStep: 'Assign Lead',
+    preconditions: [],
+    postconditions: [],
+    invariants: [],
+    dbAssertions: [],
+  },
+
+  check_team_availability: {
+    toolName: 'check_team_availability',
+    processId: 'lead_generation',
+    subStep: 'Assign Lead',
+    preconditions: [],
+    postconditions: [],
+    invariants: [],
+    dbAssertions: [],
+  },
 };
+
+// =============================================================================
+// PROCESS-LEVEL VERIFICATION CONTRACTS
+// =============================================================================
+
+interface ProcessContract {
+  processId: string;
+  entryConditions: Assertion[];
+  exitConditions: Assertion[];
+  requiredTools: string[];  // All tools that must complete for process success
+  optionalTools: string[];  // Nice-to-have but not required
+  checkpoints: string[];    // Sub-steps requiring user confirmation
+}
+
+const PROCESS_CONTRACTS: Record<string, ProcessContract> = {
+  lead_generation: {
+    processId: 'lead_generation',
+    entryConditions: [],  // No preconditions - this is the entry point
+    exitConditions: [
+      { type: 'entity_exists', entity: 'customer', description: 'Customer record must exist' },
+    ],
+    requiredTools: ['create_customer'],  // Minimum required for process completion
+    optionalTools: ['search_customers', 'create_request', 'list_team_members', 'check_team_availability', 'create_quote'],
+    checkpoints: ['qualify_lead', 'assign_lead'],  // Steps requiring user confirmation
+  },
+  quoting_estimating: {
+    processId: 'quoting_estimating',
+    entryConditions: [
+      { type: 'entity_exists', entity: 'customer', description: 'Customer must exist to create quote' },
+    ],
+    exitConditions: [
+      { type: 'entity_exists', entity: 'quote', description: 'Quote must exist' },
+    ],
+    requiredTools: ['create_quote'],
+    optionalTools: ['update_quote', 'send_quote', 'approve_quote', 'convert_quote_to_job'],
+    checkpoints: ['pricing_approval'],
+  },
+  scheduling: {
+    processId: 'scheduling',
+    entryConditions: [
+      { type: 'entity_exists', entity: 'job', description: 'Job must exist to schedule' },
+    ],
+    exitConditions: [
+      { type: 'field_not_equals', entity: 'job', field: 'starts_at', value: null, description: 'Job must have scheduled time' },
+    ],
+    requiredTools: ['auto_schedule_job'],
+    optionalTools: ['batch_schedule_jobs', 'reschedule_job'],
+    checkpoints: [],
+  },
+};
+
+/**
+ * Verify that a process has been completed successfully
+ */
+export function verifyProcessCompletion(
+  processId: string,
+  executedTools: string[],
+  results: Record<string, any>
+): { completed: boolean; missingSteps: string[]; message: string } {
+  const contract = PROCESS_CONTRACTS[processId];
+  if (!contract) {
+    return { completed: true, missingSteps: [], message: 'No process contract defined' };
+  }
+
+  const missingTools = contract.requiredTools.filter(t => !executedTools.includes(t));
+
+  return {
+    completed: missingTools.length === 0,
+    missingSteps: missingTools,
+    message: missingTools.length > 0
+      ? `Process incomplete. Missing required steps: ${missingTools.join(', ')}`
+      : 'Process completed successfully'
+  };
+}
+
+/**
+ * Get the process contract for a given process ID
+ */
+export function getProcessContract(processId: string): ProcessContract | undefined {
+  return PROCESS_CONTRACTS[processId];
+}
 
 // =============================================================================
 // RECOVERY SUGGESTIONS
 // =============================================================================
 
 const RECOVERY_SUGGESTIONS: Record<string, Record<string, string>> = {
+  // Quoting/Estimating
   approve_quote: {
     'Quote must exist': 'Please select a valid quote to approve.',
     'Quote must not already be approved': 'This quote is already approved. Would you like to create a job from it instead?',
@@ -292,11 +482,13 @@ const RECOVERY_SUGGESTIONS: Record<string, Record<string, string>> = {
     'Quote must be approved before conversion': 'Please approve the quote first before converting it to a job.',
     'Job should be created': 'Failed to create the job. Please try again or create the job manually.',
   },
+  // Scheduling
   auto_schedule_job: {
     'Job must exist': 'Please select a valid job to schedule.',
     'Job must be pending': 'This job is already scheduled or in progress.',
     'Job should be scheduled': 'The scheduling failed. No available time slots found.',
   },
+  // Dispatching
   assign_job_to_member: {
     'Job must exist': 'Please select a valid job to assign.',
     'User must exist': 'Please select a valid team member.',
@@ -305,6 +497,21 @@ const RECOVERY_SUGGESTIONS: Record<string, Record<string, string>> = {
   send_job_confirmation: {
     'Job must exist': 'Please select a valid job.',
     'Job must be scheduled': 'Please schedule the job first before sending a confirmation.',
+  },
+  // Lead Generation
+  create_customer: {
+    'Email is required': 'Please provide the customer email address.',
+    'Name is required': 'Please provide the customer name.',
+    'Customer should be created': 'Failed to create customer. Please check the details and try again.',
+  },
+  create_request: {
+    'Customer must exist': 'Please create or select a customer first.',
+    'Request title is required': 'Please provide a title for the service request.',
+    'Request should be created': 'Failed to create the request. Please try again.',
+  },
+  get_customer: {
+    'Customer ID is required': 'Please specify which customer to retrieve.',
+    'Customer should be returned': 'Customer not found. Please check the customer ID.',
   },
 };
 
