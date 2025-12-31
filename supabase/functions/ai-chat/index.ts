@@ -6585,7 +6585,35 @@ RESPONSE STYLE:
                   } else if (result.type === 'plan_complete') {
                     // Only send complete for successful plans - failures handled after executePlan
                     const failedStep = result.plan.steps.find(s => s.status === 'failed');
-                    sendPlanComplete(controller, result.plan, failedStep);
+                    
+                    // Check for next process suggestion on successful completion
+                    let nextSuggestion: NextProcessSuggestion | undefined;
+                    if (!failedStep && result.plan.status === 'completed') {
+                      const processId = getProcessFromPattern(pattern.id);
+                      if (processId) {
+                        // Collect results from all completed steps
+                        const allResults: Record<string, any> = {};
+                        result.plan.steps.forEach(step => {
+                          if (step.result) {
+                            allResults[step.tool] = step.result;
+                            Object.assign(allResults, step.result);
+                          }
+                        });
+                        const suggestion = getSuggestedNextProcess(processId, allResults);
+                        if (suggestion) {
+                          nextSuggestion = suggestion;
+                          // Track process journey
+                          trackProcessJourney(supaAdmin, businessId, userId, {
+                            processId,
+                            status: 'completed',
+                            planId: result.plan.id,
+                            context: allResults,
+                          });
+                        }
+                      }
+                    }
+                    
+                    sendPlanComplete(controller, result.plan, failedStep, undefined, nextSuggestion);
                   }
                   // Note: plan_failed is now handled after executePlan returns to allow async conversational recovery
                 }
@@ -6751,7 +6779,33 @@ RESPONSE STYLE:
                     }
                   } else if (result.type === 'plan_complete') {
                     const failedStep = result.plan.steps.find(s => s.status === 'failed');
-                    sendPlanComplete(controller, result.plan, failedStep);
+                    
+                    // Check for next process suggestion on successful completion
+                    let nextSuggestion: NextProcessSuggestion | undefined;
+                    if (!failedStep && result.plan.status === 'completed') {
+                      const processId = getProcessFromPattern(pattern.id);
+                      if (processId) {
+                        const allResults: Record<string, any> = {};
+                        result.plan.steps.forEach(step => {
+                          if (step.result) {
+                            allResults[step.tool] = step.result;
+                            Object.assign(allResults, step.result);
+                          }
+                        });
+                        const suggestion = getSuggestedNextProcess(processId, allResults);
+                        if (suggestion) {
+                          nextSuggestion = suggestion;
+                          trackProcessJourney(supaAdmin, businessId, userId, {
+                            processId,
+                            status: 'completed',
+                            planId: result.plan.id,
+                            context: allResults,
+                          });
+                        }
+                      }
+                    }
+                    
+                    sendPlanComplete(controller, result.plan, failedStep, undefined, nextSuggestion);
                   }
                 }
               );
@@ -6891,7 +6945,33 @@ RESPONSE STYLE:
                     }
                   } else if (result.type === 'plan_complete') {
                     const failedStep = result.plan.steps.find(s => s.status === 'failed');
-                    sendPlanComplete(controller, result.plan, failedStep);
+                    
+                    // Check for next process suggestion on successful completion
+                    let nextSuggestion: NextProcessSuggestion | undefined;
+                    if (!failedStep && result.plan.status === 'completed') {
+                      const processId = getProcessFromPattern(pattern.id);
+                      if (processId) {
+                        const allResults: Record<string, any> = {};
+                        result.plan.steps.forEach(step => {
+                          if (step.result) {
+                            allResults[step.tool] = step.result;
+                            Object.assign(allResults, step.result);
+                          }
+                        });
+                        const suggestion = getSuggestedNextProcess(processId, allResults);
+                        if (suggestion) {
+                          nextSuggestion = suggestion;
+                          trackProcessJourney(supaAdmin, businessId, userId, {
+                            processId,
+                            status: 'completed',
+                            planId: result.plan.id,
+                            context: allResults,
+                          });
+                        }
+                      }
+                    }
+                    
+                    sendPlanComplete(controller, result.plan, failedStep, undefined, nextSuggestion);
                   }
                 }
               );
@@ -7051,7 +7131,33 @@ RESPONSE STYLE:
                     }
                   } else if (result.type === 'plan_complete') {
                     const failedStep = result.plan.steps.find(s => s.status === 'failed');
-                    sendPlanComplete(controller, result.plan, failedStep);
+                    
+                    // Check for next process suggestion on successful completion
+                    let nextSuggestion: NextProcessSuggestion | undefined;
+                    if (!failedStep && result.plan.status === 'completed') {
+                      const processId = getProcessFromPattern(pattern.id);
+                      if (processId) {
+                        const allResults: Record<string, any> = {};
+                        result.plan.steps.forEach(step => {
+                          if (step.result) {
+                            allResults[step.tool] = step.result;
+                            Object.assign(allResults, step.result);
+                          }
+                        });
+                        const suggestion = getSuggestedNextProcess(processId, allResults);
+                        if (suggestion) {
+                          nextSuggestion = suggestion;
+                          trackProcessJourney(supaAdmin, businessId, userId, {
+                            processId,
+                            status: 'completed',
+                            planId: result.plan.id,
+                            context: allResults,
+                          });
+                        }
+                      }
+                    }
+                    
+                    sendPlanComplete(controller, result.plan, failedStep, undefined, nextSuggestion);
                   }
                 }
               );
