@@ -14,15 +14,18 @@ import { useCustomerPortalInvite } from "@/hooks/useCustomerPortalInvite";
 import { useCustomerPortalStatus } from "@/hooks/useCustomerPortalStatus";
 import { useRequestsData } from "@/hooks/useRequestsData";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import type { Customer } from "@/types";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
-import { ChevronDown, Send, Loader2, CheckCircle, Clock, UserX, Plus, FileText, ExternalLink } from 'lucide-react';
+import { ChevronDown, Send, Loader2, CheckCircle, Clock, UserX, Plus, FileText, ExternalLink, Edit3, Globe } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { RequestBottomModal } from "@/components/Requests/RequestBottomModal";
+import { LEAD_SOURCES, getLeadSourceLabel, getLeadSourceColor } from "@/lib/lead-sources";
 
 // Email validation regex - requires a valid email format
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -49,6 +52,8 @@ interface CustomerFormData {
   preferredTimeStart: string;
   preferredTimeEnd: string;
   schedulingNotes: string;
+  leadSource: string;
+  qualificationNotes: string;
 }
 
 // Validation state interface
@@ -78,7 +83,8 @@ export function CustomerBottomModal({
   const { data: requestsResponse } = useRequestsData();
   
   const [showNewRequestModal, setShowNewRequestModal] = useState(false);
-  
+  const [isAdjustingScore, setIsAdjustingScore] = useState(false);
+  const [manualScore, setManualScore] = useState<number>(0);
   // Filter requests for current customer
   const customerRequests = useMemo(() => {
     if (!customer?.id || !requestsResponse?.data) return [];
@@ -95,6 +101,8 @@ export function CustomerBottomModal({
     preferredTimeStart: "",
     preferredTimeEnd: "",
     schedulingNotes: "",
+    leadSource: "",
+    qualificationNotes: "",
   });
 
   const [validationErrors, setValidationErrors] = useState<ValidationState>({
@@ -119,7 +127,10 @@ export function CustomerBottomModal({
         preferredTimeStart: timeWindow.start || "",
         preferredTimeEnd: timeWindow.end || "",
         schedulingNotes: customer.scheduling_notes || "",
+        leadSource: customer.lead_source || "",
+        qualificationNotes: customer.qualification_notes || "",
       });
+      setManualScore(customer.lead_score ?? 0);
     } else {
       setFormData({
         name: "",
@@ -131,7 +142,10 @@ export function CustomerBottomModal({
         preferredTimeStart: "",
         preferredTimeEnd: "",
         schedulingNotes: "",
+        leadSource: "",
+        qualificationNotes: "",
       });
+      setManualScore(0);
     }
   }, [customer]);
 
@@ -208,6 +222,8 @@ export function CustomerBottomModal({
           ? JSON.stringify({ start: formData.preferredTimeStart, end: formData.preferredTimeEnd })
           : null,
         scheduling_notes: formData.schedulingNotes.trim() || null,
+        lead_source: formData.leadSource || null,
+        qualification_notes: formData.qualificationNotes.trim() || null,
       };
       
       
@@ -281,11 +297,14 @@ export function CustomerBottomModal({
         preferredTimeStart: "",
         preferredTimeEnd: "",
         schedulingNotes: "",
+        leadSource: "",
+        qualificationNotes: "",
       });
       setValidationErrors({
         name: false,
         email: false,
       });
+      setIsAdjustingScore(false);
     }
     onOpenChange(newOpen);
   };

@@ -13,6 +13,7 @@ const RouteAnalyticsView = lazy(() => import('@/components/Analytics/RouteAnalyt
 const AISuggestionsView = lazy(() => import('@/components/Analytics/AISuggestionsView'));
 const AIVisionAnalyticsView = lazy(() => import('@/components/Analytics/AIVisionAnalyticsView'));
 const PredictiveInsightsView = lazy(() => import('@/components/Analytics/PredictiveInsightsView'));
+const LeadAnalytics = lazy(() => import('@/components/Analytics/LeadAnalytics'));
 
 export default function AnalyticsPage() {
   const [params] = useSearchParams();
@@ -49,6 +50,7 @@ export default function AnalyticsPage() {
           <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
             <TabsList className="inline-flex w-auto">
               <TabsTrigger value="overview" className="whitespace-nowrap">Overview</TabsTrigger>
+              <TabsTrigger value="leads" className="whitespace-nowrap">Leads</TabsTrigger>
               <TabsTrigger value="team" className="whitespace-nowrap">Team</TabsTrigger>
               <TabsTrigger value="routes" className="whitespace-nowrap">Routes</TabsTrigger>
               <TabsTrigger value="ai" className="whitespace-nowrap">AI Performance</TabsTrigger>
@@ -63,6 +65,12 @@ export default function AnalyticsPage() {
                 dateRange={dateRange}
                 onDateRangeChange={setDateRange}
               />
+            </Suspense>
+          </TabsContent>
+
+          <TabsContent value="leads" className="space-y-4">
+            <Suspense fallback={<LoadingSkeleton />}>
+              <LeadAnalytics dateRange={dateRange} />
             </Suspense>
           </TabsContent>
 
