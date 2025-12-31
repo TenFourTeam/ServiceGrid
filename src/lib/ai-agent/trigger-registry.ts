@@ -1,79 +1,34 @@
 /**
  * Trigger Registry - Maps processes to their database triggers
  * 
- * This registry tracks which database triggers are expected for each process,
- * enabling the validator to verify automation layer completeness.
+ * NOTE: This file now re-exports from the modular process structure.
+ * For new processes, add triggers.ts to the process module folder instead.
  */
 
-export interface ProcessTriggers {
-  triggers: string[];
-  functions: string[];
-}
+import { TRIGGER_REGISTRY } from './processes';
+import type { ProcessTriggers } from './processes/types';
 
-/**
- * Registry of known database triggers and functions for each process
- * Update this when adding new automation
- */
-export const PROCESS_TRIGGER_REGISTRY: Record<string, ProcessTriggers> = {
-  'lead_generation': {
-    triggers: [
-      'trg_auto_score_lead',
-      'trg_auto_assign_request', 
-      'trg_queue_welcome_email'
-    ],
-    functions: [
-      'fn_auto_score_lead',
-      'fn_auto_assign_request',
-      'fn_queue_welcome_email'
-    ]
-  },
-  'site_assessment': {
-    triggers: [
-      'trg_assessment_job_created',
-      'trg_assessment_photo_uploaded',
-      'trg_assessment_completed'
-    ],
-    functions: [
-      'fn_create_assessment_checklist',
-      'fn_tag_assessment_photo',
-      'fn_complete_assessment'
-    ]
-  },
-  // Other processes - add triggers as they are created
-  'communication': { triggers: [], functions: [] },
-  'quoting': { triggers: [], functions: [] },
-  'scheduling': { triggers: [], functions: [] },
-  'dispatch': { triggers: [], functions: [] },
-  'quality_assurance': { triggers: [], functions: [] },
-  'maintenance': { triggers: [], functions: [] },
-  'invoicing': { triggers: [], functions: [] },
-  'payment_collection': { triggers: [], functions: [] },
-  'review_management': { triggers: [], functions: [] },
-  'warranty': { triggers: [], functions: [] },
-  'inventory': { triggers: [], functions: [] },
-  'analytics': { triggers: [], functions: [] },
-  'seasonal_planning': { triggers: [], functions: [] },
-};
+// Re-export the auto-aggregated registry
+export { TRIGGER_REGISTRY as PROCESS_TRIGGER_REGISTRY };
+export type { ProcessTriggers };
 
 /**
  * Get triggers for a process
  */
 export function getProcessTriggers(processId: string): ProcessTriggers {
-  return PROCESS_TRIGGER_REGISTRY[processId] || { triggers: [], functions: [] };
+  return TRIGGER_REGISTRY[processId as keyof typeof TRIGGER_REGISTRY] || { triggers: [], functions: [] };
 }
 
 /**
  * Check if a process has database triggers defined
  */
 export function hasDatabaseTriggers(processId: string): boolean {
-  const config = getProcessTriggers(processId);
-  return config.triggers.length > 0;
+  return getProcessTriggers(processId).triggers.length > 0;
 }
 
 /**
  * Check if a process has database functions defined
  */
 export function hasDatabaseFunctions(processId: string): boolean {
-  const config = getProcessTriggers(processId);
-  return config.functions.length > 0;
+  return getProcessTriggers(processId).functions.length > 0;
 }

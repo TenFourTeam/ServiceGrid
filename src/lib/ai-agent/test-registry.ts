@@ -1,74 +1,42 @@
 /**
  * Test Registry - Maps processes to their test files
  * 
- * This registry tracks which test files exist for each process,
- * enabling the validator to verify testing layer completeness.
+ * NOTE: This file now re-exports from the modular process structure.
+ * For new processes, add tests.ts to the process module folder instead.
  */
 
-export interface ProcessTestFiles {
-  unit: string[];
-  integration: string[];
-  e2e: string[];
-}
+import { PROCESS_IDS } from './process-ids';
+import { TEST_REGISTRY } from './processes';
+import type { ProcessTestFiles } from './processes/types';
 
-/**
- * Registry of known test files for each process
- * Update this when adding new tests
- */
-export const PROCESS_TEST_REGISTRY: Record<string, ProcessTestFiles> = {
-  'lead_generation': {
-    unit: ['tests/unit/lead-generation.unit.test.ts'],
-    integration: [],
-    e2e: ['tests/e2e/lead-generation.e2e.test.ts']
-  },
-  'site_assessment': {
-    unit: ['tests/unit/site-assessment.unit.test.ts'],
-    integration: ['tests/integration/site-assessment.integration.test.ts'],
-    e2e: ['tests/e2e/site-assessment.e2e.test.ts']
-  },
-  // Other processes - add test files as they are created
-  'communication': { unit: [], integration: [], e2e: [] },
-  'quoting': { unit: [], integration: [], e2e: [] },
-  'scheduling': { unit: [], integration: [], e2e: [] },
-  'dispatch': { unit: [], integration: [], e2e: [] },
-  'quality_assurance': { unit: [], integration: [], e2e: [] },
-  'maintenance': { unit: [], integration: [], e2e: [] },
-  'invoicing': { unit: [], integration: [], e2e: [] },
-  'payment_collection': { unit: [], integration: [], e2e: [] },
-  'review_management': { unit: [], integration: [], e2e: [] },
-  'warranty': { unit: [], integration: [], e2e: [] },
-  'inventory': { unit: [], integration: [], e2e: [] },
-  'analytics': { unit: [], integration: [], e2e: [] },
-  'seasonal_planning': { unit: [], integration: [], e2e: [] },
-};
+// Re-export the auto-aggregated registry
+export { TEST_REGISTRY as PROCESS_TEST_REGISTRY };
+export type { ProcessTestFiles };
 
 /**
  * Get test files for a process
  */
 export function getProcessTests(processId: string): ProcessTestFiles {
-  return PROCESS_TEST_REGISTRY[processId] || { unit: [], integration: [], e2e: [] };
+  return TEST_REGISTRY[processId as keyof typeof TEST_REGISTRY] || { unit: [], integration: [], e2e: [] };
 }
 
 /**
  * Check if a process has unit tests
  */
 export function hasUnitTests(processId: string): boolean {
-  const tests = getProcessTests(processId);
-  return tests.unit.length > 0;
+  return getProcessTests(processId).unit.length > 0;
 }
 
 /**
  * Check if a process has integration tests
  */
 export function hasIntegrationTests(processId: string): boolean {
-  const tests = getProcessTests(processId);
-  return tests.integration.length > 0;
+  return getProcessTests(processId).integration.length > 0;
 }
 
 /**
  * Check if a process has E2E tests
  */
 export function hasE2ETests(processId: string): boolean {
-  const tests = getProcessTests(processId);
-  return tests.e2e.length > 0;
+  return getProcessTests(processId).e2e.length > 0;
 }
