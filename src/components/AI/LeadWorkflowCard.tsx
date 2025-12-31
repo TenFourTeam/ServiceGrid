@@ -143,7 +143,7 @@ export function LeadWorkflowCard({
   };
 
   return (
-    <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+    <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent" data-testid="lead-workflow-card">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

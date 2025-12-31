@@ -1339,8 +1339,18 @@ const ROLLBACK_OPERATIONS: Record<string, { tool: string; argBuilder: (stepResul
 
 export function detectMultiStepTask(
   message: string,
-  entities: Record<string, any>
+  entities: Record<string, any>,
+  forcedPatternId?: string
 ): { isMultiStep: boolean; pattern?: MultiStepPattern } {
+  // If a pattern is forced (e.g., from process transition detection), use it directly
+  if (forcedPatternId) {
+    const forcedPattern = MULTI_STEP_PATTERNS.find(p => p.id === forcedPatternId);
+    if (forcedPattern) {
+      console.info('[multi-step-planner] Using forced pattern:', forcedPatternId);
+      return { isMultiStep: true, pattern: forcedPattern };
+    }
+  }
+
   const messageLower = message.toLowerCase();
 
   for (const pattern of MULTI_STEP_PATTERNS) {

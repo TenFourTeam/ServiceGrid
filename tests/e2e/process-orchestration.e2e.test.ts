@@ -10,8 +10,8 @@
 
 import { test, expect } from '@playwright/test';
 
-// Skip E2E tests by default (run with --grep @e2e or in CI)
-test.describe.skip('Process Orchestration E2E', () => {
+// Process Orchestration E2E tests - enable in CI or with --grep @e2e
+test.describe('Process Orchestration E2E @e2e', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to the app
     await page.goto('/');
