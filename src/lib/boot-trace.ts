@@ -5,11 +5,8 @@
 
 export type BootStage = 
   | 'init'
-  | 'fetch_key_start'
-  | 'fetch_key_ok'
-  | 'fetch_key_fail'
-  | 'clerk_loading'
-  | 'clerk_loaded'
+  | 'auth_loading'
+  | 'auth_loaded'
   | 'providers_init'
   | 'auth_checking'
   | 'auth_redirect'
@@ -28,11 +25,8 @@ export interface BootState {
 
 const STAGE_LABELS: Record<BootStage, string> = {
   init: 'Initializing',
-  fetch_key_start: 'Fetching auth config',
-  fetch_key_ok: 'Auth config loaded',
-  fetch_key_fail: 'Auth config failed',
-  clerk_loading: 'Initializing authentication',
-  clerk_loaded: 'Authentication ready',
+  auth_loading: 'Initializing authentication',
+  auth_loaded: 'Authentication ready',
   providers_init: 'Loading app providers',
   auth_checking: 'Checking session',
   auth_redirect: 'Redirecting',
@@ -113,7 +107,6 @@ export function clearAppCache(): void {
   // Clear localStorage keys related to app state
   const keysToRemove = Object.keys(localStorage).filter(key => 
     key.startsWith('ServiceGrid') || 
-    key.startsWith('clerk') ||
     key.includes('supabase')
   );
   
@@ -124,12 +117,6 @@ export function clearAppCache(): void {
       console.warn(`Failed to remove ${key}:`, e);
     }
   });
-  
-  // Clear cached Clerk key
-  if (typeof window !== 'undefined') {
-    delete (window as any).__CLERK_KEY__;
-    delete (window as any).__APP_ROOT__;
-  }
   
   console.log('[Boot] Cache cleared, reloading...');
   window.location.reload();

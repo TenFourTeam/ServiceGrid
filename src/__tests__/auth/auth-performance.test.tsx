@@ -3,12 +3,11 @@ import { renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 
-// Mock Clerk hooks
+// Mock useBusinessAuth hooks
 const mockAuth = {
   isLoaded: true,
   isSignedIn: true,
   userId: 'user_123',
-  getToken: vi.fn()
 };
 
 const mockBusiness = {
@@ -18,8 +17,14 @@ const mockBusiness = {
   refetch: vi.fn()
 };
 
-vi.mock('@clerk/clerk-react', () => ({
-  useAuth: () => mockAuth
+vi.mock('@/hooks/useBusinessAuth', () => ({
+  useAuth: () => mockAuth,
+  useBusinessAuth: () => ({
+    isAuthenticated: mockAuth.isSignedIn,
+    isLoading: !mockAuth.isLoaded,
+    profile: { id: mockAuth.userId },
+    getSessionToken: vi.fn(() => 'mock-token'),
+  })
 }));
 
 vi.mock('@/queries/useBusiness', () => ({
@@ -46,7 +51,7 @@ describe('Auth Performance Tests', () => {
     vi.clearAllMocks();
   });
 
-  it('should not fetch business data when Clerk is not loaded', () => {
+  it('should not fetch business data when auth is not loaded', () => {
     const useBusiness = vi.fn(() => mockBusiness);
     vi.doMock('@/queries/useBusiness', () => ({ useBusiness }));
     
@@ -97,7 +102,7 @@ describe('Auth Performance Tests', () => {
       wrapper: createTestWrapper()
     });
 
-    // Should show loading when Clerk is not loaded, regardless of business query state
+    // Should show loading when auth is not loaded
     expect(result.current.isLoadingBusiness).toBe(true);
   });
 
