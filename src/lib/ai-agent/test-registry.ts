@@ -23,7 +23,7 @@ export const PROCESS_TEST_REGISTRY: Record<string, ProcessTestFiles> = {
   },
   'site_assessment': {
     unit: ['tests/unit/site-assessment.unit.test.ts'],
-    integration: [],
+    integration: ['tests/integration/site-assessment.integration.test.ts'],
     e2e: ['tests/e2e/site-assessment.e2e.test.ts']
   },
   // Other processes - add test files as they are created
