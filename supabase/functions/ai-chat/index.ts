@@ -21,6 +21,10 @@ import {
   detectPlanApproval,
   resumePlanAfterRecovery,
   executeConversationalRecovery,
+  isLeadWorkflowPattern,
+  sendLeadWorkflowStart,
+  sendLeadWorkflowProgress,
+  extractCustomerData,
   type ExecutionPlan,
   type ExecutionContext,
   type PlannerResult 
@@ -6544,7 +6548,17 @@ RESPONSE STYLE:
                 (result: PlannerResult) => {
                   // Real-time progress callback
                   if (result.type === 'step_progress' || result.type === 'step_complete') {
-                    sendStepProgress(controller, result.plan, result.currentStep!, result.message);
+                    // Use lead workflow progress for lead patterns
+                    if (isLeadWorkflowPattern(pattern)) {
+                      const customerData = extractCustomerData(
+                        result.currentStep?.tool || '',
+                        result.currentStep?.result,
+                        entities
+                      );
+                      sendLeadWorkflowProgress(controller, result.plan, result.currentStep!, customerData);
+                    } else {
+                      sendStepProgress(controller, result.plan, result.currentStep!, result.message);
+                    }
                   } else if (result.type === 'plan_complete') {
                     // Only send complete for successful plans - failures handled after executePlan
                     const failedStep = result.plan.steps.find(s => s.status === 'failed');
@@ -6700,7 +6714,16 @@ RESPONSE STYLE:
                 pattern,
                 (result: PlannerResult) => {
                   if (result.type === 'step_progress' || result.type === 'step_complete') {
-                    sendStepProgress(controller, result.plan, result.currentStep!, result.message);
+                    if (isLeadWorkflowPattern(pattern)) {
+                      const customerData = extractCustomerData(
+                        result.currentStep?.tool || '',
+                        result.currentStep?.result,
+                        entities
+                      );
+                      sendLeadWorkflowProgress(controller, result.plan, result.currentStep!, customerData);
+                    } else {
+                      sendStepProgress(controller, result.plan, result.currentStep!, result.message);
+                    }
                   } else if (result.type === 'plan_complete') {
                     const failedStep = result.plan.steps.find(s => s.status === 'failed');
                     sendPlanComplete(controller, result.plan, failedStep);
@@ -6829,7 +6852,16 @@ RESPONSE STYLE:
                 pattern,
                 (result: PlannerResult) => {
                   if (result.type === 'step_progress' || result.type === 'step_complete') {
-                    sendStepProgress(controller, result.plan, result.currentStep!, result.message);
+                    if (isLeadWorkflowPattern(pattern)) {
+                      const customerData = extractCustomerData(
+                        result.currentStep?.tool || '',
+                        result.currentStep?.result,
+                        updatedEntities
+                      );
+                      sendLeadWorkflowProgress(controller, result.plan, result.currentStep!, customerData);
+                    } else {
+                      sendStepProgress(controller, result.plan, result.currentStep!, result.message);
+                    }
                   } else if (result.type === 'plan_complete') {
                     const failedStep = result.plan.steps.find(s => s.status === 'failed');
                     sendPlanComplete(controller, result.plan, failedStep);
@@ -6978,7 +7010,16 @@ RESPONSE STYLE:
                 pattern,
                 (result: PlannerResult) => {
                   if (result.type === 'step_progress' || result.type === 'step_complete') {
-                    sendStepProgress(controller, result.plan, result.currentStep!, result.message);
+                    if (isLeadWorkflowPattern(pattern)) {
+                      const customerData = extractCustomerData(
+                        result.currentStep?.tool || '',
+                        result.currentStep?.result,
+                        updatedEntities
+                      );
+                      sendLeadWorkflowProgress(controller, result.plan, result.currentStep!, customerData);
+                    } else {
+                      sendStepProgress(controller, result.plan, result.currentStep!, result.message);
+                    }
                   } else if (result.type === 'plan_complete') {
                     const failedStep = result.plan.steps.find(s => s.status === 'failed');
                     sendPlanComplete(controller, result.plan, failedStep);
@@ -7067,15 +7108,26 @@ RESPONSE STYLE:
             storePendingPlan(plan, multiStepPattern, orchestratorResult.intent?.entities || {}, userId);
             await storePendingPlanAsync(plan, multiStepPattern, orchestratorResult.intent?.entities || {}, memoryCtx);
             
-            // Send plan preview to frontend
-            sendPlanPreview(controller, plan);
+            // Check if this is a lead workflow pattern - use specialized card
+            if (isLeadWorkflowPattern(multiStepPattern)) {
+              console.info('[ai-chat] Using LeadWorkflowCard for pattern:', multiStepPattern.id);
+              sendLeadWorkflowStart(controller, plan, orchestratorResult.intent?.entities || {});
+            } else {
+              // Send generic plan preview to frontend
+              sendPlanPreview(controller, plan);
+            }
             
             // Save plan preview as assistant message
             await supaAdmin.from('ai_chat_messages').insert({
               conversation_id: convId,
               role: 'assistant',
               content: `I've prepared a multi-step plan: "${plan.name}". Please review and approve to execute.`,
-              metadata: { planId: plan.id, planName: plan.name, stepCount: plan.steps.length },
+              metadata: { 
+                planId: plan.id, 
+                planName: plan.name, 
+                stepCount: plan.steps.length,
+                specialCardType: multiStepPattern.specialCardType,
+              },
             });
             
             // Close stream - wait for approval

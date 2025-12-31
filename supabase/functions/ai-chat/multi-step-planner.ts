@@ -89,6 +89,8 @@ interface MultiStepPattern {
     optional?: boolean;
   }>;
   requiresApproval: boolean;
+  // Special card type for custom UI rendering (e.g., 'lead_workflow')
+  specialCardType?: 'lead_workflow';
 }
 
 const MULTI_STEP_PATTERNS: MultiStepPattern[] = [
@@ -474,6 +476,7 @@ const MULTI_STEP_PATTERNS: MultiStepPattern[] = [
     id: 'complete_lead_generation',
     name: 'Complete Lead Generation',
     description: 'Capture a new lead, check for duplicates, create service request, and optionally assign to team',
+    specialCardType: 'lead_workflow', // Use LeadWorkflowCard for this pattern
     patterns: [
       /new\s+lead\s+(from|via|through)/i,
       /add\s+(a\s+)?(new\s+)?customer\s+(and|then)\s+(create|assign)/i,
@@ -1723,8 +1726,123 @@ export function sendEntitySelection(
 }
 
 // =============================================================================
-// PLAN PAUSE & RESUME FOR RECOVERY
+// LEAD WORKFLOW SSE HELPERS
+// Maps tool names to user-friendly step names for the LeadWorkflowCard
 // =============================================================================
+
+const LEAD_WORKFLOW_STEP_MAP: Record<string, { name: string; description: string }> = {
+  'search_customers': { name: 'Check for Duplicates', description: 'Searching for existing customer...' },
+  'create_customer': { name: 'Create Customer', description: 'Creating new customer record...' },
+  'score_lead': { name: 'Score Lead', description: 'Calculating lead quality...' },
+  'create_request': { name: 'Log Request', description: 'Recording service request...' },
+  'check_team_availability': { name: 'Check Availability', description: 'Finding available team...' },
+  'auto_assign_lead': { name: 'Assign Lead', description: 'Assigning to team member...' },
+  'send_email': { name: 'Send Welcome', description: 'Sending welcome email...' },
+  'create_quote': { name: 'Create Quote', description: 'Creating initial quote...' },
+};
+
+// Extract customer data from tool results for the LeadWorkflowCard
+function extractCustomerData(
+  toolName: string, 
+  result: any, 
+  existing: Record<string, any>
+): Record<string, any> {
+  if (toolName === 'create_customer') {
+    return {
+      ...existing,
+      name: result?.customer?.name || result?.name || existing.name,
+      email: result?.customer?.email || result?.email || existing.email,
+      phone: result?.customer?.phone || result?.phone || existing.phone,
+      leadSource: result?.customer?.lead_source || result?.lead_source || existing.leadSource,
+    };
+  }
+  if (toolName === 'score_lead') {
+    return {
+      ...existing,
+      leadScore: result?.score ?? result?.lead_score ?? existing.leadScore,
+    };
+  }
+  return existing;
+}
+
+// Send lead workflow start event (instead of plan_preview for lead patterns)
+export function sendLeadWorkflowStart(
+  controller: ReadableStreamDefaultController | undefined,
+  plan: ExecutionPlan,
+  initialEntities: Record<string, any>
+): void {
+  if (!controller) return;
+  
+  const encoder = new TextEncoder();
+  const steps = plan.steps.map(s => {
+    const stepInfo = LEAD_WORKFLOW_STEP_MAP[s.tool] || { name: s.name, description: s.description };
+    return {
+      id: s.id,
+      name: stepInfo.name,
+      description: stepInfo.description,
+      status: s.status === 'pending' ? 'pending' : s.status,
+      tool: s.tool,
+    };
+  });
+  
+  const event = {
+    type: 'lead_workflow',
+    planId: plan.id,
+    workflow: {
+      steps,
+      currentStepIndex: 0,
+      customerData: {
+        name: initialEntities?.customerName || initialEntities?.name,
+        email: initialEntities?.customerEmail || initialEntities?.email,
+        phone: initialEntities?.customerPhone || initialEntities?.phone,
+        leadSource: initialEntities?.source,
+      },
+    },
+  };
+  controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+}
+
+// Send lead workflow progress event (instead of step_progress for lead patterns)
+export function sendLeadWorkflowProgress(
+  controller: ReadableStreamDefaultController | undefined,
+  plan: ExecutionPlan,
+  step: PlanStep,
+  customerData: Record<string, any>
+): void {
+  if (!controller) return;
+  
+  const encoder = new TextEncoder();
+  const steps = plan.steps.map(s => {
+    const stepInfo = LEAD_WORKFLOW_STEP_MAP[s.tool] || { name: s.name, description: s.description };
+    return {
+      id: s.id,
+      name: stepInfo.name,
+      description: stepInfo.description,
+      status: s.status === 'running' ? 'in_progress' : s.status,
+      tool: s.tool,
+      result: s.result,
+      error: s.error,
+    };
+  });
+  
+  const event = {
+    type: 'lead_workflow_progress',
+    planId: plan.id,
+    stepIndex: plan.currentStepIndex,
+    steps,
+    customerData,
+  };
+  controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+}
+
+// Check if a pattern should use LeadWorkflowCard
+export function isLeadWorkflowPattern(pattern: MultiStepPattern | undefined): boolean {
+  return pattern?.specialCardType === 'lead_workflow';
+}
+
+// Export extractCustomerData for use in executePlan
+export { extractCustomerData };
+
 
 export async function pausePlanForRecovery(
   plan: ExecutionPlan,
