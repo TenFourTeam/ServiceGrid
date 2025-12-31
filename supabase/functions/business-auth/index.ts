@@ -125,22 +125,25 @@ async function createSession(supabase: any, profileId: string, authMethod: strin
 
 // Get profile with business info
 async function getProfileWithBusiness(supabase: any, profileId: string) {
-  const { data: profile, error } = await supabase
+  // Query profile without foreign key join
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select(`
-      id, email, full_name, avatar_url, created_at, last_login_at,
-      default_business_id,
-      businesses:businesses!businesses_owner_id_fkey(id, name, logo_url, light_logo_url)
-    `)
+    .select('id, email, full_name, avatar_url, created_at, last_login_at, default_business_id')
     .eq('id', profileId)
     .single();
 
-  if (error) {
-    console.error('[business-auth] Failed to fetch profile:', error);
+  if (profileError) {
+    console.error('[business-auth] Failed to fetch profile:', profileError);
     return null;
   }
 
-  // Also get businesses they have permissions to
+  // Query owned businesses separately
+  const { data: ownedBusinesses } = await supabase
+    .from('businesses')
+    .select('id, name, logo_url, light_logo_url')
+    .eq('owner_id', profileId);
+
+  // Query businesses they have permissions to (as team member)
   const { data: permissions } = await supabase
     .from('business_permissions')
     .select('business_id, businesses(id, name, logo_url)')
@@ -148,8 +151,49 @@ async function getProfileWithBusiness(supabase: any, profileId: string) {
 
   return {
     ...profile,
-    member_businesses: permissions?.map(p => p.businesses) || [],
+    businesses: ownedBusinesses || [],
+    member_businesses: permissions?.map(p => p.businesses).filter(Boolean) || [],
   };
+}
+
+// Create a default business for a new user
+async function createBusinessForUser(supabase: any, profileId: string, userName: string) {
+  const businessName = userName ? `${userName}'s Business` : 'My Business';
+  
+  console.log('[business-auth] Creating business for user:', profileId, businessName);
+  
+  const { data: business, error } = await supabase
+    .from('businesses')
+    .insert({
+      owner_id: profileId,
+      name: businessName,
+      name_customized: false,
+    })
+    .select('id')
+    .single();
+
+  if (error) {
+    console.error('[business-auth] Failed to create business:', error);
+    return null;
+  }
+
+  // Update profile with default_business_id
+  await supabase
+    .from('profiles')
+    .update({ default_business_id: business.id })
+    .eq('id', profileId);
+
+  // Add business permission for owner
+  await supabase
+    .from('business_permissions')
+    .insert({
+      business_id: business.id,
+      user_id: profileId,
+      granted_by: profileId,
+    });
+
+  console.log('[business-auth] Created business:', business.id);
+  return business;
 }
 
 // === LOGIN ===
@@ -236,6 +280,17 @@ async function handleRegister(req: Request, supabase: any) {
       })
       .eq('id', existingProfile.id);
 
+    // Check if existing profile needs a business
+    const { data: existingBusiness } = await supabase
+      .from('businesses')
+      .select('id')
+      .eq('owner_id', existingProfile.id)
+      .single();
+
+    if (!existingBusiness) {
+      await createBusinessForUser(supabase, existingProfile.id, full_name || '');
+    }
+
     const session = await createSession(supabase, existingProfile.id, 'password', req);
     const fullProfile = await getProfileWithBusiness(supabase, existingProfile.id);
 
@@ -266,6 +321,9 @@ async function handleRegister(req: Request, supabase: any) {
     console.error('[business-auth] Failed to create profile:', createError);
     return jsonResponse({ error: 'Failed to create account' }, 500);
   }
+
+  // Create a business for the new user
+  await createBusinessForUser(supabase, newProfile.id, full_name || '');
 
   // Create session
   const session = await createSession(supabase, newProfile.id, 'password', req);
