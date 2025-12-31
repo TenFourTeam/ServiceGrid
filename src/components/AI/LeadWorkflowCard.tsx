@@ -229,7 +229,7 @@ export function LeadWorkflowCard({
                       <p className="text-xs text-destructive mt-1">{step.error}</p>
                     )}
                     
-                    {/* Contextual prompts */}
+                    {/* Contextual prompts with press feedback */}
                     {isActive && prompts && onPrompt && (
                       <div className="flex flex-wrap gap-1 mt-2">
                         {prompts.map((p) => (
@@ -237,8 +237,11 @@ export function LeadWorkflowCard({
                             key={p.label}
                             variant="outline"
                             size="sm"
-                            className="h-6 text-[11px] px-2"
-                            onClick={() => onPrompt(p.prompt)}
+                            className="h-6 text-[11px] px-2 active:scale-95 transition-transform"
+                            onClick={() => {
+                              feedback.tap();
+                              onPrompt(p.prompt);
+                            }}
                           >
                             {p.label}
                             <ArrowRight className="w-3 h-3 ml-1" />
@@ -270,16 +273,22 @@ export function LeadWorkflowCard({
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="h-7 text-xs"
-                    onClick={() => onPrompt("Create a quote for this lead")}
+                    className="h-7 text-xs active:scale-95 transition-transform"
+                    onClick={() => {
+                      feedback.tap();
+                      onPrompt("Create a quote for this lead");
+                    }}
                   >
                     Create Quote
                   </Button>
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="h-7 text-xs"
-                    onClick={() => onPrompt("Schedule an assessment for this lead")}
+                    className="h-7 text-xs active:scale-95 transition-transform"
+                    onClick={() => {
+                      feedback.tap();
+                      onPrompt("Schedule an assessment for this lead");
+                    }}
                   >
                     Schedule Assessment
                   </Button>

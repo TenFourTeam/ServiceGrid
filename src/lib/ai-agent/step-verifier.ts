@@ -425,6 +425,79 @@ async function verifyDatabaseAssertions(
   };
 }
 
+// ============================================================================
+// ROLLBACK TOOL IMPLEMENTATIONS
+// ============================================================================
+
+interface RollbackTool {
+  execute: (args: Record<string, any>, businessId: string) => Promise<void>;
+}
+
+const ROLLBACK_TOOLS: Record<string, RollbackTool> = {
+  delete_customer: {
+    execute: async (args, businessId) => {
+      const { error } = await supabase
+        .from('customers')
+        .delete()
+        .eq('id', args.customer_id)
+        .eq('business_id', businessId);
+      if (error) throw new Error(`Failed to delete customer: ${error.message}`);
+    }
+  },
+  delete_request: {
+    execute: async (args, businessId) => {
+      const { error } = await supabase
+        .from('requests')
+        .delete()
+        .eq('id', args.request_id)
+        .eq('business_id', businessId);
+      if (error) throw new Error(`Failed to delete request: ${error.message}`);
+    }
+  },
+  delete_quote: {
+    execute: async (args, businessId) => {
+      const { error } = await supabase
+        .from('quotes')
+        .delete()
+        .eq('id', args.quote_id)
+        .eq('business_id', businessId);
+      if (error) throw new Error(`Failed to delete quote: ${error.message}`);
+    }
+  },
+  delete_job: {
+    execute: async (args, businessId) => {
+      const { error } = await supabase
+        .from('jobs')
+        .delete()
+        .eq('id', args.job_id)
+        .eq('business_id', businessId);
+      if (error) throw new Error(`Failed to delete job: ${error.message}`);
+    }
+  },
+  unassign_job: {
+    execute: async (args, businessId) => {
+      const { error } = await supabase
+        .from('job_assignments')
+        .delete()
+        .eq('job_id', args.job_id)
+        .eq('user_id', args.user_id);
+      if (error) throw new Error(`Failed to unassign job: ${error.message}`);
+    }
+  },
+  void_invoice: {
+    execute: async (args, businessId) => {
+      // Note: 'Void' status may need to be added to invoice_status enum
+      // For now, we delete the invoice as a rollback mechanism
+      const { error } = await supabase
+        .from('invoices')
+        .delete()
+        .eq('id', args.invoice_id)
+        .eq('business_id', businessId);
+      if (error) throw new Error(`Failed to void invoice: ${error.message}`);
+    }
+  },
+};
+
 /**
  * Attempt to rollback a failed step
  */
@@ -438,6 +511,12 @@ async function attemptRollback(
     return null;
   }
   
+  const rollbackTool = ROLLBACK_TOOLS[contract.rollbackTool];
+  if (!rollbackTool) {
+    console.warn(`[StepVerifier] Rollback tool ${contract.rollbackTool} not implemented`);
+    return { rollbackTool: contract.rollbackTool, rollbackArgs: {}, error: 'Tool not implemented' };
+  }
+  
   try {
     // Build rollback args
     const rollbackArgs: Record<string, any> = {};
@@ -445,14 +524,33 @@ async function attemptRollback(
       rollbackArgs[argName] = resolveReference(ref, context, result);
     }
     
-    console.log(`[StepVerifier] Attempting rollback with ${contract.rollbackTool}`, rollbackArgs);
+    console.log(`[StepVerifier] Executing rollback with ${contract.rollbackTool}`, rollbackArgs);
     
-    // We can't actually execute the rollback here without access to the tool registry
-    // This should be handled by the plan executor
-    return { rollbackTool: contract.rollbackTool, rollbackArgs };
+    // Execute the rollback
+    await rollbackTool.execute(rollbackArgs, context.businessId);
+    
+    // Log rollback to activity log
+    await supabase.from('ai_activity_log').insert({
+      business_id: context.businessId,
+      user_id: context.userId,
+      activity_type: 'rollback',
+      description: `Rolled back ${contract.toolName} using ${contract.rollbackTool}`,
+      accepted: true,
+      metadata: {
+        original_tool: contract.toolName,
+        rollback_tool: contract.rollbackTool,
+        rollback_args: rollbackArgs,
+      }
+    });
+    
+    console.log(`[StepVerifier] Rollback successful for ${contract.toolName}`);
+    return { rollbackTool: contract.rollbackTool, rollbackArgs, success: true };
   } catch (error) {
     console.error(`[StepVerifier] Rollback failed:`, error);
-    return { error: error instanceof Error ? error.message : String(error) };
+    return { 
+      rollbackTool: contract.rollbackTool, 
+      error: error instanceof Error ? error.message : String(error) 
+    };
   }
 }
 
