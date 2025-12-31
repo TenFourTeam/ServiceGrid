@@ -17,7 +17,8 @@ export type SystemType =
   | 'security'
   | 'component'
   | 'hook'
-  | 'testing';
+  | 'testing'
+  | 'alignment';
 
 export type VerificationDimension = 
   | 'implementation'

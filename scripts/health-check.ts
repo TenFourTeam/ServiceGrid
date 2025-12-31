@@ -33,6 +33,9 @@ const systemFlags: Record<string, SystemKey> = {
   '--testing': 'testing',
   '--test': 'testing',
   '-t': 'testing',
+  '--alignment': 'alignment',
+  '--align': 'alignment',
+  '-A': 'alignment',
 };
 
 function printHelp() {
@@ -48,6 +51,7 @@ Options:
   --database, --db    Run database validator
   --security, --sec   Run security validator
   --testing, --test   Run testing validator
+  --alignment, --align Run alignment validator (DIY/DWY/DFY consistency)
   --verbose, -v       Show detailed output
   --help, -h          Show this help message
 
@@ -55,6 +59,7 @@ Examples:
   npx tsx scripts/health-check.ts --all
   npx tsx scripts/health-check.ts --edge-functions --verbose
   npx tsx scripts/health-check.ts --database --security
+  npx tsx scripts/health-check.ts --alignment
 
 Exit Codes:
   0  All checks passed (no critical issues, score >= 60%)
