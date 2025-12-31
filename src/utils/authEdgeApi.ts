@@ -46,18 +46,35 @@ export function createAuthEdgeApi(getToken: (options?: { template?: string }) =>
         if (loading) {
           toastId = toast.loading(loading);
         }
-        
+        // Get token with retry logic for race conditions during boot
         console.info(`🔧 [AuthEdgeApi] Getting Clerk token with 'supabase' template...`);
         const startToken = Date.now();
-        const token = await getToken({ template: 'supabase' });
+        
+        let token: string | null = null;
+        const maxRetries = 3;
+        const retryDelay = 200; // ms
+        
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          token = await getToken({ template: 'supabase' });
+          if (token) break;
+          
+          if (attempt < maxRetries) {
+            console.info(`🔧 [AuthEdgeApi] Token not available, retry ${attempt}/${maxRetries} in ${retryDelay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+          }
+        }
+        
         const endToken = Date.now();
-        console.info(`🔧 [AuthEdgeApi] Token fetch took ${endToken - startToken}ms`);
+        console.info(`🔧 [AuthEdgeApi] Token fetch took ${endToken - startToken}ms (${token ? 'success' : 'failed'})`);
         
         if (!token) {
-          console.warn('❌ [AuthEdgeApi] No Clerk token available');
+          console.warn('❌ [AuthEdgeApi] No Clerk token available after retries');
+          if (toastId) {
+            toast.dismiss(toastId);
+          }
           return {
             data: null,
-            error: { message: 'Authentication required', status: 401 }
+            error: { message: 'Authentication required. Please refresh the page.', status: 401 }
           };
         }
 
