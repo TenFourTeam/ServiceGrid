@@ -237,6 +237,14 @@ export interface Message {
     resolvesEntity: string;
     options: EntitySelectionOption[];
   };
+  // Next process suggestion for workflow chaining
+  nextProcessSuggestion?: {
+    processId: string;
+    patternId: string;
+    reason: string;
+    contextToPass: Record<string, any>;
+    fromProcess: string;
+  };
 }
 
 // Navigation event handler type
@@ -836,6 +844,8 @@ export function useAIChat(options?: UseAIChatOptions) {
                         // Include entity selection if available
                         entitySelection: data.entitySelection,
                       },
+                      // Include next process suggestion for workflow chaining
+                      nextProcessSuggestion: data.nextProcessSuggestion,
                     };
                     return updated;
                   }

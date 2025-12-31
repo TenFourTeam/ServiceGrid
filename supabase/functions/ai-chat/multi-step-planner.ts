@@ -1751,7 +1751,8 @@ export function sendPlanComplete(
     question: string;
     resolvesEntity: string;
     options: Array<{ id: string; label: string; value: string; metadata?: any }>;
-  }
+  },
+  nextProcessSuggestion?: NextProcessSuggestion
 ): void {
   if (!controller) {
     console.warn('[multi-step-planner] sendPlanComplete called without controller');
@@ -1781,7 +1782,7 @@ export function sendPlanComplete(
     }
   }
   
-  const event = {
+  const event: Record<string, any> = {
     type: 'plan_complete',
     planId: plan.id,
     planName: plan.name,
@@ -1813,6 +1814,12 @@ export function sendPlanComplete(
     // Entity selection for conversational recovery
     entitySelection: entitySelectionOptions,
   };
+  
+  // Add next process suggestion for successful completions
+  if (nextProcessSuggestion && plan.status === 'completed') {
+    event.nextProcessSuggestion = nextProcessSuggestion;
+  }
+  
   controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
 }
 

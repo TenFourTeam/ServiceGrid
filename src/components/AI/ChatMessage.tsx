@@ -12,6 +12,7 @@ import { PlanProgressCard } from './PlanProgressCard';
 import { LeadWorkflowCard } from './LeadWorkflowCard';
 import { AssessmentWorkflowCard } from './AssessmentWorkflowCard';
 import { CommunicationWorkflowCard } from './CommunicationWorkflowCard';
+import { NextProcessSuggestionCard } from './NextProcessSuggestionCard';
 import { EntityCard, parseEntityReferences } from './EntityCard';
 import { UndoButton, isReversibleAction, getUndoDescription } from './UndoButton';
 import { ToolResultCard } from './ToolResultCard';
@@ -204,6 +205,21 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
                 communicationData={message.communicationWorkflow.communicationData}
                 automationSummary={message.communicationWorkflow.automationSummary}
                 onPrompt={onActionExecute}
+              />
+            )}
+            
+            {/* Next Process Suggestion - shown after workflow completion */}
+            {message.nextProcessSuggestion && onActionExecute && (
+              <NextProcessSuggestionCard
+                suggestion={message.nextProcessSuggestion}
+                onContinue={(prompt, context) => {
+                  // Format prompt with context if available
+                  if (context?.customerId) {
+                    onActionExecute(`${prompt} for customer ${context.customerId}`);
+                  } else {
+                    onActionExecute(prompt);
+                  }
+                }}
               />
             )}
 
