@@ -41,6 +41,7 @@ import { GoogleDriveDocumentExport } from '@/components/Settings/GoogleDriveDocu
 import { GoogleDriveBulkOperations } from '@/components/Settings/GoogleDriveBulkOperations';
 import { GoogleDriveSharingPanel } from '@/components/Settings/GoogleDriveSharingPanel';
 import { AutomationSettings } from '@/components/settings/AutomationSettings';
+import { VerificationMetricsPanel } from '@/components/settings/VerificationMetricsPanel';
 
 export default function SettingsPage() {
   const { business, role } = useBusinessContext();
@@ -333,8 +334,9 @@ export default function SettingsPage() {
                   Configure automatic lead scoring, welcome emails, and assignment
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-6">
                 <AutomationSettings />
+                <VerificationMetricsPanel />
               </CardContent>
             </Card>
           )}

@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { ChevronUp, ChevronDown, Download, CheckCircle, FileText, Globe } from 'lucide-react';
+import { ChevronUp, ChevronDown, Download, CheckCircle, FileText, Globe, WifiOff, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import Papa from 'papaparse';
@@ -12,7 +12,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { CustomerBottomModal } from '@/components/Customers/CustomerBottomModal';
 import { CustomerSearchFilter } from '@/components/Customers/CustomerSearchFilter';
 import { CustomerActions } from '@/components/Customers/CustomerActions';
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useCustomersData } from '@/queries/unified';
 import { useRequestsData } from '@/hooks/useRequestsData';
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -22,6 +22,9 @@ import { useCustomerOperations } from '@/hooks/useCustomerOperations';
 import CustomerErrorBoundary from '@/components/ErrorBoundaries/CustomerErrorBoundary';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getLeadSourceLabel, getLeadSourceColor } from '@/lib/lead-sources';
+import { usePrefetch } from '@/hooks/usePrefetch';
+import { useLeadActionQueue } from '@/hooks/useLeadActionQueue';
+import { cn } from '@/lib/utils';
 
 export default function CustomersPage() {
   const location = useLocation();
@@ -50,6 +53,8 @@ export default function CustomersPage() {
   const [customerToDelete, setCustomerToDelete] = useState<any>(null);
   
   const { deleteCustomer, isDeletingCustomer } = useCustomerOperations();
+  const { prefetchCustomerViewModal, prefetchNewCustomerModal } = usePrefetch();
+  const { pendingCount, failedCount, isOnline, retryFailed } = useLeadActionQueue();
   
   // Search and sort state
   const [searchQuery, setSearchQuery] = useState("");
@@ -58,6 +63,11 @@ export default function CustomersPage() {
     key: 'name' | 'email' | 'phone' | 'lead_score' | 'lead_source';
     direction: 'asc' | 'desc';
   } | null>(null);
+  
+  // Prefetch on row hover
+  const handleRowHover = useCallback((customerId: string) => {
+    prefetchCustomerViewModal(customerId);
+  }, [prefetchCustomerViewModal]);
 
   // Filter and sort customers
   const filteredAndSortedCustomers = useMemo(() => {
@@ -206,14 +216,22 @@ export default function CustomersPage() {
   };
 
   // Customer Card component for mobile view
-  function CustomerCard({ customer, onClick }: { 
+  function CustomerCard({ customer, onClick, onHover }: { 
     customer: any; 
-    onClick: () => void; 
+    onClick: () => void;
+    onHover?: () => void;
   }) {
     return (
       <div 
         onClick={onClick}
-        className="relative p-4 border rounded-md bg-card shadow-sm cursor-pointer hover:bg-accent/30 transition-colors"
+        onMouseEnter={onHover}
+        className={cn(
+          "relative p-4 border rounded-md bg-card shadow-sm cursor-pointer",
+          "transition-all duration-200 ease-out",
+          "hover:translate-y-[-2px] hover:shadow-md hover:bg-accent/30",
+          "active:translate-y-0 active:shadow-sm",
+          customer._optimistic && "opacity-70 border-dashed animate-optimistic-pulse"
+        )}
       >
         {/* Actions menu positioned absolutely halfway up the right edge */}
         <div className="absolute top-1/2 right-2 -translate-y-1/2" onClick={(e) => e.stopPropagation()}>
@@ -286,7 +304,35 @@ export default function CustomersPage() {
       <section className="space-y-4">
         <Card>
           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <CardTitle>{t('customers.cardTitle')}</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle>{t('customers.cardTitle')}</CardTitle>
+              {/* Offline/Pending indicator */}
+              {(pendingCount > 0 || failedCount > 0 || !isOnline) && (
+                <div className="flex items-center gap-2">
+                  {!isOnline && (
+                    <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/30">
+                      <WifiOff className="h-3 w-3 mr-1" />
+                      Offline
+                    </Badge>
+                  )}
+                  {pendingCount > 0 && (
+                    <Badge variant="secondary" className="animate-pulse">
+                      {pendingCount} syncing...
+                    </Badge>
+                  )}
+                  {failedCount > 0 && (
+                    <Badge 
+                      variant="destructive" 
+                      className="cursor-pointer"
+                      onClick={retryFailed}
+                    >
+                      <RefreshCw className="h-3 w-3 mr-1" />
+                      {failedCount} failed - retry
+                    </Badge>
+                  )}
+                </div>
+              )}
+            </div>
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <Button variant="outline" onClick={() => setCsvImportOpen(true)} className="w-full sm:w-auto">
                 {t('customers.importCsv')}
@@ -300,7 +346,11 @@ export default function CustomersPage() {
                 <Download className="h-4 w-4 mr-2" />
                 {t('customers.exportCsv')}
               </Button>
-              <Button onClick={() => openNew()} className="w-full sm:w-auto">
+              <Button 
+                onClick={() => openNew()} 
+                onMouseEnter={prefetchNewCustomerModal}
+                className="w-full sm:w-auto"
+              >
                 {t('customers.newCustomer')}
               </Button>
             </div>
@@ -335,6 +385,7 @@ export default function CustomersPage() {
                           key={c.id}
                           customer={c}
                           onClick={() => openView(c)}
+                          onHover={() => handleRowHover(c.id)}
                         />
                       ))}
                     </div>
@@ -397,8 +448,13 @@ export default function CustomersPage() {
                         {rows.map((c) => (
                           <TableRow 
                             key={c.id}
-                            className="cursor-pointer hover:bg-muted/50 transition-colors"
+                            className={cn(
+                              "cursor-pointer transition-all duration-200",
+                              "hover:bg-muted/50 hover:translate-y-[-1px]",
+                              c._optimistic && "opacity-70 animate-optimistic-pulse"
+                            )}
                             onClick={() => openView(c)}
+                            onMouseEnter={() => handleRowHover(c.id)}
                           >
                             <TableCell>{c.name}</TableCell>
                             <TableCell>{c.email ?? ''}</TableCell>

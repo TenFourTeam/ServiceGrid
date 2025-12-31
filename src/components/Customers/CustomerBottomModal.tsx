@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
 import { toast } from "sonner";
+import { feedback } from "@/utils/feedback";
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidationHelpers, queryKeys } from "@/queries/keys";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
@@ -245,6 +246,7 @@ export function CustomerBottomModal({
         }
         
         toast.success("Customer updated successfully");
+        feedback.success();
       } else {
         const { data, error } = await authApi.invoke('customers-crud', {
           method: 'POST',
@@ -265,6 +267,7 @@ export function CustomerBottomModal({
         }
         
         toast.success("Customer created successfully");
+        feedback.leadCaptured();
         
         // Call the onCustomerCreated callback with the new customer data
         if (onCustomerCreated && data?.customer) {
@@ -280,6 +283,7 @@ export function CustomerBottomModal({
     } catch (error) {
       console.error("Error saving customer:", error);
       toast.error("Failed to save customer");
+      feedback.error();
     } finally {
       setLoading(false);
     }

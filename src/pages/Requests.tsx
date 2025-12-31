@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Plus, Search, Share, UserCircle, Filter, Globe, TrendingUp } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { formatDistanceToNow } from "date-fns";
@@ -41,6 +41,8 @@ import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { statusOptions } from "@/validation/requests";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { LEAD_SOURCES, getLeadSourceLabel } from "@/lib/lead-sources";
+import { usePrefetch } from "@/hooks/usePrefetch";
+import { cn } from "@/lib/utils";
 
 export default function Requests() {
   const { t } = useLanguage();
@@ -65,7 +67,15 @@ export default function Requests() {
   const { data: customers = [] } = useCustomersData();
   const { data: membersData } = useBusinessMembersData();
   const { data: jobsData } = useJobsData(businessId);
+  const { prefetchCustomerViewModal } = usePrefetch();
   const requests = useMemo(() => requestsResponse?.data || [], [requestsResponse]);
+  
+  // Prefetch on row hover
+  const handleRowHover = useCallback((customerId: string) => {
+    if (customerId) {
+      prefetchCustomerViewModal(customerId);
+    }
+  }, [prefetchCustomerViewModal]);
   
   // Create maps for customer data
   const customerScoreMap = useMemo(() => {
@@ -188,11 +198,17 @@ export default function Requests() {
   };
 
   // Request Card component for mobile view
-  function RequestCard({ request, onClick }: { request: RequestListItem; onClick: () => void }) {
+  function RequestCard({ request, onClick, onHover }: { request: RequestListItem; onClick: () => void; onHover?: () => void }) {
     return (
       <div 
         onClick={onClick}
-        className="relative p-4 border rounded-md bg-card shadow-sm cursor-pointer hover:bg-accent/30 transition-colors"
+        onMouseEnter={onHover}
+        className={cn(
+          "relative p-4 border rounded-md bg-card shadow-sm cursor-pointer",
+          "transition-all duration-200 ease-out",
+          "hover:translate-y-[-2px] hover:shadow-md hover:bg-accent/30",
+          "active:translate-y-0 active:shadow-sm"
+        )}
       >
         {/* Status badge positioned absolutely in top-right corner */}
         <div className="absolute top-2 right-2">
@@ -437,6 +453,7 @@ export default function Requests() {
                         setSelectedRequest(request);
                         setIsShowModalOpen(true);
                       }}
+                      onHover={() => handleRowHover(request.customer_id)}
                     />
                   ))
                 )}
@@ -521,11 +538,15 @@ export default function Requests() {
                       {filteredRequests.map((request) => (
                         <TableRow
                           key={request.id}
-                          className="cursor-pointer hover:bg-muted/50 transition-colors"
+                          className={cn(
+                            "cursor-pointer transition-all duration-200",
+                            "hover:bg-muted/50 hover:translate-y-[-1px]"
+                          )}
                           onClick={() => {
                             setSelectedRequest(request);
                             setIsShowModalOpen(true);
                           }}
+                          onMouseEnter={() => handleRowHover(request.customer_id)}
                         >
                           <TableCell className="font-medium">
                             {request.customer?.name || t('requests.table.customer')}

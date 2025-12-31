@@ -5,10 +5,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useLeadAnalytics } from "@/hooks/useLeadAnalytics";
 import { Users, TrendingUp, AlertCircle, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { usePressable } from "@/components/ui/pressable";
+import { cn } from "@/lib/utils";
 
 export function LeadMetricsCard() {
   const { data, isLoading } = useLeadAnalytics();
   const navigate = useNavigate();
+  const { pressProps, pressClass } = usePressable();
 
   if (isLoading) {
     return (
@@ -32,8 +35,14 @@ export function LeadMetricsCard() {
 
   return (
     <Card 
-      className="cursor-pointer hover:shadow-md transition-shadow"
+      className={cn(
+        "cursor-pointer transition-all duration-200",
+        "hover:shadow-md hover:translate-y-[-2px]",
+        "active:translate-y-0 active:shadow-sm",
+        pressClass
+      )}
       onClick={() => navigate('/analytics?tab=leads')}
+      {...pressProps}
     >
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
