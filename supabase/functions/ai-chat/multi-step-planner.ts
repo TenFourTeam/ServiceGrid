@@ -469,6 +469,78 @@ const MULTI_STEP_PATTERNS: MultiStepPattern[] = [
     requiresApproval: true,
   },
 
+  // Complete lead generation workflow
+  {
+    id: 'complete_lead_generation',
+    name: 'Complete Lead Generation',
+    description: 'Capture a new lead, check for duplicates, create service request, and optionally assign to team',
+    patterns: [
+      /new\s+lead\s+(from|via|through)/i,
+      /add\s+(a\s+)?(new\s+)?customer\s+(and|then)\s+(create|assign)/i,
+      /customer\s+inquiry\s+(from|about)/i,
+      /create\s+(new\s+)?lead\s+for/i,
+      /capture\s+(new\s+)?lead/i,
+      /log\s+(a\s+)?(new\s+)?(customer|lead)\s+request/i,
+    ],
+    keywords: ['new lead', 'customer inquiry', 'add customer', 'capture lead', 'service request'],
+    steps: [
+      {
+        name: 'Check for Existing Customer',
+        description: 'Search for duplicate customers by email or phone',
+        tool: 'search_customers',
+        argMapping: (ctx) => ({ 
+          query: ctx.entities?.email || ctx.entities?.phone || ctx.entities?.name 
+        }),
+      },
+      {
+        name: 'Create Customer Record',
+        description: 'Create new customer if not found',
+        tool: 'create_customer',
+        argMapping: (ctx) => ({
+          name: ctx.entities?.customerName || ctx.entities?.name,
+          email: ctx.entities?.customerEmail || ctx.entities?.email,
+          phone: ctx.entities?.customerPhone || ctx.entities?.phone,
+          address: ctx.entities?.customerAddress || ctx.entities?.address,
+        }),
+        dependsOn: ['search_customers'],
+      },
+      {
+        name: 'Create Service Request',
+        description: 'Log the service request details',
+        tool: 'create_request',
+        argMapping: (ctx, results) => ({
+          customerId: results['create_customer']?.customer_id,
+          title: ctx.entities?.serviceNeed || ctx.entities?.title || 'New inquiry',
+          serviceDetails: ctx.entities?.details || ctx.entities?.notes,
+          source: ctx.entities?.source || 'chat',
+        }),
+        dependsOn: ['create_customer'],
+      },
+      {
+        name: 'Check Team Availability',
+        description: 'Find available team members for assignment',
+        tool: 'check_team_availability',
+        argMapping: () => ({
+          date: new Date().toISOString().split('T')[0],
+        }),
+        dependsOn: ['create_request'],
+        optional: true,
+      },
+      {
+        name: 'Create Initial Quote',
+        description: 'Create a quote for the new lead',
+        tool: 'create_quote',
+        argMapping: (ctx, results) => ({
+          customerId: results['create_customer']?.customer_id,
+          lineItems: ctx.entities?.quoteItems || [],
+        }),
+        dependsOn: ['create_customer'],
+        optional: true,
+      },
+    ],
+    requiresApproval: true,
+  },
+
   // Full quote to job workflow
   {
     id: 'quote_to_job_complete',
