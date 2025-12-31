@@ -218,7 +218,7 @@ export const LEAD_GENERATION: EnhancedProcessDefinition = {
       id: 'receive_inquiry',
       name: 'Receive Inquiry/Referral',
       order: 1,
-      currentState: 'DIY',
+      currentState: 'DWY',  // UPGRADED: Now has tools for assisted entry
       targetState: 'DFY',
       sipoc: {
         supplier: 'Prospective Customer',
@@ -227,19 +227,20 @@ export const LEAD_GENERATION: EnhancedProcessDefinition = {
         output: 'New customer record OR matched existing customer, plus service request record',
         customer: 'Lead Qualification (next step)'
       },
-      tools: ['create_customer', 'search_customers', 'create_request'],
+      tools: ['create_customer', 'search_customers', 'create_request', 'send_email'],
       dbEntities: ['customers', 'requests'],
       automationCapabilities: [
         'Auto-create customer from portal submission',
         'Duplicate detection by email/phone',
-        'Auto-acknowledge receipt via email'
+        'Auto-acknowledge receipt via email',
+        'Send welcome email on creation'
       ]
     },
     {
       id: 'qualify_lead',
       name: 'Qualify Lead',
       order: 2,
-      currentState: 'DIY',
+      currentState: 'DWY',  // UPGRADED: Now has score_lead and qualify_lead tools
       targetState: 'DFY',
       sipoc: {
         supplier: 'Previous step (Receive Inquiry)',
@@ -248,12 +249,13 @@ export const LEAD_GENERATION: EnhancedProcessDefinition = {
         output: 'Qualified or disqualified customer with status notes',
         customer: 'System Entry (next step) or Archive (if disqualified)'
       },
-      tools: ['get_customer', 'search_customers', 'update_customer'],
+      tools: ['get_customer', 'search_customers', 'update_customer', 'score_lead', 'qualify_lead'],
       dbEntities: ['customers', 'requests'],
       automationCapabilities: [
         'Auto-qualify based on service area',
         'Flag VIP returning customers',
-        'Score lead quality based on request details'
+        'Score lead quality based on data completeness',
+        'Mark leads as qualified/disqualified with reason'
       ]
     },
     {
@@ -281,7 +283,7 @@ export const LEAD_GENERATION: EnhancedProcessDefinition = {
       id: 'assign_lead',
       name: 'Assign Lead to Sales/Estimator',
       order: 4,
-      currentState: 'DIY',
+      currentState: 'DWY',  // UPGRADED: Now has auto_assign_lead tool
       targetState: 'DFY',
       sipoc: {
         supplier: 'System Entry step',
@@ -290,19 +292,20 @@ export const LEAD_GENERATION: EnhancedProcessDefinition = {
         output: 'Quote or job assigned to team member with notification sent',
         customer: 'Assigned Team Member'
       },
-      tools: ['create_quote', 'create_job', 'assign_job_to_member', 'list_team_members', 'check_team_availability'],
+      tools: ['create_quote', 'create_job', 'assign_job_to_member', 'list_team_members', 'check_team_availability', 'auto_assign_lead'],
       dbEntities: ['quotes', 'jobs', 'job_assignments', 'business_members'],
       automationCapabilities: [
         'Auto-assign based on workload balancing',
         'Territory-based routing',
-        'Skill matching for specialized requests'
+        'Skill matching for specialized requests',
+        'Automatic workload-based assignment'
       ]
     },
     {
       id: 'initial_contact',
       name: 'Initial Contact with Lead',
       order: 5,
-      currentState: 'DIY',
+      currentState: 'DWY',  // UPGRADED: Now has send_email tool
       targetState: 'DFY',
       sipoc: {
         supplier: 'Assigned Team Member / AI Agent',
@@ -311,12 +314,13 @@ export const LEAD_GENERATION: EnhancedProcessDefinition = {
         output: 'Contact attempt logged, next action scheduled',
         customer: 'Customer (receiving contact) + Sales Team (tracking)'
       },
-      tools: ['send_quote', 'send_email', 'update_job'],
+      tools: ['send_quote', 'send_email', 'invite_to_portal', 'update_job'],
       dbEntities: ['ai_activity_log', 'customers', 'mail_sends'],
       automationCapabilities: [
         'Auto-send welcome email',
         'Send quote immediately after creation',
-        'Schedule follow-up reminders'
+        'Schedule follow-up reminders',
+        'Send custom emails with personalization'
       ]
     }
   ],
@@ -333,7 +337,11 @@ export const LEAD_GENERATION: EnhancedProcessDefinition = {
     'list_team_members',
     'check_team_availability',
     'send_quote',
-    'send_email'
+    'send_email',
+    'score_lead',
+    'qualify_lead',
+    'auto_assign_lead',
+    'invite_to_portal'
   ],
   
   inputContract: {

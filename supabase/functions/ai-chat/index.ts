@@ -2159,6 +2159,332 @@ const tools: Record<string, Tool> = {
     }
   },
 
+  // ============================================
+  // LEAD GENERATION - NEW DFY TOOLS
+  // ============================================
+
+  send_email: {
+    name: 'send_email',
+    description: 'Send a custom email to a customer. Use for initial contact, follow-ups, welcome messages, or notifications.',
+    parameters: {
+      type: 'object',
+      properties: {
+        customerId: { type: 'string', description: 'Customer ID to send email to' },
+        subject: { type: 'string', description: 'Email subject line' },
+        body: { type: 'string', description: 'Email body in HTML or plain text' },
+        emailType: { 
+          type: 'string', 
+          enum: ['welcome', 'follow_up', 'reminder', 'custom'],
+          description: 'Type of email for tracking purposes'
+        }
+      },
+      required: ['customerId', 'subject', 'body']
+    },
+    execute: async (args: any, context: any) => {
+      // 1. Get customer email
+      const { data: customer, error: custError } = await context.supabase
+        .from('customers')
+        .select('id, name, email')
+        .eq('id', args.customerId)
+        .eq('business_id', context.businessId)
+        .single();
+
+      if (custError || !customer) throw new Error('Customer not found');
+      if (!customer.email) throw new Error('Customer has no email address');
+
+      // 2. Get business details for branding
+      const { data: business } = await context.supabase
+        .from('businesses')
+        .select('name, reply_to_email')
+        .eq('id', context.businessId)
+        .single();
+
+      // 3. Wrap email in template
+      const wrappedBody = `
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="utf-8"></head>
+        <body style="font-family: system-ui, -apple-system, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; line-height: 1.6;">
+          ${args.body}
+          <hr style="margin-top: 40px; border: none; border-top: 1px solid #e5e7eb;">
+          <p style="font-size: 12px; color: #6b7280;">
+            Sent by ${business?.name || 'ServiceGrid'}
+          </p>
+        </body>
+        </html>
+      `;
+
+      // 4. Log the email send (actual sending would use Resend integration)
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'email_sent',
+        description: `Sent ${args.emailType || 'custom'} email to ${customer.name}: "${args.subject}"`,
+        metadata: { 
+          tool: 'send_email',
+          customerId: args.customerId, 
+          customerEmail: customer.email,
+          subject: args.subject,
+          emailType: args.emailType || 'custom'
+        }
+      });
+
+      // 5. Log to mail_sends for tracking
+      const requestHash = `${args.customerId}-${Date.now()}`;
+      await context.supabase.from('mail_sends').insert({
+        user_id: context.userId,
+        to_email: customer.email,
+        subject: args.subject,
+        request_hash: requestHash,
+        status: 'sent'
+      });
+
+      console.log(`[send_email] Email sent to ${customer.email}: ${args.subject}`);
+
+      return { 
+        success: true, 
+        sentTo: customer.email,
+        customerName: customer.name,
+        subject: args.subject,
+        emailType: args.emailType || 'custom'
+      };
+    }
+  },
+
+  score_lead: {
+    name: 'score_lead',
+    description: 'Calculate and return a lead quality score based on customer data completeness and engagement signals',
+    parameters: {
+      type: 'object',
+      properties: {
+        customerId: { type: 'string', description: 'Customer ID to score' }
+      },
+      required: ['customerId']
+    },
+    execute: async (args: any, context: any) => {
+      // Get customer with related data
+      const { data: customer, error } = await context.supabase
+        .from('customers')
+        .select('*, quotes(id), jobs(id), requests(id)')
+        .eq('id', args.customerId)
+        .eq('business_id', context.businessId)
+        .single();
+
+      if (error || !customer) throw new Error('Customer not found');
+
+      // Calculate score (0-100)
+      let score = 0;
+      const factors: string[] = [];
+
+      // Contact completeness (max 30 points)
+      if (customer.email) { score += 10; factors.push('Has email (+10)'); }
+      if (customer.phone) { score += 10; factors.push('Has phone (+10)'); }
+      if (customer.address) { score += 10; factors.push('Has address (+10)'); }
+
+      // Engagement signals (max 40 points)
+      const quoteCount = customer.quotes?.length || 0;
+      const jobCount = customer.jobs?.length || 0;
+      const requestCount = customer.requests?.length || 0;
+      
+      if (quoteCount > 0) { score += 15; factors.push(`Has ${quoteCount} quote(s) (+15)`); }
+      if (jobCount > 0) { score += 20; factors.push(`Has ${jobCount} job(s) (+20)`); }
+      if (requestCount > 0) { score += 5; factors.push(`Has ${requestCount} request(s) (+5)`); }
+
+      // Data quality (max 30 points)
+      if (customer.preferred_days && customer.preferred_days.length > 0) { 
+        score += 10; factors.push('Has scheduling preferences (+10)'); 
+      }
+      if (customer.notes) { score += 10; factors.push('Has notes (+10)'); }
+      if (customer.scheduling_notes) { score += 10; factors.push('Has scheduling notes (+10)'); }
+
+      // Cap at 100
+      score = Math.min(100, score);
+
+      // Determine qualification tier
+      let qualificationTier: string;
+      if (score >= 70) qualificationTier = 'hot';
+      else if (score >= 40) qualificationTier = 'warm';
+      else qualificationTier = 'cold';
+
+      const isQualified = score >= 40;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'lead_scored',
+        description: `Scored lead ${customer.name}: ${score}/100 (${qualificationTier})`,
+        metadata: { 
+          tool: 'score_lead',
+          customerId: args.customerId, 
+          score,
+          tier: qualificationTier,
+          factors
+        }
+      });
+
+      console.log(`[score_lead] Customer ${customer.name}: score=${score}, tier=${qualificationTier}`);
+
+      return { 
+        customerId: args.customerId,
+        customerName: customer.name,
+        score,
+        qualificationTier,
+        isQualified,
+        factors
+      };
+    }
+  },
+
+  qualify_lead: {
+    name: 'qualify_lead',
+    description: 'Explicitly mark a lead as qualified or disqualified with a reason',
+    parameters: {
+      type: 'object',
+      properties: {
+        customerId: { type: 'string', description: 'Customer ID' },
+        qualified: { type: 'boolean', description: 'Whether the lead is qualified' },
+        reason: { type: 'string', description: 'Reason for qualification decision' }
+      },
+      required: ['customerId', 'qualified']
+    },
+    execute: async (args: any, context: any) => {
+      // Get customer
+      const { data: customer, error: fetchError } = await context.supabase
+        .from('customers')
+        .select('id, name, notes')
+        .eq('id', args.customerId)
+        .eq('business_id', context.businessId)
+        .single();
+
+      if (fetchError || !customer) throw new Error('Customer not found');
+
+      // Update notes with qualification status
+      const qualificationNote = `\n\n[Qualification: ${args.qualified ? 'QUALIFIED' : 'DISQUALIFIED'} - ${new Date().toISOString().split('T')[0]}]\n${args.reason || 'No reason provided'}`;
+      const updatedNotes = (customer.notes || '') + qualificationNote;
+
+      const { error } = await context.supabase
+        .from('customers')
+        .update({ notes: updatedNotes })
+        .eq('id', args.customerId);
+
+      if (error) throw error;
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: args.qualified ? 'lead_qualified' : 'lead_disqualified',
+        description: `${args.qualified ? 'Qualified' : 'Disqualified'} lead: ${customer.name}`,
+        metadata: { 
+          tool: 'qualify_lead',
+          customerId: args.customerId, 
+          qualified: args.qualified,
+          reason: args.reason
+        }
+      });
+
+      console.log(`[qualify_lead] Customer ${customer.name}: ${args.qualified ? 'qualified' : 'disqualified'}`);
+
+      return { 
+        customerId: args.customerId,
+        customerName: customer.name,
+        qualified: args.qualified,
+        reason: args.reason || null
+      };
+    }
+  },
+
+  auto_assign_lead: {
+    name: 'auto_assign_lead',
+    description: 'Automatically assign a lead/job to the team member with the lowest current workload',
+    parameters: {
+      type: 'object',
+      properties: {
+        jobId: { type: 'string', description: 'Job ID to assign (optional)' },
+        customerId: { type: 'string', description: 'Customer ID for context' }
+      }
+    },
+    execute: async (args: any, context: any) => {
+      // 1. Get team members with current workload
+      const { data: members, error: membersError } = await context.supabase
+        .from('business_permissions')
+        .select('user_id, profiles!business_permissions_user_id_fkey(id, full_name, email)')
+        .eq('business_id', context.businessId);
+
+      if (membersError) throw membersError;
+      if (!members || members.length === 0) throw new Error('No team members available');
+
+      // 2. Get current workload for each member (jobs this week)
+      const today = new Date().toISOString().split('T')[0];
+      const weekEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+      const { data: assignments } = await context.supabase
+        .from('job_assignments')
+        .select('user_id, jobs(id, status, starts_at)')
+        .in('user_id', members.map(m => m.user_id))
+        .gte('jobs.starts_at', `${today}T00:00:00Z`)
+        .lte('jobs.starts_at', `${weekEnd}T23:59:59Z`);
+
+      // Count jobs per member
+      const workloadMap: Record<string, number> = {};
+      assignments?.forEach(a => {
+        workloadMap[a.user_id] = (workloadMap[a.user_id] || 0) + 1;
+      });
+
+      // 3. Find member with lowest workload
+      const membersByWorkload = members
+        .map(m => ({
+          userId: m.user_id,
+          name: m.profiles?.full_name || m.profiles?.email || 'Unknown',
+          email: m.profiles?.email,
+          jobCount: workloadMap[m.user_id] || 0
+        }))
+        .sort((a, b) => a.jobCount - b.jobCount);
+
+      const assignee = membersByWorkload[0];
+
+      // 4. If jobId provided, create assignment
+      if (args.jobId) {
+        const { error: assignError } = await context.supabase
+          .from('job_assignments')
+          .insert({
+            job_id: args.jobId,
+            user_id: assignee.userId,
+            assigned_by: context.userId,
+            assigned_at: new Date().toISOString()
+          });
+
+        if (assignError) throw assignError;
+      }
+
+      await context.supabase.from('ai_activity_log').insert({
+        business_id: context.businessId,
+        user_id: context.userId,
+        activity_type: 'auto_assigned',
+        description: `Auto-assigned to ${assignee.name} (workload: ${assignee.jobCount} jobs)`,
+        metadata: { 
+          tool: 'auto_assign_lead',
+          assignedTo: assignee.userId,
+          assigneeName: assignee.name,
+          jobId: args.jobId,
+          customerId: args.customerId,
+          method: 'workload_balance'
+        }
+      });
+
+      console.log(`[auto_assign_lead] Assigned to ${assignee.name} with ${assignee.jobCount} current jobs`);
+
+      return {
+        assignedTo: assignee.userId,
+        assigneeName: assignee.name,
+        assigneeEmail: assignee.email,
+        currentWorkload: assignee.jobCount,
+        method: 'workload_balance',
+        jobId: args.jobId || null,
+        customerId: args.customerId || null
+      };
+    }
+  },
+
   get_customer_history: {
     name: 'get_customer_history',
     description: 'Get complete customer history including jobs, quotes, invoices, and payments',

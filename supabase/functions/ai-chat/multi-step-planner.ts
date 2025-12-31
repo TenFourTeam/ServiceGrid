@@ -517,6 +517,15 @@ const MULTI_STEP_PATTERNS: MultiStepPattern[] = [
         dependsOn: ['create_customer'],
       },
       {
+        name: 'Score Lead',
+        description: 'Calculate lead quality score based on data completeness',
+        tool: 'score_lead',
+        argMapping: (ctx, results) => ({
+          customerId: results['create_customer']?.customer_id,
+        }),
+        dependsOn: ['create_customer'],
+      },
+      {
         name: 'Check Team Availability',
         description: 'Find available team members for assignment',
         tool: 'check_team_availability',
@@ -527,12 +536,38 @@ const MULTI_STEP_PATTERNS: MultiStepPattern[] = [
         optional: true,
       },
       {
+        name: 'Auto-Assign Lead',
+        description: 'Assign to team member with lowest workload',
+        tool: 'auto_assign_lead',
+        argMapping: (ctx, results) => ({
+          customerId: results['create_customer']?.customer_id,
+        }),
+        dependsOn: ['check_team_availability'],
+        optional: true,
+      },
+      {
         name: 'Create Initial Quote',
         description: 'Create a quote for the new lead',
         tool: 'create_quote',
         argMapping: (ctx, results) => ({
           customerId: results['create_customer']?.customer_id,
           lineItems: ctx.entities?.quoteItems || [],
+        }),
+        dependsOn: ['create_customer'],
+        optional: true,
+      },
+      {
+        name: 'Send Welcome Email',
+        description: 'Send welcome email to new customer',
+        tool: 'send_email',
+        argMapping: (ctx, results) => ({
+          customerId: results['create_customer']?.customer_id,
+          subject: `Welcome to ${ctx.businessName || 'our service'}!`,
+          body: `<p>Hi ${ctx.entities?.customerName || ctx.entities?.name || 'there'},</p>
+<p>Thank you for reaching out! We've received your inquiry and a member of our team will be in touch shortly.</p>
+<p>In the meantime, if you have any questions, feel free to reply to this email.</p>
+<p>Best regards,<br>The Team</p>`,
+          emailType: 'welcome',
         }),
         dependsOn: ['create_customer'],
         optional: true,

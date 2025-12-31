@@ -383,6 +383,71 @@ const TOOL_CONTRACTS: Record<string, ToolContract> = {
     invariants: [],
     dbAssertions: [],
   },
+
+  // ==========================================================================
+  // LEAD GENERATION - NEW DFY TOOL CONTRACTS
+  // ==========================================================================
+
+  send_email: {
+    toolName: 'send_email',
+    processId: 'lead_generation',
+    subStep: 'Initial Contact',
+    preconditions: [
+      { type: 'entity_exists', entity: 'customer', entityId: 'customerId', description: 'Customer must exist' },
+      { type: 'field_not_equals', entity: 'args', field: 'subject', value: '', description: 'Subject is required' },
+      { type: 'field_not_equals', entity: 'args', field: 'body', value: '', description: 'Body is required' },
+    ],
+    postconditions: [
+      { type: 'field_equals', entity: 'result', field: 'success', value: true, description: 'Email should be sent successfully' },
+    ],
+    invariants: [],
+    dbAssertions: [
+      {
+        query: 'SELECT COUNT(*) as count FROM ai_activity_log WHERE metadata->>\'customerId\' = $1 AND activity_type = \'email_sent\'',
+        params: { '$1': 'args.customerId' },
+        expect: { rowCount: 1, operator: 'gte' },
+        description: 'Email activity should be logged',
+      },
+    ],
+  },
+
+  score_lead: {
+    toolName: 'score_lead',
+    processId: 'lead_generation',
+    subStep: 'Qualify Lead',
+    preconditions: [
+      { type: 'entity_exists', entity: 'customer', entityId: 'customerId', description: 'Customer must exist' },
+    ],
+    postconditions: [
+      { type: 'field_not_equals', entity: 'result', field: 'score', value: null, description: 'Score should be calculated' },
+    ],
+    invariants: [],
+    dbAssertions: [],
+  },
+
+  qualify_lead: {
+    toolName: 'qualify_lead',
+    processId: 'lead_generation',
+    subStep: 'Qualify Lead',
+    preconditions: [
+      { type: 'entity_exists', entity: 'customer', entityId: 'customerId', description: 'Customer must exist' },
+    ],
+    postconditions: [],
+    invariants: [],
+    dbAssertions: [],
+  },
+
+  auto_assign_lead: {
+    toolName: 'auto_assign_lead',
+    processId: 'lead_generation',
+    subStep: 'Assign Lead',
+    preconditions: [],
+    postconditions: [
+      { type: 'field_not_equals', entity: 'result', field: 'assignedTo', value: null, description: 'Lead should be assigned to a team member' },
+    ],
+    invariants: [],
+    dbAssertions: [],
+  },
 };
 
 // =============================================================================
@@ -406,7 +471,17 @@ const PROCESS_CONTRACTS: Record<string, ProcessContract> = {
       { type: 'entity_exists', entity: 'customer', description: 'Customer record must exist' },
     ],
     requiredTools: ['create_customer'],  // Minimum required for process completion
-    optionalTools: ['search_customers', 'create_request', 'list_team_members', 'check_team_availability', 'create_quote'],
+    optionalTools: [
+      'search_customers', 
+      'create_request', 
+      'list_team_members', 
+      'check_team_availability', 
+      'create_quote',
+      'score_lead',        // NEW: Lead scoring
+      'qualify_lead',      // NEW: Lead qualification
+      'auto_assign_lead',  // NEW: Auto-assignment
+      'send_email'         // NEW: Email communication
+    ],
     checkpoints: ['qualify_lead', 'assign_lead'],  // Steps requiring user confirmation
   },
   quoting_estimating: {
