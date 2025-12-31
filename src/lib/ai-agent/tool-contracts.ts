@@ -948,35 +948,951 @@ export const CREATE_INVENTORY_ITEM_CONTRACT: ToolContract = {
   rollbackArgs: { item_id: 'result.id' }
 };
 
+export const DELETE_INVENTORY_ITEM_CONTRACT: ToolContract = {
+  toolName: 'delete_inventory_item',
+  description: 'Delete an inventory item',
+  processId: 'inventory_management',
+  subStepId: 'track_usage',
+  
+  preconditions: [
+    {
+      id: 'item_exists',
+      description: 'Inventory item must exist',
+      type: 'entity_exists',
+      entity: 'inventory_item',
+      field: 'id',
+      fromArg: 'item_id'
+    }
+  ],
+  
+  postconditions: [
+    {
+      id: 'item_deleted',
+      description: 'Inventory item was deleted',
+      type: 'field_equals',
+      entity: 'result',
+      field: 'deleted',
+      value: true
+    }
+  ],
+  
+  invariants: [],
+  dbAssertions: []
+};
+
+// ============================================================================
+// LEAD GENERATION TOOL CONTRACTS
+// ============================================================================
+
+export const CREATE_CUSTOMER_CONTRACT: ToolContract = {
+  toolName: 'create_customer',
+  description: 'Create a new customer record',
+  processId: 'lead_generation',
+  subStepId: 'capture_lead',
+  
+  preconditions: [
+    {
+      id: 'email_provided',
+      description: 'Customer email must be provided',
+      type: 'field_not_null',
+      entity: 'args',
+      field: 'email'
+    },
+    {
+      id: 'name_provided',
+      description: 'Customer name must be provided',
+      type: 'field_not_null',
+      entity: 'args',
+      field: 'name'
+    }
+  ],
+  
+  postconditions: [
+    {
+      id: 'customer_created',
+      description: 'Customer was created',
+      type: 'entity_exists',
+      entity: 'result',
+      field: 'id'
+    }
+  ],
+  
+  invariants: [],
+  
+  dbAssertions: [
+    {
+      id: 'customer_in_db',
+      description: 'Customer exists in database',
+      table: 'customers',
+      query: {
+        select: 'id, name, email',
+        where: { id: 'result.id' }
+      },
+      expect: {
+        count: 1
+      }
+    }
+  ],
+  
+  rollbackTool: 'delete_customer',
+  rollbackArgs: { customer_id: 'result.id' }
+};
+
+export const UPDATE_CUSTOMER_CONTRACT: ToolContract = {
+  toolName: 'update_customer',
+  description: 'Update an existing customer record',
+  processId: 'lead_generation',
+  subStepId: 'qualify_lead',
+  
+  preconditions: [
+    {
+      id: 'customer_exists',
+      description: 'Customer must exist',
+      type: 'entity_exists',
+      entity: 'customer',
+      field: 'id',
+      fromArg: 'customer_id'
+    }
+  ],
+  
+  postconditions: [
+    {
+      id: 'customer_updated',
+      description: 'Customer was updated',
+      type: 'entity_exists',
+      entity: 'result',
+      field: 'id'
+    }
+  ],
+  
+  invariants: [
+    {
+      id: 'business_unchanged',
+      description: 'Business ID should not change',
+      type: 'field_equals',
+      entity: 'customer',
+      field: 'business_id',
+      fromArg: 'original_business_id'
+    }
+  ],
+  
+  dbAssertions: [
+    {
+      id: 'customer_updated_in_db',
+      description: 'Customer updated in database',
+      table: 'customers',
+      query: {
+        select: 'id, updated_at',
+        where: { id: 'args.customer_id' }
+      },
+      expect: {
+        field: 'updated_at',
+        operator: 'not_null'
+      }
+    }
+  ]
+};
+
+export const CREATE_REQUEST_CONTRACT: ToolContract = {
+  toolName: 'create_request',
+  description: 'Create a new service request from a customer',
+  processId: 'lead_generation',
+  subStepId: 'capture_lead',
+  
+  preconditions: [
+    {
+      id: 'customer_exists',
+      description: 'Customer must exist',
+      type: 'entity_exists',
+      entity: 'customer',
+      field: 'id',
+      fromArg: 'customer_id'
+    }
+  ],
+  
+  postconditions: [
+    {
+      id: 'request_created',
+      description: 'Request was created',
+      type: 'entity_exists',
+      entity: 'result',
+      field: 'id'
+    }
+  ],
+  
+  invariants: [],
+  
+  dbAssertions: [
+    {
+      id: 'request_in_db',
+      description: 'Request exists in database',
+      table: 'requests',
+      query: {
+        select: 'id, customer_id, status',
+        where: { id: 'result.id' }
+      },
+      expect: {
+        count: 1
+      }
+    }
+  ]
+};
+
+// ============================================================================
+// SITE ASSESSMENT TOOL CONTRACTS
+// ============================================================================
+
+export const CREATE_ASSESSMENT_JOB_CONTRACT: ToolContract = {
+  toolName: 'create_assessment_job',
+  description: 'Create a site assessment job',
+  processId: 'site_assessment',
+  subStepId: 'schedule_assessment',
+  
+  preconditions: [
+    {
+      id: 'customer_exists',
+      description: 'Customer must exist',
+      type: 'entity_exists',
+      entity: 'customer',
+      field: 'id',
+      fromArg: 'customer_id'
+    },
+    {
+      id: 'address_provided',
+      description: 'Address must be provided for site assessment',
+      type: 'field_not_null',
+      entity: 'args',
+      field: 'address'
+    }
+  ],
+  
+  postconditions: [
+    {
+      id: 'assessment_created',
+      description: 'Assessment job was created',
+      type: 'entity_exists',
+      entity: 'result',
+      field: 'id'
+    },
+    {
+      id: 'is_assessment_flag',
+      description: 'Job is marked as assessment',
+      type: 'field_equals',
+      entity: 'result',
+      field: 'is_assessment',
+      value: true
+    }
+  ],
+  
+  invariants: [],
+  
+  dbAssertions: [
+    {
+      id: 'assessment_in_db',
+      description: 'Assessment job exists in database',
+      table: 'jobs',
+      query: {
+        select: 'id, is_assessment, customer_id',
+        where: { id: 'result.id' }
+      },
+      expect: {
+        field: 'is_assessment',
+        operator: '==',
+        value: true
+      }
+    }
+  ],
+  
+  rollbackTool: 'delete_job',
+  rollbackArgs: { job_id: 'result.id' }
+};
+
+// ============================================================================
+// PREVENTIVE MAINTENANCE TOOL CONTRACTS
+// ============================================================================
+
+export const CREATE_RECURRING_JOB_CONTRACT: ToolContract = {
+  toolName: 'create_recurring_job',
+  description: 'Create a recurring job for preventive maintenance',
+  processId: 'preventive_maintenance',
+  subStepId: 'generate_jobs',
+  
+  preconditions: [
+    {
+      id: 'customer_exists',
+      description: 'Customer must exist',
+      type: 'entity_exists',
+      entity: 'customer',
+      field: 'id',
+      fromArg: 'customer_id'
+    },
+    {
+      id: 'frequency_provided',
+      description: 'Recurrence frequency must be specified',
+      type: 'field_not_null',
+      entity: 'args',
+      field: 'recurrence'
+    }
+  ],
+  
+  postconditions: [
+    {
+      id: 'job_created',
+      description: 'Recurring job was created',
+      type: 'entity_exists',
+      entity: 'result',
+      field: 'id'
+    },
+    {
+      id: 'is_recurring_flag',
+      description: 'Job is marked as recurring',
+      type: 'field_equals',
+      entity: 'result',
+      field: 'is_recurring',
+      value: true
+    }
+  ],
+  
+  invariants: [],
+  
+  dbAssertions: [
+    {
+      id: 'recurring_job_in_db',
+      description: 'Recurring job exists in database',
+      table: 'jobs',
+      query: {
+        select: 'id, is_recurring, recurrence',
+        where: { id: 'result.id' }
+      },
+      expect: {
+        field: 'is_recurring',
+        operator: '==',
+        value: true
+      }
+    }
+  ]
+};
+
+// ============================================================================
+// REVIEWS & REPUTATION TOOL CONTRACTS
+// ============================================================================
+
+export const REQUEST_REVIEW_CONTRACT: ToolContract = {
+  toolName: 'request_review',
+  description: 'Send a review request to a customer after service',
+  processId: 'reviews_reputation',
+  subStepId: 'request_review',
+  
+  preconditions: [
+    {
+      id: 'customer_exists',
+      description: 'Customer must exist',
+      type: 'entity_exists',
+      entity: 'customer',
+      field: 'id',
+      fromArg: 'customer_id'
+    },
+    {
+      id: 'job_completed',
+      description: 'Job must be completed',
+      type: 'field_equals',
+      entity: 'job',
+      field: 'status',
+      value: 'Completed'
+    },
+    {
+      id: 'customer_has_email',
+      description: 'Customer must have an email address',
+      type: 'field_not_null',
+      entity: 'customer',
+      field: 'email'
+    }
+  ],
+  
+  postconditions: [
+    {
+      id: 'review_requested',
+      description: 'Review request was sent',
+      type: 'field_equals',
+      entity: 'result',
+      field: 'sent',
+      value: true
+    }
+  ],
+  
+  invariants: [],
+  
+  dbAssertions: [
+    {
+      id: 'mail_send_logged',
+      description: 'Review request email was logged',
+      table: 'mail_sends',
+      query: {
+        select: 'id, job_id, subject',
+        where: { job_id: 'args.job_id' }
+      },
+      expect: {
+        count: 1
+      }
+    }
+  ]
+};
+
+// ============================================================================
+// WARRANTY MANAGEMENT TOOL CONTRACTS
+// ============================================================================
+
+export const CREATE_WARRANTY_REQUEST_CONTRACT: ToolContract = {
+  toolName: 'create_warranty_request',
+  description: 'Create a warranty claim request',
+  processId: 'warranty_management',
+  subStepId: 'receive_claim',
+  
+  preconditions: [
+    {
+      id: 'customer_exists',
+      description: 'Customer must exist',
+      type: 'entity_exists',
+      entity: 'customer',
+      field: 'id',
+      fromArg: 'customer_id'
+    },
+    {
+      id: 'original_job_exists',
+      description: 'Original job must exist for warranty claim',
+      type: 'entity_exists',
+      entity: 'job',
+      field: 'id',
+      fromArg: 'original_job_id'
+    }
+  ],
+  
+  postconditions: [
+    {
+      id: 'request_created',
+      description: 'Warranty request was created',
+      type: 'entity_exists',
+      entity: 'result',
+      field: 'id'
+    }
+  ],
+  
+  invariants: [],
+  
+  dbAssertions: [
+    {
+      id: 'request_in_db',
+      description: 'Warranty request exists in database',
+      table: 'requests',
+      query: {
+        select: 'id, customer_id',
+        where: { id: 'result.id' }
+      },
+      expect: {
+        count: 1
+      }
+    }
+  ]
+};
+
+export const CREATE_WARRANTY_JOB_CONTRACT: ToolContract = {
+  toolName: 'create_warranty_job',
+  description: 'Create a job to fulfill a warranty claim',
+  processId: 'warranty_management',
+  subStepId: 'schedule_repair',
+  
+  preconditions: [
+    {
+      id: 'customer_exists',
+      description: 'Customer must exist',
+      type: 'entity_exists',
+      entity: 'customer',
+      field: 'id',
+      fromArg: 'customer_id'
+    },
+    {
+      id: 'warranty_valid',
+      description: 'Warranty claim must be approved',
+      type: 'field_equals',
+      entity: 'args',
+      field: 'warranty_approved',
+      value: true
+    }
+  ],
+  
+  postconditions: [
+    {
+      id: 'warranty_job_created',
+      description: 'Warranty job was created',
+      type: 'entity_exists',
+      entity: 'result',
+      field: 'id'
+    }
+  ],
+  
+  invariants: [],
+  
+  dbAssertions: [
+    {
+      id: 'warranty_job_in_db',
+      description: 'Warranty job exists in database',
+      table: 'jobs',
+      query: {
+        select: 'id, customer_id, status',
+        where: { id: 'result.id' }
+      },
+      expect: {
+        count: 1
+      }
+    }
+  ],
+  
+  rollbackTool: 'delete_job',
+  rollbackArgs: { job_id: 'result.id' }
+};
+
+// ============================================================================
+// CONVERT QUOTE TO JOB TOOL CONTRACT
+// ============================================================================
+
+export const CONVERT_QUOTE_TO_JOB_CONTRACT: ToolContract = {
+  toolName: 'convert_quote_to_job',
+  description: 'Convert an approved quote to a job',
+  processId: 'scheduling',
+  subStepId: 'schedule_appointment',
+  
+  preconditions: [
+    {
+      id: 'quote_exists',
+      description: 'Quote must exist',
+      type: 'entity_exists',
+      entity: 'quote',
+      field: 'id',
+      fromArg: 'quote_id'
+    },
+    {
+      id: 'quote_approved',
+      description: 'Quote must be approved',
+      type: 'field_equals',
+      entity: 'quote',
+      field: 'status',
+      value: 'Approved'
+    }
+  ],
+  
+  postconditions: [
+    {
+      id: 'job_created',
+      description: 'Job was created from quote',
+      type: 'entity_exists',
+      entity: 'result',
+      field: 'id'
+    },
+    {
+      id: 'job_linked_to_quote',
+      description: 'Job is linked to the quote',
+      type: 'field_not_null',
+      entity: 'result',
+      field: 'quote_id'
+    }
+  ],
+  
+  invariants: [
+    {
+      id: 'customer_preserved',
+      description: 'Customer should be same as quote customer',
+      type: 'field_equals',
+      entity: 'result',
+      field: 'customer_id',
+      fromArg: 'quote.customer_id'
+    }
+  ],
+  
+  dbAssertions: [
+    {
+      id: 'job_in_db',
+      description: 'Job exists in database with quote reference',
+      table: 'jobs',
+      query: {
+        select: 'id, quote_id, customer_id',
+        where: { id: 'result.id' }
+      },
+      expect: {
+        field: 'quote_id',
+        operator: 'not_null'
+      }
+    }
+  ],
+  
+  rollbackTool: 'delete_job',
+  rollbackArgs: { job_id: 'result.id' }
+};
+
+// ============================================================================
+// UPDATE JOB CONTRACT
+// ============================================================================
+
+export const UPDATE_JOB_CONTRACT: ToolContract = {
+  toolName: 'update_job',
+  description: 'Update an existing job',
+  processId: 'dispatching',
+  subStepId: 'dispatch',
+  
+  preconditions: [
+    {
+      id: 'job_exists',
+      description: 'Job must exist',
+      type: 'entity_exists',
+      entity: 'job',
+      field: 'id',
+      fromArg: 'job_id'
+    }
+  ],
+  
+  postconditions: [
+    {
+      id: 'job_updated',
+      description: 'Job was updated',
+      type: 'entity_exists',
+      entity: 'result',
+      field: 'id'
+    }
+  ],
+  
+  invariants: [
+    {
+      id: 'customer_unchanged',
+      description: 'Customer ID should not change',
+      type: 'field_equals',
+      entity: 'job',
+      field: 'customer_id',
+      fromArg: 'original_customer_id'
+    }
+  ],
+  
+  dbAssertions: [
+    {
+      id: 'job_updated_in_db',
+      description: 'Job updated in database',
+      table: 'jobs',
+      query: {
+        select: 'id, updated_at',
+        where: { id: 'args.job_id' }
+      },
+      expect: {
+        field: 'updated_at',
+        operator: 'not_null'
+      }
+    }
+  ]
+};
+
+// ============================================================================
+// UNASSIGN JOB CONTRACT
+// ============================================================================
+
+export const UNASSIGN_JOB_CONTRACT: ToolContract = {
+  toolName: 'unassign_job',
+  description: 'Remove a team member assignment from a job',
+  processId: 'dispatching',
+  subStepId: 'assign_technician',
+  
+  preconditions: [
+    {
+      id: 'job_exists',
+      description: 'Job must exist',
+      type: 'entity_exists',
+      entity: 'job',
+      field: 'id',
+      fromArg: 'job_id'
+    },
+    {
+      id: 'assignment_exists',
+      description: 'Assignment must exist',
+      type: 'custom',
+      customCheck: 'job.assignments.some(a => a.user_id === args.user_id)'
+    }
+  ],
+  
+  postconditions: [
+    {
+      id: 'assignment_removed',
+      description: 'Assignment was removed',
+      type: 'field_equals',
+      entity: 'result',
+      field: 'removed',
+      value: true
+    }
+  ],
+  
+  invariants: [],
+  
+  dbAssertions: [
+    {
+      id: 'assignment_removed_from_db',
+      description: 'Assignment removed from database',
+      table: 'job_assignments',
+      query: {
+        select: 'id',
+        where: { job_id: 'args.job_id', user_id: 'args.user_id' }
+      },
+      expect: {
+        count: 0
+      }
+    }
+  ]
+};
+
+// ============================================================================
+// INVOICE LINE ITEM CONTRACTS
+// ============================================================================
+
+export const CREATE_INVOICE_LINE_ITEM_CONTRACT: ToolContract = {
+  toolName: 'create_invoice_line_item',
+  description: 'Add a line item to an invoice',
+  processId: 'invoicing',
+  subStepId: 'create_invoice',
+  
+  preconditions: [
+    {
+      id: 'invoice_exists',
+      description: 'Invoice must exist',
+      type: 'entity_exists',
+      entity: 'invoice',
+      field: 'id',
+      fromArg: 'invoice_id'
+    },
+    {
+      id: 'invoice_editable',
+      description: 'Invoice must be in editable status',
+      type: 'field_equals',
+      entity: 'invoice',
+      field: 'status',
+      operator: 'in',
+      value: ['Draft', 'Sent']
+    }
+  ],
+  
+  postconditions: [
+    {
+      id: 'line_item_created',
+      description: 'Line item was created',
+      type: 'entity_exists',
+      entity: 'result',
+      field: 'id'
+    }
+  ],
+  
+  invariants: [],
+  
+  dbAssertions: [
+    {
+      id: 'line_item_in_db',
+      description: 'Line item exists in database',
+      table: 'invoice_line_items',
+      query: {
+        select: 'id, invoice_id, name',
+        where: { id: 'result.id' }
+      },
+      expect: {
+        count: 1
+      }
+    }
+  ],
+  
+  rollbackTool: 'delete_invoice_line_item',
+  rollbackArgs: { line_item_id: 'result.id' }
+};
+
+// ============================================================================
+// QUOTE LINE ITEM CONTRACTS
+// ============================================================================
+
+export const CREATE_QUOTE_LINE_ITEM_CONTRACT: ToolContract = {
+  toolName: 'create_quote_line_item',
+  description: 'Add a line item to a quote',
+  processId: 'quoting_estimating',
+  subStepId: 'design_solution',
+  
+  preconditions: [
+    {
+      id: 'quote_exists',
+      description: 'Quote must exist',
+      type: 'entity_exists',
+      entity: 'quote',
+      field: 'id',
+      fromArg: 'quote_id'
+    },
+    {
+      id: 'quote_editable',
+      description: 'Quote must be in editable status',
+      type: 'field_equals',
+      entity: 'quote',
+      field: 'status',
+      operator: 'in',
+      value: ['Draft', 'Sent']
+    }
+  ],
+  
+  postconditions: [
+    {
+      id: 'line_item_created',
+      description: 'Line item was created',
+      type: 'entity_exists',
+      entity: 'result',
+      field: 'id'
+    }
+  ],
+  
+  invariants: [],
+  
+  dbAssertions: [
+    {
+      id: 'line_item_in_db',
+      description: 'Line item exists in database',
+      table: 'quote_line_items',
+      query: {
+        select: 'id, quote_id, name',
+        where: { id: 'result.id' }
+      },
+      expect: {
+        count: 1
+      }
+    }
+  ],
+  
+  rollbackTool: 'delete_quote_line_item',
+  rollbackArgs: { line_item_id: 'result.id' }
+};
+
+export const UPDATE_QUOTE_LINE_ITEM_CONTRACT: ToolContract = {
+  toolName: 'update_quote_line_item',
+  description: 'Update a quote line item',
+  processId: 'quoting_estimating',
+  subStepId: 'calculate_costs',
+  
+  preconditions: [
+    {
+      id: 'line_item_exists',
+      description: 'Line item must exist',
+      type: 'entity_exists',
+      entity: 'quote_line_item',
+      field: 'id',
+      fromArg: 'line_item_id'
+    }
+  ],
+  
+  postconditions: [
+    {
+      id: 'line_item_updated',
+      description: 'Line item was updated',
+      type: 'entity_exists',
+      entity: 'result',
+      field: 'id'
+    }
+  ],
+  
+  invariants: [],
+  
+  dbAssertions: [
+    {
+      id: 'line_item_updated_in_db',
+      description: 'Line item updated in database',
+      table: 'quote_line_items',
+      query: {
+        select: 'id, updated_at',
+        where: { id: 'args.line_item_id' }
+      },
+      expect: {
+        field: 'updated_at',
+        operator: 'not_null'
+      }
+    }
+  ]
+};
+
+export const DELETE_QUOTE_LINE_ITEM_CONTRACT: ToolContract = {
+  toolName: 'delete_quote_line_item',
+  description: 'Delete a quote line item',
+  processId: 'quoting_estimating',
+  subStepId: 'calculate_costs',
+  
+  preconditions: [
+    {
+      id: 'line_item_exists',
+      description: 'Line item must exist',
+      type: 'entity_exists',
+      entity: 'quote_line_item',
+      field: 'id',
+      fromArg: 'line_item_id'
+    }
+  ],
+  
+  postconditions: [
+    {
+      id: 'line_item_deleted',
+      description: 'Line item was deleted',
+      type: 'field_equals',
+      entity: 'result',
+      field: 'deleted',
+      value: true
+    }
+  ],
+  
+  invariants: [],
+  dbAssertions: []
+};
+
 // ============================================================================
 // TOOL CONTRACT REGISTRY
 // ============================================================================
 
 export const TOOL_CONTRACTS: Record<string, ToolContract> = {
+  // Lead Generation
+  create_customer: CREATE_CUSTOMER_CONTRACT,
+  update_customer: UPDATE_CUSTOMER_CONTRACT,
+  create_request: CREATE_REQUEST_CONTRACT,
+  // Site Assessment
+  create_assessment_job: CREATE_ASSESSMENT_JOB_CONTRACT,
   // Quoting/Estimating
   create_quote: CREATE_QUOTE_CONTRACT,
   update_quote: UPDATE_QUOTE_CONTRACT,
   approve_quote: APPROVE_QUOTE_CONTRACT,
   send_quote: SEND_QUOTE_CONTRACT,
+  create_quote_line_item: CREATE_QUOTE_LINE_ITEM_CONTRACT,
+  update_quote_line_item: UPDATE_QUOTE_LINE_ITEM_CONTRACT,
+  delete_quote_line_item: DELETE_QUOTE_LINE_ITEM_CONTRACT,
   // Scheduling
   create_job: CREATE_JOB_CONTRACT,
   schedule_job: SCHEDULE_JOB_CONTRACT,
+  convert_quote_to_job: CONVERT_QUOTE_TO_JOB_CONTRACT,
   // Dispatching
   assign_job: ASSIGN_JOB_CONTRACT,
+  unassign_job: UNASSIGN_JOB_CONTRACT,
+  update_job: UPDATE_JOB_CONTRACT,
   // Customer Communication
   send_job_confirmation: SEND_JOB_CONFIRMATION_CONTRACT,
+  // Quality Assurance
+  complete_job: COMPLETE_JOB_CONTRACT,
+  // Preventive Maintenance
+  create_recurring_job: CREATE_RECURRING_JOB_CONTRACT,
   // Invoicing
   create_invoice: CREATE_INVOICE_CONTRACT,
   send_invoice: SEND_INVOICE_CONTRACT,
   void_invoice: VOID_INVOICE_CONTRACT,
+  create_invoice_line_item: CREATE_INVOICE_LINE_ITEM_CONTRACT,
   // Payment Collection
   record_payment: RECORD_PAYMENT_CONTRACT,
   process_refund: PROCESS_REFUND_CONTRACT,
-  // Quality Assurance
-  complete_job: COMPLETE_JOB_CONTRACT,
+  // Reviews & Reputation
+  request_review: REQUEST_REVIEW_CONTRACT,
+  // Warranty Management
+  create_warranty_request: CREATE_WARRANTY_REQUEST_CONTRACT,
+  create_warranty_job: CREATE_WARRANTY_JOB_CONTRACT,
   // Inventory Management
   update_inventory: UPDATE_INVENTORY_CONTRACT,
-  create_inventory_item: CREATE_INVENTORY_ITEM_CONTRACT
+  create_inventory_item: CREATE_INVENTORY_ITEM_CONTRACT,
+  delete_inventory_item: DELETE_INVENTORY_ITEM_CONTRACT
 };
 
 /**
@@ -1006,4 +1922,18 @@ export function getPhaseContracts(phase: string): ToolContract[] {
   
   const processIds = phaseProcessMap[phase] || [];
   return Object.values(TOOL_CONTRACTS).filter(c => processIds.includes(c.processId));
+}
+
+/**
+ * Check if a tool has a contract defined
+ */
+export function hasToolContract(toolName: string): boolean {
+  return toolName in TOOL_CONTRACTS;
+}
+
+/**
+ * Get all tool names that have contracts
+ */
+export function getContractedTools(): string[] {
+  return Object.keys(TOOL_CONTRACTS);
 }
