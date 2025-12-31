@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from './keys';
-import { useAuth } from '@clerk/clerk-react';
+import { useAuth } from '@/hooks/useBusinessAuth';
 import { useAuthApi } from '@/hooks/useAuthApi';
 
 export function useProfile() {

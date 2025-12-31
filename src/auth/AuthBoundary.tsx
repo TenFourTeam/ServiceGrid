@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { Navigate, useLocation, Outlet } from "react-router-dom";
-import { useAuth } from "@clerk/clerk-react";
+import { useAuth } from "@/hooks/useBusinessAuth";
 import BootLoadingScreen from "@/components/BootLoadingScreen";
 import { setBootStage } from "@/lib/boot-trace";
 
@@ -27,7 +27,7 @@ export function AuthBoundary({
     }
   }, [isLoaded]);
 
-  // Show loading screen while Clerk is initializing
+  // Show loading screen while auth is initializing
   if (!isLoaded) {
     return <BootLoadingScreen full fallbackLabel="Checking session" />;
   }
@@ -40,7 +40,7 @@ export function AuthBoundary({
   // Handle protected routes (redirect unauthenticated users)
   if (requireAuth && !isSignedIn) {
     return <Navigate 
-      to="/clerk-auth" 
+      to="/auth" 
       replace 
       state={{ from: location }}
     />;

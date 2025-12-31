@@ -100,9 +100,9 @@ export function createAuthEdgeApi(getToken: (options?: { template?: string }) =>
           console.warn('⚠️ [AuthEdgeApi] Could not decode token:', decodeError);
         }
 
-        // Keep it simple: let supabase client set Content-Type / stringify objects.
+        // Use x-session-token header for session-based auth
         const headers: Record<string, string> = {
-          Authorization: `Bearer ${token}`,
+          'x-session-token': token,
           ...(requestOptions.headers || {}),
         };
 
