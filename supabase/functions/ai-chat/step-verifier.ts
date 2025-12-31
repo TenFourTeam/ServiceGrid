@@ -616,6 +616,7 @@ async function loadEntityContext(
   const jobId = args.jobId || previousResults.convert_quote_to_job?.job_id || previousResults.create_job?.job_id;
   const customerId = args.customerId || previousResults.create_customer?.customer_id;
   const invoiceId = args.invoiceId || previousResults.create_invoice?.invoice_id;
+  const requestId = args.requestId || previousResults.create_request?.request_id;
   const userId = args.userId;
 
   // Load entities in parallel
@@ -665,6 +666,23 @@ async function loadEntityContext(
         .single()
         .then(({ data }: any) => {
           if (data) context.customer = data;
+        })
+    );
+  }
+
+  if (requestId) {
+    promises.push(
+      supabase
+        .from('requests')
+        .select('*, customer:customers(*)')
+        .eq('id', requestId)
+        .eq('business_id', businessId)
+        .single()
+        .then(({ data }: any) => {
+          if (data) {
+            context.request = data;
+            if (!context.customer) context.customer = data.customer;
+          }
         })
     );
   }
@@ -817,20 +835,101 @@ async function verifyDatabaseAssertions(
         }
       }
 
-      // Execute the query using Supabase RPC or raw query
-      // For now, we'll skip actual DB queries in edge function context
-      // and just log the intent - the main verification comes from postconditions
-      console.log(`[step-verifier] DB assertion: ${assertion.description}`, resolvedParams);
+      // Parse the SQL-style query to extract table and conditions
+      const queryMatch = assertion.query.match(/SELECT\s+(.+?)\s+FROM\s+(\w+)/i);
+      if (!queryMatch) {
+        console.warn(`[step-verifier] Could not parse query: ${assertion.query}`);
+        continue;
+      }
 
-      // Mark as passed if we can't verify (graceful degradation)
-      // In production, implement actual DB verification
-    } catch (error) {
+      const [, selectFields, tableName] = queryMatch;
+      
+      // Build Supabase query
+      let query = supabase.from(tableName).select(selectFields.replace(/COUNT\(\*\)\s+as\s+count/i, 'id'));
+
+      // Apply WHERE conditions from resolved params
+      for (const [paramKey, value] of Object.entries(resolvedParams)) {
+        // Extract column name from WHERE clause (e.g., "id = $1" -> "id")
+        const whereMatch = assertion.query.match(new RegExp(`(\\w+)\\s*=\\s*\\${paramKey.slice(1)}`, 'i'));
+        if (whereMatch && value !== undefined && value !== null) {
+          query = query.eq(whereMatch[1], value);
+        }
+      }
+
+      // Execute query
+      const { data, error, count } = await query;
+
+      if (error) {
+        console.error(`[step-verifier] DB query error:`, error);
+        failedAssertions.push({
+          assertionId: assertion.description,
+          description: assertion.description,
+          expected: assertion.expect,
+          actual: `query_error: ${error.message}`,
+        });
+        continue;
+      }
+
+      // Verify expectations
+      const rowCount = Array.isArray(data) ? data.length : 0;
+      
+      // Check row count expectation
+      if (assertion.expect.rowCount !== undefined) {
+        const expectedCount = assertion.expect.rowCount;
+        const operator = assertion.expect.operator || 'eq';
+        
+        let passes = false;
+        switch (operator) {
+          case 'eq': passes = rowCount === expectedCount; break;
+          case 'gt': passes = rowCount > expectedCount; break;
+          case 'gte': passes = rowCount >= expectedCount; break;
+          case 'lt': passes = rowCount < expectedCount; break;
+          case 'lte': passes = rowCount <= expectedCount; break;
+          default: passes = rowCount >= expectedCount;
+        }
+        
+        if (!passes) {
+          failedAssertions.push({
+            assertionId: assertion.description,
+            description: assertion.description,
+            expected: `rowCount ${operator} ${expectedCount}`,
+            actual: rowCount,
+          });
+        }
+      }
+      
+      // Check field value expectation
+      if (assertion.expect.field && data && data.length > 0) {
+        const actualValue = data[0][assertion.expect.field];
+        const expectedValue = assertion.expect.value;
+        
+        let passes = false;
+        if (expectedValue === 'NOT_NULL') {
+          passes = actualValue !== null && actualValue !== undefined;
+        } else if (assertion.expect.operator === 'not_null') {
+          passes = actualValue !== null && actualValue !== undefined;
+        } else {
+          passes = actualValue === expectedValue;
+        }
+        
+        if (!passes) {
+          failedAssertions.push({
+            assertionId: assertion.description,
+            description: assertion.description,
+            expected: expectedValue === 'NOT_NULL' ? 'not null' : expectedValue,
+            actual: actualValue,
+          });
+        }
+      }
+
+      console.log(`[step-verifier] DB assertion passed: ${assertion.description}`);
+    } catch (error: any) {
       console.error(`[step-verifier] DB assertion failed:`, error);
       failedAssertions.push({
         assertionId: assertion.description,
         description: assertion.description,
         expected: assertion.expect,
-        actual: 'query_error',
+        actual: `error: ${error.message}`,
       });
     }
   }

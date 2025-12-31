@@ -1139,6 +1139,237 @@ export const CREATE_REQUEST_CONTRACT: ToolContract = {
 };
 
 // ============================================================================
+// LEAD SCORING & QUALIFICATION TOOL CONTRACTS
+// ============================================================================
+
+export const SCORE_LEAD_CONTRACT: ToolContract = {
+  toolName: 'score_lead',
+  description: 'Calculate or recalculate lead score for a customer',
+  processId: 'lead_generation',
+  subStepId: 'qualify_lead',
+  
+  preconditions: [
+    {
+      id: 'customer_exists',
+      description: 'Customer must exist',
+      type: 'entity_exists',
+      entity: 'customer',
+      field: 'id',
+      fromArg: 'customer_id'
+    }
+  ],
+  
+  postconditions: [
+    {
+      id: 'score_calculated',
+      description: 'Lead score was calculated',
+      type: 'field_not_null',
+      entity: 'result',
+      field: 'score'
+    },
+    {
+      id: 'score_in_range',
+      description: 'Lead score is between 0 and 100',
+      type: 'custom',
+      customCheck: 'result.score >= 0 && result.score <= 100'
+    }
+  ],
+  
+  invariants: [
+    {
+      id: 'business_unchanged',
+      description: 'Customer business ID should not change',
+      type: 'field_equals',
+      entity: 'customer',
+      field: 'business_id',
+      fromArg: 'original_business_id'
+    }
+  ],
+  
+  dbAssertions: [
+    {
+      id: 'score_in_db',
+      description: 'Lead score updated in database',
+      table: 'customers',
+      query: {
+        select: 'id, lead_score',
+        where: { id: 'args.customer_id' }
+      },
+      expect: {
+        field: 'lead_score',
+        operator: 'not_null'
+      }
+    }
+  ]
+};
+
+export const QUALIFY_LEAD_CONTRACT: ToolContract = {
+  toolName: 'qualify_lead',
+  description: 'Manually qualify or disqualify a lead',
+  processId: 'lead_generation',
+  subStepId: 'qualify_lead',
+  
+  preconditions: [
+    {
+      id: 'customer_exists',
+      description: 'Customer must exist',
+      type: 'entity_exists',
+      entity: 'customer',
+      field: 'id',
+      fromArg: 'customer_id'
+    }
+  ],
+  
+  postconditions: [
+    {
+      id: 'qualification_updated',
+      description: 'Qualification status was updated',
+      type: 'field_not_null',
+      entity: 'result',
+      field: 'is_qualified'
+    }
+  ],
+  
+  invariants: [
+    {
+      id: 'business_unchanged',
+      description: 'Customer business ID should not change',
+      type: 'field_equals',
+      entity: 'customer',
+      field: 'business_id',
+      fromArg: 'original_business_id'
+    }
+  ],
+  
+  dbAssertions: [
+    {
+      id: 'qualification_in_db',
+      description: 'Qualification status updated in database',
+      table: 'customers',
+      query: {
+        select: 'id, is_qualified, qualified_at',
+        where: { id: 'args.customer_id' }
+      },
+      expect: {
+        field: 'is_qualified',
+        operator: 'not_null'
+      }
+    }
+  ]
+};
+
+export const AUTO_ASSIGN_LEAD_CONTRACT: ToolContract = {
+  toolName: 'auto_assign_lead',
+  description: 'Automatically assign a lead to a team member based on workload',
+  processId: 'lead_generation',
+  subStepId: 'assign_lead',
+  
+  preconditions: [
+    {
+      id: 'customer_or_request_exists',
+      description: 'Customer or request must exist',
+      type: 'custom',
+      customCheck: 'args.customer_id || args.request_id'
+    }
+  ],
+  
+  postconditions: [
+    {
+      id: 'assignment_made',
+      description: 'Lead was assigned to a team member',
+      type: 'field_not_null',
+      entity: 'result',
+      field: 'assigned_to'
+    }
+  ],
+  
+  invariants: [],
+  
+  dbAssertions: [
+    {
+      id: 'customer_owner_updated',
+      description: 'Customer owner_id updated in database',
+      table: 'customers',
+      query: {
+        select: 'id, owner_id',
+        where: { id: 'args.customer_id' }
+      },
+      expect: {
+        field: 'owner_id',
+        operator: 'not_null'
+      }
+    }
+  ]
+};
+
+export const SEND_EMAIL_CONTRACT: ToolContract = {
+  toolName: 'send_email',
+  description: 'Send an email to a customer',
+  processId: 'lead_generation',
+  subStepId: 'initial_contact',
+  
+  preconditions: [
+    {
+      id: 'customer_exists',
+      description: 'Customer must exist',
+      type: 'entity_exists',
+      entity: 'customer',
+      field: 'id',
+      fromArg: 'customer_id'
+    },
+    {
+      id: 'customer_has_email',
+      description: 'Customer must have an email address',
+      type: 'field_not_null',
+      entity: 'customer',
+      field: 'email'
+    },
+    {
+      id: 'subject_provided',
+      description: 'Email subject must be provided',
+      type: 'field_not_null',
+      entity: 'args',
+      field: 'subject'
+    },
+    {
+      id: 'body_provided',
+      description: 'Email body must be provided',
+      type: 'field_not_null',
+      entity: 'args',
+      field: 'body'
+    }
+  ],
+  
+  postconditions: [
+    {
+      id: 'email_sent',
+      description: 'Email was sent successfully',
+      type: 'field_equals',
+      entity: 'result',
+      field: 'success',
+      value: true
+    }
+  ],
+  
+  invariants: [],
+  
+  dbAssertions: [
+    {
+      id: 'email_logged',
+      description: 'Email activity logged',
+      table: 'ai_activity_log',
+      query: {
+        select: 'id, activity_type',
+        where: { id: 'result.activity_log_id' }
+      },
+      expect: {
+        count: 1
+      }
+    }
+  ]
+};
+
+// ============================================================================
 // SITE ASSESSMENT TOOL CONTRACTS
 // ============================================================================
 
@@ -1852,6 +2083,10 @@ export const TOOL_CONTRACTS: Record<string, ToolContract> = {
   create_customer: CREATE_CUSTOMER_CONTRACT,
   update_customer: UPDATE_CUSTOMER_CONTRACT,
   create_request: CREATE_REQUEST_CONTRACT,
+  score_lead: SCORE_LEAD_CONTRACT,
+  qualify_lead: QUALIFY_LEAD_CONTRACT,
+  auto_assign_lead: AUTO_ASSIGN_LEAD_CONTRACT,
+  send_email: SEND_EMAIL_CONTRACT,
   // Site Assessment
   create_assessment_job: CREATE_ASSESSMENT_JOB_CONTRACT,
   // Quoting/Estimating
