@@ -40,6 +40,7 @@ export const COMPLETE_LEAD_GENERATION: MultiStepPattern = {
   description: 'End-to-end lead capture, qualification, and initial contact workflow',
   category: 'pre-service',
   estimatedDurationMs: 5000,
+  specialCardType: 'lead_workflow',
   steps: [
     {
       order: 1,

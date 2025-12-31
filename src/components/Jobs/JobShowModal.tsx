@@ -839,6 +839,22 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                     </Button>
                   )}
                 </div>
+                
+                {/* Before Photos section for assessment jobs */}
+                {(job as any).is_assessment && (
+                  <div className="mb-4 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Camera className="w-4 h-4 text-blue-500" />
+                      <span className="font-medium text-sm">Before Photos</span>
+                      <Badge variant="secondary" className="text-xs bg-blue-500/20 text-blue-600">
+                        {allMedia.filter(m => m.tags?.includes('assessment:before')).length}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Photos captured during the assessment are automatically tagged for before/after comparisons
+                    </p>
+                  </div>
+                )}
             
             {/* Display legacy job.photos */}
             {Array.isArray((job as any).photos) && (job as any).photos.length > 0 && (
