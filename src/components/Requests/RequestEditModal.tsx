@@ -7,6 +7,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CalendarIcon, ImagePlus, X } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -15,6 +16,7 @@ import { invalidationHelpers } from "@/queries/keys";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useAuthApi } from '@/hooks/useAuthApi';
 import { useCustomersData } from "@/hooks/useCustomersData";
+import { useBusinessMembersData } from "@/hooks/useBusinessMembers";
 import { CustomerCombobox } from "@/components/Quotes/CustomerCombobox";
 import { CustomerBottomModal } from "@/components/Customers/CustomerBottomModal";
 import { preferredTimeOptions } from "@/validation/requests";
@@ -41,6 +43,7 @@ export function RequestEditModal({
   const { businessId } = useBusinessContext();
   const authApi = useAuthApi();
   const { data: customers = [] } = useCustomersData();
+  const { data: membersResponse } = useBusinessMembersData();
   
   // Form state
   const [customer, setCustomer] = useState<Customer | null>(null);
@@ -56,6 +59,9 @@ export function RequestEditModal({
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showCreateCustomer, setShowCreateCustomer] = useState(false);
+  const [assignedTo, setAssignedTo] = useState<string | null>(null);
+  
+  const teamMembers = membersResponse?.data || [];
 
   // Populate form when request data changes
   useEffect(() => {
@@ -71,6 +77,7 @@ export function RequestEditModal({
       setNotes(request.notes || "");
       setExistingPhotos(request.photos as string[] || []);
       setFiles([]);
+      setAssignedTo(request.assigned_to || null);
     }
   }, [request, customers, open]);
 
@@ -94,6 +101,7 @@ export function RequestEditModal({
     setExistingPhotos([]);
     setUploading(false);
     setLoading(false);
+    setAssignedTo(null);
   };
 
   const handleSave = async () => {
@@ -151,6 +159,7 @@ export function RequestEditModal({
         preferred_times: preferredTimes,
         notes: notes.trim() || null,
         photos: allPhotos,
+        assigned_to: assignedTo || null,
       };
       
       const { data, error } = await authApi.invoke('requests-crud', {
@@ -478,6 +487,24 @@ export function RequestEditModal({
                   placeholder={t('requests.create.notesPlaceholder')}
                   rows={2}
                 />
+              </div>
+
+              {/* Assign To */}
+              <div className="space-y-2">
+                <Label>{t('requests.create.assignTo') || 'Assign To'}</Label>
+                <Select value={assignedTo || ''} onValueChange={(val) => setAssignedTo(val || null)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('requests.create.selectTeamMember') || 'Select team member'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Unassigned</SelectItem>
+                    {teamMembers.map((member) => (
+                      <SelectItem key={member.user_id} value={member.user_id}>
+                        {member.display_name || member.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>

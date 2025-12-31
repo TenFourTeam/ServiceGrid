@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, FileText, Wrench, Calendar, Archive, Edit } from 'lucide-react';
+import { MoreHorizontal, FileText, Wrench, Calendar, Archive, Edit, UserCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuthApi } from '@/hooks/useAuthApi';
@@ -12,6 +12,9 @@ import type { RequestListItem } from '@/hooks/useRequestsData';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { RequestEditModal } from './RequestEditModal';
 import { useState } from 'react';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/queries/keys';
 
 interface RequestActionsProps {
   request: RequestListItem;
@@ -22,6 +25,9 @@ export function RequestActions({ request }: RequestActionsProps) {
   const navigate = useNavigate();
   const [showEditModal, setShowEditModal] = useState(false);
   const authApi = useAuthApi();
+  const { userId } = useClerkAuth();
+  const { businessId } = useBusinessContext();
+  const queryClient = useQueryClient();
   const { triggerJobScheduled } = useLifecycleEmailIntegration();
   const createQuote = useCreateQuote();
   const { updateRequest } = useRequestOperations();
@@ -170,6 +176,21 @@ export function RequestActions({ request }: RequestActionsProps) {
     });
   };
 
+  const handleAssignToMe = async () => {
+    if (!userId || !businessId) return;
+    try {
+      await authApi.invoke('requests-crud', {
+        method: 'PUT',
+        body: { id: request.id, assigned_to: userId }
+      });
+      toast.success(t('requests.actions.assignedToYou') || 'Request assigned to you');
+      queryClient.invalidateQueries({ queryKey: queryKeys.data.requests(businessId) });
+      setDropdownOpen(false);
+    } catch (error) {
+      console.error('Failed to assign request:', error);
+      toast.error('Failed to assign request');
+    }
+  };
 
   return (
     <>
@@ -191,6 +212,18 @@ export function RequestActions({ request }: RequestActionsProps) {
             <Edit className="h-4 w-4" />
             {t('requests.actions.edit')}
           </DropdownMenuItem>
+          {!request.assigned_to && (
+            <DropdownMenuItem 
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                handleAssignToMe();
+              }} 
+              className="gap-2"
+            >
+              <UserCheck className="h-4 w-4" />
+              {t('requests.actions.assignToMe') || 'Assign to Me'}
+            </DropdownMenuItem>
+          )}
           <DropdownMenuSeparator />
           <DropdownMenuItem 
             onClick={(e) => { 

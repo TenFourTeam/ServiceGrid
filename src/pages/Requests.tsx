@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Plus, Search, Share } from "lucide-react";
+import { Plus, Search, Share, UserCircle } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { formatDistanceToNow } from "date-fns";
 import AppLayout from "@/components/Layout/AppLayout";
@@ -21,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRequestsData, RequestListItem } from "@/hooks/useRequestsData";
@@ -172,6 +173,18 @@ export default function Requests() {
           <div className="text-sm text-muted-foreground mt-1 truncate">
             {request.property_address || t('requests.noAddressProvided')}
           </div>
+          {/* Assigned To */}
+          {request.assigned_user ? (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+              <UserCircle className="h-3 w-3" />
+              <span className="truncate">{request.assigned_user.display_name || request.assigned_user.email}</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground/50 mt-1">
+              <UserCircle className="h-3 w-3" />
+              <span>{t('requests.unassigned') || 'Unassigned'}</span>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -383,6 +396,7 @@ export default function Requests() {
                             {t('requests.table.status')}{sortKey === 'status' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
                           </button>
                         </TableHead>
+                        <TableHead>{t('requests.table.assignedTo') || 'Assigned To'}</TableHead>
                         <TableHead>{t('requests.table.actions')}</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -411,6 +425,22 @@ export default function Requests() {
                           </TableCell>
                           <TableCell>
                             {getStatusBadge(request.status)}
+                          </TableCell>
+                          <TableCell>
+                            {request.assigned_user ? (
+                              <div className="flex items-center gap-2">
+                                <Avatar className="h-6 w-6">
+                                  <AvatarFallback className="text-xs">
+                                    {request.assigned_user.email?.[0]?.toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span className="text-sm truncate max-w-[120px]">
+                                  {request.assigned_user.display_name || request.assigned_user.email}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">{t('requests.unassigned') || 'Unassigned'}</span>
+                            )}
                           </TableCell>
                           <TableCell>
                             <RequestActions request={request} />

@@ -11,6 +11,12 @@ export interface RequestCustomer {
   address?: string;
 }
 
+export interface AssignedUser {
+  id: string;
+  email: string;
+  display_name?: string;
+}
+
 export interface RequestListItem {
   id: string;
   business_id: string;
@@ -28,6 +34,8 @@ export interface RequestListItem {
   created_at: string;
   updated_at: string;
   customer: RequestCustomer;
+  assigned_to?: string | null;
+  assigned_user?: AssignedUser | null;
 }
 
 export function useRequestsData() {
