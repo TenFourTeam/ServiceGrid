@@ -17,7 +17,9 @@ import type { Customer } from "@/types";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
+import { Progress } from '@/components/ui/progress';
 import { ChevronDown, Send, Loader2, CheckCircle, Clock, UserX } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 
 // Email validation regex - requires a valid email format
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -377,6 +379,37 @@ export function CustomerBottomModal({
                 />
               )}
             </div>
+
+            {/* Lead Qualification Status - View Mode */}
+            {mode === 'view' && customer?.lead_score !== undefined && (
+              <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">Lead Score</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl font-bold">{customer.lead_score}</span>
+                    <span className="text-muted-foreground">/100</span>
+                  </div>
+                </div>
+                <Progress value={customer.lead_score ?? 0} className="h-2" />
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    {customer.is_qualified ? (
+                      <span className="flex items-center gap-1 text-green-600">
+                        <CheckCircle className="h-4 w-4" />
+                        Qualified lead
+                      </span>
+                    ) : (
+                      "Needs more info to qualify"
+                    )}
+                  </span>
+                  {customer.qualified_at && (
+                    <span className="text-muted-foreground text-xs">
+                      Qualified {formatDistanceToNow(new Date(customer.qualified_at), { addSuffix: true })}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Scheduling Preferences */}
             {mode !== 'view' && (
