@@ -107,71 +107,163 @@ const LEAD_GENERATION_MAPPING: ProcessMapping = {
 };
 
 // ============================================================================
-// COMMUNICATION PROCESS
+// COMMUNICATION PROCESS (5 Sub-Processes)
 // ============================================================================
 
 const COMMUNICATION_MAPPING: ProcessMapping = {
   processId: PROCESS_IDS.COMMUNICATION,
   name: 'Communication',
   subSteps: [
+    // Sub-Process 1: Receive Customer Inquiry
     {
       processId: PROCESS_IDS.COMMUNICATION,
-      subStepId: 'send_message',
-      name: 'Send Message',
+      subStepId: 'comm_receive_inquiry',
+      name: 'Receive Customer Inquiry',
       diy: {
-        edgeFunctions: ['messages-crud', 'conversations-crud'],
-        uiComponents: ['ConversationPanel', 'MessageComposer'],
-        dbTables: ['messages', 'conversations'],
-        description: 'User composes and sends message via conversation UI',
+        edgeFunctions: ['conversations-crud', 'customer-messages-crud'],
+        uiComponents: ['ConversationPanel', 'CustomerMessages', 'NewConversationButton'],
+        dbTables: ['sg_conversations', 'sg_messages', 'customers'],
+        description: 'User manually creates conversation in ConversationPanel',
       },
       dwy: {
-        tools: ['send_message', 'create_conversation'],
-        edgeFunctions: ['messages-crud', 'conversations-crud'],
-        dbTables: ['messages', 'conversations'],
+        tools: ['create_conversation', 'get_or_create_conversation', 'search_customers'],
+        edgeFunctions: ['conversations-crud', 'customer-messages-crud'],
+        dbTables: ['sg_conversations', 'sg_messages', 'customers'],
         requiresConfirmation: true,
-        description: 'AI drafts message, user reviews and sends',
+        description: 'AI suggests creating conversation when user mentions customer communication',
+      },
+      dfy: {
+        triggers: ['trg_auto_create_conversation_on_request'],
+        edgeFunctions: ['conversations-crud'],
+        dbTables: ['sg_conversations', 'requests', 'customers'],
+        description: 'Auto-create conversation when service request submitted or first quote/job created',
+      },
+      expectedOutcome: {
+        entity: 'sg_conversations',
+        state: { created: true, customer_linked: true },
+        description: 'Conversation thread exists and is linked to customer',
+      },
+    },
+    // Sub-Process 2: Access Customer & Service Data
+    {
+      processId: PROCESS_IDS.COMMUNICATION,
+      subStepId: 'comm_access_data',
+      name: 'Access Customer & Service Data',
+      diy: {
+        edgeFunctions: ['conversations-crud', 'customers-crud', 'jobs-crud'],
+        uiComponents: ['ConversationPanel', 'CustomerDetail'],
+        dbTables: ['sg_conversations', 'customers', 'jobs', 'quotes'],
+        description: 'System auto-loads context when user opens conversation',
+      },
+      dwy: {
+        tools: ['get_customer', 'get_job', 'list_conversations', 'get_conversation_details'],
+        edgeFunctions: ['conversations-crud', 'customers-crud'],
+        dbTables: ['sg_conversations', 'customers', 'jobs', 'profiles'],
+        requiresConfirmation: false,
+        description: 'AI retrieves customer context when composing message',
+      },
+      dfy: {
+        triggers: [],
+        edgeFunctions: ['conversations-crud'],
+        dbTables: ['sg_conversations', 'customers', 'jobs'],
+        description: 'Already DFY - get_conversations_with_preview RPC auto-fetches all linked data',
+      },
+      expectedOutcome: {
+        entity: 'sg_conversations',
+        state: { context_loaded: true },
+        description: 'Enriched conversation object with customer, job, worker names',
+      },
+    },
+    // Sub-Process 3: Communicate Service Details
+    {
+      processId: PROCESS_IDS.COMMUNICATION,
+      subStepId: 'comm_send_details',
+      name: 'Communicate Service Details',
+      diy: {
+        edgeFunctions: ['messages-crud', 'send-lifecycle-email'],
+        uiComponents: ['ConversationPanel', 'MessageComposer', 'CustomerMessages'],
+        dbTables: ['sg_messages', 'mail_sends', 'email_queue'],
+        description: 'User types message in ConversationPanel or sends email',
+      },
+      dwy: {
+        tools: ['send_message', 'send_email', 'queue_email'],
+        edgeFunctions: ['messages-crud', 'send-lifecycle-email'],
+        dbTables: ['sg_messages', 'mail_sends', 'email_queue'],
+        requiresConfirmation: true,
+        description: 'AI drafts message, user confirms, AI sends',
       },
       dfy: {
         triggers: [],
         edgeFunctions: ['send-lifecycle-email', 'process-email-queue'],
         scheduledJobs: ['process-email-queue'],
-        dbTables: ['messages', 'email_queue'],
-        description: 'Automated lifecycle emails sent on triggers',
+        dbTables: ['sg_messages', 'email_queue'],
+        description: 'Auto-send confirmation when job scheduled, auto-send quote notification',
       },
       expectedOutcome: {
-        entity: 'message',
+        entity: 'sg_messages',
         state: { created: true, sent: true },
-        description: 'Message created and sent to recipient',
+        description: 'Message delivered to customer via selected channel',
       },
     },
+    // Sub-Process 4: Real-Time Service Updates
     {
       processId: PROCESS_IDS.COMMUNICATION,
-      subStepId: 'send_welcome_email',
-      name: 'Send Welcome Email',
+      subStepId: 'comm_realtime_updates',
+      name: 'Real-Time Service Updates',
       diy: {
-        edgeFunctions: ['send-lifecycle-email'],
-        uiComponents: ['CustomerDetail', 'SendEmailButton'],
-        dbTables: ['email_queue', 'customers'],
-        description: 'User manually triggers welcome email',
+        edgeFunctions: ['messages-crud', 'jobs-crud'],
+        uiComponents: ['ConversationPanel', 'JobDetail'],
+        dbTables: ['sg_messages', 'sg_conversations', 'jobs'],
+        description: 'Technician manually sends status message from mobile',
       },
       dwy: {
-        tools: ['send_welcome_email'],
-        edgeFunctions: ['send-lifecycle-email'],
-        dbTables: ['email_queue', 'customers'],
-        requiresConfirmation: true,
-        description: 'AI suggests sending welcome email',
+        tools: ['send_message', 'update_job'],
+        edgeFunctions: ['messages-crud', 'jobs-crud'],
+        dbTables: ['sg_messages', 'sg_conversations', 'jobs'],
+        requiresConfirmation: false,
+        description: 'AI prompts technician to send update at milestones',
       },
       dfy: {
-        triggers: ['trigger_queue_welcome_email'],
+        triggers: ['trg_job_status_customer_notification'],
+        edgeFunctions: ['messages-crud'],
+        dbTables: ['sg_messages', 'sg_conversations', 'jobs'],
+        description: 'Auto-message customer when job status changes (en_route, in_progress, completed)',
+      },
+      expectedOutcome: {
+        entity: 'sg_messages',
+        state: { created: true, type: 'status_update' },
+        description: 'Customer notified of job status change via conversation',
+      },
+    },
+    // Sub-Process 5: Follow-Up Post-Service
+    {
+      processId: PROCESS_IDS.COMMUNICATION,
+      subStepId: 'comm_followup',
+      name: 'Follow-Up Post-Service',
+      diy: {
+        edgeFunctions: ['send-lifecycle-email', 'process-email-queue'],
+        uiComponents: ['ConversationPanel', 'CustomerDetail'],
+        dbTables: ['email_queue', 'mail_sends', 'jobs'],
+        description: 'User manually sends follow-up email after job completion',
+      },
+      dwy: {
+        tools: ['queue_email', 'send_email'],
+        edgeFunctions: ['send-lifecycle-email', 'process-email-queue'],
+        dbTables: ['email_queue', 'mail_sends', 'jobs'],
+        requiresConfirmation: true,
+        description: 'AI suggests follow-up after job marked complete',
+      },
+      dfy: {
+        triggers: ['trg_job_complete_followup_queue'],
         edgeFunctions: ['process-email-queue'],
         scheduledJobs: ['process-email-queue'],
-        dbTables: ['email_queue', 'customers'],
-        description: 'Auto-queues welcome email on customer creation',
+        dbTables: ['email_queue', 'mail_sends', 'jobs'],
+        description: 'Auto-queue follow-up email after configurable delay (default 24h)',
       },
       expectedOutcome: {
         entity: 'email_queue',
-        state: { queued: true, email_type: 'welcome' },
-        description: 'Welcome email queued for delivery',
+        state: { queued: true, email_type: 'job_followup' },
+        description: 'Follow-up email queued for delivery at scheduled time',
       },
     },
   ],

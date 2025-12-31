@@ -521,12 +521,16 @@ export type Database = {
           assignment_method: string
           auto_assign_leads: boolean
           auto_create_assessment_checklist: boolean | null
+          auto_create_conversations: boolean
           auto_generate_report: boolean | null
           auto_score_leads: boolean
+          auto_send_followup_email: boolean
+          auto_send_job_updates: boolean
           auto_send_welcome_email: boolean
           auto_suggest_risk_tags: boolean | null
           business_id: string
           created_at: string
+          followup_email_delay_hours: number
           id: string
           lead_score_threshold: number
           updated_at: string
@@ -537,12 +541,16 @@ export type Database = {
           assignment_method?: string
           auto_assign_leads?: boolean
           auto_create_assessment_checklist?: boolean | null
+          auto_create_conversations?: boolean
           auto_generate_report?: boolean | null
           auto_score_leads?: boolean
+          auto_send_followup_email?: boolean
+          auto_send_job_updates?: boolean
           auto_send_welcome_email?: boolean
           auto_suggest_risk_tags?: boolean | null
           business_id: string
           created_at?: string
+          followup_email_delay_hours?: number
           id?: string
           lead_score_threshold?: number
           updated_at?: string
@@ -553,12 +561,16 @@ export type Database = {
           assignment_method?: string
           auto_assign_leads?: boolean
           auto_create_assessment_checklist?: boolean | null
+          auto_create_conversations?: boolean
           auto_generate_report?: boolean | null
           auto_score_leads?: boolean
+          auto_send_followup_email?: boolean
+          auto_send_job_updates?: boolean
           auto_send_welcome_email?: boolean
           auto_suggest_risk_tags?: boolean | null
           business_id?: string
           created_at?: string
+          followup_email_delay_hours?: number
           id?: string
           lead_score_threshold?: number
           updated_at?: string
@@ -1269,6 +1281,7 @@ export type Database = {
           error_message: string | null
           id: string
           max_attempts: number
+          metadata: Json | null
           processed_at: string | null
           recipient_email: string
           recipient_name: string | null
@@ -1286,6 +1299,7 @@ export type Database = {
           error_message?: string | null
           id?: string
           max_attempts?: number
+          metadata?: Json | null
           processed_at?: string | null
           recipient_email: string
           recipient_name?: string | null
@@ -1303,6 +1317,7 @@ export type Database = {
           error_message?: string | null
           id?: string
           max_attempts?: number
+          metadata?: Json | null
           processed_at?: string | null
           recipient_email?: string
           recipient_name?: string | null

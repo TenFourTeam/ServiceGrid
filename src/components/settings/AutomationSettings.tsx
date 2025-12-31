@@ -20,6 +20,11 @@ interface AutomationSettingsData {
   welcome_email_delay_minutes: number;
   auto_assign_leads: boolean;
   assignment_method: string;
+  // Communication automation settings
+  auto_create_conversations: boolean;
+  auto_send_job_updates: boolean;
+  auto_send_followup_email: boolean;
+  followup_email_delay_hours: number;
 }
 
 export function AutomationSettings() {
@@ -84,6 +89,10 @@ export function AutomationSettings() {
           welcome_email_delay_minutes: settings.welcome_email_delay_minutes,
           auto_assign_leads: settings.auto_assign_leads,
           assignment_method: settings.assignment_method,
+          auto_create_conversations: settings.auto_create_conversations,
+          auto_send_job_updates: settings.auto_send_job_updates,
+          auto_send_followup_email: settings.auto_send_followup_email,
+          followup_email_delay_hours: settings.followup_email_delay_hours,
           updated_at: new Date().toISOString()
         })
         .eq("business_id", businessId);
