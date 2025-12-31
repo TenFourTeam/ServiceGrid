@@ -461,6 +461,63 @@ export function useAIChat(options?: UseAIChatOptions) {
                 setMessages(prev => [...prev, confirmationMessage]);
                 setCurrentStreamingMessage('');
                 setIsStreaming(false);
+              } else if (data.type === 'lead_workflow') {
+                // Lead workflow start - use specialized LeadWorkflowCard
+                const leadWorkflowMessage: Message = {
+                  id: crypto.randomUUID(),
+                  role: 'assistant',
+                  content: 'Starting lead capture workflow...',
+                  timestamp: new Date(),
+                  messageType: 'lead_workflow',
+                  leadWorkflow: {
+                    steps: data.workflow.steps.map((s: any) => ({
+                      id: s.id,
+                      name: s.name,
+                      description: s.description,
+                      status: s.status,
+                      tool: s.tool,
+                    })),
+                    currentStepIndex: data.workflow.currentStepIndex || 0,
+                    customerData: data.workflow.customerData || {},
+                  },
+                  // Also store planId for approval handling
+                  planPreview: {
+                    id: data.planId,
+                    name: 'Lead Capture',
+                    description: 'Capture and process new lead',
+                    steps: data.workflow.steps,
+                    requiresApproval: true,
+                  },
+                };
+                setMessages(prev => [...prev, leadWorkflowMessage]);
+                setCurrentStreamingMessage('');
+                // Keep streaming true for progress updates
+              } else if (data.type === 'lead_workflow_progress') {
+                // Update lead workflow progress
+                setMessages(prev => {
+                  const workflowMsgIndex = prev.findIndex(m => m.messageType === 'lead_workflow');
+                  if (workflowMsgIndex !== -1) {
+                    const updated = [...prev];
+                    updated[workflowMsgIndex] = {
+                      ...updated[workflowMsgIndex],
+                      leadWorkflow: {
+                        steps: data.steps.map((s: any) => ({
+                          id: s.id,
+                          name: s.name,
+                          description: s.description,
+                          status: s.status,
+                          tool: s.tool,
+                          result: s.result,
+                          error: s.error,
+                        })),
+                        currentStepIndex: data.stepIndex,
+                        customerData: data.customerData || updated[workflowMsgIndex].leadWorkflow?.customerData || {},
+                      },
+                    };
+                    return updated;
+                  }
+                  return prev;
+                });
               } else if (data.type === 'plan_preview') {
                 // Show multi-step plan preview for approval
                 const planPreviewMessage: Message = {
