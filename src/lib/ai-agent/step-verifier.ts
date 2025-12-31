@@ -78,8 +78,8 @@ export async function executeWithVerification(
   // Check process entry conditions if this is first tool in process
   const process = getToolProcess(toolName);
   if (process) {
-    const entryCheck = checkEntryConditions(process, context.entities);
-    if (!entryCheck.passed) {
+    const entryCheck = checkEntryConditions(process.id, context.entities);
+    if (!entryCheck.valid) {
       console.warn(`[StepVerifier] Process entry conditions failed for ${process.id}`);
     }
   }
