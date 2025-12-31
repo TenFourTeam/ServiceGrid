@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, createContext, useContext } from 'react';
-import { useAuth, useUser } from '@clerk/clerk-react';
 import { supabase } from '@/integrations/supabase/client';
 import type { 
   CustomerAuthState, 
@@ -62,51 +61,17 @@ const initialState: ExtendedCustomerAuthState = {
 };
 
 export function useCustomerAuthProvider() {
-  const { isSignedIn, userId } = useAuth();
-  const { user } = useUser();
-  
   const [state, setState] = useState<ExtendedCustomerAuthState>(initialState);
 
   // Check session on mount
   useEffect(() => {
     checkAuth();
-  }, [isSignedIn, userId]);
+  }, []);
 
   const checkAuth = useCallback(async () => {
     setState(prev => ({ ...prev, isLoading: true }));
 
     try {
-      // First check Clerk auth for customers
-      if (isSignedIn && user) {
-        const userType = user.publicMetadata?.userType;
-        
-        if (userType === 'customer') {
-          // Verify customer with our backend
-          const response = await supabase.functions.invoke('customer-auth/clerk-verify', {
-            body: { 
-              clerk_user_id: userId,
-              email: user.primaryEmailAddress?.emailAddress,
-            },
-          });
-
-          if (response.data?.authenticated) {
-            setState({
-              customer: response.data.customer_account,
-              customerDetails: response.data.customer,
-              authMethod: 'clerk',
-              isLoading: false,
-              isAuthenticated: true,
-              sessionToken: null,
-              availableBusinesses: response.data.available_businesses || [],
-              activeBusinessId: response.data.customer?.business_id || null,
-              activeCustomerId: response.data.customer?.id || null,
-              hasPassword: response.data.customer_account?.has_password || false,
-            });
-            return;
-          }
-        }
-      }
-
       // Check session-based auth
       const sessionToken = localStorage.getItem(CUSTOMER_SESSION_KEY);
       if (sessionToken) {
@@ -146,7 +111,7 @@ export function useCustomerAuthProvider() {
         isLoading: false,
       });
     }
-  }, [isSignedIn, userId, user]);
+  }, []);
 
   const sendMagicLink = useCallback(async (email: string): Promise<SendMagicLinkResult> => {
     try {

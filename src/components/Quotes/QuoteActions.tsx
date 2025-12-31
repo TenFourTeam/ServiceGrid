@@ -5,7 +5,7 @@ import { MoreHorizontal, Send, FileText, Receipt, Edit, Trash2, Smartphone } fro
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuthApi } from '@/hooks/useAuthApi';
-import { useAuth as useClerkAuth } from '@clerk/clerk-react';
+
 import { useLifecycleEmailIntegration } from '@/hooks/useLifecycleEmailIntegration';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useQueryClient } from '@tanstack/react-query';
