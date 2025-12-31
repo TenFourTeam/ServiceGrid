@@ -312,7 +312,18 @@ export function LeadWorkflowCard({
                 </div>
               )}
               {onPrompt && (
-                <div className="flex gap-2 mt-3">
+                <div className="flex gap-2 mt-3 flex-wrap">
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    className="h-7 text-xs active:scale-95 transition-transform"
+                    onClick={() => {
+                      feedback.tap();
+                      onPrompt("Start a conversation with this customer");
+                    }}
+                  >
+                    Contact Customer
+                  </Button>
                   <Button 
                     variant="outline" 
                     size="sm" 

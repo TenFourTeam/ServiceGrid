@@ -332,6 +332,28 @@ export function CommunicationWorkflowCard({
               {onPrompt && (
                 <div className="flex gap-2 mt-3 flex-wrap">
                   <Button 
+                    variant="default" 
+                    size="sm" 
+                    className="h-7 text-xs active:scale-95 transition-transform"
+                    onClick={() => {
+                      feedback.tap();
+                      onPrompt("Schedule a site assessment for this customer");
+                    }}
+                  >
+                    Schedule Assessment
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-7 text-xs active:scale-95 transition-transform"
+                    onClick={() => {
+                      feedback.tap();
+                      onPrompt("Create a quote for this customer");
+                    }}
+                  >
+                    Create Quote
+                  </Button>
+                  <Button 
                     variant="outline" 
                     size="sm" 
                     className="h-7 text-xs active:scale-95 transition-transform"
@@ -341,17 +363,6 @@ export function CommunicationWorkflowCard({
                     }}
                   >
                     Send Another
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="h-7 text-xs active:scale-95 transition-transform"
-                    onClick={() => {
-                      feedback.tap();
-                      onPrompt("Schedule a follow-up for this customer");
-                    }}
-                  >
-                    Schedule Follow-up
                   </Button>
                 </div>
               )}
