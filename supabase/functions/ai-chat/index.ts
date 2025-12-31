@@ -7301,29 +7301,43 @@ RESPONSE STYLE:
           // ===============================================================
           // MULTI-STEP PLAN DETECTION (approval/rejection handled earlier)
           // ===============================================================
+          // Merge entities from orchestrator, processContext (from workflow cards), and processTransition
+          const mergedEntities = {
+            ...(orchestratorResult.intent?.entities || {}),
+            ...(processContext || {}),
+            ...(processTransition?.entities || {}),
+          };
+          
           // Check if this is a multi-step task that needs a plan
+          // If a process transition was detected, force that pattern
+          const forcedPatternId = processTransition?.patternId;
+          if (forcedPatternId) {
+            console.info('[ai-chat] Forcing pattern from process transition:', forcedPatternId);
+          }
+          
           const { isMultiStep, pattern: multiStepPattern } = detectMultiStepTask(
             message, 
-            orchestratorResult.intent?.entities || {}
+            mergedEntities,
+            forcedPatternId
           );
           
           if (isMultiStep && multiStepPattern) {
             console.info('[ai-chat] Multi-step task detected:', multiStepPattern.id);
             
-            // Build the execution plan
-            const plan = buildExecutionPlan(multiStepPattern, orchestratorResult.intent?.entities || {});
+            // Build the execution plan with merged entities
+            const plan = buildExecutionPlan(multiStepPattern, mergedEntities);
             
             // Store for later approval (both cache for quick access and DB for persistence)
-            storePendingPlan(plan, multiStepPattern, orchestratorResult.intent?.entities || {}, userId);
-            await storePendingPlanAsync(plan, multiStepPattern, orchestratorResult.intent?.entities || {}, memoryCtx);
+            storePendingPlan(plan, multiStepPattern, mergedEntities, userId);
+            await storePendingPlanAsync(plan, multiStepPattern, mergedEntities, memoryCtx);
             
             // Check if this is a specialized workflow pattern - use dedicated card
             if (isLeadWorkflowPattern(multiStepPattern)) {
               console.info('[ai-chat] Using LeadWorkflowCard for pattern:', multiStepPattern.id);
-              sendLeadWorkflowStart(controller, plan, orchestratorResult.intent?.entities || {});
+              sendLeadWorkflowStart(controller, plan, mergedEntities);
             } else if (isAssessmentWorkflowPattern(multiStepPattern)) {
               console.info('[ai-chat] Using AssessmentWorkflowCard for pattern:', multiStepPattern.id);
-              sendAssessmentWorkflowStart(controller, plan, orchestratorResult.intent?.entities || {});
+              sendAssessmentWorkflowStart(controller, plan, mergedEntities);
             } else {
               // Send generic plan preview to frontend
               sendPlanPreview(controller, plan);

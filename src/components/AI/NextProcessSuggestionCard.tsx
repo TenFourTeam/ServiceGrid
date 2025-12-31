@@ -43,7 +43,7 @@ export function NextProcessSuggestionCard({ suggestion, onContinue }: NextProces
   };
 
   return (
-    <Card className="mt-3 border-primary/20 bg-primary/5">
+    <Card className="mt-3 border-primary/20 bg-primary/5" data-testid="next-process-suggestion">
       <CardContent className="p-3">
         <div className="flex items-start gap-2">
           <Sparkles className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />

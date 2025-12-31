@@ -46,7 +46,7 @@ export function ClarificationCard({
   };
 
   return (
-    <Card className="border-primary/20 bg-gradient-to-br from-primary/5 via-primary/3 to-transparent overflow-hidden">
+    <Card className="border-primary/20 bg-gradient-to-br from-primary/5 via-primary/3 to-transparent overflow-hidden" data-testid="clarification-card">
       <CardHeader className="pb-3 pt-4">
         <div className="flex items-start gap-3">
           <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0">
