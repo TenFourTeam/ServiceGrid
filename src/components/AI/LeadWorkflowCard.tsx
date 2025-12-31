@@ -58,9 +58,11 @@ export interface LeadWorkflowCardProps {
     phone?: string;
     leadScore?: number;
     leadSource?: string;
+    customer_id?: string;
+    customerId?: string;
   };
   automationSummary?: AutomationSummary;
-  onPrompt?: (prompt: string) => void;
+  onPrompt?: (prompt: string, context?: Record<string, any>) => void;
   isExpanded?: boolean;
 }
 
@@ -319,7 +321,15 @@ export function LeadWorkflowCard({
                     className="h-7 text-xs active:scale-95 transition-transform"
                     onClick={() => {
                       feedback.tap();
-                      onPrompt("Start a conversation with this customer");
+                      const customerId = customerData?.customer_id || customerData?.customerId;
+                      const customerName = customerData?.name || 'this customer';
+                      // Use entity reference syntax for AI to parse
+                      const prompt = customerId 
+                        ? `Contact customer [ENTITY:customer:${customerId}:${customerName}]`
+                        : `Start a conversation with ${customerName}`;
+                      onPrompt(prompt, { 
+                        processContext: { customerId, customerName, fromProcess: 'lead_generation' }
+                      });
                     }}
                   >
                     Contact Customer
@@ -330,7 +340,14 @@ export function LeadWorkflowCard({
                     className="h-7 text-xs active:scale-95 transition-transform"
                     onClick={() => {
                       feedback.tap();
-                      onPrompt("Create a quote for this lead");
+                      const customerId = customerData?.customer_id || customerData?.customerId;
+                      const customerName = customerData?.name || 'this lead';
+                      const prompt = customerId 
+                        ? `Create a quote for [ENTITY:customer:${customerId}:${customerName}]`
+                        : `Create a quote for ${customerName}`;
+                      onPrompt(prompt, {
+                        processContext: { customerId, customerName, fromProcess: 'lead_generation' }
+                      });
                     }}
                   >
                     Create Quote
@@ -341,7 +358,14 @@ export function LeadWorkflowCard({
                     className="h-7 text-xs active:scale-95 transition-transform"
                     onClick={() => {
                       feedback.tap();
-                      onPrompt("Schedule an assessment for this lead");
+                      const customerId = customerData?.customer_id || customerData?.customerId;
+                      const customerName = customerData?.name || 'this lead';
+                      const prompt = customerId 
+                        ? `Schedule an assessment for [ENTITY:customer:${customerId}:${customerName}]`
+                        : `Schedule an assessment for ${customerName}`;
+                      onPrompt(prompt, {
+                        processContext: { customerId, customerName, fromProcess: 'lead_generation' }
+                      });
                     }}
                   >
                     Schedule Assessment

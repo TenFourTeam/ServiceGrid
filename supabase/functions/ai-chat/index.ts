@@ -6318,15 +6318,34 @@ Deno.serve(async (req) => {
     console.info('[ai-chat] Orchestrator result:', orchestratorResult.type, orchestratorResult.intent?.intentId, 
       orchestratorResult.intent?.isFollowUp ? '(follow-up)' : '');
 
-    // Handle clarification requests - send structured SSE event
-    if (orchestratorResult.type === 'clarification' && orchestratorResult.clarificationData) {
-      console.info('[ai-chat] Clarification needed:', orchestratorResult.clarificationData.question);
+    // Store clarification/confirmation data for use inside the stream controller
+    const pendingClarification = orchestratorResult.type === 'clarification' && orchestratorResult.clarificationData 
+      ? orchestratorResult.clarificationData 
+      : null;
+    const pendingConfirmation = orchestratorResult.type === 'confirmation' && orchestratorResult.confirmationRequest
+      ? orchestratorResult.confirmationRequest
+      : null;
+    
+    if (pendingClarification) {
+      console.info('[ai-chat] Clarification needed:', pendingClarification.question);
     }
-
-    // Handle confirmation requests - send structured SSE event  
-    if (orchestratorResult.type === 'confirmation' && orchestratorResult.confirmationRequest) {
-      console.info('[ai-chat] Confirmation needed:', orchestratorResult.confirmationRequest.action);
+    if (pendingConfirmation) {
+      console.info('[ai-chat] Confirmation needed:', pendingConfirmation.action);
     }
+    
+    // Check for process transition in user message
+    const processTransition = detectProcessTransition(message, {
+      customerId: includeContext?.entityType === 'customer' ? includeContext?.entityId : undefined,
+      conversationId: memoryCtx?.conversationId,
+      jobId: includeContext?.entityType === 'job' ? includeContext?.entityId : undefined,
+    });
+    
+    if (processTransition) {
+      console.info('[ai-chat] Detected process transition:', processTransition.patternId, processTransition.entities);
+    }
+    
+    // Extract processContext from request for context handoff
+    const processContext = includeContext?.processContext as Record<string, any> | undefined;
 
     // Build memory context section for system prompt
     const memorySection = [
@@ -6504,6 +6523,61 @@ RESPONSE STYLE:
                 content: greetingText 
               })}\n\n`)
             );
+          }
+          
+          // ===============================================================
+          // CLARIFICATION/CONFIRMATION HANDLING (send SSE events)
+          // ===============================================================
+          if (pendingClarification) {
+            console.info('[ai-chat] Sending clarification SSE event');
+            
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({
+                type: 'clarification',
+                question: pendingClarification.question,
+                options: pendingClarification.options || [],
+                domain: pendingClarification.domain,
+                intent: pendingClarification.intent,
+                allowFreeform: true,
+              })}\n\n`)
+            );
+            
+            // Save clarification as assistant message
+            await supaAdmin.from('ai_chat_messages').insert({
+              conversation_id: convId,
+              role: 'assistant',
+              content: pendingClarification.question,
+            });
+            
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`));
+            controller.close();
+            return;
+          }
+          
+          if (pendingConfirmation) {
+            console.info('[ai-chat] Sending confirmation SSE event');
+            
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({
+                type: 'confirmation',
+                action: pendingConfirmation.action,
+                description: pendingConfirmation.description,
+                riskLevel: pendingConfirmation.riskLevel || 'medium',
+                confirmLabel: pendingConfirmation.confirmLabel,
+                cancelLabel: pendingConfirmation.cancelLabel,
+              })}\n\n`)
+            );
+            
+            // Save confirmation as assistant message
+            await supaAdmin.from('ai_chat_messages').insert({
+              conversation_id: convId,
+              role: 'assistant',
+              content: pendingConfirmation.description,
+            });
+            
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`));
+            controller.close();
+            return;
           }
 
           // ===============================================================

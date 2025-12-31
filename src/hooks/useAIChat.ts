@@ -355,7 +355,10 @@ export function useAIChat(options?: UseAIChatOptions) {
             mediaIds: mediaIds.length > 0 ? mediaIds : undefined,
             includeContext: {
               currentPage: window.location.pathname,
-              ...context
+              entityId: context?.entityId,
+              entityType: context?.entityType,
+              // Include process context for handoff between processes
+              processContext: context?.processContext,
             }
           }),
           signal: abortControllerRef.current.signal,

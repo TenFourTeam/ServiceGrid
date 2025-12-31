@@ -60,9 +60,13 @@ export interface CommunicationWorkflowCardProps {
     conversationTitle?: string;
     messagePreview?: string;
     channel?: 'portal' | 'email' | 'both';
+    customerId?: string;
+    customer_id?: string;
+    conversationId?: string;
+    conversation_id?: string;
   };
   automationSummary?: CommunicationAutomationSummary;
-  onPrompt?: (prompt: string) => void;
+  onPrompt?: (prompt: string, context?: Record<string, any>) => void;
   isExpanded?: boolean;
 }
 
@@ -337,7 +341,15 @@ export function CommunicationWorkflowCard({
                     className="h-7 text-xs active:scale-95 transition-transform"
                     onClick={() => {
                       feedback.tap();
-                      onPrompt("Schedule a site assessment for this customer");
+                      const customerId = communicationData?.customer_id || communicationData?.customerId;
+                      const conversationId = communicationData?.conversation_id || communicationData?.conversationId;
+                      const customerName = communicationData?.customerName || 'this customer';
+                      const prompt = customerId 
+                        ? `Schedule a site assessment for [ENTITY:customer:${customerId}:${customerName}]`
+                        : `Schedule a site assessment for ${customerName}`;
+                      onPrompt(prompt, {
+                        processContext: { customerId, conversationId, customerName, fromProcess: 'communication' }
+                      });
                     }}
                   >
                     Schedule Assessment
@@ -348,7 +360,15 @@ export function CommunicationWorkflowCard({
                     className="h-7 text-xs active:scale-95 transition-transform"
                     onClick={() => {
                       feedback.tap();
-                      onPrompt("Create a quote for this customer");
+                      const customerId = communicationData?.customer_id || communicationData?.customerId;
+                      const conversationId = communicationData?.conversation_id || communicationData?.conversationId;
+                      const customerName = communicationData?.customerName || 'this customer';
+                      const prompt = customerId 
+                        ? `Create a quote for [ENTITY:customer:${customerId}:${customerName}]`
+                        : `Create a quote for ${customerName}`;
+                      onPrompt(prompt, {
+                        processContext: { customerId, conversationId, customerName, fromProcess: 'communication' }
+                      });
                     }}
                   >
                     Create Quote
@@ -359,7 +379,12 @@ export function CommunicationWorkflowCard({
                     className="h-7 text-xs active:scale-95 transition-transform"
                     onClick={() => {
                       feedback.tap();
-                      onPrompt("Send another message to this customer");
+                      const customerId = communicationData?.customer_id || communicationData?.customerId;
+                      const conversationId = communicationData?.conversation_id || communicationData?.conversationId;
+                      const customerName = communicationData?.customerName || 'this customer';
+                      onPrompt(`Send another message to ${customerName}`, {
+                        processContext: { customerId, conversationId, customerName, fromProcess: 'communication' }
+                      });
                     }}
                   >
                     Send Another

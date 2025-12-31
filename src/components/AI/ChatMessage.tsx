@@ -24,7 +24,7 @@ import { useConversationMedia } from '@/hooks/useConversationMedia';
 interface ChatMessageProps {
   message: Message;
   isStreaming?: boolean;
-  onActionExecute?: (action: string) => Promise<void>;
+  onActionExecute?: (action: string, context?: Record<string, any>) => Promise<void>;
   onApproveSchedule?: (scheduleData: any) => Promise<void>;
   onApprovePlan?: (message: string) => void;
   onRejectPlan?: (message: string) => void;
