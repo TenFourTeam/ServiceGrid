@@ -5,7 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Loader2, Zap, Mail, Users, Save, TestTube, Info } from "lucide-react";
+import { Loader2, Zap, Mail, Users, Save, TestTube, Info, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
@@ -334,6 +334,91 @@ export function AutomationSettings() {
                   "Rotates assignments evenly among team members"}
                 {settings.assignment_method === 'territory' && 
                   "Assigns based on customer location (requires territory setup)"}
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Communication Automation */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5 text-purple-500" />
+            Communication Automation
+          </CardTitle>
+          <CardDescription>
+            Automatically manage customer communications and follow-ups
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="auto-conversations">Auto-create conversations</Label>
+              <p className="text-sm text-muted-foreground">
+                Automatically create a conversation thread when new service requests are submitted
+              </p>
+            </div>
+            <Switch
+              id="auto-conversations"
+              checked={settings.auto_create_conversations}
+              onCheckedChange={(checked) =>
+                setSettings({ ...settings, auto_create_conversations: checked })
+              }
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="auto-job-updates">Auto-send job status updates</Label>
+              <p className="text-sm text-muted-foreground">
+                Notify customers when job status changes (en route, in progress, completed)
+              </p>
+            </div>
+            <Switch
+              id="auto-job-updates"
+              checked={settings.auto_send_job_updates}
+              onCheckedChange={(checked) =>
+                setSettings({ ...settings, auto_send_job_updates: checked })
+              }
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="auto-followup">Auto-send follow-up emails</Label>
+              <p className="text-sm text-muted-foreground">
+                Queue a follow-up email after job completion to request feedback
+              </p>
+            </div>
+            <Switch
+              id="auto-followup"
+              checked={settings.auto_send_followup_email}
+              onCheckedChange={(checked) =>
+                setSettings({ ...settings, auto_send_followup_email: checked })
+              }
+            />
+          </div>
+
+          {settings.auto_send_followup_email && (
+            <div className="space-y-2">
+              <Label htmlFor="followup-delay">Follow-up delay (hours)</Label>
+              <Input
+                id="followup-delay"
+                type="number"
+                min={1}
+                max={168}
+                value={settings.followup_email_delay_hours}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    followup_email_delay_hours: parseInt(e.target.value) || 24
+                  })
+                }
+                className="w-32"
+              />
+              <p className="text-sm text-muted-foreground">
+                Wait this many hours after job completion before sending follow-up
               </p>
             </div>
           )}
