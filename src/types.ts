@@ -38,6 +38,12 @@ export interface Customer {
   avoid_days?: string; // JSON array of day indices
   preferred_time_window?: string; // JSON object with start/end times
   scheduling_notes?: string;
+  // Lead qualification fields
+  lead_score?: number; // 0-100 score based on data completeness
+  lead_source?: string; // Where the lead came from
+  is_qualified?: boolean; // Whether lead meets threshold
+  qualified_at?: ISODate; // When they became qualified
+  qualification_notes?: string;
   createdAt?: ISODate;
   updatedAt?: ISODate;
 }

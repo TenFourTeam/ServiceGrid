@@ -40,6 +40,7 @@ import { GoogleDriveMediaBackup } from '@/components/Settings/GoogleDriveMediaBa
 import { GoogleDriveDocumentExport } from '@/components/Settings/GoogleDriveDocumentExport';
 import { GoogleDriveBulkOperations } from '@/components/Settings/GoogleDriveBulkOperations';
 import { GoogleDriveSharingPanel } from '@/components/Settings/GoogleDriveSharingPanel';
+import { AutomationSettings } from '@/components/settings/AutomationSettings';
 
 export default function SettingsPage() {
   const { business, role } = useBusinessContext();
@@ -322,6 +323,21 @@ export default function SettingsPage() {
               <BusinessConstraintsSettings />
             </CardContent>
           </Card>
+
+          {/* Lead Generation Automation - only for owners */}
+          {role === 'owner' && (
+            <Card className="md:col-span-2">
+              <CardHeader>
+                <CardTitle>Lead Generation Automation</CardTitle>
+                <CardDescription>
+                  Configure automatic lead scoring, welcome emails, and assignment
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AutomationSettings />
+              </CardContent>
+            </Card>
+          )}
 
           {/* QuickBooks Integration - only for owners */}
           {role === 'owner' && (

@@ -3,7 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { ChevronUp, ChevronDown, Download } from 'lucide-react';
+import { ChevronUp, ChevronDown, Download, CheckCircle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import Papa from 'papaparse';
 import { formatDate } from '@/utils/format';
 import { formatDistanceToNow } from 'date-fns';
@@ -36,6 +38,7 @@ export default function CustomersPage() {
   
   // Search and sort state
   const [searchQuery, setSearchQuery] = useState("");
+  const [qualificationFilter, setQualificationFilter] = useState<'all' | 'qualified' | 'unqualified'>('all');
   const [sortConfig, setSortConfig] = useState<{
     key: 'name' | 'email' | 'phone';
     direction: 'asc' | 'desc';
@@ -55,6 +58,13 @@ export default function CustomersPage() {
       );
     }
     
+    // Apply qualification filter
+    if (qualificationFilter === 'qualified') {
+      filtered = filtered.filter(customer => customer.is_qualified === true);
+    } else if (qualificationFilter === 'unqualified') {
+      filtered = filtered.filter(customer => customer.is_qualified !== true);
+    }
+    
     // Apply sorting
     if (sortConfig) {
       filtered = [...filtered].sort((a, b) => {
@@ -70,7 +80,7 @@ export default function CustomersPage() {
     }
     
     return filtered;
-  }, [customers, searchQuery, sortConfig]);
+  }, [customers, searchQuery, qualificationFilter, sortConfig]);
   
   const rows = filteredAndSortedCustomers;
 
@@ -212,6 +222,18 @@ export default function CustomersPage() {
               {formatDistanceToNow(new Date(customer.created_at), { addSuffix: true })}
             </div>
           )}
+          {/* Lead Score Badge */}
+          <div className="flex items-center gap-2 mt-2">
+            <Badge variant={(customer.lead_score ?? 0) >= 40 ? "default" : "secondary"} className="text-xs">
+              Score: {customer.lead_score ?? 0}
+            </Badge>
+            {customer.is_qualified && (
+              <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/30">
+                <CheckCircle className="h-3 w-3 mr-1" />
+                Qualified
+              </Badge>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -247,7 +269,8 @@ export default function CustomersPage() {
             <div className="space-y-4">
               <CustomerSearchFilter
                 onSearch={setSearchQuery}
-                activeFilters={{ search: searchQuery }}
+                onQualificationFilter={setQualificationFilter}
+                activeFilters={{ search: searchQuery, qualification: qualificationFilter }}
               />
               
               {rows.length === 0 && searchQuery && (
@@ -308,6 +331,7 @@ export default function CustomersPage() {
                             </div>
                           </TableHead>
                           <TableHead>{t('customers.table.address')}</TableHead>
+                          <TableHead>Lead Score</TableHead>
                           <TableHead className="w-12">{t('customers.table.actions')}</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -322,6 +346,18 @@ export default function CustomersPage() {
                             <TableCell>{c.email ?? ''}</TableCell>
                             <TableCell>{c.phone ?? ''}</TableCell>
                             <TableCell>{c.address ?? ''}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Badge variant={(c.lead_score ?? 0) >= 40 ? "default" : "secondary"} className="text-xs">
+                                  {c.lead_score ?? 0}
+                                </Badge>
+                                {c.is_qualified && (
+                                  <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/30">
+                                    <CheckCircle className="h-3 w-3" />
+                                  </Badge>
+                                )}
+                              </div>
+                            </TableCell>
                             <TableCell onClick={(e) => e.stopPropagation()}>
                               <CustomerActions 
                                 customer={c}
