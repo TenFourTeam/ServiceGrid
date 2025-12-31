@@ -1,0 +1,2 @@
+# This directory contains auto-generated process documentation
+# Run: npx tsx scripts/generate-process-docs.ts

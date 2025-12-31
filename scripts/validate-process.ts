@@ -14,7 +14,7 @@ import {
   printValidationResult,
   printValidationSummary 
 } from '../src/lib/ai-agent/process-validator';
-import { PROCESS_REGISTRY } from '../src/lib/ai-agent/process-registry';
+import { ALL_PROCESS_IDS } from '../src/lib/ai-agent/process-ids';
 
 const args = process.argv.slice(2);
 const processId = args[0];
@@ -27,7 +27,7 @@ if (!processId || processId === '--help' || processId === '-h') {
   console.log('  npx ts-node scripts/validate-process.ts --all');
   console.log('');
   console.log('Available processes:');
-  Object.keys(PROCESS_REGISTRY).forEach(id => {
+  ALL_PROCESS_IDS.forEach(id => {
     console.log(`  - ${id}`);
   });
   process.exit(0);
@@ -42,10 +42,10 @@ if (processId === '--all') {
   const hasFailures = summary.completeProcesses < summary.totalProcesses;
   process.exit(hasFailures ? 1 : 0);
 } else {
-  if (!PROCESS_REGISTRY[processId]) {
+  if (!ALL_PROCESS_IDS.includes(processId as any)) {
     console.error(`Error: Process '${processId}' not found in registry`);
     console.log('\nAvailable processes:');
-    Object.keys(PROCESS_REGISTRY).forEach(id => console.log(`  - ${id}`));
+    ALL_PROCESS_IDS.forEach(id => console.log(`  - ${id}`));
     process.exit(1);
   }
   
