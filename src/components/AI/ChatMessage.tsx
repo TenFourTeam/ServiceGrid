@@ -223,6 +223,9 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
                         <ReactMarkdown>
                           {part.content}
                         </ReactMarkdown>
+                        {isStreaming && idx === parsedContent.length - 1 && (
+                          <span className="inline-block w-0.5 h-4 ml-0.5 bg-primary animate-cursor-blink" />
+                        )}
                       </div>
                     )}
                     {isStreaming && idx === parsedContent.length - 1 && (
