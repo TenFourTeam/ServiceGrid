@@ -27,8 +27,6 @@ export function useUserBusinesses() {
   // Check if we have an actual access token (not just isSignedIn)
   const hasToken = !!session?.access_token;
 
-  console.log('[useUserBusinesses] Query state:', { isLoaded, isSignedIn, hasToken });
-
   return useQuery<UserBusiness[], Error>({
     queryKey: ['user-businesses'],
     queryFn: async () => {
