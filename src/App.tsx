@@ -31,6 +31,7 @@ const ReferralPage = lazy(() => import("./pages/Referral"));
 const ReferralLanding = lazy(() => import("./pages/ReferralLanding"));
 
 const AuthPage = lazy(() => import("./pages/Auth"));
+const AuthConfirm = lazy(() => import("./pages/AuthConfirm"));
 const MagicLinkVerify = lazy(() => import("./pages/MagicLinkVerify"));
 const PasswordReset = lazy(() => import("./pages/PasswordReset"));
 const QuoteActionPage = lazy(() => import("./pages/QuoteAction"));
@@ -154,6 +155,7 @@ function App() {
             {/* Public pages that don't require auth checks */}
             <Route path="/resources/:slug" element={<IndustryResourcePage />} />
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/auth/confirm" element={<AuthConfirm />} />
             <Route path="/auth/verify/:token" element={<MagicLinkVerify />} />
             <Route path="/auth/reset/:token" element={<PasswordReset />} />
             <Route path="/quote-action" element={<QuoteActionPage />} />
