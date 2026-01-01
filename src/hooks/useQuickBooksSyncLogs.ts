@@ -1,24 +1,23 @@
 import { useQuery } from '@tanstack/react-query';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuthApi } from '@/hooks/useAuthApi';
 import type { QBSyncLog } from '@/types/quickbooks';
 
 export function useQuickBooksSyncLogs() {
   const { businessId } = useBusinessContext();
+  const authApi = useAuthApi();
 
   return useQuery<QBSyncLog[]>({
     queryKey: ['quickbooks', 'sync-logs', businessId],
     enabled: !!businessId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('quickbooks_sync_log')
-        .select('*')
-        .eq('business_id', businessId)
-        .order('created_at', { ascending: false })
-        .limit(50);
+      const { data, error } = await authApi.invoke('sync-logs-crud', {
+        method: 'GET',
+        queryParams: { source: 'quickbooks' },
+      });
 
-      if (error) throw error;
-      return data as QBSyncLog[];
+      if (error) throw new Error(error.message || 'Failed to fetch sync logs');
+      return (data || []) as QBSyncLog[];
     },
   });
 }

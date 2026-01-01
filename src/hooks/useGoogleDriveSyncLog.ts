@@ -1,24 +1,23 @@
 import { useQuery } from '@tanstack/react-query';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuthApi } from '@/hooks/useAuthApi';
 import type { GoogleDriveSyncLog } from '@/types/googleDrive';
 
 export function useGoogleDriveSyncLog() {
   const { businessId } = useBusinessContext();
+  const authApi = useAuthApi();
 
   return useQuery<GoogleDriveSyncLog[]>({
     queryKey: ['google-drive', 'sync-logs', businessId],
     enabled: !!businessId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('google_drive_sync_log')
-        .select('*')
-        .eq('business_id', businessId)
-        .order('created_at', { ascending: false })
-        .limit(50);
+      const { data, error } = await authApi.invoke('sync-logs-crud', {
+        method: 'GET',
+        queryParams: { source: 'google-drive' },
+      });
 
-      if (error) throw error;
-      return data as GoogleDriveSyncLog[];
+      if (error) throw new Error(error.message || 'Failed to fetch sync logs');
+      return (data || []) as GoogleDriveSyncLog[];
     },
   });
 }
