@@ -18,7 +18,6 @@ export const TestScenarios = {
   // User profiles with proper schema fields
   businessOwner: {
     id: crypto.randomUUID(),
-    clerk_user_id: 'clerk_owner_test',
     email: 'owner@test.com',
     full_name: 'Test Owner',
     role: 'owner' as const,
@@ -26,7 +25,6 @@ export const TestScenarios = {
 
   businessWorker: {
     id: crypto.randomUUID(),
-    clerk_user_id: 'clerk_worker_test',
     email: 'worker@test.com', 
     full_name: 'Test Worker',
     role: 'worker' as const,
@@ -80,8 +78,8 @@ export const TestScenarios = {
   },
 }
 
-export function createMockAuthToken(userId: string = 'clerk_owner'): string {
-  return `mock-jwt-${userId}`;
+export function createMockSessionToken(userId: string = 'test_user'): string {
+  return `mock-session-${userId}`;
 }
 
 export function createTestEnvironment() {
