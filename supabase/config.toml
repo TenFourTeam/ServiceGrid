@@ -554,3 +554,23 @@ verify_jwt = false
 # Quote subscription management
 [functions.manage-quote-subscription]
 verify_jwt = false
+
+# Auth system edge functions
+[functions.ai-conversations-crud]
+verify_jwt = false
+
+[functions.ai-activity-crud]
+verify_jwt = false
+
+[functions.assessment-progress]
+verify_jwt = false
+
+[functions.generated-jobs-stats]
+verify_jwt = false
+
+[functions.sync-logs-crud]
+verify_jwt = false
+
+[functions.media-tags-query]
+verify_jwt = false
+

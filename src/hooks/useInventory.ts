@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuthApi } from './useAuthApi';
 import { toast } from 'sonner';
 
 export interface InventoryItem {
@@ -38,20 +38,22 @@ export interface InventoryTransaction {
 }
 
 export function useInventory(businessId?: string) {
+  const authApi = useAuthApi();
+
   return useQuery({
     queryKey: ['inventory', businessId],
     queryFn: async () => {
       if (!businessId) return [];
       
-      const { data, error } = await supabase
-        .from('inventory_items')
-        .select('*')
-        .eq('business_id', businessId)
-        .eq('is_active', true)
-        .order('name');
+      const { data, error } = await authApi.invoke('inventory-crud', {
+        method: 'GET',
+      });
 
-      if (error) throw error;
-      return data as InventoryItem[];
+      if (error) {
+        throw new Error(error.message || 'Failed to fetch inventory');
+      }
+
+      return (data || []) as InventoryItem[];
     },
     enabled: !!businessId,
   });
@@ -59,16 +61,19 @@ export function useInventory(businessId?: string) {
 
 export function useInventoryOperations() {
   const queryClient = useQueryClient();
+  const authApi = useAuthApi();
 
   const createItem = useMutation({
     mutationFn: async (item: Partial<InventoryItem>) => {
-      const { data, error } = await supabase
-        .from('inventory_items')
-        .insert([item as any])
-        .select()
-        .single();
+      const { data, error } = await authApi.invoke('inventory-crud', {
+        method: 'POST',
+        body: item,
+      });
 
-      if (error) throw error;
+      if (error) {
+        throw new Error(error.message || 'Failed to create item');
+      }
+
       return data;
     },
     onMutate: async (newItem) => {
@@ -122,14 +127,16 @@ export function useInventoryOperations() {
 
   const updateItem = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<InventoryItem> & { id: string }) => {
-      const { data, error } = await supabase
-        .from('inventory_items')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
+      const { data, error } = await authApi.invoke('inventory-crud', {
+        method: 'PATCH',
+        queryParams: { id },
+        body: updates,
+      });
 
-      if (error) throw error;
+      if (error) {
+        throw new Error(error.message || 'Failed to update item');
+      }
+
       return data;
     },
     onMutate: async ({ id, business_id, ...updates }) => {
@@ -159,12 +166,14 @@ export function useInventoryOperations() {
 
   const deleteItem = useMutation({
     mutationFn: async ({ id, business_id }: { id: string; business_id: string }) => {
-      const { error } = await supabase
-        .from('inventory_items')
-        .update({ is_active: false })
-        .eq('id', id);
+      const { error } = await authApi.invoke('inventory-crud', {
+        method: 'DELETE',
+        queryParams: { id },
+      });
 
-      if (error) throw error;
+      if (error) {
+        throw new Error(error.message || 'Failed to delete item');
+      }
     },
     onMutate: async ({ id, business_id }) => {
       await queryClient.cancelQueries({ queryKey: ['inventory'] });
@@ -190,31 +199,17 @@ export function useInventoryOperations() {
 
   const logTransaction = useMutation({
     mutationFn: async (transaction: Omit<InventoryTransaction, 'id' | 'created_at'>) => {
-      const { data: item } = await supabase
-        .from('inventory_items')
-        .select('current_quantity')
-        .eq('id', transaction.inventory_item_id)
-        .single();
+      const { data, error } = await authApi.invoke('inventory-crud', {
+        method: 'POST',
+        queryParams: { action: 'transaction' },
+        body: transaction,
+      });
 
-      if (!item) throw new Error('Item not found');
+      if (error) {
+        throw new Error(error.message || 'Failed to log transaction');
+      }
 
-      const newQuantity = Number(item.current_quantity) + Number(transaction.quantity);
-
-      const { error: transactionError } = await supabase
-        .from('inventory_transactions')
-        .insert(transaction);
-
-      if (transactionError) throw transactionError;
-
-      const { error: updateError } = await supabase
-        .from('inventory_items')
-        .update({ 
-          current_quantity: newQuantity,
-          last_restocked_at: transaction.transaction_type === 'restock' ? new Date().toISOString() : undefined
-        })
-        .eq('id', transaction.inventory_item_id);
-
-      if (updateError) throw updateError;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
