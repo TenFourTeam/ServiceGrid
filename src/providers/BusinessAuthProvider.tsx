@@ -104,13 +104,23 @@ export function BusinessAuthProvider({ children }: BusinessAuthProviderProps) {
   // Initialize auth state listener - runs ONCE on mount
   useEffect(() => {
     let isMounted = true;
+    const AUTH_INIT_TIMEOUT_MS = 6000; // Failsafe: force init after 6 seconds
+
+    // Failsafe timeout - ensures isLoading ALWAYS resolves even if getSession hangs
+    const timeoutId = setTimeout(() => {
+      if (!hasInitializedRef.current && isMounted) {
+        console.warn('[BusinessAuth] Init timeout reached, forcing isLoading=false');
+        hasInitializedRef.current = true;
+        setIsLoading(false);
+      }
+    }, AUTH_INIT_TIMEOUT_MS);
 
     // Set up auth state listener FIRST (purely reactive after initialization)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
         console.log('[BusinessAuth] Auth state changed:', event, 'hasSession:', !!newSession);
         
-        // Only clear state on explicit sign-out events, NOT on transient null sessions
+        // Clear state on explicit sign-out event
         if (event === 'SIGNED_OUT') {
           console.log('[BusinessAuth] Explicit sign-out, clearing state');
           clearUserState();
@@ -133,26 +143,40 @@ export function BusinessAuthProvider({ children }: BusinessAuthProviderProps) {
       }
     );
 
-    // THEN check for existing session - this is the SOURCE OF TRUTH for initialization
-    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
-      if (!isMounted) return;
-      
-      console.log('[BusinessAuth] Initial session check:', !!existingSession);
-      setSession(existingSession);
-      
-      if (existingSession?.user) {
-        fetchProfile(existingSession.user);
+    // Async IIFE with try/catch/finally to GUARANTEE isLoading resolves
+    (async () => {
+      try {
+        const { data: { session: existingSession }, error } = await supabase.auth.getSession();
+        
+        if (!isMounted) return;
+        
+        if (error) {
+          console.error('[BusinessAuth] getSession error:', error.message);
+          // Treat as no session - don't throw
+        }
+        
+        console.log('[BusinessAuth] Initial session check:', !!existingSession);
+        setSession(existingSession ?? null);
+        
+        if (existingSession?.user) {
+          fetchProfile(existingSession.user);
+        }
+      } catch (err) {
+        console.error('[BusinessAuth] Unexpected init error:', err);
+        // Still continue - we'll just have no session
+      } finally {
+        // ALWAYS mark initialization complete
+        if (!hasInitializedRef.current && isMounted) {
+          hasInitializedRef.current = true;
+          setIsLoading(false);
+          console.log('[BusinessAuth] Initialization complete, isLoading=false');
+        }
       }
-      
-      // Mark initialization complete - this is the ONLY place we set isLoading false
-      if (!hasInitializedRef.current) {
-        hasInitializedRef.current = true;
-        setIsLoading(false);
-      }
-    });
+    })();
 
     return () => {
       isMounted = false;
+      clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
   }, [fetchProfile, clearUserState]);
