@@ -131,14 +131,8 @@ verify_jwt = false
 [functions.send-lifecycle-email]
 verify_jwt = false
 
-[functions.team-send-email]
-verify_jwt = false
-
 # Invite system functions
 [functions.create-invites]
-verify_jwt = false
-
-[functions.invite-manage]
 verify_jwt = false
 
 [functions.accept-invite]
@@ -182,12 +176,6 @@ verify_jwt = false
 
 # Business operations (require authentication)
 [functions.business-update]
-verify_jwt = false
-
-[functions.switch-business]
-verify_jwt = false
-
-[functions.business-role]
 verify_jwt = false
 
 # Payments & Stripe (require authentication)
@@ -375,9 +363,6 @@ verify_jwt = false
 [functions.process-media-thumbnail]
 verify_jwt = false
 
-[functions.transcode-media-video]
-verify_jwt = false
-
 # Route planning with turn-by-turn directions
 [functions.calculate-route-directions]
 verify_jwt = false
@@ -522,25 +507,8 @@ verify_jwt = false
 [functions.appointment-requests-manage]
 verify_jwt = false
 
-# Automation Settings
-[functions.automation-settings-crud]
-verify_jwt = false
-
 # Inventory Management
 [functions.inventory-crud]
-verify_jwt = false
-
-[functions.inventory-transactions-crud]
-verify_jwt = false
-
-# Lead Management
-[functions.lead-score]
-verify_jwt = false
-
-[functions.lead-assign]
-verify_jwt = false
-
-[functions.qualify-lead]
 verify_jwt = false
 
 # Auto-generate recurring jobs

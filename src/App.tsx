@@ -156,8 +156,6 @@ function App() {
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/auth/verify/:token" element={<MagicLinkVerify />} />
             <Route path="/auth/reset/:token" element={<PasswordReset />} />
-            {/* Legacy route - redirect to new auth */}
-            <Route path="/clerk-auth" element={<Navigate to="/auth" replace />} />
             <Route path="/quote-action" element={<QuoteActionPage />} />
             <Route path="/job-action" element={<JobActionPage />} />
             <Route path="/quote/:token" element={<QuoteViewerPage />} />
