@@ -32,15 +32,6 @@ export function useBusinessMembersData(opts: UseBusinessMembersDataOptions = {})
   const businessId = opts?.businessId || contextBusinessId;
   const enabled = isAuthenticated && !!businessId && (opts?.enabled ?? true);
 
-  // Debug logging
-  console.log('[useBusinessMembers] Hook setup:', { 
-    businessId, 
-    contextBusinessId: contextBusinessId,
-    isAuthenticated, 
-    enabled,
-    optsEnabled: opts?.enabled 
-  });
-
   const query = useQuery({
     queryKey: businessId ? qkMembers(businessId) : ['business-members', { businessId: null }],
     enabled,
