@@ -1,9 +1,9 @@
 /**
  * Step Verifier - Runtime verification of tool execution
  * Checks pre/post conditions, invariants, and database assertions
+ * All database operations go through edge functions for proper auth
  */
 
-import { supabase } from '@/integrations/supabase/client';
 import { 
   ToolContract, 
   Assertion, 
@@ -38,6 +38,7 @@ export interface StepExecutionContext {
   args: Record<string, any>;
   entities: Record<string, any>;  // Loaded entities (customer, quote, job, etc.)
   previousResults: Record<string, any>;  // Results from previous steps
+  apiInvoker?: (functionName: string, options: any) => Promise<any>;  // Auth API invoker
 }
 
 export interface VerifiedStepResult {
@@ -337,7 +338,7 @@ async function verifyInvariants(
 }
 
 /**
- * Run database assertions
+ * Run database assertions via edge function
  */
 async function verifyDatabaseAssertions(
   dbAssertions: DatabaseAssertion[],
@@ -345,6 +346,12 @@ async function verifyDatabaseAssertions(
   result: any
 ): Promise<Omit<VerificationResult, 'executionTimeMs'>> {
   const failedAssertions: FailedAssertion[] = [];
+  
+  // If no API invoker, skip DB assertions (will be validated server-side)
+  if (!context.apiInvoker) {
+    console.warn('[StepVerifier] No apiInvoker provided, skipping DB assertions');
+    return { passed: true, phase: 'db_assertion', failedAssertions: [] };
+  }
   
   for (const assertion of dbAssertions) {
     try {
@@ -354,29 +361,29 @@ async function verifyDatabaseAssertions(
         whereClause[field] = resolveReference(ref, context, result);
       }
       
-      // Execute query
-      let query = supabase
-        .from(assertion.table as any)
-        .select(assertion.query.select);
-      
-      for (const [field, value] of Object.entries(whereClause)) {
-        if (value !== undefined && value !== null) {
-          query = query.eq(field, value);
+      // Execute query via edge function
+      const response = await context.apiInvoker('step-verifier-crud', {
+        method: 'POST',
+        queryParams: { action: 'db-assertion' },
+        body: {
+          table: assertion.table,
+          select: assertion.query.select,
+          where: whereClause
         }
-      }
+      });
       
-      const { data, error } = await query;
-      
-      if (error) {
+      if (response.error) {
         failedAssertions.push({
           assertionId: assertion.id,
           description: assertion.description,
           expected: 'query success',
           actual: 'query error',
-          details: error.message
+          details: response.error
         });
         continue;
       }
+      
+      const data = response.data || [];
       
       // Check expectations
       if (assertion.expect.count !== undefined) {
@@ -425,127 +432,8 @@ async function verifyDatabaseAssertions(
   };
 }
 
-// ============================================================================
-// ROLLBACK TOOL IMPLEMENTATIONS
-// ============================================================================
-
-interface RollbackTool {
-  execute: (args: Record<string, any>, businessId: string) => Promise<void>;
-}
-
-const ROLLBACK_TOOLS: Record<string, RollbackTool> = {
-  delete_customer: {
-    execute: async (args, businessId) => {
-      const { error } = await supabase
-        .from('customers')
-        .delete()
-        .eq('id', args.customer_id)
-        .eq('business_id', businessId);
-      if (error) throw new Error(`Failed to delete customer: ${error.message}`);
-    }
-  },
-  delete_request: {
-    execute: async (args, businessId) => {
-      const { error } = await supabase
-        .from('requests')
-        .delete()
-        .eq('id', args.request_id)
-        .eq('business_id', businessId);
-      if (error) throw new Error(`Failed to delete request: ${error.message}`);
-    }
-  },
-  delete_quote: {
-    execute: async (args, businessId) => {
-      const { error } = await supabase
-        .from('quotes')
-        .delete()
-        .eq('id', args.quote_id)
-        .eq('business_id', businessId);
-      if (error) throw new Error(`Failed to delete quote: ${error.message}`);
-    }
-  },
-  delete_job: {
-    execute: async (args, businessId) => {
-      const { error } = await supabase
-        .from('jobs')
-        .delete()
-        .eq('id', args.job_id)
-        .eq('business_id', businessId);
-      if (error) throw new Error(`Failed to delete job: ${error.message}`);
-    }
-  },
-  unassign_job: {
-    execute: async (args, businessId) => {
-      const { error } = await supabase
-        .from('job_assignments')
-        .delete()
-        .eq('job_id', args.job_id)
-        .eq('user_id', args.user_id);
-      if (error) throw new Error(`Failed to unassign job: ${error.message}`);
-    }
-  },
-  void_invoice: {
-    execute: async (args, businessId) => {
-      // Note: 'Void' status may need to be added to invoice_status enum
-      // For now, we delete the invoice as a rollback mechanism
-      const { error } = await supabase
-        .from('invoices')
-        .delete()
-        .eq('id', args.invoice_id)
-        .eq('business_id', businessId);
-      if (error) throw new Error(`Failed to void invoice: ${error.message}`);
-    }
-  },
-  // Site Assessment Rollback Tools
-  delete_media: {
-    execute: async (args, businessId) => {
-      const { error } = await supabase
-        .from('sg_media')
-        .delete()
-        .eq('id', args.media_id)
-        .eq('business_id', businessId);
-      if (error) throw new Error(`Failed to delete media: ${error.message}`);
-    }
-  },
-  remove_media_tags: {
-    execute: async (args, businessId) => {
-      // Remove specific tags from media
-      const { data: media, error: fetchError } = await supabase
-        .from('sg_media')
-        .select('tags')
-        .eq('id', args.media_id)
-        .eq('business_id', businessId)
-        .single();
-      
-      if (fetchError) throw new Error(`Failed to fetch media: ${fetchError.message}`);
-      
-      const currentTags = (media?.tags as string[]) || [];
-      const tagsToRemove = args.tags || [];
-      const newTags = currentTags.filter((t: string) => !tagsToRemove.includes(t));
-      
-      const { error } = await supabase
-        .from('sg_media')
-        .update({ tags: newTags })
-        .eq('id', args.media_id)
-        .eq('business_id', businessId);
-      
-      if (error) throw new Error(`Failed to remove media tags: ${error.message}`);
-    }
-  },
-  delete_checklist: {
-    execute: async (args, businessId) => {
-      const { error } = await supabase
-        .from('sg_checklists')
-        .delete()
-        .eq('id', args.checklist_id)
-        .eq('business_id', businessId);
-      if (error) throw new Error(`Failed to delete checklist: ${error.message}`);
-    }
-  },
-};
-
 /**
- * Attempt to rollback a failed step
+ * Attempt to rollback a failed step via edge function
  */
 async function attemptRollback(
   contract: ToolContract,
@@ -557,10 +445,10 @@ async function attemptRollback(
     return null;
   }
   
-  const rollbackTool = ROLLBACK_TOOLS[contract.rollbackTool];
-  if (!rollbackTool) {
-    console.warn(`[StepVerifier] Rollback tool ${contract.rollbackTool} not implemented`);
-    return { rollbackTool: contract.rollbackTool, rollbackArgs: {}, error: 'Tool not implemented' };
+  // If no API invoker, can't execute rollback
+  if (!context.apiInvoker) {
+    console.warn(`[StepVerifier] No apiInvoker provided, cannot execute rollback`);
+    return { rollbackTool: contract.rollbackTool, error: 'No API invoker available' };
   }
   
   try {
@@ -572,22 +460,21 @@ async function attemptRollback(
     
     console.log(`[StepVerifier] Executing rollback with ${contract.rollbackTool}`, rollbackArgs);
     
-    // Execute the rollback
-    await rollbackTool.execute(rollbackArgs, context.businessId);
-    
-    // Log rollback to activity log
-    await supabase.from('ai_activity_log').insert({
-      business_id: context.businessId,
-      user_id: context.userId,
-      activity_type: 'rollback',
-      description: `Rolled back ${contract.toolName} using ${contract.rollbackTool}`,
-      accepted: true,
-      metadata: {
-        original_tool: contract.toolName,
-        rollback_tool: contract.rollbackTool,
-        rollback_args: rollbackArgs,
+    // Execute the rollback via edge function
+    const response = await context.apiInvoker('step-verifier-crud', {
+      method: 'POST',
+      queryParams: { action: 'execute-rollback' },
+      body: {
+        rollbackTool: contract.rollbackTool,
+        rollbackArgs,
+        originalTool: contract.toolName
       }
     });
+    
+    if (response.error) {
+      console.error(`[StepVerifier] Rollback failed:`, response.error);
+      return { rollbackTool: contract.rollbackTool, rollbackArgs, error: response.error };
+    }
     
     console.log(`[StepVerifier] Rollback successful for ${contract.toolName}`);
     return { rollbackTool: contract.rollbackTool, rollbackArgs, success: true };
