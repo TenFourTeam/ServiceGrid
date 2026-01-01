@@ -103,44 +103,59 @@ export function BusinessAuthProvider({ children }: BusinessAuthProviderProps) {
 
   // Initialize auth state listener - runs ONCE on mount
   useEffect(() => {
-    // Set up auth state listener FIRST
+    let isMounted = true;
+
+    // Set up auth state listener FIRST (purely reactive after initialization)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
-        console.log('[BusinessAuth] Auth state changed:', event);
+        console.log('[BusinessAuth] Auth state changed:', event, 'hasSession:', !!newSession);
+        
+        // Only clear state on explicit sign-out events, NOT on transient null sessions
+        if (event === 'SIGNED_OUT') {
+          console.log('[BusinessAuth] Explicit sign-out, clearing state');
+          clearUserState();
+          return;
+        }
+
+        // Update session state
         setSession(newSession);
         
         if (newSession?.user) {
           // Defer profile fetch to avoid Supabase deadlock
           setTimeout(() => {
-            fetchProfile(newSession.user);
+            if (isMounted) {
+              fetchProfile(newSession.user);
+            }
           }, 0);
-        } else {
-          clearUserState();
         }
-
-        // Set loading to false only once after initial state is processed
-        if (!hasInitializedRef.current) {
-          hasInitializedRef.current = true;
-          setIsLoading(false);
-        }
+        // Note: We do NOT call clearUserState() on null sessions here
+        // This prevents clearing state during initialization or token refresh
       }
     );
 
-    // THEN check for existing session
+    // THEN check for existing session - this is the SOURCE OF TRUTH for initialization
     supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
+      if (!isMounted) return;
+      
+      console.log('[BusinessAuth] Initial session check:', !!existingSession);
       setSession(existingSession);
+      
       if (existingSession?.user) {
         fetchProfile(existingSession.user);
       }
-      // Set loading to false only once
+      
+      // Mark initialization complete - this is the ONLY place we set isLoading false
       if (!hasInitializedRef.current) {
         hasInitializedRef.current = true;
         setIsLoading(false);
       }
     });
 
-    return () => subscription.unsubscribe();
-  }, [fetchProfile, clearUserState]); // Removed isLoading from deps to prevent re-runs
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, [fetchProfile, clearUserState]);
 
   // Get session token (JWT) for API calls
   const getSessionToken = useCallback((): string | null => {
