@@ -250,7 +250,6 @@ verify_jwt = false
 [functions.audit-logs-crud]
 verify_jwt = false
 
-
 [functions.upload-request-photo]
 verify_jwt = false
 
@@ -545,3 +544,10 @@ verify_jwt = false
 [functions.step-verifier-crud]
 verify_jwt = false
 
+# Email queue processing
+[functions.process-email-queue]
+verify_jwt = false
+
+# Supabase Auth Email Hook - sends branded auth emails via Resend
+[functions.auth-email-hook]
+verify_jwt = false
