@@ -70,15 +70,6 @@ export function useBusinessContext(targetBusinessId?: string) {
   const role = resolvedBusiness?.role || null;
   const businessId = resolvedBusiness?.id;
   
-  // Debug logging
-  console.log('[useBusinessContext] Data:', { 
-    businessesCount: transformedBusinesses?.length,
-    resolvedBusinessId: businessId,
-    role,
-    isLoading: businessesQuery.isLoading,
-    isFetching: businessesQuery.isFetching
-  });
-  
   // Simplified loading and error states
   const isLoadingBusiness = !isLoaded || businessesQuery.isLoading;
   const hasError = businessesQuery.isError;
