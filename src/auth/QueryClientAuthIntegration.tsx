@@ -18,7 +18,7 @@ export function QueryClientAuthIntegration() {
   // Lifecycle email triggers - only activate when auth is ready and user is signed in
   useLifecycleEmailTriggers(isLoaded && isSignedIn);
 
-  // Clear cache on sign out and handle auth changes
+  // Clear cache on sign out and invalidate queries on sign in
   useEffect(() => {
     if (!isLoaded) return;
     
@@ -27,10 +27,13 @@ export function QueryClientAuthIntegration() {
 
     if (!isSignedIn && wasSignedIn) {
       // User signed out - clear all cached data
+      console.log('[QueryClientAuthIntegration] User signed out, clearing cache');
       queryClient.clear();
+    } else if (isSignedIn && wasSignedIn === false) {
+      // User just signed in - invalidate and refetch user-businesses
+      console.log('[QueryClientAuthIntegration] User signed in, invalidating user-businesses');
+      queryClient.invalidateQueries({ queryKey: ['user-businesses'] });
     }
-    // Note: We don't refetch on sign-in anymore - queries will naturally
-    // start fetching once their enabled conditions are met
   }, [isLoaded, isSignedIn, queryClient]);
 
   // Simplified token handling - refresh session periodically

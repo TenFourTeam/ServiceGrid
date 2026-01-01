@@ -57,6 +57,17 @@ export function useBusinessContext(targetBusinessId?: string) {
   // Use targetBusinessId immediately if provided to prevent race condition
   const businessId = targetBusinessId || business?.id;
   
+  // Debug logging
+  console.log('[useBusinessContext] Data:', { 
+    businessesCount: transformedBusinesses?.length,
+    ownedBusinessId: ownedBusiness?.id,
+    targetBusinessId,
+    resolvedBusinessId: businessId,
+    role,
+    isLoading: businessesQuery.isLoading,
+    isFetching: businessesQuery.isFetching
+  });
+  
   // Simplified loading and error states
   const isLoadingBusiness = !isLoaded || businessesQuery.isLoading;
   const hasError = businessesQuery.isError;
