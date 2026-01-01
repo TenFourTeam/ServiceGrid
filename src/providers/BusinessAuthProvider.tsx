@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 
@@ -98,7 +98,10 @@ export function BusinessAuthProvider({ children }: BusinessAuthProviderProps) {
     setSession(null);
   }, []);
 
-  // Initialize auth state listener
+  // Track whether initial auth state has been processed (prevents multiple setIsLoading calls)
+  const hasInitializedRef = useRef(false);
+
+  // Initialize auth state listener - runs ONCE on mount
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -115,8 +118,9 @@ export function BusinessAuthProvider({ children }: BusinessAuthProviderProps) {
           clearUserState();
         }
 
-        // Only set loading to false after we've processed the initial state
-        if (isLoading) {
+        // Set loading to false only once after initial state is processed
+        if (!hasInitializedRef.current) {
+          hasInitializedRef.current = true;
           setIsLoading(false);
         }
       }
@@ -128,11 +132,15 @@ export function BusinessAuthProvider({ children }: BusinessAuthProviderProps) {
       if (existingSession?.user) {
         fetchProfile(existingSession.user);
       }
-      setIsLoading(false);
+      // Set loading to false only once
+      if (!hasInitializedRef.current) {
+        hasInitializedRef.current = true;
+        setIsLoading(false);
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, [fetchProfile, clearUserState, isLoading]);
+  }, [fetchProfile, clearUserState]); // Removed isLoading from deps to prevent re-runs
 
   // Get session token (JWT) for API calls
   const getSessionToken = useCallback((): string | null => {
