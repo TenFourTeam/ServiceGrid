@@ -15,8 +15,8 @@ export function QueryClientAuthIntegration() {
   const { refreshSession } = useBusinessAuth();
   const previousSignedInRef = useRef<boolean | null>(null);
   
-  // Lifecycle email triggers with proper deduplication
-  useLifecycleEmailTriggers(true);
+  // Lifecycle email triggers - only activate when auth is ready and user is signed in
+  useLifecycleEmailTriggers(isLoaded && isSignedIn);
 
   // Clear cache on sign out and handle auth changes
   useEffect(() => {

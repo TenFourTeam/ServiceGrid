@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useAuthApi } from '@/hooks/useAuthApi';
+import { useAuth } from '@/hooks/useBusinessAuth';
 
 export interface UserBusiness {
   id: string;
@@ -19,6 +20,7 @@ export interface UserBusiness {
  * Hook to fetch all businesses the current user is a member of
  */
 export function useUserBusinesses() {
+  const { isSignedIn, isLoaded } = useAuth();
   const authApi = useAuthApi();
 
   return useQuery<UserBusiness[], Error>({
@@ -35,6 +37,7 @@ export function useUserBusinesses() {
       // The API returns standardized { data, count } format
       return data?.data || [];
     },
+    enabled: isLoaded && isSignedIn, // Prevent race condition - only fetch when authenticated
     staleTime: 30_000,
   });
 }
