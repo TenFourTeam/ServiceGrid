@@ -1,18 +1,40 @@
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { subscribeToBootState, getBootDiagnostics, clearAppCache, BootState } from '@/lib/boot-trace';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, Copy, RefreshCw, CheckCircle } from 'lucide-react';
 
 const STALL_TIMEOUT_MS = 12000; // 12 seconds
 
+// Public routes that should never show the stall guard
+const PUBLIC_BYPASS_ROUTES = [
+  '/auth',
+  '/customer-login',
+  '/customer-invite',
+  '/customer-magic',
+  '/customer-reset-password',
+  '/',
+  '/pricing',
+  '/roadmap',
+  '/changelog',
+  '/blog',
+  '/resources',
+];
+
 interface StallGuardProps {
   children: React.ReactNode;
 }
 
 export function StallGuard({ children }: StallGuardProps) {
+  const location = useLocation();
   const [bootState, setBootState] = useState<BootState | null>(null);
   const [isStalled, setIsStalled] = useState(false);
   const [copied, setCopied] = useState(false);
+  
+  // Check if current route should bypass stall detection
+  const shouldBypass = PUBLIC_BYPASS_ROUTES.some(route => 
+    location.pathname === route || location.pathname.startsWith(route + '/')
+  );
 
   useEffect(() => {
     const unsubscribe = subscribeToBootState(setBootState);
@@ -48,6 +70,11 @@ export function StallGuard({ children }: StallGuardProps) {
   const handleHardRefresh = () => {
     window.location.reload();
   };
+
+  // If on a public route, skip the stall check entirely
+  if (shouldBypass) {
+    return <>{children}</>;
+  }
 
   if (isStalled && bootState) {
     return (
