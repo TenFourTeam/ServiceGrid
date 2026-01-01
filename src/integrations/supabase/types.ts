@@ -2492,9 +2492,6 @@ export type Database = {
           full_name: string | null
           id: string
           last_login_at: string | null
-          magic_token: string | null
-          magic_token_expires_at: string | null
-          password_hash: string | null
           phone_e164: string | null
           updated_at: string
         }
@@ -2506,9 +2503,6 @@ export type Database = {
           full_name?: string | null
           id?: string
           last_login_at?: string | null
-          magic_token?: string | null
-          magic_token_expires_at?: string | null
-          password_hash?: string | null
           phone_e164?: string | null
           updated_at?: string
         }
@@ -2520,9 +2514,6 @@ export type Database = {
           full_name?: string | null
           id?: string
           last_login_at?: string | null
-          magic_token?: string | null
-          magic_token_expires_at?: string | null
-          password_hash?: string | null
           phone_e164?: string | null
           updated_at?: string
         }
