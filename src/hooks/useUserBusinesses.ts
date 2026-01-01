@@ -39,5 +39,6 @@ export function useUserBusinesses() {
     },
     enabled: isLoaded && isSignedIn, // Prevent race condition - only fetch when authenticated
     staleTime: 30_000,
+    placeholderData: (prev) => prev, // Keep previous data visible during refetch
   });
 }

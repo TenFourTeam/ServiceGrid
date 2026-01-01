@@ -34,7 +34,7 @@ export default function CalendarShell({
   const [date, setDate] = useState<Date>(startOfDay(new Date()));
   const [showOverviewGenerator, setShowOverviewGenerator] = useState(false);
   const [showArtifactsViewer, setShowArtifactsViewer] = useState(false);
-  const { role, userId, businessId, businessName } = useBusinessContext(routeBusinessId);
+  const { role, userId, businessId, businessName, isLoadingBusiness } = useBusinessContext(routeBusinessId);
   const { data: jobs, refetch: refetchJobs } = useJobsData(businessId);
   const { data: businessMembers } = useBusinessMembersData();
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
@@ -42,6 +42,30 @@ export default function CalendarShell({
   const isPhone = useIsPhone();
   const { t } = useLanguage();
   const queryClient = useQueryClient();
+  
+  // Skeleton loading state while business context is loading
+  if (isLoadingBusiness || !businessId) {
+    return (
+      <div className="flex-1 min-h-0 flex flex-col gap-4">
+        <header className="pt-6 flex items-center justify-between">
+          <Skeleton className="h-7 w-48" />
+          <div className="flex gap-2">
+            <Skeleton className="h-9 w-28" />
+            <Skeleton className="h-9 w-28" />
+            <Skeleton className="h-9 w-20" />
+          </div>
+        </header>
+        <div className="flex-1 grid grid-cols-7 gap-px bg-muted/30 rounded-lg overflow-hidden">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <div key={i} className="bg-background p-2 min-h-[120px]">
+              <Skeleton className="h-5 w-10 mb-3" />
+              <Skeleton className="h-16 w-full rounded" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
   
   // Clear cache when business changes
   useEffect(() => {
