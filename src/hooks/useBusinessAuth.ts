@@ -19,6 +19,7 @@ export function useAuth() {
     isSignedIn: isAuthenticated,
     isLoaded: !isLoading,
     userId: user?.profileId ?? null,
+    session, // Expose session for debugging
     
     // Return JWT access token for API calls
     getToken: async (_options?: { template?: string; skipCache?: boolean }): Promise<string | null> => {
