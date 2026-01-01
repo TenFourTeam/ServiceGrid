@@ -8,15 +8,31 @@ import { useLifecycleEmailTriggers } from "@/hooks/useLifecycleEmailTriggers";
  * - Clears cache on sign out
  * - Refetches queries on auth changes
  * - Handles token expiration recovery
+ * - Detects stale sessions and triggers logout
  */
 export function QueryClientAuthIntegration() {
   const queryClient = useQueryClient();
   const { isLoaded, isSignedIn } = useAuth();
-  const { refreshSession } = useBusinessAuth();
+  const { refreshSession, logout } = useBusinessAuth();
   const previousSignedInRef = useRef<boolean | null>(null);
   
   // Lifecycle email triggers - only activate when auth is ready and user is signed in
   useLifecycleEmailTriggers(isLoaded && isSignedIn);
+
+  // Subscribe to query cache for auth errors
+  useEffect(() => {
+    const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
+      if (event.type === 'updated' && event.query.state.status === 'error') {
+        const error = event.query.state.error as Error;
+        if (error?.message === 'AUTH_INVALID') {
+          console.warn('[QueryClientAuthIntegration] Auth invalid detected, logging out');
+          queryClient.clear();
+          logout();
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, [queryClient, logout]);
 
   // Clear cache on sign out and invalidate queries on sign in
   useEffect(() => {
@@ -47,17 +63,19 @@ export function QueryClientAuthIntegration() {
         if (success) {
           console.info('[QueryClientAuthIntegration] Session refreshed successfully');
         } else {
-          console.warn('[QueryClientAuthIntegration] Session refresh failed, clearing cache');
+          console.warn('[QueryClientAuthIntegration] Session refresh failed, logging out');
           queryClient.clear();
+          logout();
         }
       } catch (error) {
         console.warn('[QueryClientAuthIntegration] Session refresh error:', error);
         queryClient.clear();
+        logout();
       }
     }, 10 * 60 * 1000); // 10 minutes
 
     return () => clearInterval(refreshInterval);
-  }, [isSignedIn, refreshSession, queryClient]);
+  }, [isSignedIn, refreshSession, queryClient, logout]);
 
   return null; // This is a side-effect only component
 }
