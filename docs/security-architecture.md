@@ -1,14 +1,14 @@
 # Security Architecture Documentation
 
 ## Overview
-This project implements a comprehensive security architecture using Supabase RLS (Row Level Security) combined with Clerk JWT authentication and Edge Functions for all database operations.
+This project implements a comprehensive security architecture using Supabase RLS (Row Level Security) combined with session-based authentication and Edge Functions for all database operations.
 
 ## Security Model
 
 ### 1. Authentication Layer
-- **Clerk JWT**: All user authentication handled by Clerk
-- **Custom JWT Template**: Supabase integration uses custom JWT template for seamless auth
-- **Profile Mapping**: User profiles stored in `public.profiles` table linked to Clerk user IDs
+- **Session Tokens**: All user authentication handled via secure session tokens stored in `business_sessions` table
+- **Edge Function Validation**: Session tokens validated in Edge Functions before any database access
+- **Profile Mapping**: User profiles stored in `public.profiles` table with session-based identification
 
 ### 2. Database Security (RLS)
 - **RLS Enabled**: All tables have Row Level Security enabled
@@ -17,29 +17,29 @@ This project implements a comprehensive security architecture using Supabase RLS
 
 ### 3. Edge Function Security Pattern
 - **No Direct Database Calls**: Frontend never queries database directly
-- **Authenticated API**: All database operations go through Edge Functions with JWT validation
+- **Authenticated API**: All database operations go through Edge Functions with session token validation
 - **Authorization Checks**: Each Edge Function verifies user permissions before database access
 
 ## Architecture Pattern
 
 ```
-Frontend → useAuthApi → Edge Function → Authentication Check → RLS Policy → Database
+Frontend → useBusinessAuth → Edge Function → Session Validation → RLS Policy → Database
 ```
 
 ### Key Components
 
-#### 1. useAuthApi Hook
-- Provides authenticated API client for Edge Function calls
-- Automatically includes Clerk JWT tokens
-- Handles success/error states with toast notifications
+#### 1. BusinessAuthProvider
+- Provides authenticated session state throughout the app
+- Manages session token in localStorage
+- Handles login, logout, and session refresh
 
 #### 2. Edge Functions
 - All database operations routed through Edge Functions
-- Each function validates JWT and user permissions
+- Each function validates session token via `x-session-token` header
 - Functions use service role key with RLS for secure data access
 
 #### 3. RLS Policies
-- Policies use `current_clerk_user_id()` function to identify current user
+- Policies use `current_user_profile_id()` function to identify current user
 - Business membership verified through `is_business_member()` function
 - Owner permissions checked via `can_manage_business()` function
 
@@ -73,7 +73,7 @@ AND routine_name LIKE '%auth%';
 ### ✅ Implemented
 - RLS enabled on all tables
 - No direct database calls from frontend
-- JWT validation in all Edge Functions
+- Session token validation in all Edge Functions
 - Business-scoped data access
 - Security definer functions with proper search_path
 - Audit logging for sensitive operations
@@ -88,6 +88,22 @@ AND routine_name LIKE '%auth%';
 - All functions use `SECURITY DEFINER` with `SET search_path = public`
 - No SQL injection vulnerabilities
 - Proper error handling and logging
+
+## Session Management
+
+### Session Token Flow
+1. User logs in via `/auth` page
+2. `business-auth` Edge Function validates credentials
+3. Session token generated and stored in `business_sessions` table
+4. Token returned to frontend and stored in localStorage
+5. All subsequent API calls include `x-session-token` header
+6. Edge Functions validate token against `business_sessions` table
+
+### Session Security
+- Tokens are cryptographically random UUIDs
+- Sessions expire after 24 hours
+- Sessions can be revoked by deleting from `business_sessions` table
+- IP address and user agent logged for security monitoring
 
 ## Monitoring
 
@@ -111,7 +127,7 @@ AND routine_name LIKE '%auth%';
 4. Check for any direct database calls in codebase
 
 ### Recovery Actions
-- Revoke compromised JWT tokens via Clerk
+- Revoke compromised sessions by deleting from `business_sessions`
 - Update RLS policies if needed
 - Rotate service role keys if compromised
 - Review and patch Edge Functions
@@ -119,7 +135,7 @@ AND routine_name LIKE '%auth%';
 ## Conclusion
 
 This architecture provides defense in depth:
-1. **Authentication** at the JWT level
+1. **Authentication** at the session token level
 2. **Authorization** at the Edge Function level  
 3. **Data Protection** at the RLS level
 

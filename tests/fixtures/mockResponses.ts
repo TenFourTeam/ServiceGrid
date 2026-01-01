@@ -106,7 +106,6 @@ export const mockResponses = {
       data: {
         profile: {
           id: 'profile-1',
-          clerk_user_id: 'user_1',
           first_name: 'Test',
           last_name: 'User',
           email: 'test@example.com',

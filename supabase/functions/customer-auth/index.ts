@@ -537,7 +537,7 @@ async function handleLogin(req: Request, supabase: any) {
   }
 
   // Verify password
-  const validPassword = await bcrypt.compare(password, account.password_hash);
+  const validPassword = bcrypt.compareSync(password, account.password_hash);
   if (!validPassword) {
     return new Response(
       JSON.stringify({ error: 'Invalid email or password' }),

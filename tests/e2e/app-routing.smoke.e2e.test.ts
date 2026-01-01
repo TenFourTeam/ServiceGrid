@@ -8,8 +8,8 @@ test.describe('App Routing Smoke Tests @smoke', () => {
       await page.goto(route);
       await page.waitForLoadState('networkidle');
       
-      // Should redirect to clerk auth page
-      expect(page.url()).toContain('/clerk-auth');
+      // Should redirect to auth page
+      expect(page.url()).toContain('/auth');
     }
   });
 
@@ -21,11 +21,11 @@ test.describe('App Routing Smoke Tests @smoke', () => {
     await expect(page.locator('body')).toBeVisible();
     // The NotFound page should have some indication it's a 404
     const hasNotFoundContent = await page.getByText(/not found|404|page not found/i).first().isVisible().catch(() => false);
-    expect(hasNotFoundContent || page.url().includes('/clerk-auth')).toBeTruthy();
+    expect(hasNotFoundContent || page.url().includes('/auth')).toBeTruthy();
   });
 
   test('public routes are accessible', async ({ page }) => {
-    const publicRoutes = ['/', '/clerk-auth'];
+    const publicRoutes = ['/', '/auth'];
     
     for (const route of publicRoutes) {
       await page.goto(route);

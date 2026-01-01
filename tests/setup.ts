@@ -4,12 +4,13 @@ import { vi } from 'vitest';
 // Mock environment variables
 // Environment variables are now handled by vitest.config.ts define block
 
-// Mock window.Clerk for authentication tests
-Object.defineProperty(window, 'Clerk', {
+// Mock session storage for authentication tests
+Object.defineProperty(window, 'localStorage', {
   value: {
-    session: {
-      getToken: vi.fn().mockResolvedValue('mock-jwt-token'),
-    },
+    getItem: vi.fn().mockReturnValue('mock-session-token'),
+    setItem: vi.fn(),
+    removeItem: vi.fn(),
+    clear: vi.fn(),
   },
   writable: true,
 });
