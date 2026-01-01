@@ -65,10 +65,14 @@ serve(async (req: Request) => {
       return json({ error: 'Failed to fetch worker businesses' }, { status: 500 });
     }
 
-    // Add worker businesses
+    // Add worker businesses (excluding any we already added as owner)
+    const ownedIds = new Set(businesses.map(b => b.id));
     if (workerBusinesses) {
       for (const permission of workerBusinesses) {
         const business = permission.businesses as any;
+        // Skip if already added as owner (prevents duplicates)
+        if (ownedIds.has(business.id)) continue;
+        
         businesses.push({
           id: business.id,
           name: business.name,
@@ -85,7 +89,7 @@ serve(async (req: Request) => {
       }
     }
 
-    console.log(`✅ Found ${businesses.length} businesses for user`);
+    console.log(`✅ Found ${businesses.length} businesses for user (deduplicated)`);
     
     return json({
       data: businesses,
