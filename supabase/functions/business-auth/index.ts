@@ -125,16 +125,16 @@ async function createSession(supabase: any, profileId: string, authMethod: strin
 
 // Get profile with business info
 async function getProfileWithBusiness(supabase: any, profileId: string) {
-  // Query profile without foreign key join
+  // Query profile without foreign key join - use actual columns from profiles table
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('id, email, full_name, avatar_url, created_at, last_login_at, default_business_id')
+    .select('id, email, full_name, phone_e164, created_at, last_login_at, default_business_id')
     .eq('id', profileId)
     .single();
 
   if (profileError) {
     console.error('[business-auth] Failed to fetch profile:', profileError);
-    return null;
+    throw new Error('Failed to load profile data');
   }
 
   // Query owned businesses separately
