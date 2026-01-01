@@ -384,7 +384,7 @@ async function handleMagicLink(req: Request, supabase: any) {
 
   // Send email
   const baseUrl = redirect_url || 'https://servicegrid.app';
-  const magicLinkUrl = `${baseUrl}/auth/verify?token=${magicToken}`;
+  const magicLinkUrl = `${baseUrl}/auth/verify/${magicToken}`;
 
   let emailSent = false;
 
@@ -655,7 +655,7 @@ async function handlePasswordReset(req: Request, supabase: any) {
 
   // Send email
   const baseUrl = redirect_url || 'https://servicegrid.app';
-  const resetUrl = `${baseUrl}/auth/reset-password?token=${resetToken}`;
+  const resetUrl = `${baseUrl}/auth/reset/${resetToken}`;
 
   let emailSent = false;
 
@@ -727,7 +727,7 @@ async function handlePasswordResetConfirm(req: Request, supabase: any) {
   }
 
   // Update password
-  const passwordHash = await bcrypt.hash(password);
+  const passwordHash = bcrypt.hashSync(password);
 
   await supabase
     .from('profiles')

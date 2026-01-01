@@ -425,7 +425,7 @@ async function handleRegister(req: Request, supabase: any) {
   }
 
   // Hash password
-  const passwordHash = await bcrypt.hash(password);
+  const passwordHash = bcrypt.hashSync(password);
 
   // Upsert customer account with password
   const { data: account, error: accountError } = await supabase
@@ -669,7 +669,7 @@ async function handleSetPassword(req: Request, supabase: any) {
   }
 
   // Hash and store password
-  const passwordHash = await bcrypt.hash(password);
+  const passwordHash = bcrypt.hashSync(password);
 
   const { error: updateError } = await supabase
     .from('customer_accounts')
@@ -935,7 +935,7 @@ async function handlePasswordResetConfirm(req: Request, supabase: any) {
   }
 
   // Hash new password
-  const passwordHash = await bcrypt.hash(password);
+  const passwordHash = bcrypt.hashSync(password);
 
   // Update password and clear reset token
   await supabase
