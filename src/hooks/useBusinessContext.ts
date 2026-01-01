@@ -28,33 +28,7 @@ export function useBusinessContext(targetBusinessId?: string) {
   // Get all businesses the user has access to (owned + worker)
   const businessesQuery = useUserBusinesses();
   
-  // Early return if auth is not ready - prevents race condition
-  if (!isLoaded) {
-    return {
-      isAuthenticated: false,
-      isLoaded: false,
-      userId: null,
-      profileId: null,
-      business: null,
-      businessId: undefined,
-      businessName: undefined,
-      businessDescription: undefined,
-      businessPhone: undefined,
-      businessReplyToEmail: undefined,
-      businessTaxRateDefault: undefined,
-      businessLogoUrl: undefined,
-      businessLightLogoUrl: undefined,
-      role: null,
-      userRole: null,
-      canManage: false,
-      isLoadingBusiness: true,
-      hasBusinessError: false,
-      businessError: null,
-      refetchBusiness: () => Promise.resolve({ data: undefined, error: null }),
-    };
-  }
-  
-  // Transform UserBusiness to BusinessUI format
+  // Transform UserBusiness to BusinessUI format (safe even if data is undefined)
   const transformedBusinesses: BusinessUI[] | undefined = businessesQuery.data?.map(b => ({
     id: b.id,
     name: b.name,
@@ -87,7 +61,7 @@ export function useBusinessContext(targetBusinessId?: string) {
   const isLoadingBusiness = !isLoaded || businessesQuery.isLoading;
   const hasError = businessesQuery.isError;
   
-  // Update meta tags when business data changes
+  // Update meta tags when business data changes - MUST be called unconditionally
   useEffect(() => {
     if (business?.name) {
       updateBusinessMeta({
@@ -97,6 +71,32 @@ export function useBusinessContext(targetBusinessId?: string) {
       });
     }
   }, [business?.name, business?.description, business?.logoUrl]);
+  
+  // Early return if auth is not ready - AFTER all hooks are called
+  if (!isLoaded) {
+    return {
+      isAuthenticated: false,
+      isLoaded: false,
+      userId: null,
+      profileId: null,
+      business: null,
+      businessId: undefined,
+      businessName: undefined,
+      businessDescription: undefined,
+      businessPhone: undefined,
+      businessReplyToEmail: undefined,
+      businessTaxRateDefault: undefined,
+      businessLogoUrl: undefined,
+      businessLightLogoUrl: undefined,
+      role: null,
+      userRole: null,
+      canManage: false,
+      isLoadingBusiness: true,
+      hasBusinessError: false,
+      businessError: null,
+      refetchBusiness: () => Promise.resolve({ data: undefined, error: null }),
+    };
+  }
   
   return {
     // Authentication state
