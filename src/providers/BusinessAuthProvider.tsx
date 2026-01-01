@@ -194,7 +194,8 @@ export function BusinessAuthProvider({ children }: BusinessAuthProviderProps) {
       });
 
       if (error) {
-        return { error: error.message || 'Login failed' };
+        // Non-2xx responses still include the body in data, prioritize data.error
+        return { error: data?.error || error.message || 'Login failed' };
       }
 
       if (!data?.session_token) {
@@ -238,7 +239,8 @@ export function BusinessAuthProvider({ children }: BusinessAuthProviderProps) {
       });
 
       if (error) {
-        return { error: error.message || 'Registration failed' };
+        // Non-2xx responses still include the body in data, prioritize data.error
+        return { error: data?.error || error.message || 'Registration failed' };
       }
 
       if (!data?.session_token) {
@@ -282,7 +284,8 @@ export function BusinessAuthProvider({ children }: BusinessAuthProviderProps) {
       });
 
       if (error) {
-        return { error: error.message || 'Failed to send magic link' };
+        // Non-2xx responses still include the body in data, prioritize data.error
+        return { error: data?.error || error.message || 'Failed to send magic link' };
       }
 
       if (!data?.success) {
@@ -304,7 +307,8 @@ export function BusinessAuthProvider({ children }: BusinessAuthProviderProps) {
       });
 
       if (error) {
-        return { error: error.message || 'Invalid or expired link' };
+        // Non-2xx responses still include the body in data, prioritize data.error
+        return { error: data?.error || error.message || 'Invalid or expired link' };
       }
 
       if (!data?.session_token) {
