@@ -39,6 +39,24 @@ export function useUserBusinesses() {
       
       if (error) {
         console.error('[useUserBusinesses] API error:', error);
+        
+        // Check for auth-specific errors that indicate invalid session
+        const authErrorPatterns = [
+          'Invalid or expired session',
+          'User from sub claim',
+          'Missing authentication',
+          'JWT',
+          'Profile not found'
+        ];
+        const isAuthError = authErrorPatterns.some(pattern => 
+          error.message?.toLowerCase().includes(pattern.toLowerCase())
+        );
+        
+        if (isAuthError) {
+          console.warn('[useUserBusinesses] Auth error detected, marking as AUTH_INVALID');
+          throw new Error('AUTH_INVALID');
+        }
+        
         throw new Error(error.message || 'Failed to fetch user businesses');
       }
       
@@ -53,6 +71,11 @@ export function useUserBusinesses() {
     // Only enable when we have auth AND an actual access token
     enabled: isLoaded && isSignedIn && hasToken,
     staleTime: 30_000,
-    placeholderData: (prev) => prev, // Keep previous data visible during refetch
+    placeholderData: (prev) => prev,
+    retry: (failureCount, error) => {
+      // Don't retry auth errors - they won't resolve without re-login
+      if (error.message === 'AUTH_INVALID') return false;
+      return failureCount < 2;
+    },
   });
 }
