@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAuth } from '@/hooks/useBusinessAuth';
+import { useBusinessAuth } from '@/hooks/useBusinessAuth';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 interface UploadOptions {
@@ -23,8 +23,16 @@ const SUPPORTED_TYPES = [
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 
+/**
+ * Media Upload Hook for Conversations
+ * 
+ * NOTE: This hook uses raw fetch() instead of authApi.invoke() because:
+ * 1. File uploads require FormData which supabase.functions.invoke() handles differently
+ * 2. Uses x-session-token header for auth (validated by requireCtx in edge function)
+ * 3. Needs progress tracking during upload
+ */
 export function useConversationMediaUpload() {
-  const { getToken } = useAuth();
+  const { getSessionToken } = useBusinessAuth();
   const { businessId } = useBusinessContext();
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -62,14 +70,14 @@ export function useConversationMediaUpload() {
 
       onProgress?.(30);
 
-      // Upload to edge function
-      const token = await getToken();
+      // Upload to edge function using session token auth
+      const sessionToken = getSessionToken();
       const response = await fetch(
         `https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/upload-conversation-media`,
         {
           method: 'POST',
           headers: {
-            'x-session-token': token || '',
+            'x-session-token': sessionToken || '',
             'x-business-id': businessId
           },
           body: formData

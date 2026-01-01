@@ -4,6 +4,18 @@ import { useBusinessAuth } from '@/hooks/useBusinessAuth';
 import { toast } from 'sonner';
 import { useConversationMediaUpload } from './useConversationMediaUpload';
 
+/**
+ * AI Chat Hook
+ * 
+ * NOTE: This hook intentionally uses raw fetch() instead of authApi.invoke() because:
+ * 1. AI chat requires Server-Sent Events (SSE) streaming for real-time token delivery
+ * 2. supabase.functions.invoke() does not support streaming responses
+ * 3. Uses x-session-token header for auth (validated by requireCtx in edge function)
+ * 
+ * This is the only business platform hook that should use raw fetch - all other
+ * API calls should use authApi.invoke() for consistency.
+ */
+
 export interface ClarificationData {
   question: string;
   options?: Array<{ label: string; value: string }>;
