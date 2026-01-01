@@ -202,6 +202,11 @@ export function BusinessAuthProvider({ children }: BusinessAuthProviderProps) {
         return { error: data?.error || 'Login failed' };
       }
 
+      // Guard against null profile from backend
+      if (!data?.profile?.id) {
+        return { error: 'Failed to load profile. Please try again.' };
+      }
+
       storeSession(data.session_token, data.expires_at);
 
       const userData: BusinessUser = {
@@ -245,6 +250,11 @@ export function BusinessAuthProvider({ children }: BusinessAuthProviderProps) {
 
       if (!data?.session_token) {
         return { error: data?.error || 'Registration failed' };
+      }
+
+      // Guard against null profile from backend
+      if (!data?.profile?.id) {
+        return { error: 'Failed to load profile. Please try again.' };
       }
 
       storeSession(data.session_token, data.expires_at);
@@ -313,6 +323,11 @@ export function BusinessAuthProvider({ children }: BusinessAuthProviderProps) {
 
       if (!data?.session_token) {
         return { error: data?.error || 'Invalid or expired link' };
+      }
+
+      // Guard against null profile from backend
+      if (!data?.profile?.id) {
+        return { error: 'Failed to load profile. Please try again.' };
       }
 
       storeSession(data.session_token, data.expires_at);
