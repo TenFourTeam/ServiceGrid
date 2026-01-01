@@ -358,7 +358,7 @@ export function useAIChat(options?: UseAIChatOptions) {
         {
           method: 'POST',
           headers: {
-            'x-session-token': sessionToken || '',
+            'Authorization': `Bearer ${sessionToken || ''}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -1129,7 +1129,7 @@ export function useAIChat(options?: UseAIChatOptions) {
       const response = await fetch(
         `https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/ai-chat-messages?conversationId=${convId}`,
         {
-          headers: { 'x-session-token': sessionToken || '' }
+          headers: { 'Authorization': `Bearer ${sessionToken || ''}` }
         }
       );
       
