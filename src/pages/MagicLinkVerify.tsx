@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useBusinessAuth } from '@/hooks/useBusinessAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,43 +8,48 @@ import { Loader2, CheckCircle, XCircle, Mail } from 'lucide-react';
 type VerifyStatus = 'verifying' | 'success' | 'error';
 
 export default function MagicLinkVerify() {
-  const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
-  const { verifyMagicLink, isAuthenticated } = useBusinessAuth();
+  const [searchParams] = useSearchParams();
+  const { isAuthenticated, isLoading } = useBusinessAuth();
   
   const [status, setStatus] = useState<VerifyStatus>('verifying');
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
-    // If already authenticated, redirect
-    if (isAuthenticated) {
-      navigate('/calendar', { replace: true });
-      return;
-    }
+    // Wait for auth to finish loading
+    if (isLoading) return;
 
-    if (!token) {
+    // Supabase magic links automatically sign in via onAuthStateChange
+    // Check if we have an error in the URL params
+    const error = searchParams.get('error');
+    const errorDescription = searchParams.get('error_description');
+    
+    if (error) {
       setStatus('error');
-      setErrorMessage('No verification token provided');
+      setErrorMessage(errorDescription || error || 'Verification failed');
       return;
     }
 
-    const verify = async () => {
-      const result = await verifyMagicLink(token);
-      
-      if (result.error) {
-        setStatus('error');
-        setErrorMessage(result.error);
-      } else {
-        setStatus('success');
-        // Redirect after a brief delay to show success
-        setTimeout(() => {
-          navigate('/calendar', { replace: true });
-        }, 1500);
-      }
-    };
+    // If authenticated, redirect to dashboard
+    if (isAuthenticated) {
+      setStatus('success');
+      setTimeout(() => {
+        navigate('/calendar', { replace: true });
+      }, 1500);
+      return;
+    }
 
-    verify();
-  }, [token, verifyMagicLink, navigate, isAuthenticated]);
+    // If not authenticated and no error, the link may have expired
+    // Give it a moment to process (Supabase handles this automatically)
+    const timeout = setTimeout(() => {
+      if (!isAuthenticated) {
+        setStatus('error');
+        setErrorMessage('Link expired or invalid. Please request a new one.');
+      }
+    }, 3000);
+
+    return () => clearTimeout(timeout);
+  }, [isAuthenticated, isLoading, searchParams, navigate]);
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-background p-4">

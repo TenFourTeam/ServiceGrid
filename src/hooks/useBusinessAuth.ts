@@ -9,20 +9,20 @@ export function useBusinessAuth() {
 }
 
 /**
- * Session-based useAuth hook
+ * Supabase Auth-based useAuth hook
  * Drop-in replacement for common auth patterns
  */
 export function useAuth() {
-  const { isAuthenticated, isLoading, user, getSessionToken, logout } = useBusinessAuthContext();
+  const { isAuthenticated, isLoading, user, session, logout } = useBusinessAuthContext();
   
   return {
     isSignedIn: isAuthenticated,
     isLoaded: !isLoading,
     userId: user?.profileId ?? null,
     
-    // Async wrapper for compatibility with common auth patterns
+    // Return JWT access token for API calls
     getToken: async (_options?: { template?: string; skipCache?: boolean }): Promise<string | null> => {
-      return getSessionToken();
+      return session?.access_token ?? null;
     },
     
     signOut: logout
@@ -30,7 +30,7 @@ export function useAuth() {
 }
 
 /**
- * Session-based useUser hook
+ * Supabase Auth-based useUser hook
  * Drop-in replacement for common auth patterns
  */
 export function useUser() {

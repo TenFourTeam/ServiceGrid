@@ -1,8 +1,8 @@
 // Shared authentication and business context resolution for Supabase Edge Functions
-// Session token authentication only
+// JWT-based authentication using Supabase Auth
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.54.0";
 
-type UserUuid = string;    // postgres uuid
+type UserUuid = string;
 
 export type AuthContext = {
   userId: UserUuid;
@@ -29,76 +29,55 @@ export async function requireCtx(req: Request, options: { autoCreate?: boolean, 
   console.info('🔍 [auth] Request URL:', req.url);
   console.info('🔍 [auth] Request method:', req.method);
   
-  // Check for session token (required)
-  const sessionToken = req.headers.get("x-session-token");
-  
-  if (!sessionToken) {
-    console.error('❌ [auth] Missing session token');
-    throw new Error("Missing authentication token. Please sign in again.");
-  }
-  
-  console.info('🔍 [auth] Session token detected, using session auth');
-  return await requireCtxFromSession(req, sessionToken, options);
-}
-
-// === SESSION TOKEN AUTHENTICATION ===
-async function requireCtxFromSession(
-  req: Request, 
-  sessionToken: string, 
-  options: { autoCreate?: boolean, businessId?: string }
-): Promise<AuthContext> {
   const supaAdmin = createSupabaseAdmin();
   
-  // Validate session token
-  const { data: session, error: sessionError } = await supaAdmin
-    .from('business_sessions')
-    .select('id, profile_id, expires_at')
-    .eq('session_token', sessionToken)
-    .single();
-
-  if (sessionError || !session) {
-    console.error('❌ [auth] Invalid session token');
-    throw new Error("Invalid or expired session");
+  // Check for JWT in Authorization header (Supabase Auth standard)
+  const authHeader = req.headers.get("Authorization");
+  
+  if (!authHeader?.startsWith("Bearer ")) {
+    console.error('❌ [auth] Missing or invalid Authorization header');
+    throw new Error("Missing authentication. Please sign in again.");
   }
-
-  // Check expiry
-  if (new Date(session.expires_at) < new Date()) {
-    console.error('❌ [auth] Session token expired');
-    throw new Error("Session expired. Please refresh or login again.");
+  
+  const token = authHeader.replace("Bearer ", "");
+  console.info('🔍 [auth] JWT token detected, validating with Supabase Auth');
+  
+  // Validate JWT with Supabase Auth
+  const { data: { user }, error: authError } = await supaAdmin.auth.getUser(token);
+  
+  if (authError || !user) {
+    console.error('❌ [auth] JWT validation failed:', authError?.message);
+    throw new Error("Invalid or expired session. Please sign in again.");
   }
-
-  // Get profile
+  
+  console.info('✅ [auth] JWT validated for user:', user.id);
+  
+  // Get profile to resolve business ID
   const { data: profile, error: profileError } = await supaAdmin
     .from('profiles')
     .select('id, email, default_business_id')
-    .eq('id', session.profile_id)
+    .eq('id', user.id)
     .single();
 
   if (profileError || !profile) {
-    console.error('❌ [auth] Profile not found for session');
-    throw new Error("Profile not found");
+    console.error('❌ [auth] Profile not found for user:', user.id);
+    throw new Error("Profile not found. Please contact support.");
   }
-
-  // Update session last_used_at
-  await supaAdmin
-    .from('business_sessions')
-    .update({ last_used_at: new Date().toISOString() })
-    .eq('id', session.id);
 
   // Resolve business ID
   const businessId = await resolveBusinessId(
     supaAdmin, 
-    profile.id, 
+    user.id, 
     profile.default_business_id,
     req,
     options
   );
 
-  console.info('✅ [auth] Session auth successful for profile:', profile.id);
+  console.info('✅ [auth] Auth successful for user:', user.id, 'business:', businessId);
 
   return {
-    userId: profile.id,
-    email: profile.email?.toLowerCase() || undefined,
+    userId: user.id,
+    email: user.email?.toLowerCase() || undefined,
     businessId,
     supaAdmin,
   };
@@ -258,9 +237,9 @@ export async function incrementAICredits(ctx: AuthContext, supabase: any, credit
 export async function requireCtxWithUserClient(req: Request, options: { autoCreate?: boolean, businessId?: string } = { autoCreate: true }): Promise<AuthContextWithUserClient> {
   const authCtx = await requireCtx(req, options);
   
-  // Session auth - use service role client (RLS bypassed for trusted backend operations)
+  // Use admin client for all operations (JWT validated, trusted backend)
   const userClient = authCtx.supaAdmin;
-  console.info('✅ [auth] Using admin client for session-based operations');
+  console.info('✅ [auth] Using admin client for authenticated operations');
   
   return {
     ...authCtx,
@@ -271,7 +250,7 @@ export async function requireCtxWithUserClient(req: Request, options: { autoCrea
 // CORS headers for Edge Functions
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-business-id, x-session-token",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-business-id",
   "Access-Control-Allow-Methods": "*",
 };
 
