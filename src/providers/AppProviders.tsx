@@ -59,7 +59,7 @@ export function AppProviders({ children }: AppProvidersProps) {
         <TooltipProvider delayDuration={100}>
           <ConsolidatedToaster />
           <AuthAwareNotifications />
-          {import.meta.env.DEV && <AuthDebugBadge />}
+          <AuthDebugBadge />
           {children}
         </TooltipProvider>
       </LanguageProvider>

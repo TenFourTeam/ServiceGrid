@@ -42,26 +42,37 @@ export function useBusinessContext(targetBusinessId?: string) {
     createdAt: b.joined_at,
   }));
   
-  // Find the owned business (user's default business)
-  const ownedBusiness = transformedBusinesses?.find(b => b.role === 'owner');
+  // Deterministic business selection with worker-safe fallback
+  // Priority: targetBusinessId > is_current > first owner > first business
+  const resolvedBusiness = (() => {
+    if (!transformedBusinesses?.length) return undefined;
+    
+    // 1. If targetBusinessId provided, use that
+    if (targetBusinessId) {
+      return transformedBusinesses.find(b => b.id === targetBusinessId);
+    }
+    
+    // 2. Find is_current business (set by backend based on default_business_id)
+    const currentBusiness = businessesQuery.data?.find(b => b.is_current);
+    if (currentBusiness) {
+      return transformedBusinesses.find(b => b.id === currentBusiness.id);
+    }
+    
+    // 3. Fallback to first owner business
+    const ownerBusiness = transformedBusinesses.find(b => b.role === 'owner');
+    if (ownerBusiness) return ownerBusiness;
+    
+    // 4. Final fallback: first business in list (for worker-only users)
+    return transformedBusinesses[0];
+  })();
   
-  // Determine which business to use
-  const targetBusiness = targetBusinessId 
-    ? transformedBusinesses?.find(b => b.id === targetBusinessId)
-    : ownedBusiness;
-  
-  // Get the business and role
-  const business = targetBusiness;
-  const role = targetBusiness?.role || null;
-  
-  // Use targetBusinessId immediately if provided to prevent race condition
-  const businessId = targetBusinessId || business?.id;
+  const business = resolvedBusiness;
+  const role = resolvedBusiness?.role || null;
+  const businessId = resolvedBusiness?.id;
   
   // Debug logging
   console.log('[useBusinessContext] Data:', { 
     businessesCount: transformedBusinesses?.length,
-    ownedBusinessId: ownedBusiness?.id,
-    targetBusinessId,
     resolvedBusinessId: businessId,
     role,
     isLoading: businessesQuery.isLoading,
