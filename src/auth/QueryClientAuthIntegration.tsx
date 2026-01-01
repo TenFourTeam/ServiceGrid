@@ -29,11 +29,8 @@ export function QueryClientAuthIntegration() {
       // User signed out - clear all cached data
       queryClient.clear();
     }
-
-    // Refetch visible queries when becoming authenticated
-    if (!wasSignedIn && isSignedIn) {
-      queryClient.refetchQueries({ type: 'active' });
-    }
+    // Note: We don't refetch on sign-in anymore - queries will naturally
+    // start fetching once their enabled conditions are met
   }, [isLoaded, isSignedIn, queryClient]);
 
   // Simplified token handling - refresh session periodically

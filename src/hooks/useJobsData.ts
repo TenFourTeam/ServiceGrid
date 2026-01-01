@@ -76,6 +76,7 @@ export function useJobsData(businessId?: string, opts?: UseJobsDataOptions) {
       return { jobs: data?.jobs || [], count: data?.count || 0 };
     },
     refetchOnWindowFocus: true, // Get fresh data when user returns to tab
+    placeholderData: (prev) => prev, // Keep previous data visible during refetch
   });
 
   return {
