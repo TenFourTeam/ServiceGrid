@@ -156,6 +156,12 @@ export function BusinessAuthProvider({ children }: BusinessAuthProviderProps) {
         
         if (error) {
           console.error('[BusinessAuth] getSession error:', error.message);
+          
+          // Detect stale/invalid refresh token and clear it immediately
+          if (error.message?.includes('Refresh Token') || error.message?.includes('refresh_token')) {
+            console.warn('[BusinessAuth] Stale refresh token detected, signing out to clear');
+            await supabase.auth.signOut();
+          }
           // Treat as no session - don't throw
         }
         
