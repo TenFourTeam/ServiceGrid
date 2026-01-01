@@ -28,6 +28,7 @@ export default function CalendarShell({
   selectedJobId?: string;
   businessId?: string;
 }) {
+  console.log('[CalendarShell] Mounting with routeBusinessId:', routeBusinessId);
   const [view, setView] = useState<"month" | "week" | "day">("week");
   const [showMap, setShowMap] = useState(false);
   const [displayMode, setDisplayMode] = useState<CalendarDisplayMode>('scheduled');
