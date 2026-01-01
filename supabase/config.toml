@@ -131,6 +131,10 @@ verify_jwt = false
 [functions.send-lifecycle-email]
 verify_jwt = false
 
+# Auth email hook (called by Supabase Auth)
+[functions.auth-email-hook]
+verify_jwt = false
+
 # Invite system functions
 [functions.create-invites]
 verify_jwt = false
