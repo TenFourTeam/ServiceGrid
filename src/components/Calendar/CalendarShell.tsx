@@ -42,8 +42,71 @@ export default function CalendarShell({
   const isPhone = useIsPhone();
   const { t } = useLanguage();
   const queryClient = useQueryClient();
-  
-  // Skeleton loading state while business context is loading
+
+  const month = useMemo(() => new Date(date), [date]);
+  const rangeTitle = useMemo(() => {
+    if (view === "month") return format(date, "MMMM yyyy");
+    if (view === "week") {
+      const s = startOfWeek(date);
+      const e = endOfWeek(date);
+      return s.getMonth() === e.getMonth() ? `${format(s, "MMM d")}–${format(e, "d, yyyy")}` : `${format(s, "MMM d")}–${format(e, "MMM d, yyyy")}`;
+    }
+    return format(date, "EEE, MMM d");
+  }, [date, view]);
+
+  const stepDate = useCallback((dir: 1 | -1) => {
+    if (view === "month") {
+      setDate(addMonths(date, dir));
+    } else if (view === "week") {
+      const step = (isPhone && view === "week") ? 1 : 7;
+      setDate(addDays(date, step * dir));
+    } else {
+      setDate(addDays(date, dir));
+    }
+  }, [date, view, isPhone]);
+
+  // ALL useEffects BEFORE any early returns to comply with React's Rules of Hooks
+  useEffect(() => {
+    if (!businessId) return;
+    console.log("[CalendarShell] Business changed, clearing jobs cache for:", businessId);
+    queryClient.removeQueries({ queryKey: ['data', 'jobs'] });
+  }, [businessId, queryClient]);
+
+  useEffect(() => {
+    if (!businessId) return;
+    console.log("[CalendarShell] Business context changed:", {
+      businessId,
+      businessName,
+      role,
+      userId,
+      memberCount: businessMembers?.length || 0,
+      memberNames: businessMembers?.map(m => m.name || m.email) || []
+    });
+  }, [businessId, businessName, role, userId, businessMembers]);
+
+  useEffect(() => {
+    if (!userId || !businessMembers?.length) return;
+    if (selectedMemberId === null) {
+      const currentUser = businessMembers.find(member => member.user_id === userId);
+      if (currentUser) setSelectedMemberId(userId);
+    }
+  }, [userId, selectedMemberId, businessMembers]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.target as HTMLElement)?.tagName === 'INPUT' || (e.target as HTMLElement)?.tagName === 'TEXTAREA') return;
+      if (e.key === '1') setView('day');
+      if (e.key === '2') setView('week');
+      if (e.key === '3') setView('month');
+      if (e.key.toLowerCase() === 't') setDate(startOfDay(new Date()));
+      if (e.key === 'ArrowLeft') stepDate(-1);
+      if (e.key === 'ArrowRight') stepDate(1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [stepDate]);
+
+  // Skeleton loading state - AFTER all hooks
   if (isLoadingBusiness || !businessId) {
     return (
       <div className="flex-1 min-h-0 flex flex-col gap-4">
@@ -66,75 +129,6 @@ export default function CalendarShell({
       </div>
     );
   }
-  
-  // Clear cache when business changes
-  useEffect(() => {
-    if (businessId) {
-      console.log("[CalendarShell] Business changed, clearing jobs cache for:", businessId);
-      queryClient.removeQueries({ queryKey: ['data', 'jobs'] });
-    }
-  }, [businessId, queryClient]);
-  
-  // Debug business context changes
-  useEffect(() => {
-    console.log("[CalendarShell] Business context changed:", {
-      businessId,
-      businessName,
-      role,
-      userId,
-      memberCount: businessMembers?.length || 0,
-      memberNames: businessMembers?.map(m => m.name || m.email) || []
-    });
-  }, [businessId, businessName, role, userId, businessMembers]);
-  
-  // Default to showing the owner's own calendar
-  useEffect(() => {
-    if (userId && selectedMemberId === null && businessMembers && businessMembers.length > 0) {
-      // Find the current user in the business members array
-      const currentUser = businessMembers.find(member => member.user_id === userId);
-      if (currentUser) {
-        setSelectedMemberId(userId);
-      }
-    }
-  }, [userId, selectedMemberId, businessMembers]);
-  
-  const month = useMemo(() => new Date(date), [date]);
-  const rangeTitle = useMemo(() => {
-    if (view === "month") return format(date, "MMMM yyyy");
-    if (view === "week") {
-      const s = startOfWeek(date);
-      const e = endOfWeek(date);
-      return s.getMonth() === e.getMonth() ? `${format(s, "MMM d")}–${format(e, "d, yyyy")}` : `${format(s, "MMM d")}–${format(e, "MMM d, yyyy")}`;
-    }
-    return format(date, "EEE, MMM d");
-  }, [date, view]);
-
-  // Keyboard shortcuts: 1/2/3 to switch views, T for today, arrows to navigate
-  const stepDate = useCallback((dir: 1 | -1) => {
-    if (view === "month") {
-      setDate(addMonths(date, dir));
-    } else if (view === "week") {
-      // For phone in week view, navigate by 1 day to slide the 3-day window
-      // For tablet/desktop, navigate by full week (7 days)
-      const step = (isPhone && view === "week") ? 1 : 7;
-      setDate(addDays(date, step * dir));
-    } else {
-      setDate(addDays(date, dir));
-    }
-  }, [date, view, isPhone]);
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement)?.tagName === 'INPUT' || (e.target as HTMLElement)?.tagName === 'TEXTAREA') return;
-      if (e.key === '1') setView('day');
-      if (e.key === '2') setView('week');
-      if (e.key === '3') setView('month');
-      if (e.key.toLowerCase() === 't') setDate(startOfDay(new Date()));
-      if (e.key === 'ArrowLeft') stepDate(-1);
-      if (e.key === 'ArrowRight') stepDate(1);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [stepDate]);
   return <div className="flex-1 min-h-0 flex flex-col gap-2 md:gap-4">
         <header className="pt-4 md:pt-6 flex flex-col gap-3 md:gap-0 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center justify-between md:gap-3">
