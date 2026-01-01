@@ -34,7 +34,8 @@ export default function CalendarShell({
   const [date, setDate] = useState<Date>(startOfDay(new Date()));
   const [showOverviewGenerator, setShowOverviewGenerator] = useState(false);
   const [showArtifactsViewer, setShowArtifactsViewer] = useState(false);
-  const { role, userId, businessId, businessName, isLoadingBusiness } = useBusinessContext(routeBusinessId);
+  const [showProvisioningFallback, setShowProvisioningFallback] = useState(false);
+  const { role, userId, businessId, businessName, isLoadingBusiness, refetchBusiness } = useBusinessContext(routeBusinessId);
   const { data: jobs, refetch: refetchJobs } = useJobsData(businessId);
   const { data: businessMembers } = useBusinessMembersData();
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
@@ -106,8 +107,35 @@ export default function CalendarShell({
     return () => window.removeEventListener('keydown', onKey);
   }, [stepDate]);
 
+  // Business provisioning fallback - show after timeout if signed in but no business
+  useEffect(() => {
+    if (!isLoadingBusiness && !businessId) {
+      const timer = setTimeout(() => {
+        setShowProvisioningFallback(true);
+      }, 5000);
+      return () => clearTimeout(timer);
+    } else {
+      setShowProvisioningFallback(false);
+    }
+  }, [isLoadingBusiness, businessId]);
+
   // Skeleton loading state - AFTER all hooks
   if (isLoadingBusiness || !businessId) {
+    // Show provisioning fallback after timeout
+    if (showProvisioningFallback) {
+      return (
+        <div className="flex-1 min-h-0 flex items-center justify-center">
+          <div className="text-center space-y-4 max-w-md p-8">
+            <h2 className="text-xl font-semibold text-foreground">Setting up your workspace...</h2>
+            <p className="text-muted-foreground">This should only take a moment. If this persists, try refreshing.</p>
+            <Button onClick={() => refetchBusiness?.()} variant="secondary">
+              Retry
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="flex-1 min-h-0 flex flex-col gap-4">
         <header className="pt-6 flex items-center justify-between">
