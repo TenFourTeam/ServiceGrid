@@ -76,8 +76,8 @@ export function useConversationMediaUpload() {
         `https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/upload-conversation-media`,
         {
           method: 'POST',
-          headers: {
-            'x-session-token': sessionToken || '',
+        headers: {
+            'Authorization': `Bearer ${sessionToken || ''}`,
             'x-business-id': businessId
           },
           body: formData
