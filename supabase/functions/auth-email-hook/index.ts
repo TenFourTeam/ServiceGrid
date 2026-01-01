@@ -82,10 +82,49 @@ function getEmailSubject(actionType: string): string {
   }
 }
 
+// Derive the correct base URL, avoiding localhost
+function getSiteUrl(email_data: EmailPayload['email_data']): string {
+  const fallbackUrl = 'https://servicegrid.app';
+  
+  // Check for env override first
+  const envBaseUrl = Deno.env.get('APP_BASE_URL');
+  if (envBaseUrl) {
+    return envBaseUrl.replace(/\/$/, '');
+  }
+  
+  // Try to derive from redirect_to (most reliable - set by frontend)
+  if (email_data.redirect_to) {
+    try {
+      const redirectUrl = new URL(email_data.redirect_to);
+      const origin = redirectUrl.origin;
+      // Skip localhost/127.0.0.1
+      if (!origin.includes('localhost') && !origin.includes('127.0.0.1')) {
+        return origin;
+      }
+    } catch {
+      // Invalid URL, continue to next option
+    }
+  }
+  
+  // Try site_url but skip localhost
+  if (email_data.site_url) {
+    try {
+      const siteOrigin = new URL(email_data.site_url).origin;
+      if (!siteOrigin.includes('localhost') && !siteOrigin.includes('127.0.0.1')) {
+        return siteOrigin;
+      }
+    } catch {
+      // Invalid URL
+    }
+  }
+  
+  return fallbackUrl;
+}
+
 function getEmailContent(payload: EmailPayload): { heading: string; message: string; buttonText: string; actionUrl: string } {
   const { user, email_data } = payload;
   const userName = user.user_metadata?.full_name || user.user_metadata?.name || 'there';
-  const siteUrl = email_data.site_url || email_data.redirect_to.split('?')[0].replace(/\/[^/]*$/, '') || 'https://app.servicegrid.com';
+  const siteUrl = getSiteUrl(email_data);
   
   // Build confirmation URL with token
   let actionUrl = '';

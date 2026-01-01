@@ -42,15 +42,15 @@ export default function AuthConfirm() {
         setStatus('success');
 
         // Determine redirect based on type
-        let destination = redirectTo || '/calendar';
         let successMessage = 'Email confirmed successfully!';
+        let destination = '/calendar';
 
         switch (type) {
           case 'signup':
           case 'magiclink':
           case 'invite':
             successMessage = 'Email confirmed! Redirecting...';
-            destination = redirectTo || '/calendar';
+            destination = '/calendar';
             break;
           case 'recovery':
             successMessage = 'Email verified! You can now reset your password.';
@@ -60,6 +60,19 @@ export default function AuthConfirm() {
             successMessage = 'Email updated successfully!';
             destination = '/settings';
             break;
+        }
+
+        // Handle redirect_to if provided and same-origin
+        if (redirectTo) {
+          try {
+            const redirectUrl = new URL(redirectTo, window.location.origin);
+            // Only use redirect_to if it's same-origin
+            if (redirectUrl.origin === window.location.origin) {
+              destination = redirectUrl.pathname + redirectUrl.search + redirectUrl.hash;
+            }
+          } catch {
+            // Invalid URL, use default destination
+          }
         }
 
         toast.success(successMessage);
