@@ -10,12 +10,12 @@ export interface ToastOptions {
 
 /**
  * Authenticated edge function helper with integrated toast support
- * Creates a function that includes session authentication tokens in edge function calls
+ * Uses Supabase Auth JWT tokens automatically included by the client
  */
 export function createAuthEdgeApi(getToken: (options?: { template?: string }) => Promise<string | null>) {
   return {
     /**
-     * Invoke an edge function with automatic session authentication and optional toast notifications
+     * Invoke an edge function with automatic JWT authentication and optional toast notifications
      */
     async invoke(
       functionName: string,
@@ -46,13 +46,14 @@ export function createAuthEdgeApi(getToken: (options?: { template?: string }) =>
         if (loading) {
           toastId = toast.loading(loading);
         }
-        // Get token with retry logic for race conditions during boot
+
+        // Get JWT token from Supabase session with retry logic
         console.info(`🔧 [AuthEdgeApi] Getting session token...`);
         const startToken = Date.now();
         
         let token: string | null = null;
         const maxRetries = 3;
-        const retryDelay = 200; // ms
+        const retryDelay = 200;
         
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
           token = await getToken({ template: 'supabase' });
@@ -74,22 +75,22 @@ export function createAuthEdgeApi(getToken: (options?: { template?: string }) =>
           }
           return {
             data: null,
-            error: { message: 'Authentication required. Please refresh the page.', status: 401 }
+            error: { message: 'Authentication required. Please sign in.', status: 401 }
           };
         }
 
         console.info(`🔧 [AuthEdgeApi] Token obtained, length: ${token.length}`);
         
-        // Use x-session-token header for session-based auth
+        // Use Authorization header with Bearer token (Supabase standard)
         const headers: Record<string, string> = {
-          'x-session-token': token,
+          'Authorization': `Bearer ${token}`,
           ...(requestOptions.headers || {}),
         };
 
-        const bodyToSend = requestOptions.body; // object | string | FormData | undefined
+        const bodyToSend = requestOptions.body;
 
         console.info(`🔧 [AuthEdgeApi] Prepared headers:`, Object.keys(headers));
-        console.info(`🔧 [AuthEdgeApi] Calling ${functionName} with auth token`);
+        console.info(`🔧 [AuthEdgeApi] Calling ${functionName} with JWT auth`);
 
         // Build function URL with query parameters if provided
         let functionUrl = functionName;
@@ -179,6 +180,5 @@ export function createAuthEdgeApi(getToken: (options?: { template?: string }) =>
  */
 function getDefaultSuccessMessage(method: string): string | false {
   // Remove automatic success toasts - let callers handle their own
-  // This prevents duplicate toasts when hooks also have onSuccess handlers
   return false;
 }

@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { User, Session } from '@supabase/supabase-js';
 
 // Types
 export interface BusinessUser {
@@ -24,23 +25,20 @@ export interface BusinessAuthContextValue {
   profile: BusinessProfile | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  session: Session | null;
   
   // Actions
   login: (email: string, password: string) => Promise<{ error?: string }>;
   register: (email: string, password: string, fullName: string) => Promise<{ error?: string }>;
   sendMagicLink: (email: string) => Promise<{ error?: string }>;
-  verifyMagicLink: (token: string) => Promise<{ error?: string }>;
   logout: () => Promise<void>;
   refreshSession: () => Promise<boolean>;
   
-  // Token access (for API calls)
+  // Token access (for API calls) - now returns JWT from Supabase session
   getSessionToken: () => string | null;
 }
 
 const BusinessAuthContext = createContext<BusinessAuthContextValue | null>(null);
-
-const SESSION_TOKEN_KEY = 'business_session_token';
-const SESSION_EXPIRY_KEY = 'business_session_expiry';
 
 interface BusinessAuthProviderProps {
   children: React.ReactNode;
@@ -49,347 +47,233 @@ interface BusinessAuthProviderProps {
 export function BusinessAuthProvider({ children }: BusinessAuthProviderProps) {
   const [user, setUser] = useState<BusinessUser | null>(null);
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const initRef = useRef(false);
-  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Get session token from storage
-  const getSessionToken = useCallback((): string | null => {
-    return localStorage.getItem(SESSION_TOKEN_KEY);
-  }, []);
+  const isAuthenticated = !!session?.user;
 
-  // Store session in localStorage
-  const storeSession = useCallback((token: string, expiresAt: string) => {
-    localStorage.setItem(SESSION_TOKEN_KEY, token);
-    localStorage.setItem(SESSION_EXPIRY_KEY, expiresAt);
-  }, []);
-
-  // Clear session from localStorage
-  const clearSession = useCallback(() => {
-    localStorage.removeItem(SESSION_TOKEN_KEY);
-    localStorage.removeItem(SESSION_EXPIRY_KEY);
-    setUser(null);
-    setProfile(null);
-    setIsAuthenticated(false);
-  }, []);
-
-  // Validate session with backend
-  const validateSession = useCallback(async (token: string): Promise<boolean> => {
+  // Fetch profile from database
+  const fetchProfile = useCallback(async (authUser: User): Promise<void> => {
     try {
-      const { data, error } = await supabase.functions.invoke('business-auth', {
-        method: 'POST',
-        body: { action: 'session' },
-        headers: { 'x-session-token': token }
-      });
+      const { data: profileData, error } = await supabase
+        .from('profiles')
+        .select('id, email, full_name, phone_e164, default_business_id')
+        .eq('id', authUser.id)
+        .single();
 
-      if (error || !data?.valid) {
-        console.warn('[BusinessAuth] Session invalid:', error?.message || 'Invalid session');
-        return false;
+      if (error) {
+        console.error('[BusinessAuth] Failed to fetch profile:', error);
+        return;
       }
 
-      // Update user state from session data
-      const userData: BusinessUser = {
-        profileId: data.profile.id,
-        email: data.profile.email,
-        fullName: data.profile.full_name,
-        phoneE164: data.profile.phone_e164,
-        defaultBusinessId: data.profile.default_business_id
-      };
+      if (profileData) {
+        const userData: BusinessUser = {
+          profileId: profileData.id,
+          email: profileData.email,
+          fullName: profileData.full_name,
+          phoneE164: profileData.phone_e164,
+          defaultBusinessId: profileData.default_business_id
+        };
 
-      const profileData: BusinessProfile = {
-        id: data.profile.id,
-        email: data.profile.email,
-        fullName: data.profile.full_name,
-        phoneE164: data.profile.phone_e164,
-        defaultBusinessId: data.profile.default_business_id
-      };
+        const profileObj: BusinessProfile = {
+          id: profileData.id,
+          email: profileData.email,
+          fullName: profileData.full_name,
+          phoneE164: profileData.phone_e164,
+          defaultBusinessId: profileData.default_business_id
+        };
 
-      setUser(userData);
-      setProfile(profileData);
-      setIsAuthenticated(true);
-
-      return true;
+        setUser(userData);
+        setProfile(profileObj);
+      }
     } catch (err) {
-      console.error('[BusinessAuth] Session validation error:', err);
-      return false;
+      console.error('[BusinessAuth] Profile fetch error:', err);
     }
   }, []);
 
-  // Refresh session before expiry
+  // Clear user state
+  const clearUserState = useCallback(() => {
+    setUser(null);
+    setProfile(null);
+    setSession(null);
+  }, []);
+
+  // Initialize auth state listener
+  useEffect(() => {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, newSession) => {
+        console.log('[BusinessAuth] Auth state changed:', event);
+        setSession(newSession);
+        
+        if (newSession?.user) {
+          // Defer profile fetch to avoid Supabase deadlock
+          setTimeout(() => {
+            fetchProfile(newSession.user);
+          }, 0);
+        } else {
+          clearUserState();
+        }
+
+        // Only set loading to false after we've processed the initial state
+        if (isLoading) {
+          setIsLoading(false);
+        }
+      }
+    );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
+      setSession(existingSession);
+      if (existingSession?.user) {
+        fetchProfile(existingSession.user);
+      }
+      setIsLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [fetchProfile, clearUserState, isLoading]);
+
+  // Get session token (JWT) for API calls
+  const getSessionToken = useCallback((): string | null => {
+    return session?.access_token ?? null;
+  }, [session]);
+
+  // Refresh session
   const refreshSession = useCallback(async (): Promise<boolean> => {
-    const token = getSessionToken();
-    if (!token) return false;
-
     try {
-      const { data, error } = await supabase.functions.invoke('business-auth', {
-        method: 'POST',
-        body: { action: 'refresh' },
-        headers: { 'x-session-token': token }
-      });
-
-      if (error || !data?.session_token) {
-        console.warn('[BusinessAuth] Session refresh failed');
-        clearSession();
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error || !data.session) {
+        console.warn('[BusinessAuth] Session refresh failed:', error?.message);
         return false;
       }
-
-      storeSession(data.session_token, data.expires_at);
       return true;
     } catch (err) {
       console.error('[BusinessAuth] Session refresh error:', err);
-      clearSession();
       return false;
     }
-  }, [getSessionToken, storeSession, clearSession]);
-
-  // Initialize: check for existing session
-  useEffect(() => {
-    if (initRef.current) return;
-    initRef.current = true;
-
-    const init = async () => {
-      const token = getSessionToken();
-      
-      if (token) {
-        const valid = await validateSession(token);
-        if (!valid) {
-          clearSession();
-        }
-      }
-      
-      setIsLoading(false);
-    };
-
-    init();
-  }, [getSessionToken, validateSession, clearSession]);
-
-  // Set up session refresh interval (every 10 minutes)
-  useEffect(() => {
-    if (!isAuthenticated) {
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-        refreshIntervalRef.current = null;
-      }
-      return;
-    }
-
-    refreshIntervalRef.current = setInterval(() => {
-      refreshSession();
-    }, 10 * 60 * 1000);
-
-    return () => {
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-      }
-    };
-  }, [isAuthenticated, refreshSession]);
+  }, []);
 
   // Login with email/password
   const login = useCallback(async (email: string, password: string): Promise<{ error?: string }> => {
     try {
-      const { data, error } = await supabase.functions.invoke('business-auth', {
-        method: 'POST',
-        body: { action: 'login', email, password }
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.toLowerCase().trim(),
+        password
       });
 
       if (error) {
-        // Non-2xx responses still include the body in data, prioritize data.error
-        return { error: data?.error || error.message || 'Login failed' };
+        // Map Supabase error messages to user-friendly messages
+        if (error.message.includes('Invalid login credentials')) {
+          return { error: 'Invalid email or password' };
+        }
+        if (error.message.includes('Email not confirmed')) {
+          return { error: 'Please verify your email before signing in' };
+        }
+        return { error: error.message };
       }
 
-      if (!data?.session_token) {
-        return { error: data?.error || 'Login failed' };
+      if (!data.session) {
+        return { error: 'Login failed. Please try again.' };
       }
-
-      // Guard against null profile from backend
-      if (!data?.profile?.id) {
-        return { error: 'Failed to load profile. Please try again.' };
-      }
-
-      storeSession(data.session_token, data.expires_at);
-
-      const userData: BusinessUser = {
-        profileId: data.profile.id,
-        email: data.profile.email,
-        fullName: data.profile.full_name,
-        phoneE164: data.profile.phone_e164,
-        defaultBusinessId: data.profile.default_business_id
-      };
-
-      const profileData: BusinessProfile = {
-        id: data.profile.id,
-        email: data.profile.email,
-        fullName: data.profile.full_name,
-        phoneE164: data.profile.phone_e164,
-        defaultBusinessId: data.profile.default_business_id
-      };
-
-      setUser(userData);
-      setProfile(profileData);
-      setIsAuthenticated(true);
 
       return {};
     } catch (err: any) {
+      console.error('[BusinessAuth] Login error:', err);
       return { error: err.message || 'Login failed' };
     }
-  }, [storeSession]);
+  }, []);
 
   // Register new user
   const register = useCallback(async (email: string, password: string, fullName: string): Promise<{ error?: string }> => {
     try {
-      const { data, error } = await supabase.functions.invoke('business-auth', {
-        method: 'POST',
-        body: { action: 'register', email, password, full_name: fullName }
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { data, error } = await supabase.auth.signUp({
+        email: email.toLowerCase().trim(),
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            full_name: fullName.trim()
+          }
+        }
       });
 
       if (error) {
-        // Non-2xx responses still include the body in data, prioritize data.error
-        return { error: data?.error || error.message || 'Registration failed' };
+        // Map Supabase error messages to user-friendly messages
+        if (error.message.includes('already registered')) {
+          return { error: 'An account with this email already exists. Try logging in instead.' };
+        }
+        if (error.message.includes('Password should be at least')) {
+          return { error: 'Password must be at least 6 characters' };
+        }
+        return { error: error.message };
       }
 
-      if (!data?.session_token) {
-        return { error: data?.error || 'Registration failed' };
+      // Check if email confirmation is required
+      if (data.user && !data.session) {
+        // Email confirmation is required
+        return { error: 'Please check your email to confirm your account.' };
       }
 
-      // Guard against null profile from backend
-      if (!data?.profile?.id) {
-        return { error: 'Failed to load profile. Please try again.' };
+      if (!data.session) {
+        return { error: 'Registration failed. Please try again.' };
       }
-
-      storeSession(data.session_token, data.expires_at);
-
-      const userData: BusinessUser = {
-        profileId: data.profile.id,
-        email: data.profile.email,
-        fullName: data.profile.full_name,
-        phoneE164: data.profile.phone_e164,
-        defaultBusinessId: data.profile.default_business_id
-      };
-
-      const profileData: BusinessProfile = {
-        id: data.profile.id,
-        email: data.profile.email,
-        fullName: data.profile.full_name,
-        phoneE164: data.profile.phone_e164,
-        defaultBusinessId: data.profile.default_business_id
-      };
-
-      setUser(userData);
-      setProfile(profileData);
-      setIsAuthenticated(true);
 
       return {};
     } catch (err: any) {
+      console.error('[BusinessAuth] Register error:', err);
       return { error: err.message || 'Registration failed' };
     }
-  }, [storeSession]);
+  }, []);
 
   // Send magic link
   const sendMagicLink = useCallback(async (email: string): Promise<{ error?: string }> => {
     try {
-      const { data, error } = await supabase.functions.invoke('business-auth', {
-        method: 'POST',
-        body: { action: 'magic-link', email }
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email.toLowerCase().trim(),
+        options: {
+          emailRedirectTo: redirectUrl
+        }
       });
 
       if (error) {
-        // Non-2xx responses still include the body in data, prioritize data.error
-        return { error: data?.error || error.message || 'Failed to send magic link' };
-      }
-
-      if (!data?.success) {
-        return { error: data?.error || 'Failed to send magic link' };
+        return { error: error.message };
       }
 
       return {};
     } catch (err: any) {
+      console.error('[BusinessAuth] Magic link error:', err);
       return { error: err.message || 'Failed to send magic link' };
     }
   }, []);
 
-  // Verify magic link
-  const verifyMagicLink = useCallback(async (token: string): Promise<{ error?: string }> => {
-    try {
-      const { data, error } = await supabase.functions.invoke('business-auth', {
-        method: 'POST',
-        body: { action: 'verify-magic', token }
-      });
-
-      if (error) {
-        // Non-2xx responses still include the body in data, prioritize data.error
-        return { error: data?.error || error.message || 'Invalid or expired link' };
-      }
-
-      if (!data?.session_token) {
-        return { error: data?.error || 'Invalid or expired link' };
-      }
-
-      // Guard against null profile from backend
-      if (!data?.profile?.id) {
-        return { error: 'Failed to load profile. Please try again.' };
-      }
-
-      storeSession(data.session_token, data.expires_at);
-
-      const userData: BusinessUser = {
-        profileId: data.profile.id,
-        email: data.profile.email,
-        fullName: data.profile.full_name,
-        phoneE164: data.profile.phone_e164,
-        defaultBusinessId: data.profile.default_business_id
-      };
-
-      const profileData: BusinessProfile = {
-        id: data.profile.id,
-        email: data.profile.email,
-        fullName: data.profile.full_name,
-        phoneE164: data.profile.phone_e164,
-        defaultBusinessId: data.profile.default_business_id
-      };
-
-      setUser(userData);
-      setProfile(profileData);
-      setIsAuthenticated(true);
-
-      return {};
-    } catch (err: any) {
-      return { error: err.message || 'Invalid or expired link' };
-    }
-  }, [storeSession]);
-
   // Logout
   const logout = useCallback(async (): Promise<void> => {
-    const token = getSessionToken();
-    
-    if (token) {
-      try {
-        await supabase.functions.invoke('business-auth', {
-          method: 'POST',
-          body: { action: 'logout' },
-          headers: { 'x-session-token': token }
-        });
-      } catch (err) {
-        console.warn('[BusinessAuth] Logout request failed:', err);
-      }
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.warn('[BusinessAuth] Logout error:', err);
     }
-
-    clearSession();
-  }, [getSessionToken, clearSession]);
+    clearUserState();
+  }, [clearUserState]);
 
   const value = useMemo<BusinessAuthContextValue>(() => ({
     user,
     profile,
     isLoading,
     isAuthenticated,
+    session,
     login,
     register,
     sendMagicLink,
-    verifyMagicLink,
     logout,
     refreshSession,
     getSessionToken
-  }), [user, profile, isLoading, isAuthenticated, login, register, sendMagicLink, verifyMagicLink, logout, refreshSession, getSessionToken]);
+  }), [user, profile, isLoading, isAuthenticated, session, login, register, sendMagicLink, logout, refreshSession, getSessionToken]);
 
   return (
     <BusinessAuthContext.Provider value={value}>
