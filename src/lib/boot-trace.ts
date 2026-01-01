@@ -150,9 +150,18 @@ if (typeof window !== 'undefined') {
       return;
     }
     
+    const message = event.reason?.message || String(event.reason);
+    
+    // Detect chunk load failures from React.lazy / dynamic imports
+    if (message.includes('Failed to fetch dynamically imported module') ||
+        message.includes('Loading chunk') ||
+        message.includes('Importing a module script failed')) {
+      setBootStage('error', `Chunk load failed: ${message}`);
+      return;
+    }
+    
     // Log rejections during boot
     if (bootState.stage !== 'app_ready') {
-      const message = event.reason?.message || String(event.reason);
       console.error('[Boot] Unhandled rejection during boot:', message);
     }
   });
