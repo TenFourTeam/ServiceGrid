@@ -47,10 +47,9 @@ export default function AuthPage() {
     }
   }, [authLoading, isAuthenticated, navigate, redirectTarget]);
 
-  // Show loading while checking auth
-  if (authLoading) {
-    return <BootLoadingScreen full fallbackLabel="Checking session" />;
-  }
+  // On the auth page, skip the loading screen - show the form immediately
+  // The redirect effect will handle authenticated users once auth resolves
+  // This prevents the "Loading..." flash when there's no session or stale tokens
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
