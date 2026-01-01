@@ -28,7 +28,7 @@ const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
  * 
  * NOTE: This hook uses raw fetch() instead of authApi.invoke() because:
  * 1. File uploads require FormData which supabase.functions.invoke() handles differently
- * 2. Uses x-session-token header for auth (validated by requireCtx in edge function)
+ * 2. Uses Authorization: Bearer header for JWT auth (validated by requireCtx in edge function)
  * 3. Needs progress tracking during upload
  */
 export function useConversationMediaUpload() {
