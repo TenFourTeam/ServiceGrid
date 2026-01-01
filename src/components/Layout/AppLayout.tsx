@@ -29,12 +29,12 @@ export default function AppLayout({ children, title, businessId }: { children: R
   const [showAiTooltip, setShowAiTooltip] = useState(false);
 
   // Show AI onboarding tooltip after a short delay
-  useState(() => {
+  useEffect(() => {
     if (!aiOnboardingSeen) {
       const timer = setTimeout(() => setShowAiTooltip(true), 2000);
       return () => clearTimeout(timer);
     }
-  });
+  }, [aiOnboardingSeen]);
 
   useEffect(() => {
     document.title = title ? `${title} • ServiceGrid` : 'ServiceGrid';
