@@ -28,6 +28,32 @@ export function useBusinessContext(targetBusinessId?: string) {
   // Get all businesses the user has access to (owned + worker)
   const businessesQuery = useUserBusinesses();
   
+  // Early return if auth is not ready - prevents race condition
+  if (!isLoaded) {
+    return {
+      isAuthenticated: false,
+      isLoaded: false,
+      userId: null,
+      profileId: null,
+      business: null,
+      businessId: undefined,
+      businessName: undefined,
+      businessDescription: undefined,
+      businessPhone: undefined,
+      businessReplyToEmail: undefined,
+      businessTaxRateDefault: undefined,
+      businessLogoUrl: undefined,
+      businessLightLogoUrl: undefined,
+      role: null,
+      userRole: null,
+      canManage: false,
+      isLoadingBusiness: true,
+      hasBusinessError: false,
+      businessError: null,
+      refetchBusiness: () => Promise.resolve({ data: undefined, error: null }),
+    };
+  }
+  
   // Transform UserBusiness to BusinessUI format
   const transformedBusinesses: BusinessUI[] | undefined = businessesQuery.data?.map(b => ({
     id: b.id,
