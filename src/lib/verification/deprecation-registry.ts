@@ -37,7 +37,8 @@ export const DEPRECATED_ITEMS: DeprecatedItem[] = [
     path: 'supabase/functions/transcode-media-video',
     deprecatedAt: '2024-12-31',
     reason: 'Video transcoding not implemented - stub only. Using original video URLs instead.',
-    deleteAfter: '2025-02-01',
+    deleted: true,
+    deletedAt: '2026-01-01',
   },
 ];
 
