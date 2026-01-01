@@ -49,7 +49,7 @@ export default function PasswordReset() {
     try {
       const { data, error } = await supabase.functions.invoke('business-auth', {
         method: 'POST',
-        body: { action: 'password-reset', token, new_password: password }
+        body: { action: 'password-reset-confirm', token, password }
       });
 
       if (error || !data?.success) {
