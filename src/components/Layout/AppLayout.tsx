@@ -8,8 +8,6 @@ import MobileNavigation from '@/components/Layout/MobileNavigation';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { PageFade } from '@/components/Motion/PageFade';
 import { SubscriptionBanner } from '@/components/Onboarding/SubscriptionBanner';
-import { useOnboardingState } from '@/onboarding/streamlined';
-import { useOnboardingActions } from '@/onboarding/hooks';
 import { useSessionStorage } from '@/hooks/useSessionStorage';
 import { RoleIndicator } from '@/components/Layout/RoleIndicator';
 import { BusinessSwitcher } from '@/components/Layout/BusinessSwitcher';

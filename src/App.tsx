@@ -74,6 +74,13 @@ function AppReadySignal({ children }: { children: React.ReactNode }) {
 function RouteLoadingFallback() {
   useEffect(() => {
     setBootStage('route_loading');
+    
+    // Timeout detection for stuck lazy imports
+    const timeout = setTimeout(() => {
+      console.error('[RouteLoadingFallback] Route still loading after 10s - possible import failure');
+    }, 10000);
+    
+    return () => clearTimeout(timeout);
   }, []);
   return <BootLoadingScreen fallbackLabel="Loading page" />;
 }
