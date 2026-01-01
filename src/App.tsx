@@ -70,6 +70,14 @@ function AppReadySignal({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Component to signal route loading during Suspense
+function RouteLoadingFallback() {
+  useEffect(() => {
+    setBootStage('route_loading');
+  }, []);
+  return <BootLoadingScreen fallbackLabel="Loading page" />;
+}
+
 // App component 
 function App() {
   return (
@@ -79,7 +87,7 @@ function App() {
           <AppProviders>
             <QueryClientAuthIntegration />
             <ErrorBoundary>
-            <Suspense fallback={<BootLoadingScreen fallbackLabel="Loading page" />}>
+            <Suspense fallback={<RouteLoadingFallback />}>
               <AppReadySignal>
           <Routes>
             {/* Public routes */}

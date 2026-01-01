@@ -14,7 +14,7 @@ export default function BootLoadingScreen({ full = false, fallbackLabel }: BootL
     return unsubscribe;
   }, []);
 
-  const label = bootState?.stageLabel || fallbackLabel || 'Loading';
+  const label = fallbackLabel || bootState?.stageLabel || 'Loading';
   const elapsed = bootState ? Math.round((Date.now() - bootState.startTime) / 1000) : 0;
   const showElapsed = elapsed > 3; // Show elapsed time after 3 seconds
 
