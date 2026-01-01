@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
 import { subscribeToBootState, getBootDiagnostics, clearAppCache, BootState } from '@/lib/boot-trace';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, Copy, RefreshCw, CheckCircle } from 'lucide-react';
@@ -26,14 +25,14 @@ interface StallGuardProps {
 }
 
 export function StallGuard({ children }: StallGuardProps) {
-  const location = useLocation();
   const [bootState, setBootState] = useState<BootState | null>(null);
   const [isStalled, setIsStalled] = useState(false);
   const [copied, setCopied] = useState(false);
   
-  // Check if current route should bypass stall detection
+  // Check if current route should bypass stall detection using window.location
+  // (we can't use useLocation here since StallGuard wraps the Router)
   const shouldBypass = PUBLIC_BYPASS_ROUTES.some(route => 
-    location.pathname === route || location.pathname.startsWith(route + '/')
+    window.location.pathname === route || window.location.pathname.startsWith(route + '/')
   );
 
   useEffect(() => {
