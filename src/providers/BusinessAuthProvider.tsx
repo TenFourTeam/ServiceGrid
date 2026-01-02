@@ -26,6 +26,7 @@ export interface BusinessAuthContextValue {
   isLoading: boolean;
   isAuthenticated: boolean;
   session: Session | null;
+  authTimedOut: boolean; // True if auth init timed out (stale tokens cleared)
   
   // Actions
   login: (email: string, password: string) => Promise<{ error?: string }>;
@@ -44,11 +45,22 @@ interface BusinessAuthProviderProps {
   children: React.ReactNode;
 }
 
+// Helper to clear all Supabase auth tokens from localStorage
+function clearSupabaseAuthTokens(): void {
+  if (typeof window === 'undefined') return;
+  const keysToRemove = Object.keys(localStorage).filter(key => 
+    key.includes('supabase') && key.includes('auth')
+  );
+  keysToRemove.forEach(key => localStorage.removeItem(key));
+  console.log('[BusinessAuth] Cleared stale auth tokens:', keysToRemove.length);
+}
+
 export function BusinessAuthProvider({ children }: BusinessAuthProviderProps) {
   const [user, setUser] = useState<BusinessUser | null>(null);
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [authTimedOut, setAuthTimedOut] = useState(false);
 
   const isAuthenticated = !!session?.user;
 
@@ -109,7 +121,13 @@ export function BusinessAuthProvider({ children }: BusinessAuthProviderProps) {
     // Failsafe timeout - ensures isLoading ALWAYS resolves even if getSession hangs
     const timeoutId = setTimeout(() => {
       if (!hasInitializedRef.current && isMounted) {
-        console.warn('[BusinessAuth] Init timeout reached, forcing isLoading=false');
+        console.warn('[BusinessAuth] Init timeout reached, clearing stale tokens and forcing unauthenticated state');
+        // Clear any stale localStorage tokens to prevent AuthBoundary loops
+        clearSupabaseAuthTokens();
+        // Explicitly set session to null
+        setSession(null);
+        // Mark as timed out so AuthBoundary knows to redirect immediately
+        setAuthTimedOut(true);
         hasInitializedRef.current = true;
         setIsLoading(false);
       }
@@ -320,13 +338,14 @@ export function BusinessAuthProvider({ children }: BusinessAuthProviderProps) {
     isLoading,
     isAuthenticated,
     session,
+    authTimedOut,
     login,
     register,
     sendMagicLink,
     logout,
     refreshSession,
     getSessionToken
-  }), [user, profile, isLoading, isAuthenticated, session, login, register, sendMagicLink, logout, refreshSession, getSessionToken]);
+  }), [user, profile, isLoading, isAuthenticated, session, authTimedOut, login, register, sendMagicLink, logout, refreshSession, getSessionToken]);
 
   return (
     <BusinessAuthContext.Provider value={value}>

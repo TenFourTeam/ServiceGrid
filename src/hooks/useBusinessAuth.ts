@@ -13,13 +13,14 @@ export function useBusinessAuth() {
  * Drop-in replacement for common auth patterns
  */
 export function useAuth() {
-  const { isAuthenticated, isLoading, user, session, logout } = useBusinessAuthContext();
+  const { isAuthenticated, isLoading, user, session, logout, authTimedOut } = useBusinessAuthContext();
   
   return {
     isSignedIn: isAuthenticated,
     isLoaded: !isLoading,
     userId: user?.profileId ?? null,
     session, // Expose session for debugging
+    authTimedOut, // True if auth init timed out (stale tokens cleared)
     
     // Return JWT access token for API calls
     getToken: async (_options?: { template?: string; skipCache?: boolean }): Promise<string | null> => {

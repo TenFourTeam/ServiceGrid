@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { Navigate, useLocation, Outlet } from "react-router-dom";
 import { useAuth, useBusinessAuthContext } from "@/hooks/useBusinessAuth";
 import LoadingScreen from "@/components/LoadingScreen";
+import { toast } from "sonner";
 
 interface AuthBoundaryProps {
   children: React.ReactNode;
@@ -24,9 +25,20 @@ export function AuthBoundary({
   publicOnly = false,
   redirectTo 
 }: AuthBoundaryProps) {
-  const { isLoaded, isSignedIn } = useAuth();
+  const { isLoaded, isSignedIn, authTimedOut } = useAuth();
   const { session } = useBusinessAuthContext();
   const location = useLocation();
+  const hasShownTimeoutToast = useRef(false);
+
+  // Show toast when auth times out (only once)
+  useEffect(() => {
+    if (authTimedOut && !hasShownTimeoutToast.current) {
+      hasShownTimeoutToast.current = true;
+      toast.error("Session expired", {
+        description: "Your session could not be verified. Please sign in again.",
+      });
+    }
+  }, [authTimedOut]);
 
   // Show loading screen while auth is initializing
   if (!isLoaded) {
@@ -40,6 +52,11 @@ export function AuthBoundary({
 
   // Handle protected routes (redirect unauthenticated users)
   if (requireAuth && !isSignedIn) {
+    // If auth timed out, we've already cleared tokens - redirect immediately
+    if (authTimedOut) {
+      return <Navigate to="/" replace state={{ from: location }} />;
+    }
+    
     // If there's evidence of a session (in memory or localStorage),
     // show loading instead of redirecting - session might still be initializing
     if (session || hasStoredSession()) {
