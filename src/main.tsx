@@ -3,7 +3,6 @@ import { createRoot, Root } from 'react-dom/client';
 import App from './App';
 import './index.css';
 import './i18n/config';
-import { setBootStage } from '@/lib/boot-trace';
 
 // Store root instance globally to persist across HMR updates
 declare global {
@@ -22,7 +21,6 @@ if (!window.__APP_ROOT__) {
 const root = window.__APP_ROOT__;
 
 function renderApp() {
-  setBootStage('init');
   root.render(<App />);
 }
 
