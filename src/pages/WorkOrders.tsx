@@ -19,7 +19,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-import { useAuth as useClerkAuth } from '@clerk/clerk-react';
+import { useAuth } from '@/hooks/useAuth';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import ReschedulePopover from '@/components/WorkOrders/ReschedulePopover';
@@ -346,7 +346,7 @@ function WorkOrderRow({ job, uninvoiced, customerName, when, onOpen, onOpenJobEd
 
 export default function WorkOrdersPage() {
   const { data: customers = [] } = useCustomersData();
-  const { isSignedIn, getToken } = useClerkAuth();
+  const { isSignedIn, getToken } = useAuth();
   const { 
     q, setQ, 
     sort, setSort, 
@@ -417,7 +417,7 @@ export default function WorkOrdersPage() {
                   try {
                     toast.loading('Sending tomorrow\'s confirmations...');
                     
-                    const token = await getToken({ template: 'supabase' });
+                    const token = await getToken();
                     if (!token) {
                       throw new Error('Unable to get authentication token');
                     }

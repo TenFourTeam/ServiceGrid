@@ -1,5 +1,5 @@
 import { Button } from "@/components/Button";
-import { SignUpButton } from "@clerk/clerk-react";
+import { Link } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -29,7 +29,7 @@ export function IndustryHero({ title, subtitle, Icon }: IndustryHeroProps) {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-4 animate-fade-in">
-            <SignUpButton mode="modal" forceRedirectUrl="/calendar">
+            <Link to="/auth?redirect=/calendar">
               <Button 
                 variant="primary" 
                 size="lg" 
@@ -37,7 +37,7 @@ export function IndustryHero({ title, subtitle, Icon }: IndustryHeroProps) {
               >
                 {t('industryPages.hero.startTrial')}
               </Button>
-            </SignUpButton>
+            </Link>
             <Button 
               variant="secondary" 
               size="lg"

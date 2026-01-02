@@ -5,7 +5,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useCustomersData } from '@/queries/unified';
 import { Customer, Job, JobType } from '@/types';
-import { useAuth } from '@clerk/clerk-react';
 import { useAuthApi } from "@/hooks/useAuthApi";
 import { queryKeys } from '@/queries/keys';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
