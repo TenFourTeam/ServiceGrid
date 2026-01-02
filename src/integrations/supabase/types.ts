@@ -5463,9 +5463,9 @@ export type Database = {
         Row: {
           business_id: string | null
           full_name: string | null
+          productivity_percentage: number | null
           task_minutes: number | null
           tasks_completed: number | null
-          tasks_per_hour: number | null
           timesheet_entries: number | null
           timesheet_minutes: number | null
           user_id: string | null
@@ -5482,33 +5482,16 @@ export type Database = {
       }
       weekly_time_breakdown: {
         Row: {
-          all_task_categories: Json | null
           business_id: string | null
-          job_id: string | null
-          job_title: string | null
-          total_task_minutes: number | null
-          total_tasks_completed: number | null
-          total_timesheet_minutes: number | null
+          days_worked: number | null
+          jobs_worked: number | null
+          tasks_completed: number | null
+          total_minutes: number | null
           user_id: string | null
           user_name: string | null
           week_start: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "timesheet_entries_job_id_fkey"
-            columns: ["job_id"]
-            isOneToOne: false
-            referencedRelation: "jobs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "timesheet_entries_job_id_fkey"
-            columns: ["job_id"]
-            isOneToOne: false
-            referencedRelation: "time_by_job_report"
-            referencedColumns: ["job_id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Functions: {
