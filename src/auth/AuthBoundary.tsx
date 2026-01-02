@@ -40,7 +40,7 @@ export function AuthBoundary({
   // Handle protected routes (redirect unauthenticated users)
   if (requireAuth && !isSignedIn) {
     return <Navigate 
-      to="/auth" 
+      to="/" 
       replace 
       state={{ from: location }}
     />;
