@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { Navigate, useLocation, Outlet } from "react-router-dom";
-import { useAuth } from "@/hooks/useBusinessAuth";
+import { useAuth, useBusinessAuthContext } from "@/hooks/useBusinessAuth";
 import BootLoadingScreen from "@/components/BootLoadingScreen";
 import { setBootStage } from "@/lib/boot-trace";
 
@@ -11,6 +11,14 @@ interface AuthBoundaryProps {
   redirectTo?: string;
 }
 
+// Check if there's evidence of a Supabase session in localStorage
+function hasStoredSession(): boolean {
+  if (typeof window === 'undefined') return false;
+  return Object.keys(localStorage).some(key => 
+    key.includes('supabase') && key.includes('auth')
+  );
+}
+
 export function AuthBoundary({ 
   children, 
   requireAuth = false, 
@@ -18,6 +26,7 @@ export function AuthBoundary({
   redirectTo 
 }: AuthBoundaryProps) {
   const { isLoaded, isSignedIn } = useAuth();
+  const { session } = useBusinessAuthContext();
   const location = useLocation();
 
   // Report auth checking stage
@@ -39,6 +48,11 @@ export function AuthBoundary({
 
   // Handle protected routes (redirect unauthenticated users)
   if (requireAuth && !isSignedIn) {
+    // If there's evidence of a session (in memory or localStorage),
+    // show loading instead of redirecting - session might still be initializing
+    if (session || hasStoredSession()) {
+      return <BootLoadingScreen full fallbackLabel="Verifying session" />;
+    }
     return <Navigate 
       to="/" 
       replace 
