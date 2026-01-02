@@ -168,7 +168,8 @@ export function safeToISOString(dateInput: string | Date | null | undefined): st
 /**
  * Filters jobs with valid dates only
  */
-export function filterJobsWithValidDates<T extends { startsAt?: string | Date | null; endsAt?: string | Date | null; clockInTime?: string | Date | null; clockOutTime?: string | Date | null }>(jobs: T[]): T[] {
+export function filterJobsWithValidDates<T extends { startsAt?: string | Date | null; endsAt?: string | Date | null; clockInTime?: string | Date | null; clockOutTime?: string | Date | null }>(jobs: T[] | undefined | null): T[] {
+  if (!jobs || !Array.isArray(jobs)) return [];
   return jobs.filter(job => {
     const startsAt = safeCreateDate(job.startsAt);
     return startsAt !== null; // Only include jobs with valid start dates
