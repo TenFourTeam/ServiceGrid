@@ -48,7 +48,7 @@ export function WeekCalendar({
   const { data: allJobs } = useJobsData(businessId);
   const jobs = propsJobs || allJobs || [];
   
-  const { data: customers } = useCustomersData();
+  const { data: customers = [] } = useCustomersData();
   const queryClient = useQueryClient();
   const isPhone = useIsPhone();
   

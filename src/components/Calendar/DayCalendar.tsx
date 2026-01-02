@@ -16,7 +16,7 @@ import { getJobDisplayName } from "@/utils/jobDisplay";
 export default function DayCalendar({ date, displayMode = 'scheduled', selectedMemberId }: { date: Date; displayMode?: 'scheduled' | 'clocked' | 'combined'; selectedMemberId?: string | null; }) {
   const { businessId, role } = useBusinessContext();
   const { data: allJobs } = useJobsData(businessId);
-  const { data: customers } = useCustomersData();
+  const { data: customers = [] } = useCustomersData();
   
   const dayStart = startOfDay(date);
   const dayEnd = endOfDay(date);
