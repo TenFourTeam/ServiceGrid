@@ -46,7 +46,7 @@ export function WeekCalendar({
 }) {
   const { businessId, role, userId } = useBusinessContext();
   const { data: allJobs } = useJobsData(businessId);
-  const jobs = propsJobs || allJobs;
+  const jobs = propsJobs || allJobs || [];
   
   const { data: customers } = useCustomersData();
   const queryClient = useQueryClient();
@@ -79,7 +79,7 @@ export function WeekCalendar({
   } | null>(null);
   const [weekStart, setWeekStart] = useState(() => {
     const initial = (() => {
-      if (selectedJobId) {
+      if (selectedJobId && jobs.length > 0) {
         const j = jobs.find(j => j.id === selectedJobId);
         if (j) {
           const jobDate = safeCreateDate(j.startsAt);
@@ -200,7 +200,7 @@ export function WeekCalendar({
     
     return map;
   }, [jobs, selectedMemberId, days]);
-  const [activeJob, setActiveJob] = useState<Job | null>(() => selectedJobId ? jobs.find(j => j.id === selectedJobId) as Job ?? null : null);
+  const [activeJob, setActiveJob] = useState<Job | null>(() => selectedJobId && jobs.length > 0 ? jobs.find(j => j.id === selectedJobId) as Job ?? null : null);
   const [now, setNow] = useState<Date>(new Date());
   useEffect(() => {
     const id = setInterval(() => {
