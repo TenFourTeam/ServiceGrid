@@ -36,8 +36,6 @@ const systemFlags: Record<string, SystemKey> = {
   '--alignment': 'alignment',
   '--align': 'alignment',
   '-A': 'alignment',
-  '--intent': 'intent',
-  '-i': 'intent',
 };
 
 function printHelp() {
@@ -54,7 +52,6 @@ Options:
   --security, --sec   Run security validator
   --testing, --test   Run testing validator
   --alignment, --align Run alignment validator (DIY/DWY/DFY consistency)
-  --intent, -i        Run intent pattern validator
   --verbose, -v       Show detailed output
   --help, -h          Show this help message
 

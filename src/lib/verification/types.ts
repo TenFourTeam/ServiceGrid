@@ -18,8 +18,7 @@ export type SystemType =
   | 'component'
   | 'hook'
   | 'testing'
-  | 'alignment'
-  | 'intent';
+  | 'alignment';
 
 export type VerificationDimension = 
   | 'implementation'
