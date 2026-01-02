@@ -1,6 +1,6 @@
 import React from "react";
 import { Navigate, useLocation, Outlet } from "react-router-dom";
-import { useAuth } from "@clerk/clerk-react";
+import { useAuth } from "@/hooks/useAuth";
 import LoadingScreen from "@/components/LoadingScreen";
 
 interface AuthBoundaryProps {
@@ -19,7 +19,7 @@ export function AuthBoundary({
   const { isLoaded, isSignedIn } = useAuth();
   const location = useLocation();
 
-  // Show loading screen while Clerk is initializing
+  // Show loading screen while auth is initializing
   if (!isLoaded) {
     return <LoadingScreen full />;
   }
@@ -32,7 +32,7 @@ export function AuthBoundary({
   // Handle protected routes (redirect unauthenticated users)
   if (requireAuth && !isSignedIn) {
     return <Navigate 
-      to="/clerk-auth" 
+      to="/auth" 
       replace 
       state={{ from: location }}
     />;
