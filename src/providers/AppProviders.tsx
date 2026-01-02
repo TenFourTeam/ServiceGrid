@@ -4,8 +4,8 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { ConsolidatedToaster } from '@/components/ui/toaster';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useBusinessAuth';
-import { LeadAutomationNotificationsProvider } from '@/components/providers/LeadAutomationNotificationsProvider';
-import { AssessmentAutomationNotificationsProvider } from '@/components/providers/AssessmentAutomationNotificationsProvider';
+// import { LeadAutomationNotificationsProvider } from '@/components/providers/LeadAutomationNotificationsProvider'; // Temporarily disabled
+// import { AssessmentAutomationNotificationsProvider } from '@/components/providers/AssessmentAutomationNotificationsProvider'; // Temporarily disabled
 import { AuthDebugBadge } from '@/components/dev/AuthDebugBadge';
 
 // Simple query client with basic defaults
@@ -41,12 +41,8 @@ function AuthAwareNotifications() {
   // Don't mount notification providers until auth is initialized
   if (!isLoaded) return null;
   
-  return (
-    <>
-      <LeadAutomationNotificationsProvider />
-      <AssessmentAutomationNotificationsProvider />
-    </>
-  );
+  // Notification providers temporarily disabled for stability
+  return null;
 }
 
 /**
