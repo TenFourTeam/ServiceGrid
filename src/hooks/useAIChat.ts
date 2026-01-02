@@ -1,8 +1,20 @@
 import { useState, useCallback, useRef } from 'react';
 import { useBusinessContext } from './useBusinessContext';
-import { useAuth } from '@/hooks/useAuth';
+import { useBusinessAuth } from '@/hooks/useBusinessAuth';
 import { toast } from 'sonner';
 import { useConversationMediaUpload } from './useConversationMediaUpload';
+
+/**
+ * AI Chat Hook
+ * 
+ * NOTE: This hook intentionally uses raw fetch() instead of authApi.invoke() because:
+ * 1. AI chat requires Server-Sent Events (SSE) streaming for real-time token delivery
+ * 2. supabase.functions.invoke() does not support streaming responses
+ * 3. Uses Authorization: Bearer header for JWT auth (validated by requireCtx in edge function)
+ * 
+ * This is the only business platform hook that should use raw fetch - all other
+ * API calls should use authApi.invoke() for consistency.
+ */
 
 export interface ClarificationData {
   question: string;
@@ -117,7 +129,7 @@ export interface Message {
     variant?: 'primary' | 'secondary' | 'danger';
   }>;
   // Special message types for agent flows
-  messageType?: 'standard' | 'clarification' | 'confirmation' | 'plan_preview' | 'plan_progress' | 'lead_workflow';
+  messageType?: 'standard' | 'clarification' | 'confirmation' | 'plan_preview' | 'plan_progress' | 'lead_workflow' | 'assessment_workflow' | 'communication_workflow';
   clarification?: ClarificationData;
   confirmation?: ConfirmationData;
   planPreview?: PlanPreviewData;
@@ -157,12 +169,93 @@ export interface Message {
       emailDelay?: number;
     };
   };
+  // Assessment workflow card data
+  assessmentWorkflow?: {
+    steps: Array<{
+      id: string;
+      name: string;
+      description: string;
+      status: 'pending' | 'in_progress' | 'completed' | 'skipped' | 'failed';
+      tool?: string;
+      result?: any;
+      error?: string;
+      verification?: {
+        phase: string;
+        failedAssertion?: string;
+        recoverySuggestion?: string;
+      };
+      rollbackExecuted?: boolean;
+      rollbackTool?: string;
+    }>;
+    currentStepIndex: number;
+    assessmentData?: {
+      customerName?: string;
+      address?: string;
+      scheduledDate?: string;
+      assignedTo?: string;
+      photoCount?: number;
+      checklistProgress?: number;
+      riskCount?: number;
+    };
+    automationSummary?: {
+      checklistCreated?: boolean;
+      checklistItemCount?: number;
+      photosUploaded?: number;
+      risksIdentified?: number;
+      reportGenerated?: boolean;
+      estimateCreated?: boolean;
+    };
+  };
+  // Communication workflow card data
+  communicationWorkflow?: {
+    steps: Array<{
+      id: string;
+      name: string;
+      description: string;
+      status: 'pending' | 'in_progress' | 'completed' | 'skipped' | 'failed';
+      tool?: string;
+      result?: any;
+      error?: string;
+      verification?: {
+        phase: string;
+        failedAssertion?: string;
+        recoverySuggestion?: string;
+      };
+      rollbackExecuted?: boolean;
+      rollbackTool?: string;
+    }>;
+    currentStepIndex: number;
+    communicationData?: {
+      customerName?: string;
+      customerEmail?: string;
+      conversationTitle?: string;
+      messagePreview?: string;
+      channel?: 'portal' | 'email' | 'both';
+    };
+    automationSummary?: {
+      conversationCreated?: boolean;
+      conversationId?: string;
+      messageSent?: boolean;
+      messageId?: string;
+      emailQueued?: boolean;
+      emailScheduledFor?: string;
+      statusUpdateSent?: boolean;
+    };
+  };
   // Entity selection - rendered as a conversational element outside plan card
   entitySelection?: {
     planId: string;
     question: string;
     resolvesEntity: string;
     options: EntitySelectionOption[];
+  };
+  // Next process suggestion for workflow chaining
+  nextProcessSuggestion?: {
+    processId: string;
+    patternId: string;
+    reason: string;
+    contextToPass: Record<string, any>;
+    fromProcess: string;
   };
 }
 
@@ -185,7 +278,7 @@ export function useAIChat(options?: UseAIChatOptions) {
   const [lastFailedMessage, setLastFailedMessage] = useState<{ content: string; attachments?: File[]; context?: any } | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const { businessId } = useBusinessContext();
-  const { getToken } = useAuth();
+  const { getSessionToken } = useBusinessAuth();
   const { uploadMedia } = useConversationMediaUpload();
 
   // Reversible tools for undo functionality
@@ -257,7 +350,7 @@ export function useAIChat(options?: UseAIChatOptions) {
     setCurrentStreamingMessage('');
 
     try {
-      const token = await getToken();
+      const sessionToken = getSessionToken();
       abortControllerRef.current = new AbortController();
 
       const response = await fetch(
@@ -265,7 +358,7 @@ export function useAIChat(options?: UseAIChatOptions) {
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${sessionToken || ''}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -274,7 +367,10 @@ export function useAIChat(options?: UseAIChatOptions) {
             mediaIds: mediaIds.length > 0 ? mediaIds : undefined,
             includeContext: {
               currentPage: window.location.pathname,
-              ...context
+              entityId: context?.entityId,
+              entityType: context?.entityType,
+              // Include process context for handoff between processes
+              processContext: context?.processContext,
             }
           }),
           signal: abortControllerRef.current.signal,
@@ -537,6 +633,128 @@ export function useAIChat(options?: UseAIChatOptions) {
                   }
                   return prev;
                 });
+              } else if (data.type === 'assessment_workflow') {
+                // Assessment workflow start - use specialized AssessmentWorkflowCard
+                const assessmentWorkflowMessage: Message = {
+                  id: crypto.randomUUID(),
+                  role: 'assistant',
+                  content: 'Starting site assessment workflow...',
+                  timestamp: new Date(),
+                  messageType: 'assessment_workflow',
+                  assessmentWorkflow: {
+                    steps: data.workflow.steps.map((s: any) => ({
+                      id: s.id,
+                      name: s.name,
+                      description: s.description,
+                      status: s.status,
+                      tool: s.tool,
+                    })),
+                    currentStepIndex: data.workflow.currentStepIndex || 0,
+                    assessmentData: data.workflow.assessmentData || {},
+                  },
+                  // Also store planId for approval handling
+                  planPreview: {
+                    id: data.planId,
+                    name: 'Site Assessment',
+                    description: 'Complete site assessment workflow',
+                    steps: data.workflow.steps,
+                    requiresApproval: true,
+                  },
+                };
+                setMessages(prev => [...prev, assessmentWorkflowMessage]);
+                setCurrentStreamingMessage('');
+                // Keep streaming true for progress updates
+              } else if (data.type === 'assessment_workflow_progress') {
+                // Update assessment workflow progress with verification and automation summary
+                setMessages(prev => {
+                  const workflowMsgIndex = prev.findIndex(m => m.messageType === 'assessment_workflow');
+                  if (workflowMsgIndex !== -1) {
+                    const updated = [...prev];
+                    updated[workflowMsgIndex] = {
+                      ...updated[workflowMsgIndex],
+                      assessmentWorkflow: {
+                        steps: data.steps.map((s: any) => ({
+                          id: s.id,
+                          name: s.name,
+                          description: s.description,
+                          status: s.status,
+                          tool: s.tool,
+                          result: s.result,
+                          error: s.error,
+                          verification: s.verification,
+                          rollbackExecuted: s.rollbackExecuted,
+                          rollbackTool: s.rollbackTool,
+                        })),
+                        currentStepIndex: data.stepIndex,
+                        assessmentData: data.assessmentData || updated[workflowMsgIndex].assessmentWorkflow?.assessmentData || {},
+                        automationSummary: data.automationSummary || updated[workflowMsgIndex].assessmentWorkflow?.automationSummary,
+                      },
+                    };
+                    return updated;
+                  }
+                  return prev;
+                });
+              } else if (data.type === 'communication_workflow') {
+                // Communication workflow start - use specialized CommunicationWorkflowCard
+                const communicationWorkflowMessage: Message = {
+                  id: crypto.randomUUID(),
+                  role: 'assistant',
+                  content: 'Starting customer communication workflow...',
+                  timestamp: new Date(),
+                  messageType: 'communication_workflow',
+                  communicationWorkflow: {
+                    steps: data.workflow.steps.map((s: any) => ({
+                      id: s.id,
+                      name: s.name,
+                      description: s.description,
+                      status: s.status,
+                      tool: s.tool,
+                    })),
+                    currentStepIndex: data.workflow.currentStepIndex || 0,
+                    communicationData: data.workflow.communicationData || {},
+                  },
+                  // Also store planId for approval handling
+                  planPreview: {
+                    id: data.planId,
+                    name: 'Customer Communication',
+                    description: 'Send message to customer',
+                    steps: data.workflow.steps,
+                    requiresApproval: false,
+                  },
+                };
+                setMessages(prev => [...prev, communicationWorkflowMessage]);
+                setCurrentStreamingMessage('');
+                // Keep streaming true for progress updates
+              } else if (data.type === 'communication_workflow_progress') {
+                // Update communication workflow progress
+                setMessages(prev => {
+                  const workflowMsgIndex = prev.findIndex(m => m.messageType === 'communication_workflow');
+                  if (workflowMsgIndex !== -1) {
+                    const updated = [...prev];
+                    updated[workflowMsgIndex] = {
+                      ...updated[workflowMsgIndex],
+                      communicationWorkflow: {
+                        steps: data.steps.map((s: any) => ({
+                          id: s.id,
+                          name: s.name,
+                          description: s.description,
+                          status: s.status,
+                          tool: s.tool,
+                          result: s.result,
+                          error: s.error,
+                          verification: s.verification,
+                          rollbackExecuted: s.rollbackExecuted,
+                          rollbackTool: s.rollbackTool,
+                        })),
+                        currentStepIndex: data.stepIndex,
+                        communicationData: data.communicationData || updated[workflowMsgIndex].communicationWorkflow?.communicationData || {},
+                        automationSummary: data.automationSummary || updated[workflowMsgIndex].communicationWorkflow?.automationSummary,
+                      },
+                    };
+                    return updated;
+                  }
+                  return prev;
+                });
               } else if (data.type === 'plan_preview') {
                 // Show multi-step plan preview for approval
                 const planPreviewMessage: Message = {
@@ -641,6 +859,8 @@ export function useAIChat(options?: UseAIChatOptions) {
                         // Include entity selection if available
                         entitySelection: data.entitySelection,
                       },
+                      // Include next process suggestion for workflow chaining
+                      nextProcessSuggestion: data.nextProcessSuggestion,
                     };
                     return updated;
                   }
@@ -849,7 +1069,7 @@ export function useAIChat(options?: UseAIChatOptions) {
       setCurrentStreamingMessage('');
       abortControllerRef.current = null;
     }
-  }, [businessId, conversationId, getToken, options, uploadMedia, reversibleTools]);
+  }, [businessId, conversationId, getSessionToken, options, uploadMedia, reversibleTools]);
 
   const stopStreaming = useCallback(() => {
     abortControllerRef.current?.abort();
@@ -905,11 +1125,11 @@ export function useAIChat(options?: UseAIChatOptions) {
     if (!businessId) return;
     
     try {
-      const token = await getToken();
+      const sessionToken = getSessionToken();
       const response = await fetch(
         `https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/ai-chat-messages?conversationId=${convId}`,
         {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { 'Authorization': `Bearer ${sessionToken || ''}` }
         }
       );
       
@@ -935,7 +1155,7 @@ export function useAIChat(options?: UseAIChatOptions) {
       console.error('Error loading conversation:', error);
       toast.error('Failed to load conversation');
     }
-  }, [businessId, getToken]);
+  }, [businessId, getSessionToken]);
 
   // Resume a paused plan after recovery action
   const resumePlan = useCallback(async (planId: string) => {

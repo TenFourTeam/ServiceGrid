@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/Button";
 import { Link } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
 import { content } from "../content";
 import { ServiceGridLogo } from "./ServiceGridLogo";
 import { getIndustries } from "../industryData";
@@ -25,6 +24,7 @@ import {
 } from "@/components/ui/collapsible";
 import { LanguageToggle } from "./LanguageToggle";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/hooks/useBusinessAuth";
 import { Menu, ChevronDown } from "lucide-react";
 
 export function TopNav() {
@@ -102,6 +102,7 @@ export function TopNav() {
           </NavigationMenu>
           
           <LanguageToggle />
+          
           {!isSignedIn && (
             <>
               <Link to="/auth">
@@ -109,7 +110,7 @@ export function TopNav() {
                   {t('landing.nav.signIn')}
                 </Button>
               </Link>
-              <Link to="/auth">
+              <Link to="/auth?mode=signup">
                 <Button variant="primary" size="sm" className="hover-scale attention-ring [--ring:var(--brand-600)] text-xs sm:text-sm px-2 sm:px-3">
                   <span className="hidden xs:inline">{t('landing.nav.tryFree')}</span>
                   <span className="xs:hidden">{t('landing.nav.tryFreeShort')}</span>
@@ -117,10 +118,11 @@ export function TopNav() {
               </Link>
             </>
           )}
+          
           {isSignedIn && (
             <Link to="/calendar">
               <Button variant="primary" size="sm" className="hover-scale text-xs sm:text-sm px-2 sm:px-3">
-                Dashboard
+                Go to App
               </Button>
             </Link>
           )}
@@ -211,18 +213,19 @@ export function TopNav() {
                       {t('landing.nav.signIn')}
                     </Button>
                   </Link>
-                  <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
+                  <Link to="/auth?mode=signup" onClick={() => setMobileMenuOpen(false)}>
                     <Button variant="primary" size="sm" className="w-full justify-center">
                       {t('landing.nav.tryFree')}
                     </Button>
                   </Link>
                 </div>
               )}
+              
               {isSignedIn && (
                 <div className="pt-4 border-t border-border">
                   <Link to="/calendar" onClick={() => setMobileMenuOpen(false)}>
                     <Button variant="primary" size="sm" className="w-full justify-center">
-                      Dashboard
+                      Go to App
                     </Button>
                   </Link>
                 </div>

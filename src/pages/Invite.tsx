@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/useBusinessAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +18,6 @@ export default function InviteAccept() {
   
   const token = searchParams.get('token');
   const redeemInvite = useRedeemInvite();
-  
 
   useEffect(() => {
     if (!token) {
@@ -32,7 +31,9 @@ export default function InviteAccept() {
     }
 
     if (!isSignedIn) {
-      setStatus('auth-required');
+      // Store token and redirect to auth page
+      sessionStorage.setItem('invite_token', token);
+      navigate(`/auth?redirect=/invite?token=${token}`, { replace: true });
       return;
     }
 
@@ -58,6 +59,9 @@ export default function InviteAccept() {
         description: "You have successfully joined the team.",
       });
 
+      // Clear the stored token
+      sessionStorage.removeItem('invite_token');
+
       // Redirect to calendar after a short delay
       setTimeout(() => {
         navigate('/calendar');
@@ -73,14 +77,6 @@ export default function InviteAccept() {
       });
     }
   };
-
-  // Redirect to auth page when auth is required
-  useEffect(() => {
-    if (status === 'auth-required' && !isSignedIn) {
-      // Redirect to auth page with return URL
-      navigate(`/auth?redirect=/invite?token=${token}`);
-    }
-  }, [status, isSignedIn, navigate, token]);
 
   if (!token) {
     return (
@@ -99,26 +95,6 @@ export default function InviteAccept() {
             <Button onClick={() => navigate('/')} className="w-full">
               Go to Home
             </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (status === 'auth-required') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-              <Loader2 className="h-6 w-6 text-primary animate-spin" />
-            </div>
-            <CardTitle>Join the Team</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center space-y-4">
-            <p className="text-muted-foreground">
-              You've been invited to join a team on ServiceGrid. Redirecting to sign in...
-            </p>
           </CardContent>
         </Card>
       </div>

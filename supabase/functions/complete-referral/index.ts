@@ -22,11 +22,14 @@ serve(async (req: Request) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Look up the profile UUID from the Clerk user ID
+    // user_id is now a profile UUID directly
+    const profileUuid = user_id;
+
+    // Verify the profile exists
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('id')
-      .eq('clerk_user_id', user_id)
+      .eq('id', profileUuid)
       .maybeSingle();
 
     if (profileError) {
@@ -38,14 +41,12 @@ serve(async (req: Request) => {
     }
 
     if (!profile) {
-      console.log('Profile not found for Clerk user:', user_id);
+      console.log('Profile not found for user:', user_id);
       return new Response(
         JSON.stringify({ error: 'User profile not found' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    const profileUuid = profile.id;
 
     // Find the referral by code
     const { data: existingReferral, error: fetchError } = await supabase

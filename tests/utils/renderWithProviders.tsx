@@ -3,7 +3,7 @@ import { render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 
-// Mock Auth Provider for tests - no longer depends on Clerk
+// Mock Auth Provider for tests
 const MockAuthProvider = ({ children }: { children: React.ReactNode }) => {
   return <div data-testid="mock-auth-provider">{children}</div>;
 };

@@ -97,10 +97,9 @@ site_url = "http://localhost:3000"
 additional_redirect_urls = ["https://localhost:3000"]
 jwt_expiry = 3600
 
-# Third-party authentication with Clerk
-[auth.third_party.clerk]
-enabled = true
-domain = "divine-cow-23.clerk.accounts.dev"
+# Business user authentication (session-based auth)
+[functions.business-auth]
+verify_jwt = false
 
 # Business page serving for link previews
 [functions.serve-business-page]
@@ -125,27 +124,19 @@ verify_jwt = false
 [functions.complete-profile-email]
 verify_jwt = true
 
-[functions.clerk-publishable-key]
-verify_jwt = false
-
 [functions.google-maps-api-key]
 verify_jwt = false
 
 # Email functions
-[functions.resend-send-email]
-verify_jwt = false
-
 [functions.send-lifecycle-email]
 verify_jwt = false
 
-[functions.team-send-email]
+# Auth email hook (called by Supabase Auth)
+[functions.auth-email-hook]
 verify_jwt = false
 
 # Invite system functions
 [functions.create-invites]
-verify_jwt = false
-
-[functions.invite-manage]
 verify_jwt = false
 
 [functions.accept-invite]
@@ -189,12 +180,6 @@ verify_jwt = false
 
 # Business operations (require authentication)
 [functions.business-update]
-verify_jwt = false
-
-[functions.switch-business]
-verify_jwt = false
-
-[functions.business-role]
 verify_jwt = false
 
 # Payments & Stripe (require authentication)
@@ -268,7 +253,6 @@ verify_jwt = false
 
 [functions.audit-logs-crud]
 verify_jwt = false
-
 
 [functions.upload-request-photo]
 verify_jwt = false
@@ -347,9 +331,6 @@ verify_jwt = false
 [functions.predict-scheduling]
 verify_jwt = false
 
-[functions.ai-chat]
-verify_jwt = false
-
 # Phase 6: Advanced Scheduling Features
 [functions.team-availability-crud]
 verify_jwt = false
@@ -383,9 +364,6 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.process-media-thumbnail]
-verify_jwt = false
-
-[functions.transcode-media-video]
 verify_jwt = false
 
 # Route planning with turn-by-turn directions
@@ -499,48 +477,81 @@ verify_jwt = false
 [functions.customer-auth]
 verify_jwt = false
 
-# Customer Portal Job Data
-[functions.customer-job-data]
-verify_jwt = false
-
-# Customer Portal Invites
 [functions.customer-portal-invite]
 verify_jwt = false
 
 [functions.customer-portal-invite-validate]
 verify_jwt = false
 
-# Customer Portal Status
 [functions.customer-portal-status]
 verify_jwt = false
 
-# Customer Quote Actions
-[functions.customer-quote-actions]
-verify_jwt = false
-
-# Customer Invoice Detail
 [functions.customer-invoice-detail]
 verify_jwt = false
 
-# Document PDF Generation
-[functions.generate-document-pdf]
+[functions.customer-job-data]
 verify_jwt = false
 
-# Customer Self-Service Appointment Management
-[functions.customer-appointment-requests]
+[functions.customer-quote-actions]
 verify_jwt = false
 
 [functions.customer-service-request]
 verify_jwt = false
 
-# Customer Portal Business Switching
 [functions.customer-switch-business]
 verify_jwt = false
 
-# Appointment Change Requests (Business Management)
+[functions.customer-set-password]
+verify_jwt = false
+
+[functions.customer-appointment-requests]
+verify_jwt = false
+
 [functions.appointment-requests-manage]
 verify_jwt = false
 
-# Email Queue Processing (DFY Automation)
+# Inventory Management
+[functions.inventory-crud]
+verify_jwt = false
+
+# Auto-generate recurring jobs
+[functions.auto-generate-recurring-jobs]
+verify_jwt = false
+
+# PDF Generation
+[functions.generate-document-pdf]
+verify_jwt = false
+
+# Quote subscription management
+[functions.manage-quote-subscription]
+verify_jwt = false
+
+# Auth system edge functions
+[functions.ai-conversations-crud]
+verify_jwt = false
+
+[functions.ai-activity-crud]
+verify_jwt = false
+
+[functions.assessment-progress]
+verify_jwt = false
+
+[functions.generated-jobs-stats]
+verify_jwt = false
+
+[functions.sync-logs-crud]
+verify_jwt = false
+
+[functions.media-tags-query]
+verify_jwt = false
+
+[functions.step-verifier-crud]
+verify_jwt = false
+
+# Email queue processing
 [functions.process-email-queue]
+verify_jwt = false
+
+# Supabase Auth Email Hook - sends branded auth emails via Resend
+[functions.auth-email-hook]
 verify_jwt = false

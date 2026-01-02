@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import BusinessLogo from '@/components/BusinessLogo';
 import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/useBusinessAuth';
 import { useAuthApi } from '@/hooks/useAuthApi';
 import ConnectBanner from '@/components/Stripe/ConnectBanner';
 import { useStripeConnect } from '@/hooks/useStripeConnect';
@@ -42,6 +42,8 @@ import { GoogleDriveBulkOperations } from '@/components/Settings/GoogleDriveBulk
 import { GoogleDriveSharingPanel } from '@/components/Settings/GoogleDriveSharingPanel';
 import { AutomationSettings } from '@/components/settings/AutomationSettings';
 import { VerificationMetricsPanel } from '@/components/settings/VerificationMetricsPanel';
+import { ProcessVerificationPanel } from '@/components/Settings/ProcessVerificationPanel';
+import { SystemHealthDashboard } from '@/components/Settings/SystemHealthDashboard';
 
 export default function SettingsPage() {
   const { business, role } = useBusinessContext();
@@ -337,6 +339,36 @@ export default function SettingsPage() {
               <CardContent className="space-y-6">
                 <AutomationSettings />
                 <VerificationMetricsPanel />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Process Verification Dashboard - only for owners */}
+          {role === 'owner' && (
+            <Card className="md:col-span-2">
+              <CardHeader>
+                <CardTitle>Process Blueprint Verification</CardTitle>
+                <CardDescription>
+                  Validate that all processes are implemented to the Process Implementation Blueprint standard
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ProcessVerificationPanel />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* System Health Dashboard - only for owners */}
+          {role === 'owner' && (
+            <Card className="md:col-span-2">
+              <CardHeader>
+                <CardTitle>System Health</CardTitle>
+                <CardDescription>
+                  Universal verification status across Edge Functions, Database, Security, and Testing
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <SystemHealthDashboard />
               </CardContent>
             </Card>
           )}

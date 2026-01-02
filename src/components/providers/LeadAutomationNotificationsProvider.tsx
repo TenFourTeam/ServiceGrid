@@ -1,22 +1,10 @@
-import { useAuth } from '@/hooks/useAuth';
 import { useLeadAutomationNotifications } from '@/hooks/useLeadAutomationNotifications';
 
 /**
  * Provider component that initializes real-time lead automation notifications.
- * Only activates when user is authenticated.
+ * Hook is always called (for React hook integrity), but guards internally.
  */
 export function LeadAutomationNotificationsProvider() {
-  const { isSignedIn } = useAuth();
-  
-  // Only subscribe when user is authenticated
-  if (isSignedIn) {
-    return <LeadAutomationNotificationsInner />;
-  }
-  
-  return null;
-}
-
-function LeadAutomationNotificationsInner() {
   useLeadAutomationNotifications();
   return null;
 }

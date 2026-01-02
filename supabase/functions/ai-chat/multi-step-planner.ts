@@ -63,11 +63,20 @@ export interface ExecutionPlan {
   pausedAtStep?: number;
 }
 
+export interface NextProcessSuggestion {
+  processId: string;
+  patternId: string;
+  reason: string;
+  contextToPass: Record<string, any>;
+  fromProcess: string;
+}
+
 export interface PlannerResult {
   type: 'plan_preview' | 'step_progress' | 'step_complete' | 'plan_complete' | 'plan_failed' | 'plan_cancelled';
   plan: ExecutionPlan;
   currentStep?: PlanStep;
   message?: string;
+  nextProcessSuggestion?: NextProcessSuggestion;
 }
 
 export interface ExecutionContext {
@@ -97,8 +106,8 @@ interface MultiStepPattern {
     optional?: boolean;
   }>;
   requiresApproval: boolean;
-  // Special card type for custom UI rendering (e.g., 'lead_workflow')
-  specialCardType?: 'lead_workflow';
+  // Special card type for custom UI rendering (e.g., 'lead_workflow', 'assessment_workflow', 'communication_workflow')
+  specialCardType?: 'lead_workflow' | 'assessment_workflow' | 'communication_workflow';
 }
 
 const MULTI_STEP_PATTERNS: MultiStepPattern[] = [
@@ -587,7 +596,164 @@ const MULTI_STEP_PATTERNS: MultiStepPattern[] = [
     requiresApproval: true,
   },
 
-  // Full quote to job workflow
+  // Complete site assessment workflow
+  {
+    id: 'complete_site_assessment',
+    name: 'Complete Site Assessment',
+    description: 'Schedule and conduct a full site assessment with documentation and reporting',
+    specialCardType: 'assessment_workflow', // Use AssessmentWorkflowCard for this pattern
+    patterns: [
+      /site\s+assessment\s+(for|at)/i,
+      /schedule\s+(a\s+)?(site\s+)?assessment/i,
+      /conduct\s+(a\s+)?site\s+(visit|assessment|inspection)/i,
+      /assessment\s+for\s+.+\s+property/i,
+      /property\s+assessment\s+(for|at)/i,
+      /on-?site\s+(evaluation|inspection)/i,
+    ],
+    keywords: ['site assessment', 'property assessment', 'site visit', 'inspection', 'assessment'],
+    steps: [
+      {
+        name: 'Check for Existing Customer',
+        description: 'Search for customer record',
+        tool: 'search_customers',
+        argMapping: (ctx) => ({ 
+          query: ctx.entities?.email || ctx.entities?.phone || ctx.entities?.name 
+        }),
+      },
+      {
+        name: 'Create Customer Record',
+        description: 'Create new customer if not found',
+        tool: 'create_customer',
+        argMapping: (ctx) => ({
+          name: ctx.entities?.customerName || ctx.entities?.name,
+          email: ctx.entities?.customerEmail || ctx.entities?.email,
+          phone: ctx.entities?.customerPhone || ctx.entities?.phone,
+          address: ctx.entities?.customerAddress || ctx.entities?.address,
+        }),
+        dependsOn: ['search_customers'],
+        optional: true,
+      },
+      {
+        name: 'Create Assessment Request',
+        description: 'Log assessment request in system',
+        tool: 'create_request',
+        argMapping: (ctx, results) => ({
+          customerId: results['create_customer']?.customer_id || results['search_customers']?.customers?.[0]?.id,
+          title: ctx.entities?.title || 'Site Assessment',
+          serviceDetails: ctx.entities?.details || 'On-site assessment requested',
+          source: ctx.entities?.source || 'chat',
+        }),
+        dependsOn: ['search_customers'],
+      },
+      {
+        name: 'Check Team Availability',
+        description: 'Find available assessors',
+        tool: 'check_team_availability',
+        argMapping: (ctx) => ({
+          date: ctx.entities?.preferredDate || new Date().toISOString().split('T')[0],
+        }),
+        dependsOn: ['create_request'],
+      },
+      {
+        name: 'Create Assessment Job',
+        description: 'Schedule assessment job',
+        tool: 'create_assessment_job',
+        argMapping: (ctx, results) => ({
+          customerId: results['create_customer']?.customer_id || results['search_customers']?.customers?.[0]?.id,
+          address: ctx.entities?.address || ctx.entities?.customerAddress,
+          title: ctx.entities?.title || 'Site Assessment',
+          starts_at: ctx.entities?.starts_at || ctx.entities?.preferredDate,
+          notes: ctx.entities?.access_instructions || ctx.entities?.notes,
+          request_id: results['create_request']?.request_id,
+        }),
+        dependsOn: ['check_team_availability'],
+      },
+      {
+        name: 'Assign Assessor',
+        description: 'Assign team member to assessment',
+        tool: 'assign_job',
+        argMapping: (ctx, results) => ({
+          jobId: results['create_assessment_job']?.job_id,
+          userId: ctx.entities?.assigned_to || results['check_team_availability']?.availableMembers?.[0]?.id,
+        }),
+        dependsOn: ['create_assessment_job'],
+        optional: true,
+      },
+      {
+        name: 'Send Confirmation',
+        description: 'Send confirmation to customer',
+        tool: 'send_job_confirmation',
+        argMapping: (ctx, results) => ({
+          jobId: results['create_assessment_job']?.job_id,
+        }),
+        dependsOn: ['create_assessment_job'],
+        optional: true,
+      },
+    ],
+    requiresApproval: true,
+  },
+
+  // Complete customer communication workflow
+  {
+    id: 'complete_customer_communication',
+    name: 'Customer Communication',
+    description: 'Start a conversation with a customer, send messages, and optionally schedule follow-ups',
+    specialCardType: 'communication_workflow',
+    patterns: [
+      /contact\s+(the\s+)?customer/i,
+      /start\s+(a\s+)?conversation\s+(with|for)/i,
+      /message\s+(the\s+)?customer/i,
+      /reach\s+out\s+to/i,
+      /follow\s+up\s+with/i,
+      /send\s+(a\s+)?message\s+to/i,
+      /communicate\s+with/i,
+    ],
+    keywords: ['contact', 'message', 'conversation', 'communicate', 'reach out', 'follow up'],
+    steps: [
+      {
+        name: 'Get Customer Details',
+        description: 'Retrieve customer information',
+        tool: 'get_customer',
+        argMapping: (ctx) => ({
+          customerId: ctx.entities?.customerId || ctx.entities?.customer_id,
+        }),
+      },
+      {
+        name: 'Get or Create Conversation',
+        description: 'Find existing conversation or create new one',
+        tool: 'get_or_create_conversation',
+        argMapping: (ctx, results) => ({
+          customerId: results['get_customer']?.id || ctx.entities?.customerId,
+        }),
+        dependsOn: ['get_customer'],
+      },
+      {
+        name: 'Send Message',
+        description: 'Send initial message to customer',
+        tool: 'send_message',
+        argMapping: (ctx, results) => ({
+          conversationId: results['get_or_create_conversation']?.conversation_id,
+          content: ctx.entities?.messageContent || 'Hello! Thank you for reaching out. How can we help you today?',
+          senderType: 'business',
+        }),
+        dependsOn: ['get_or_create_conversation'],
+      },
+      {
+        name: 'Send Email Notification',
+        description: 'Optionally send email notification',
+        tool: 'send_email',
+        argMapping: (ctx, results) => ({
+          customerId: results['get_customer']?.id,
+          emailType: 'message_notification',
+          subject: ctx.entities?.emailSubject || 'New message from our team',
+        }),
+        dependsOn: ['send_message'],
+        optional: true,
+      },
+    ],
+    requiresApproval: false,
+  },
+
   {
     id: 'quote_to_job_complete',
     name: 'Quote to Scheduled Job',
@@ -919,6 +1085,27 @@ export interface RecoveryAction {
 
 // Map of tool names to available recovery actions
 const RECOVERY_ACTIONS: Record<string, RecoveryAction[]> = {
+  // Communication-related recovery actions
+  'get_or_create_conversation': [
+    {
+      id: 'select_customer',
+      label: 'Select a customer',
+      description: 'Choose which customer to contact',
+      resumeFromStep: true,
+      queryTool: 'search_customers',
+      resolvesEntity: 'customerId',
+      clarificationPrompt: 'Which customer would you like to contact?',
+    },
+  ],
+  'send_message': [
+    {
+      id: 'view_conversations',
+      label: 'View conversations',
+      description: 'Check existing conversations',
+      navigateTo: '/team?tab=conversations',
+      resumeFromStep: true,
+    },
+  ],
   'get_unscheduled_jobs': [
     {
       id: 'create_job',
@@ -1152,8 +1339,18 @@ const ROLLBACK_OPERATIONS: Record<string, { tool: string; argBuilder: (stepResul
 
 export function detectMultiStepTask(
   message: string,
-  entities: Record<string, any>
+  entities: Record<string, any>,
+  forcedPatternId?: string
 ): { isMultiStep: boolean; pattern?: MultiStepPattern } {
+  // If a pattern is forced (e.g., from process transition detection), use it directly
+  if (forcedPatternId) {
+    const forcedPattern = MULTI_STEP_PATTERNS.find(p => p.id === forcedPatternId);
+    if (forcedPattern) {
+      console.info('[multi-step-planner] Using forced pattern:', forcedPatternId);
+      return { isMultiStep: true, pattern: forcedPattern };
+    }
+  }
+
   const messageLower = message.toLowerCase();
 
   for (const pattern of MULTI_STEP_PATTERNS) {
@@ -1564,7 +1761,8 @@ export function sendPlanComplete(
     question: string;
     resolvesEntity: string;
     options: Array<{ id: string; label: string; value: string; metadata?: any }>;
-  }
+  },
+  nextProcessSuggestion?: NextProcessSuggestion
 ): void {
   if (!controller) {
     console.warn('[multi-step-planner] sendPlanComplete called without controller');
@@ -1594,7 +1792,7 @@ export function sendPlanComplete(
     }
   }
   
-  const event = {
+  const event: Record<string, any> = {
     type: 'plan_complete',
     planId: plan.id,
     planName: plan.name,
@@ -1626,6 +1824,12 @@ export function sendPlanComplete(
     // Entity selection for conversational recovery
     entitySelection: entitySelectionOptions,
   };
+  
+  // Add next process suggestion for successful completions
+  if (nextProcessSuggestion && plan.status === 'completed') {
+    event.nextProcessSuggestion = nextProcessSuggestion;
+  }
+  
   controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
 }
 
@@ -1866,6 +2070,262 @@ export function isLeadWorkflowPattern(pattern: MultiStepPattern | undefined): bo
   return pattern?.specialCardType === 'lead_workflow';
 }
 
+// =============================================================================
+// ASSESSMENT WORKFLOW SSE HELPERS
+// =============================================================================
+
+// Map assessment tool names to user-friendly step names
+const ASSESSMENT_WORKFLOW_STEP_MAP: Record<string, { name: string; description: string }> = {
+  'search_customers': { 
+    name: 'Check Customer', 
+    description: 'Search for existing customer record' 
+  },
+  'create_customer': { 
+    name: 'Create Customer', 
+    description: 'Create new customer record' 
+  },
+  'create_request': { 
+    name: 'Log Request', 
+    description: 'Log assessment request in system' 
+  },
+  'check_team_availability': { 
+    name: 'Check Availability', 
+    description: 'Find available assessors' 
+  },
+  'create_assessment_job': { 
+    name: 'Schedule Assessment', 
+    description: 'Create and schedule assessment job' 
+  },
+  'assign_job': { 
+    name: 'Assign Assessor', 
+    description: 'Assign team member to assessment' 
+  },
+  'send_job_confirmation': { 
+    name: 'Send Confirmation', 
+    description: 'Notify customer of scheduled assessment' 
+  },
+  'upload_media': { 
+    name: 'Upload Photos', 
+    description: 'Upload assessment photos' 
+  },
+  'tag_media': { 
+    name: 'Tag Photos', 
+    description: 'Add tags and annotations' 
+  },
+  'analyze_photo': { 
+    name: 'Analyze Issues', 
+    description: 'AI-assisted risk detection' 
+  },
+  'generate_summary': { 
+    name: 'Generate Report', 
+    description: 'Create assessment report' 
+  },
+};
+
+// Extract assessment data from tool results for the AssessmentWorkflowCard
+function extractAssessmentData(
+  toolName: string, 
+  result: any, 
+  existing: Record<string, any>
+): Record<string, any> {
+  if (toolName === 'create_customer' || toolName === 'search_customers') {
+    const customer = result?.customer || result?.customers?.[0];
+    return {
+      ...existing,
+      customerName: customer?.name || existing.customerName,
+      address: customer?.address || existing.address,
+    };
+  }
+  if (toolName === 'create_assessment_job') {
+    return {
+      ...existing,
+      scheduledDate: result?.starts_at || existing.scheduledDate,
+      jobId: result?.job_id || result?.id || existing.jobId,
+    };
+  }
+  if (toolName === 'assign_job') {
+    return {
+      ...existing,
+      assignedTo: result?.assigned_to_name || existing.assignedTo,
+    };
+  }
+  if (toolName === 'upload_media') {
+    return {
+      ...existing,
+      photoCount: (existing.photoCount || 0) + (result?.count || 1),
+    };
+  }
+  if (toolName === 'tag_media' || toolName === 'analyze_photo') {
+    return {
+      ...existing,
+      riskCount: (existing.riskCount || 0) + (result?.risk_count || result?.risks_found || 0),
+    };
+  }
+  return existing;
+}
+
+// Check if a pattern should use AssessmentWorkflowCard
+export function isAssessmentWorkflowPattern(pattern: MultiStepPattern | undefined): boolean {
+  return pattern?.specialCardType === 'assessment_workflow';
+}
+
+// Send assessment workflow start event
+export function sendAssessmentWorkflowStart(
+  controller: ReadableStreamDefaultController | undefined,
+  plan: ExecutionPlan,
+  initialEntities: Record<string, any>
+): void {
+  if (!controller) return;
+  
+  const encoder = new TextEncoder();
+  const steps = plan.steps.map(s => {
+    const stepInfo = ASSESSMENT_WORKFLOW_STEP_MAP[s.tool] || { name: s.name, description: s.description };
+    return {
+      id: s.id,
+      name: stepInfo.name,
+      description: stepInfo.description,
+      status: s.status === 'pending' ? 'pending' : s.status,
+      tool: s.tool,
+    };
+  });
+  
+  const event = {
+    type: 'assessment_workflow',
+    planId: plan.id,
+    workflow: {
+      steps,
+      currentStepIndex: 0,
+      assessmentData: {
+        customerName: initialEntities?.customerName || initialEntities?.name,
+        address: initialEntities?.address || initialEntities?.customerAddress,
+        scheduledDate: initialEntities?.preferredDate || initialEntities?.starts_at,
+      },
+    },
+  };
+  controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+}
+
+// Send assessment workflow progress event
+export function sendAssessmentWorkflowProgress(
+  controller: ReadableStreamDefaultController | undefined,
+  plan: ExecutionPlan,
+  step: PlanStep,
+  assessmentData: Record<string, any>,
+  automationSummary?: {
+    checklistCreated?: boolean;
+    checklistItemCount?: number;
+    photosUploaded?: number;
+    risksIdentified?: number;
+    reportGenerated?: boolean;
+    estimateCreated?: boolean;
+  }
+): void {
+  if (!controller) return;
+  
+  const encoder = new TextEncoder();
+  const steps = plan.steps.map(s => {
+    const stepInfo = ASSESSMENT_WORKFLOW_STEP_MAP[s.tool] || { name: s.name, description: s.description };
+    return {
+      id: s.id,
+      name: stepInfo.name,
+      description: stepInfo.description,
+      status: s.status === 'running' ? 'in_progress' : s.status,
+      tool: s.tool,
+      result: s.result,
+      error: s.error,
+      verification: s.verification,
+      rollbackExecuted: s.rollbackExecuted,
+      rollbackTool: s.rollbackTool,
+    };
+  });
+  
+  const event: Record<string, any> = {
+    type: 'assessment_workflow_progress',
+    planId: plan.id,
+    stepIndex: plan.currentStepIndex,
+    steps,
+    assessmentData,
+  };
+  
+  // Include automation summary when workflow completes
+  if (automationSummary) {
+    event.automationSummary = automationSummary;
+  }
+  
+  controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+}
+
+// Fetch assessment automation summary from recent activity log entries
+export async function fetchAssessmentAutomationSummary(
+  supabase: any,
+  businessId: string,
+  jobId?: string
+): Promise<{
+  checklistCreated?: boolean;
+  checklistItemCount?: number;
+  photosUploaded?: number;
+  risksIdentified?: number;
+  reportGenerated?: boolean;
+  estimateCreated?: boolean;
+} | undefined> {
+  try {
+    // Query recent automation activity from past 30 seconds
+    const thirtySecondsAgo = new Date(Date.now() - 30000).toISOString();
+    
+    const { data: recentActivity } = await supabase
+      .from('ai_activity_log')
+      .select('activity_type, description, metadata')
+      .eq('business_id', businessId)
+      .gte('created_at', thirtySecondsAgo)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    
+    if (!recentActivity || recentActivity.length === 0) {
+      return undefined;
+    }
+    
+    const summary: {
+      checklistCreated?: boolean;
+      checklistItemCount?: number;
+      photosUploaded?: number;
+      risksIdentified?: number;
+      reportGenerated?: boolean;
+      estimateCreated?: boolean;
+    } = {};
+    
+    for (const activity of recentActivity) {
+      const actionType = activity.metadata?.action_type;
+      
+      if (actionType === 'assessment_checklist_created' && !summary.checklistCreated) {
+        summary.checklistCreated = true;
+        summary.checklistItemCount = activity.metadata?.item_count;
+      }
+      if (actionType === 'assessment_photo_uploaded') {
+        summary.photosUploaded = (summary.photosUploaded || 0) + 1;
+      }
+      if ((actionType === 'assessment_risk_detected' || actionType === 'risk_tag_added') && !summary.risksIdentified) {
+        summary.risksIdentified = (summary.risksIdentified || 0) + 1;
+      }
+      if (actionType === 'assessment_report_generated' && !summary.reportGenerated) {
+        summary.reportGenerated = true;
+      }
+      if (actionType === 'estimate_created' && !summary.estimateCreated) {
+        summary.estimateCreated = true;
+      }
+    }
+    
+    // Only return if we found at least one automation event
+    if (summary.checklistCreated || summary.photosUploaded || summary.risksIdentified || summary.reportGenerated || summary.estimateCreated) {
+      return summary;
+    }
+    
+    return undefined;
+  } catch (error) {
+    console.error('[multi-step-planner] Failed to fetch assessment automation summary:', error);
+    return undefined;
+  }
+}
+
 // Fetch automation summary from recent activity log entries
 export async function fetchAutomationSummary(
   supabase: any,
@@ -1936,6 +2396,221 @@ export async function fetchAutomationSummary(
 // Export extractCustomerData for use in executePlan
 export { extractCustomerData };
 
+// =============================================================================
+// COMMUNICATION WORKFLOW SSE HELPERS
+// =============================================================================
+
+// Map communication tool names to user-friendly step names
+const COMMUNICATION_WORKFLOW_STEP_MAP: Record<string, { name: string; description: string }> = {
+  'get_customer': { 
+    name: 'Get Customer', 
+    description: 'Retrieve customer information' 
+  },
+  'get_or_create_conversation': { 
+    name: 'Start Conversation', 
+    description: 'Find or create conversation thread' 
+  },
+  'send_message': { 
+    name: 'Send Message', 
+    description: 'Send message to customer' 
+  },
+  'send_email': { 
+    name: 'Send Email', 
+    description: 'Send email notification' 
+  },
+  'queue_email': { 
+    name: 'Queue Follow-up', 
+    description: 'Schedule follow-up email' 
+  },
+};
+
+// Extract communication data from tool results
+function extractCommunicationData(
+  toolName: string, 
+  result: any, 
+  existing: Record<string, any>
+): Record<string, any> {
+  if (toolName === 'get_customer') {
+    return {
+      ...existing,
+      customerName: result?.name || existing.customerName,
+      customerEmail: result?.email || existing.customerEmail,
+      customerId: result?.id || existing.customerId,
+    };
+  }
+  if (toolName === 'get_or_create_conversation') {
+    return {
+      ...existing,
+      conversationId: result?.conversation_id || result?.id || existing.conversationId,
+      conversationTitle: result?.title || existing.conversationTitle,
+    };
+  }
+  if (toolName === 'send_message') {
+    return {
+      ...existing,
+      messagePreview: result?.content?.substring(0, 100) || existing.messagePreview,
+    };
+  }
+  return existing;
+}
+
+// Check if a pattern should use CommunicationWorkflowCard
+export function isCommunicationWorkflowPattern(pattern: MultiStepPattern | undefined): boolean {
+  return pattern?.specialCardType === 'communication_workflow';
+}
+
+// Send communication workflow start event
+export function sendCommunicationWorkflowStart(
+  controller: ReadableStreamDefaultController | undefined,
+  plan: ExecutionPlan,
+  initialEntities: Record<string, any>
+): void {
+  if (!controller) return;
+  
+  const encoder = new TextEncoder();
+  const steps = plan.steps.map(s => {
+    const stepInfo = COMMUNICATION_WORKFLOW_STEP_MAP[s.tool] || { name: s.name, description: s.description };
+    return {
+      id: s.id,
+      name: stepInfo.name,
+      description: stepInfo.description,
+      status: s.status === 'pending' ? 'pending' : s.status,
+      tool: s.tool,
+    };
+  });
+  
+  const event = {
+    type: 'communication_workflow',
+    planId: plan.id,
+    workflow: {
+      steps,
+      currentStepIndex: 0,
+      communicationData: {
+        customerName: initialEntities?.customerName || initialEntities?.name,
+        customerEmail: initialEntities?.customerEmail || initialEntities?.email,
+        channel: initialEntities?.channel || 'portal',
+      },
+    },
+  };
+  controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+}
+
+// Send communication workflow progress event
+export function sendCommunicationWorkflowProgress(
+  controller: ReadableStreamDefaultController | undefined,
+  plan: ExecutionPlan,
+  step: PlanStep,
+  communicationData: Record<string, any>,
+  automationSummary?: {
+    conversationCreated?: boolean;
+    conversationId?: string;
+    messageSent?: boolean;
+    messageId?: string;
+    emailQueued?: boolean;
+    emailScheduledFor?: string;
+  }
+): void {
+  if (!controller) return;
+  
+  const encoder = new TextEncoder();
+  const steps = plan.steps.map(s => {
+    const stepInfo = COMMUNICATION_WORKFLOW_STEP_MAP[s.tool] || { name: s.name, description: s.description };
+    return {
+      id: s.id,
+      name: stepInfo.name,
+      description: stepInfo.description,
+      status: s.status === 'running' ? 'in_progress' : s.status,
+      tool: s.tool,
+      result: s.result,
+      error: s.error,
+      verification: s.verification,
+      rollbackExecuted: s.rollbackExecuted,
+      rollbackTool: s.rollbackTool,
+    };
+  });
+  
+  const event: Record<string, any> = {
+    type: 'communication_workflow_progress',
+    planId: plan.id,
+    stepIndex: plan.currentStepIndex,
+    steps,
+    communicationData,
+  };
+  
+  if (automationSummary) {
+    event.automationSummary = automationSummary;
+  }
+  
+  controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+}
+
+// Fetch communication automation summary
+export async function fetchCommunicationAutomationSummary(
+  supabase: any,
+  businessId: string,
+  conversationId?: string
+): Promise<{
+  conversationCreated?: boolean;
+  conversationId?: string;
+  messageSent?: boolean;
+  messageId?: string;
+  emailQueued?: boolean;
+  emailScheduledFor?: string;
+} | undefined> {
+  try {
+    const thirtySecondsAgo = new Date(Date.now() - 30000).toISOString();
+    
+    const { data: recentActivity } = await supabase
+      .from('ai_activity_log')
+      .select('activity_type, description, metadata')
+      .eq('business_id', businessId)
+      .gte('created_at', thirtySecondsAgo)
+      .order('created_at', { ascending: false })
+      .limit(10);
+    
+    if (!recentActivity || recentActivity.length === 0) {
+      return undefined;
+    }
+    
+    const summary: {
+      conversationCreated?: boolean;
+      conversationId?: string;
+      messageSent?: boolean;
+      messageId?: string;
+      emailQueued?: boolean;
+      emailScheduledFor?: string;
+    } = {};
+    
+    for (const activity of recentActivity) {
+      const actionType = activity.metadata?.action_type;
+      
+      if (actionType === 'conversation_created' && !summary.conversationCreated) {
+        summary.conversationCreated = true;
+        summary.conversationId = activity.metadata?.conversation_id;
+      }
+      if (actionType === 'message_sent' && !summary.messageSent) {
+        summary.messageSent = true;
+        summary.messageId = activity.metadata?.message_id;
+      }
+      if (actionType === 'email_queued' && !summary.emailQueued) {
+        summary.emailQueued = true;
+        summary.emailScheduledFor = activity.metadata?.scheduled_for;
+      }
+    }
+    
+    if (summary.conversationCreated || summary.messageSent || summary.emailQueued) {
+      return summary;
+    }
+    
+    return undefined;
+  } catch (error) {
+    console.error('[multi-step-planner] Failed to fetch communication automation summary:', error);
+    return undefined;
+  }
+}
+
+// Export communication data extractor
+export { extractCommunicationData };
 
 export async function pausePlanForRecovery(
   plan: ExecutionPlan,

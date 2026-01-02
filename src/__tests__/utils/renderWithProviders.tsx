@@ -3,9 +3,9 @@ import { render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 
-// Mock Auth Provider for tests - no longer depends on Clerk
-const MockAuthProvider = ({ children }: { children: React.ReactNode }) => {
-  return <div data-testid="mock-auth-provider">{children}</div>;
+// Mock Business Auth Provider for tests
+const MockBusinessAuthProvider = ({ children }: { children: React.ReactNode }) => {
+  return <div data-testid="mock-business-auth-provider">{children}</div>;
 };
 
 interface RenderOptions {
@@ -31,13 +31,13 @@ export function renderWithProviders(
   });
   
   return render(
-    <MockAuthProvider>
+    <MockBusinessAuthProvider>
       <QueryClientProvider client={testQueryClient}>
         <MemoryRouter initialEntries={[route]}>
           {ui}
         </MemoryRouter>
       </QueryClientProvider>
-    </MockAuthProvider>
+    </MockBusinessAuthProvider>
   );
 }
 

@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, createContext, useContext } from 'react';
-import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import type { 
   CustomerAuthState, 
@@ -62,24 +61,17 @@ const initialState: ExtendedCustomerAuthState = {
 };
 
 export function useCustomerAuthProvider() {
-  const { isSignedIn, userId, session } = useAuth();
-  // Get user email from session instead of Clerk's useUser
-  const userEmail = session?.user?.email;
-  
   const [state, setState] = useState<ExtendedCustomerAuthState>(initialState);
 
   // Check session on mount
   useEffect(() => {
     checkAuth();
-  }, [isSignedIn, userId]);
+  }, []);
 
   const checkAuth = useCallback(async () => {
     setState(prev => ({ ...prev, isLoading: true }));
 
     try {
-      // Customer portal uses session-based auth, not Supabase auth
-      // So we skip the Supabase session check for customers
-
       // Check session-based auth
       const sessionToken = localStorage.getItem(CUSTOMER_SESSION_KEY);
       if (sessionToken) {
@@ -119,7 +111,7 @@ export function useCustomerAuthProvider() {
         isLoading: false,
       });
     }
-  }, [isSignedIn, userId, userEmail]);
+  }, []);
 
   const sendMagicLink = useCallback(async (email: string): Promise<SendMagicLinkResult> => {
     try {

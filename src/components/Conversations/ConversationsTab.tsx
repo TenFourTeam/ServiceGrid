@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useConversations } from '@/hooks/useConversations';
 import { useUnreadMentions } from '@/hooks/useUnreadMentions';
 import { useProfile } from '@/queries/useProfile';
-import { useAuth } from '@/hooks/useAuth';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,7 +22,6 @@ export function ConversationsTab() {
   const { conversations, isLoading, createConversation, createCustomerConversation, reassignConversation, archiveConversation, unarchiveConversation } = useConversations();
   const { unreadCount } = useUnreadMentions();
   const { data: profileData } = useProfile();
-  const { session } = useAuth();
   const [selectedConversation, setSelectedConversation] = useState<{ 
     id: string; 
     title: string; 
@@ -102,7 +100,7 @@ export function ConversationsTab() {
     const currentUser = profileData?.profile ? {
       id: profileData.profile.id,
       name: profileData.profile.fullName,
-      email: session?.user?.email || '',
+      email: '',
     } : undefined;
 
     return (

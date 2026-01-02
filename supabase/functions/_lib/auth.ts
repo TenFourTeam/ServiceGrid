@@ -1,10 +1,8 @@
 // Shared authentication and business context resolution for Supabase Edge Functions
+// JWT-based authentication using Supabase Auth
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.54.0";
 
-// Test mode support
-const TEST_MODE = Deno.env.get("TEST_MODE") === "true";
-
-type UserUuid = string; // postgres uuid
+type UserUuid = string;
 
 export type AuthContext = {
   userId: UserUuid;
@@ -27,30 +25,74 @@ export async function getCurrentUserId(req: Request): Promise<string> {
 }
 
 export async function requireCtx(req: Request, options: { autoCreate?: boolean, businessId?: string } = { autoCreate: true }): Promise<AuthContext> {
-  console.info('🔍 [auth] === SUPABASE AUTH START ===');
+  console.info('🔍 [auth] === AUTH DEBUGGING START ===');
   console.info('🔍 [auth] Request URL:', req.url);
   console.info('🔍 [auth] Request method:', req.method);
   
-  // Extract authorization header
-  const authHeader = req.headers.get("authorization") || req.headers.get("Authorization");
-  console.info('🔍 [auth] Auth header present:', !!authHeader);
+  const supaAdmin = createSupabaseAdmin();
   
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    console.error('❌ [auth] Missing or invalid authorization header');
-    throw new Error("Missing authentication token");
+  // Check for JWT in Authorization header (Supabase Auth standard)
+  const authHeader = req.headers.get("Authorization");
+  
+  if (!authHeader?.startsWith("Bearer ")) {
+    console.error('❌ [auth] Missing or invalid Authorization header');
+    throw new Error("Missing authentication. Please sign in again.");
+  }
+  
+  const token = authHeader.replace("Bearer ", "");
+  console.info('🔍 [auth] JWT token detected, validating with Supabase Auth');
+  
+  // Validate JWT with Supabase Auth
+  const { data: { user }, error: authError } = await supaAdmin.auth.getUser(token);
+  
+  if (authError || !user) {
+    console.error('❌ [auth] JWT validation failed:', authError?.message);
+    throw new Error("Invalid or expired session. Please sign in again.");
+  }
+  
+  console.info('✅ [auth] JWT validated for user:', user.id);
+  
+  // Get profile to resolve business ID
+  const { data: profile, error: profileError } = await supaAdmin
+    .from('profiles')
+    .select('id, email, default_business_id')
+    .eq('id', user.id)
+    .single();
+
+  if (profileError || !profile) {
+    console.error('❌ [auth] Profile not found for user:', user.id);
+    throw new Error("Profile not found. Please contact support.");
   }
 
-  const token = authHeader.replace(/^Bearer\s+/i, "");
-  console.info('🔍 [auth] Token extracted, length:', token.length);
+  // Resolve business ID
+  const businessId = await resolveBusinessId(
+    supaAdmin, 
+    user.id, 
+    profile.default_business_id,
+    req,
+    options
+  );
 
-  // Create admin Supabase client
+  console.info('✅ [auth] Auth successful for user:', user.id, 'business:', businessId);
+
+  return {
+    userId: user.id,
+    email: user.email?.toLowerCase() || undefined,
+    businessId,
+    supaAdmin,
+  };
+}
+
+// === SHARED HELPERS ===
+
+function createSupabaseAdmin() {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!supabaseUrl || !serviceKey) {
     throw new Error("Supabase configuration missing");
   }
   
-  const supaAdmin = createClient(supabaseUrl, serviceKey, {
+  return createClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false },
     db: { schema: 'public' },
     global: {
@@ -60,38 +102,15 @@ export async function requireCtx(req: Request, options: { autoCreate?: boolean, 
       }
     }
   });
+}
 
-  // Verify the Supabase JWT and get user
-  let user: any;
-  try {
-    console.info('🔍 [auth] Verifying Supabase JWT...');
-    const startTime = Date.now();
-    
-    const { data, error } = await supaAdmin.auth.getUser(token);
-    
-    if (error || !data.user) {
-      console.error('❌ [auth] Token verification failed:', error?.message);
-      throw new Error(`Authentication failed: ${error?.message || 'Invalid token'}`);
-    }
-    
-    user = data.user;
-    const endTime = Date.now();
-    console.info('✅ [auth] Token verification successful in', endTime - startTime, 'ms');
-    console.info('🔍 [auth] User ID:', user.id);
-    console.info('🔍 [auth] User email:', user.email);
-  } catch (e) {
-    const error = e as Error;
-    console.error('❌ [auth] Token verification failed:', error.message);
-    throw new Error(`Authentication failed: ${error.message || error}`);
-  }
-
-  const userUuid = user.id as UserUuid;
-  const email = user.email || "";
-
-  // Ensure profile exists
-  await ensureProfile(supaAdmin, userUuid, email, options.autoCreate);
-
-  // Business resolution with full chain
+async function resolveBusinessId(
+  supaAdmin: any,
+  userUuid: string,
+  defaultBusinessId: string | null,
+  req: Request,
+  options: { autoCreate?: boolean, businessId?: string }
+): Promise<string> {
   const url = new URL(req.url);
   const explicitBizId = 
     options?.businessId ||
@@ -105,18 +124,11 @@ export async function requireCtx(req: Request, options: { autoCreate?: boolean, 
   if (explicitBizId) {
     businessId = explicitBizId;
     console.info(`[auth] Using explicit business ID: ${businessId}`);
-  } else {
-    // 2) User default business
-    const { data: profileDefault } = await supaAdmin
-      .from('profiles')
-      .select('default_business_id')
-      .eq('id', userUuid)
-      .maybeSingle();
-
-    if (profileDefault?.default_business_id) {
-      businessId = profileDefault.default_business_id;
-      console.info(`[auth] Using default business ID: ${businessId}`);
-    }
+  } 
+  // 2) User default business
+  else if (defaultBusinessId) {
+    businessId = defaultBusinessId;
+    console.info(`[auth] Using default business ID: ${businessId}`);
   }
 
   // 3) Ownership lookup
@@ -178,17 +190,11 @@ export async function requireCtx(req: Request, options: { autoCreate?: boolean, 
     throw new Error('Failed to resolve business ID');
   }
 
-  return {
-    userId: userUuid,
-    email: email?.toLowerCase() || undefined,
-    businessId,
-    supaAdmin
-  };
+  return businessId;
 }
 
 /**
  * Check if the business has AI access and sufficient credits
- * Throws an error if AI is disabled or credit limit exceeded
  */
 export async function requireAIAccess(ctx: AuthContext, supabase: any): Promise<void> {
   const { data: business, error } = await supabase
@@ -225,90 +231,20 @@ export async function incrementAICredits(ctx: AuthContext, supabase: any, credit
 
   if (error) {
     console.error('[incrementAICredits] Error incrementing credits:', error);
-    // Don't throw - this shouldn't block the operation
   }
 }
 
 export async function requireCtxWithUserClient(req: Request, options: { autoCreate?: boolean, businessId?: string } = { autoCreate: true }): Promise<AuthContextWithUserClient> {
-  // Get the standard auth context using service role
   const authCtx = await requireCtx(req, options);
   
-  // Extract the original JWT token
-  const authHeader = req.headers.get("authorization") || req.headers.get("Authorization");
-  const token = authHeader!.replace(/^Bearer\s+/i, "");
-  
-  // Create user-scoped Supabase client using the user's JWT
-  const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-  if (!supabaseUrl || !anonKey) {
-    throw new Error("Supabase configuration missing");
-  }
-  
-  // Create client with user's JWT for RLS
-  const userClient = createClient(supabaseUrl, anonKey, {
-    auth: { 
-      persistSession: false,
-      autoRefreshToken: false,
-      storage: undefined
-    },
-    db: { schema: 'public' },
-    global: {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'apikey': anonKey
-      }
-    }
-  });
-
-  console.info('✅ [auth] Created user-scoped client with Supabase JWT for RLS');
+  // Use admin client for all operations (JWT validated, trusted backend)
+  const userClient = authCtx.supaAdmin;
+  console.info('✅ [auth] Using admin client for authenticated operations');
   
   return {
     ...authCtx,
     userClient
   };
-}
-
-/**
- * Ensure a profile exists for the user, creating one if necessary
- */
-async function ensureProfile(supabase: any, userId: UserUuid, email: string, autoCreate: boolean = true): Promise<void> {
-  // Check if profile exists
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("id", userId)
-    .limit(1)
-    .maybeSingle();
-
-  if (profileError) throw profileError;
-  if (profile?.id) return; // Profile exists
-
-  if (!autoCreate) {
-    throw new Error('Profile not found and auto-creation disabled');
-  }
-
-  // Profile doesn't exist - create it
-  console.info(`🔄 [auth] Creating profile for new user: ${userId}`);
-  
-  const { error: createError } = await supabase
-    .from("profiles")
-    .insert({
-      id: userId, // Use auth.uid() directly as profile ID
-      email: email.toLowerCase() || ""
-    });
-
-  if (createError) {
-    // Handle race condition - profile might have been created
-    if (createError.code === '23505') {
-      console.info('🔄 [auth] Profile already exists (race condition)');
-      return;
-    }
-    
-    console.error('❌ [auth] Failed to create profile:', createError);
-    throw new Error(`Failed to create user profile: ${createError.message}`);
-  }
-
-  console.info(`✅ [auth] Profile created successfully for user: ${userId}`);
 }
 
 // CORS headers for Edge Functions
@@ -322,7 +258,6 @@ export const corsHeaders = {
 export function json(data: unknown, init: ResponseInit = {}) {
   const baseHeaders = { "Content-Type": "application/json", ...corsHeaders };
   
-  // Safely merge incoming headers without overriding Content-Type
   const extraHeaders = init.headers instanceof Headers
     ? Object.fromEntries(init.headers.entries())
     : (init.headers as Record<string, string> | undefined) ?? {};

@@ -1,5 +1,5 @@
-import { Button } from "@/components/Button";
 import { Link } from "react-router-dom";
+import { Button } from "@/components/Button";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface IndustryCTAProps {
@@ -22,7 +22,7 @@ export function IndustryCTA({ title, subtitle }: IndustryCTAProps) {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-4">
-            <Link to="/auth?redirect=/calendar">
+            <Link to="/auth?mode=signup">
               <Button 
                 variant="secondary" 
                 size="lg" 

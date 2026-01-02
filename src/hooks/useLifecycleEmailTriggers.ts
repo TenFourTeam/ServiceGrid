@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth, useUser } from '@/hooks/useBusinessAuth';
 import { useBusinessContext } from './useBusinessContext';
 import { useProfile } from '@/queries/useProfile';
 import { useStripeConnect } from './useStripeConnect';
@@ -13,7 +13,8 @@ import { lifecycleEmailTriggers, daysSinceSignup, daysSinceLastLogin, LIFECYCLE_
 export function useLifecycleEmailTriggers(enableAutoTriggers: boolean = false) {
   // Force disable all auto triggers
   enableAutoTriggers = false;
-  const { isSignedIn, isLoaded, session } = useAuth();
+  const { isSignedIn, isLoaded } = useAuth();
+  const { user } = useUser();
   const { business, businessName, isLoadingBusiness } = useBusinessContext();
   const { data: profile } = useProfile();
   const { status: stripeStatus } = useStripeConnect();
@@ -23,11 +24,11 @@ export function useLifecycleEmailTriggers(enableAutoTriggers: boolean = false) {
   const lastLoginCheck = useRef<string | null>(null);
   const lastEngagementCheck = useRef<string | null>(null);
 
-  // Prepare email data - use user's actual email from session
+  // Prepare email data - use user's actual email from profile
   const { userId } = useBusinessContext();
   const emailData = {
     userFullName: profile?.profile?.fullName,
-    userEmail: session?.user?.email || business?.replyToEmail,
+    userEmail: user?.primaryEmailAddress?.emailAddress || business?.replyToEmail,
     businessName: businessName || business?.name,
     businessId: business?.id,
     userId: userId,

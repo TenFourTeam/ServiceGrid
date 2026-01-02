@@ -1,5 +1,5 @@
-import { Button } from "@/components/Button";
 import { Link } from "react-router-dom";
+import { Button } from "@/components/Button";
 import type { LucideIcon } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -29,7 +29,7 @@ export function IndustryHero({ title, subtitle, Icon }: IndustryHeroProps) {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-4 animate-fade-in">
-            <Link to="/auth?redirect=/calendar">
+            <Link to="/auth?mode=signup">
               <Button 
                 variant="primary" 
                 size="lg" 

@@ -1,18 +1,20 @@
-import { useMemo } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useBusinessAuth } from '@/hooks/useBusinessAuth';
 import { createAuthEdgeApi } from '@/utils/authEdgeApi';
 
 /**
  * Global authenticated API hook
  * Provides a pre-configured authApi instance for making authenticated edge function calls
- * Eliminates the need to repeatedly set up token handling
+ * 
+ * NOTE: No useMemo - we need fresh token references on every render.
+ * React Query handles caching; stale closures cause "Missing Authorization header" errors.
  */
 export function useAuthApi() {
-  const { getToken } = useAuth();
+  const { getSessionToken } = useBusinessAuth();
   
-  const authApi = useMemo(() => {
-    return createAuthEdgeApi(getToken);
-  }, [getToken]);
+  // Create fresh on every render to avoid stale closure issues
+  const getTokenAsync = async (_options?: { template?: string }): Promise<string | null> => {
+    return getSessionToken();
+  };
   
-  return authApi;
+  return createAuthEdgeApi(getTokenAsync);
 }

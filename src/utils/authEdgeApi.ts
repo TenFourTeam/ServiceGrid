@@ -10,12 +10,12 @@ export interface ToastOptions {
 
 /**
  * Authenticated edge function helper with integrated toast support
- * Creates a function that includes Clerk authentication tokens in edge function calls
+ * Uses Supabase Auth JWT tokens automatically included by the client
  */
 export function createAuthEdgeApi(getToken: (options?: { template?: string }) => Promise<string | null>) {
   return {
     /**
-     * Invoke an edge function with automatic Clerk authentication and optional toast notifications
+     * Invoke an edge function with automatic JWT authentication and optional toast notifications
      */
     async invoke(
       functionName: string,
@@ -46,53 +46,51 @@ export function createAuthEdgeApi(getToken: (options?: { template?: string }) =>
         if (loading) {
           toastId = toast.loading(loading);
         }
-        
-        console.info(`🔧 [AuthEdgeApi] Getting Clerk token with 'supabase' template...`);
+
+        // Get JWT token from Supabase session with retry logic
+        console.info(`🔧 [AuthEdgeApi] Getting session token...`);
         const startToken = Date.now();
-        const token = await getToken({ template: 'supabase' });
+        
+        let token: string | null = null;
+        const maxRetries = 3;
+        const retryDelay = 200;
+        
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          token = await getToken({ template: 'supabase' });
+          if (token) break;
+          
+          if (attempt < maxRetries) {
+            console.info(`🔧 [AuthEdgeApi] Token not available, retry ${attempt}/${maxRetries} in ${retryDelay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+          }
+        }
+        
         const endToken = Date.now();
-        console.info(`🔧 [AuthEdgeApi] Token fetch took ${endToken - startToken}ms`);
+        console.info(`🔧 [AuthEdgeApi] Token fetch took ${endToken - startToken}ms (${token ? 'success' : 'failed'})`);
         
         if (!token) {
-          console.warn('❌ [AuthEdgeApi] No Clerk token available');
+          console.warn('❌ [AuthEdgeApi] No session token available after retries');
+          if (toastId) {
+            toast.dismiss(toastId);
+          }
           return {
             data: null,
-            error: { message: 'Authentication required', status: 401 }
+            error: { message: 'Authentication required. Please sign in.', status: 401 }
           };
         }
 
         console.info(`🔧 [AuthEdgeApi] Token obtained, length: ${token.length}`);
-        console.info(`🔧 [AuthEdgeApi] Token prefix: ${token.substring(0, 20)}`);
-        console.info(`🔧 [AuthEdgeApi] Token suffix: ${token.substring(token.length - 20)}`);
         
-        // Try to decode token structure for debugging
-        try {
-          const [header, payload] = token.split('.');
-          if (header && payload) {
-            const decodedPayload = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
-            console.info(`🔧 [AuthEdgeApi] Token payload preview:`, {
-              sub: decodedPayload.sub,
-              iss: decodedPayload.iss,
-              exp: decodedPayload.exp,
-              iat: decodedPayload.iat
-            });
-            console.info(`🔧 [AuthEdgeApi] Token expires: ${new Date(decodedPayload.exp * 1000).toISOString()}`);
-            console.info(`🔧 [AuthEdgeApi] Current time: ${new Date().toISOString()}`);
-          }
-        } catch (decodeError) {
-          console.warn('⚠️ [AuthEdgeApi] Could not decode token:', decodeError);
-        }
-
-        // Keep it simple: let supabase client set Content-Type / stringify objects.
+        // Use Authorization header with Bearer token (Supabase standard)
         const headers: Record<string, string> = {
-          Authorization: `Bearer ${token}`,
+          'Authorization': `Bearer ${token}`,
           ...(requestOptions.headers || {}),
         };
 
-        const bodyToSend = requestOptions.body; // object | string | FormData | undefined
+        const bodyToSend = requestOptions.body;
 
         console.info(`🔧 [AuthEdgeApi] Prepared headers:`, Object.keys(headers));
-        console.info(`🔧 [AuthEdgeApi] Calling ${functionName} with auth token`);
+        console.info(`🔧 [AuthEdgeApi] Calling ${functionName} with JWT auth`);
 
         // Build function URL with query parameters if provided
         let functionUrl = functionName;
@@ -182,17 +180,5 @@ export function createAuthEdgeApi(getToken: (options?: { template?: string }) =>
  */
 function getDefaultSuccessMessage(method: string): string | false {
   // Remove automatic success toasts - let callers handle their own
-  // This prevents duplicate toasts when hooks also have onSuccess handlers
   return false;
-}
-
-// Declare global Clerk types for TypeScript
-declare global {
-  interface Window {
-    Clerk?: {
-      session?: {
-        getToken(options?: { refresh?: boolean; skipCache?: boolean }): Promise<string>;
-      };
-    };
-  }
 }

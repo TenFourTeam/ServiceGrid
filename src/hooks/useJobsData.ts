@@ -11,7 +11,7 @@ interface UseJobsDataOptions {
 }
 
 /**
- * Edge Function jobs hook - unified Clerk authentication
+ * Edge Function jobs hook - unified session authentication
  * @param businessId - Explicit businessId to fetch jobs for (bypasses context)
  * @param opts - Additional options like enabled flag
  */
@@ -28,14 +28,6 @@ export function useJobsData(businessId?: string, opts?: UseJobsDataOptions) {
   const enabled = isAuthenticated && !!effectiveBusinessId && (opts?.enabled ?? true);
 
   const queryKey = queryKeys.data.jobs(effectiveBusinessId || '', userId || '');
-  console.log("[useJobsData] DEBUG - Query setup:", {
-    queryKey,
-    effectiveBusinessId,
-    userId,
-    role,
-    enabled,
-    isAuthenticated
-  });
 
   const query = useQuery({
     queryKey,
@@ -76,6 +68,7 @@ export function useJobsData(businessId?: string, opts?: UseJobsDataOptions) {
       return { jobs: data?.jobs || [], count: data?.count || 0 };
     },
     refetchOnWindowFocus: true, // Get fresh data when user returns to tab
+    placeholderData: (prev) => prev, // Keep previous data visible during refetch
   });
 
   return {

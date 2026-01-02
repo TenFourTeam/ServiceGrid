@@ -1,7 +1,7 @@
 // Re-export all auth components and hooks for easy importing
 export { AuthBoundary, RequireAuth, PublicOnly } from './AuthBoundary';
 export { default as AuthErrorBoundary } from './AuthErrorBoundary';
-export { QueryClientIntegration } from './QueryClientIntegration';
+export { QueryClientAuthIntegration } from './QueryClientAuthIntegration';
 
-// Re-export useAuth from our unified hook
-export { useAuth, useUser } from '@/hooks/useAuth';
+// Re-export the new auth hooks as the primary auth interface
+export { useAuth, useUser, useBusinessAuth } from '@/hooks/useBusinessAuth';

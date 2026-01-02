@@ -26,10 +26,30 @@ import {
   sendLeadWorkflowProgress,
   extractCustomerData,
   fetchAutomationSummary,
+  isAssessmentWorkflowPattern,
+  sendAssessmentWorkflowStart,
+  sendAssessmentWorkflowProgress,
+  fetchAssessmentAutomationSummary,
+  isCommunicationWorkflowPattern,
+  sendCommunicationWorkflowStart,
+  sendCommunicationWorkflowProgress,
+  fetchCommunicationAutomationSummary,
+  extractCommunicationData,
   type ExecutionPlan,
   type ExecutionContext,
   type PlannerResult 
 } from './multi-step-planner.ts';
+
+// Process Orchestration
+import {
+  getProcessFromPattern,
+  getSuggestedNextProcess,
+  trackProcessJourney,
+  detectProcessTransition,
+  getProcessLabel,
+  getProcessPrompt,
+  type NextProcessSuggestion
+} from './process-orchestrator.ts';
 
 // Memory & Context Persistence
 import { 
@@ -6129,7 +6149,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Authenticate using Clerk JWT
+    // Authenticate using session token
     const { userId, businessId, supaAdmin } = await requireCtx(req);
 
     const { conversationId, message, mediaIds, includeContext } = await req.json();
@@ -6298,15 +6318,34 @@ Deno.serve(async (req) => {
     console.info('[ai-chat] Orchestrator result:', orchestratorResult.type, orchestratorResult.intent?.intentId, 
       orchestratorResult.intent?.isFollowUp ? '(follow-up)' : '');
 
-    // Handle clarification requests - send structured SSE event
-    if (orchestratorResult.type === 'clarification' && orchestratorResult.clarificationData) {
-      console.info('[ai-chat] Clarification needed:', orchestratorResult.clarificationData.question);
+    // Store clarification/confirmation data for use inside the stream controller
+    const pendingClarification = orchestratorResult.type === 'clarification' && orchestratorResult.clarificationData 
+      ? orchestratorResult.clarificationData 
+      : null;
+    const pendingConfirmation = orchestratorResult.type === 'confirmation' && orchestratorResult.confirmationRequest
+      ? orchestratorResult.confirmationRequest
+      : null;
+    
+    if (pendingClarification) {
+      console.info('[ai-chat] Clarification needed:', pendingClarification.question);
     }
-
-    // Handle confirmation requests - send structured SSE event  
-    if (orchestratorResult.type === 'confirmation' && orchestratorResult.confirmationRequest) {
-      console.info('[ai-chat] Confirmation needed:', orchestratorResult.confirmationRequest.action);
+    if (pendingConfirmation) {
+      console.info('[ai-chat] Confirmation needed:', pendingConfirmation.action);
     }
+    
+    // Check for process transition in user message
+    const processTransition = detectProcessTransition(message, {
+      customerId: includeContext?.entityType === 'customer' ? includeContext?.entityId : undefined,
+      conversationId: memoryCtx?.conversationId,
+      jobId: includeContext?.entityType === 'job' ? includeContext?.entityId : undefined,
+    });
+    
+    if (processTransition) {
+      console.info('[ai-chat] Detected process transition:', processTransition.patternId, processTransition.entities);
+    }
+    
+    // Extract processContext from request for context handoff
+    const processContext = includeContext?.processContext as Record<string, any> | undefined;
 
     // Build memory context section for system prompt
     const memorySection = [
@@ -6485,6 +6524,61 @@ RESPONSE STYLE:
               })}\n\n`)
             );
           }
+          
+          // ===============================================================
+          // CLARIFICATION/CONFIRMATION HANDLING (send SSE events)
+          // ===============================================================
+          if (pendingClarification) {
+            console.info('[ai-chat] Sending clarification SSE event');
+            
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({
+                type: 'clarification',
+                question: pendingClarification.question,
+                options: pendingClarification.options || [],
+                domain: pendingClarification.domain,
+                intent: pendingClarification.intent,
+                allowFreeform: true,
+              })}\n\n`)
+            );
+            
+            // Save clarification as assistant message
+            await supaAdmin.from('ai_chat_messages').insert({
+              conversation_id: convId,
+              role: 'assistant',
+              content: pendingClarification.question,
+            });
+            
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`));
+            controller.close();
+            return;
+          }
+          
+          if (pendingConfirmation) {
+            console.info('[ai-chat] Sending confirmation SSE event');
+            
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({
+                type: 'confirmation',
+                action: pendingConfirmation.action,
+                description: pendingConfirmation.description,
+                riskLevel: pendingConfirmation.riskLevel || 'medium',
+                confirmLabel: pendingConfirmation.confirmLabel,
+                cancelLabel: pendingConfirmation.cancelLabel,
+              })}\n\n`)
+            );
+            
+            // Save confirmation as assistant message
+            await supaAdmin.from('ai_chat_messages').insert({
+              conversation_id: convId,
+              role: 'assistant',
+              content: pendingConfirmation.description,
+            });
+            
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`));
+            controller.close();
+            return;
+          }
 
           // ===============================================================
           // PLAN APPROVAL/REJECTION HANDLING (inside stream where controller exists)
@@ -6549,7 +6643,7 @@ RESPONSE STYLE:
                 (result: PlannerResult) => {
                   // Real-time progress callback
                   if (result.type === 'step_progress' || result.type === 'step_complete') {
-                    // Use lead workflow progress for lead patterns
+                    // Use specialized workflow progress for dedicated card patterns
                     if (isLeadWorkflowPattern(pattern)) {
                       const customerData = extractCustomerData(
                         result.currentStep?.tool || '',
@@ -6557,13 +6651,43 @@ RESPONSE STYLE:
                         entities
                       );
                       sendLeadWorkflowProgress(controller, result.plan, result.currentStep!, customerData);
+                    } else if (isAssessmentWorkflowPattern(pattern)) {
+                      sendAssessmentWorkflowProgress(controller, result.plan, result.currentStep!, {});
                     } else {
                       sendStepProgress(controller, result.plan, result.currentStep!, result.message);
                     }
                   } else if (result.type === 'plan_complete') {
                     // Only send complete for successful plans - failures handled after executePlan
                     const failedStep = result.plan.steps.find(s => s.status === 'failed');
-                    sendPlanComplete(controller, result.plan, failedStep);
+                    
+                    // Check for next process suggestion on successful completion
+                    let nextSuggestion: NextProcessSuggestion | undefined;
+                    if (!failedStep && result.plan.status === 'completed') {
+                      const processId = getProcessFromPattern(pattern.id);
+                      if (processId) {
+                        // Collect results from all completed steps
+                        const allResults: Record<string, any> = {};
+                        result.plan.steps.forEach(step => {
+                          if (step.result) {
+                            allResults[step.tool] = step.result;
+                            Object.assign(allResults, step.result);
+                          }
+                        });
+                        const suggestion = getSuggestedNextProcess(processId, allResults);
+                        if (suggestion) {
+                          nextSuggestion = suggestion;
+                          // Track process journey
+                          trackProcessJourney(supaAdmin, businessId, userId, {
+                            processId,
+                            status: 'completed',
+                            planId: result.plan.id,
+                            context: allResults,
+                          });
+                        }
+                      }
+                    }
+                    
+                    sendPlanComplete(controller, result.plan, failedStep, undefined, nextSuggestion);
                   }
                   // Note: plan_failed is now handled after executePlan returns to allow async conversational recovery
                 }
@@ -6722,12 +6846,40 @@ RESPONSE STYLE:
                         entities
                       );
                       sendLeadWorkflowProgress(controller, result.plan, result.currentStep!, customerData);
+                    } else if (isAssessmentWorkflowPattern(pattern)) {
+                      sendAssessmentWorkflowProgress(controller, result.plan, result.currentStep!, {});
                     } else {
                       sendStepProgress(controller, result.plan, result.currentStep!, result.message);
                     }
                   } else if (result.type === 'plan_complete') {
                     const failedStep = result.plan.steps.find(s => s.status === 'failed');
-                    sendPlanComplete(controller, result.plan, failedStep);
+                    
+                    // Check for next process suggestion on successful completion
+                    let nextSuggestion: NextProcessSuggestion | undefined;
+                    if (!failedStep && result.plan.status === 'completed') {
+                      const processId = getProcessFromPattern(pattern.id);
+                      if (processId) {
+                        const allResults: Record<string, any> = {};
+                        result.plan.steps.forEach(step => {
+                          if (step.result) {
+                            allResults[step.tool] = step.result;
+                            Object.assign(allResults, step.result);
+                          }
+                        });
+                        const suggestion = getSuggestedNextProcess(processId, allResults);
+                        if (suggestion) {
+                          nextSuggestion = suggestion;
+                          trackProcessJourney(supaAdmin, businessId, userId, {
+                            processId,
+                            status: 'completed',
+                            planId: result.plan.id,
+                            context: allResults,
+                          });
+                        }
+                      }
+                    }
+                    
+                    sendPlanComplete(controller, result.plan, failedStep, undefined, nextSuggestion);
                   }
                 }
               );
@@ -6860,12 +7012,40 @@ RESPONSE STYLE:
                         updatedEntities
                       );
                       sendLeadWorkflowProgress(controller, result.plan, result.currentStep!, customerData);
+                    } else if (isAssessmentWorkflowPattern(pattern)) {
+                      sendAssessmentWorkflowProgress(controller, result.plan, result.currentStep!, {});
                     } else {
                       sendStepProgress(controller, result.plan, result.currentStep!, result.message);
                     }
                   } else if (result.type === 'plan_complete') {
                     const failedStep = result.plan.steps.find(s => s.status === 'failed');
-                    sendPlanComplete(controller, result.plan, failedStep);
+                    
+                    // Check for next process suggestion on successful completion
+                    let nextSuggestion: NextProcessSuggestion | undefined;
+                    if (!failedStep && result.plan.status === 'completed') {
+                      const processId = getProcessFromPattern(pattern.id);
+                      if (processId) {
+                        const allResults: Record<string, any> = {};
+                        result.plan.steps.forEach(step => {
+                          if (step.result) {
+                            allResults[step.tool] = step.result;
+                            Object.assign(allResults, step.result);
+                          }
+                        });
+                        const suggestion = getSuggestedNextProcess(processId, allResults);
+                        if (suggestion) {
+                          nextSuggestion = suggestion;
+                          trackProcessJourney(supaAdmin, businessId, userId, {
+                            processId,
+                            status: 'completed',
+                            planId: result.plan.id,
+                            context: allResults,
+                          });
+                        }
+                      }
+                    }
+                    
+                    sendPlanComplete(controller, result.plan, failedStep, undefined, nextSuggestion);
                   }
                 }
               );
@@ -7018,12 +7198,40 @@ RESPONSE STYLE:
                         updatedEntities
                       );
                       sendLeadWorkflowProgress(controller, result.plan, result.currentStep!, customerData);
+                    } else if (isAssessmentWorkflowPattern(pattern)) {
+                      sendAssessmentWorkflowProgress(controller, result.plan, result.currentStep!, {});
                     } else {
                       sendStepProgress(controller, result.plan, result.currentStep!, result.message);
                     }
                   } else if (result.type === 'plan_complete') {
                     const failedStep = result.plan.steps.find(s => s.status === 'failed');
-                    sendPlanComplete(controller, result.plan, failedStep);
+                    
+                    // Check for next process suggestion on successful completion
+                    let nextSuggestion: NextProcessSuggestion | undefined;
+                    if (!failedStep && result.plan.status === 'completed') {
+                      const processId = getProcessFromPattern(pattern.id);
+                      if (processId) {
+                        const allResults: Record<string, any> = {};
+                        result.plan.steps.forEach(step => {
+                          if (step.result) {
+                            allResults[step.tool] = step.result;
+                            Object.assign(allResults, step.result);
+                          }
+                        });
+                        const suggestion = getSuggestedNextProcess(processId, allResults);
+                        if (suggestion) {
+                          nextSuggestion = suggestion;
+                          trackProcessJourney(supaAdmin, businessId, userId, {
+                            processId,
+                            status: 'completed',
+                            planId: result.plan.id,
+                            context: allResults,
+                          });
+                        }
+                      }
+                    }
+                    
+                    sendPlanComplete(controller, result.plan, failedStep, undefined, nextSuggestion);
                   }
                 }
               );
@@ -7093,26 +7301,43 @@ RESPONSE STYLE:
           // ===============================================================
           // MULTI-STEP PLAN DETECTION (approval/rejection handled earlier)
           // ===============================================================
+          // Merge entities from orchestrator, processContext (from workflow cards), and processTransition
+          const mergedEntities = {
+            ...(orchestratorResult.intent?.entities || {}),
+            ...(processContext || {}),
+            ...(processTransition?.entities || {}),
+          };
+          
           // Check if this is a multi-step task that needs a plan
+          // If a process transition was detected, force that pattern
+          const forcedPatternId = processTransition?.patternId;
+          if (forcedPatternId) {
+            console.info('[ai-chat] Forcing pattern from process transition:', forcedPatternId);
+          }
+          
           const { isMultiStep, pattern: multiStepPattern } = detectMultiStepTask(
             message, 
-            orchestratorResult.intent?.entities || {}
+            mergedEntities,
+            forcedPatternId
           );
           
           if (isMultiStep && multiStepPattern) {
             console.info('[ai-chat] Multi-step task detected:', multiStepPattern.id);
             
-            // Build the execution plan
-            const plan = buildExecutionPlan(multiStepPattern, orchestratorResult.intent?.entities || {});
+            // Build the execution plan with merged entities
+            const plan = buildExecutionPlan(multiStepPattern, mergedEntities);
             
             // Store for later approval (both cache for quick access and DB for persistence)
-            storePendingPlan(plan, multiStepPattern, orchestratorResult.intent?.entities || {}, userId);
-            await storePendingPlanAsync(plan, multiStepPattern, orchestratorResult.intent?.entities || {}, memoryCtx);
+            storePendingPlan(plan, multiStepPattern, mergedEntities, userId);
+            await storePendingPlanAsync(plan, multiStepPattern, mergedEntities, memoryCtx);
             
-            // Check if this is a lead workflow pattern - use specialized card
+            // Check if this is a specialized workflow pattern - use dedicated card
             if (isLeadWorkflowPattern(multiStepPattern)) {
               console.info('[ai-chat] Using LeadWorkflowCard for pattern:', multiStepPattern.id);
-              sendLeadWorkflowStart(controller, plan, orchestratorResult.intent?.entities || {});
+              sendLeadWorkflowStart(controller, plan, mergedEntities);
+            } else if (isAssessmentWorkflowPattern(multiStepPattern)) {
+              console.info('[ai-chat] Using AssessmentWorkflowCard for pattern:', multiStepPattern.id);
+              sendAssessmentWorkflowStart(controller, plan, mergedEntities);
             } else {
               // Send generic plan preview to frontend
               sendPlanPreview(controller, plan);

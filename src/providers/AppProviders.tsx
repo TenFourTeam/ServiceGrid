@@ -3,7 +3,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ConsolidatedToaster } from '@/components/ui/toaster';
 import { LanguageProvider } from '@/contexts/LanguageContext';
+import { useAuth } from '@/hooks/useBusinessAuth';
 import { LeadAutomationNotificationsProvider } from '@/components/providers/LeadAutomationNotificationsProvider';
+import { AssessmentAutomationNotificationsProvider } from '@/components/providers/AssessmentAutomationNotificationsProvider';
+import { AuthDebugBadge } from '@/components/dev/AuthDebugBadge';
 
 // Simple query client with basic defaults
 const queryClient = new QueryClient({
@@ -29,6 +32,24 @@ interface AppProvidersProps {
 }
 
 /**
+ * Notification providers that only mount after auth is initialized.
+ * This prevents hook errors from accessing auth context too early.
+ */
+function AuthAwareNotifications() {
+  const { isLoaded } = useAuth();
+  
+  // Don't mount notification providers until auth is initialized
+  if (!isLoaded) return null;
+  
+  return (
+    <>
+      <LeadAutomationNotificationsProvider />
+      <AssessmentAutomationNotificationsProvider />
+    </>
+  );
+}
+
+/**
  * Minimal provider hierarchy: QueryClient → Tooltip
  */
 export function AppProviders({ children }: AppProvidersProps) {
@@ -37,7 +58,8 @@ export function AppProviders({ children }: AppProvidersProps) {
       <LanguageProvider>
         <TooltipProvider delayDuration={100}>
           <ConsolidatedToaster />
-          <LeadAutomationNotificationsProvider />
+          <AuthAwareNotifications />
+          <AuthDebugBadge />
           {children}
         </TooltipProvider>
       </LanguageProvider>

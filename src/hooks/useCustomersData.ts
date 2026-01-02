@@ -11,7 +11,7 @@ interface UseCustomersDataOptions {
 }
 
 /**
- * Edge Function customers hook - unified Clerk authentication
+ * Edge Function customers hook - unified session authentication
  */
 export function useCustomersData(opts?: UseCustomersDataOptions) {
   const { isAuthenticated, businessId } = useBusinessContext();

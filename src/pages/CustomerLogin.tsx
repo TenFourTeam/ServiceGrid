@@ -11,9 +11,7 @@ import { CustomerRegisterForm } from '@/components/CustomerPortal/CustomerRegist
 import { PasswordResetForm } from '@/components/CustomerPortal/PasswordResetForm';
 import { useCustomerAuth } from '@/hooks/useCustomerAuth';
 import { CustomerAuthProvider } from '@/components/CustomerPortal/CustomerAuthProvider';
-import { supabase } from '@/integrations/supabase/client';
-import { Chrome, Mail, Lock, ArrowLeft, Loader2, PartyPopper } from 'lucide-react';
-import { toast } from 'sonner';
+import { Mail, Lock, ArrowLeft, Loader2, PartyPopper } from 'lucide-react';
 
 interface InviteState {
   inviteToken?: string;
@@ -28,7 +26,6 @@ function CustomerLoginContent() {
   const { isAuthenticated, isLoading } = useCustomerAuth();
   const [activeTab, setActiveTab] = useState<'magic' | 'password' | 'register'>('magic');
   const [showPasswordReset, setShowPasswordReset] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   
   // Get invite data from location state
   const inviteState = (location.state as InviteState) || {};
@@ -49,27 +46,6 @@ function CustomerLoginContent() {
       navigate(from, { replace: true });
     }
   }, [isAuthenticated, isLoading, navigate, from]);
-
-  const handleGoogleSignIn = async () => {
-    setIsGoogleLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/portal`,
-        }
-      });
-      if (error) {
-        console.error('Google sign-in error:', error);
-        toast.error('Failed to start Google sign-in');
-        setIsGoogleLoading(false);
-      }
-    } catch (error: any) {
-      console.error('Google sign-in error:', error);
-      toast.error('Failed to start Google sign-in');
-      setIsGoogleLoading(false);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -119,33 +95,6 @@ function CustomerLoginContent() {
               <PasswordResetForm onBack={() => setShowPasswordReset(false)} />
             ) : (
               <>
-                {/* Google Sign In - Primary option */}
-                <div className="space-y-3">
-                  <Button 
-                    variant="outline" 
-                    className="w-full h-11"
-                    disabled={isGoogleLoading}
-                    onClick={handleGoogleSignIn}
-                  >
-                    {isGoogleLoading ? (
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    ) : (
-                      <Chrome className="mr-2 h-5 w-5" />
-                    )}
-                    Continue with Google
-                  </Button>
-                  <p className="text-xs text-center text-muted-foreground">
-                    Recommended for repeat customers
-                  </p>
-                </div>
-
-                <div className="relative">
-                  <Separator />
-                  <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
-                    or
-                  </span>
-                </div>
-
                 {/* Tab-based auth options */}
                 <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
                   <TabsList className="grid w-full grid-cols-3">

@@ -10,6 +10,9 @@ import { ConfirmationCard } from './ConfirmationCard';
 import { PlanPreviewCard } from './PlanPreviewCard';
 import { PlanProgressCard } from './PlanProgressCard';
 import { LeadWorkflowCard } from './LeadWorkflowCard';
+import { AssessmentWorkflowCard } from './AssessmentWorkflowCard';
+import { CommunicationWorkflowCard } from './CommunicationWorkflowCard';
+import { NextProcessSuggestionCard } from './NextProcessSuggestionCard';
 import { EntityCard, parseEntityReferences } from './EntityCard';
 import { UndoButton, isReversibleAction, getUndoDescription } from './UndoButton';
 import { ToolResultCard } from './ToolResultCard';
@@ -21,7 +24,7 @@ import { useConversationMedia } from '@/hooks/useConversationMedia';
 interface ChatMessageProps {
   message: Message;
   isStreaming?: boolean;
-  onActionExecute?: (action: string) => Promise<void>;
+  onActionExecute?: (action: string, context?: Record<string, any>) => Promise<void>;
   onApproveSchedule?: (scheduleData: any) => Promise<void>;
   onApprovePlan?: (message: string) => void;
   onRejectPlan?: (message: string) => void;
@@ -52,7 +55,9 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
       message.messageType !== 'confirmation' &&
       message.messageType !== 'plan_preview' &&
       message.messageType !== 'plan_progress' &&
-      message.messageType !== 'lead_workflow') {
+      message.messageType !== 'lead_workflow' &&
+      message.messageType !== 'assessment_workflow' &&
+      message.messageType !== 'communication_workflow') {
     return null;
   }
 
@@ -180,6 +185,43 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
                 onPrompt={onActionExecute}
               />
             )}
+            
+            {/* Assessment Workflow Card */}
+            {message.messageType === 'assessment_workflow' && message.assessmentWorkflow && (
+              <AssessmentWorkflowCard
+                steps={message.assessmentWorkflow.steps}
+                currentStepIndex={message.assessmentWorkflow.currentStepIndex}
+                assessmentData={message.assessmentWorkflow.assessmentData}
+                automationSummary={message.assessmentWorkflow.automationSummary}
+                onPrompt={onActionExecute}
+              />
+            )}
+            
+            {/* Communication Workflow Card */}
+            {message.messageType === 'communication_workflow' && message.communicationWorkflow && (
+              <CommunicationWorkflowCard
+                steps={message.communicationWorkflow.steps}
+                currentStepIndex={message.communicationWorkflow.currentStepIndex}
+                communicationData={message.communicationWorkflow.communicationData}
+                automationSummary={message.communicationWorkflow.automationSummary}
+                onPrompt={onActionExecute}
+              />
+            )}
+            
+            {/* Next Process Suggestion - shown after workflow completion */}
+            {message.nextProcessSuggestion && onActionExecute && (
+              <NextProcessSuggestionCard
+                suggestion={message.nextProcessSuggestion}
+                onContinue={(prompt, context) => {
+                  // Format prompt with context if available
+                  if (context?.customerId) {
+                    onActionExecute(`${prompt} for customer ${context.customerId}`);
+                  } else {
+                    onActionExecute(prompt);
+                  }
+                }}
+              />
+            )}
 
             {/* Standard message content */}
             {message.messageType !== 'clarification' && 
@@ -187,6 +229,8 @@ export function ChatMessage({ message, isStreaming, onActionExecute, onApproveSc
              message.messageType !== 'plan_preview' && 
              message.messageType !== 'plan_progress' && 
              message.messageType !== 'lead_workflow' &&
+             message.messageType !== 'assessment_workflow' &&
+             message.messageType !== 'communication_workflow' &&
              parsedContent.map((part, idx) => {
               if (part.type === 'text') {
                 // Parse entity references within text

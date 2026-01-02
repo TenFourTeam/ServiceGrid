@@ -5,10 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Textarea } from "@/components/ui/textarea";
 import { formatDateTime, formatMoney } from "@/utils/format";
-import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { useAuthApi } from '@/hooks/useAuthApi';
 import { toast } from "sonner";
-import { Sparkles, CheckSquare, Image, Eye, StickyNote, Brain } from "lucide-react";
+import { Sparkles, CheckSquare, Image, Eye, StickyNote, Brain, ClipboardCheck, Camera } from "lucide-react";
 import ReschedulePopover from "@/components/WorkOrders/ReschedulePopover";
 import type { Job, Quote, JobsCacheData, InvoicesCacheData } from "@/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle as ModalTitle } from "@/components/ui/dialog";
@@ -45,6 +44,7 @@ import { useCreateChecklistTemplate } from '@/hooks/useChecklistTemplates';
 import { useGoogleDriveSync } from '@/hooks/useGoogleDriveSync';
 import { useGoogleDriveConnection } from '@/hooks/useGoogleDriveConnection';
 import { Cloud } from 'lucide-react';
+import { AssessmentTab } from './AssessmentTab';
 
 interface JobShowModalProps {
   open: boolean;
@@ -807,6 +807,12 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                 <Brain className="h-4 w-4" />
                 <span className="hidden sm:inline">AI Summary</span>
               </TabsTrigger>
+              {(job as any).is_assessment && (
+                <TabsTrigger value="assessment" className="flex items-center gap-2 flex-shrink-0">
+                  <ClipboardCheck className="h-4 w-4" />
+                  <span className="hidden sm:inline">Assessment</span>
+                </TabsTrigger>
+              )}
             </TabsList>
             
             <TabsContent value="checklist">
@@ -832,6 +838,22 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                     </Button>
                   )}
                 </div>
+                
+                {/* Before Photos section for assessment jobs */}
+                {(job as any).is_assessment && (
+                  <div className="mb-4 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Camera className="w-4 h-4 text-blue-500" />
+                      <span className="font-medium text-sm">Before Photos</span>
+                      <Badge variant="secondary" className="text-xs bg-blue-500/20 text-blue-600">
+                        {allMedia.filter(m => m.tags?.includes('assessment:before')).length}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Photos captured during the assessment are automatically tagged for before/after comparisons
+                    </p>
+                  </div>
+                )}
             
             {/* Display legacy job.photos */}
             {Array.isArray((job as any).photos) && (job as any).photos.length > 0 && (
@@ -966,6 +988,16 @@ export default function JobShowModal({ open, onOpenChange, job, onOpenJobEditMod
                 </Button>
               </div>
             </TabsContent>
+            
+            {(job as any).is_assessment && (
+              <TabsContent value="assessment">
+                <AssessmentTab 
+                  jobId={job.id} 
+                  onGenerateReport={() => setShowAISummary(true)}
+                  onCreateQuote={() => setPickerOpen(true)}
+                />
+              </TabsContent>
+            )}
           </Tabs>
           
           <SummaryGenerator

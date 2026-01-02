@@ -1372,12 +1372,62 @@ export const SEND_EMAIL_CONTRACT: ToolContract = {
 // ============================================================================
 // SITE ASSESSMENT TOOL CONTRACTS
 // ============================================================================
+// SITE ASSESSMENT TOOL CONTRACTS
+// ============================================================================
+
+export const LOG_ASSESSMENT_REQUEST_CONTRACT: ToolContract = {
+  toolName: 'create_request',
+  description: 'Log a site assessment request',
+  processId: 'site_assessment',
+  subStepId: 'log_assessment_request',
+  
+  preconditions: [
+    {
+      id: 'customer_exists',
+      description: 'Customer must exist',
+      type: 'entity_exists',
+      entity: 'customer',
+      field: 'id',
+      fromArg: 'customer_id'
+    }
+  ],
+  
+  postconditions: [
+    {
+      id: 'request_created',
+      description: 'Request was created',
+      type: 'entity_exists',
+      entity: 'result',
+      field: 'id'
+    }
+  ],
+  
+  invariants: [],
+  
+  dbAssertions: [
+    {
+      id: 'request_in_db',
+      description: 'Request exists in database',
+      table: 'requests',
+      query: {
+        select: 'id, customer_id, status',
+        where: { id: 'result.id' }
+      },
+      expect: {
+        count: 1
+      }
+    }
+  ],
+  
+  rollbackTool: 'delete_request',
+  rollbackArgs: { request_id: 'result.id' }
+};
 
 export const CREATE_ASSESSMENT_JOB_CONTRACT: ToolContract = {
   toolName: 'create_assessment_job',
-  description: 'Create a site assessment job',
+  description: 'Create a site assessment job with scheduling',
   processId: 'site_assessment',
-  subStepId: 'schedule_assessment',
+  subStepId: 'schedule_and_assign',
   
   preconditions: [
     {
@@ -1423,7 +1473,7 @@ export const CREATE_ASSESSMENT_JOB_CONTRACT: ToolContract = {
       description: 'Assessment job exists in database',
       table: 'jobs',
       query: {
-        select: 'id, is_assessment, customer_id',
+        select: 'id, is_assessment, customer_id, status',
         where: { id: 'result.id' }
       },
       expect: {
@@ -1436,6 +1486,132 @@ export const CREATE_ASSESSMENT_JOB_CONTRACT: ToolContract = {
   
   rollbackTool: 'delete_job',
   rollbackArgs: { job_id: 'result.id' }
+};
+
+export const UPLOAD_ASSESSMENT_MEDIA_CONTRACT: ToolContract = {
+  toolName: 'upload_media',
+  description: 'Upload before photos during site assessment',
+  processId: 'site_assessment',
+  subStepId: 'capture_before_photos',
+  
+  preconditions: [
+    {
+      id: 'job_exists',
+      description: 'Assessment job must exist',
+      type: 'entity_exists',
+      entity: 'job',
+      field: 'id',
+      fromArg: 'job_id'
+    }
+  ],
+  
+  postconditions: [
+    {
+      id: 'media_created',
+      description: 'Media was uploaded',
+      type: 'entity_exists',
+      entity: 'result',
+      field: 'id'
+    }
+  ],
+  
+  invariants: [],
+  
+  dbAssertions: [
+    {
+      id: 'media_in_db',
+      description: 'Media exists in database',
+      table: 'sg_media',
+      query: {
+        select: 'id, job_id, file_type',
+        where: { id: 'result.id' }
+      },
+      expect: {
+        count: 1
+      }
+    }
+  ],
+  
+  rollbackTool: 'delete_media',
+  rollbackArgs: { media_id: 'result.id' }
+};
+
+export const TAG_ASSESSMENT_RISK_CONTRACT: ToolContract = {
+  toolName: 'tag_media',
+  description: 'Tag assessment media with risk/opportunity labels',
+  processId: 'site_assessment',
+  subStepId: 'analyze_and_flag',
+  
+  preconditions: [
+    {
+      id: 'media_exists',
+      description: 'Media must exist',
+      type: 'entity_exists',
+      entity: 'media',
+      field: 'id',
+      fromArg: 'media_id'
+    }
+  ],
+  
+  postconditions: [
+    {
+      id: 'tags_applied',
+      description: 'Tags were applied to media',
+      type: 'field_not_null',
+      entity: 'result',
+      field: 'tags'
+    }
+  ],
+  
+  invariants: [],
+  
+  dbAssertions: [],
+  
+  rollbackTool: 'remove_media_tags',
+  rollbackArgs: { media_id: 'args.media_id', tags: 'args.tags' }
+};
+
+export const GENERATE_ASSESSMENT_REPORT_CONTRACT: ToolContract = {
+  toolName: 'generate_summary',
+  description: 'Generate AI summary for assessment report',
+  processId: 'site_assessment',
+  subStepId: 'generate_report',
+  
+  preconditions: [
+    {
+      id: 'job_exists',
+      description: 'Assessment job must exist',
+      type: 'entity_exists',
+      entity: 'job',
+      field: 'id',
+      fromArg: 'job_id'
+    },
+    {
+      id: 'job_is_assessment',
+      description: 'Job must be an assessment',
+      type: 'field_equals',
+      entity: 'job',
+      field: 'is_assessment',
+      value: true
+    }
+  ],
+  
+  postconditions: [
+    {
+      id: 'summary_generated',
+      description: 'Summary was generated',
+      type: 'field_not_null',
+      entity: 'result',
+      field: 'summary'
+    }
+  ],
+  
+  invariants: [],
+  
+  dbAssertions: [],
+  
+  rollbackTool: undefined,
+  rollbackArgs: undefined
 };
 
 // ============================================================================
@@ -2088,7 +2264,11 @@ export const TOOL_CONTRACTS: Record<string, ToolContract> = {
   auto_assign_lead: AUTO_ASSIGN_LEAD_CONTRACT,
   send_email: SEND_EMAIL_CONTRACT,
   // Site Assessment
+  log_assessment_request: LOG_ASSESSMENT_REQUEST_CONTRACT,
   create_assessment_job: CREATE_ASSESSMENT_JOB_CONTRACT,
+  upload_assessment_media: UPLOAD_ASSESSMENT_MEDIA_CONTRACT,
+  tag_assessment_risk: TAG_ASSESSMENT_RISK_CONTRACT,
+  generate_assessment_report: GENERATE_ASSESSMENT_REPORT_CONTRACT,
   // Quoting/Estimating
   create_quote: CREATE_QUOTE_CONTRACT,
   update_quote: UPDATE_QUOTE_CONTRACT,

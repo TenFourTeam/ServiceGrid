@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Navigate, useLocation, Outlet } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import LoadingScreen from "@/components/LoadingScreen";
+import { useAuth } from "@/hooks/useBusinessAuth";
+import BootLoadingScreen from "@/components/BootLoadingScreen";
+import { setBootStage } from "@/lib/boot-trace";
 
 interface AuthBoundaryProps {
   children: React.ReactNode;
@@ -19,9 +20,16 @@ export function AuthBoundary({
   const { isLoaded, isSignedIn } = useAuth();
   const location = useLocation();
 
+  // Report auth checking stage
+  useEffect(() => {
+    if (!isLoaded) {
+      setBootStage('auth_checking');
+    }
+  }, [isLoaded]);
+
   // Show loading screen while auth is initializing
   if (!isLoaded) {
-    return <LoadingScreen full />;
+    return <BootLoadingScreen full fallbackLabel="Checking session" />;
   }
 
   // Handle public-only routes (redirect authenticated users)

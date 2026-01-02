@@ -1,4 +1,4 @@
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/useBusinessAuth';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthApi } from '@/hooks/useAuthApi';
 

@@ -37,8 +37,6 @@ export default defineConfig(({ mode }) => ({
             '@radix-ui/react-checkbox',
             '@radix-ui/react-switch',
           ],
-          // Auth Libraries - now using Supabase Auth directly
-          // No separate auth vendor chunk needed
           // Data & Query Libraries
           'data-vendor': [
             '@supabase/supabase-js',

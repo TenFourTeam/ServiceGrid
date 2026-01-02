@@ -184,15 +184,28 @@ export function MediaGallery({ media, isLoading, onMediaClick, onGenerateVisuali
                 {/* Tag badges on thumbnails */}
                 {item.tags && item.tags.length > 0 && (
                   <div className="absolute bottom-1 right-1 flex gap-1">
-                    {item.tags.slice(0, 2).map((tag, idx) => (
-                      <Badge 
-                        key={idx} 
-                        variant="secondary" 
-                        className="text-[10px] px-1 py-0 h-4 bg-black/70 text-white border-none"
-                      >
-                        {tag}
-                      </Badge>
-                    ))}
+                    {item.tags.slice(0, 2).map((tag, idx) => {
+                      // Determine badge color based on tag type
+                      const isRisk = tag.startsWith('risk:') || tag.startsWith('hazard:');
+                      const isOpportunity = tag.startsWith('opportunity:');
+                      const isAssessment = tag.startsWith('assessment:');
+                      
+                      return (
+                        <Badge 
+                          key={idx} 
+                          variant="secondary" 
+                          className={cn(
+                            "text-[10px] px-1 py-0 h-4 border-none",
+                            isRisk && "bg-red-500/90 text-white",
+                            isOpportunity && "bg-green-500/90 text-white",
+                            isAssessment && "bg-blue-500/90 text-white",
+                            !isRisk && !isOpportunity && !isAssessment && "bg-black/70 text-white"
+                          )}
+                        >
+                          {tag}
+                        </Badge>
+                      );
+                    })}
                     {item.tags.length > 2 && (
                       <Badge 
                         variant="secondary" 

@@ -4,7 +4,6 @@ import { useProfileOperations } from '@/hooks/useProfileOperations';
 import { toast } from 'sonner';
 import { formatPhoneInput } from '@/utils/validation';
 import { formatNameSuggestion } from '@/validation/profile';
-import { useUser } from '@clerk/clerk-react';
 
 /**
  * Profile form state management for Settings page
@@ -12,8 +11,6 @@ import { useUser } from '@clerk/clerk-react';
  */
 export function useSettingsForm() {
   const { data: profile } = useProfile();
-  const { user } = useUser();
-  
   const { updateProfile, isUpdating } = useProfileOperations();
   
   // Form state - computed from server data
@@ -57,24 +54,10 @@ export function useSettingsForm() {
 
     try {
       // Update profile only
-      const optimisticName = userName.trim();
-      
       await updateProfile.mutateAsync({ 
-        fullName: optimisticName, 
+        fullName: userName.trim(), 
         phoneRaw: userPhone.trim(),
       });
-      
-      // Optional non-blocking Clerk sync
-      if (user && optimisticName) {
-        try {
-          const parts = optimisticName.split(' ');
-          const firstName = parts.shift() || '';
-          const lastName = parts.join(' ');
-          await user.update({ firstName, lastName });
-        } catch (clerkError) {
-          console.warn('Clerk sync failed (non-blocking):', clerkError);
-        }
-      }
     } catch (error) {
       console.error('Profile update failed:', error);
     }

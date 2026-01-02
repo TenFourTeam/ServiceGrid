@@ -1,322 +1,379 @@
-import { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import { useAuthApi } from "@/hooks/useAuthApi";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "sonner";
-import { Loader2, Mail, Lock, User } from "lucide-react";
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useBusinessAuth } from '@/hooks/useBusinessAuth';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from 'sonner';
+import { Loader2, Mail, Lock, User, ArrowRight } from 'lucide-react';
+import BootLoadingScreen from '@/components/BootLoadingScreen';
+
+type AuthTab = 'login' | 'register' | 'magic-link';
 
 export default function AuthPage() {
-  const location = useLocation();
   const navigate = useNavigate();
-  const { isSignedIn, isLoaded } = useAuth();
-  const authApi = useAuthApi();
+  const location = useLocation();
+  const { isAuthenticated, isLoading: authLoading, login, register, sendMagicLink } = useBusinessAuth();
   
-  const from: any = (location.state as any)?.from;
-  const redirectTarget = from?.pathname ? `${from.pathname}${from.search ?? ""}${from.hash ?? ""}` : "/calendar";
+  const [activeTab, setActiveTab] = useState<AuthTab>('login');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Form states
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
+  // Get redirect target from location state
+  const from = (location.state as any)?.from;
+  const redirectTarget = from?.pathname ? `${from.pathname}${from.search ?? ''}${from.hash ?? ''}` : '/calendar';
 
+  // Update page title
   useEffect(() => {
-    document.title = "Sign In • ServiceGrid";
-  }, []);
+    const titles: Record<AuthTab, string> = {
+      'login': 'Sign In',
+      'register': 'Create Account',
+      'magic-link': 'Magic Link'
+    };
+    document.title = `${titles[activeTab]} • ServiceGrid`;
+  }, [activeTab]);
 
-  // Redirect if already signed in
+  // Redirect if already authenticated
   useEffect(() => {
-    if (isLoaded && isSignedIn) {
-      // Process referral if any
-      const referralCode = sessionStorage.getItem('referral_code');
-      if (referralCode) {
-        authApi.invoke('complete-referral', {
-          method: 'POST',
-          body: { referral_code: referralCode }
-        }).then(() => {
-          sessionStorage.removeItem('referral_code');
-        }).catch(console.error);
-      }
-      
+    if (!authLoading && isAuthenticated) {
       navigate(redirectTarget, { replace: true });
     }
-  }, [isLoaded, isSignedIn, navigate, redirectTarget, authApi]);
+  }, [authLoading, isAuthenticated, navigate, redirectTarget]);
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  // On the auth page, skip the loading screen - show the form immediately
+  // The redirect effect will handle authenticated users once auth resolves
+  // This prevents the "Loading..." flash when there's no session or stale tokens
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    if (!email || !password) {
+      toast.error('Please fill in all fields');
+      return;
+    }
 
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+    setIsSubmitting(true);
+    const result = await login(email, password);
+    setIsSubmitting(false);
 
-      if (error) {
-        if (error.message.includes("Invalid login credentials")) {
-          toast.error("Invalid email or password");
-        } else if (error.message.includes("Email not confirmed")) {
-          toast.error("Please verify your email before signing in");
-        } else {
-          toast.error(error.message);
-        }
-        return;
-      }
-
-      toast.success("Signed in successfully");
-    } catch (error) {
-      console.error("Sign in error:", error);
-      toast.error("An unexpected error occurred");
-    } finally {
-      setIsLoading(false);
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      toast.success('Signed in successfully');
+      navigate(redirectTarget, { replace: true });
     }
   };
 
-  const handleSignUp = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    if (!email || !password || !fullName) {
+      toast.error('Please fill in all fields');
+      return;
+    }
 
-    try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth`,
-          data: {
-            full_name: fullName,
-          }
-        }
-      });
+    if (password.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
 
-      if (error) {
-        if (error.message.includes("already registered")) {
-          toast.error("An account with this email already exists");
-        } else {
-          toast.error(error.message);
-        }
-        return;
-      }
+    setIsSubmitting(true);
+    const result = await register(email, password, fullName);
+    setIsSubmitting(false);
 
-      toast.success("Check your email to confirm your account");
-    } catch (error) {
-      console.error("Sign up error:", error);
-      toast.error("An unexpected error occurred");
-    } finally {
-      setIsLoading(false);
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      toast.success('Account created successfully');
+      navigate(redirectTarget, { replace: true });
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    setIsLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth`,
-        }
-      });
+  const handleMagicLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      toast.error('Please enter your email');
+      return;
+    }
 
-      if (error) {
-        toast.error(error.message);
-      }
-    } catch (error) {
-      console.error("Google sign in error:", error);
-      toast.error("An unexpected error occurred");
-    } finally {
-      setIsLoading(false);
+    setIsSubmitting(true);
+    const result = await sendMagicLink(email);
+    setIsSubmitting(false);
+
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      setMagicLinkSent(true);
+      toast.success('Check your email for the magic link');
     }
   };
-
-  if (!isLoaded) {
-    return (
-      <div className="min-h-screen grid place-items-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
-    <main className="container mx-auto max-w-md py-10 px-4">
-      <link rel="canonical" href={`${window.location.origin}/auth`} />
-      
-      <div className="mb-8 text-center">
-        <h1 className="text-2xl font-bold text-foreground mb-2">
-          Welcome to ServiceGrid
-        </h1>
-        <p className="text-muted-foreground">
-          Streamline your service business operations
+    <main className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="w-full max-w-md">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-foreground mb-2">
+            Welcome to ServiceGrid
+          </h1>
+          <p className="text-muted-foreground">
+            Streamline your service business operations
+          </p>
+        </div>
+
+        <Card className="border-border/50 shadow-lg">
+          <CardHeader className="space-y-1 pb-4">
+            <CardTitle className="text-xl text-center">
+              {activeTab === 'login' && 'Sign in to your account'}
+              {activeTab === 'register' && 'Create a new account'}
+              {activeTab === 'magic-link' && 'Sign in with magic link'}
+            </CardTitle>
+            <CardDescription className="text-center">
+              {activeTab === 'login' && 'Enter your credentials to continue'}
+              {activeTab === 'register' && 'Fill in your details to get started'}
+              {activeTab === 'magic-link' && "We'll send you a link to sign in"}
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent>
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as AuthTab)}>
+              <TabsList className="grid w-full grid-cols-3 mb-6">
+                <TabsTrigger value="login">Sign In</TabsTrigger>
+                <TabsTrigger value="register">Register</TabsTrigger>
+                <TabsTrigger value="magic-link">Magic Link</TabsTrigger>
+              </TabsList>
+
+              {/* Login Tab */}
+              <TabsContent value="login">
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="login-email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="login-email"
+                        type="email"
+                        placeholder="you@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="pl-10"
+                        disabled={isSubmitting}
+                        autoComplete="email"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="login-password">Password</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="login-password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="pl-10"
+                        disabled={isSubmitting}
+                        autoComplete="current-password"
+                      />
+                    </div>
+                  </div>
+
+                  <Button type="submit" className="w-full" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Signing in...
+                      </>
+                    ) : (
+                      <>
+                        Sign In
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </>
+                    )}
+                  </Button>
+
+                  <p className="text-center text-sm text-muted-foreground">
+                    Forgot your password?{' '}
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('magic-link')}
+                      className="text-primary hover:underline"
+                    >
+                      Use magic link
+                    </button>
+                  </p>
+                </form>
+              </TabsContent>
+
+              {/* Register Tab */}
+              <TabsContent value="register">
+                <form onSubmit={handleRegister} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="register-name">Full Name</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="register-name"
+                        type="text"
+                        placeholder="John Smith"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        className="pl-10"
+                        disabled={isSubmitting}
+                        autoComplete="name"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="register-email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="register-email"
+                        type="email"
+                        placeholder="you@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="pl-10"
+                        disabled={isSubmitting}
+                        autoComplete="email"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="register-password">Password</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="register-password"
+                        type="password"
+                        placeholder="At least 8 characters"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="pl-10"
+                        disabled={isSubmitting}
+                        autoComplete="new-password"
+                      />
+                    </div>
+                  </div>
+
+                  <Button type="submit" className="w-full" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating account...
+                      </>
+                    ) : (
+                      <>
+                        Create Account
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </>
+                    )}
+                  </Button>
+
+                  <p className="text-center text-sm text-muted-foreground">
+                    Already have an account?{' '}
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('login')}
+                      className="text-primary hover:underline"
+                    >
+                      Sign in
+                    </button>
+                  </p>
+                </form>
+              </TabsContent>
+
+              {/* Magic Link Tab */}
+              <TabsContent value="magic-link">
+                {magicLinkSent ? (
+                  <div className="text-center py-6 space-y-4">
+                    <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Mail className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-foreground">Check your email</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        We sent a magic link to <strong>{email}</strong>
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setMagicLinkSent(false);
+                        setEmail('');
+                      }}
+                    >
+                      Use a different email
+                    </Button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleMagicLink} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="magic-email">Email</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="magic-email"
+                          type="email"
+                          placeholder="you@example.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="pl-10"
+                          disabled={isSubmitting}
+                          autoComplete="email"
+                        />
+                      </div>
+                    </div>
+
+                    <Button type="submit" className="w-full" disabled={isSubmitting}>
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Sending link...
+                        </>
+                      ) : (
+                        <>
+                          Send Magic Link
+                          <Mail className="ml-2 h-4 w-4" />
+                        </>
+                      )}
+                    </Button>
+
+                    <p className="text-center text-sm text-muted-foreground">
+                      Remember your password?{' '}
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('login')}
+                        className="text-primary hover:underline"
+                      >
+                        Sign in
+                      </button>
+                    </p>
+                  </form>
+                )}
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+
+        {/* Footer links */}
+        <p className="text-center text-xs text-muted-foreground mt-6">
+          By continuing, you agree to our{' '}
+          <a href="/legal/terms" className="text-primary hover:underline">Terms of Service</a>
+          {' '}and{' '}
+          <a href="/legal/privacy" className="text-primary hover:underline">Privacy Policy</a>
         </p>
       </div>
-
-      <Card>
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-xl">Get started</CardTitle>
-          <CardDescription>
-            Sign in to your account or create a new one
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="signin">
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signin-email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="signin-email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="signin-password">Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="signin-password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Signing in...
-                    </>
-                  ) : (
-                    "Sign In"
-                  )}
-                </Button>
-              </form>
-            </TabsContent>
-
-            <TabsContent value="signup">
-              <form onSubmit={handleSignUp} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-name">Full Name</Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="signup-name"
-                      type="text"
-                      placeholder="John Doe"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      className="pl-10"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="signup-password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10"
-                      minLength={6}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating account...
-                    </>
-                  ) : (
-                    "Create Account"
-                  )}
-                </Button>
-              </form>
-            </TabsContent>
-
-            <div className="relative my-4">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
-              </div>
-            </div>
-
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full"
-              onClick={handleGoogleSignIn}
-              disabled={isLoading}
-            >
-              <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
-                <path
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  fill="#4285F4"
-                />
-                <path
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  fill="#34A853"
-                />
-                <path
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                  fill="#FBBC05"
-                />
-                <path
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                  fill="#EA4335"
-                />
-              </svg>
-              Continue with Google
-            </Button>
-          </Tabs>
-        </CardContent>
-      </Card>
     </main>
   );
 }
