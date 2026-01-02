@@ -91,6 +91,7 @@ Deno.serve(async (req) => {
     return json({
       profile: {
         id: profile.id,
+        email: ctx.email, // Include email from JWT for client consistency
         fullName: profile.full_name,
         phoneE164: profile.phone_e164,
         defaultBusinessId: profile.default_business_id
