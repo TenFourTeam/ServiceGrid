@@ -53,54 +53,39 @@ export function BusinessAuthProvider({ children }: BusinessAuthProviderProps) {
 
   const isAuthenticated = !!session?.user;
 
-  // Fetch profile via edge function (bypasses RLS, more reliable)
-  const fetchProfile = useCallback(async (authUser: User, accessToken: string): Promise<void> => {
+  // Fetch profile from database
+  const fetchProfile = useCallback(async (authUser: User): Promise<void> => {
     try {
-      console.log('[BusinessAuth] Fetching profile via edge function');
-      
-      const response = await fetch(
-        'https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/get-profile',
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+      const { data: profileData, error } = await supabase
+        .from('profiles')
+        .select('id, email, full_name, phone_e164, default_business_id')
+        .eq('id', authUser.id)
+        .single();
 
-      if (!response.ok) {
-        console.error('[BusinessAuth] Failed to fetch profile:', response.status);
-        return;
-      }
-
-      const { profile: profileData, error } = await response.json();
-      
       if (error) {
-        console.error('[BusinessAuth] Profile fetch returned error:', error);
+        console.error('[BusinessAuth] Failed to fetch profile:', error);
         return;
       }
 
       if (profileData) {
         const userData: BusinessUser = {
           profileId: profileData.id,
-          email: profileData.email || authUser.email || '',
-          fullName: profileData.fullName,
-          phoneE164: profileData.phoneE164,
-          defaultBusinessId: profileData.defaultBusinessId
+          email: profileData.email,
+          fullName: profileData.full_name,
+          phoneE164: profileData.phone_e164,
+          defaultBusinessId: profileData.default_business_id
         };
 
         const profileObj: BusinessProfile = {
           id: profileData.id,
-          email: profileData.email || authUser.email || '',
-          fullName: profileData.fullName,
-          phoneE164: profileData.phoneE164,
-          defaultBusinessId: profileData.defaultBusinessId
+          email: profileData.email,
+          fullName: profileData.full_name,
+          phoneE164: profileData.phone_e164,
+          defaultBusinessId: profileData.default_business_id
         };
 
         setUser(userData);
         setProfile(profileObj);
-        console.log('[BusinessAuth] Profile loaded successfully');
       }
     } catch (err) {
       console.error('[BusinessAuth] Profile fetch error:', err);
@@ -149,11 +134,11 @@ export function BusinessAuthProvider({ children }: BusinessAuthProviderProps) {
         // Update session state
         setSession(newSession);
         
-        if (newSession?.user && newSession.access_token) {
+        if (newSession?.user) {
           // Defer profile fetch to avoid Supabase deadlock
           setTimeout(() => {
             if (isMounted) {
-              fetchProfile(newSession.user, newSession.access_token);
+              fetchProfile(newSession.user);
             }
           }, 0);
         }
@@ -183,8 +168,8 @@ export function BusinessAuthProvider({ children }: BusinessAuthProviderProps) {
         console.log('[BusinessAuth] Initial session check:', !!existingSession);
         setSession(existingSession ?? null);
         
-        if (existingSession?.user && existingSession.access_token) {
-          fetchProfile(existingSession.user, existingSession.access_token);
+        if (existingSession?.user) {
+          fetchProfile(existingSession.user);
         }
       } catch (err) {
         console.error('[BusinessAuth] Unexpected init error:', err);
