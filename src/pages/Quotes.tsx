@@ -50,7 +50,7 @@ export default function QuotesPage() {
   const authApi = useAuthApi();
   const { businessTaxRateDefault } = useBusinessContext();
   const { data: quotes } = useQuotesData();
-  const { data: customers } = useCustomersData();
+  const { data: customers = [] } = useCustomersData();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();

@@ -20,7 +20,7 @@ interface PickJobModalProps {
 export default function PickJobModal({ open, onOpenChange, onSelect, customerId }: PickJobModalProps) {
   const { businessId } = useBusinessContext();
   const { data: jobs } = useJobsData(businessId);
-  const { data: customers } = useCustomersData();
+  const { data: customers = [] } = useCustomersData();
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);

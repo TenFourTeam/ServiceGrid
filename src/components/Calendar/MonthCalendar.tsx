@@ -22,7 +22,7 @@ export default function MonthCalendar({ date, onDateChange, displayMode = 'sched
   const { start, end, days } = useMonthGrid(date);
   const { businessId, role } = useBusinessContext();
   const { data: allJobs } = useJobsData(businessId);
-  const { data: customers } = useCustomersData();
+  const { data: customers = [] } = useCustomersData();
   
   
   const jobs = useMemo(() => {

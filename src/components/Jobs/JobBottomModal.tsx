@@ -83,7 +83,7 @@ export function JobBottomModal({
   const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [isMapOpen, setIsMapOpen] = useState(true); // Map collapsible state
 
-  const { data: customers } = useCustomersData();
+  const { data: customers = [] } = useCustomersData();
   const { data: allMembers } = useBusinessMembersData();
   const queryClient = useQueryClient();
   const { businessId, userId } = useBusinessContext();

@@ -42,7 +42,7 @@ interface RecurringJobModalProps {
 export function RecurringJobModal({ isOpen, onClose, template }: RecurringJobModalProps) {
   const { t } = useTranslation();
   const { businessId } = useBusinessContext();
-  const { data: customers } = useCustomersData();
+  const { data: customers = [] } = useCustomersData();
   const createTemplate = useCreateRecurringTemplate();
   const updateTemplate = useUpdateRecurringTemplate();
   const isMobile = useIsMobile();

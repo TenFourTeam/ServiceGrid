@@ -49,7 +49,7 @@ export function JobEditModal({
   const [jobType, setJobType] = useState<JobType>('appointment');
   const [showCreateCustomer, setShowCreateCustomer] = useState(false);
 
-  const { data: customers } = useCustomersData();
+  const { data: customers = [] } = useCustomersData();
   const updateJobMutation = useUpdateJob();
   const { t } = useLanguage();
 
