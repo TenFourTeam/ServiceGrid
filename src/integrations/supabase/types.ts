@@ -517,36 +517,60 @@ export type Database = {
       }
       automation_settings: {
         Row: {
+          assessment_checklist_template_id: string | null
           assignment_method: string
           auto_assign_leads: boolean
+          auto_create_assessment_checklist: boolean | null
+          auto_create_conversations: boolean
+          auto_generate_report: boolean | null
           auto_score_leads: boolean
+          auto_send_followup_email: boolean
+          auto_send_job_updates: boolean
           auto_send_welcome_email: boolean
+          auto_suggest_risk_tags: boolean | null
           business_id: string
           created_at: string
+          followup_email_delay_hours: number
           id: string
           lead_score_threshold: number
           updated_at: string
           welcome_email_delay_minutes: number
         }
         Insert: {
+          assessment_checklist_template_id?: string | null
           assignment_method?: string
           auto_assign_leads?: boolean
+          auto_create_assessment_checklist?: boolean | null
+          auto_create_conversations?: boolean
+          auto_generate_report?: boolean | null
           auto_score_leads?: boolean
+          auto_send_followup_email?: boolean
+          auto_send_job_updates?: boolean
           auto_send_welcome_email?: boolean
+          auto_suggest_risk_tags?: boolean | null
           business_id: string
           created_at?: string
+          followup_email_delay_hours?: number
           id?: string
           lead_score_threshold?: number
           updated_at?: string
           welcome_email_delay_minutes?: number
         }
         Update: {
+          assessment_checklist_template_id?: string | null
           assignment_method?: string
           auto_assign_leads?: boolean
+          auto_create_assessment_checklist?: boolean | null
+          auto_create_conversations?: boolean
+          auto_generate_report?: boolean | null
           auto_score_leads?: boolean
+          auto_send_followup_email?: boolean
+          auto_send_job_updates?: boolean
           auto_send_welcome_email?: boolean
+          auto_suggest_risk_tags?: boolean | null
           business_id?: string
           created_at?: string
+          followup_email_delay_hours?: number
           id?: string
           lead_score_threshold?: number
           updated_at?: string
@@ -666,13 +690,69 @@ export type Database = {
           },
         ]
       }
+      business_sessions: {
+        Row: {
+          auth_method: string
+          created_at: string | null
+          expires_at: string
+          id: string
+          ip_address: string | null
+          last_used_at: string | null
+          profile_id: string
+          refresh_expires_at: string
+          refresh_token: string | null
+          session_token: string
+          user_agent: string | null
+        }
+        Insert: {
+          auth_method?: string
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          ip_address?: string | null
+          last_used_at?: string | null
+          profile_id: string
+          refresh_expires_at?: string
+          refresh_token?: string | null
+          session_token?: string
+          user_agent?: string | null
+        }
+        Update: {
+          auth_method?: string
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          ip_address?: string | null
+          last_used_at?: string | null
+          profile_id?: string
+          refresh_expires_at?: string
+          refresh_token?: string | null
+          session_token?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_sessions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_sessions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "user_productivity_report"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       businesses: {
         Row: {
           ai_credits_used_this_month: number | null
           ai_monthly_credit_limit: number | null
           ai_vision_enabled: boolean | null
           application_fee_bps: number
-          clerk_org_id: string | null
           created_at: string
           description: string | null
           est_prefix: string
@@ -701,7 +781,6 @@ export type Database = {
           ai_monthly_credit_limit?: number | null
           ai_vision_enabled?: boolean | null
           application_fee_bps?: number
-          clerk_org_id?: string | null
           created_at?: string
           description?: string | null
           est_prefix?: string
@@ -730,7 +809,6 @@ export type Database = {
           ai_monthly_credit_limit?: number | null
           ai_vision_enabled?: boolean | null
           application_fee_bps?: number
-          clerk_org_id?: string | null
           created_at?: string
           description?: string | null
           est_prefix?: string
@@ -1010,7 +1088,6 @@ export type Database = {
       customer_accounts: {
         Row: {
           auth_method: string | null
-          clerk_user_id: string | null
           created_at: string | null
           customer_id: string
           email: string
@@ -1024,7 +1101,6 @@ export type Database = {
         }
         Insert: {
           auth_method?: string | null
-          clerk_user_id?: string | null
           created_at?: string | null
           customer_id: string
           email: string
@@ -1038,7 +1114,6 @@ export type Database = {
         }
         Update: {
           auth_method?: string | null
-          clerk_user_id?: string | null
           created_at?: string | null
           customer_id?: string
           email?: string
@@ -1257,6 +1332,7 @@ export type Database = {
           error_message: string | null
           id: string
           max_attempts: number
+          metadata: Json | null
           processed_at: string | null
           recipient_email: string
           recipient_name: string | null
@@ -1274,6 +1350,7 @@ export type Database = {
           error_message?: string | null
           id?: string
           max_attempts?: number
+          metadata?: Json | null
           processed_at?: string | null
           recipient_email: string
           recipient_name?: string | null
@@ -1291,6 +1368,7 @@ export type Database = {
           error_message?: string | null
           id?: string
           max_attempts?: number
+          metadata?: Json | null
           processed_at?: string | null
           recipient_email?: string
           recipient_name?: string | null
@@ -2411,8 +2489,10 @@ export type Database = {
           created_at: string
           default_business_id: string | null
           email: string
+          email_verified_at: string | null
           full_name: string | null
           id: string
+          last_login_at: string | null
           phone_e164: string | null
           updated_at: string
         }
@@ -2421,8 +2501,10 @@ export type Database = {
           created_at?: string
           default_business_id?: string | null
           email: string
+          email_verified_at?: string | null
           full_name?: string | null
           id?: string
+          last_login_at?: string | null
           phone_e164?: string | null
           updated_at?: string
         }
@@ -2431,8 +2513,10 @@ export type Database = {
           created_at?: string
           default_business_id?: string | null
           email?: string
+          email_verified_at?: string | null
           full_name?: string | null
           id?: string
+          last_login_at?: string | null
           phone_e164?: string | null
           updated_at?: string
         }
@@ -5563,8 +5647,8 @@ export type Database = {
         Returns: boolean
       }
       can_manage_business: { Args: { p_business_id: string }; Returns: boolean }
+      cleanup_expired_business_sessions: { Args: never; Returns: number }
       cleanup_expired_pending_plans: { Args: never; Returns: undefined }
-      current_clerk_user_id: { Args: never; Returns: string }
       current_user_profile_id: { Args: never; Returns: string }
       debug_auth_state: { Args: never; Returns: Json }
       disablelongtransactions: { Args: never; Returns: string }
@@ -5606,7 +5690,6 @@ export type Database = {
           ai_monthly_credit_limit: number | null
           ai_vision_enabled: boolean | null
           application_fee_bps: number
-          clerk_org_id: string | null
           created_at: string
           description: string | null
           est_prefix: string
