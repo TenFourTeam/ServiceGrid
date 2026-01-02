@@ -35,7 +35,7 @@ export default function CalendarShell({
   const [showOverviewGenerator, setShowOverviewGenerator] = useState(false);
   const [showArtifactsViewer, setShowArtifactsViewer] = useState(false);
   const [showProvisioningFallback, setShowProvisioningFallback] = useState(false);
-  const { role, userId, businessId, businessName, isLoadingBusiness, refetchBusiness } = useBusinessContext(routeBusinessId);
+  const { role, userId, businessId, businessName, isLoadingBusiness, refetchBusiness, hasBusinessError } = useBusinessContext(routeBusinessId);
   const { data: jobs, refetch: refetchJobs } = useJobsData(businessId);
   const { data: businessMembers } = useBusinessMembersData();
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
@@ -123,6 +123,29 @@ export default function CalendarShell({
       setShowProvisioningFallback(false);
     }
   }, [isLoadingBusiness, businessId]);
+
+  // Business error state - show error UI with retry
+  if (hasBusinessError) {
+    return (
+      <div className="flex-1 min-h-0 flex items-center justify-center">
+        <div className="text-center space-y-4 max-w-md p-8">
+          <div className="mx-auto w-12 h-12 bg-destructive/10 rounded-full flex items-center justify-center">
+            <span className="text-destructive text-xl">!</span>
+          </div>
+          <h2 className="text-xl font-semibold text-foreground">Unable to load business data</h2>
+          <p className="text-muted-foreground">There was a problem loading your workspace. Please try again.</p>
+          <div className="flex flex-col gap-2">
+            <Button onClick={() => refetchBusiness?.()} variant="primary">
+              Retry
+            </Button>
+            <a href="/" className="text-sm text-muted-foreground hover:text-foreground underline">
+              Sign out and try again
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Skeleton loading state - AFTER all hooks
   if (isLoadingBusiness || !businessId) {
