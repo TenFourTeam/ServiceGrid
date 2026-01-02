@@ -16,7 +16,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useIsPhone } from "@/hooks/use-phone";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
-import { useSearchParams } from "react-router-dom";
+
 import { useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { setBootStage } from "@/lib/boot-trace";
@@ -32,9 +32,6 @@ export default function CalendarShell({
 }) {
   console.log('[CalendarShell] Mounting with routeBusinessId:', routeBusinessId);
   
-  // Check for safe mode via URL param (?safe=1)
-  const [searchParams] = useSearchParams();
-  const safeMode = searchParams.get('safe') === '1';
   
   const [view, setView] = useState<"month" | "week" | "day">("week");
   const [showMap, setShowMap] = useState(false);
@@ -173,22 +170,6 @@ export default function CalendarShell({
               <Skeleton className="h-16 w-full rounded" />
             </div>
           ))}
-        </div>
-      </div>
-    );
-  }
-  // SAFE MODE: Render minimal UI to isolate crash source
-  if (safeMode) {
-    return (
-      <div className="flex-1 min-h-0 flex flex-col gap-4 p-8">
-        <div className="bg-primary/10 border border-primary/20 rounded-lg p-6 text-center">
-          <h2 className="text-xl font-semibold text-primary mb-2">Safe Mode Active</h2>
-          <p className="text-muted-foreground mb-4">
-            Calendar loaded successfully in safe mode. Business: {businessName || businessId}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Remove <code className="bg-muted px-1 rounded">?safe=1</code> from URL to load full calendar.
-          </p>
         </div>
       </div>
     );
