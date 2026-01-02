@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { initIntercom, shutdownIntercom } from "@/utils/intercom";
+import { clearAppCache } from "@/lib/boot-trace";
 
 import "@/landing/animations.css";
 import { Hero } from "@/landing/components/Hero";
@@ -12,6 +13,16 @@ import { TopNav } from "@/landing/components/TopNav";
 import { FAQ } from "@/landing/components/FAQ";
 import { Industries } from "@/landing/components/Industries";
 
+// Reset app state (clear all Supabase tokens and reload)
+function handleResetApp() {
+  clearAppCache();
+  window.location.href = '/';
+}
+
+// Expose reset function globally for debugging
+if (typeof window !== 'undefined') {
+  (window as any).__resetApp = handleResetApp;
+}
 
 
 export default function Landing() {
