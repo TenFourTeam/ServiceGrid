@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { useAuth, useSignIn } from '@clerk/clerk-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -12,6 +11,7 @@ import { CustomerRegisterForm } from '@/components/CustomerPortal/CustomerRegist
 import { PasswordResetForm } from '@/components/CustomerPortal/PasswordResetForm';
 import { useCustomerAuth } from '@/hooks/useCustomerAuth';
 import { CustomerAuthProvider } from '@/components/CustomerPortal/CustomerAuthProvider';
+import { supabase } from '@/integrations/supabase/client';
 import { Chrome, Mail, Lock, ArrowLeft, Loader2, PartyPopper } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -25,8 +25,6 @@ interface InviteState {
 function CustomerLoginContent() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isSignedIn } = useAuth();
-  const { signIn, isLoaded: isSignInLoaded } = useSignIn();
   const { isAuthenticated, isLoading } = useCustomerAuth();
   const [activeTab, setActiveTab] = useState<'magic' | 'password' | 'register'>('magic');
   const [showPasswordReset, setShowPasswordReset] = useState(false);
@@ -51,6 +49,27 @@ function CustomerLoginContent() {
       navigate(from, { replace: true });
     }
   }, [isAuthenticated, isLoading, navigate, from]);
+
+  const handleGoogleSignIn = async () => {
+    setIsGoogleLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/portal`,
+        }
+      });
+      if (error) {
+        console.error('Google sign-in error:', error);
+        toast.error('Failed to start Google sign-in');
+        setIsGoogleLoading(false);
+      }
+    } catch (error: any) {
+      console.error('Google sign-in error:', error);
+      toast.error('Failed to start Google sign-in');
+      setIsGoogleLoading(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -105,22 +124,8 @@ function CustomerLoginContent() {
                   <Button 
                     variant="outline" 
                     className="w-full h-11"
-                    disabled={isGoogleLoading || !isSignInLoaded}
-                    onClick={async () => {
-                      if (!signIn) return;
-                      setIsGoogleLoading(true);
-                      try {
-                        await signIn.authenticateWithRedirect({
-                          strategy: 'oauth_google',
-                          redirectUrl: '/sso-callback',
-                          redirectUrlComplete: '/portal',
-                        });
-                      } catch (error: any) {
-                        console.error('Google sign-in error:', error);
-                        toast.error('Failed to start Google sign-in');
-                        setIsGoogleLoading(false);
-                      }
-                    }}
+                    disabled={isGoogleLoading}
+                    onClick={handleGoogleSignIn}
                   >
                     {isGoogleLoading ? (
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -190,7 +195,7 @@ function CustomerLoginContent() {
         {/* Business user link */}
         <p className="text-center text-sm text-muted-foreground mt-6">
           Are you a contractor?{' '}
-          <Link to="/clerk-auth" className="text-primary hover:underline">
+          <Link to="/auth" className="text-primary hover:underline">
             Sign in here
           </Link>
         </p>

@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { useBusinessContext } from './useBusinessContext';
-import { useAuth } from '@clerk/clerk-react';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { useConversationMediaUpload } from './useConversationMediaUpload';
 
@@ -257,7 +257,7 @@ export function useAIChat(options?: UseAIChatOptions) {
     setCurrentStreamingMessage('');
 
     try {
-      const token = await getToken({ template: 'supabase' });
+      const token = await getToken();
       abortControllerRef.current = new AbortController();
 
       const response = await fetch(
@@ -905,7 +905,7 @@ export function useAIChat(options?: UseAIChatOptions) {
     if (!businessId) return;
     
     try {
-      const token = await getToken({ template: 'supabase' });
+      const token = await getToken();
       const response = await fetch(
         `https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/ai-chat-messages?conversationId=${convId}`,
         {

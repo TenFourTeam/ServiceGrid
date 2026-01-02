@@ -8,7 +8,6 @@ import { feedback } from "@/utils/feedback";
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidationHelpers, queryKeys } from "@/queries/keys";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
-import { useAuth } from '@clerk/clerk-react';
 import { useAuthApi } from "@/hooks/useAuthApi";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useCustomerPortalInvite } from "@/hooks/useCustomerPortalInvite";

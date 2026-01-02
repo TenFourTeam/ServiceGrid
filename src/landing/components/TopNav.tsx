@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/Button";
-import { SignInButton, SignUpButton, SignedIn, SignedOut } from "@clerk/clerk-react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { content } from "../content";
 import { ServiceGridLogo } from "./ServiceGridLogo";
 import { getIndustries } from "../industryData";
@@ -29,6 +29,7 @@ import { Menu, ChevronDown } from "lucide-react";
 
 export function TopNav() {
   const { t } = useLanguage();
+  const { isSignedIn } = useAuth();
   const industries = getIndustries(t);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
@@ -101,19 +102,28 @@ export function TopNav() {
           </NavigationMenu>
           
           <LanguageToggle />
-            <SignedOut>
-              <SignInButton mode="modal" forceRedirectUrl="/calendar">
+          {!isSignedIn && (
+            <>
+              <Link to="/auth">
                 <Button variant="ghost" size="sm" className="hover-scale text-xs sm:text-sm px-2 sm:px-3">
                   {t('landing.nav.signIn')}
                 </Button>
-              </SignInButton>
-              <SignUpButton mode="modal" forceRedirectUrl="/calendar">
+              </Link>
+              <Link to="/auth">
                 <Button variant="primary" size="sm" className="hover-scale attention-ring [--ring:var(--brand-600)] text-xs sm:text-sm px-2 sm:px-3">
                   <span className="hidden xs:inline">{t('landing.nav.tryFree')}</span>
                   <span className="xs:hidden">{t('landing.nav.tryFreeShort')}</span>
                 </Button>
-              </SignUpButton>
-            </SignedOut>
+              </Link>
+            </>
+          )}
+          {isSignedIn && (
+            <Link to="/calendar">
+              <Button variant="primary" size="sm" className="hover-scale text-xs sm:text-sm px-2 sm:px-3">
+                Dashboard
+              </Button>
+            </Link>
+          )}
         </div>
 
         {/* Mobile Hamburger Menu */}
@@ -194,20 +204,29 @@ export function TopNav() {
               </div>
 
               {/* Auth Buttons */}
-              <SignedOut>
+              {!isSignedIn && (
                 <div className="flex flex-col gap-3 pt-4 border-t border-border">
-                  <SignInButton mode="modal" forceRedirectUrl="/calendar">
+                  <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
                     <Button variant="ghost" size="sm" className="w-full justify-center">
                       {t('landing.nav.signIn')}
                     </Button>
-                  </SignInButton>
-                  <SignUpButton mode="modal" forceRedirectUrl="/calendar">
+                  </Link>
+                  <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
                     <Button variant="primary" size="sm" className="w-full justify-center">
                       {t('landing.nav.tryFree')}
                     </Button>
-                  </SignUpButton>
+                  </Link>
                 </div>
-              </SignedOut>
+              )}
+              {isSignedIn && (
+                <div className="pt-4 border-t border-border">
+                  <Link to="/calendar" onClick={() => setMobileMenuOpen(false)}>
+                    <Button variant="primary" size="sm" className="w-full justify-center">
+                      Dashboard
+                    </Button>
+                  </Link>
+                </div>
+              )}
             </nav>
           </SheetContent>
         </Sheet>
@@ -215,4 +234,3 @@ export function TopNav() {
     </header>
   );
 }
-

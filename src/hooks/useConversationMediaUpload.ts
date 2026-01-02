@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAuth } from '@clerk/clerk-react';
+import { useAuth } from '@/hooks/useAuth';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 interface UploadOptions {
@@ -63,7 +63,7 @@ export function useConversationMediaUpload() {
       onProgress?.(30);
 
       // Upload to edge function
-      const token = await getToken({ template: 'supabase' });
+      const token = await getToken();
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upload-conversation-media`,
         {

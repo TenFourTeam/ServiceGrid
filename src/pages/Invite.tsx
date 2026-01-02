@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { useAuth as useClerkAuth, SignedOut, SignInButton } from "@clerk/clerk-react";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,10 +11,10 @@ import { CheckCircle, AlertCircle, UserPlus, Loader2 } from "lucide-react";
 export default function InviteAccept() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { isSignedIn, isLoaded } = useClerkAuth();
+  const { isSignedIn, isLoaded } = useAuth();
   const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'auth-required'>('loading');
   const [message, setMessage] = useState('');
-  const autoOpenRef = useRef<HTMLButtonElement | null>(null);
+  const hasRedeemed = useRef(false);
   
   const token = searchParams.get('token');
   const redeemInvite = useRedeemInvite();
@@ -28,7 +28,7 @@ export default function InviteAccept() {
     }
 
     if (!isLoaded) {
-      return; // Wait for Clerk to load
+      return; // Wait for auth to load
     }
 
     if (!isSignedIn) {
@@ -37,7 +37,10 @@ export default function InviteAccept() {
     }
 
     // If we have a token and user is signed in, redeem the invite
-    handleRedeemInvite();
+    if (!hasRedeemed.current) {
+      hasRedeemed.current = true;
+      handleRedeemInvite();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, isSignedIn, isLoaded]);
 
@@ -71,13 +74,13 @@ export default function InviteAccept() {
     }
   };
 
-  // Auto-trigger sign-in when auth is required
+  // Redirect to auth page when auth is required
   useEffect(() => {
     if (status === 'auth-required' && !isSignedIn) {
-      const t = setTimeout(() => autoOpenRef.current?.click(), 0);
-      return () => clearTimeout(t);
+      // Redirect to auth page with return URL
+      navigate(`/auth?redirect=/invite?token=${token}`);
     }
-  }, [status, isSignedIn]);
+  }, [status, isSignedIn, navigate, token]);
 
   if (!token) {
     return (
@@ -108,30 +111,14 @@ export default function InviteAccept() {
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-              <UserPlus className="h-6 w-6 text-primary" />
+              <Loader2 className="h-6 w-6 text-primary animate-spin" />
             </div>
             <CardTitle>Join the Team</CardTitle>
           </CardHeader>
           <CardContent className="text-center space-y-4">
             <p className="text-muted-foreground">
-              You've been invited to join a team on ServiceGrid. Opening sign-in to accept your invitation...
+              You've been invited to join a team on ServiceGrid. Redirecting to sign in...
             </p>
-            <SignedOut>
-              <SignInButton
-                mode="modal"
-                forceRedirectUrl={`${window.location.origin}/invite?token=${token}`}
-                fallbackRedirectUrl={`${window.location.origin}/invite?token=${token}`}
-                appearance={{ elements: { modalBackdrop: "fixed inset-0 bg-background" } }}
-              >
-                <Button ref={autoOpenRef} className="sr-only">Open sign in</Button>
-              </SignInButton>
-              <p className="text-sm text-muted-foreground">
-                If nothing happens, {" "}
-                <button className="underline" onClick={() => autoOpenRef.current?.click()}>
-                  click here to sign in
-                </button>.
-              </p>
-            </SignedOut>
           </CardContent>
         </Card>
       </div>

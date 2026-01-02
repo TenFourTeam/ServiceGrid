@@ -1,5 +1,5 @@
 import { Button } from "@/components/Button";
-import { SignUpButton } from "@clerk/clerk-react";
+import { Link } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface IndustryCTAProps {
@@ -22,7 +22,7 @@ export function IndustryCTA({ title, subtitle }: IndustryCTAProps) {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-4">
-            <SignUpButton mode="modal" forceRedirectUrl="/calendar">
+            <Link to="/auth?redirect=/calendar">
               <Button 
                 variant="secondary" 
                 size="lg" 
@@ -30,7 +30,7 @@ export function IndustryCTA({ title, subtitle }: IndustryCTAProps) {
               >
                 {t('industryPages.cta.startTrial')}
               </Button>
-            </SignUpButton>
+            </Link>
           </div>
 
           <p className="text-sm text-brand-100 mt-4">
