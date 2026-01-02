@@ -132,6 +132,9 @@ verify_jwt = false
 verify_jwt = false
 
 # Email functions
+[functions.resend-send-email]
+verify_jwt = false
+
 [functions.send-lifecycle-email]
 verify_jwt = false
 

@@ -210,35 +210,14 @@ export async function requireCtx(req: Request, options: { autoCreate?: boolean, 
       .select('id')
       .single();
     
-    if (businessError) {
-      // Handle race condition - another request already created the business
-      if (businessError.code === '23505') {
-        console.info('[auth] Business already exists (race condition), re-querying...');
-        const { data: existingBusiness } = await supaAdmin
-          .from('businesses')
-          .select('id')
-          .eq('owner_id', userUuid)
-          .limit(1)
-          .maybeSingle();
-        
-        if (existingBusiness?.id) {
-          businessId = existingBusiness.id;
-          console.info(`[auth] Found existing business after race: ${businessId}`);
-        } else {
-          throw new Error('Failed to resolve business after race condition');
-        }
-      } else {
-        throw businessError;
-      }
-    } else {
-      businessId = newBusiness.id;
-      console.info(`[auth] Created new business ID: ${businessId}`);
-    }
+    if (businessError) throw businessError;
+    businessId = newBusiness.id;
+    console.info(`[auth] Created new business ID: ${businessId}`);
     
-    // Update profile to link the business as default
+    // Update profile to link the new business as default
     await supaAdmin
       .from('profiles')
-      .update({ default_business_id: businessId })
+      .update({ default_business_id: newBusiness.id })
       .eq('id', userUuid);
   }
 

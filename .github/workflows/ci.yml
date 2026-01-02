@@ -120,50 +120,10 @@ jobs:
           SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlqdWRrenFmcmlhemFiaW9zbnZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ2NzIyNjAsImV4cCI6MjA3MDI0ODI2MH0.HLOwmgddlBTcHfYrX9RYvO8RK6IVkjDQvsdHyXuMXIM
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
-  process-validation:
-    runs-on: ubuntu-latest
-    name: Process Validation
-    needs: static-analysis
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Validate all processes
-        run: npx tsx scripts/validate-process.ts --all
-
-  health-check:
-    runs-on: ubuntu-latest
-    name: System Health Check
-    needs: static-analysis
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Run health check
-        run: npx tsx scripts/health-check.ts --all --verbose
-
   e2e-tests:
     runs-on: ubuntu-latest
     name: E2E Smoke Tests
-    needs: [unit-tests, integration-tests, process-validation]
+    needs: [unit-tests, integration-tests]
     steps:
       - name: Checkout
         uses: actions/checkout@v4

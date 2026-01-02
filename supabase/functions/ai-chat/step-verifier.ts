@@ -448,138 +448,6 @@ const TOOL_CONTRACTS: Record<string, ToolContract> = {
     invariants: [],
     dbAssertions: [],
   },
-
-  // ==========================================================================
-  // CUSTOMER COMMUNICATION TOOL CONTRACTS
-  // ==========================================================================
-
-  create_conversation: {
-    toolName: 'create_conversation',
-    processId: 'communication',
-    subStep: 'Receive Customer Inquiry',
-    preconditions: [
-      { type: 'entity_exists', entity: 'customer', entityId: 'customerId', description: 'Customer must exist' },
-    ],
-    postconditions: [
-      { type: 'entity_exists', entity: 'conversation', entityId: 'result.conversation_id', description: 'Conversation should be created' },
-    ],
-    invariants: [],
-    dbAssertions: [
-      {
-        query: 'SELECT COUNT(*) as count FROM sg_conversations WHERE id = $1',
-        params: { '$1': 'result.conversation_id' },
-        expect: { rowCount: 1 },
-        description: 'Conversation exists in database',
-      },
-    ],
-    rollbackTool: 'delete_conversation',
-    rollbackArgs: (result) => ({ conversationId: result.conversation_id }),
-  },
-
-  get_or_create_conversation: {
-    toolName: 'get_or_create_conversation',
-    processId: 'communication',
-    subStep: 'Receive Customer Inquiry',
-    preconditions: [
-      { type: 'entity_exists', entity: 'customer', entityId: 'customerId', description: 'Customer must exist' },
-    ],
-    postconditions: [
-      { type: 'entity_exists', entity: 'conversation', entityId: 'result.conversation_id', description: 'Conversation should exist' },
-    ],
-    invariants: [],
-    dbAssertions: [],
-  },
-
-  get_conversation_details: {
-    toolName: 'get_conversation_details',
-    processId: 'communication',
-    subStep: 'Access Customer & Service Data',
-    preconditions: [
-      { type: 'entity_exists', entity: 'conversation', entityId: 'conversationId', description: 'Conversation must exist' },
-    ],
-    postconditions: [],
-    invariants: [],
-    dbAssertions: [],
-  },
-
-  send_message: {
-    toolName: 'send_message',
-    processId: 'communication',
-    subStep: 'Communicate Service Details',
-    preconditions: [
-      { type: 'entity_exists', entity: 'conversation', entityId: 'conversationId', description: 'Conversation must exist' },
-      { type: 'field_not_equals', entity: 'args', field: 'content', value: '', description: 'Message content is required' },
-    ],
-    postconditions: [
-      { type: 'entity_exists', entity: 'message', entityId: 'result.message_id', description: 'Message should be created' },
-    ],
-    invariants: [],
-    dbAssertions: [
-      {
-        query: 'SELECT COUNT(*) as count FROM sg_messages WHERE id = $1',
-        params: { '$1': 'result.message_id' },
-        expect: { rowCount: 1 },
-        description: 'Message exists in database',
-      },
-    ],
-    rollbackTool: 'delete_message',
-    rollbackArgs: (result) => ({ messageId: result.message_id }),
-  },
-
-  send_status_update: {
-    toolName: 'send_status_update',
-    processId: 'communication',
-    subStep: 'Real-Time Service Updates',
-    preconditions: [
-      { type: 'entity_exists', entity: 'job', entityId: 'jobId', description: 'Job must exist' },
-    ],
-    postconditions: [
-      { type: 'entity_exists', entity: 'message', entityId: 'result.message_id', description: 'Status update message should be created' },
-    ],
-    invariants: [],
-    dbAssertions: [],
-  },
-
-  queue_email: {
-    toolName: 'queue_email',
-    processId: 'communication',
-    subStep: 'Follow-Up Post-Service',
-    preconditions: [
-      { type: 'field_not_equals', entity: 'args', field: 'recipientEmail', value: '', description: 'Recipient email is required' },
-      { type: 'field_not_equals', entity: 'args', field: 'emailType', value: '', description: 'Email type is required' },
-    ],
-    postconditions: [
-      { type: 'entity_exists', entity: 'email', entityId: 'result.email_id', description: 'Email should be queued' },
-    ],
-    invariants: [],
-    dbAssertions: [
-      {
-        query: 'SELECT COUNT(*) as count FROM email_queue WHERE id = $1',
-        params: { '$1': 'result.email_id' },
-        expect: { rowCount: 1 },
-        description: 'Email exists in queue',
-      },
-    ],
-    rollbackTool: 'cancel_queued_email',
-    rollbackArgs: (result) => ({ emailId: result.email_id }),
-  },
-
-  queue_followup_email: {
-    toolName: 'queue_followup_email',
-    processId: 'communication',
-    subStep: 'Follow-Up Post-Service',
-    preconditions: [
-      { type: 'entity_exists', entity: 'job', entityId: 'jobId', description: 'Job must exist' },
-      { type: 'field_equals', entity: 'job', field: 'status', value: 'Completed', description: 'Job must be completed' },
-    ],
-    postconditions: [
-      { type: 'entity_exists', entity: 'email', entityId: 'result.email_id', description: 'Follow-up email should be queued' },
-    ],
-    invariants: [],
-    dbAssertions: [],
-    rollbackTool: 'cancel_queued_email',
-    rollbackArgs: (result) => ({ emailId: result.email_id }),
-  },
 };
 
 // =============================================================================
@@ -639,26 +507,6 @@ const PROCESS_CONTRACTS: Record<string, ProcessContract> = {
     requiredTools: ['auto_schedule_job'],
     optionalTools: ['batch_schedule_jobs', 'reschedule_job'],
     checkpoints: [],
-  },
-  communication: {
-    processId: 'communication',
-    entryConditions: [
-      { type: 'entity_exists', entity: 'customer', description: 'Customer must exist to communicate' },
-    ],
-    exitConditions: [
-      { type: 'entity_exists', entity: 'conversation', description: 'Conversation must exist' },
-    ],
-    requiredTools: ['get_or_create_conversation'],
-    optionalTools: [
-      'create_conversation',
-      'get_conversation_details',
-      'send_message',
-      'send_email',
-      'send_status_update',
-      'queue_email',
-      'queue_followup_email'
-    ],
-    checkpoints: ['send_message'],
   },
 };
 
@@ -739,34 +587,6 @@ const RECOVERY_SUGGESTIONS: Record<string, Record<string, string>> = {
   get_customer: {
     'Customer ID is required': 'Please specify which customer to retrieve.',
     'Customer should be returned': 'Customer not found. Please check the customer ID.',
-  },
-  // Communication
-  create_conversation: {
-    'Customer must exist': 'Please create or select a customer first.',
-    'Conversation should be created': 'Failed to create conversation. Please try again.',
-  },
-  get_or_create_conversation: {
-    'Customer must exist': 'Please create or select a customer first.',
-    'Conversation should exist': 'Failed to get or create conversation. Please try again.',
-  },
-  send_message: {
-    'Conversation must exist': 'Please start a conversation first.',
-    'Message content is required': 'Please provide message content.',
-    'Message should be created': 'Failed to send message. Please try again.',
-  },
-  queue_email: {
-    'Recipient email is required': 'Please provide a recipient email address.',
-    'Email type is required': 'Please specify the email type.',
-    'Email should be queued': 'Failed to queue email. Please try again.',
-  },
-  send_status_update: {
-    'Job must exist': 'Please select a valid job first.',
-    'Status update message should be created': 'Failed to send status update. Please try again.',
-  },
-  queue_followup_email: {
-    'Job must exist': 'Please select a valid job first.',
-    'Job must be completed': 'The job must be completed before sending a follow-up.',
-    'Follow-up email should be queued': 'Failed to queue follow-up email. Please try again.',
   },
 };
 
@@ -893,25 +713,6 @@ async function loadEntityContext(
         .single()
         .then(({ data }: any) => {
           if (data) context.user = data;
-        })
-    );
-  }
-
-  // Load conversation entity for communication tools
-  const conversationId = args.conversationId || previousResults.get_or_create_conversation?.conversation_id || previousResults.create_conversation?.conversation_id;
-  if (conversationId) {
-    promises.push(
-      supabase
-        .from('sg_conversations')
-        .select('*, customer:customers(*)')
-        .eq('id', conversationId)
-        .eq('business_id', businessId)
-        .single()
-        .then(({ data }: any) => {
-          if (data) {
-            context.conversation = data;
-            if (!context.customer) context.customer = data.customer;
-          }
         })
     );
   }

@@ -58,11 +58,9 @@ export interface LeadWorkflowCardProps {
     phone?: string;
     leadScore?: number;
     leadSource?: string;
-    customer_id?: string;
-    customerId?: string;
   };
   automationSummary?: AutomationSummary;
-  onPrompt?: (prompt: string, context?: Record<string, any>) => void;
+  onPrompt?: (prompt: string) => void;
   isExpanded?: boolean;
 }
 
@@ -143,7 +141,7 @@ export function LeadWorkflowCard({
   };
 
   return (
-    <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent" data-testid="lead-workflow-card">
+    <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -314,40 +312,14 @@ export function LeadWorkflowCard({
                 </div>
               )}
               {onPrompt && (
-                <div className="flex gap-2 mt-3 flex-wrap">
-                  <Button 
-                    variant="default" 
-                    size="sm" 
-                    className="h-7 text-xs active:scale-95 transition-transform"
-                    onClick={() => {
-                      feedback.tap();
-                      const customerId = customerData?.customer_id || customerData?.customerId;
-                      const customerName = customerData?.name || 'this customer';
-                      // Use entity reference syntax for AI to parse
-                      const prompt = customerId 
-                        ? `Contact customer [ENTITY:customer:${customerId}:${customerName}]`
-                        : `Start a conversation with ${customerName}`;
-                      onPrompt(prompt, { 
-                        processContext: { customerId, customerName, fromProcess: 'lead_generation' }
-                      });
-                    }}
-                  >
-                    Contact Customer
-                  </Button>
+                <div className="flex gap-2 mt-3">
                   <Button 
                     variant="outline" 
                     size="sm" 
                     className="h-7 text-xs active:scale-95 transition-transform"
                     onClick={() => {
                       feedback.tap();
-                      const customerId = customerData?.customer_id || customerData?.customerId;
-                      const customerName = customerData?.name || 'this lead';
-                      const prompt = customerId 
-                        ? `Create a quote for [ENTITY:customer:${customerId}:${customerName}]`
-                        : `Create a quote for ${customerName}`;
-                      onPrompt(prompt, {
-                        processContext: { customerId, customerName, fromProcess: 'lead_generation' }
-                      });
+                      onPrompt("Create a quote for this lead");
                     }}
                   >
                     Create Quote
@@ -358,14 +330,7 @@ export function LeadWorkflowCard({
                     className="h-7 text-xs active:scale-95 transition-transform"
                     onClick={() => {
                       feedback.tap();
-                      const customerId = customerData?.customer_id || customerData?.customerId;
-                      const customerName = customerData?.name || 'this lead';
-                      const prompt = customerId 
-                        ? `Schedule an assessment for [ENTITY:customer:${customerId}:${customerName}]`
-                        : `Schedule an assessment for ${customerName}`;
-                      onPrompt(prompt, {
-                        processContext: { customerId, customerName, fromProcess: 'lead_generation' }
-                      });
+                      onPrompt("Schedule an assessment for this lead");
                     }}
                   >
                     Schedule Assessment
