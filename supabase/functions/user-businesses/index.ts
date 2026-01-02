@@ -67,11 +67,23 @@ serve(async (req: Request) => {
 
     // Add worker businesses (excluding any we already added as owner)
     const ownedIds = new Set(businesses.map(b => b.id));
+    console.log('[user-businesses] Owned IDs for deduplication:', Array.from(ownedIds));
+    
     if (workerBusinesses) {
       for (const permission of workerBusinesses) {
         const business = permission.businesses as any;
+        
+        // Skip if no business data
+        if (!business || !business.id) {
+          console.log('[user-businesses] Skipping permission with no business data');
+          continue;
+        }
+        
         // Skip if already added as owner (prevents duplicates)
-        if (ownedIds.has(business.id)) continue;
+        if (ownedIds.has(business.id)) {
+          console.log('[user-businesses] Skipping duplicate business (user is owner):', business.id);
+          continue;
+        }
         
         businesses.push({
           id: business.id,
