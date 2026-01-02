@@ -28,19 +28,32 @@ export function useBusinessContext(targetBusinessId?: string) {
   // Get all businesses the user has access to (owned + worker)
   const businessesQuery = useUserBusinesses();
   
-  // Transform UserBusiness to BusinessUI format (safe even if data is undefined)
-  const transformedBusinesses: BusinessUI[] | undefined = businessesQuery.data?.map(b => ({
-    id: b.id,
-    name: b.name,
-    description: b.description,
-    phone: b.phone,
-    replyToEmail: b.reply_to_email,
-    taxRateDefault: b.tax_rate_default,
-    role: b.role,
-    logoUrl: b.logo_url,
-    lightLogoUrl: b.light_logo_url,
-    createdAt: b.joined_at,
-  }));
+  // Transform UserBusiness to BusinessUI format with deduplication
+  // Owner role takes precedence over worker role if duplicates exist
+  const transformedBusinesses: BusinessUI[] | undefined = (() => {
+    if (!businessesQuery.data) return undefined;
+    
+    const seen = new Map<string, BusinessUI>();
+    for (const b of businessesQuery.data) {
+      const existing = seen.get(b.id);
+      // Keep owner role over worker role if duplicate
+      if (!existing || b.role === 'owner') {
+        seen.set(b.id, {
+          id: b.id,
+          name: b.name,
+          description: b.description,
+          phone: b.phone,
+          replyToEmail: b.reply_to_email,
+          taxRateDefault: b.tax_rate_default,
+          role: b.role,
+          logoUrl: b.logo_url,
+          lightLogoUrl: b.light_logo_url,
+          createdAt: b.joined_at,
+        });
+      }
+    }
+    return Array.from(seen.values());
+  })();
   
   // Deterministic business selection with worker-safe fallback
   // Priority: targetBusinessId > is_current > first owner > first business
