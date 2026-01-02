@@ -14,7 +14,7 @@ export function useLifecycleEmailTriggers(enableAutoTriggers: boolean = false) {
   enableAutoTriggers = false;
   const { isSignedIn, isLoaded } = useAuth();
   const { user } = useUser();
-  const { business, businessName, isLoadingBusiness, profileFullName, userId } = useBusinessContext();
+  const { business, businessName, isLoadingBusiness, profileFullName, userId, profileId } = useBusinessContext();
   const { status: stripeStatus } = useStripeConnect();
   const authApi = useAuthApi();
   const hasTriggeredWelcome = useRef(false);
@@ -35,7 +35,7 @@ export function useLifecycleEmailTriggers(enableAutoTriggers: boolean = false) {
 
   // Welcome email trigger - send once on first successful login
   useEffect(() => {
-    if (!enableAutoTriggers || !isLoaded || !isSignedIn || !profile || hasTriggeredWelcome.current || isLoadingBusiness) {
+    if (!enableAutoTriggers || !isLoaded || !isSignedIn || !profileId || hasTriggeredWelcome.current || isLoadingBusiness) {
       return;
     }
 
@@ -46,7 +46,7 @@ export function useLifecycleEmailTriggers(enableAutoTriggers: boolean = false) {
       console.info('[useLifecycleEmailTriggers] Welcome email triggered');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enableAutoTriggers, isLoaded, isSignedIn, profile, isLoadingBusiness, emailData.userEmail, emailData.userId]);
+  }, [enableAutoTriggers, isLoaded, isSignedIn, profileId, isLoadingBusiness, emailData.userEmail, emailData.userId]);
 
   // Stripe connection celebration trigger
   useEffect(() => {
