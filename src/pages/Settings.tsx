@@ -41,9 +41,6 @@ import { GoogleDriveDocumentExport } from '@/components/Settings/GoogleDriveDocu
 import { GoogleDriveBulkOperations } from '@/components/Settings/GoogleDriveBulkOperations';
 import { GoogleDriveSharingPanel } from '@/components/Settings/GoogleDriveSharingPanel';
 import { AutomationSettings } from '@/components/settings/AutomationSettings';
-import { VerificationMetricsPanel } from '@/components/settings/VerificationMetricsPanel';
-import { ProcessVerificationPanel } from '@/components/Settings/ProcessVerificationPanel';
-import { SystemHealthDashboard } from '@/components/Settings/SystemHealthDashboard';
 
 export default function SettingsPage() {
   const { business, role } = useBusinessContext();
@@ -336,39 +333,8 @@ export default function SettingsPage() {
                   Configure automatic lead scoring, welcome emails, and assignment
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent>
                 <AutomationSettings />
-                <VerificationMetricsPanel />
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Process Verification Dashboard - only for owners */}
-          {role === 'owner' && (
-            <Card className="md:col-span-2">
-              <CardHeader>
-                <CardTitle>Process Blueprint Verification</CardTitle>
-                <CardDescription>
-                  Validate that all processes are implemented to the Process Implementation Blueprint standard
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ProcessVerificationPanel />
-              </CardContent>
-            </Card>
-          )}
-
-          {/* System Health Dashboard - only for owners */}
-          {role === 'owner' && (
-            <Card className="md:col-span-2">
-              <CardHeader>
-                <CardTitle>System Health</CardTitle>
-                <CardDescription>
-                  Universal verification status across Edge Functions, Database, Security, and Testing
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <SystemHealthDashboard />
               </CardContent>
             </Card>
           )}
