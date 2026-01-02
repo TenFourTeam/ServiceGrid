@@ -1,9 +1,7 @@
-import { useAuth } from '@clerk/clerk-react';
+import { useAuth } from '@/hooks/useAuth';
 import { useUserBusinesses } from '@/hooks/useUserBusinesses';
 import { useEffect } from 'react';
 import { updateBusinessMeta } from '@/utils/metaUpdater';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 
 export type BusinessUI = {
   id: string;
@@ -25,21 +23,6 @@ export type BusinessUI = {
  */
 export function useBusinessContext(targetBusinessId?: string) {
   const { isSignedIn, isLoaded, userId } = useAuth();
-  
-  // Get the user's profile ID (UUID) from the profiles table
-  const { data: profile } = useQuery({
-    queryKey: ['current-profile', userId],
-    queryFn: async () => {
-      if (!userId) return null;
-      const { data } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('clerk_user_id', userId)
-        .maybeSingle();
-      return data;
-    },
-    enabled: !!userId && isSignedIn,
-  });
   
   // Get all businesses the user has access to (owned + worker)
   const businessesQuery = useUserBusinesses();
@@ -92,8 +75,8 @@ export function useBusinessContext(targetBusinessId?: string) {
     // Authentication state
     isAuthenticated: isSignedIn,
     isLoaded,
-    userId, // Clerk user ID
-    profileId: profile?.id, // Profile UUID for database operations
+    userId, // Supabase user ID (UUID)
+    profileId: userId, // Same as userId now - profile.id = auth.uid()
     
     // Business data (currently using user's owned business)
     business,

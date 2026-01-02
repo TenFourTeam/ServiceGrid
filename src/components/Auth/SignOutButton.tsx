@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAuth } from "@clerk/clerk-react";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { LogOut, Loader2 } from "lucide-react";
 import { toast } from "sonner";
