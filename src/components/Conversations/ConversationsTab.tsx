@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useConversations } from '@/hooks/useConversations';
 import { useUnreadMentions } from '@/hooks/useUnreadMentions';
-import { useProfile } from '@/queries/useProfile';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,7 +21,7 @@ type ConversationFilter = 'all' | 'my-direct' | 'customer' | 'team';
 export function ConversationsTab() {
   const { conversations, isLoading, createConversation, createCustomerConversation, reassignConversation, archiveConversation, unarchiveConversation } = useConversations();
   const { unreadCount } = useUnreadMentions();
-  const { data: profileData } = useProfile();
+  const { profileId } = useBusinessContext();
   const [selectedConversation, setSelectedConversation] = useState<{ 
     id: string; 
     title: string; 
@@ -39,7 +39,7 @@ export function ConversationsTab() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
 
-  const currentUserId = profileData?.profile?.id;
+  const currentUserId = profileId;
 
   // Enhanced search: include job_title and assigned_worker_name
   const searchFiltered = conversations.filter(c => {

@@ -20,6 +20,9 @@ export type BusinessUI = {
 /**
  * Role-aware business context - dynamically determines user's role for the current business
  * Uses the existing business_permissions system to detect owner vs worker roles
+ * 
+ * CONSOLIDATED: This hook now provides all profile + business data
+ * Previously consumers needed both useProfile() and useBusinessContext()
  */
 export function useBusinessContext(targetBusinessId?: string) {
   const { isSignedIn, isLoaded, userId } = useAuth();
@@ -92,6 +95,10 @@ export function useBusinessContext(targetBusinessId?: string) {
       isLoaded: false,
       userId: null,
       profileId: null,
+      // Profile data (CONSOLIDATED from useProfile)
+      profileFullName: null,
+      profilePhoneE164: null,
+      defaultBusinessId: null,
       business: null,
       businessId: undefined,
       businessName: undefined,
@@ -117,6 +124,11 @@ export function useBusinessContext(targetBusinessId?: string) {
     isLoaded,
     userId, // Profile UUID for database operations
     profileId: profile?.id, // Profile UUID for database operations
+    
+    // Profile data (CONSOLIDATED from useProfile)
+    profileFullName: profile?.fullName || null,
+    profilePhoneE164: profile?.phoneE164 || null,
+    defaultBusinessId: profile?.defaultBusinessId || null,
     
     // Business data (currently using user's owned business)
     business,

@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useCreateTimeOffRequest } from '@/hooks/useTimeOff';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
-import { useProfile } from '@/queries/useProfile';
+
 
 const timeOffSchema = z.object({
   start_date: z.string().min(1, 'Start date is required'),
@@ -30,8 +30,7 @@ interface TimeOffRequestModalProps {
 
 export function TimeOffRequestModal({ isOpen, onClose }: TimeOffRequestModalProps) {
   const isMobile = useIsMobile();
-  const { businessId } = useBusinessContext();
-  const { data: profile } = useProfile();
+  const { businessId, profileId } = useBusinessContext();
   const createRequest = useCreateTimeOffRequest();
 
   const form = useForm<FormData>({
@@ -44,12 +43,12 @@ export function TimeOffRequestModal({ isOpen, onClose }: TimeOffRequestModalProp
   });
 
   const onSubmit = (data: FormData) => {
-    if (!businessId || !profile?.profile?.id) return;
+    if (!businessId || !profileId) return;
 
     createRequest.mutate(
       {
         business_id: businessId,
-        user_id: profile.profile.id,
+        user_id: profileId,
         start_date: new Date(data.start_date).toISOString(),
         end_date: new Date(data.end_date).toISOString(),
         reason: data.reason,
