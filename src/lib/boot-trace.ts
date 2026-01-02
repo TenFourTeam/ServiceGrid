@@ -138,9 +138,16 @@ if (typeof window !== 'undefined') {
       return;
     }
     
-    // Log other errors during boot
+    // Capture ANY error during boot (before app_ready)
     if (bootState.stage !== 'app_ready') {
-      console.error('[Boot] Error during boot:', event.error || event.message);
+      const location = event.filename ? `${event.filename}:${event.lineno}:${event.colno}` : 'unknown';
+      const errorMsg = event.error?.message || event.message || 'Unknown error';
+      console.error('[Boot] Error during boot:', {
+        message: errorMsg,
+        location,
+        error: event.error,
+      });
+      setBootStage('error', `Boot error: ${errorMsg.slice(0, 80)}`);
     }
   });
   
@@ -160,9 +167,13 @@ if (typeof window !== 'undefined') {
       return;
     }
     
-    // Log rejections during boot
+    // Capture ANY unhandled rejection during boot
     if (bootState.stage !== 'app_ready') {
-      console.error('[Boot] Unhandled rejection during boot:', message);
+      console.error('[Boot] Unhandled rejection during boot:', {
+        message,
+        reason: event.reason,
+      });
+      setBootStage('error', `Boot rejection: ${message.slice(0, 80)}`);
     }
   });
 }

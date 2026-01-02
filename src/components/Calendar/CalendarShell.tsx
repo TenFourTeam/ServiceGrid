@@ -19,6 +19,8 @@ import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
+import { setBootStage } from "@/lib/boot-trace";
+
 type CalendarDisplayMode = 'scheduled' | 'clocked' | 'combined';
 
 export default function CalendarShell({
@@ -29,6 +31,11 @@ export default function CalendarShell({
   businessId?: string;
 }) {
   console.log('[CalendarShell] Mounting with routeBusinessId:', routeBusinessId);
+  
+  // Check for safe mode via URL param (?safe=1)
+  const [searchParams] = useSearchParams();
+  const safeMode = searchParams.get('safe') === '1';
+  
   const [view, setView] = useState<"month" | "week" | "day">("week");
   const [showMap, setShowMap] = useState(false);
   const [displayMode, setDisplayMode] = useState<CalendarDisplayMode>('scheduled');
@@ -111,12 +118,11 @@ export default function CalendarShell({
   // Business provisioning fallback - only show after extended timeout when truly stuck
   useEffect(() => {
     // Only trigger fallback when loading is complete but business is still missing
-    // Use a longer timeout (15s) to avoid false positives during normal loading
     if (!isLoadingBusiness && !businessId) {
       const timer = setTimeout(() => {
-        console.warn('[CalendarShell] Business context not resolved after 15s');
+        console.warn('[CalendarShell] Business context not resolved after 8s');
         setShowProvisioningFallback(true);
-      }, 15000);
+      }, 8000);
       return () => clearTimeout(timer);
     }
     // Reset fallback state when business becomes available
@@ -124,6 +130,14 @@ export default function CalendarShell({
       setShowProvisioningFallback(false);
     }
   }, [isLoadingBusiness, businessId]);
+  
+  // Signal app ready when calendar successfully mounts with business context
+  useEffect(() => {
+    if (businessId && !isLoadingBusiness) {
+      console.log('[CalendarShell] Calendar ready with businessId:', businessId);
+      setBootStage('app_ready');
+    }
+  }, [businessId, isLoadingBusiness]);
 
   // Skeleton loading state - AFTER all hooks
   if (isLoadingBusiness || !businessId) {
@@ -163,6 +177,23 @@ export default function CalendarShell({
       </div>
     );
   }
+  // SAFE MODE: Render minimal UI to isolate crash source
+  if (safeMode) {
+    return (
+      <div className="flex-1 min-h-0 flex flex-col gap-4 p-8">
+        <div className="bg-primary/10 border border-primary/20 rounded-lg p-6 text-center">
+          <h2 className="text-xl font-semibold text-primary mb-2">Safe Mode Active</h2>
+          <p className="text-muted-foreground mb-4">
+            Calendar loaded successfully in safe mode. Business: {businessName || businessId}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Remove <code className="bg-muted px-1 rounded">?safe=1</code> from URL to load full calendar.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return <div className="flex-1 min-h-0 flex flex-col gap-2 md:gap-4">
         <header className="pt-4 md:pt-6 flex flex-col gap-3 md:gap-0 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center justify-between md:gap-3">
