@@ -14,7 +14,7 @@ test.describe('Public Navigation @smoke', () => {
   });
 
   test('logo navigation works', async ({ page }) => {
-    await page.goto('/auth');
+    await page.goto('/clerk-auth');
     await page.waitForLoadState('networkidle');
     
     // Navigate back to home via logo

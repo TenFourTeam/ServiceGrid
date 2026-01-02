@@ -4,7 +4,7 @@ import { MoreHorizontal, FileText, Wrench, Calendar, Archive, Edit, UserCheck } 
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuthApi } from '@/hooks/useAuthApi';
-import { useAuth } from '@/hooks/useBusinessAuth';
+import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useCreateQuote } from '@/hooks/useQuoteOperations';
 import { useLifecycleEmailIntegration } from '@/hooks/useLifecycleEmailIntegration';
 import { useRequestOperations } from '@/hooks/useRequestOperations';
@@ -25,7 +25,7 @@ export function RequestActions({ request }: RequestActionsProps) {
   const navigate = useNavigate();
   const [showEditModal, setShowEditModal] = useState(false);
   const authApi = useAuthApi();
-  const { userId } = useAuth();
+  const { userId } = useClerkAuth();
   const { businessId } = useBusinessContext();
   const queryClient = useQueryClient();
   const { triggerJobScheduled } = useLifecycleEmailIntegration();

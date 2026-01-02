@@ -2,21 +2,6 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { requireCtx, corsHeaders, json } from "../_lib/auth.ts";
 
-// Helper to check if Stripe is properly configured
-function isStripeConfigured(): boolean {
-  const key = Deno.env.get("STRIPE_SECRET_KEY") || "";
-  // Valid Stripe keys start with sk_test_ or sk_live_
-  return key.startsWith("sk_test_") || key.startsWith("sk_live_");
-}
-
-// Safe default response when Stripe is not configured
-const STRIPE_NOT_CONFIGURED_RESPONSE = {
-  subscribed: false,
-  subscription_tier: null,
-  subscription_end: null,
-  stripeConfigured: false,
-};
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -24,25 +9,16 @@ serve(async (req) => {
 
   try {
     const { userId, email, supaAdmin: supabase } = await requireCtx(req);
-    
-    // Early check for Stripe configuration
-    const stripeConfigured = isStripeConfigured();
-    
+    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+      apiVersion: "2023-10-16",
+    });
+
     // GET - Check subscription status or get portal link
     if (req.method === "GET") {
       const url = new URL(req.url);
       const action = url.searchParams.get("action");
 
-      // For actions that REQUIRE Stripe, return error if not configured
       if (action === "portal_link") {
-        if (!stripeConfigured) {
-          return json({ error: "Stripe is not configured", stripeConfigured: false }, { status: 503 });
-        }
-        
-        const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-          apiVersion: "2023-10-16",
-        });
-        
         const customers = await stripe.customers.list({ email, limit: 1 });
         let customerId: string;
 
@@ -92,85 +68,55 @@ serve(async (req) => {
         });
       }
 
-      // Default: Check user subscription status
-      // This is safe to return defaults if Stripe isn't configured
-      if (!stripeConfigured) {
-        console.log("[subscriptions-crud] Stripe not configured, returning safe defaults");
-        return json({ ...STRIPE_NOT_CONFIGURED_RESPONSE });
-      }
-      
-      const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-        apiVersion: "2023-10-16",
-      });
-
+      // Default: Check user subscription
+      const customers = await stripe.customers.list({ email, limit: 1 });
       let customerId: string | null = null;
+
+      if (customers.data.length > 0) {
+        customerId = customers.data[0].id;
+      }
+
       let subscribed = false;
       let subscription_tier = null;
       let subscription_end = null;
 
-      try {
-        const customers = await stripe.customers.list({ email, limit: 1 });
+      if (customerId) {
+        const subscriptions = await stripe.subscriptions.list({
+          customer: customerId,
+          status: "active",
+          limit: 1,
+        });
 
-        if (customers.data.length > 0) {
-          customerId = customers.data[0].id;
+        if (subscriptions.data.length > 0) {
+          const sub = subscriptions.data[0];
+          subscribed = true;
+          subscription_tier = sub.items.data[0]?.price?.recurring?.interval || "monthly";
+          subscription_end = sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null;
         }
-
-        if (customerId) {
-          const subscriptions = await stripe.subscriptions.list({
-            customer: customerId,
-            status: "active",
-            limit: 1,
-          });
-
-          if (subscriptions.data.length > 0) {
-            const sub = subscriptions.data[0];
-            subscribed = true;
-            subscription_tier = sub.items.data[0]?.price?.recurring?.interval || "monthly";
-            subscription_end = sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null;
-          }
-        }
-
-        // Upsert subscriber record
-        await supabase
-          .from("subscribers")
-          .upsert({
-            user_id: userId,
-            email,
-            subscribed,
-            subscription_tier,
-            subscription_end,
-            stripe_customer_id: customerId,
-            updated_at: new Date().toISOString(),
-          }, { onConflict: "user_id" });
-      } catch (stripeError: any) {
-        // Handle Stripe auth errors gracefully for status checks
-        const msg = stripeError?.message || String(stripeError);
-        if (msg.includes("Invalid API Key") || msg.includes("authentication") || msg.includes("api_key")) {
-          console.error("[subscriptions-crud] Stripe auth error, returning safe defaults:", msg);
-          return json({ ...STRIPE_NOT_CONFIGURED_RESPONSE });
-        }
-        throw stripeError;
       }
+
+      // Upsert subscriber record
+      await supabase
+        .from("subscribers")
+        .upsert({
+          user_id: userId,
+          email,
+          subscribed,
+          subscription_tier,
+          subscription_end,
+          stripe_customer_id: customerId,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "user_id" });
 
       return json({
         subscribed,
         subscription_tier,
         subscription_end,
-        stripeConfigured: true,
       });
     }
 
     // POST - Create checkout or manage quote subscription
     if (req.method === "POST") {
-      // All POST actions require Stripe to be configured
-      if (!stripeConfigured) {
-        return json({ error: "Stripe is not configured", stripeConfigured: false }, { status: 503 });
-      }
-      
-      const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-        apiVersion: "2023-10-16",
-      });
-      
       const body = await req.json().catch(() => ({}));
       const action = body.action;
 
@@ -322,12 +268,6 @@ serve(async (req) => {
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     console.error("[subscriptions-crud] error:", msg);
-    
-    // Handle Stripe auth errors gracefully
-    if (msg.includes("Invalid API Key") || msg.includes("authentication") || msg.includes("api_key")) {
-      return json({ ...STRIPE_NOT_CONFIGURED_RESPONSE, error: "Stripe configuration error" }, { status: 200 });
-    }
-    
     return json({ error: msg }, { status: 500 });
   }
 });

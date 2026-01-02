@@ -1,21 +1,17 @@
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusinessContext } from './useBusinessContext';
-import { useAuth } from './useBusinessAuth';
 import { toast } from 'sonner';
 
 /**
  * Hook that listens to real-time automation events from ai_activity_log
  * and surfaces them as toast notifications for immediate user visibility.
- * Always called (for React hook integrity), but guards internally.
  */
 export function useLeadAutomationNotifications() {
-  const { isSignedIn, isLoaded } = useAuth();
-  const { businessId, isLoadingBusiness } = useBusinessContext();
+  const { businessId } = useBusinessContext();
 
   useEffect(() => {
-    // Guard inside effect - don't subscribe until auth and business context are ready
-    if (!isLoaded || !isSignedIn || isLoadingBusiness || !businessId) return;
+    if (!businessId) return;
 
     // Subscribe to new ai_activity_log inserts for automation events
     const channel = supabase
@@ -82,5 +78,5 @@ export function useLeadAutomationNotifications() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [isLoaded, isSignedIn, isLoadingBusiness, businessId]);
+  }, [businessId]);
 }

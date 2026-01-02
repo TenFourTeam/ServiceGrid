@@ -127,10 +127,10 @@ export function HighlightsSticky() {
   const { t } = useLanguage();
   
   const steps: HighlightStep[] = [
-    { key: 'schedule', imageSrc: '/how-it-works-1.png', alt: t('landing.highlights.steps.0.alt') },
-    { key: 'quote', imageSrc: '/how-it-works-2.png', alt: t('landing.highlights.steps.1.alt') },
-    { key: 'work', imageSrc: '/how-it-works-3.png', alt: t('landing.highlights.steps.2.alt') },
-    { key: 'invoice', imageSrc: '/how-it-works-4.png', alt: t('landing.highlights.steps.3.alt') },
+    { key: 'schedule', imageSrc: '/How%20It%20Works%201.png', alt: t('landing.highlights.steps.0.alt') },
+    { key: 'quote', imageSrc: '/How%20It%20Works%202.png', alt: t('landing.highlights.steps.1.alt') },
+    { key: 'work', imageSrc: '/How%20It%20Works%203.png', alt: t('landing.highlights.steps.2.alt') },
+    { key: 'invoice', imageSrc: '/How%20It%20Works%204.png', alt: t('landing.highlights.steps.3.alt') },
   ];
   
   const computeDefaultKey = () => {

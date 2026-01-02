@@ -26,7 +26,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    // Authenticate with session token and get user context
+    // Authenticate with Clerk and get user context
     const { userId, supaAdmin } = await requireCtx(req);
     
     // Parse request body

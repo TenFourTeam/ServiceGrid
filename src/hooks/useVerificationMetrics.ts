@@ -1,12 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
-import { useAuthApi } from './useAuthApi';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface VerificationMetric {
   id: string;
   tool_name: string;
   verification_passed: boolean;
   phase: 'precondition' | 'postcondition' | 'invariant' | 'db_assertion';
-  failed_assertions: Array<{ assertionId: string; description: string; expected: any; actual: any; }>;
+  failed_assertions: Array<{
+    assertionId: string;
+    description: string;
+    expected: any;
+    actual: any;
+  }>;
   execution_time_ms: number;
   recovery_suggestion?: string;
   created_at: string;
@@ -25,84 +30,137 @@ export interface VerificationSummary {
 
 export function useVerificationMetrics(
   businessId: string | undefined,
-  options?: { dateRange?: { start: Date; end: Date }; limit?: number; }
+  options?: {
+    dateRange?: { start: Date; end: Date };
+    limit?: number;
+  }
 ) {
-  const authApi = useAuthApi();
-
   return useQuery({
     queryKey: ['verification-metrics', businessId, options?.dateRange, options?.limit],
     queryFn: async (): Promise<VerificationSummary> => {
-      const defaultSummary = { total: 0, passed: 0, failed: 0, successRate: 100, avgExecutionTimeMs: 0, failuresByTool: {}, failuresByPhase: {}, recentFailures: [] };
-      if (!businessId) return defaultSummary;
-
-      const queryParams: Record<string, string> = { activityType: 'step_verification', limit: String(options?.limit || 500) };
-      if (options?.dateRange) {
-        queryParams.startDate = options.dateRange.start.toISOString();
-        queryParams.endDate = options.dateRange.end.toISOString();
+      if (!businessId) {
+        return {
+          total: 0,
+          passed: 0,
+          failed: 0,
+          successRate: 100,
+          avgExecutionTimeMs: 0,
+          failuresByTool: {},
+          failuresByPhase: {},
+          recentFailures: [],
+        };
       }
 
-      const { data, error } = await authApi.invoke('ai-activity-crud', { method: 'GET', queryParams });
-      if (error) throw new Error(error.message || 'Failed to fetch metrics');
+      let query = supabase
+        .from('ai_activity_log')
+        .select('*')
+        .eq('business_id', businessId)
+        .eq('activity_type', 'step_verification')
+        .order('created_at', { ascending: false })
+        .limit(options?.limit || 500);
 
-      const metrics: VerificationMetric[] = ((data || []) as any[]).map((row) => ({
-        id: row.id,
-        tool_name: row.metadata?.tool_name || 'unknown',
-        verification_passed: row.metadata?.verification_passed || false,
-        phase: row.metadata?.phase || 'precondition',
-        failed_assertions: row.metadata?.failed_assertions || [],
-        execution_time_ms: row.metadata?.execution_time_ms || 0,
-        recovery_suggestion: row.metadata?.recovery_suggestion,
-        created_at: row.created_at,
-      }));
+      if (options?.dateRange) {
+        query = query
+          .gte('created_at', options.dateRange.start.toISOString())
+          .lte('created_at', options.dateRange.end.toISOString());
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('[useVerificationMetrics] Query error:', error);
+        throw error;
+      }
+
+      const metrics: VerificationMetric[] = (data || []).map((row) => {
+        const metadata = row.metadata as Record<string, any> || {};
+        return {
+          id: row.id,
+          tool_name: metadata.tool_name || 'unknown',
+          verification_passed: metadata.verification_passed || false,
+          phase: metadata.phase || 'precondition',
+          failed_assertions: metadata.failed_assertions || [],
+          execution_time_ms: metadata.execution_time_ms || 0,
+          recovery_suggestion: metadata.recovery_suggestion,
+          created_at: row.created_at,
+        };
+      });
 
       const total = metrics.length;
-      const passed = metrics.filter(m => m.verification_passed).length;
+      const passed = metrics.filter((m) => m.verification_passed).length;
       const failed = total - passed;
-      const failedMetrics = metrics.filter(m => !m.verification_passed);
+      const successRate = total > 0 ? (passed / total) * 100 : 100;
+
+      const avgExecutionTimeMs =
+        total > 0
+          ? metrics.reduce((sum, m) => sum + m.execution_time_ms, 0) / total
+          : 0;
+
+      const failedMetrics = metrics.filter((m) => !m.verification_passed);
+
       const failuresByTool: Record<string, number> = {};
       const failuresByPhase: Record<string, number> = {};
-      for (const m of failedMetrics) {
-        failuresByTool[m.tool_name] = (failuresByTool[m.tool_name] || 0) + 1;
-        failuresByPhase[m.phase] = (failuresByPhase[m.phase] || 0) + 1;
+
+      for (const metric of failedMetrics) {
+        failuresByTool[metric.tool_name] = (failuresByTool[metric.tool_name] || 0) + 1;
+        failuresByPhase[metric.phase] = (failuresByPhase[metric.phase] || 0) + 1;
       }
 
       return {
-        total, passed, failed, successRate: total > 0 ? (passed / total) * 100 : 100,
-        avgExecutionTimeMs: total > 0 ? metrics.reduce((s, m) => s + m.execution_time_ms, 0) / total : 0,
-        failuresByTool, failuresByPhase, recentFailures: failedMetrics.slice(0, 10),
+        total,
+        passed,
+        failed,
+        successRate,
+        avgExecutionTimeMs,
+        failuresByTool,
+        failuresByPhase,
+        recentFailures: failedMetrics.slice(0, 10),
       };
     },
     enabled: !!businessId,
-    staleTime: 60_000,
+    staleTime: 60_000, // 1 minute
   });
 }
 
-export function useVerificationHistory(businessId: string | undefined, toolName?: string, limit = 50) {
-  const authApi = useAuthApi();
-
+export function useVerificationHistory(
+  businessId: string | undefined,
+  toolName?: string,
+  limit = 50
+) {
   return useQuery({
     queryKey: ['verification-history', businessId, toolName, limit],
     queryFn: async (): Promise<VerificationMetric[]> => {
       if (!businessId) return [];
 
-      const { data, error } = await authApi.invoke('ai-activity-crud', {
-        method: 'GET',
-        queryParams: { activityType: 'step_verification', limit: String(limit) },
-      });
+      let query = supabase
+        .from('ai_activity_log')
+        .select('*')
+        .eq('business_id', businessId)
+        .eq('activity_type', 'step_verification')
+        .order('created_at', { ascending: false })
+        .limit(limit);
 
-      if (error) throw new Error(error.message || 'Failed to fetch history');
+      const { data, error } = await query;
 
-      return ((data || []) as any[])
-        .map((row) => ({
-          id: row.id,
-          tool_name: row.metadata?.tool_name || 'unknown',
-          verification_passed: row.metadata?.verification_passed || false,
-          phase: row.metadata?.phase || 'precondition',
-          failed_assertions: row.metadata?.failed_assertions || [],
-          execution_time_ms: row.metadata?.execution_time_ms || 0,
-          recovery_suggestion: row.metadata?.recovery_suggestion,
-          created_at: row.created_at,
-        }))
+      if (error) {
+        console.error('[useVerificationHistory] Query error:', error);
+        throw error;
+      }
+
+      return (data || [])
+        .map((row) => {
+          const metadata = row.metadata as Record<string, any> || {};
+          return {
+            id: row.id,
+            tool_name: metadata.tool_name || 'unknown',
+            verification_passed: metadata.verification_passed || false,
+            phase: metadata.phase || 'precondition',
+            failed_assertions: metadata.failed_assertions || [],
+            execution_time_ms: metadata.execution_time_ms || 0,
+            recovery_suggestion: metadata.recovery_suggestion,
+            created_at: row.created_at,
+          };
+        })
         .filter((m) => !toolName || m.tool_name === toolName);
     },
     enabled: !!businessId,

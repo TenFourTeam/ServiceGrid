@@ -1,4 +1,4 @@
-import { useAuth } from '@/hooks/useBusinessAuth';
+import { useAuth } from '@clerk/clerk-react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthApi } from '@/hooks/useAuthApi';
 

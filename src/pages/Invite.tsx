@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useBusinessAuth";
+import { useAuth as useClerkAuth, SignedOut, SignInButton } from "@clerk/clerk-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,13 +11,14 @@ import { CheckCircle, AlertCircle, UserPlus, Loader2 } from "lucide-react";
 export default function InviteAccept() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { isSignedIn, isLoaded } = useAuth();
+  const { isSignedIn, isLoaded } = useClerkAuth();
   const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'auth-required'>('loading');
   const [message, setMessage] = useState('');
-  const hasRedeemed = useRef(false);
+  const autoOpenRef = useRef<HTMLButtonElement | null>(null);
   
   const token = searchParams.get('token');
   const redeemInvite = useRedeemInvite();
+  
 
   useEffect(() => {
     if (!token) {
@@ -27,21 +28,16 @@ export default function InviteAccept() {
     }
 
     if (!isLoaded) {
-      return; // Wait for auth to load
+      return; // Wait for Clerk to load
     }
 
     if (!isSignedIn) {
-      // Store token and redirect to auth page
-      sessionStorage.setItem('invite_token', token);
-      navigate(`/auth?redirect=/invite?token=${token}`, { replace: true });
+      setStatus('auth-required');
       return;
     }
 
     // If we have a token and user is signed in, redeem the invite
-    if (!hasRedeemed.current) {
-      hasRedeemed.current = true;
-      handleRedeemInvite();
-    }
+    handleRedeemInvite();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, isSignedIn, isLoaded]);
 
@@ -59,9 +55,6 @@ export default function InviteAccept() {
         description: "You have successfully joined the team.",
       });
 
-      // Clear the stored token
-      sessionStorage.removeItem('invite_token');
-
       // Redirect to calendar after a short delay
       setTimeout(() => {
         navigate('/calendar');
@@ -77,6 +70,14 @@ export default function InviteAccept() {
       });
     }
   };
+
+  // Auto-trigger sign-in when auth is required
+  useEffect(() => {
+    if (status === 'auth-required' && !isSignedIn) {
+      const t = setTimeout(() => autoOpenRef.current?.click(), 0);
+      return () => clearTimeout(t);
+    }
+  }, [status, isSignedIn]);
 
   if (!token) {
     return (
@@ -95,6 +96,42 @@ export default function InviteAccept() {
             <Button onClick={() => navigate('/')} className="w-full">
               Go to Home
             </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (status === 'auth-required') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+              <UserPlus className="h-6 w-6 text-primary" />
+            </div>
+            <CardTitle>Join the Team</CardTitle>
+          </CardHeader>
+          <CardContent className="text-center space-y-4">
+            <p className="text-muted-foreground">
+              You've been invited to join a team on ServiceGrid. Opening sign-in to accept your invitation...
+            </p>
+            <SignedOut>
+              <SignInButton
+                mode="modal"
+                forceRedirectUrl={`${window.location.origin}/invite?token=${token}`}
+                fallbackRedirectUrl={`${window.location.origin}/invite?token=${token}`}
+                appearance={{ elements: { modalBackdrop: "fixed inset-0 bg-background" } }}
+              >
+                <Button ref={autoOpenRef} className="sr-only">Open sign in</Button>
+              </SignInButton>
+              <p className="text-sm text-muted-foreground">
+                If nothing happens, {" "}
+                <button className="underline" onClick={() => autoOpenRef.current?.click()}>
+                  click here to sign in
+                </button>.
+              </p>
+            </SignedOut>
           </CardContent>
         </Card>
       </div>

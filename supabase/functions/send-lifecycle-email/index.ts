@@ -368,20 +368,19 @@ serve(async (req: Request): Promise<Response> => {
 
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // userId is already a profile UUID - use it directly
-    const profileId = userId;
-
-    // Verify the profile exists
+    // Convert Clerk user ID to Supabase profile UUID
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .select('id')
-      .eq('id', profileId)
+      .eq('clerk_user_id', userId)
       .maybeSingle();
 
     if (!profileData?.id) {
-      console.error('[send-lifecycle-email] Profile not found for user:', userId);
+      console.error('[send-lifecycle-email] Profile not found for Clerk user:', userId);
       return json({ error: "User profile not found" }, { status: 404 });
     }
+
+    const profileId = profileData.id;
 
     // Check if email already sent (deduplication)
     const { data: existingEmail } = await supabase
@@ -416,49 +415,109 @@ serve(async (req: Request): Promise<Response> => {
       default:
         return json({ error: `Unknown email type: ${type}` }, { status: 400 });
     }
-  } catch (templateError) {
-    console.error('[send-lifecycle-email] Template error:', templateError);
-    return json({ error: 'Failed to generate email template' }, { status: 500 });
+  } catch (e) {
+    console.error('[send-lifecycle-email] Template generation failed', e);
+    return json({ error: 'Template generation failed' }, { status: 500 });
   }
 
   // Send email via Resend
   const resend = new Resend(resendApiKey);
   
   try {
-    const emailResult = await resend.emails.send({
-      from: fromEmail,
-      to: data.userEmail,
+    const sendRes = await resend.emails.send({
+      from: `ServiceGrid <${fromEmail}>`,
+      to: [data.userEmail],
       subject: emailTemplate.subject,
       html: emailTemplate.html,
     });
 
-    console.info('[send-lifecycle-email] Email sent:', emailResult);
-
-    // Record email sent (for deduplication)
-    await supabase.from('lifecycle_emails_sent').insert({
-      user_id: profileId,
-      email_type: type,
-      business_id: businessId || null,
-      sent_at: new Date().toISOString(),
-      metadata: {
-        subject: emailTemplate.subject,
-        resend_id: emailResult.data?.id
+    if ((sendRes as any)?.error) {
+      console.error('Resend send error:', (sendRes as any)?.error);
+      
+      // Log failed email to mail_sends
+      try {
+        await supabase.from('mail_sends').insert({
+          user_id: profileId,
+          to_email: data.userEmail,
+          subject: emailTemplate.subject,
+          status: 'failed',
+          error_code: 'RESEND_ERROR',
+          error_message: (sendRes as any)?.error?.message || 'Unknown error',
+          request_hash: crypto.randomUUID(),
+        });
+      } catch (logError) {
+        console.error('[send-lifecycle-email] Failed to log error to mail_sends:', logError);
       }
-    });
+      
+      return json({ error: (sendRes as any)?.error?.message || 'Email send failed' }, { status: 500 });
+    }
+
+    const messageId = (sendRes as any)?.data?.id ?? null;
+    
+    console.info('[send-lifecycle-email] Email sent:', type, data.userEmail, messageId);
+
+    // Log successful email to mail_sends
+    try {
+      const requestHash = crypto.randomUUID();
+      
+      await supabase.from('mail_sends').insert({
+        user_id: profileId,
+        to_email: data.userEmail,
+        subject: emailTemplate.subject,
+        status: 'sent',
+        provider_message_id: messageId,
+        request_hash: requestHash,
+      });
+      
+      console.log('[send-lifecycle-email] Logged to mail_sends:', requestHash);
+    } catch (logError) {
+      console.error('[send-lifecycle-email] Failed to log to mail_sends:', logError);
+      // Don't fail the operation if logging fails
+    }
+
+    // Record that email was sent (prevents duplicates)
+    try {
+      await supabase.from('lifecycle_emails_sent').insert({
+        user_id: profileId,
+        email_type: type,
+        email_data: data,
+      });
+      console.info('[send-lifecycle-email] Recorded in lifecycle_emails_sent:', type);
+    } catch (trackError) {
+      console.error('[send-lifecycle-email] Failed to record in lifecycle_emails_sent:', trackError);
+      // Don't fail the request if tracking fails
+    }
 
     return json({ 
       success: true, 
-      message: 'Email sent successfully',
-      resendId: emailResult.data?.id 
+      messageId,
+      type,
+      recipient: data.userEmail 
     });
+
+  } catch (e: any) {
+    console.error('Unexpected send error:', e);
     
-  } catch (sendError) {
-    console.error('[send-lifecycle-email] Resend error:', sendError);
-    return json({ error: 'Failed to send email' }, { status: 500 });
+    // Log failed email to mail_sends
+    try {
+      await supabase.from('mail_sends').insert({
+        user_id: profileId,
+        to_email: data.userEmail,
+        subject: emailTemplate?.subject || 'Lifecycle Email',
+        status: 'failed',
+        error_code: e?.name || 'UNKNOWN_ERROR',
+        error_message: e?.message || 'Unknown error',
+        request_hash: crypto.randomUUID(),
+      });
+    } catch (logError) {
+      console.error('[send-lifecycle-email] Failed to log error to mail_sends:', logError);
+    }
+    
+    return json({ error: e?.message || 'Send failed' }, { status: 500 });
   }
 
-  } catch (error) {
-    console.error('[send-lifecycle-email] Unexpected error:', error);
-    return json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
+  } catch (error: any) {
+    console.error('Error in send-lifecycle-email:', error);
+    return json({ error: 'Internal server error' }, { status: 500 });
   }
 });

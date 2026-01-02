@@ -5,8 +5,9 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupConte
 import { Calendar as CalendarIcon, FileText, Receipt, Users, Wrench, User as UserIcon, Settings as SettingsIcon, LifeBuoy, LogOut, Shield, Clock, UserPlus, ClipboardList, BarChart3, Repeat } from "lucide-react";
 import BusinessLogo from "@/components/BusinessLogo";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useUser } from "@/hooks/useBusinessAuth";
+import { useClerk, useUser } from "@clerk/clerk-react";
 import { usePreloadImage } from "@/hooks/usePreloadImage";
+import { useProfile } from "@/queries/useProfile";
 import { SignOutButton } from "@/components/Auth/SignOutButton";
 import { useLanguage } from "@/contexts/LanguageContext";
 const getCoreNavItems = (t: (key: string) => string) => [{
@@ -65,12 +66,14 @@ export default function AppSidebar({ businessId }: { businessId?: string }) {
     business,
     businessLogoUrl,
     businessLightLogoUrl,
-    businessName,
-    profileFullName
+    businessName
   } = useBusinessContext(businessId);
 
   const location = useLocation();
   const navigate = useNavigate();
+  const {
+    signOut
+  } = useClerk();
   const {
     state
   } = useSidebar();
@@ -78,6 +81,9 @@ export default function AppSidebar({ businessId }: { businessId?: string }) {
   const {
     user
   } = useUser();
+  const {
+    data: profile
+  } = useProfile();
   const { t } = useLanguage();
 
   // Get translated nav items and filter based on user role
@@ -169,7 +175,7 @@ export default function AppSidebar({ businessId }: { businessId?: string }) {
             <DropdownMenuTrigger asChild>
               <button type="button" className="w-full flex items-center gap-2 rounded-md hover:border px-2 py-2 hover:bg-muted transition group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-8" aria-label="User menu">
                 <UserIcon className="h-5 w-5 text-primary flex-shrink-0" />
-                <span className="truncate group-data-[collapsible=icon]:hidden transition-all">{profileFullName || user?.fullName || "Account"}</span>
+                <span className="truncate group-data-[collapsible=icon]:hidden transition-all">{profile?.profile?.fullName || user?.fullName || "Account"}</span>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent side="top" align="start" sideOffset={8} alignOffset={-4} className="w-56">

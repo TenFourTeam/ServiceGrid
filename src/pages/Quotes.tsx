@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import SendQuoteModal from '@/components/Quotes/SendQuoteModal';
 import { Input } from '@/components/ui/input';
-import { useAuth } from '@/hooks/useBusinessAuth';
+import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { useQuotesData, useCustomersData } from '@/queries/unified';
 
 import { useQueryClient } from '@tanstack/react-query';
@@ -46,7 +46,7 @@ const statusColors: Record<QuoteStatus, string> = {
 
 export default function QuotesPage() {
   const { t } = useLanguage();
-  const { isSignedIn } = useAuth();
+  const { isSignedIn } = useClerkAuth();
   const authApi = useAuthApi();
   const { businessTaxRateDefault } = useBusinessContext();
   const { data: quotes } = useQuotesData();

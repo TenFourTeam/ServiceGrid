@@ -690,69 +690,13 @@ export type Database = {
           },
         ]
       }
-      business_sessions: {
-        Row: {
-          auth_method: string
-          created_at: string | null
-          expires_at: string
-          id: string
-          ip_address: string | null
-          last_used_at: string | null
-          profile_id: string
-          refresh_expires_at: string
-          refresh_token: string | null
-          session_token: string
-          user_agent: string | null
-        }
-        Insert: {
-          auth_method?: string
-          created_at?: string | null
-          expires_at?: string
-          id?: string
-          ip_address?: string | null
-          last_used_at?: string | null
-          profile_id: string
-          refresh_expires_at?: string
-          refresh_token?: string | null
-          session_token?: string
-          user_agent?: string | null
-        }
-        Update: {
-          auth_method?: string
-          created_at?: string | null
-          expires_at?: string
-          id?: string
-          ip_address?: string | null
-          last_used_at?: string | null
-          profile_id?: string
-          refresh_expires_at?: string
-          refresh_token?: string | null
-          session_token?: string
-          user_agent?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "business_sessions_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "business_sessions_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "user_productivity_report"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
       businesses: {
         Row: {
           ai_credits_used_this_month: number | null
           ai_monthly_credit_limit: number | null
           ai_vision_enabled: boolean | null
           application_fee_bps: number
+          clerk_org_id: string | null
           created_at: string
           description: string | null
           est_prefix: string
@@ -781,6 +725,7 @@ export type Database = {
           ai_monthly_credit_limit?: number | null
           ai_vision_enabled?: boolean | null
           application_fee_bps?: number
+          clerk_org_id?: string | null
           created_at?: string
           description?: string | null
           est_prefix?: string
@@ -809,6 +754,7 @@ export type Database = {
           ai_monthly_credit_limit?: number | null
           ai_vision_enabled?: boolean | null
           application_fee_bps?: number
+          clerk_org_id?: string | null
           created_at?: string
           description?: string | null
           est_prefix?: string
@@ -1088,6 +1034,7 @@ export type Database = {
       customer_accounts: {
         Row: {
           auth_method: string | null
+          clerk_user_id: string | null
           created_at: string | null
           customer_id: string
           email: string
@@ -1101,6 +1048,7 @@ export type Database = {
         }
         Insert: {
           auth_method?: string | null
+          clerk_user_id?: string | null
           created_at?: string | null
           customer_id: string
           email: string
@@ -1114,6 +1062,7 @@ export type Database = {
         }
         Update: {
           auth_method?: string | null
+          clerk_user_id?: string | null
           created_at?: string | null
           customer_id?: string
           email?: string
@@ -2485,35 +2434,32 @@ export type Database = {
       }
       profiles: {
         Row: {
+          clerk_user_id: string | null
           created_at: string
           default_business_id: string | null
           email: string
-          email_verified_at: string | null
           full_name: string | null
           id: string
-          last_login_at: string | null
           phone_e164: string | null
           updated_at: string
         }
         Insert: {
+          clerk_user_id?: string | null
           created_at?: string
           default_business_id?: string | null
           email: string
-          email_verified_at?: string | null
           full_name?: string | null
           id?: string
-          last_login_at?: string | null
           phone_e164?: string | null
           updated_at?: string
         }
         Update: {
+          clerk_user_id?: string | null
           created_at?: string
           default_business_id?: string | null
           email?: string
-          email_verified_at?: string | null
           full_name?: string | null
           id?: string
-          last_login_at?: string | null
           phone_e164?: string | null
           updated_at?: string
         }
@@ -5644,8 +5590,8 @@ export type Database = {
         Returns: boolean
       }
       can_manage_business: { Args: { p_business_id: string }; Returns: boolean }
-      cleanup_expired_business_sessions: { Args: never; Returns: number }
       cleanup_expired_pending_plans: { Args: never; Returns: undefined }
+      current_clerk_user_id: { Args: never; Returns: string }
       current_user_profile_id: { Args: never; Returns: string }
       debug_auth_state: { Args: never; Returns: Json }
       disablelongtransactions: { Args: never; Returns: string }
@@ -5687,6 +5633,7 @@ export type Database = {
           ai_monthly_credit_limit: number | null
           ai_vision_enabled: boolean | null
           application_fee_bps: number
+          clerk_org_id: string | null
           created_at: string
           description: string | null
           est_prefix: string

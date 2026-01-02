@@ -19,7 +19,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-import { useAuthApi } from '@/hooks/useAuthApi';
+import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import ReschedulePopover from '@/components/WorkOrders/ReschedulePopover';
@@ -346,7 +346,7 @@ function WorkOrderRow({ job, uninvoiced, customerName, when, onOpen, onOpenJobEd
 
 export default function WorkOrdersPage() {
   const { data: customers = [] } = useCustomersData();
-  const authApi = useAuthApi();
+  const { isSignedIn, getToken } = useClerkAuth();
   const { 
     q, setQ, 
     sort, setSort, 
@@ -407,26 +407,40 @@ export default function WorkOrdersPage() {
             </div>
             
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            <Button 
+              <Button 
                 onClick={async () => {
+                  if (!isSignedIn) {
+                    toast.error('Please sign in to send confirmations');
+                    return;
+                  }
+
                   try {
-                    const { data: result, error } = await authApi.invoke('send-work-order-confirmations', {
+                    toast.loading('Sending tomorrow\'s confirmations...');
+                    
+                    const token = await getToken({ template: 'supabase' });
+                    if (!token) {
+                      throw new Error('Unable to get authentication token');
+                    }
+
+                    const response = await fetch('https://ijudkzqfriazabiosnvb.supabase.co/functions/v1/send-work-order-confirmations', {
                       method: 'POST',
-                      body: { type: 'bulk' },
-                      toast: {
-                        loading: 'Sending tomorrow\'s confirmations...',
-                        error: 'Failed to send confirmations'
-                      }
+                      headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlqdWRrenFmcmlhemFiaW9zbnZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ2NzIyNjAsImV4cCI6MjA3MDI0ODI2MH0.HLOwmgddlBTcHfYrX9RYvO8RK6IVkjDQvsdHyXuMXIM'
+                      },
+                      body: JSON.stringify({
+                        type: 'bulk'
+                      })
                     });
                     
-                    if (error) {
-                      throw new Error(error.message || 'Failed to send confirmations');
-                    }
+                    const result = await response.json();
                     
-                    if (result) {
+                    if (response.ok) {
                       const processedCount = result.results?.length || 0;
                       const successCount = result.results?.filter((r: any) => r.success)?.length || 0;
                       
+                      toast.dismiss();
                       if (successCount > 0) {
                         toast.success(`Successfully sent ${successCount} confirmation${successCount !== 1 ? 's' : ''} for tomorrow's scheduled work orders`);
                       } else {

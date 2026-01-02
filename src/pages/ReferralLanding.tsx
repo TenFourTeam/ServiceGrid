@@ -27,7 +27,7 @@ export default function ReferralLanding() {
   }, [referralCode]);
 
   const handleGetStarted = () => {
-    navigate('/auth', { state: { referralCode } });
+    navigate('/clerk-auth', { state: { referralCode } });
   };
 
   return (

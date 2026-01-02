@@ -7,6 +7,7 @@ test.describe('Accessibility Compliance', () => {
     await page.waitForLoadState('networkidle');
 
     const results = await new AxeBuilder({ page })
+      .exclude('.clerk-components')
       .analyze();
 
     const criticalViolations = results.violations.filter(
@@ -16,11 +17,12 @@ test.describe('Accessibility Compliance', () => {
     expect(criticalViolations).toHaveLength(0);
   });
 
-  test('auth page is accessible', async ({ page }) => {
-    await page.goto('/auth');
+  test('clerk auth page is accessible', async ({ page }) => {
+    await page.goto('/clerk-auth');
     await page.waitForLoadState('networkidle');
 
     const results = await new AxeBuilder({ page })
+      .exclude('.clerk-components')
       .analyze();
       
     const criticalViolations = results.violations.filter(

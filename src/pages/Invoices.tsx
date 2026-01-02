@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatDate, formatMoney } from '@/utils/format';
 import { useEffect, useMemo, useState } from 'react';
-import { useAuth } from '@/hooks/useBusinessAuth';
+import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -40,7 +40,7 @@ export default function InvoicesPage() {
   const { data: customers = [] } = useCustomersData();
   const { data: invoices = [] } = useInvoicesData();
   const { data: recurringSchedules = [] } = useRecurringSchedules();
-  const { isSignedIn } = useAuth();
+  const { isSignedIn } = useClerkAuth();
   const { businessId } = useBusinessContext();
   const { t } = useLanguage();
   const authApi = useAuthApi();

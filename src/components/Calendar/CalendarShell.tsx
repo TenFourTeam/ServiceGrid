@@ -16,11 +16,9 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useIsPhone } from "@/hooks/use-phone";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
-
+import { useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-import { setBootStage } from "@/lib/boot-trace";
-
 type CalendarDisplayMode = 'scheduled' | 'clocked' | 'combined';
 
 export default function CalendarShell({
@@ -30,17 +28,13 @@ export default function CalendarShell({
   selectedJobId?: string;
   businessId?: string;
 }) {
-  console.log('[CalendarShell] Mounting with routeBusinessId:', routeBusinessId);
-  
-  
   const [view, setView] = useState<"month" | "week" | "day">("week");
   const [showMap, setShowMap] = useState(false);
   const [displayMode, setDisplayMode] = useState<CalendarDisplayMode>('scheduled');
   const [date, setDate] = useState<Date>(startOfDay(new Date()));
   const [showOverviewGenerator, setShowOverviewGenerator] = useState(false);
   const [showArtifactsViewer, setShowArtifactsViewer] = useState(false);
-  const [showProvisioningFallback, setShowProvisioningFallback] = useState(false);
-  const { role, userId, businessId, businessName, isLoadingBusiness, refetchBusiness } = useBusinessContext(routeBusinessId);
+  const { role, userId, businessId, businessName } = useBusinessContext(routeBusinessId);
   const { data: jobs, refetch: refetchJobs } = useJobsData(businessId);
   const { data: businessMembers } = useBusinessMembersData();
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
@@ -48,7 +42,38 @@ export default function CalendarShell({
   const isPhone = useIsPhone();
   const { t } = useLanguage();
   const queryClient = useQueryClient();
-
+  
+  // Clear cache when business changes
+  useEffect(() => {
+    if (businessId) {
+      console.log("[CalendarShell] Business changed, clearing jobs cache for:", businessId);
+      queryClient.removeQueries({ queryKey: ['data', 'jobs'] });
+    }
+  }, [businessId, queryClient]);
+  
+  // Debug business context changes
+  useEffect(() => {
+    console.log("[CalendarShell] Business context changed:", {
+      businessId,
+      businessName,
+      role,
+      userId,
+      memberCount: businessMembers?.length || 0,
+      memberNames: businessMembers?.map(m => m.name || m.email) || []
+    });
+  }, [businessId, businessName, role, userId, businessMembers]);
+  
+  // Default to showing the owner's own calendar
+  useEffect(() => {
+    if (userId && selectedMemberId === null && businessMembers && businessMembers.length > 0) {
+      // Find the current user in the business members array
+      const currentUser = businessMembers.find(member => member.user_id === userId);
+      if (currentUser) {
+        setSelectedMemberId(userId);
+      }
+    }
+  }, [userId, selectedMemberId, businessMembers]);
+  
   const month = useMemo(() => new Date(date), [date]);
   const rangeTitle = useMemo(() => {
     if (view === "month") return format(date, "MMMM yyyy");
@@ -60,44 +85,19 @@ export default function CalendarShell({
     return format(date, "EEE, MMM d");
   }, [date, view]);
 
+  // Keyboard shortcuts: 1/2/3 to switch views, T for today, arrows to navigate
   const stepDate = useCallback((dir: 1 | -1) => {
     if (view === "month") {
       setDate(addMonths(date, dir));
     } else if (view === "week") {
+      // For phone in week view, navigate by 1 day to slide the 3-day window
+      // For tablet/desktop, navigate by full week (7 days)
       const step = (isPhone && view === "week") ? 1 : 7;
       setDate(addDays(date, step * dir));
     } else {
       setDate(addDays(date, dir));
     }
   }, [date, view, isPhone]);
-
-  // ALL useEffects BEFORE any early returns to comply with React's Rules of Hooks
-  useEffect(() => {
-    if (!businessId) return;
-    console.log("[CalendarShell] Business changed, clearing jobs cache for:", businessId);
-    queryClient.removeQueries({ queryKey: ['data', 'jobs'] });
-  }, [businessId, queryClient]);
-
-  useEffect(() => {
-    if (!businessId) return;
-    console.log("[CalendarShell] Business context changed:", {
-      businessId,
-      businessName,
-      role,
-      userId,
-      memberCount: businessMembers?.length || 0,
-      memberNames: businessMembers?.map(m => m.name || m.email) || []
-    });
-  }, [businessId, businessName, role, userId, businessMembers]);
-
-  useEffect(() => {
-    if (!userId || !businessMembers?.length) return;
-    if (selectedMemberId === null) {
-      const currentUser = businessMembers.find(member => member.user_id === userId);
-      if (currentUser) setSelectedMemberId(userId);
-    }
-  }, [userId, selectedMemberId, businessMembers]);
-
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement)?.tagName === 'INPUT' || (e.target as HTMLElement)?.tagName === 'TEXTAREA') return;
@@ -111,70 +111,6 @@ export default function CalendarShell({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [stepDate]);
-
-  // Business provisioning fallback - only show after extended timeout when truly stuck
-  useEffect(() => {
-    // Only trigger fallback when loading is complete but business is still missing
-    if (!isLoadingBusiness && !businessId) {
-      const timer = setTimeout(() => {
-        console.warn('[CalendarShell] Business context not resolved after 8s');
-        setShowProvisioningFallback(true);
-      }, 8000);
-      return () => clearTimeout(timer);
-    }
-    // Reset fallback state when business becomes available
-    if (businessId) {
-      setShowProvisioningFallback(false);
-    }
-  }, [isLoadingBusiness, businessId]);
-  
-  // Signal app ready when calendar successfully mounts with business context
-  useEffect(() => {
-    if (businessId && !isLoadingBusiness) {
-      console.log('[CalendarShell] Calendar ready with businessId:', businessId);
-      setBootStage('app_ready');
-    }
-  }, [businessId, isLoadingBusiness]);
-
-  // Skeleton loading state - AFTER all hooks
-  if (isLoadingBusiness || !businessId) {
-    // Show provisioning fallback after timeout
-    if (showProvisioningFallback) {
-      return (
-        <div className="flex-1 min-h-0 flex items-center justify-center">
-          <div className="text-center space-y-4 max-w-md p-8">
-            <h2 className="text-xl font-semibold text-foreground">Setting up your workspace...</h2>
-            <p className="text-muted-foreground">This should only take a moment. If this persists, try refreshing.</p>
-            <Button onClick={() => refetchBusiness?.()} variant="secondary">
-              Retry
-            </Button>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="flex-1 min-h-0 flex flex-col gap-4">
-        <header className="pt-6 flex items-center justify-between">
-          <Skeleton className="h-7 w-48" />
-          <div className="flex gap-2">
-            <Skeleton className="h-9 w-28" />
-            <Skeleton className="h-9 w-28" />
-            <Skeleton className="h-9 w-20" />
-          </div>
-        </header>
-        <div className="flex-1 grid grid-cols-7 gap-px bg-muted/30 rounded-lg overflow-hidden">
-          {Array.from({ length: 7 }).map((_, i) => (
-            <div key={i} className="bg-background p-2 min-h-[120px]">
-              <Skeleton className="h-5 w-10 mb-3" />
-              <Skeleton className="h-16 w-full rounded" />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   return <div className="flex-1 min-h-0 flex flex-col gap-2 md:gap-4">
         <header className="pt-4 md:pt-6 flex flex-col gap-3 md:gap-0 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center justify-between md:gap-3">

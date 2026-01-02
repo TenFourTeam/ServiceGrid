@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useBusinessAuth } from "@/hooks/useBusinessAuth";
+import { useAuth } from "@clerk/clerk-react";
 import { Button } from "@/components/ui/button";
 import { LogOut, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -28,7 +28,7 @@ export function SignOutButton({
   showConfirmation = true,
   onSignOut 
 }: SignOutButtonProps) {
-  const { logout } = useBusinessAuth();
+  const { signOut } = useAuth();
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   const handleSignOut = async () => {
@@ -36,7 +36,7 @@ export function SignOutButton({
       setIsSigningOut(true);
       toast.info("Signing out...");
       
-      await logout();
+      await signOut();
       
       onSignOut?.();
       toast.success("Signed out successfully");

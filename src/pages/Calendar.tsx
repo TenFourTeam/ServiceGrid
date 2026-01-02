@@ -5,7 +5,6 @@ import { useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function CalendarPage() {
-  console.log('[CalendarPage] Mounting...');
   const [params] = useSearchParams();
   const job = params.get('job') || undefined;
   const businessId = params.get('businessId') || undefined;

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useUser } from '@clerk/clerk-react';
 import AppLayout from '@/components/Layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,6 +14,7 @@ import { useAuthApi } from '@/hooks/useAuthApi';
 import { useProfile } from '@/queries/useProfile';
 
 export default function ReferralPage() {
+  const { user } = useUser();
   const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
   const { data: stats, isLoading } = useReferralStats();

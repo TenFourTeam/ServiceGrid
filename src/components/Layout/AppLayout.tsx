@@ -8,6 +8,8 @@ import MobileNavigation from '@/components/Layout/MobileNavigation';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { PageFade } from '@/components/Motion/PageFade';
 import { SubscriptionBanner } from '@/components/Onboarding/SubscriptionBanner';
+import { useOnboardingState } from '@/onboarding/streamlined';
+import { useOnboardingActions } from '@/onboarding/hooks';
 import { useSessionStorage } from '@/hooks/useSessionStorage';
 import { RoleIndicator } from '@/components/Layout/RoleIndicator';
 import { BusinessSwitcher } from '@/components/Layout/BusinessSwitcher';
@@ -16,7 +18,7 @@ import { AIStatusBadge } from '@/components/AI/AIStatusBadge';
 import { AskAIButton } from '@/components/AI/AskAIButton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
-// import { Softphone } from '@/components/VoIP/Softphone'; // Temporarily disabled
+import { Softphone } from '@/components/VoIP/Softphone';
 
 export default function AppLayout({ children, title, businessId }: { children: ReactNode; title?: string; businessId?: string }) {
   const isMobile = useIsMobile();
@@ -27,12 +29,12 @@ export default function AppLayout({ children, title, businessId }: { children: R
   const [showAiTooltip, setShowAiTooltip] = useState(false);
 
   // Show AI onboarding tooltip after a short delay
-  useEffect(() => {
+  useState(() => {
     if (!aiOnboardingSeen) {
       const timer = setTimeout(() => setShowAiTooltip(true), 2000);
       return () => clearTimeout(timer);
     }
-  }, [aiOnboardingSeen]);
+  });
 
   useEffect(() => {
     document.title = title ? `${title} • ServiceGrid` : 'ServiceGrid';
@@ -54,7 +56,7 @@ export default function AppLayout({ children, title, businessId }: { children: R
         
         <MobileNavigation />
         <AskAIButton />
-        {/* {role === 'owner' && <Softphone />} */}
+        {role === 'owner' && <Softphone />}
       </div>
     );
   }
@@ -118,7 +120,7 @@ export default function AppLayout({ children, title, businessId }: { children: R
       </div>
 
       <AskAIButton />
-      {/* {role === 'owner' && <Softphone />} */}
+      {role === 'owner' && <Softphone />}
     </SidebarProvider>
   );
 }

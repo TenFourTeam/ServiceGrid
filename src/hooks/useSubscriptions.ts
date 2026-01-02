@@ -25,18 +25,6 @@ export function useSubscriptions() {
       });
 
       if (error) {
-        // Check for Stripe API key errors - don't block the app
-        const errorMsg = error.message || '';
-        if (errorMsg.includes('Invalid API Key') || errorMsg.includes('API key')) {
-          console.warn('[useSubscriptions] Stripe not configured, returning defaults');
-          return {
-            subscribed: false,
-            subscription_tier: null,
-            subscription_end: null,
-            trialDaysLeft: undefined,
-            isTrialExpired: false,
-          } as SubscriptionStatus;
-        }
         throw new Error(error.message || 'Failed to check subscription');
       }
 
@@ -54,11 +42,6 @@ export function useSubscriptions() {
     },
     staleTime: 60_000,
     refetchInterval: 5 * 60 * 1000,
-    retry: (failureCount, error) => {
-      // Don't retry on API key errors
-      if (error.message?.includes('Invalid API Key')) return false;
-      return failureCount < 3;
-    },
   });
 
   const createCheckout = useMutation({

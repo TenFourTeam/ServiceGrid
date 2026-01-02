@@ -18,7 +18,7 @@ export type ProfileUpdateResponse = {
 };
 
 /**
- * Profile operations hook using server-side edge function with proper session authentication
+ * Profile operations hook using server-side edge function with proper Clerk authentication
  */
 export function useProfileOperations() {
   const queryClient = useQueryClient();

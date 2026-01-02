@@ -6,6 +6,7 @@
 interface EnvironmentConfig {
   supabaseUrl: string;
   supabaseAnonKey: string;
+  clerkPublishableKey?: string;
   isDevelopment: boolean;
   isProduction: boolean;
   appUrl: string;
@@ -30,6 +31,13 @@ export function getSupabaseAnonKey(): string {
  */
 export function getAppUrl(): string {
   return import.meta.env.VITE_APP_URL || 'https://servicegrid.app';
+}
+
+/**
+ * Get the Clerk publishable key
+ */
+export function getClerkPublishableKey(): string | undefined {
+  return import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 }
 
 /**
@@ -69,6 +77,7 @@ export function getEnvironmentConfig(): EnvironmentConfig {
   return {
     supabaseUrl: getSupabaseUrl(),
     supabaseAnonKey: getSupabaseAnonKey(),
+    clerkPublishableKey: getClerkPublishableKey(),
     isDevelopment: isDevelopment(),
     isProduction: isProduction(),
     appUrl: getAppUrl(),

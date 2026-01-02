@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { useBusinessContext } from './useBusinessContext';
-import { useAuthApi } from './useAuthApi';
 import { toast } from 'sonner';
 
 interface Conversation {
@@ -10,32 +10,22 @@ interface Conversation {
   updated_at: string;
 }
 
-interface GroupedConversations {
-  today: Conversation[];
-  yesterday: Conversation[];
-  lastWeek: Conversation[];
-  older: Conversation[];
-}
-
 export function useAIConversations() {
   const { businessId } = useBusinessContext();
   const queryClient = useQueryClient();
-  const authApi = useAuthApi();
 
   const conversations = useQuery({
     queryKey: ['ai-conversations', businessId],
-    queryFn: async (): Promise<GroupedConversations> => {
-      if (!businessId) return { today: [], yesterday: [], lastWeek: [], older: [] };
+    queryFn: async () => {
+      if (!businessId) return [];
 
-      const { data, error } = await authApi.invoke('ai-conversations-crud', {
-        method: 'GET',
-      });
+      const { data, error } = await supabase
+        .from('ai_chat_conversations')
+        .select('id, title, created_at, updated_at')
+        .eq('business_id', businessId)
+        .order('updated_at', { ascending: false });
 
-      if (error) {
-        throw new Error(error.message || 'Failed to fetch conversations');
-      }
-
-      const conversations = (data || []) as Conversation[];
+      if (error) throw error;
 
       // Group by relative time
       const now = new Date();
@@ -45,14 +35,14 @@ export function useAIConversations() {
       const lastWeek = new Date(today);
       lastWeek.setDate(lastWeek.getDate() - 7);
 
-      const grouped: GroupedConversations = {
-        today: [],
-        yesterday: [],
-        lastWeek: [],
-        older: [],
+      const grouped = {
+        today: [] as Conversation[],
+        yesterday: [] as Conversation[],
+        lastWeek: [] as Conversation[],
+        older: [] as Conversation[],
       };
 
-      conversations?.forEach(conv => {
+      data?.forEach(conv => {
         const convDate = new Date(conv.created_at);
         if (convDate >= today) {
           grouped.today.push(conv);
@@ -72,14 +62,12 @@ export function useAIConversations() {
 
   const deleteConversation = useMutation({
     mutationFn: async (conversationId: string) => {
-      const { error } = await authApi.invoke('ai-conversations-crud', {
-        method: 'DELETE',
-        queryParams: { id: conversationId },
-      });
+      const { error } = await supabase
+        .from('ai_chat_conversations')
+        .delete()
+        .eq('id', conversationId);
 
-      if (error) {
-        throw new Error(error.message || 'Failed to delete conversation');
-      }
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ai-conversations', businessId] });

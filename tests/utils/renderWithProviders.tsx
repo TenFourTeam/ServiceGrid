@@ -2,10 +2,11 @@ import React from 'react';
 import { render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
+import { ClerkProvider } from '@clerk/clerk-react';
 
-// Mock Auth Provider for tests
-const MockAuthProvider = ({ children }: { children: React.ReactNode }) => {
-  return <div data-testid="mock-auth-provider">{children}</div>;
+// Mock Clerk Provider for tests
+const MockClerkProvider = ({ children }: { children: React.ReactNode }) => {
+  return <div data-testid="mock-clerk-provider">{children}</div>;
 };
 
 interface RenderOptions {
@@ -31,13 +32,13 @@ export function renderWithProviders(
   });
   
   return render(
-    <MockAuthProvider>
+    <MockClerkProvider>
       <QueryClientProvider client={testQueryClient}>
         <MemoryRouter initialEntries={[route]}>
           {ui}
         </MemoryRouter>
       </QueryClientProvider>
-    </MockAuthProvider>
+    </MockClerkProvider>
   );
 }
 

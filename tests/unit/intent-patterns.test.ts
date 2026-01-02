@@ -109,7 +109,7 @@ describe('Intent Pattern System', () => {
     it('generates a coverage report', () => {
       const report = analyzeCoverage();
       expect(report.totalPhrases).toBeGreaterThan(0);
-      expect(report.matched).toBeDefined();
+      expect(report.correctMatches).toBeDefined();
       expect(report.accuracy).toBeDefined();
     });
 

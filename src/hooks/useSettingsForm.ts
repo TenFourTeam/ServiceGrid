@@ -1,16 +1,19 @@
 import { useState, useEffect } from 'react';
-import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { useProfile } from '@/queries/useProfile';
 import { useProfileOperations } from '@/hooks/useProfileOperations';
 import { toast } from 'sonner';
 import { formatPhoneInput } from '@/utils/validation';
 import { formatNameSuggestion } from '@/validation/profile';
+import { useUser } from '@clerk/clerk-react';
 
 /**
  * Profile form state management for Settings page
  * Handles personal profile data (name + phone) only
  */
 export function useSettingsForm() {
-  const { profileFullName, profilePhoneE164 } = useBusinessContext();
+  const { data: profile } = useProfile();
+  const { user } = useUser();
+  
   const { updateProfile, isUpdating } = useProfileOperations();
   
   // Form state - computed from server data
@@ -19,14 +22,14 @@ export function useSettingsForm() {
   
   // Auto-sync form state with server data
   useEffect(() => {
-    if (profileFullName) {
-      setUserName(profileFullName);
+    if (profile?.profile?.fullName) {
+      setUserName(profile.profile.fullName);
     }
-    if (profilePhoneE164) {
+    if (profile?.profile?.phoneE164) {
       // Always display phone in user-friendly format
-      setUserPhone(formatPhoneInput(profilePhoneE164));
+      setUserPhone(formatPhoneInput(profile.profile.phoneE164));
     }
-  }, [profileFullName, profilePhoneE164]);
+  }, [profile]);
   
   // Form validation - only name and phone required
   const isFormValid = userName.trim() && userPhone.trim();
@@ -54,10 +57,24 @@ export function useSettingsForm() {
 
     try {
       // Update profile only
+      const optimisticName = userName.trim();
+      
       await updateProfile.mutateAsync({ 
-        fullName: userName.trim(), 
+        fullName: optimisticName, 
         phoneRaw: userPhone.trim(),
       });
+      
+      // Optional non-blocking Clerk sync
+      if (user && optimisticName) {
+        try {
+          const parts = optimisticName.split(' ');
+          const firstName = parts.shift() || '';
+          const lastName = parts.join(' ');
+          await user.update({ firstName, lastName });
+        } catch (clerkError) {
+          console.warn('Clerk sync failed (non-blocking):', clerkError);
+        }
+      }
     } catch (error) {
       console.error('Profile update failed:', error);
     }

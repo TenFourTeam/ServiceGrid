@@ -1,7 +1,9 @@
-import { useAuth, useBusinessAuth } from '@/hooks/useBusinessAuth';
+import { useAuth } from '@clerk/clerk-react';
 import { useUserBusinesses } from '@/hooks/useUserBusinesses';
 import { useEffect } from 'react';
 import { updateBusinessMeta } from '@/utils/metaUpdater';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 export type BusinessUI = {
   id: string;
@@ -20,18 +22,29 @@ export type BusinessUI = {
 /**
  * Role-aware business context - dynamically determines user's role for the current business
  * Uses the existing business_permissions system to detect owner vs worker roles
- * 
- * CONSOLIDATED: This hook now provides all profile + business data
- * Previously consumers needed both useProfile() and useBusinessContext()
  */
 export function useBusinessContext(targetBusinessId?: string) {
   const { isSignedIn, isLoaded, userId } = useAuth();
-  const { profile } = useBusinessAuth();
+  
+  // Get the user's profile ID (UUID) from the profiles table
+  const { data: profile } = useQuery({
+    queryKey: ['current-profile', userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      const { data } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('clerk_user_id', userId)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!userId && isSignedIn,
+  });
   
   // Get all businesses the user has access to (owned + worker)
   const businessesQuery = useUserBusinesses();
   
-  // Transform UserBusiness to BusinessUI format (safe even if data is undefined)
+  // Transform UserBusiness to BusinessUI format
   const transformedBusinesses: BusinessUI[] | undefined = businessesQuery.data?.map(b => ({
     id: b.id,
     name: b.name,
@@ -45,39 +58,26 @@ export function useBusinessContext(targetBusinessId?: string) {
     createdAt: b.joined_at,
   }));
   
-  // Deterministic business selection with worker-safe fallback
-  // Priority: targetBusinessId > is_current > first owner > first business
-  const resolvedBusiness = (() => {
-    if (!transformedBusinesses?.length) return undefined;
-    
-    // 1. If targetBusinessId provided, use that
-    if (targetBusinessId) {
-      return transformedBusinesses.find(b => b.id === targetBusinessId);
-    }
-    
-    // 2. Find is_current business (set by backend based on default_business_id)
-    const currentBusiness = businessesQuery.data?.find(b => b.is_current);
-    if (currentBusiness) {
-      return transformedBusinesses.find(b => b.id === currentBusiness.id);
-    }
-    
-    // 3. Fallback to first owner business
-    const ownerBusiness = transformedBusinesses.find(b => b.role === 'owner');
-    if (ownerBusiness) return ownerBusiness;
-    
-    // 4. Final fallback: first business in list (for worker-only users)
-    return transformedBusinesses[0];
-  })();
+  // Find the owned business (user's default business)
+  const ownedBusiness = transformedBusinesses?.find(b => b.role === 'owner');
   
-  const business = resolvedBusiness;
-  const role = resolvedBusiness?.role || null;
-  const businessId = resolvedBusiness?.id;
+  // Determine which business to use
+  const targetBusiness = targetBusinessId 
+    ? transformedBusinesses?.find(b => b.id === targetBusinessId)
+    : ownedBusiness;
+  
+  // Get the business and role
+  const business = targetBusiness;
+  const role = targetBusiness?.role || null;
+  
+  // Use targetBusinessId immediately if provided to prevent race condition
+  const businessId = targetBusinessId || business?.id;
   
   // Simplified loading and error states
   const isLoadingBusiness = !isLoaded || businessesQuery.isLoading;
   const hasError = businessesQuery.isError;
   
-  // Update meta tags when business data changes - MUST be called unconditionally
+  // Update meta tags when business data changes
   useEffect(() => {
     if (business?.name) {
       updateBusinessMeta({
@@ -88,47 +88,12 @@ export function useBusinessContext(targetBusinessId?: string) {
     }
   }, [business?.name, business?.description, business?.logoUrl]);
   
-  // Early return if auth is not ready - AFTER all hooks are called
-  if (!isLoaded) {
-    return {
-      isAuthenticated: false,
-      isLoaded: false,
-      userId: null,
-      profileId: null,
-      // Profile data (CONSOLIDATED from useProfile)
-      profileFullName: null,
-      profilePhoneE164: null,
-      defaultBusinessId: null,
-      business: null,
-      businessId: undefined,
-      businessName: undefined,
-      businessDescription: undefined,
-      businessPhone: undefined,
-      businessReplyToEmail: undefined,
-      businessTaxRateDefault: undefined,
-      businessLogoUrl: undefined,
-      businessLightLogoUrl: undefined,
-      role: null,
-      userRole: null,
-      canManage: false,
-      isLoadingBusiness: true,
-      hasBusinessError: false,
-      businessError: null,
-      refetchBusiness: () => Promise.resolve({ data: undefined, error: null }),
-    };
-  }
-  
   return {
     // Authentication state
     isAuthenticated: isSignedIn,
     isLoaded,
-    userId, // Profile UUID for database operations
+    userId, // Clerk user ID
     profileId: profile?.id, // Profile UUID for database operations
-    
-    // Profile data (CONSOLIDATED from useProfile)
-    profileFullName: profile?.fullName || null,
-    profilePhoneE164: profile?.phoneE164 || null,
-    defaultBusinessId: profile?.defaultBusinessId || null,
     
     // Business data (currently using user's owned business)
     business,

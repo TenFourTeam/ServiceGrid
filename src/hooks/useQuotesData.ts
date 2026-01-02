@@ -12,7 +12,7 @@ interface UseQuotesDataOptions {
 }
 
 /**
- * Edge Function quotes hook - unified session authentication
+ * Edge Function quotes hook - unified Clerk authentication
  */
 export function useQuotesData(opts?: UseQuotesDataOptions) {
   const { isAuthenticated, businessId } = useBusinessContext();

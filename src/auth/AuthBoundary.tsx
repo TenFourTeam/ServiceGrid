@@ -1,8 +1,7 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { Navigate, useLocation, Outlet } from "react-router-dom";
-import { useAuth } from "@/hooks/useBusinessAuth";
-import BootLoadingScreen from "@/components/BootLoadingScreen";
-import { setBootStage } from "@/lib/boot-trace";
+import { useAuth } from "@clerk/clerk-react";
+import LoadingScreen from "@/components/LoadingScreen";
 
 interface AuthBoundaryProps {
   children: React.ReactNode;
@@ -20,16 +19,9 @@ export function AuthBoundary({
   const { isLoaded, isSignedIn } = useAuth();
   const location = useLocation();
 
-  // Report auth checking stage
-  useEffect(() => {
-    if (!isLoaded) {
-      setBootStage('auth_checking');
-    }
-  }, [isLoaded]);
-
-  // Show loading screen while auth is initializing
+  // Show loading screen while Clerk is initializing
   if (!isLoaded) {
-    return <BootLoadingScreen full fallbackLabel="Checking session" />;
+    return <LoadingScreen full />;
   }
 
   // Handle public-only routes (redirect authenticated users)
@@ -40,7 +32,7 @@ export function AuthBoundary({
   // Handle protected routes (redirect unauthenticated users)
   if (requireAuth && !isSignedIn) {
     return <Navigate 
-      to="/auth" 
+      to="/clerk-auth" 
       replace 
       state={{ from: location }}
     />;

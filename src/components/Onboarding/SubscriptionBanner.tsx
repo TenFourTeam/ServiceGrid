@@ -7,11 +7,10 @@ import { useNavigate } from 'react-router-dom';
 
 export function SubscriptionBanner() {
   const [dismissed, setDismissed] = useState(false);
-  const { status: subscription, isError } = useSubscriptions();
+  const { status: subscription } = useSubscriptions();
   const navigate = useNavigate();
 
-  // Hide banner if there's an error (e.g., Stripe not configured) or no subscription data
-  if (!subscription || subscription.subscribed || dismissed || isError) {
+  if (!subscription || subscription.subscribed || dismissed) {
     return null;
   }
 

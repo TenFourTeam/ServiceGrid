@@ -30,25 +30,10 @@ const POSTGIS_EXCLUSIONS = [
 ];
 
 /**
- * Application reporting views to exclude from security definer warnings
- * These views are protected by edge function authentication and business_id filtering
- * See docs/SECURITY_EXCEPTIONS.md for full documentation
+ * Check if a table/view name is a PostGIS system object
  */
-const REPORTING_VIEW_EXCLUSIONS = [
-  'unified_assignments',
-  'time_by_job_report',
-  'time_by_task_report',
-  'user_productivity_report',
-  'daily_time_breakdown',
-  'weekly_time_breakdown',
-  'task_category_breakdown'
-];
-
-/**
- * Check if a table/view name is an accepted security exception
- */
-function isSecurityException(name: string): boolean {
-  return POSTGIS_EXCLUSIONS.includes(name) || REPORTING_VIEW_EXCLUSIONS.includes(name);
+function isPostgisObject(name: string): boolean {
+  return POSTGIS_EXCLUSIONS.includes(name);
 }
 
 export class SecurityValidator extends BaseValidator {
@@ -131,9 +116,9 @@ export class SecurityValidator extends BaseValidator {
         )
       );
     } else {
-      // Filter out accepted security exceptions (PostGIS + reporting views)
-      const appTablesWithoutRLS = tablesWithoutRLS.filter(t => !isSecurityException(t));
-      const excludedTablesWithoutRLS = tablesWithoutRLS.filter(t => isSecurityException(t));
+      // Filter out PostGIS system objects
+      const appTablesWithoutRLS = tablesWithoutRLS.filter(t => !isPostgisObject(t));
+      const postgisTablesWithoutRLS = tablesWithoutRLS.filter(t => isPostgisObject(t));
       
       if (appTablesWithoutRLS.length === 0) {
         // Only PostGIS tables missing RLS - acceptable
@@ -142,7 +127,7 @@ export class SecurityValidator extends BaseValidator {
             'sec-rls-all',
             'RLS Enabled on App Tables',
             'configuration',
-            `All application tables have RLS enabled (${excludedTablesWithoutRLS.length} system/reporting objects excluded)`
+            `All application tables have RLS enabled (${postgisTablesWithoutRLS.length} PostGIS system tables excluded)`
           )
         );
       } else {

@@ -2,12 +2,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useVerificationMetrics } from '@/hooks/useVerificationMetrics';
-import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { useProfile } from '@/queries/useProfile';
 import { CheckCircle2, XCircle, Clock, AlertTriangle, Activity, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function VerificationMetricsPanel() {
-  const { businessId } = useBusinessContext();
+  const { data: profile } = useProfile();
+  const businessId = profile?.business?.id;
 
   const { data: metrics, isLoading } = useVerificationMetrics(businessId, {
     limit: 500,

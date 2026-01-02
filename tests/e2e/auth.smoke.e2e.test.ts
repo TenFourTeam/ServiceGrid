@@ -14,7 +14,8 @@ test.describe('Authentication Flow @smoke', () => {
     
     if (await signInButton.isVisible()) {
       await signInButton.click();
-      await page.waitForTimeout(1000); // Give time for navigation
+      await page.waitForTimeout(1000); // Give time for modal/navigation
+      // Clerk modal should appear or navigate
       await expect(page.locator('body')).toBeVisible();
     }
   });
@@ -23,10 +24,10 @@ test.describe('Authentication Flow @smoke', () => {
     await page.goto('/calendar');
     await page.waitForLoadState('networkidle');
     
-    // Should redirect to auth page
-    expect(page.url()).toContain('/auth');
+    // Should redirect to clerk auth page
+    expect(page.url()).toContain('/clerk-auth');
     
-    // Should see auth content
+    // Should see some auth-related content
     await expect(page.locator('body')).toBeVisible();
   });
 
@@ -39,7 +40,8 @@ test.describe('Authentication Flow @smoke', () => {
     
     if (await signInButton.isVisible()) {
       await signInButton.click();
-      await page.waitForTimeout(1000);
+      // Clerk modal should open or navigate somewhere
+      await page.waitForTimeout(1000); // Give modal time to appear
       await expect(page.locator('body')).toBeVisible();
     }
   });
@@ -51,8 +53,8 @@ test.describe('Authentication Flow @smoke', () => {
       await page.goto(route);
       await page.waitForLoadState('networkidle');
       
-      // Should redirect to auth page
-      expect(page.url()).toContain('/auth');
+      // Should redirect to clerk auth page
+      expect(page.url()).toContain('/clerk-auth');
     }
   });
 });

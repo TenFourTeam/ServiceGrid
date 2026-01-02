@@ -14,13 +14,12 @@ import { EdgeFunctionDefinition, EdgeFunctionCategory } from '../types';
 export const EDGE_FUNCTION_REGISTRY: EdgeFunctionDefinition[] = [
   // Auth & Profile
   { name: 'accept-invite', path: 'supabase/functions/accept-invite/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'auth' },
-  { name: 'add-team-member', path: 'supabase/functions/add-team-member/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'auth' },
-  { name: 'check-user-exists', path: 'supabase/functions/check-user-exists/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'auth' },
   { name: 'customer-auth', path: 'supabase/functions/customer-auth/index.ts', requiresAuth: false, requiredSecrets: [], hasCors: true, category: 'auth' },
   { name: 'decline-invite', path: 'supabase/functions/decline-invite/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'auth' },
   { name: 'get-profile', path: 'supabase/functions/get-profile/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'auth' },
   { name: 'update-profile', path: 'supabase/functions/update-profile/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'auth' },
   { name: 'complete-profile-email', path: 'supabase/functions/complete-profile-email/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'auth' },
+  { name: 'clerk-publishable-key', path: 'supabase/functions/clerk-publishable-key/index.ts', requiresAuth: false, requiredSecrets: ['CLERK_PUBLISHABLE_KEY'], hasCors: true, category: 'auth' },
   { name: 'leave-business', path: 'supabase/functions/leave-business/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'auth' },
   { name: 'create-invites', path: 'supabase/functions/create-invites/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'auth' },
   { name: 'search-invite-users', path: 'supabase/functions/search-invite-users/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'auth' },
@@ -30,8 +29,6 @@ export const EDGE_FUNCTION_REGISTRY: EdgeFunctionDefinition[] = [
   // AI
   { name: 'ai-chat', path: 'supabase/functions/ai-chat/index.ts', requiresAuth: true, requiredSecrets: ['ANTHROPIC_API_KEY'], hasCors: true, category: 'ai' },
   { name: 'ai-chat-messages', path: 'supabase/functions/ai-chat-messages/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'ai' },
-  { name: 'ai-activity-crud', path: 'supabase/functions/ai-activity-crud/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'ai' },
-  { name: 'ai-conversations-crud', path: 'supabase/functions/ai-conversations-crud/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'ai' },
   { name: 'ai-generations-analytics', path: 'supabase/functions/ai-generations-analytics/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'ai' },
   { name: 'ai-schedule-optimizer', path: 'supabase/functions/ai-schedule-optimizer/index.ts', requiresAuth: true, requiredSecrets: ['ANTHROPIC_API_KEY'], hasCors: true, category: 'ai' },
   { name: 'estimate-job-from-photo', path: 'supabase/functions/estimate-job-from-photo/index.ts', requiresAuth: true, requiredSecrets: ['ANTHROPIC_API_KEY'], hasCors: true, category: 'ai' },
@@ -81,9 +78,7 @@ export const EDGE_FUNCTION_REGISTRY: EdgeFunctionDefinition[] = [
 
   // Scheduling
   { name: 'auto-schedule-request', path: 'supabase/functions/auto-schedule-request/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'scheduling' },
-  { name: 'assessment-progress', path: 'supabase/functions/assessment-progress/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'scheduling' },
   { name: 'check-scheduling-capacity', path: 'supabase/functions/check-scheduling-capacity/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'scheduling' },
-  { name: 'generated-jobs-stats', path: 'supabase/functions/generated-jobs-stats/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'scheduling' },
   { name: 'jobs-crud', path: 'supabase/functions/jobs-crud/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'scheduling' },
   { name: 'jobs-crud-assign', path: 'supabase/functions/jobs-crud-assign/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'scheduling' },
   { name: 'jobs-location-query', path: 'supabase/functions/jobs-location-query/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'scheduling' },
@@ -97,7 +92,6 @@ export const EDGE_FUNCTION_REGISTRY: EdgeFunctionDefinition[] = [
   { name: 'optimize-job-route', path: 'supabase/functions/optimize-job-route/index.ts', requiresAuth: true, requiredSecrets: ['GOOGLE_MAPS_API_KEY'], hasCors: true, category: 'scheduling' },
   { name: 'optimize-recurring-route', path: 'supabase/functions/optimize-recurring-route/index.ts', requiresAuth: true, requiredSecrets: ['GOOGLE_MAPS_API_KEY'], hasCors: true, category: 'scheduling' },
   { name: 'priority-reschedule', path: 'supabase/functions/priority-reschedule/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'scheduling' },
-  { name: 'step-verifier-crud', path: 'supabase/functions/step-verifier-crud/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'scheduling' },
   { name: 'suggest-reschedule', path: 'supabase/functions/suggest-reschedule/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'scheduling' },
   { name: 'team-availability-crud', path: 'supabase/functions/team-availability-crud/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'scheduling' },
   { name: 'team-utilization', path: 'supabase/functions/team-utilization/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'scheduling' },
@@ -127,8 +121,8 @@ export const EDGE_FUNCTION_REGISTRY: EdgeFunctionDefinition[] = [
   { name: 'update-media-annotations', path: 'supabase/functions/update-media-annotations/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'media' },
   { name: 'bulk-update-media-tags', path: 'supabase/functions/bulk-update-media-tags/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'media' },
   { name: 'process-media-thumbnail', path: 'supabase/functions/process-media-thumbnail/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'media' },
+  { name: 'transcode-media-video', path: 'supabase/functions/transcode-media-video/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'media' },
   { name: 'conversation-media-fetch', path: 'supabase/functions/conversation-media-fetch/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'media' },
-  { name: 'media-tags-query', path: 'supabase/functions/media-tags-query/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'media' },
 
   // Integrations - Google Drive
   { name: 'google-drive-oauth', path: 'supabase/functions/google-drive-oauth/index.ts', requiresAuth: true, requiredSecrets: ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'], hasCors: true, category: 'integrations' },
@@ -195,7 +189,6 @@ export const EDGE_FUNCTION_REGISTRY: EdgeFunctionDefinition[] = [
   { name: 'note-presence', path: 'supabase/functions/note-presence/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'admin' },
   { name: 'send-lifecycle-email', path: 'supabase/functions/send-lifecycle-email/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'admin' },
   { name: 'process-email-queue', path: 'supabase/functions/process-email-queue/index.ts', requiresAuth: false, requiredSecrets: [], hasCors: true, category: 'internal' },
-  { name: 'sync-logs-crud', path: 'supabase/functions/sync-logs-crud/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'integrations' },
 
   // Checklists & QA
   { name: 'checklists-crud', path: 'supabase/functions/checklists-crud/index.ts', requiresAuth: true, requiredSecrets: [], hasCors: true, category: 'admin' },

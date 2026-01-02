@@ -63,6 +63,12 @@ export function AccountSecurityCard() {
             Magic Link
           </Badge>
         );
+      case 'clerk':
+        return (
+          <Badge variant="secondary" className="gap-1">
+            Google
+          </Badge>
+        );
       default:
         return null;
     }

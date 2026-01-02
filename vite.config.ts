@@ -37,6 +37,10 @@ export default defineConfig(({ mode }) => ({
             '@radix-ui/react-checkbox',
             '@radix-ui/react-switch',
           ],
+          // Auth Libraries
+          'auth-vendor': [
+            '@clerk/clerk-react'
+          ],
           // Data & Query Libraries
           'data-vendor': [
             '@supabase/supabase-js',

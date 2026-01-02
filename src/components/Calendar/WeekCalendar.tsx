@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerClose } from '@/components/ui/drawer';
 import { Textarea } from '@/components/ui/textarea';
 // Jobs data now comes from store via dashboard data
-import { useAuth } from '@/hooks/useBusinessAuth';
+import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { useAuthApi } from '@/hooks/useAuthApi';
 import { toast } from 'sonner';
 import { JobBottomModal } from '@/components/Jobs/JobBottomModal';

@@ -1,7 +1,7 @@
 // Re-export all auth components and hooks for easy importing
 export { AuthBoundary, RequireAuth, PublicOnly } from './AuthBoundary';
 export { default as AuthErrorBoundary } from './AuthErrorBoundary';
-export { QueryClientAuthIntegration } from './QueryClientAuthIntegration';
+export { QueryClientClerkIntegration } from './QueryClientClerkIntegration';
 
-// Re-export the new auth hooks as the primary auth interface
-export { useAuth, useUser, useBusinessAuth } from '@/hooks/useBusinessAuth';
+// Re-export Clerk's useAuth as the primary auth hook
+export { useAuth } from '@clerk/clerk-react';

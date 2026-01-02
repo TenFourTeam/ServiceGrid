@@ -139,17 +139,10 @@ export function renderWithAuth(
     },
   });
 
-  // Mock useBusinessAuth hook
-  vi.doMock('@/hooks/useBusinessAuth', () => ({
+  // Mock Clerk hooks
+  vi.doMock('@clerk/clerk-react', () => ({
     useAuth: () => createMockAuthState(finalAuthState),
-    useUser: () => createMockUserState(finalUserState),
-    useBusinessAuth: () => ({
-      isAuthenticated: finalAuthState.isSignedIn,
-      isLoading: !finalAuthState.isLoaded,
-      user: finalAuthState.isSignedIn ? { profileId: finalAuthState.userId } : null,
-      logout: vi.fn(),
-      getSessionToken: vi.fn(() => 'mock-session-token'),
-    })
+    useUser: () => createMockUserState(finalUserState)
   }));
 
   // Mock business query

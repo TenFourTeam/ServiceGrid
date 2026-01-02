@@ -2,7 +2,9 @@ import { useAssessmentAutomationNotifications } from '@/hooks/useAssessmentAutom
 
 /**
  * Provider component that initializes assessment automation notifications.
- * Hook is always called (for React hook integrity), but guards internally.
+ * This listens to real-time events from ai_activity_log for assessment-related
+ * automations (checklist creation, photo uploads, risk detection, etc.)
+ * and surfaces them as toast notifications.
  */
 export function AssessmentAutomationNotificationsProvider() {
   useAssessmentAutomationNotifications();

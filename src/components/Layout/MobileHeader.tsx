@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Menu, Settings, LogOut, Shield, FileText, Calendar as CalendarIcon, Receipt, Users, Wrench, Clock, ClipboardList, UserPlus, BarChart3 } from "lucide-react";
 import { useNavigate, NavLink, useLocation } from "react-router-dom";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
-import { useUser } from '@/hooks/useBusinessAuth';
+import { useUser } from "@clerk/clerk-react";
+import { useProfile } from "@/queries/useProfile";
 import BusinessLogo from "@/components/BusinessLogo";
 import { SignOutButton } from "@/components/Auth/SignOutButton";
 import { Separator } from "@/components/ui/separator";
@@ -35,8 +36,9 @@ const businessNavItems = [
 export default function MobileHeader({ title, businessId }: MobileHeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { businessName, businessLogoUrl, businessLightLogoUrl, role, business, profileFullName } = useBusinessContext(businessId);
+  const { businessName, businessLogoUrl, businessLightLogoUrl, role, business } = useBusinessContext(businessId);
   const { user } = useUser();
+  const { data: profile } = useProfile();
   const isPhone = useIsPhone();
 
   // Filter items based on user role
@@ -79,7 +81,7 @@ export default function MobileHeader({ title, businessId }: MobileHeaderProps) {
             {/* Scrollable content area */}
             <div className="flex-1 overflow-y-auto space-y-4">
               <div className="text-center">
-                <p className="font-medium">{profileFullName || user?.fullName || "Account"}</p>
+                <p className="font-medium">{profile?.profile?.fullName || user?.fullName || "Account"}</p>
                 <p className="text-sm text-muted-foreground">
                   {user?.primaryEmailAddress?.emailAddress || user?.emailAddresses?.[0]?.emailAddress}
                 </p>
