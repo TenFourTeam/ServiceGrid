@@ -8,7 +8,6 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Loader2, Mail, Lock, User, ArrowRight } from 'lucide-react';
-import BootLoadingScreen from '@/components/BootLoadingScreen';
 
 type AuthTab = 'login' | 'register' | 'magic-link';
 

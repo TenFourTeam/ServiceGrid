@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
-import { setBootStage } from '@/lib/boot-trace';
 
 // Types
 export interface BusinessUser {
@@ -107,13 +106,10 @@ export function BusinessAuthProvider({ children }: BusinessAuthProviderProps) {
     let isMounted = true;
     const AUTH_INIT_TIMEOUT_MS = 6000; // Failsafe: force init after 6 seconds
 
-    setBootStage('auth_checking');
-
     // Failsafe timeout - ensures isLoading ALWAYS resolves even if getSession hangs
     const timeoutId = setTimeout(() => {
       if (!hasInitializedRef.current && isMounted) {
         console.warn('[BusinessAuth] Init timeout reached, forcing isLoading=false');
-        setBootStage('error', 'Auth initialization timeout');
         hasInitializedRef.current = true;
         setIsLoading(false);
       }
@@ -179,7 +175,6 @@ export function BusinessAuthProvider({ children }: BusinessAuthProviderProps) {
         if (!hasInitializedRef.current && isMounted) {
           hasInitializedRef.current = true;
           setIsLoading(false);
-          setBootStage('auth_loaded');
           console.log('[BusinessAuth] Initialization complete, isLoading=false');
         }
       }

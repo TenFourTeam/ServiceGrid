@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { initIntercom, shutdownIntercom } from "@/utils/intercom";
-import { clearAppCache } from "@/lib/boot-trace";
+import { clearAppCache } from "@/lib/cache-utils";
 
 import "@/landing/animations.css";
 import { Hero } from "@/landing/components/Hero";

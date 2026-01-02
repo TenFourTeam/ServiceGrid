@@ -1,13 +1,11 @@
-import React, { Suspense, lazy, useEffect } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import React, { Suspense, lazy } from "react";
+import { Routes, Route } from "react-router-dom";
 import { BrowserRouter } from "react-router-dom";
 import { BusinessAuthProvider } from "@/providers/BusinessAuthProvider";
 import { AppProviders } from "@/providers/AppProviders";
-import { setBootStage } from "@/lib/boot-trace";
-import { StallGuard } from "@/components/StallGuard";
-import BootLoadingScreen from "@/components/BootLoadingScreen";
+import LoadingScreen from "@/components/LoadingScreen";
 
-import { AuthBoundary, RequireAuth, PublicOnly, QueryClientAuthIntegration } from "@/auth";
+import { RequireAuth, PublicOnly, QueryClientAuthIntegration } from "@/auth";
 import { RequireRole } from "@/components/Auth/RequireRole";
 import ErrorBoundary from './components/ErrorBoundary';
 
@@ -62,150 +60,130 @@ const CustomerInviteAccept = lazy(() => import("./pages/CustomerInviteAccept"));
 import { CustomerAuthProvider, CustomerProtectedRoute, CustomerPortalLayout, CustomerDashboard, CustomerDocuments, CustomerSchedule, CustomerMessages, PasswordResetConfirm } from './components/CustomerPortal';
 
 
-// Component to signal when app is ready
-function AppReadySignal({ children }: { children: React.ReactNode }) {
-  useEffect(() => {
-    setBootStage('app_ready');
-  }, []);
-  return <>{children}</>;
-}
-
-// Component to signal route loading during Suspense
-function RouteLoadingFallback() {
-  useEffect(() => {
-    setBootStage('route_loading');
-  }, []);
-  return <BootLoadingScreen fallbackLabel="Loading page" />;
-}
-
 // App component 
 function App() {
   return (
-    <StallGuard>
-      <BrowserRouter>
-        <BusinessAuthProvider>
-          <AppProviders>
-            <QueryClientAuthIntegration />
-            <ErrorBoundary>
-            <Suspense fallback={<RouteLoadingFallback />}>
-              <AppReadySignal>
-          <Routes>
-            {/* Public routes */}
-            <Route element={<PublicOnly redirectTo="/calendar" />}>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/roadmap" element={<RoadmapPage />} />
-              <Route path="/changelog" element={<ChangelogPage />} />
-              <Route path="/pricing" element={<PricingPage />} />
-              <Route path="/blog" element={<BlogPage />} />
-              <Route path="/blog/:slug" element={<BlogPostPage />} />
-            </Route>
+    <BrowserRouter>
+      <BusinessAuthProvider>
+        <AppProviders>
+          <QueryClientAuthIntegration />
+          <ErrorBoundary>
+          <Suspense fallback={<LoadingScreen full label="Loading page" />}>
+        <Routes>
+          {/* Public routes */}
+          <Route element={<PublicOnly redirectTo="/calendar" />}>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/roadmap" element={<RoadmapPage />} />
+            <Route path="/changelog" element={<ChangelogPage />} />
+            <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/blog" element={<BlogPage />} />
+            <Route path="/blog/:slug" element={<BlogPostPage />} />
+          </Route>
+          
+          {/* Protected routes */}
+          <Route element={<RequireAuth />}>
+            {/* Routes accessible to both owners and workers */}
+            <Route path="/calendar" element={<CalendarPage />} />
+            <Route path="/timesheet" element={<TimesheetPage />} />
             
-            {/* Protected routes */}
-            <Route element={<RequireAuth />}>
-              {/* Routes accessible to both owners and workers */}
-              <Route path="/calendar" element={<CalendarPage />} />
-              <Route path="/timesheet" element={<TimesheetPage />} />
-              
-              {/* Owner-only routes */}
-              <Route path="/team" element={
-                <RequireRole role="owner">
-                  <TeamPage />
-                </RequireRole>
-              } />
-              <Route path="/team/member/:userId" element={
-                <RequireRole role="owner">
-                  <MemberTimesheetPage />
-                </RequireRole>
-              } />
-              
-              {/* Owner-only routes */}
-              <Route path="/work-orders" element={
-                <RequireRole role="owner">
-                  <WorkOrdersPage />
-                </RequireRole>
-              } />
-              <Route path="/quotes" element={
-                <RequireRole role="owner">
-                  <QuotesPage />
-                </RequireRole>
-              } />
-              <Route path="/invoices" element={
-                <RequireRole role="owner">
-                  <InvoicesPage />
-                </RequireRole>
-              } />
-              <Route path="/customers" element={
-                <RequireRole role="owner">
-                  <CustomersPage />
-                </RequireRole>
-              } />
-              <Route path="/requests" element={
-                <RequireRole role="owner">
-                  <RequestsPage />
-                </RequireRole>
-              } />
-              <Route path="/analytics" element={
-                <RequireRole role="owner">
-                  <AnalyticsPage />
-                </RequireRole>
-              } />
-              <Route path="/recurring-jobs" element={
-                <RequireRole role="owner">
-                  <RecurringJobsPage />
-                </RequireRole>
-              } />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/referral" element={<ReferralPage />} />
-              <Route path="/legal" element={<LegalPage />} />
-              <Route path="/legal/:slug" element={<LegalDocument />} />
-            </Route>
+            {/* Owner-only routes */}
+            <Route path="/team" element={
+              <RequireRole role="owner">
+                <TeamPage />
+              </RequireRole>
+            } />
+            <Route path="/team/member/:userId" element={
+              <RequireRole role="owner">
+                <MemberTimesheetPage />
+              </RequireRole>
+            } />
+            
+            {/* Owner-only routes */}
+            <Route path="/work-orders" element={
+              <RequireRole role="owner">
+                <WorkOrdersPage />
+              </RequireRole>
+            } />
+            <Route path="/quotes" element={
+              <RequireRole role="owner">
+                <QuotesPage />
+              </RequireRole>
+            } />
+            <Route path="/invoices" element={
+              <RequireRole role="owner">
+                <InvoicesPage />
+              </RequireRole>
+            } />
+            <Route path="/customers" element={
+              <RequireRole role="owner">
+                <CustomersPage />
+              </RequireRole>
+            } />
+            <Route path="/requests" element={
+              <RequireRole role="owner">
+                <RequestsPage />
+              </RequireRole>
+            } />
+            <Route path="/analytics" element={
+              <RequireRole role="owner">
+                <AnalyticsPage />
+              </RequireRole>
+            } />
+            <Route path="/recurring-jobs" element={
+              <RequireRole role="owner">
+                <RecurringJobsPage />
+              </RequireRole>
+            } />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/referral" element={<ReferralPage />} />
+            <Route path="/legal" element={<LegalPage />} />
+            <Route path="/legal/:slug" element={<LegalDocument />} />
+          </Route>
 
-            {/* Public pages that don't require auth checks */}
-            <Route path="/resources/:slug" element={<IndustryResourcePage />} />
-            <Route path="/auth" element={<AuthPage />} />
-            <Route path="/auth/confirm" element={<AuthConfirm />} />
-            <Route path="/auth/verify/:token" element={<MagicLinkVerify />} />
-            <Route path="/auth/reset/:token" element={<PasswordReset />} />
-            <Route path="/quote-action" element={<QuoteActionPage />} />
-            <Route path="/job-action" element={<JobActionPage />} />
-            <Route path="/quote/:token" element={<QuoteViewerPage />} />
-            <Route path="/quote-present/:token" element={<QuotePresentationPage />} />
-            <Route path="/quote-edit/:quoteId/:token" element={<QuoteEditFormPage />} />
-            <Route path="/payment-success" element={<PaymentSuccessPage />} />
-            <Route path="/payment-canceled" element={<PaymentCanceledPage />} />
-            <Route path="/invoice-pay" element={<InvoicePayPage />} />
-            <Route path="/invite" element={<InvitePage />} />
-            <Route path="/invite/referral" element={<ReferralLanding />} />
-            <Route path="/request/:businessId" element={<PublicRequestFormPage />} />
-            <Route path="/auth/google-drive/callback" element={<GoogleDriveCallback />} />
-            
-            {/* Customer Portal routes */}
-            <Route path="/customer-login" element={<CustomerLogin />} />
-            <Route path="/customer-invite/:token" element={<CustomerInviteAccept />} />
-            <Route path="/customer-magic/:token" element={<CustomerMagicLink />} />
-            <Route path="/customer-reset-password/:token" element={<PasswordResetConfirm />} />
-            <Route path="/portal" element={
-              <CustomerAuthProvider>
-                <CustomerProtectedRoute>
-                  <CustomerPortalLayout />
-                </CustomerProtectedRoute>
-              </CustomerAuthProvider>
-            }>
-              <Route index element={<CustomerDashboard />} />
-              <Route path="documents" element={<CustomerDocuments />} />
-              <Route path="schedule" element={<CustomerSchedule />} />
-              <Route path="messages" element={<CustomerMessages />} />
-            </Route>
-            
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-              </AppReadySignal>
-              </Suspense>
-            </ErrorBoundary>
-        </AppProviders>
-        </BusinessAuthProvider>
-      </BrowserRouter>
-    </StallGuard>
+          {/* Public pages that don't require auth checks */}
+          <Route path="/resources/:slug" element={<IndustryResourcePage />} />
+          <Route path="/auth" element={<AuthPage />} />
+          <Route path="/auth/confirm" element={<AuthConfirm />} />
+          <Route path="/auth/verify/:token" element={<MagicLinkVerify />} />
+          <Route path="/auth/reset/:token" element={<PasswordReset />} />
+          <Route path="/quote-action" element={<QuoteActionPage />} />
+          <Route path="/job-action" element={<JobActionPage />} />
+          <Route path="/quote/:token" element={<QuoteViewerPage />} />
+          <Route path="/quote-present/:token" element={<QuotePresentationPage />} />
+          <Route path="/quote-edit/:quoteId/:token" element={<QuoteEditFormPage />} />
+          <Route path="/payment-success" element={<PaymentSuccessPage />} />
+          <Route path="/payment-canceled" element={<PaymentCanceledPage />} />
+          <Route path="/invoice-pay" element={<InvoicePayPage />} />
+          <Route path="/invite" element={<InvitePage />} />
+          <Route path="/invite/referral" element={<ReferralLanding />} />
+          <Route path="/request/:businessId" element={<PublicRequestFormPage />} />
+          <Route path="/auth/google-drive/callback" element={<GoogleDriveCallback />} />
+          
+          {/* Customer Portal routes */}
+          <Route path="/customer-login" element={<CustomerLogin />} />
+          <Route path="/customer-invite/:token" element={<CustomerInviteAccept />} />
+          <Route path="/customer-magic/:token" element={<CustomerMagicLink />} />
+          <Route path="/customer-reset-password/:token" element={<PasswordResetConfirm />} />
+          <Route path="/portal" element={
+            <CustomerAuthProvider>
+              <CustomerProtectedRoute>
+                <CustomerPortalLayout />
+              </CustomerProtectedRoute>
+            </CustomerAuthProvider>
+          }>
+            <Route index element={<CustomerDashboard />} />
+            <Route path="documents" element={<CustomerDocuments />} />
+            <Route path="schedule" element={<CustomerSchedule />} />
+            <Route path="messages" element={<CustomerMessages />} />
+          </Route>
+          
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+            </Suspense>
+          </ErrorBoundary>
+      </AppProviders>
+      </BusinessAuthProvider>
+    </BrowserRouter>
   );
 }
 
