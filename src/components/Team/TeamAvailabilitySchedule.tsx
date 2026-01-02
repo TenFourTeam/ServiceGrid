@@ -6,7 +6,6 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { useTeamAvailability, useCreateAvailability, useUpdateAvailability, useDeleteAvailability } from '@/hooks/useTeamAvailability';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
-import { useProfile } from '@/queries/useProfile';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Calendar, Clock, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -22,9 +21,8 @@ const DAYS_OF_WEEK = [
 ];
 
 export function TeamAvailabilitySchedule() {
-  const { businessId } = useBusinessContext();
-  const { data: profile } = useProfile();
-  const userId = profile?.profile?.id;
+  const { businessId, profileId } = useBusinessContext();
+  const userId = profileId;
   const { data: availability, isLoading } = useTeamAvailability(userId);
   const createAvailability = useCreateAvailability();
   const updateAvailability = useUpdateAvailability();

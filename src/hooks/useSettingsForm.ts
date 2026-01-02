@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useProfile } from '@/queries/useProfile';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useProfileOperations } from '@/hooks/useProfileOperations';
 import { toast } from 'sonner';
 import { formatPhoneInput } from '@/utils/validation';
@@ -10,7 +10,7 @@ import { formatNameSuggestion } from '@/validation/profile';
  * Handles personal profile data (name + phone) only
  */
 export function useSettingsForm() {
-  const { data: profile } = useProfile();
+  const { profileFullName, profilePhoneE164 } = useBusinessContext();
   const { updateProfile, isUpdating } = useProfileOperations();
   
   // Form state - computed from server data
@@ -19,14 +19,14 @@ export function useSettingsForm() {
   
   // Auto-sync form state with server data
   useEffect(() => {
-    if (profile?.profile?.fullName) {
-      setUserName(profile.profile.fullName);
+    if (profileFullName) {
+      setUserName(profileFullName);
     }
-    if (profile?.profile?.phoneE164) {
+    if (profilePhoneE164) {
       // Always display phone in user-friendly format
-      setUserPhone(formatPhoneInput(profile.profile.phoneE164));
+      setUserPhone(formatPhoneInput(profilePhoneE164));
     }
-  }, [profile]);
+  }, [profileFullName, profilePhoneE164]);
   
   // Form validation - only name and phone required
   const isFormValid = userName.trim() && userPhone.trim();

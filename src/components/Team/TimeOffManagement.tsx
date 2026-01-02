@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTimeOffRequests, useUpdateTimeOffRequest, TimeOffStatus } from '@/hooks/useTimeOff';
 import { TimeOffRequestModal } from './TimeOffRequestModal';
-import { useProfile } from '@/queries/useProfile';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 interface TimeOffManagementProps {
   userId?: string;
@@ -17,7 +17,7 @@ interface TimeOffManagementProps {
 export function TimeOffManagement({ userId, isManager = false }: TimeOffManagementProps) {
   const { t } = useTranslation();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { data: profile } = useProfile();
+  const { profileFullName } = useBusinessContext();
   const { data: requests, isLoading } = useTimeOffRequests(userId);
   const updateRequest = useUpdateTimeOffRequest();
 
