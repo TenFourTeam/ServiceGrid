@@ -21,7 +21,7 @@ type ConversationFilter = 'all' | 'my-direct' | 'customer' | 'team';
 export function ConversationsTab() {
   const { conversations, isLoading, createConversation, createCustomerConversation, reassignConversation, archiveConversation, unarchiveConversation } = useConversations();
   const { unreadCount } = useUnreadMentions();
-  const { profileId } = useBusinessContext();
+  const { profileId, profileFullName } = useBusinessContext();
   const [selectedConversation, setSelectedConversation] = useState<{ 
     id: string; 
     title: string; 
@@ -97,9 +97,9 @@ export function ConversationsTab() {
   };
 
   if (selectedConversation) {
-    const currentUser = profileData?.profile ? {
-      id: profileData.profile.id,
-      name: profileData.profile.fullName,
+    const currentUser = profileId ? {
+      id: profileId,
+      name: profileFullName || '',
       email: '',
     } : undefined;
 
