@@ -4,9 +4,8 @@
  */
 import { useMemo } from 'react';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { useBusinessAuth } from '@/hooks/useBusinessAuth';
 import { 
-  // useBusiness integrated into useBusinessContext 
-  useProfile, 
   useCustomersData,
   useJobsData, 
   useQuotesData,
@@ -32,9 +31,9 @@ export interface OnboardingState {
 
 export function useOnboardingState(): OnboardingState {
   const { businessId, isAuthenticated, business, isLoadingBusiness } = useBusinessContext();
+  const { profile, isLoading: authLoading } = useBusinessAuth();
   
   // Direct query consumption - no context layer
-  const { data: profile, isLoading: profileLoading, isFetching: profileFetching } = useProfile();
   const { count: customersCount, isLoading: customersLoading } = useCustomersData();
   const { count: jobsCount, isLoading: jobsLoading } = useJobsData(businessId);
   const { count: quotesCount, isLoading: quotesLoading } = useQuotesData();
@@ -42,16 +41,13 @@ export function useOnboardingState(): OnboardingState {
   const { status: subscription, isLoading: subscriptionLoading } = useSubscriptions();
 
   return useMemo(() => {
-    const loading = isLoadingBusiness || profileLoading || customersLoading || 
+    const loading = isLoadingBusiness || authLoading || customersLoading || 
                    jobsLoading || quotesLoading || stripeLoading || subscriptionLoading;
-
-    // Don't show incomplete during active fetching to prevent flickering
-    const isRefetching = profileFetching;
 
     // Simple, readable guard logic - preserve completion during updates
     const profileComplete = !!(
-      profile?.profile?.fullName?.trim() &&
-      profile?.profile?.phoneE164 &&
+      profile?.fullName?.trim() &&
+      profile?.phoneE164 &&
       business?.name?.trim()
     );
 
@@ -83,8 +79,8 @@ export function useOnboardingState(): OnboardingState {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    profile?.profile?.fullName,
-    profile?.profile?.phoneE164,
+    profile?.fullName,
+    profile?.phoneE164,
     business?.name,
     customersCount,
     jobsCount,
@@ -92,7 +88,7 @@ export function useOnboardingState(): OnboardingState {
     stripeStatus?.chargesEnabled,
     subscription?.subscribed,
     isLoadingBusiness,
-    profileLoading,
+    authLoading,
     customersLoading,
     jobsLoading,
     quotesLoading,

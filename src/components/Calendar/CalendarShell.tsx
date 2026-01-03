@@ -107,15 +107,14 @@ export default function CalendarShell({
     return () => window.removeEventListener('keydown', onKey);
   }, [stepDate]);
 
-  // Business provisioning fallback - only show after extended timeout when truly stuck
+  // Business provisioning fallback - show after 5s when truly stuck
   useEffect(() => {
     // Only trigger fallback when loading is complete but business is still missing
-    // Use a longer timeout (15s) to avoid false positives during normal loading
     if (!isLoadingBusiness && !businessId) {
       const timer = setTimeout(() => {
-        console.warn('[CalendarShell] Business context not resolved after 15s');
+        console.warn('[CalendarShell] Business context not resolved after 5s');
         setShowProvisioningFallback(true);
-      }, 15000);
+      }, 5000);
       return () => clearTimeout(timer);
     }
     // Reset fallback state when business becomes available

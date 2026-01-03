@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthApi } from '@/hooks/useAuthApi';
 import { toast } from 'sonner';
 import type { UserBusiness } from '@/hooks/useUserBusinesses';
-import { useProfile } from '@/queries/useProfile';
+import { useBusinessAuth } from '@/hooks/useBusinessAuth';
 
 // Canonical query key for user businesses
 export const qkUserBusinesses = () => ['user-businesses'] as const;
@@ -11,7 +11,7 @@ export function useRemoveBusinessAccess() {
   const qc = useQueryClient();
   const authApi = useAuthApi();
   const key = qkUserBusinesses();
-  const { data: profile } = useProfile();
+  const { profile } = useBusinessAuth();
 
   return useMutation({
     mutationFn: async (business: UserBusiness) => {
@@ -19,7 +19,7 @@ export function useRemoveBusinessAccess() {
         throw new Error('Only workers can leave businesses');
       }
 
-      if (!profile?.profile?.id) {
+      if (!profile?.id) {
         throw new Error('User profile not found');
       }
 
