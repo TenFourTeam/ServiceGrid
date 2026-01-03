@@ -3,6 +3,12 @@ import { useAuthApi } from '@/hooks/useAuthApi';
 import { useAuth, useBusinessAuth } from '@/hooks/useBusinessAuth';
 import { useState, useEffect } from 'react';
 
+// Logging helper with timestamps
+function authLog(category: string, message: string, data?: Record<string, unknown>) {
+  const timestamp = new Date().toISOString().split('T')[1].slice(0, -1);
+  console.log(`[${timestamp}] [useUserBusinesses:${category}] ${message}`, data ? data : '');
+}
+
 export interface UserBusiness {
   id: string;
   name: string;
@@ -34,23 +40,39 @@ export function useUserBusinesses() {
   
   useEffect(() => {
     if (hasToken) {
-      const timer = setTimeout(() => setIsTokenStable(true), 100);
+      authLog('TOKEN', 'Token detected - waiting for stability', { hasToken });
+      const timer = setTimeout(() => {
+        authLog('TOKEN', 'Token is now stable');
+        setIsTokenStable(true);
+      }, 100);
       return () => clearTimeout(timer);
     } else {
+      authLog('TOKEN', 'No token - resetting stability');
       setIsTokenStable(false);
     }
   }, [hasToken]);
 
+  const queryEnabled = isLoaded && isSignedIn && isTokenStable;
+  
+  authLog('QUERY', 'Query status check', { 
+    isLoaded, 
+    isSignedIn, 
+    hasToken, 
+    isTokenStable, 
+    enabled: queryEnabled 
+  });
+
   return useQuery<UserBusiness[], Error>({
     queryKey: ['user-businesses'],
     queryFn: async () => {
-      console.log('[useUserBusinesses] Fetching businesses...');
+      authLog('API', 'Fetching businesses from API');
+      
       const { data, error } = await authApi.invoke('user-businesses', {
         method: 'GET'
       });
       
       if (error) {
-        console.error('[useUserBusinesses] API error:', error);
+        authLog('API', 'API error', { error: error.message });
         
         // Check for auth-specific errors that indicate invalid session
         const authErrorPatterns = [
@@ -65,28 +87,32 @@ export function useUserBusinesses() {
         );
         
         if (isAuthError) {
-          console.warn('[useUserBusinesses] Auth error detected, marking as AUTH_INVALID');
+          authLog('API', 'Auth error detected - marking as AUTH_INVALID');
           throw new Error('AUTH_INVALID');
         }
         
         throw new Error(error.message || 'Failed to fetch user businesses');
       }
       
-      console.log('[useUserBusinesses] API response:', { 
-        businessCount: data?.data?.length,
-        businesses: data?.data?.map((b: UserBusiness) => ({ id: b.id, name: b.name, role: b.role }))
+      const businesses = data?.data || [];
+      authLog('API', 'API response received', { 
+        count: businesses.length,
+        businesses: businesses.map((b: UserBusiness) => ({ id: b.id, name: b.name, role: b.role }))
       });
       
-      // The API returns standardized { data, count } format
-      return data?.data || [];
+      return businesses;
     },
     // Only enable when we have auth AND a stable access token
-    enabled: isLoaded && isSignedIn && isTokenStable,
+    enabled: queryEnabled,
     staleTime: 30_000,
     placeholderData: (prev) => prev,
     retry: (failureCount, error) => {
       // Don't retry auth errors - they won't resolve without re-login
-      if (error.message === 'AUTH_INVALID') return false;
+      if (error.message === 'AUTH_INVALID') {
+        authLog('RETRY', 'Not retrying AUTH_INVALID error');
+        return false;
+      }
+      authLog('RETRY', 'Retrying query', { failureCount });
       return failureCount < 2;
     },
   });
