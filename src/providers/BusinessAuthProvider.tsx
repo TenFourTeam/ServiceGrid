@@ -335,6 +335,9 @@ export function BusinessAuthProvider({ children }: BusinessAuthProviderProps) {
 
   // Logout
   const logout = useCallback(async (): Promise<void> => {
+    // Clear localStorage tokens FIRST to prevent AuthBoundary race condition
+    clearSupabaseAuthTokens();
+    
     try {
       await supabase.auth.signOut();
     } catch (err) {
