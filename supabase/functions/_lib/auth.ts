@@ -59,27 +59,53 @@ export async function requireCtx(req: Request, options: { autoCreate?: boolean, 
     .eq('id', user.id)
     .single();
 
-  // Auto-provision profile if missing (handles failed signup triggers)
+  // Auto-provision profile AND business if missing (handles failed signup triggers)
   if (profileError || !profile) {
-    console.warn('⚠️ [auth] Profile not found for user, auto-provisioning:', user.id);
+    console.warn('⚠️ [auth] Profile not found for user, auto-provisioning profile + business:', user.id);
     
+    // Derive a friendly business name from user metadata or email
+    const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
+    const businessName = `${userName}'s Business`;
+    
+    // 1. Create business first (so we have the ID for the profile)
+    const { data: newBusiness, error: businessError } = await supaAdmin
+      .from('businesses')
+      .insert({
+        name: businessName,
+        owner_id: user.id,
+        name_customized: false
+      })
+      .select('id')
+      .single();
+    
+    if (businessError) {
+      console.error('❌ [auth] Failed to auto-provision business:', businessError);
+      throw new Error("Failed to create business. Please contact support.");
+    }
+    
+    console.info('✅ [auth] Auto-provisioned business:', newBusiness.id, 'named:', businessName);
+    
+    // 2. Create profile with default_business_id linked atomically
     const { data: newProfile, error: createError } = await supaAdmin
       .from('profiles')
       .insert({
         id: user.id,
         email: user.email?.toLowerCase(),
-        full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'
+        full_name: userName,
+        default_business_id: newBusiness.id
       })
       .select('id, email, default_business_id')
       .single();
     
     if (createError) {
       console.error('❌ [auth] Failed to auto-provision profile:', createError);
-      throw new Error("Profile not found. Please contact support.");
+      // Clean up orphaned business
+      await supaAdmin.from('businesses').delete().eq('id', newBusiness.id);
+      throw new Error("Failed to create profile. Please contact support.");
     }
     
     profile = newProfile;
-    console.info('✅ [auth] Auto-provisioned profile for user:', user.id);
+    console.info('✅ [auth] Auto-provisioned profile for user:', user.id, 'with business:', newBusiness.id);
   }
 
   // Resolve business ID
@@ -181,21 +207,32 @@ async function resolveBusinessId(
     }
   }
 
-  // 5) Auto-create (optional)
+  // 5) Auto-create (optional) - fallback for edge cases since profile auto-provisioning now creates business
   if (!businessId) {
     if (!options?.autoCreate) {
       throw new Error('No business found and auto-creation disabled');
     }
     
+    // Fetch user profile for personalized naming
+    const { data: userProfile } = await supaAdmin
+      .from('profiles')
+      .select('full_name, email')
+      .eq('id', userUuid)
+      .single();
+    
+    const businessName = userProfile?.full_name 
+      ? `${userProfile.full_name}'s Business`
+      : `${userProfile?.email?.split('@')[0] || 'My'}'s Business`;
+    
     const { data: newBusiness, error: businessError } = await supaAdmin
       .from('businesses')
-      .insert({ name: 'My Business', owner_id: userUuid })
+      .insert({ name: businessName, owner_id: userUuid, name_customized: false })
       .select('id')
       .single();
     
     if (businessError) throw businessError;
     businessId = newBusiness.id;
-    console.info(`[auth] Created new business ID: ${businessId}`);
+    console.info(`[auth] Created new business ID: ${businessId} named: ${businessName}`);
     
     // Update profile to link the new business as default
     await supaAdmin
