@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useAuthApi } from '@/hooks/useAuthApi';
 import { useAuth, useBusinessAuth } from '@/hooks/useBusinessAuth';
+import { useState, useEffect } from 'react';
 
 export interface UserBusiness {
   id: string;
@@ -26,6 +27,19 @@ export function useUserBusinesses() {
   
   // Check if we have an actual access token (not just isSignedIn)
   const hasToken = !!session?.access_token;
+  
+  // Token stability guard - wait a tick after token becomes available
+  // to avoid queries during token refresh transitions
+  const [isTokenStable, setIsTokenStable] = useState(false);
+  
+  useEffect(() => {
+    if (hasToken) {
+      const timer = setTimeout(() => setIsTokenStable(true), 100);
+      return () => clearTimeout(timer);
+    } else {
+      setIsTokenStable(false);
+    }
+  }, [hasToken]);
 
   return useQuery<UserBusiness[], Error>({
     queryKey: ['user-businesses'],
@@ -66,8 +80,8 @@ export function useUserBusinesses() {
       // The API returns standardized { data, count } format
       return data?.data || [];
     },
-    // Only enable when we have auth AND an actual access token
-    enabled: isLoaded && isSignedIn && hasToken,
+    // Only enable when we have auth AND a stable access token
+    enabled: isLoaded && isSignedIn && isTokenStable,
     staleTime: 30_000,
     placeholderData: (prev) => prev,
     retry: (failureCount, error) => {

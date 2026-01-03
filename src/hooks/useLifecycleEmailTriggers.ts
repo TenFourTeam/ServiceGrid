@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { useAuth, useUser } from '@/hooks/useBusinessAuth';
+import { useAuth, useUser, useBusinessAuth } from '@/hooks/useBusinessAuth';
 import { useBusinessContext } from './useBusinessContext';
-import { useProfile } from '@/queries/useProfile';
 import { useStripeConnect } from './useStripeConnect';
 import { useAuthApi } from './useAuthApi';
 import { lifecycleEmailTriggers, daysSinceSignup, daysSinceLastLogin, LIFECYCLE_EMAIL_TYPES } from '@/utils/lifecycleEmails';
@@ -15,8 +14,8 @@ export function useLifecycleEmailTriggers(enableAutoTriggers: boolean = false) {
   enableAutoTriggers = false;
   const { isSignedIn, isLoaded } = useAuth();
   const { user } = useUser();
-  const { business, businessName, isLoadingBusiness } = useBusinessContext();
-  const { data: profile } = useProfile();
+  const { profile } = useBusinessAuth();
+  const { business, businessName, isLoadingBusiness, userId } = useBusinessContext();
   const { status: stripeStatus } = useStripeConnect();
   const authApi = useAuthApi();
   const hasTriggeredWelcome = useRef(false);
@@ -25,9 +24,8 @@ export function useLifecycleEmailTriggers(enableAutoTriggers: boolean = false) {
   const lastEngagementCheck = useRef<string | null>(null);
 
   // Prepare email data - use user's actual email from profile
-  const { userId } = useBusinessContext();
   const emailData = {
-    userFullName: profile?.profile?.fullName,
+    userFullName: profile?.fullName,
     userEmail: user?.primaryEmailAddress?.emailAddress || business?.replyToEmail,
     businessName: businessName || business?.name,
     businessId: business?.id,

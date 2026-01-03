@@ -63,9 +63,18 @@ export function BusinessAuthProvider({ children }: BusinessAuthProviderProps) {
   const [authTimedOut, setAuthTimedOut] = useState(false);
 
   const isAuthenticated = !!session?.user;
+  
+  // Track last fetched profile to prevent duplicate fetches
+  const lastFetchedProfileIdRef = useRef<string | null>(null);
 
   // Fetch profile from database
   const fetchProfile = useCallback(async (authUser: User): Promise<void> => {
+    // Skip if we already fetched for this user
+    if (lastFetchedProfileIdRef.current === authUser.id) {
+      console.log('[BusinessAuth] Profile already fetched for user, skipping');
+      return;
+    }
+    
     try {
       const { data: profileData, error } = await supabase
         .from('profiles')
@@ -97,6 +106,7 @@ export function BusinessAuthProvider({ children }: BusinessAuthProviderProps) {
 
         setUser(userData);
         setProfile(profileObj);
+        lastFetchedProfileIdRef.current = authUser.id;
       }
     } catch (err) {
       console.error('[BusinessAuth] Profile fetch error:', err);
@@ -108,6 +118,7 @@ export function BusinessAuthProvider({ children }: BusinessAuthProviderProps) {
     setUser(null);
     setProfile(null);
     setSession(null);
+    lastFetchedProfileIdRef.current = null; // Reset on logout
   }, []);
 
   // Track whether initial auth state has been processed (prevents multiple setIsLoading calls)
