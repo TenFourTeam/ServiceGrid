@@ -52,16 +52,34 @@ export async function requireCtx(req: Request, options: { autoCreate?: boolean, 
   
   console.info('✅ [auth] JWT validated for user:', user.id);
   
-  // Get profile to resolve business ID
-  const { data: profile, error: profileError } = await supaAdmin
+  // Get profile to resolve business ID (auto-provision if missing)
+  let { data: profile, error: profileError } = await supaAdmin
     .from('profiles')
     .select('id, email, default_business_id')
     .eq('id', user.id)
     .single();
 
+  // Auto-provision profile if missing (handles failed signup triggers)
   if (profileError || !profile) {
-    console.error('❌ [auth] Profile not found for user:', user.id);
-    throw new Error("Profile not found. Please contact support.");
+    console.warn('⚠️ [auth] Profile not found for user, auto-provisioning:', user.id);
+    
+    const { data: newProfile, error: createError } = await supaAdmin
+      .from('profiles')
+      .insert({
+        id: user.id,
+        email: user.email?.toLowerCase(),
+        full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'
+      })
+      .select('id, email, default_business_id')
+      .single();
+    
+    if (createError) {
+      console.error('❌ [auth] Failed to auto-provision profile:', createError);
+      throw new Error("Profile not found. Please contact support.");
+    }
+    
+    profile = newProfile;
+    console.info('✅ [auth] Auto-provisioned profile for user:', user.id);
   }
 
   // Resolve business ID
