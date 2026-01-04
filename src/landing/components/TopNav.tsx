@@ -25,7 +25,7 @@ import {
 import { LanguageToggle } from "./LanguageToggle";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/hooks/useBusinessAuth";
-import { Menu, ChevronDown } from "lucide-react";
+import { Menu, ChevronDown, Phone } from "lucide-react";
 
 export function TopNav() {
   const { t } = useLanguage();
@@ -42,6 +42,13 @@ export function TopNav() {
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-1 sm:gap-2 flex-shrink-0 ml-auto">
+          <a 
+            href="tel:+13467713830" 
+            className="flex items-center gap-1.5 text-sm font-medium px-3 py-2 hover:text-primary transition-colors"
+          >
+            <Phone className="h-4 w-4" />
+            <span className="hidden lg:inline">(346) 771-3830</span>
+          </a>
           <NavigationMenu className="hidden sm:flex">
             <NavigationMenuList>
               <NavigationMenuItem>
@@ -140,6 +147,15 @@ export function TopNav() {
           </SheetTrigger>
           <SheetContent side="right" className="w-[300px] sm:w-[350px]">
             <nav className="flex flex-col gap-6 mt-8">
+              {/* Phone Number */}
+              <a
+                href="tel:+13467713830"
+                className="flex items-center gap-2 font-semibold text-foreground hover:text-brand-600"
+              >
+                <Phone className="h-5 w-5 text-brand-600" />
+                (346) 771-3830
+              </a>
+
               {/* Pricing Link */}
               <Link
                 to="/pricing"
