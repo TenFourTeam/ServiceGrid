@@ -66,6 +66,7 @@ export function useLegalDocument(slug: string, language: string = 'en'): LegalDo
         
         const fileMap: Record<string, string> = {
           'tos': 'terms-of-service.md',
+          'privacy': 'privacy-policy.md',
           'cookies': 'cookie-policy.md',
           'credits': 'service-credits.md',
           'dpa': 'data-processing-addendum.md'
@@ -121,6 +122,7 @@ export function useLegalDocument(slug: string, language: string = 'en'): LegalDo
 export function useLegalDocuments() {
   const documents = [
     { slug: 'tos', icon: 'FileText' },
+    { slug: 'privacy', icon: 'Lock' },
     { slug: 'cookies', icon: 'Cookie' },
     { slug: 'credits', icon: 'BadgeDollarSign' },
     { slug: 'dpa', icon: 'Shield' }
