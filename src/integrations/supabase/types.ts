@@ -1254,10 +1254,13 @@ export type Database = {
           business_id: string
           created_at: string
           email: string
+          geocoded_at: string | null
           id: string
           is_qualified: boolean | null
+          latitude: number | null
           lead_score: number | null
           lead_source: string | null
+          longitude: number | null
           name: string
           notes: string | null
           owner_id: string
@@ -1275,10 +1278,13 @@ export type Database = {
           business_id: string
           created_at?: string
           email: string
+          geocoded_at?: string | null
           id?: string
           is_qualified?: boolean | null
+          latitude?: number | null
           lead_score?: number | null
           lead_source?: string | null
+          longitude?: number | null
           name: string
           notes?: string | null
           owner_id: string
@@ -1296,10 +1302,13 @@ export type Database = {
           business_id?: string
           created_at?: string
           email?: string
+          geocoded_at?: string | null
           id?: string
           is_qualified?: boolean | null
+          latitude?: number | null
           lead_score?: number | null
           lead_source?: string | null
+          longitude?: number | null
           name?: string
           notes?: string | null
           owner_id?: string
@@ -1392,6 +1401,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      geocode_cache: {
+        Row: {
+          accuracy: string | null
+          address: string
+          cached_at: string | null
+          created_at: string | null
+          expires_at: string | null
+          formatted_address: string | null
+          id: string
+          latitude: number
+          location: unknown
+          longitude: number
+          place_id: string | null
+        }
+        Insert: {
+          accuracy?: string | null
+          address: string
+          cached_at?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          formatted_address?: string | null
+          id?: string
+          latitude: number
+          location?: unknown
+          longitude: number
+          place_id?: string | null
+        }
+        Update: {
+          accuracy?: string | null
+          address?: string
+          cached_at?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          formatted_address?: string | null
+          id?: string
+          latitude?: number
+          location?: unknown
+          longitude?: number
+          place_id?: string | null
+        }
+        Relationships: []
       }
       google_drive_connections: {
         Row: {
@@ -3074,9 +3125,12 @@ export type Database = {
           customer_id: string
           end_date: string | null
           estimated_duration_minutes: number
+          geocoded_at: string | null
           id: string
           is_active: boolean
           last_generated_at: string | null
+          latitude: number | null
+          longitude: number | null
           next_generation_date: string | null
           notes: string | null
           preferred_time_end: string | null
@@ -3099,9 +3153,12 @@ export type Database = {
           customer_id: string
           end_date?: string | null
           estimated_duration_minutes?: number
+          geocoded_at?: string | null
           id?: string
           is_active?: boolean
           last_generated_at?: string | null
+          latitude?: number | null
+          longitude?: number | null
           next_generation_date?: string | null
           notes?: string | null
           preferred_time_end?: string | null
@@ -3124,9 +3181,12 @@ export type Database = {
           customer_id?: string
           end_date?: string | null
           estimated_duration_minutes?: number
+          geocoded_at?: string | null
           id?: string
           is_active?: boolean
           last_generated_at?: string | null
+          latitude?: number | null
+          longitude?: number | null
           next_generation_date?: string | null
           notes?: string | null
           preferred_time_end?: string | null
@@ -3426,6 +3486,48 @@ export type Database = {
           },
         ]
       }
+      route_directions_cache: {
+        Row: {
+          cached_at: string | null
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          legs: Json
+          optimize_waypoints: boolean | null
+          overview_polyline: string
+          route_hash: string
+          total_distance_meters: number
+          total_duration_seconds: number
+          waypoints: Json
+        }
+        Insert: {
+          cached_at?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          legs: Json
+          optimize_waypoints?: boolean | null
+          overview_polyline: string
+          route_hash: string
+          total_distance_meters: number
+          total_duration_seconds: number
+          waypoints: Json
+        }
+        Update: {
+          cached_at?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          legs?: Json
+          optimize_waypoints?: boolean | null
+          overview_polyline?: string
+          route_hash?: string
+          total_distance_meters?: number
+          total_duration_seconds?: number
+          waypoints?: Json
+        }
+        Relationships: []
+      }
       service_catalog: {
         Row: {
           business_id: string
@@ -3469,6 +3571,62 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "service_catalog_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_territories: {
+        Row: {
+          assigned_members: string[] | null
+          boundary: unknown
+          business_id: string
+          center_lat: number | null
+          center_lng: number | null
+          color: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          radius_meters: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_members?: string[] | null
+          boundary?: unknown
+          business_id: string
+          center_lat?: number | null
+          center_lng?: number | null
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          radius_meters?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_members?: string[] | null
+          boundary?: unknown
+          business_id?: string
+          center_lat?: number | null
+          center_lng?: number | null
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          radius_meters?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_territories_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
@@ -5630,6 +5788,32 @@ export type Database = {
       cleanup_expired_business_sessions: { Args: never; Returns: number }
       cleanup_expired_pending_plans: { Args: never; Returns: undefined }
       current_user_profile_id: { Args: never; Returns: string }
+      customers_in_territory: {
+        Args: { p_business_id: string; p_territory_id: string }
+        Returns: {
+          address: string
+          id: string
+          latitude: number
+          longitude: number
+          name: string
+        }[]
+      }
+      customers_within_radius: {
+        Args: {
+          p_business_id: string
+          p_latitude: number
+          p_longitude: number
+          p_radius_meters: number
+        }
+        Returns: {
+          address: string
+          distance_meters: number
+          id: string
+          latitude: number
+          longitude: number
+          name: string
+        }[]
+      }
       debug_auth_state: { Args: never; Returns: Json }
       disablelongtransactions: { Args: never; Returns: string }
       dropgeometrycolumn:
@@ -5843,47 +6027,79 @@ export type Database = {
         Returns: boolean
       }
       is_business_member: { Args: { p_business_id: string }; Returns: boolean }
-      jobs_within_polygon: {
-        Args: {
-          p_business_id: string
-          p_polygon_coords: Json
-          p_user_id?: string
-        }
-        Returns: {
-          address: string
-          customer_id: string
-          customer_name: string
-          ends_at: string
-          id: string
-          latitude: number
-          longitude: number
-          starts_at: string
-          status: Database["public"]["Enums"]["job_status"]
-          title: string
-        }[]
-      }
-      jobs_within_radius: {
-        Args: {
-          p_business_id: string
-          p_lat: number
-          p_lng: number
-          p_radius_meters: number
-          p_user_id?: string
-        }
-        Returns: {
-          address: string
-          customer_id: string
-          customer_name: string
-          distance_meters: number
-          ends_at: string
-          id: string
-          latitude: number
-          longitude: number
-          starts_at: string
-          status: Database["public"]["Enums"]["job_status"]
-          title: string
-        }[]
-      }
+      jobs_within_polygon:
+        | {
+            Args: { p_business_id: string; p_polygon: Json }
+            Returns: {
+              address: string
+              id: string
+              latitude: number
+              longitude: number
+              scheduled_start: string
+              status: string
+              title: string
+            }[]
+          }
+        | {
+            Args: {
+              p_business_id: string
+              p_polygon_coords: Json
+              p_user_id?: string
+            }
+            Returns: {
+              address: string
+              customer_id: string
+              customer_name: string
+              ends_at: string
+              id: string
+              latitude: number
+              longitude: number
+              starts_at: string
+              status: Database["public"]["Enums"]["job_status"]
+              title: string
+            }[]
+          }
+      jobs_within_radius:
+        | {
+            Args: {
+              p_business_id: string
+              p_lat: number
+              p_lng: number
+              p_radius_meters: number
+              p_user_id?: string
+            }
+            Returns: {
+              address: string
+              customer_id: string
+              customer_name: string
+              distance_meters: number
+              ends_at: string
+              id: string
+              latitude: number
+              longitude: number
+              starts_at: string
+              status: Database["public"]["Enums"]["job_status"]
+              title: string
+            }[]
+          }
+        | {
+            Args: {
+              p_business_id: string
+              p_latitude: number
+              p_longitude: number
+              p_radius_meters: number
+            }
+            Returns: {
+              address: string
+              distance_meters: number
+              id: string
+              latitude: number
+              longitude: number
+              scheduled_start: string
+              status: string
+              title: string
+            }[]
+          }
       link_invoice_relations: {
         Args: {
           p_invoice_id: string
