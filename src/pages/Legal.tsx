@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import AppLayout from '@/components/Layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { FileText, Shield, Cookie, BadgeDollarSign } from 'lucide-react';
+import { FileText, Shield, Cookie, BadgeDollarSign, Lock } from 'lucide-react';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useLegalDocuments } from '@/hooks/useLegalDocument';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -15,6 +15,7 @@ export default function LegalPage() {
 
   const iconMap = {
     FileText,
+    Lock,
     Cookie,
     BadgeDollarSign,
     Shield
